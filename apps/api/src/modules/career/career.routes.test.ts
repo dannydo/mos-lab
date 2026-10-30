@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import Fastify from 'fastify';
 import { careerRoutes } from './career.routes.js';
-import { CareerProgressionService } from './career.service.js';
 import { DEFAULT_CAREER_PROGRESSION_CONFIG } from '@mos-lab/shared';
 
 function createTestApp() {
@@ -183,4 +182,21 @@ test('POST /career/staff/:id/promote requires QA/QC audit to be passed', async (
   const body = JSON.parse(res.body);
   assert.equal(body.success, false);
   assert.match(body.message, /QA\/QC/);
+});
+
+test('GET /career/staff/:id allows CV to view another staff career status without 403', async () => {
+  const app = createTestApp();
+  await app.register(careerRoutes);
+
+  // Authenticated as technician staff #1, viewing staff #99
+  const res = await app.inject({
+    method: 'GET',
+    url: '/career/staff/99',
+    headers: { 'x-test-role': 'technician', 'x-test-staff-id': '1' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.equal(body.success, true);
+  assert.equal(body.data.staffId, 99);
 });

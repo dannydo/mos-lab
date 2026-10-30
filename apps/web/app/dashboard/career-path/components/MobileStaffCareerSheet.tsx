@@ -35,10 +35,12 @@ type MetricStatus = 'passed' | 'near' | 'failed';
 
 const ROLE_TABS = [
   { key: 'ALL', label: 'Tất cả' },
+  { key: 'KTV', label: 'KTV' },
   { key: 'CV', label: 'CV' },
   { key: 'CV_PLUS', label: '🪶 CV' },
   { key: 'CV_PLUS_PLUS', label: '🪶 CV 🪶' },
-  { key: 'KTV', label: 'KTV' },
+  { key: 'CC', label: 'CC' },
+  { key: 'FM', label: 'FM' },
 ];
 
 export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
@@ -242,15 +244,9 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     }
   };
 
-  // Base CV/KTV filter (sắp xếp theo số bộ mi ordersCount giảm dần)
+  // Base staff list (sắp xếp theo số bộ mi ordersCount giảm dần)
   const baseStaffList = useMemo(() => {
-    const list = staffList.filter((s) => {
-      const isCv =
-        ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
-        ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
-      return isCv;
-    });
-    return [...list].sort((a, b) => {
+    return [...staffList].sort((a, b) => {
       const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
       if (diff !== 0) return diff;
       return (a.displayName || '').localeCompare(b.displayName || '');
@@ -261,16 +257,20 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = {
       ALL: baseStaffList.length,
+      KTV: 0,
       CV: 0,
       CV_PLUS: 0,
       CV_PLUS_PLUS: 0,
-      KTV: 0,
+      CC: 0,
+      FM: 0,
     };
     baseStaffList.forEach((s) => {
       if (s.careerRole === 'CV') counts.CV++;
       else if (s.careerRole === 'CV_PLUS') counts.CV_PLUS++;
       else if (s.careerRole === 'CV_PLUS_PLUS') counts.CV_PLUS_PLUS++;
       else if (s.careerRole === 'KTV') counts.KTV++;
+      else if (s.careerRole === 'CC' || (s.role || '').toLowerCase() === 'cc') counts.CC++;
+      else if (s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase())) counts.FM++;
     });
     return counts;
   }, [baseStaffList]);
@@ -280,7 +280,12 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     let result = baseStaffList;
 
     if (activeRoleFilter !== 'ALL') {
-      result = result.filter((s) => s.careerRole === activeRoleFilter);
+      result = result.filter((s) => {
+        if (activeRoleFilter === 'CC') return s.careerRole === 'CC' || (s.role || '').toLowerCase() === 'cc';
+        if (activeRoleFilter === 'FM')
+          return s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase());
+        return s.careerRole === activeRoleFilter;
+      });
     }
 
     if (searchQuery.trim()) {

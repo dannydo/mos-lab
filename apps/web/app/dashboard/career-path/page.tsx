@@ -179,13 +179,20 @@ export default function CareerPathPage() {
           });
           setStaffList(sortedList);
 
-          // 2. Tự chọn người có số bộ mi cao nhất (ưu tiên trong nhóm CV/CV+/CV++)
+          // 2. Ưu tiên chọn hồ sơ của chính người đang đăng nhập trước, fallback người có số bộ mi cao nhất
+          const currentStaffId = currentUser?.id;
+          const ownStaff = currentStaffId
+            ? sortedList.find((s) => s.id === currentStaffId || (s.legacyStaffId && s.legacyStaffId === currentStaffId))
+            : null;
+
           const cvPool = sortedList.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
           const targetPool = cvPool.length > 0 ? cvPool : sortedList;
           const highestOrdersStaff = targetPool[0];
 
           const defaultStaff =
-            (selectedStaffId ? sortedList.find((s) => s.id === selectedStaffId) : null) || highestOrdersStaff;
+            (selectedStaffId ? sortedList.find((s) => s.id === selectedStaffId) : null) ||
+            ownStaff ||
+            highestOrdersStaff;
 
           if (defaultStaff) {
             setSelectedStaffId(defaultStaff.id);
@@ -410,14 +417,10 @@ export default function CareerPathPage() {
     }
   };
 
-  // Island details: CV accounts only see CV track islands (ktv, cv, cv_plus, cv_plus_plus)
+  // Island details: Full 7 Islands panoramic view for all users
   const islands = useMemo(() => {
-    const all = getCareerIslands(safeConfig);
-    if (isCvAccount) {
-      return all.filter((i) => ['ktv', 'cv', 'cv_plus', 'cv_plus_plus'].includes(i.id));
-    }
-    return all;
-  }, [safeConfig, isCvAccount]);
+    return getCareerIslands(safeConfig);
+  }, [safeConfig]);
 
   const currentIslandData = islands.find((i) => i.id === activeIsland) || islands[0];
   const staffRealOrders = selectedStaffStatus?.metrics?.ordersCount || 0;
@@ -430,18 +433,15 @@ export default function CareerPathPage() {
       {/* TOP COMPACT STATUS BAR (PLAYER HUD) */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-pink-200 dark:border-slate-800 px-3 py-2.5 shadow-xs">
         <div className="w-full max-w-[1880px] mx-auto flex items-center justify-between">
-          {/* Player Avatar & Status (Click to open staff picker on mobile for non-CV) */}
+          {/* Player Avatar & Status (Click to open staff picker on mobile) */}
           <button
             type="button"
             onClick={() => {
-              if (isCvAccount) return;
               playSound('pop');
               setIsMobileStaffDrawerOpen(true);
             }}
-            className={`flex items-center gap-2 text-left transition min-w-0 ${
-              isCvAccount ? 'cursor-default' : 'hover:opacity-90 active:scale-98 cursor-pointer group'
-            }`}
-            title={isCvAccount ? 'Lộ trình cá nhân của bạn' : 'Nhấn để đổi chuyên viên'}
+            className="flex items-center gap-2 text-left transition min-w-0 hover:opacity-90 active:scale-98 cursor-pointer group"
+            title="Nhấn để đổi nhân sự"
           >
             <div className="relative shrink-0 w-10 h-10">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-purple-400 p-0.5 shadow-md shadow-pink-500/25 group-hover:ring-2 group-hover:ring-pink-400">
@@ -467,9 +467,7 @@ export default function CareerPathPage() {
                   <span className="truncate max-w-[95px] xs:max-w-[120px] sm:max-w-none">
                     {selectedStaffStatus?.staffName || 'Đang chọn nhân sự...'}
                   </span>
-                  {!isCvAccount && (
-                    <ChevronDown className="w-3 h-3 text-pink-500 dark:text-pink-400 shrink-0 md:hidden" />
-                  )}
+                  <ChevronDown className="w-3 h-3 text-pink-500 dark:text-pink-400 shrink-0 md:hidden" />
                 </span>
                 {/* Desktop-only full role badge (hidden on mobile to prevent clutter and weird oval wrap) */}
                 <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 whitespace-nowrap shrink-0">
@@ -506,7 +504,7 @@ export default function CareerPathPage() {
               className="h-8 px-2.5 rounded-full bg-pink-500/15 dark:bg-pink-500/25 border border-pink-500/40 text-pink-700 dark:text-pink-300 text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer shrink-0 flex items-center gap-1 hover:bg-pink-500/30"
             >
               <span className="text-xs">🗺️</span>
-              <span className="text-[11px] font-bold">{isCvAccount ? '4 Đảo CV' : '7 Đảo'}</span>
+              <span className="text-[11px] font-bold">7 Đảo</span>
             </button>
 
             {/* Tổng số chuối dư (Banana Balance) */}
@@ -559,9 +557,7 @@ export default function CareerPathPage() {
               🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
             </div>
             <span className="text-[10px] text-pink-600 dark:text-pink-300 font-bold font-mono">
-              {isCvAccount
-                ? 'Lộ trình thăng tiến Chuyên Viên (KTV ➔ CV ➔ CV+ ➔ CV++)'
-                : '7 Vương Quốc Panoramic · Nhìn trọn 1 màn hình'}
+              7 Vương Quốc Panoramic · Nhìn trọn 1 màn hình
             </span>
           </div>
 
@@ -570,25 +566,13 @@ export default function CareerPathPage() {
             <span className="text-sm">✨</span>
           </h1>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
-            {isCvAccount ? (
-              <>
-                Vượt ải ⛑️ KTV Thử Việc ➔ CV ➔ <WingRoleLabel text="🪶 CV" /> ➔ <WingRoleLabel text="🪶 CV 🪶" />!
-              </>
-            ) : (
-              <>
-                Vượt ải ⛑️ KTV Thử Việc ➔ CV ➔ <WingRoleLabel text="🪶 CV" /> ➔ <WingRoleLabel text="🪶 CV 🪶" /> ➔{' '}
-                <WingRoleLabel text="🪽 FM 🪽" /> ➔ 💖 CHO ➔ 💎 BOSS Co-Owner!
-              </>
-            )}
+            Vượt ải ⛑️ KTV Thử Việc ➔ CV ➔ <WingRoleLabel text="🪶 CV" /> ➔ <WingRoleLabel text="🪶 CV 🪶" /> ➔{' '}
+            <WingRoleLabel text="🪽 FM 🪽" /> ➔ 💖 CHO ➔ 💎 BOSS Co-Owner!
           </p>
 
           {/* ISLANDS PANORAMIC GRID ON DESKTOP FHD */}
           <div className="mt-3 pt-1 border-t border-pink-200/60 dark:border-pink-500/20">
-            <div
-              className={`grid grid-cols-2 sm:grid-cols-4 ${
-                isCvAccount ? 'xl:grid-cols-4' : 'xl:grid-cols-7'
-              } gap-2.5 pt-3.5`}
-            >
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2.5 pt-3.5">
               {islands.map((island) => {
                 const isActive = activeIsland === island.id;
                 return (
@@ -633,41 +617,39 @@ export default function CareerPathPage() {
           </div>
         </div>
 
-        {/* STAFF LIST SELECTOR & AUDIT (Desktop only, hidden for CV self-only scope) */}
-        {!isCvAccount && (
-          <div className="hidden md:block w-full space-y-3 transition-all duration-300">
-            <StaffCareerSelector
-              config={safeConfig}
-              staffList={staffList}
-              selectedStaffId={selectedStaffId}
-              onSelectStaff={handleSelectStaff}
-              onSyncProd={handleSyncProd}
-              syncing={syncingProd}
-              lastSyncedAt={lastSyncedAt}
-              activeRoleFilter={activeRoleFilter}
-              onRoleFilterChange={setActiveRoleFilter}
-              period={selectedPeriod}
-              onPeriodChange={handlePeriodChange}
-              onSetRole={isDanny ? handleSetRole : undefined}
-              onDemote={isDanny ? handleDemote : undefined}
-              actionLoading={actionLoading}
-              onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
-              selectorMode={selectorMode}
-              onSelectorModeChange={(mode) => {
-                setSelectorMode(mode);
-                setIsStaffSelectorCollapsed(mode !== 'table');
-              }}
-              isCollapsedHorizontal={selectorMode !== 'table'}
-              onCollapseHorizontal={() => {
-                setIsStaffSelectorCollapsed(true);
-              }}
-              onExpandHorizontal={() => {
-                setSelectorMode('table');
-                setIsStaffSelectorCollapsed(false);
-              }}
-            />
-          </div>
-        )}
+        {/* STAFF LIST SELECTOR & AUDIT (Desktop) */}
+        <div className="hidden md:block w-full space-y-3 transition-all duration-300">
+          <StaffCareerSelector
+            config={safeConfig}
+            staffList={staffList}
+            selectedStaffId={selectedStaffId}
+            onSelectStaff={handleSelectStaff}
+            onSyncProd={handleSyncProd}
+            syncing={syncingProd}
+            lastSyncedAt={lastSyncedAt}
+            activeRoleFilter={activeRoleFilter}
+            onRoleFilterChange={setActiveRoleFilter}
+            period={selectedPeriod}
+            onPeriodChange={handlePeriodChange}
+            onSetRole={isDanny ? handleSetRole : undefined}
+            onDemote={isDanny ? handleDemote : undefined}
+            actionLoading={actionLoading}
+            onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
+            selectorMode={selectorMode}
+            onSelectorModeChange={(mode) => {
+              setSelectorMode(mode);
+              setIsStaffSelectorCollapsed(mode !== 'table');
+            }}
+            isCollapsedHorizontal={selectorMode !== 'table'}
+            onCollapseHorizontal={() => {
+              setIsStaffSelectorCollapsed(true);
+            }}
+            onExpandHorizontal={() => {
+              setSelectorMode('table');
+              setIsStaffSelectorCollapsed(false);
+            }}
+          />
+        </div>
 
         {/* REAL STAFF SIMULATION CARD & ENCYCLOPEDIA (FULL WIDTH) */}
         <div className="w-full space-y-4 transition-all duration-300">
@@ -770,16 +752,9 @@ export default function CareerPathPage() {
               <div className="w-6 h-6 rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/25 flex items-center justify-center shrink-0">
                 <UserCheck className="w-3.5 h-3.5" />
               </div>
-              <span className="font-black text-sm">Chọn Chuyên Viên</span>
+              <span className="font-black text-sm">Chọn Nhân Sự</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-500 text-white tabular-nums shadow-xs">
-                {
-                  staffList.filter(
-                    (s) =>
-                      ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
-                      ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)
-                  ).length
-                }{' '}
-                CV
+                {staffList.length} Nhân Sự
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal m-0 mt-0.5">

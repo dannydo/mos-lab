@@ -91,15 +91,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
     },
     async (request, reply) => {
       try {
-        const user = (request as any).user;
         const staffList = await CareerProgressionService.listStaff(fastify, request.query);
-        if (isCvRole(user?.role)) {
-          const ownId = Number(user?.staffId || user?.id);
-          const filtered = Array.isArray(staffList)
-            ? staffList.filter((s: any) => Number(s.staffId ?? s.id) === ownId)
-            : [];
-          return reply.send({ success: true, data: filtered });
-        }
         return reply.send({ success: true, data: staffList });
       } catch (err: any) {
         fastify.log.error({ err }, 'Failed to list career staff');
@@ -152,7 +144,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const forceRefresh = request.query?.refresh === 'true';
       const targetRole = request.query?.targetRole as any;
@@ -160,16 +151,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
 
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
-      }
-
-      if (isCvRole(user?.role)) {
-        const ownId = Number(user?.staffId || user?.id);
-        if (staffId !== ownId) {
-          return reply.status(403).send({
-            success: false,
-            message: 'Tài khoản Chuyên Viên chỉ được xem lộ trình thăng tiến cá nhân của chính mình.',
-          });
-        }
       }
 
       try {
@@ -198,7 +179,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
 
       try {
@@ -225,7 +205,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const newRole = request.body?.newRole;
       const force = request.body?.force === true;
@@ -258,7 +237,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const role = request.body?.role;
       const reason = request.body?.reason;
@@ -291,7 +269,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const newRole = request.body?.newRole;
       const reason = request.body?.reason;
@@ -324,7 +301,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
 
       try {
@@ -354,20 +330,9 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
-      }
-
-      if (isCvRole(user?.role)) {
-        const ownId = Number(user?.staffId || user?.id);
-        if (staffId !== ownId) {
-          return reply.status(403).send({
-            success: false,
-            message: 'Tài khoản Chuyên Viên chỉ được xem lịch sử giao dịch chuối của chính mình.',
-          });
-        }
       }
 
       try {
@@ -398,20 +363,9 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
-      const user = (request as any).user;
       const staffId = Number(request.query?.staffId);
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
-      }
-
-      if (isCvRole(user?.role)) {
-        const ownId = Number(user?.staffId || user?.id);
-        if (staffId !== ownId) {
-          return reply.status(403).send({
-            success: false,
-            message: 'Tài khoản Chuyên Viên chỉ được xem quyền lợi CV+ của chính mình.',
-          });
-        }
       }
 
       try {
@@ -442,14 +396,6 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
-      const user = (request as any).user;
-      if (isCvRole(user?.role)) {
-        return reply.status(403).send({
-          success: false,
-          message: 'Tài khoản Chuyên Viên không có quyền xem bảng mô phỏng tổng hợp toàn salon.',
-        });
-      }
-
       try {
         const result = await CareerProgressionService.getAllCvPlusSimulations(fastify, request.query?.month);
         return reply.send({ success: true, data: result });

@@ -64,7 +64,7 @@ export interface StaffCareerSelectorProps {
 }
 
 const ROLE_TABS = [
-  { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên & KTV' },
+  { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên, CC & FM' },
   { key: 'KTV', label: 'KTV', fullLabel: 'KTV Thử Việc (Tập sự & Sát hạch)' },
   { key: 'CV', label: 'CV', fullLabel: 'Chuyên Viên Mi' },
   {
@@ -77,6 +77,8 @@ const ROLE_TABS = [
     label: '🪶 CV 🪶',
     fullLabel: 'Chuyên Viên Cấp Cao · 🪶 CV 🪶 (Đang nghiên cứu)',
   },
+  { key: 'CC', label: 'CC', fullLabel: 'Tư Vấn Viên CC' },
+  { key: 'FM', label: 'FM', fullLabel: 'Quản Lý Tầng FM' },
 ];
 
 const PERIOD_TABS: { key: CareerPeriod; label: string; fullLabel: string }[] = [
@@ -230,17 +232,14 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
 
   const filteredStaff = useMemo(() => {
     const list = staffList.filter((s) => {
-      // Bắt buộc chỉ lọc lấy CV (Chuyên viên) & KTV theo danh sách báo cáo
-      const isCv =
-        ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
-        ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
-      if (!isCv) return false;
-
       if (currentFilter === 'ALL') return true;
       if (currentFilter === 'KTV') return s.careerRole === 'KTV';
       if (currentFilter === 'CV') return s.careerRole === 'CV';
       if (currentFilter === 'CV_PLUS') return s.careerRole === 'CV_PLUS';
       if (currentFilter === 'CV_PLUS_PLUS') return s.careerRole === 'CV_PLUS_PLUS';
+      if (currentFilter === 'CC') return s.careerRole === 'CC' || (s.role || '').toLowerCase() === 'cc';
+      if (currentFilter === 'FM')
+        return s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase());
       return true;
     });
 

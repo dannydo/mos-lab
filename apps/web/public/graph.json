@@ -7674,7 +7674,7 @@
         "path": "/api/career/sync-prod",
         "module": "career",
         "handler": "inlineHandler",
-        "line": 115
+        "line": 107
       }
     },
     {
@@ -31503,6 +31503,18 @@
       }
     },
     {
+      "id": "uicomp:CustomerDetailDrawerMobile.test",
+      "type": "UIComponent",
+      "label": "<CustomerDetailDrawerMobile.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/__tests__/CustomerDetailDrawerMobile.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerDetailDrawerMobile.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:RescheduleBookingModal.test",
       "type": "UIComponent",
       "label": "<RescheduleBookingModal.test />",
@@ -36474,8 +36486,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6182,
-        "lineCount": 187,
+        "sizeBytes": 6661,
+        "lineCount": 203,
         "ext": ".ts"
       }
     },
@@ -36487,8 +36499,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16584,
-        "lineCount": 463,
+        "sizeBytes": 14568,
+        "lineCount": 409,
         "ext": ".ts"
       }
     },
@@ -36513,8 +36525,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 111843,
-        "lineCount": 2814,
+        "sizeBytes": 113374,
+        "lineCount": 2846,
         "ext": ".ts"
       }
     },
@@ -38151,8 +38163,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62730,
-        "lineCount": 1808,
+        "sizeBytes": 62737,
+        "lineCount": 1812,
         "ext": ".ts"
       }
     },
@@ -42311,8 +42323,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 48330,
-        "lineCount": 1141,
+        "sizeBytes": 48381,
+        "lineCount": 1145,
         "ext": ".tsx"
       }
     },
@@ -43013,8 +43025,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27199,
-        "lineCount": 608,
+        "sizeBytes": 27509,
+        "lineCount": 612,
         "ext": ".tsx"
       }
     },
@@ -43039,8 +43051,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 82194,
-        "lineCount": 1762,
+        "sizeBytes": 82255,
+        "lineCount": 1760,
         "ext": ".tsx"
       }
     },
@@ -43052,8 +43064,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37712,
-        "lineCount": 849,
+        "sizeBytes": 36673,
+        "lineCount": 826,
         "ext": ".tsx"
       }
     },
@@ -47875,8 +47887,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13180,
-        "lineCount": 484,
+        "sizeBytes": 13162,
+        "lineCount": 476,
         "ext": ".ts"
       }
     },
@@ -65518,6 +65530,20 @@
     {
       "id": "edge:uicomp:UserProfile:token:color:primary",
       "source": "uicomp:UserProfile",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailDrawerMobile.test:ws:apps/web",
+      "source": "uicomp:CustomerDetailDrawerMobile.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailDrawerMobile.test:token:color:primary",
+      "source": "uicomp:CustomerDetailDrawerMobile.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -103513,8 +103539,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3737,
-    "totalEdges": 7843,
+    "totalNodes": 3738,
+    "totalEdges": 7845,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -103522,14 +103548,14 @@
       "Component": 64,
       "SharedType": 1372,
       "DesignToken": 12,
-      "UIComponent": 322,
+      "UIComponent": 323,
       "File": 1038
     },
     "edgeTypeCounts": {
       "EXPORTS": 1566,
       "HANDLES_ROUTE": 744,
-      "RENDERS": 386,
-      "USES_TOKEN": 324,
+      "RENDERS": 387,
+      "USES_TOKEN": 325,
       "IMPORTS": 581,
       "QUERIES_MODEL": 423,
       "API_CALL": 3819

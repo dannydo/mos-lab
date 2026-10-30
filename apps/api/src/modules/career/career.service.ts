@@ -232,17 +232,22 @@ export class CareerProgressionService {
     fastify: FastifyInstance,
     query?: { role?: string; search?: string; period?: CareerPeriod }
   ): Promise<any[]> {
-    // 1. Lấy danh sách ID Chuyên Viên hoạt động từ cấu hình Báo Cáo CV (ACTIVE_CV_STAFF_CONFIG / CrmTeam 'CV')
+    // 1. Lấy danh sách ID Chuyên Viên và CC hoạt động từ cấu hình (ACTIVE_CV_STAFF_CONFIG, ACTIVE_CC_STAFF_CONFIG)
     let activeCvLegacyIds: number[] = [];
+    let activeCcLegacyIds: number[] = [];
     try {
       if ((fastify.prisma.crm as any)?.crmTeam) {
-        activeCvLegacyIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
+        [activeCvLegacyIds, activeCcLegacyIds] = await Promise.all([
+          TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG'),
+          TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG'),
+        ]);
       }
     } catch (_err) {
       // Safe fallback
     }
 
-    const CV_ROLES = ['lt', 'technician', 'cv'];
+    const eligibleLegacyIds = Array.from(new Set([...activeCvLegacyIds, ...activeCcLegacyIds]));
+    const INCLUDED_ROLES = ['lt', 'technician', 'cv', 'ktv', 'cc', 'fm'];
     const EXCLUDED_ROLES = [
       'office-cleaner',
       'security-guard',
@@ -251,15 +256,20 @@ export class CareerProgressionService {
       'teacher',
       'admin',
       'super_admin',
-      'manager',
-      'cc',
       'oc',
       'ht',
     ];
 
     const where: any = {
       isActive: true,
-      ...(activeCvLegacyIds.length > 0 ? { legacyStaffId: { in: activeCvLegacyIds } } : { role: { in: CV_ROLES } }),
+      OR: [
+        ...(eligibleLegacyIds.length > 0 ? [{ legacyStaffId: { in: eligibleLegacyIds } }] : []),
+        { role: { in: INCLUDED_ROLES } },
+        // Floor Managers (Quản lý tầng)
+        { legacyStaffId: { in: [52086, 52454] } },
+        { role: 'manager', displayName: { contains: 'FM' } },
+        { role: 'manager', displayName: { contains: 'Floor' } },
+      ],
       NOT: [{ role: { in: EXCLUDED_ROLES } }],
     };
 
@@ -737,13 +747,23 @@ export class CareerProgressionService {
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
-      // Determine Career Role (Chuyên Viên Mi: CV, CV+, CV++)
+      // Determine Career Role (Chuyên Viên Mi: KTV, CV, CV+, CV++, CC, FM)
       let careerRole: CareerRole = 'CV';
       if (
         staff.careerProgression?.currentRole &&
-        ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(staff.careerProgression.currentRole)
+        ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS', 'FM', 'CHO', 'BOSS', 'MASTER_TECH', 'CC'].includes(
+          staff.careerProgression.currentRole
+        )
       ) {
         careerRole = staff.careerProgression.currentRole as CareerRole;
+      } else if (staff.role === 'cc' || activeCcLegacyIds.includes(legacyId)) {
+        careerRole = 'CC';
+      } else if (
+        staff.role === 'fm' ||
+        [52086, 52454].includes(legacyId) ||
+        (staff.role === 'manager' && (staff.displayName?.includes('FM') || staff.displayName?.includes('Floor')))
+      ) {
+        careerRole = 'FM';
       } else {
         if (selfComboRate >= 0.25 && staffOrders90d >= 250) {
           careerRole = 'CV_PLUS_PLUS';
@@ -768,9 +788,11 @@ export class CareerProgressionService {
         ordersCount: staffOrders90d, // Riêng số bộ mi: luôn luôn giữ ở 90 ngày qua
         periodOrders: staffOrdersPeriod,
         targetOrders:
-          (careerRole === 'CV_PLUS'
-            ? config.cvPlusToCvPlusPlus?.minOrders
-            : config.cvToCvPlus?.minOrders || config.cvToCc?.minOrders) ?? 330,
+          careerRole === 'CC' || careerRole === 'FM'
+            ? 0
+            : ((careerRole === 'CV_PLUS'
+                ? config.cvPlusToCvPlusPlus?.minOrders
+                : config.cvToCvPlus?.minOrders || config.cvToCc?.minOrders) ?? 330),
         period: periodConfig.period,
         fixRate, // Bug trong kỳ được chọn
         totalTip,
@@ -843,8 +865,17 @@ export class CareerProgressionService {
       };
     });
 
+    // Filter by query role if specified
+    const filteredResult =
+      query?.role && query.role !== 'ALL'
+        ? result.filter((s) => {
+            if (query.role === 'CV') return ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
+            return s.careerRole === query.role;
+          })
+        : result;
+
     // 1. Order by số bộ mi (ordersCount DESC) theo chuẩn nghiệp vụ, tie-break theo tên Chuyên Viên
-    return result.sort((a, b) => {
+    return filteredResult.sort((a, b) => {
       const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
       if (diff !== 0) return diff;
       return (a.displayName || '').localeCompare(b.displayName || '');
@@ -1453,7 +1484,7 @@ export class CareerProgressionService {
     const normalizedRole = (staff.role || '').toLowerCase();
 
     if (!progression?.currentRole) {
-      if (['lt', 'technician'].includes(normalizedRole)) {
+      if (['lt', 'technician', 'cv', 'ktv'].includes(normalizedRole)) {
         if (selfComboRate >= 0.25 && ordersCount >= 250) {
           currentRole = 'CV_PLUS_PLUS';
         } else if (selfComboRate >= 0.15 && ordersCount >= 150) {
@@ -1463,7 +1494,7 @@ export class CareerProgressionService {
         }
       } else if (['cc', 'consultant'].includes(normalizedRole)) {
         currentRole = 'CC';
-      } else if (['manager'].includes(normalizedRole)) {
+      } else if (['manager', 'fm'].includes(normalizedRole) || [52086, 52454].includes(targetLegacyStaffId)) {
         currentRole = staff.displayName?.includes('CHO') ? 'CHO' : 'FM';
       } else if (['admin', 'super_admin'].includes(normalizedRole)) {
         currentRole = 'BOSS';
@@ -1474,7 +1505,8 @@ export class CareerProgressionService {
     if (requestedTargetRole && ['CV_PLUS', 'CV_PLUS_PLUS', 'FM', 'CHO', 'BOSS'].includes(requestedTargetRole)) {
       targetRole = requestedTargetRole;
     } else if (!progression?.targetRole) {
-      if (currentRole === 'CV') targetRole = 'CV_PLUS';
+      if (currentRole === 'KTV') targetRole = 'CV';
+      else if (currentRole === 'CV') targetRole = 'CV_PLUS';
       else if (currentRole === 'CV_PLUS') targetRole = 'CV_PLUS_PLUS';
       else if (currentRole === 'CV_PLUS_PLUS') targetRole = 'FM';
       else if (currentRole === 'CC') targetRole = 'FM';
