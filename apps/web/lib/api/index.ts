@@ -18,6 +18,7 @@ import { notificationsApi } from './notifications.api';
 import { telesaleCompetencyApi } from './telesale-competency.api';
 import { bibleApi } from './bible.api';
 import { fundsApi } from './funds.api';
+import { financialGoalsApi } from './financial-goals.api';
 
 export * from './base';
 export * from './ai.api';
@@ -29,6 +30,7 @@ export * from './notifications.api';
 export * from './telesale-competency.api';
 export * from './bible.api';
 export * from './funds.api';
+export * from './financial-goals.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -51,6 +53,7 @@ export const apiClient = {
   ...notificationsApi,
   ...telesaleCompetencyApi,
   ...bibleApi,
+  ...financialGoalsApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,

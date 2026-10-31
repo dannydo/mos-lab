@@ -33,6 +33,7 @@ import {
   Sparkles,
   FlaskConical,
   Trophy,
+  DollarSign,
 } from 'lucide-react';
 
 import {
@@ -470,6 +471,12 @@ export function getSidebarGroups(
         path: '/dashboard/telesale-target',
       },
       {
+        key: 'financial-goals',
+        label: 'Mục Tiêu Tài Chính',
+        icon: <AppIcon icon={DollarSign} size="sm" className="text-amber-500" />,
+        path: '/dashboard/financial-goals',
+      },
+      {
         key: 'cs',
         label: 'Báo Cáo CS',
         icon: <CustomerServiceOutlined />,
@@ -676,6 +683,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/pilot-dark-lashes')) return 'pilot-dark-lashes';
   if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
 
+  if (pathname.includes('/dashboard/financial-goals')) return 'financial-goals';
   if (pathname.includes('/dashboard/telesale-competency')) return 'telesale-competency';
   if (pathname.includes('/dashboard/telesale-target')) return 'telesale-target';
   if (pathname.includes('/dashboard/cc')) return 'cc';

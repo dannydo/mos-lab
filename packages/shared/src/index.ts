@@ -69,3 +69,4 @@ export * from './types/mos-notifications.js';
 export * from './types/telesale-competency.js';
 export * from './types/cb-telemetry.js';
 export * from './types/fund.js';
+export * from './types/financial-goals.js';
