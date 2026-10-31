@@ -582,4 +582,61 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     // Inside empty bullet • , smart list exits cleanly
     expect(textarea.value).toBe('• Việc 1\n');
   });
+
+  it('renders [+] action sheet button and opens "Tác vụ đính kèm & Tiện ích" in mobile subthread (MOS-BUG-181)', async () => {
+    const mockOnOpenTaskModal = vi.fn();
+    const mockParentMsg = {
+      id: 'msg-parent-util-181',
+      conversationId: 'dm-pair-1-6',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'super_admin',
+      text: 'Tin nhắn thảo luận cần kiểm tra tiện ích đính kèm',
+      timeLabel: '10:00',
+      createdAt: new Date().toISOString(),
+      thread: [],
+    };
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockParentMsg as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet onOpenTaskModal={mockOnOpenTaskModal} />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Tác vụ đính kèm')).toBeTruthy();
+    });
+
+    const plusBtn = screen.getByLabelText('Tác vụ đính kèm');
+    expect(plusBtn).toBeTruthy();
+
+    // Click [+] button
+    fireEvent.click(plusBtn);
+
+    // Verify Action Sheet "Tác vụ đính kèm & Tiện ích" is displayed
+    expect(screen.getByText('Tác vụ đính kèm & Tiện ích')).toBeTruthy();
+    expect(screen.getByText('Thẻ khách / Booking')).toBeTruthy();
+    expect(screen.getByText('Đính kèm tệp / PDF')).toBeTruthy();
+    expect(screen.getByText('Gửi hình ảnh')).toBeTruthy();
+    expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
+    expect(screen.getByText('Quy trình công việc')).toBeTruthy();
+    expect(screen.getByText('Nhãn dán Wings')).toBeTruthy();
+    expect(screen.getByText('Google Drive')).toBeTruthy();
+    expect(screen.getByText('Tin nhắn thoại')).toBeTruthy();
+    expect(screen.getByText('Trợ lý Wings AI')).toBeTruthy();
+
+    // Click Giao việc & Hạn chót in the action sheet
+    fireEvent.click(screen.getByText('Giao việc & Hạn chót'));
+    expect(mockOnOpenTaskModal).toHaveBeenCalled();
+  });
 });

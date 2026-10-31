@@ -24,11 +24,13 @@ import {
   CornerDownRight,
   Sparkles,
   UserCheck,
+  Plus,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
+import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
@@ -303,6 +305,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   // Customer Card Attachment inside Thread
   const [customerPickerOpen, setCustomerPickerOpen] = useState<boolean>(false);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
+
+  // Bottom Action Sheet (Tác vụ đính kèm & Tiện ích)
+  const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
 
   // Sticker & Emoji Sheet
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
@@ -1715,6 +1720,17 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
         {/* Composer Input Bar */}
         <div className="flex items-end gap-1.5">
+          {/* [+] Action Sheet Button (Tác vụ đính kèm & Tiện ích) */}
+          <button
+            type="button"
+            onClick={() => setActionSheetOpen(true)}
+            className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5"
+            aria-label="Tác vụ đính kèm"
+            title="Tác vụ đính kèm & Tiện ích"
+          >
+            <Plus className="w-5 h-5 text-amber-400" />
+          </button>
+
           {/* Sticker & Emoji Button */}
           <button
             type="button"
@@ -2025,6 +2041,38 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         currentText={text}
         onSend={() => {
           handleSend();
+        }}
+      />
+
+      {/* Bottom Action Sheet for Subthread (Tác vụ đính kèm & Tiện ích) */}
+      <MosChatMobileActionSheet
+        open={actionSheetOpen}
+        onClose={() => setActionSheetOpen(false)}
+        onSelectCustomer={() => setCustomerPickerOpen(true)}
+        onSelectFile={() => fileInputRef.current?.click()}
+        onSelectImage={() => fileInputRef.current?.click()}
+        onSelectDrive={() => {
+          antdMessage.info('Mở liên kết Google Drive cho luồng');
+        }}
+        onSelectTask={() => {
+          if (onOpenTaskModal) {
+            onOpenTaskModal({ sourceMsg: liveThreadMsg });
+          } else {
+            antdMessage.info('Giao việc trong luồng');
+          }
+        }}
+        onSelectWorkflow={() => {
+          antdMessage.info('Khởi tạo quy trình làm việc trong luồng');
+        }}
+        onSelectSticker={() => {
+          setStickerPickerOpen(true);
+        }}
+        onSelectVoice={() => {
+          antdMessage.info('Giữ nút Mic để thu âm giọng nói trong luồng');
+        }}
+        onSelectAiCopilot={() => {
+          setText((prev) => (prev ? `${prev} @MAI ` : '@MAI '));
+          textareaRef.current?.focus();
         }}
       />
     </div>
