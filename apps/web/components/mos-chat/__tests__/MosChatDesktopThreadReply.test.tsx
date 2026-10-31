@@ -313,4 +313,16 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     expect(bubble.className).toContain('text-left');
     expect(bubble.className).not.toContain('text-right');
   });
+
+  it('renders exactly one format toolbar by default, without duplicate toolbars', () => {
+    render(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        renderAppleNotesFormatToolbar={() => <div data-testid="apple-notes-toolbar-mock">Format Toolbar</div>}
+      />
+    );
+
+    const toolbars = screen.getAllByTestId('apple-notes-toolbar-mock');
+    expect(toolbars).toHaveLength(1);
+  });
 });

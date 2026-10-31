@@ -1682,9 +1682,6 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
           >
             {renderMentionAutocompleteDropdown('thread')}
 
-            {/* Inline Compact Format Toolbar in Thread */}
-            {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
-
             {/* Staged Customer Card for Thread */}
             {stagedCustomerCard && (
               <div
@@ -1716,7 +1713,9 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                 </span>
                 <span className="truncate text-amber-500 font-medium text-[11px]">({stagedCustomerCard.meta})</span>
                 {stagedCustomerCard.cvName && (
-                  <span className="text-slate-400 truncate hidden sm:inline text-[11px]">· {stagedCustomerCard.cvName}</span>
+                  <span className="text-slate-400 truncate hidden sm:inline text-[11px]">
+                    · {stagedCustomerCard.cvName}
+                  </span>
                 )}
                 <button
                   type="button"
@@ -1783,7 +1782,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 overflow-hidden shrink-0">
                         <ImagePlus size={16} />
                       </div>
-                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                      <span
+                        className="text-[10.5px] font-medium text-center leading-tight"
+                        style={{ color: token.colorText }}
+                      >
                         Gửi ảnh
                       </span>
                     </button>
@@ -1800,7 +1802,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20 overflow-hidden shrink-0">
                         <HardDrive size={16} />
                       </div>
-                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                      <span
+                        className="text-[10.5px] font-medium text-center leading-tight"
+                        style={{ color: token.colorText }}
+                      >
                         Drive
                       </span>
                     </button>
@@ -1816,7 +1821,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20 overflow-hidden shrink-0">
                         <UserRoundPlus size={16} />
                       </div>
-                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                      <span
+                        className="text-[10.5px] font-medium text-center leading-tight"
+                        style={{ color: token.colorText }}
+                      >
                         Thẻ khách
                       </span>
                     </button>
@@ -1832,7 +1840,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-400/15 text-[#d4a84b] border border-[#d4a84b]/30 overflow-hidden shrink-0">
                         <AlarmClockPlus size={16} />
                       </div>
-                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                      <span
+                        className="text-[10.5px] font-medium text-center leading-tight"
+                        style={{ color: token.colorText }}
+                      >
                         Giao việc
                       </span>
                     </button>
@@ -1857,7 +1868,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-sky-500/10 text-sky-400 border border-sky-500/20 overflow-hidden shrink-0">
                         <AtSign size={16} />
                       </div>
-                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                      <span
+                        className="text-[10.5px] font-medium text-center leading-tight"
+                        style={{ color: token.colorText }}
+                      >
                         Nhắc tên
                       </span>
                     </button>
@@ -1875,7 +1889,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         <div className="w-9 h-9 rounded-full flex items-center justify-center bg-purple-500/15 text-purple-400 border border-purple-500/30 overflow-hidden shrink-0 font-black text-[11px]">
                           MAI
                         </div>
-                        <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        <span
+                          className="text-[10.5px] font-medium text-center leading-tight"
+                          style={{ color: token.colorText }}
+                        >
                           Gọi @MAI
                         </span>
                       </button>
@@ -1897,7 +1914,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/15 text-amber-400 border border-amber-500/30 overflow-hidden shrink-0">
                         <FilePenLine size={16} />
                       </div>
-                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                      <span
+                        className="text-[10.5px] font-medium text-center leading-tight"
+                        style={{ color: token.colorText }}
+                      >
                         CKEditor
                       </span>
                     </button>
@@ -2131,7 +2151,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       }
                       if (e.key === 'Enter' && e.shiftKey) {
                         const el = e.currentTarget;
-                        const smart = handleSmartListEnterKey(threadInput, el.selectionStart || 0, el.selectionEnd || 0);
+                        const smart = handleSmartListEnterKey(
+                          threadInput,
+                          el.selectionStart || 0,
+                          el.selectionEnd || 0
+                        );
                         if (smart?.handled) {
                           e.preventDefault();
                           setThreadInput(smart.nextText);
@@ -2447,7 +2471,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[11px] select-none hidden sm:inline" style={{ color: token.colorTextQuaternary }}>
+                    <span
+                      className="text-[11px] select-none hidden sm:inline"
+                      style={{ color: token.colorTextQuaternary }}
+                    >
                       Enter gửi · Shift+Enter xuống dòng
                     </span>
                     <Tooltip title="Gửi vào luồng (Enter)">
