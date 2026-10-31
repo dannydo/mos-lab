@@ -14,17 +14,26 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ previewIma
       open={!!previewImageUrl}
       onCancel={onClose}
       footer={null}
-      width={700}
+      width="calc(100vw - 32px)"
       centered
       destroyOnHidden
+      className="max-w-none"
+      style={{ top: 16, maxWidth: 'calc(100vw - 32px)', margin: '0 auto' }}
+      styles={{
+        content: {
+          padding: '12px',
+          background: 'rgba(15, 23, 42, 0.95)',
+          borderRadius: '16px',
+        },
+      }}
       getContainer={() => document.body}
     >
       {previewImageUrl && (
-        <div className="p-2 text-center">
+        <div className="p-1 text-center flex items-center justify-center">
           <img
             src={previewImageUrl}
             alt="Ảnh Bằng Chứng QA/QC"
-            className="max-h-[600px] mx-auto rounded-lg shadow-lg border border-slate-200 dark:border-slate-800"
+            className="max-h-[calc(100vh-100px)] max-w-full mx-auto rounded-lg shadow-lg border border-slate-700/60 object-contain select-none"
           />
         </div>
       )}

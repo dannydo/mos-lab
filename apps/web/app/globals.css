@@ -8346,3 +8346,16 @@ button:not(:disabled):not(.ant-btn-loading):active,
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ==========================================================================
+   Ant Design Image Preview — Maximize Browser Viewport Real Estate
+   ========================================================================== */
+.ant-image-preview-wrap {
+  overflow: hidden !important;
+}
+
+.ant-image-preview .ant-image-preview-img {
+  max-width: 98.5vw !important;
+  max-height: 94vh !important;
+  object-fit: contain !important;
+}

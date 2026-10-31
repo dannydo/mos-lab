@@ -511,16 +511,20 @@ export const MosChatMermaidBlock: React.FC<MosChatMermaidBlockProps> = ({ code, 
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
-        width={isFullscreenWindow ? '100vw' : 'min(96vw, 1360px)'}
+        width={isFullscreenWindow ? '100vw' : 'calc(100vw - 24px)'}
         centered={!isFullscreenWindow}
         destroyOnHidden
-        className={isFullscreenWindow ? 'm-0 p-0 top-0 max-w-none' : ''}
-        style={isFullscreenWindow ? { top: 0, padding: 0, margin: 0, maxWidth: '100vw' } : { top: 20 }}
+        className={isFullscreenWindow ? 'm-0 p-0 top-0 max-w-none' : 'max-w-none'}
+        style={
+          isFullscreenWindow
+            ? { top: 0, padding: 0, margin: 0, maxWidth: '100vw' }
+            : { top: 12, paddingBottom: 12, maxWidth: 'calc(100vw - 24px)', margin: '0 auto' }
+        }
         styles={{
           content: {
-            padding: '16px 20px',
+            padding: '12px 16px',
             background: isDark ? '#0b1120' : '#ffffff',
-            borderRadius: isFullscreenWindow ? '0px' : '18px',
+            borderRadius: isFullscreenWindow ? '0px' : '14px',
             border: `1px solid ${cardBorder}`,
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
           },
@@ -679,7 +683,7 @@ export const MosChatMermaidBlock: React.FC<MosChatMermaidBlockProps> = ({ code, 
             isDragging ? 'cursor-grabbing' : 'cursor-grab'
           }`}
           style={{
-            height: isFullscreenWindow ? 'calc(100vh - 100px)' : '76vh',
+            height: isFullscreenWindow ? 'calc(100vh - 68px)' : 'calc(100vh - 96px)',
             background: isDark
               ? 'radial-gradient(circle, rgba(148, 163, 184, 0.18) 1.2px, #0b1120 1.2px) 0 0 / 24px 24px'
               : 'radial-gradient(circle, rgba(100, 116, 139, 0.22) 1.2px, #f8fafc 1.2px) 0 0 / 24px 24px',
