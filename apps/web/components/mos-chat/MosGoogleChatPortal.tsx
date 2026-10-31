@@ -238,6 +238,7 @@ import {
   type MosChatDockDimension,
 } from './components/MosChatDockedWindows';
 import { MosChatReminderAlert } from './components/MosChatReminderAlert';
+import { MosChatTaskInlineChecklist } from './components/MosChatTaskInlineChecklist';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
 import dynamic from 'next/dynamic';
 
@@ -309,6 +310,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
+  const [expandedChecklistTaskIds, setExpandedChecklistTaskIds] = useState<Record<string, boolean>>({});
   const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>(getInitialStaffDirectory);
   const [workflowTemplates, setWorkflowTemplates] = useState<MosChatWorkflowTemplate[]>([]);
   const [workflowInstances, setWorkflowInstances] = useState<MosChatWorkflowInstance[]>([]);
@@ -7090,27 +7092,43 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               </span>
             </Tooltip>
 
-            {/* Checklist progress pill */}
+            {/* Checklist progress pill & accordion toggle */}
             {task.checklist &&
               task.checklist.length > 0 &&
               (() => {
                 const chkTotal = task.checklist.length;
                 const chkDone = task.checklist.filter((c) => c.done).length;
                 const isAllDone = chkDone === chkTotal;
+                const isExpanded = Boolean(expandedChecklistTaskIds[task.id]);
                 return (
-                  <Tooltip title={`Tiến độ checklist: ${chkDone}/${chkTotal} việc hoàn thành`}>
-                    <span
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums cursor-default ${
+                  <Tooltip
+                    title={
+                      isExpanded
+                        ? 'Bấm để thu gọn checklist'
+                        : `Tiến độ checklist: ${chkDone}/${chkTotal} việc (Bấm để xem & thực thi)`
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedChecklistTaskIds((prev) => ({
+                          ...prev,
+                          [task.id]: !prev[task.id],
+                        }));
+                      }}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums cursor-pointer transition-all hover:scale-105 active:scale-95 ${
                         isAllDone
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
+                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25'
                       }`}
                     >
                       <ListTodo size={9} />
                       <span>
                         {chkDone}/{chkTotal}
                       </span>
-                    </span>
+                      {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                    </button>
                   </Tooltip>
                 );
               })()}
@@ -7271,6 +7289,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           );
         })()}
 
+        {/* Inline Expandable Checklist Accordion */}
+        {expandedChecklistTaskIds[task.id] && (
+          <MosChatTaskInlineChecklist task={task} onUpdateTask={handleUpdateTask} isDark={isDark} token={token} />
+        )}
+
         {/* Embedded mOS Mission Section (Unified Card - avoids duplicated cards and titles) */}
         {taskMission && (
           <div className="pt-0.5">{renderLiveMissionCard(taskMission, sourceMsg || null, 'embedded')}</div>
@@ -7384,6 +7407,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {(!task.checklist || task.checklist.length === 0) && !isDone && (
+              <Tooltip title="Thêm checklist cho công việc">
+                <button
+                  type="button"
+                  aria-label="Thêm checklist"
+                  onClick={() => {
+                    setExpandedChecklistTaskIds((prev) => ({
+                      ...prev,
+                      [task.id]: true,
+                    }));
+                  }}
+                  className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 text-slate-400 hover:text-amber-400"
+                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                >
+                  <ListTodo size={11} />
+                </button>
+              </Tooltip>
+            )}
+
             <Tooltip title="Chỉnh sửa công việc">
               <button
                 type="button"

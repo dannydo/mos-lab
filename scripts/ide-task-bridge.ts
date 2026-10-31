@@ -243,17 +243,17 @@ async function handleWaitAndDeploy(
           throw mergeErr;
         }
       }
-
-      // 2. Push to origin main
-      process.stdout.write('Pushing main to origin...\n');
-      try {
-        execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
-      } catch (pushErr) {
-        process.stderr.write(`\n[BRIDGE ERROR] Failed to push main to origin: ${pushErr}\n`);
-        throw pushErr;
-      }
     } else {
       process.stdout.write(`Commit ${commitSha} is already merged into main.\n`);
+    }
+
+    // 2. Always ensure origin main is up to date before deploy
+    process.stdout.write('Pushing main to origin...\n');
+    try {
+      execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
+    } catch (pushErr) {
+      process.stderr.write(`\n[BRIDGE ERROR] Failed to push main to origin: ${pushErr}\n`);
+      throw pushErr;
     }
   } finally {
     if (stashed) {
