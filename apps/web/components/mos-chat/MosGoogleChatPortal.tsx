@@ -1056,8 +1056,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const composerText = composerTextRef.current;
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
+  const [threadStagedCustomerCard, setThreadStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
+  const [isUrgentSendThread, setIsUrgentSendThread] = useState<boolean>(false);
+  const [customerPickerTarget, setCustomerPickerTarget] = useState<'main' | 'thread'>('main');
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
-  const handleOpenCustomerPicker = useCallback(() => setCustomerPickerOpen(true), []);
+  const handleOpenCustomerPicker = useCallback((scope: 'main' | 'thread' = 'main') => {
+    setCustomerPickerTarget(scope);
+    setCustomerPickerOpen(true);
+  }, []);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [sampleCardIndex, setSampleCardIndex] = useState(0);
@@ -4288,6 +4294,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   };
 
   const handleSelectCustomerCard = async (card: MosChatCustomerCard, sendImmediately = false) => {
+    if (customerPickerTarget === 'thread') {
+      if (sendImmediately && activeConversation && activeThreadMsgId) {
+        await handleSendThreadReply(`Lưu ý hỗ trợ chu đáo khách hàng ${card.name}:`, card);
+        antdMessage.success(`Đã gửi thẻ khách hàng ${card.name} vào luồng`);
+      } else {
+        setThreadStagedCustomerCard(card);
+        antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name} vào phản hồi luồng`);
+      }
+      setCustomerPickerOpen(false);
+      return;
+    }
     if (sendImmediately && activeConversation) {
       await handleSendMessage(activeConversation.id, `Lưu ý hỗ trợ chu đáo khách hàng ${card.name}:`, card);
       antdMessage.success(`Đã gửi thẻ khách hàng ${card.name}`);
@@ -5224,13 +5241,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
-  const handleSendThreadReply = async (replyTextOverride?: string) => {
+  const handleSendThreadReply = async (replyTextOverride?: string, cardOverride?: MosChatCustomerCard | null) => {
     const text = (typeof replyTextOverride === 'string' ? replyTextOverride : threadInput).trim();
+    const cardToSend = cardOverride !== undefined ? cardOverride : threadStagedCustomerCard;
     const attachmentsToSend = threadAttachments;
-    if ((!text && attachmentsToSend.length === 0) || !activeConversation || !activeThreadMsgId) return;
+    if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !activeThreadMsgId) return;
+    const wasUrgent = isUrgentSendThread;
+    if (wasUrgent) {
+      setIsUrgentSendThread(false);
+    }
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     setThreadInput('');
     setThreadAttachments([]);
+    setThreadStagedCustomerCard(null);
     if (threadInputRef.current) {
       threadInputRef.current.value = '';
       threadInputRef.current.style.height = 'auto';
@@ -5243,8 +5266,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       senderName,
       senderRole: 'Super Admin',
       senderAvatar: 'DD',
-      text,
+      text: text || (cardToSend ? `Đính kèm thẻ khách hàng ${cardToSend.name}:` : ''),
       attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+      customerCard: cardToSend || undefined,
+      isBuzzed: wasUrgent || undefined,
       timeLabel: dayjs().format('HH:mm'),
       createdAt: new Date().toISOString(),
     };
@@ -5268,11 +5293,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const res = await apiClient.chat.sendThreadReply({
         conversationId: activeConversation.id,
         messageId: activeThreadMsgId,
-        text,
+        text: text || (cardToSend ? `Đính kèm thẻ khách hàng ${cardToSend.name}:` : ''),
         attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        customerCard: cardToSend || undefined,
       });
       if (res?.conversation) {
         setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? res.conversation! : c)));
+      }
+      if (wasUrgent && res?.reply?.id) {
+        void handleBuzzMessage(activeThreadMsgId, res.reply.id);
       }
       notifyLivePeers();
     } catch (_) {}
@@ -5387,9 +5416,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
-  const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
+  const openTaskModalFromMessage = (msg: MosChatMessage | null, reply?: SafeAny) => {
     setEditingTask(null);
-    setTaskModalSourceMsg(msg);
+    if (reply && msg) {
+      const syntheticMsg: MosChatMessage = {
+        ...msg,
+        id: `${msg.id}#${reply.id}`,
+        text: reply.text || msg.text,
+        senderId: reply.senderId || msg.senderId,
+        senderName: reply.senderName || msg.senderName,
+        senderAvatar: reply.senderAvatar || msg.senderAvatar,
+      };
+      setTaskModalSourceMsg(syntheticMsg);
+    } else {
+      setTaskModalSourceMsg(msg);
+    }
     setTaskDoneState(false);
     setTaskArchivedState(false);
     if (staffDirectory.length === 0) {
@@ -10644,6 +10685,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               handleUpdateTask={handleUpdateTask}
               renderTaskCard={renderTaskCard}
               openCustomerDetail={openCustomerDetail}
+              setDriveLinkModalOpen={setDriveLinkModalOpen}
+              uploadTargetRef={uploadTargetRef}
+              handleOpenCustomerPicker={handleOpenCustomerPicker}
+              stagedCustomerCard={threadStagedCustomerCard}
+              setStagedCustomerCard={setThreadStagedCustomerCard}
+              openTaskModalFromMessage={openTaskModalFromMessage}
+              isUrgentSendThread={isUrgentSendThread}
+              setIsUrgentSendThread={setIsUrgentSendThread}
+              setTriggerWorkflowModalOpen={setTriggerWorkflowModalOpen}
+              setInitialWorkflowCode={setInitialWorkflowCode}
             />
           </>
         )}

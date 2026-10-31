@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Tooltip, Popover, Popconfirm, Dropdown, Input } from 'antd';
+import { Tooltip, Popover, Popconfirm, Dropdown, Input, Avatar } from 'antd';
 import dayjs from 'dayjs';
 import {
   Activity,
+  AlarmClockPlus,
   ArrowUpRight,
   AtSign,
   Bot,
@@ -14,6 +15,7 @@ import {
   CornerDownRight,
   Eye,
   FilePenLine,
+  HardDrive,
   History,
   ImagePlus,
   ListTodo,
@@ -22,6 +24,7 @@ import {
   Minimize2,
   Paperclip,
   Pencil,
+  Plus,
   Rocket,
   RotateCcw,
   Search,
@@ -29,6 +32,7 @@ import {
   SmilePlus,
   Sparkles,
   Trash2,
+  UserRoundPlus,
   Volume2,
   VolumeX,
   X,
@@ -40,6 +44,7 @@ import {
   type MosChatMessage,
   type MosChatTaskItem,
   type MosChatThreadReply,
+  type MosChatCustomerCard,
   type UpdateMosChatTaskRequest,
   type SafeAny,
 } from '@mos-lab/shared';
@@ -187,6 +192,16 @@ export interface MosChatThreadDrawerProps {
     mode?: 'inline' | 'list' | 'thread'
   ) => React.ReactNode;
   openCustomerDetail?: (customerId: number) => void;
+  setDriveLinkModalOpen?: (open: boolean) => void;
+  uploadTargetRef?: React.MutableRefObject<SafeAny>;
+  handleOpenCustomerPicker?: (scope?: 'main' | 'thread') => void;
+  stagedCustomerCard?: MosChatCustomerCard | null;
+  setStagedCustomerCard?: React.Dispatch<React.SetStateAction<MosChatCustomerCard | null>>;
+  openTaskModalFromMessage?: (msg: MosChatMessage | null, reply?: SafeAny) => void;
+  isUrgentSendThread?: boolean;
+  setIsUrgentSendThread?: React.Dispatch<React.SetStateAction<boolean>>;
+  setTriggerWorkflowModalOpen?: (open: boolean) => void;
+  setInitialWorkflowCode?: (code: string) => void;
 }
 
 export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.memo(
@@ -301,6 +316,16 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     handleUpdateTask,
     renderTaskCard,
     openCustomerDetail,
+    setDriveLinkModalOpen,
+    uploadTargetRef,
+    handleOpenCustomerPicker,
+    stagedCustomerCard,
+    setStagedCustomerCard,
+    openTaskModalFromMessage,
+    isUrgentSendThread,
+    setIsUrgentSendThread,
+    setTriggerWorkflowModalOpen,
+    setInitialWorkflowCode,
   }) => {
     const [formatBarOpenThread, setFormatBarOpenThread] = useState<boolean>(true);
     const [isPreviewModeThread, setIsPreviewModeThread] = useState<boolean>(false);
@@ -308,6 +333,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     const [replyingToReply, setReplyingToReply] = useState<{ id: string; senderName: string; text: string } | null>(
       null
     );
+    const [mobileActionOpen, setMobileActionOpen] = useState<boolean>(false);
+    const [localUrgentSend, setLocalUrgentSend] = useState<boolean>(false);
+    const isUrgent = isUrgentSendThread ?? localUrgentSend;
+    const setIsUrgent = setIsUrgentSendThread ?? setLocalUrgentSend;
 
     // Auto reset reply quote when active subthread changes
     React.useEffect(() => {
@@ -324,7 +353,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
 
     const handleThreadSubmit = () => {
       const trimmed = threadInput.trim();
-      if (!trimmed && threadAttachments.length === 0) return;
+      if (!trimmed && threadAttachments.length === 0 && !stagedCustomerCard) return;
       let finalText = trimmed;
       if (replyingToReply) {
         finalText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${trimmed}`;
@@ -1415,6 +1444,23 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                               </Tooltip>
                             );
                           })()}
+                          {/* Create Task & Reminder from this reply */}
+                          {openTaskModalFromMessage && !r.isDeleted && (
+                            <Tooltip title="Tạo Task & Hẹn giờ nhắc từ phản hồi này">
+                              <button
+                                type="button"
+                                aria-label="Tạo Task & Hẹn giờ nhắc từ phản hồi này"
+                                onClick={() => openTaskModalFromMessage(activeThreadMessage, r)}
+                                className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer text-amber-500 transition-transform hover:scale-110"
+                                style={{
+                                  background: 'rgba(212, 168, 75, 0.16)',
+                                  color: '#d4a84b',
+                                }}
+                              >
+                                <AlarmClockPlus size={11} />
+                              </button>
+                            </Tooltip>
+                          )}
                         </>
                       )}
 
@@ -1639,6 +1685,52 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
             {/* Inline Compact Format Toolbar in Thread */}
             {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
 
+            {/* Staged Customer Card for Thread */}
+            {stagedCustomerCard && (
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs animate-in fade-in slide-in-from-bottom-1 duration-150 mb-1.5"
+                style={{
+                  background: isDark ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.08)',
+                  border: `1px solid ${accentBorder}`,
+                }}
+              >
+                <Avatar
+                  size={20}
+                  className="shrink-0 font-bold text-[10px]"
+                  style={{
+                    backgroundColor: '#d4a84b',
+                    color: '#000',
+                  }}
+                >
+                  {(stagedCustomerCard.name || 'KH')
+                    .trim()
+                    .split(/\s+/)
+                    .map((w) => w[0])
+                    .filter(Boolean)
+                    .slice(-2)
+                    .join('')
+                    .toUpperCase()}
+                </Avatar>
+                <span className="font-semibold truncate text-[11.5px]" style={{ color: token.colorText }}>
+                  {stagedCustomerCard.name}
+                </span>
+                <span className="truncate text-amber-500 font-medium text-[11px]">({stagedCustomerCard.meta})</span>
+                {stagedCustomerCard.cvName && (
+                  <span className="text-slate-400 truncate hidden sm:inline text-[11px]">· {stagedCustomerCard.cvName}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setStagedCustomerCard?.(null)}
+                  className="ml-auto w-5 h-5 rounded-full flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  style={{ color: token.colorTextSecondary }}
+                  title="Bỏ đính kèm thẻ khách hàng khỏi luồng"
+                  aria-label="Bỏ đính kèm thẻ khách hàng khỏi luồng"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
             {/* Quoting Preview Banner inside Subthread */}
             {replyingToReply && (
               <div
@@ -1669,343 +1761,722 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
               </div>
             )}
 
-            {isPreviewModeThread ? (
-              <div
-                className="w-full min-h-[50px] max-h-[160px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
-                style={{ color: token.colorText }}
-              >
-                <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-amber-500/20 text-[10.5px] font-bold text-amber-500">
-                  <div className="flex items-center gap-1.5">
-                    <Eye size={12} />
-                    <span>Đang xem trước phản hồi luồng</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsPreviewModeThread(false)}
-                    className="text-[10.5px] px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-medium transition-colors cursor-pointer"
+            {isMobile ? (
+              <div className="flex flex-col gap-2">
+                {/* Quick action grid drawer on mobile in Thread */}
+                {mobileActionOpen && (
+                  <div
+                    className="p-3 rounded-2xl grid grid-cols-3 gap-2.5 transition-all shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 mb-1"
+                    style={{
+                      background: surfaceRaised,
+                      border: `1px solid ${borderStrong}`,
+                    }}
                   >
-                    Quay lại sửa
-                  </button>
-                </div>
-                {threadInput.trim() ? (
-                  <div className="prose max-w-none text-[13px]">{renderRichTextMessage(threadInput, false)}</div>
-                ) : (
-                  <div className="text-zinc-500 text-[11.5px] italic py-1">Chưa có nội dung để xem trước...</div>
-                )}
-              </div>
-            ) : (
-              <textarea
-                ref={threadInputRef}
-                rows={1}
-                value={threadInput}
-                onDragOver={(e) => {
-                  if (draggingRootMsgId) return;
-                  const hasFiles =
-                    Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
-                  if (hasFiles) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.dataTransfer.dropEffect = 'copy';
-                    if (!isDraggingOverThread) setIsDraggingOverThread(true);
-                    if (isDraggingOver) setIsDraggingOver(false);
-                  }
-                }}
-                onDrop={(e) => {
-                  if (draggingRootMsgId) return;
-                  if (e.dataTransfer?.files?.length) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDraggingOver(false);
-                    setIsDraggingOverThread(false);
-                    void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
-                  }
-                }}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setThreadInput(next);
-                  const pos = e.target.selectionEnd || 0;
-                  setThreadCursorPos(pos);
-                  checkForMentionTrigger(next, pos, 'thread');
-                }}
-                onSelect={(e) => {
-                  const pos = (e.target as HTMLTextAreaElement).selectionEnd || 0;
-                  setThreadCursorPos(pos);
-                  checkForMentionTrigger(threadInput, pos, 'thread');
-                }}
-                onKeyDown={(e) => {
-                  if (handleMentionKeyDown(e, 'thread')) {
-                    return;
-                  }
-                  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-                    e.preventDefault();
-                    handleApplyFormat('bold', 'thread');
-                    return;
-                  }
-                  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
-                    e.preventDefault();
-                    handleApplyFormat('italic', 'thread');
-                    return;
-                  }
-                  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
-                    e.preventDefault();
-                    handleApplyFormat('underline', 'thread');
-                    return;
-                  }
-                  if (e.key === 'Enter' && e.shiftKey) {
-                    const el = e.currentTarget;
-                    const smart = handleSmartListEnterKey(threadInput, el.selectionStart || 0, el.selectionEnd || 0);
-                    if (smart?.handled) {
-                      e.preventDefault();
-                      setThreadInput(smart.nextText);
-                      setThreadCursorPos(smart.nextCursor);
-                      setTimeout(() => {
-                        el.focus();
-                        el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-                      }, 0);
-                      return;
-                    }
-                  }
-                  if (e.key === 'Escape' && replyingToReply) {
-                    e.preventDefault();
-                    setReplyingToReply(null);
-                    return;
-                  }
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    if (
-                      e.nativeEvent.isComposing ||
-                      isComposingRef.current ||
-                      e.keyCode === 229 ||
-                      Date.now() - lastCompositionEndMsRef.current < 60
-                    ) {
-                      return;
-                    }
-                    e.preventDefault();
-                    handleThreadSubmit();
-                  }
-                }}
-                placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
-                className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
-                style={{
-                  color: token.colorText,
-                  maxHeight: 140,
-                }}
-              />
-            )}
-
-            {/* Bottom row: Tools on Left, Send on Right */}
-            <div
-              className="flex items-center justify-between gap-1.5 pt-1 mt-0.5 border-t"
-              style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
-            >
-              <div className="flex items-center gap-0.5">
-                {/* [Bot] Call @MAI in Thread */}
-                {canUseAiCopilot && (
-                  <Tooltip title="Gọi @MAI để mOS AI phân tích & tư vấn trực tiếp vào luồng này">
                     <button
                       type="button"
-                      aria-label="Gọi @MAI trong luồng"
                       onClick={() => {
-                        setThreadInput((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
-                        setTimeout(() => {
-                          threadInputRef.current?.focus();
-                        }, 20);
+                        triggerFilePicker('thread');
+                        setMobileActionOpen(false);
                       }}
-                      className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 shrink-0 cursor-pointer hover:bg-purple-500/20 active:scale-95 transition-all text-purple-400 hover:text-purple-300 text-[11px] font-black"
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
                     >
-                      <Bot size={14} />
-                      <span>@MAI</span>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 overflow-hidden shrink-0">
+                        <ImagePlus size={16} />
+                      </div>
+                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        Gửi ảnh
+                      </span>
                     </button>
-                  </Tooltip>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (uploadTargetRef) uploadTargetRef.current = { scope: 'thread' };
+                        setDriveLinkModalOpen?.(true);
+                        setMobileActionOpen(false);
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20 overflow-hidden shrink-0">
+                        <HardDrive size={16} />
+                      </div>
+                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        Drive
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleOpenCustomerPicker?.('thread');
+                        setMobileActionOpen(false);
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20 overflow-hidden shrink-0">
+                        <UserRoundPlus size={16} />
+                      </div>
+                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        Thẻ khách
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openTaskModalFromMessage?.(activeThreadMessage);
+                        setMobileActionOpen(false);
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-400/15 text-[#d4a84b] border border-[#d4a84b]/30 overflow-hidden shrink-0">
+                        <AlarmClockPlus size={16} />
+                      </div>
+                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        Giao việc
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThreadInput((prev) => {
+                          const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                          setTimeout(() => {
+                            threadInputRef.current?.focus();
+                            const len = next.length;
+                            threadInputRef.current?.setSelectionRange(len, len);
+                            checkForMentionTrigger(next, len, 'thread');
+                          }, 20);
+                          return next;
+                        });
+                        setMobileActionOpen(false);
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-sky-500/10 text-sky-400 border border-sky-500/20 overflow-hidden shrink-0">
+                        <AtSign size={16} />
+                      </div>
+                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        Nhắc tên
+                      </span>
+                    </button>
+
+                    {canUseAiCopilot && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThreadInput((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+                          setMobileActionOpen(false);
+                          threadInputRef.current?.focus();
+                        }}
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-purple-500/15 text-purple-400 border border-purple-500/30 overflow-hidden shrink-0 font-black text-[11px]">
+                          MAI
+                        </div>
+                        <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                          Gọi @MAI
+                        </span>
+                      </button>
+                    )}
+
+                    {/* CKEditor Mobile Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRichEditorModalState({
+                          open: true,
+                          scope: 'thread',
+                          title: 'Soạn thảo phản hồi (CKEditor)',
+                        });
+                        setMobileActionOpen(false);
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/15 text-amber-400 border border-amber-500/30 overflow-hidden shrink-0">
+                        <FilePenLine size={16} />
+                      </div>
+                      <span className="text-[10.5px] font-medium text-center leading-tight" style={{ color: token.colorText }}>
+                        CKEditor
+                      </span>
+                    </button>
+                  </div>
                 )}
 
-                {/* [@] Mention Button in Thread */}
-                <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                {/* Apple Notes Style Format Toolbar for Mobile */}
+                {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
+
+                {/* Mobile Main Row */}
+                <div className="flex items-center gap-1.5">
+                  {/* [+] Action expander button */}
                   <button
                     type="button"
-                    aria-label="Nhắc tên đồng nghiệp trong luồng"
-                    onClick={() => {
-                      setThreadInput((prev) => {
-                        const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
-                        setTimeout(() => {
-                          threadInputRef.current?.focus();
-                          const len = next.length;
-                          threadInputRef.current?.setSelectionRange(len, len);
-                          checkForMentionTrigger(next, len, 'thread');
-                        }, 20);
-                        return next;
-                      });
+                    aria-label={mobileActionOpen ? 'Đóng tiện ích đính kèm' : 'Mở tiện ích đính kèm'}
+                    onClick={() => setMobileActionOpen((prev) => !prev)}
+                    className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
+                    style={{
+                      background: mobileActionOpen ? '#d4a84b' : surfaceRaised,
+                      border: `1px solid ${mobileActionOpen ? '#d4a84b' : borderStrong}`,
+                      color: mobileActionOpen ? '#000' : token.colorTextSecondary,
                     }}
-                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
-                    style={{ color: token.colorTextSecondary }}
                   >
-                    <AtSign size={15} />
+                    {mobileActionOpen ? <X size={15} /> : <Plus size={15} />}
                   </button>
-                </Tooltip>
 
-                {/* [Aa] Inline Quick-Type Format Bar Button in Thread */}
-                <Tooltip title="Thanh định dạng gọn gõ nhanh (B, I, U, Màu chữ, Danh sách •)">
+                  {/* [Aa] Apple Notes Format Button for Mobile */}
                   <button
                     type="button"
                     aria-label="Định dạng chữ Apple Notes trong luồng"
                     onClick={() => setFormatBarOpenThread((prev) => !prev)}
-                    className="w-7 h-7 rounded-lg inline-flex flex-col items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+                    className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
                     style={{
-                      background: formatBarOpenThread ? 'rgba(236, 72, 153, 0.18)' : 'transparent',
-                      color: formatBarOpenThread ? '#f472b6' : token.colorTextSecondary,
-                      border: formatBarOpenThread ? '1px solid rgba(236, 72, 153, 0.35)' : 'none',
+                      background: formatBarOpenThread ? '#d4a84b' : surfaceRaised,
+                      border: `1px solid ${formatBarOpenThread ? '#d4a84b' : borderStrong}`,
+                      color: formatBarOpenThread ? '#000' : token.colorTextSecondary,
                     }}
                   >
-                    <span className="font-serif font-bold text-[11.5px] leading-none tracking-tight">Aa</span>
-                    <span
-                      className="w-3 h-[2px] rounded-full mt-0.5"
-                      style={{ background: formatBarOpenThread ? '#f472b6' : 'currentColor', opacity: 0.75 }}
-                    />
+                    <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
                   </button>
-                </Tooltip>
 
-                {/* [⚡ Gọn] Compact Quick-Type Editor in Thread */}
-                <Tooltip title="Mở Bản gọn (Type nhanh) cho luồng phản hồi">
-                  <button
-                    type="button"
-                    aria-label="Mở trình soạn thảo Bản gọn trong luồng"
-                    onClick={() => {
-                      setRichEditorModalState({
-                        open: true,
-                        scope: 'thread',
-                        title: 'Soạn thảo phản hồi (CKEditor)',
-                        initialMode: 'compact',
-                      });
-                    }}
-                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-pink-500/15 active:scale-95 transition-all text-pink-400"
+                  {/* Text Input Pill */}
+                  <div
+                    className="relative flex-1 min-h-[38px] max-h-[120px] rounded-2xl px-3 py-1 flex items-center gap-1.5"
+                    style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
                   >
-                    <Zap size={13} />
-                  </button>
-                </Tooltip>
-
-                {/* [CKEditor] Button in Thread */}
-                <Tooltip title="Mở rộng trình soạn thảo CKEditor cho luồng phản hồi">
-                  <button
-                    type="button"
-                    aria-label="Mở trình soạn thảo phong phú CKEditor trong luồng"
-                    onClick={() => {
-                      setRichEditorModalState({
-                        open: true,
-                        scope: 'thread',
-                        title: 'Soạn thảo phản hồi (CKEditor)',
-                        initialMode: 'split',
-                      });
-                    }}
-                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-amber-500/15 active:scale-95 transition-all text-amber-500"
-                  >
-                    <FilePenLine size={14} />
-                  </button>
-                </Tooltip>
-
-                <Popover
-                  trigger="click"
-                  placement="topRight"
-                  open={openStickerPopoverKey === 'composer:thread'}
-                  onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
-                  content={renderComposerEmojiPickerContent('thread')}
-                >
-                  <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
-                    <button
-                      type="button"
-                      aria-label="Gửi Sticker động hoặc Emoji vào luồng"
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
-                      style={{ color: token.colorTextSecondary }}
-                    >
-                      <SmilePlus size={15} />
-                    </button>
-                  </Tooltip>
-                </Popover>
-
-                <Tooltip title="Đính kèm tệp tin (PDF, Excel, Word...)">
-                  <button
-                    type="button"
-                    aria-label="Đính kèm tệp tin vào luồng"
-                    onClick={() => triggerFilePicker('thread')}
-                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <Paperclip size={15} />
-                  </button>
-                </Tooltip>
-
-                <Tooltip title="Tải hình vào luồng">
-                  <button
-                    type="button"
-                    aria-label="Tải hình vào luồng"
-                    onClick={() => triggerFilePicker('thread')}
-                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <ImagePlus size={15} />
-                  </button>
-                </Tooltip>
-
-                {/* [↵] Quick Down-line / Xuống dòng Button */}
-                <Tooltip title="Xuống dòng (Shift+Enter)">
-                  <button
-                    type="button"
-                    aria-label="Xuống dòng trong luồng"
-                    onClick={() => {
-                      const el = threadInputRef.current;
-                      if (!el) return;
-                      const isFocused = typeof document !== 'undefined' && document.activeElement === el;
-                      const start = isFocused ? (el.selectionStart ?? threadInput.length) : threadInput.length;
-                      const end = isFocused ? (el.selectionEnd ?? threadInput.length) : threadInput.length;
-                      const smart = handleSmartListEnterKey(threadInput, start, end);
-                      if (smart?.handled) {
-                        setThreadInput(smart.nextText);
-                        setThreadCursorPos(smart.nextCursor);
-                        setTimeout(() => {
-                          el.focus();
-                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-                        }, 0);
-                      } else {
-                        const next = threadInput.substring(0, start) + '\n' + threadInput.substring(end);
+                    <textarea
+                      ref={threadInputRef}
+                      rows={1}
+                      value={threadInput}
+                      onChange={(e) => {
+                        const next = e.target.value;
                         setThreadInput(next);
-                        setThreadCursorPos(start + 1);
-                        setTimeout(() => {
-                          el.focus();
-                          el.setSelectionRange(start + 1, start + 1);
-                        }, 0);
-                      }
-                    }}
-                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <CornerDownLeft size={14} />
-                  </button>
-                </Tooltip>
-              </div>
+                        const pos = e.target.selectionEnd || 0;
+                        setThreadCursorPos(pos);
+                        checkForMentionTrigger(next, pos, 'thread');
+                      }}
+                      onSelect={(e) => {
+                        const pos = (e.target as HTMLTextAreaElement).selectionEnd || 0;
+                        setThreadCursorPos(pos);
+                        checkForMentionTrigger(threadInput, pos, 'thread');
+                      }}
+                      onKeyDown={(e) => {
+                        if (handleMentionKeyDown(e, 'thread')) return;
+                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                          e.preventDefault();
+                          handleApplyFormat('bold', 'thread');
+                          return;
+                        }
+                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                          e.preventDefault();
+                          handleApplyFormat('italic', 'thread');
+                          return;
+                        }
+                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                          e.preventDefault();
+                          handleApplyFormat('underline', 'thread');
+                          return;
+                        }
+                        if (e.key === 'Escape' && replyingToReply) {
+                          e.preventDefault();
+                          setReplyingToReply(null);
+                          return;
+                        }
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          if (
+                            e.nativeEvent.isComposing ||
+                            isComposingRef.current ||
+                            e.keyCode === 229 ||
+                            Date.now() - lastCompositionEndMsRef.current < 60
+                          ) {
+                            return;
+                          }
+                          e.preventDefault();
+                          handleThreadSubmit();
+                        }
+                      }}
+                      placeholder="Trả lời vào luồng..."
+                      className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
+                      style={{ color: token.colorText, maxHeight: 120 }}
+                    />
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[11px] select-none hidden sm:inline" style={{ color: token.colorTextQuaternary }}>
-                  Enter gửi · Shift+Enter xuống dòng
-                </span>
-                <Tooltip title="Gửi vào luồng (Enter)">
+                    <Popover
+                      trigger="click"
+                      placement="topRight"
+                      open={openStickerPopoverKey === 'composer:thread'}
+                      onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
+                      content={renderComposerEmojiPickerContent('thread')}
+                    >
+                      <button
+                        type="button"
+                        aria-label="Chọn biểu tượng cảm xúc vào luồng"
+                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-transform cursor-pointer"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <SmilePlus size={16} />
+                      </button>
+                    </Popover>
+                  </div>
+
+                  {/* Send button */}
                   <button
                     type="button"
-                    aria-label="Gửi vào luồng"
+                    aria-label="Gửi phản hồi vào luồng"
                     onClick={() => void handleThreadSubmit()}
-                    className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm"
+                    disabled={!threadInput.trim() && threadAttachments.length === 0 && !stagedCustomerCard}
+                    className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden"
                     style={{
                       background:
-                        threadInput.trim() || threadAttachments.length > 0
+                        threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
                           ? '#d4a84b'
-                          : isDark
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : 'rgba(0, 0, 0, 0.06)',
-                      color: threadInput.trim() || threadAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
+                          : surfaceRaised,
+                      color:
+                        threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                          ? '#000'
+                          : token.colorTextQuaternary,
+                      border: `1px solid ${borderStrong}`,
                     }}
                   >
-                    <SendHorizontal size={14} />
+                    <SendHorizontal size={15} />
                   </button>
-                </Tooltip>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Desktop Layout */
+              <div>
+                {/* Inline Compact Format Toolbar in Thread */}
+                {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
+
+                {isPreviewModeThread ? (
+                  <div
+                    className="w-full min-h-[50px] max-h-[160px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
+                    style={{ color: token.colorText }}
+                  >
+                    <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-amber-500/20 text-[10.5px] font-bold text-amber-500">
+                      <div className="flex items-center gap-1.5">
+                        <Eye size={12} />
+                        <span>Đang xem trước phản hồi luồng</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewModeThread(false)}
+                        className="text-[10.5px] px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-medium transition-colors cursor-pointer"
+                      >
+                        Quay lại sửa
+                      </button>
+                    </div>
+                    {threadInput.trim() ? (
+                      <div className="prose max-w-none text-[13px]">{renderRichTextMessage(threadInput, false)}</div>
+                    ) : (
+                      <div className="text-zinc-500 text-[11.5px] italic py-1">Chưa có nội dung để xem trước...</div>
+                    )}
+                  </div>
+                ) : (
+                  <textarea
+                    ref={threadInputRef}
+                    rows={1}
+                    value={threadInput}
+                    onDragOver={(e) => {
+                      if (draggingRootMsgId) return;
+                      const hasFiles =
+                        Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
+                      if (hasFiles) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = 'copy';
+                        if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                        if (isDraggingOver) setIsDraggingOver(false);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      if (draggingRootMsgId) return;
+                      if (e.dataTransfer?.files?.length) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDraggingOver(false);
+                        setIsDraggingOverThread(false);
+                        void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
+                      }
+                    }}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setThreadInput(next);
+                      const pos = e.target.selectionEnd || 0;
+                      setThreadCursorPos(pos);
+                      checkForMentionTrigger(next, pos, 'thread');
+                    }}
+                    onSelect={(e) => {
+                      const pos = (e.target as HTMLTextAreaElement).selectionEnd || 0;
+                      setThreadCursorPos(pos);
+                      checkForMentionTrigger(threadInput, pos, 'thread');
+                    }}
+                    onKeyDown={(e) => {
+                      if (handleMentionKeyDown(e, 'thread')) {
+                        return;
+                      }
+                      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                        e.preventDefault();
+                        handleApplyFormat('bold', 'thread');
+                        return;
+                      }
+                      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                        e.preventDefault();
+                        handleApplyFormat('italic', 'thread');
+                        return;
+                      }
+                      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                        e.preventDefault();
+                        handleApplyFormat('underline', 'thread');
+                        return;
+                      }
+                      if (e.key === 'Enter' && e.shiftKey) {
+                        const el = e.currentTarget;
+                        const smart = handleSmartListEnterKey(threadInput, el.selectionStart || 0, el.selectionEnd || 0);
+                        if (smart?.handled) {
+                          e.preventDefault();
+                          setThreadInput(smart.nextText);
+                          setThreadCursorPos(smart.nextCursor);
+                          setTimeout(() => {
+                            el.focus();
+                            el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                          }, 0);
+                          return;
+                        }
+                      }
+                      if (e.key === 'Escape' && replyingToReply) {
+                        e.preventDefault();
+                        setReplyingToReply(null);
+                        return;
+                      }
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        if (
+                          e.nativeEvent.isComposing ||
+                          isComposingRef.current ||
+                          e.keyCode === 229 ||
+                          Date.now() - lastCompositionEndMsRef.current < 60
+                        ) {
+                          return;
+                        }
+                        e.preventDefault();
+                        handleThreadSubmit();
+                      }
+                    }}
+                    placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
+                    className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
+                    style={{
+                      color: token.colorText,
+                      maxHeight: 140,
+                    }}
+                  />
+                )}
+
+                {/* Bottom row: Tools on Left, Send on Right */}
+                <div
+                  className="flex items-center justify-between gap-1.5 pt-1 mt-0.5 border-t"
+                  style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
+                >
+                  <div className="flex items-center gap-0.5 flex-wrap">
+                    {/* [Aa] Inline Quick-Type Format Bar Button in Thread */}
+                    <Tooltip title="Thanh định dạng gọn gõ nhanh (B, I, U, Màu chữ, Danh sách •)">
+                      <button
+                        type="button"
+                        aria-label="Định dạng chữ Apple Notes trong luồng"
+                        onClick={() => setFormatBarOpenThread((prev) => !prev)}
+                        className="w-7 h-7 rounded-lg inline-flex flex-col items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+                        style={{
+                          background: formatBarOpenThread ? 'rgba(236, 72, 153, 0.18)' : 'transparent',
+                          color: formatBarOpenThread ? '#f472b6' : token.colorTextSecondary,
+                          border: formatBarOpenThread ? '1px solid rgba(236, 72, 153, 0.35)' : 'none',
+                        }}
+                      >
+                        <span className="font-serif font-bold text-[11.5px] leading-none tracking-tight">Aa</span>
+                        <span
+                          className="w-3 h-[2px] rounded-full mt-0.5"
+                          style={{ background: formatBarOpenThread ? '#f472b6' : 'currentColor', opacity: 0.75 }}
+                        />
+                      </button>
+                    </Tooltip>
+
+                    {/* [⚡ Gọn] Compact Quick-Type Editor in Thread */}
+                    <Tooltip title="Mở Bản gọn (Type nhanh) cho luồng phản hồi">
+                      <button
+                        type="button"
+                        aria-label="Mở trình soạn thảo Bản gọn trong luồng"
+                        onClick={() => {
+                          setRichEditorModalState({
+                            open: true,
+                            scope: 'thread',
+                            title: 'Soạn thảo phản hồi (CKEditor)',
+                            initialMode: 'compact',
+                          });
+                        }}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-pink-500/15 active:scale-95 transition-all text-pink-400"
+                      >
+                        <Zap size={13} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [CKEditor] Button in Thread */}
+                    <Tooltip title="Mở rộng trình soạn thảo CKEditor cho luồng phản hồi">
+                      <button
+                        type="button"
+                        aria-label="Mở trình soạn thảo phong phú CKEditor trong luồng"
+                        onClick={() => {
+                          setRichEditorModalState({
+                            open: true,
+                            scope: 'thread',
+                            title: 'Soạn thảo phản hồi (CKEditor)',
+                            initialMode: 'split',
+                          });
+                        }}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-amber-500/15 active:scale-95 transition-all text-amber-500"
+                      >
+                        <FilePenLine size={14} />
+                      </button>
+                    </Tooltip>
+
+                    <Popover
+                      trigger="click"
+                      placement="topRight"
+                      open={openStickerPopoverKey === 'composer:thread'}
+                      onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
+                      content={renderComposerEmojiPickerContent('thread')}
+                    >
+                      <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
+                        <button
+                          type="button"
+                          aria-label="Gửi Sticker động hoặc Emoji vào luồng"
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                          style={{ color: token.colorTextSecondary }}
+                        >
+                          <SmilePlus size={15} />
+                        </button>
+                      </Tooltip>
+                    </Popover>
+
+                    <Tooltip title="Đính kèm tệp tin (PDF, Excel, Word...)">
+                      <button
+                        type="button"
+                        aria-label="Đính kèm tệp tin vào luồng"
+                        onClick={() => triggerFilePicker('thread')}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <Paperclip size={15} />
+                      </button>
+                    </Tooltip>
+
+                    <Tooltip title="Tải hình vào luồng">
+                      <button
+                        type="button"
+                        aria-label="Tải hình vào luồng"
+                        onClick={() => triggerFilePicker('thread')}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <ImagePlus size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [HardDrive] Đính kèm hình từ Google Drive */}
+                    <Tooltip title="Đính kèm hình từ link Google Drive vào luồng">
+                      <button
+                        type="button"
+                        aria-label="Đính kèm hình từ link Google Drive vào luồng"
+                        onClick={() => {
+                          if (uploadTargetRef) uploadTargetRef.current = { scope: 'thread' };
+                          setDriveLinkModalOpen?.(true);
+                        }}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <HardDrive size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [UserRoundPlus] Đính kèm thẻ Khách hàng */}
+                    <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS vào luồng">
+                      <button
+                        type="button"
+                        aria-label="Đính kèm thẻ Khách hàng vào luồng"
+                        onClick={() => handleOpenCustomerPicker?.('thread')}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                        style={{ color: stagedCustomerCard ? '#d4a84b' : token.colorTextSecondary }}
+                      >
+                        <UserRoundPlus size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [Bot] Call @MAI in Thread */}
+                    {canUseAiCopilot && (
+                      <Tooltip title="Gọi @MAI để mOS AI phân tích & tư vấn trực tiếp vào luồng này">
+                        <button
+                          type="button"
+                          aria-label="Gọi @MAI trong luồng"
+                          onClick={() => {
+                            setThreadInput((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+                            setTimeout(() => {
+                              threadInputRef.current?.focus();
+                            }, 20);
+                          }}
+                          className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 shrink-0 cursor-pointer hover:bg-purple-500/20 active:scale-95 transition-all text-purple-400 hover:text-purple-300 text-[11px] font-black"
+                        >
+                          <Bot size={14} />
+                          <span>@MAI</span>
+                        </button>
+                      </Tooltip>
+                    )}
+
+                    {/* [@] Mention Button in Thread */}
+                    <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                      <button
+                        type="button"
+                        aria-label="Nhắc tên đồng nghiệp trong luồng"
+                        onClick={() => {
+                          setThreadInput((prev) => {
+                            const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                            setTimeout(() => {
+                              threadInputRef.current?.focus();
+                              const len = next.length;
+                              threadInputRef.current?.setSelectionRange(len, len);
+                              checkForMentionTrigger(next, len, 'thread');
+                            }, 20);
+                            return next;
+                          });
+                        }}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <AtSign size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [Zap] Chế độ khẩn cấp (Buzz) */}
+                    <Tooltip
+                      title={
+                        isUrgent
+                          ? 'Đang bật chế độ khẩn cấp (Buzz) trong luồng: Nhấp để tắt'
+                          : 'Bật chế độ khẩn cấp (Buzz) trong luồng: Gửi và phát âm thanh cảnh báo @MAI'
+                      }
+                    >
+                      <button
+                        type="button"
+                        aria-label="Chế độ khẩn cấp trong luồng"
+                        onClick={() => setIsUrgent((prev) => !prev)}
+                        className={`h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all ${
+                          isUrgent
+                            ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400 font-black'
+                            : 'hover:bg-amber-500/15 text-amber-500/80 border border-amber-500/30'
+                        }`}
+                      >
+                        <Zap size={13} className={isUrgent ? 'animate-bounce' : ''} />
+                        <span>Khẩn cấp</span>
+                      </button>
+                    </Tooltip>
+
+                    {/* [AlarmClockPlus] Giao Task & Cài nhắc hẹn mới */}
+                    <Tooltip title="Giao Task & Cài nhắc hẹn mới từ tin nhắn luồng">
+                      <button
+                        type="button"
+                        aria-label="Giao Task & Cài nhắc hẹn mới từ tin nhắn luồng"
+                        onClick={() => openTaskModalFromMessage?.(activeThreadMessage)}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 hover:bg-amber-500/15 cursor-pointer transition-colors"
+                        style={{ color: '#d4a84b' }}
+                      >
+                        <AlarmClockPlus size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [Activity] ⚡ Quy trình cho Super Admin */}
+                    {isStrictDannySuperAdmin && activeConversation?.id !== AI_COPILOT_CONV_ID && (
+                      <Tooltip title="⚡ Khởi tạo Quy trình Sống (/tam-ung, /kiem-kho, /tao-quy-trinh) — Chỉ dành cho Super Admin">
+                        <button
+                          type="button"
+                          aria-label="Khởi tạo Quy trình Sống trong luồng"
+                          onClick={() => {
+                            if (setInitialWorkflowCode) setInitialWorkflowCode('WF_CASH_ADVANCE');
+                            setTriggerWorkflowModalOpen?.(true);
+                          }}
+                          className="h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold hover:bg-blue-500/15 cursor-pointer transition-colors"
+                          style={{
+                            color: '#60a5fa',
+                            border: '1px solid rgba(59, 130, 246, 0.35)',
+                          }}
+                        >
+                          <Activity size={13} />
+                          <span>⚡ Quy trình</span>
+                        </button>
+                      </Tooltip>
+                    )}
+
+                    {/* [↵] Quick Down-line / Xuống dòng Button */}
+                    <Tooltip title="Xuống dòng (Shift+Enter)">
+                      <button
+                        type="button"
+                        aria-label="Xuống dòng trong luồng"
+                        onClick={() => {
+                          const el = threadInputRef.current;
+                          if (!el) return;
+                          const isFocused = typeof document !== 'undefined' && document.activeElement === el;
+                          const start = isFocused ? (el.selectionStart ?? threadInput.length) : threadInput.length;
+                          const end = isFocused ? (el.selectionEnd ?? threadInput.length) : threadInput.length;
+                          const smart = handleSmartListEnterKey(threadInput, start, end);
+                          if (smart?.handled) {
+                            setThreadInput(smart.nextText);
+                            setThreadCursorPos(smart.nextCursor);
+                            setTimeout(() => {
+                              el.focus();
+                              el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                            }, 0);
+                          } else {
+                            const next = threadInput.substring(0, start) + '\n' + threadInput.substring(end);
+                            setThreadInput(next);
+                            setThreadCursorPos(start + 1);
+                            setTimeout(() => {
+                              el.focus();
+                              el.setSelectionRange(start + 1, start + 1);
+                            }, 0);
+                          }
+                        }}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <CornerDownLeft size={14} />
+                      </button>
+                    </Tooltip>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[11px] select-none hidden sm:inline" style={{ color: token.colorTextQuaternary }}>
+                      Enter gửi · Shift+Enter xuống dòng
+                    </span>
+                    <Tooltip title="Gửi vào luồng (Enter)">
+                      <button
+                        type="button"
+                        aria-label="Gửi vào luồng"
+                        onClick={() => void handleThreadSubmit()}
+                        disabled={!threadInput.trim() && threadAttachments.length === 0 && !stagedCustomerCard}
+                        className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{
+                          background:
+                            threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                              ? '#d4a84b'
+                              : isDark
+                                ? 'rgba(255, 255, 255, 0.08)'
+                                : 'rgba(0, 0, 0, 0.06)',
+                          color:
+                            threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                              ? '#000'
+                              : token.colorTextQuaternary,
+                        }}
+                      >
+                        <SendHorizontal size={14} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </aside>
