@@ -25,11 +25,16 @@ import {
   GraduationCap,
   MessageSquare,
   HelpCircle,
+  Smartphone,
+  BookCheck,
   type LucideIcon,
 } from 'lucide-react';
 import type { PilotSession } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { AdaptiveModal } from '../../../../components/ui';
+import { GiangHoLearningJourneyCard } from './GiangHoLearningJourneyCard';
+import { IphonePracticalExamRubric } from './IphonePracticalExamRubric';
+import { LashLiftTheoryExamModal } from './LashLiftTheoryExamModal';
 
 interface PilotAssessmentCertSopDetailProps {
   onBack?: () => void;
@@ -226,6 +231,32 @@ const INITIAL_TECHNICIAN_RECORDS: TechnicianAssessmentRecord[] = [
     certificateIssuedAt: '26/10/2026',
     certificateApproved: false, // Chờ duyệt
   },
+  {
+    id: 'tech-giang-ho',
+    technicianName: 'Chuyên Viên Giang Hồ',
+    branch: 'Chi nhánh Đề Thám (Quận 1)',
+    examDate: '31/10/2026',
+    trainer: 'Cô Giang Đàm (Master Trainer)',
+    examiner: 'CEO Danny Đỗ',
+    theoryScore: 92,
+    practicalScores: {
+      'crit-safety': 25,
+      'crit-shield': 24,
+      'crit-timing': 19,
+      'crit-result': 19,
+      'crit-conduct': 9,
+    },
+    practicalTotalScore: 96,
+    isEliminationViolated: false,
+    status: 'PASSED',
+    examinerNotes:
+      'Thao tác dán trục silicone 90° rất chuẩn, sợi mi tơi đều không bắt chéo. Thời gian hoàn thành 64 phút, 0 lỗi kỹ thuật.',
+    evidenceNote:
+      'Đã hoàn thành xuất sắc 4 buổi thực hành 26-30/10 tại Đề Thám. Đạt chuẩn KTV Chính Thức ngày 31/10/2026.',
+    certificateCode: 'WINGS-DL-2026-004-GH',
+    certificateIssuedAt: '31/10/2026',
+    certificateApproved: false, // Chờ CEO Danny ký duyệt
+  },
 ];
 
 export function PilotAssessmentCertSopDetail({
@@ -255,6 +286,42 @@ export function PilotAssessmentCertSopDetail({
 
   // State cho Certificate Preview Modal
   const [previewCertTech, setPreviewCertTech] = useState<TechnicianAssessmentRecord | null>(null);
+
+  // State cho iPhone Rubric Coi Thi & Bài Thi Lý Thuyết (MOS-BUG-182)
+  const [iphoneRubricOpen, setIphoneRubricOpen] = useState<boolean>(false);
+  const [theoryQuizOpen, setTheoryQuizOpen] = useState<boolean>(false);
+
+  const handleRubricApprove = (finalScore: number, notes: string) => {
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.id === 'tech-giang-ho'
+          ? {
+              ...r,
+              practicalTotalScore: finalScore,
+              examinerNotes: notes,
+              status: finalScore >= 90 ? 'PASSED' : 'FAILED',
+              certificateApproved: finalScore >= 95,
+              certificateCode: 'WINGS-DL-2026-004-GH',
+              certificateIssuedAt: '31/10/2026',
+            }
+          : r
+      )
+    );
+  };
+
+  const handleTheoryQuizSubmit = (score: number, summary: string) => {
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.id === 'tech-giang-ho'
+          ? {
+              ...r,
+              theoryScore: score,
+              evidenceNote: `${r.evidenceNote} | Lý thuyết: ${score}/100đ (${summary})`,
+            }
+          : r
+      )
+    );
+  };
 
   // Tính toán điểm thực hành hiện tại trong form chấm thi
   const currentPracticalTotal = useMemo(() => {
@@ -475,6 +542,12 @@ export function PilotAssessmentCertSopDetail({
       {/* ========================================================================= */}
       {activeTab === 'exam' && (
         <div className="space-y-6" data-testid="section-exam-management">
+          {/* Card Học Viên Giang Hồ: Nhật Ký Thực Hành 4 Buổi & Thi Tốt Nghiệp 31/10 */}
+          <GiangHoLearningJourneyCard
+            onOpenExamRubric={() => setIphoneRubricOpen(true)}
+            onOpenTheoryQuiz={() => setTheoryQuizOpen(true)}
+          />
+
           {/* Nguyên tắc bất biến 2 vòng */}
           <div className="p-4 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200 space-y-2">
             <div className="flex items-center gap-2 font-bold text-sm text-amber-800 dark:text-amber-300">
@@ -1326,6 +1399,33 @@ export function PilotAssessmentCertSopDetail({
             </div>
           </div>
         )}
+      </AdaptiveModal>
+
+      {/* Modal Bài Thi Lý Thuyết (MOS-BUG-182) */}
+      <LashLiftTheoryExamModal
+        open={theoryQuizOpen}
+        onClose={() => setTheoryQuizOpen(false)}
+        onSubmitScore={handleTheoryQuizSubmit}
+        candidateName="Chuyên Viên Giang Hồ"
+        examinerName="CEO Danny Đỗ"
+      />
+
+      {/* Modal iPhone 12+ Coi Thi 1-Chạm (MOS-BUG-182) */}
+      <AdaptiveModal
+        open={iphoneRubricOpen}
+        onCancel={() => setIphoneRubricOpen(false)}
+        footer={null}
+        width={460}
+        centered
+        className="iphone-exam-rubric-modal"
+        title={null}
+      >
+        <IphonePracticalExamRubric
+          onClose={() => setIphoneRubricOpen(false)}
+          onApproveCert={handleRubricApprove}
+          candidateName="Chuyên Viên Giang Hồ"
+          examinerName="CEO Danny Đỗ"
+        />
       </AdaptiveModal>
 
       {/* Khối Báo Cáo Tiến Độ Hạng Mục 5 & Thẩm Quyền CEO */}

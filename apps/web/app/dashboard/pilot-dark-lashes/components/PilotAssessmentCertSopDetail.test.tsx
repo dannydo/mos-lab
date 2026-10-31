@@ -190,4 +190,22 @@ describe('PilotAssessmentCertSopDetail', () => {
     expect(screen.getByText('DARK LASHES SPECIALIST CERTIFICATE')).toBeInTheDocument();
     expect(screen.getByText('WINGS NAILS & LASHES ACADEMY')).toBeInTheDocument();
   });
+
+  it('renders Chuyên Viên Giang Hồ learning journey and opens iPhone rubric and theory quiz modals (MOS-BUG-182)', () => {
+    render(<PilotAssessmentCertSopDetail sessions={MOCK_SESSIONS} />);
+
+    // Giang Hồ journey card
+    expect(screen.getByTestId('giang-ho-learning-journey-card')).toBeInTheDocument();
+    expect(screen.getAllByText(/Chuyên Viên Giang Hồ/i).length).toBeGreaterThan(0);
+
+    // Click to open iPhone rubric
+    const openRubricBtn = screen.getByTestId('btn-open-iphone-rubric-quick');
+    fireEvent.click(openRubricBtn);
+    expect(screen.getByTestId('iphone-exam-rubric-view')).toBeInTheDocument();
+
+    // Click to open theory quiz
+    const openTheoryBtn = screen.getByTestId('btn-open-theory-quiz-quick');
+    fireEvent.click(openTheoryBtn);
+    expect(screen.getByText(/Bài Thi Lý Thuyết Kỹ Thuật Uốn Mi/i)).toBeInTheDocument();
+  });
 });

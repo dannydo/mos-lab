@@ -49,6 +49,7 @@ export default function PilotDarkLashesPage() {
   const [metrics, setMetrics] = useState<PilotMetricsSummary | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'sop' | 'sop-preparation'>('sessions');
   const [activeSopSubView, setActiveSopSubView] = useState<'overview' | 'module-2-detail'>('overview');
+  const [sopInitialModuleId, setSopInitialModuleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -58,6 +59,9 @@ export default function PilotDarkLashesPage() {
         setActiveTab('sop');
       } else if (tabParam === 'sop-preparation' || tabParam === 'sop-prep') {
         setActiveTab('sop-preparation');
+      } else if (tabParam === 'exam' || tabParam === 'assessment' || params.get('module') === 'assessment') {
+        setActiveTab('sop');
+        setSopInitialModuleId('assessment');
       }
       if (tabParam === 'sop-detail' || params.get('subview') === 'module-2') {
         setActiveTab('sop');
@@ -533,6 +537,7 @@ export default function PilotDarkLashesPage() {
                     sessions={sessions}
                     onOpenSessionFlow={handleOpenFlow}
                     onViewSopDetail={() => setActiveSopSubView('module-2-detail')}
+                    initialModuleId={sopInitialModuleId}
                   />
                 )}
               </div>
