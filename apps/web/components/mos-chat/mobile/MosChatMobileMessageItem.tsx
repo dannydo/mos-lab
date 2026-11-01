@@ -21,12 +21,13 @@ import {
   VolumeX,
   Copy,
   Users,
+  SmilePlus,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
-import { parsePureStickerMessage, MosChatStickerVisual } from '../mos-chat-stickers';
+import { parsePureStickerMessage, MosChatStickerVisual, parseStickerReactionKey } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
@@ -614,6 +615,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {Object.entries(message.reactions).map(([emoji, count]) => {
               if (count <= 0) return null;
               const isReacted = hasUserReacted(message, emoji);
+              const stickerReaction = parseStickerReactionKey(emoji);
               return (
                 <button
                   key={emoji}
@@ -629,9 +631,14 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                       : 'bg-slate-800/90 border border-slate-700 text-slate-200'
                   }`}
                   title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
+                  aria-label={isReacted ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
                 >
-                  <span>{emoji}</span>
-                  <span className={`text-[10px] font-semibold tabular-nums ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}>
+                  {stickerReaction ? (
+                    <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                  ) : (
+                    <span>{emoji}</span>
+                  )}
+                  <span className={`text-[10px] font-semibold tabular-nums ${isReacted ? 'text-amber-300 font-bold' : 'text-slate-400'}`}>
                     {count}
                   </span>
                 </button>
@@ -647,6 +654,17 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
               aria-label="Xem người thả cảm xúc"
             >
               <Users className="w-3 h-3" />
+            </button>
+
+            {/* Button to add reaction */}
+            <button
+              type="button"
+              onClick={() => setSelectedMsgForAction(message)}
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-400 active:scale-95 transition-all shadow-sm"
+              aria-label="Thêm biểu cảm"
+              title="Thêm biểu cảm"
+            >
+              <SmilePlus className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
