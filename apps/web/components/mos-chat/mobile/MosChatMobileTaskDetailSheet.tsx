@@ -35,6 +35,7 @@ import { isCanonicalSuperAdminIdentity, isCvRole, isSuperAdminRole } from '@mos-
 import { useMosChat } from '../context/MosChatContext';
 import { Popconfirm, message as antdMessage } from 'antd';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { MosChatTaskInlineChecklist } from '../components/MosChatTaskInlineChecklist';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -397,6 +398,9 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               </div>
             );
           })()}
+
+          {/* Inline Checklist & Auto-Summarizer */}
+          <MosChatTaskInlineChecklist task={task} onUpdateTask={updateTask} isDark={true} />
 
           {/* Negotiation Banner if requested */}
           {hasNegotiation && (

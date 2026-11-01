@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Plus, Trash2, ListTodo, Loader2 } from 'lucide-react';
+import { Check, Plus, Trash2, ListTodo, Loader2, Sparkles } from 'lucide-react';
 import { Tooltip, Input, Progress } from 'antd';
 import type { MosChatTaskItem, UpdateMosChatTaskRequest } from '@mos-lab/shared';
 
@@ -18,12 +18,25 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
 }) => {
   const [quickTitle, setQuickTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [actingItemId, setActingItemId] = useState<string | null>(null);
 
   const checklist = task.checklist || [];
   const totalCount = checklist.length;
   const doneCount = checklist.filter((c) => c.done).length;
   const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+  const handleAutoSummarize = async () => {
+    if (isSummarizing) return;
+    setIsSummarizing(true);
+    try {
+      await onUpdateTask(task.id, {
+        checklistAction: 'auto_summarize',
+      });
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
 
   const handleToggle = async (itemId: string) => {
     if (actingItemId) return;
@@ -75,22 +88,58 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
       }}
     >
       {/* Header Bar */}
-      <div className="flex items-center justify-between gap-2 pb-1 border-b border-black/5 dark:border-white/5">
+      <div className="flex items-center justify-between gap-2 pb-1 border-b border-black/5 dark:border-white/5 flex-wrap">
         <div className="flex items-center gap-1.5 min-w-0">
           <ListTodo size={13} className="text-amber-500 shrink-0" />
           <span className="text-[11.5px] font-bold text-slate-800 dark:text-slate-200">Checklist đầu việc</span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0 text-[10.5px] font-bold tabular-nums">
-          <span
-            className={
-              percent === 100 ? 'text-emerald-500 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'
-            }
-          >
-            {doneCount}/{totalCount}
-          </span>
-          <span className="text-slate-400 text-[10px]">({percent}%)</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <Tooltip title="Đọc tin nhắn báo cáo công việc, tự động tóm tắt & thêm vào Checklist">
+            <button
+              type="button"
+              disabled={isSummarizing}
+              onClick={handleAutoSummarize}
+              aria-label="Tự động tóm tắt và thêm checklist"
+              className="px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-all bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-300 border border-purple-500/30 disabled:opacity-50"
+            >
+              {isSummarizing ? (
+                <Loader2 size={10} className="animate-spin shrink-0" />
+              ) : (
+                <Sparkles size={10} className="shrink-0" />
+              )}
+              <span>{isSummarizing ? 'Đang tóm tắt...' : 'Tóm tắt & Thêm Checklist'}</span>
+            </button>
+          </Tooltip>
+          <div className="flex items-center gap-1 shrink-0 text-[10.5px] font-bold tabular-nums">
+            <span
+              className={
+                percent === 100 ? 'text-emerald-500 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'
+              }
+            >
+              {doneCount}/{totalCount}
+            </span>
+            <span className="text-slate-400 text-[10px]">({percent}%)</span>
+          </div>
         </div>
       </div>
+
+      {/* Executive Summary Banner */}
+      {task.summary && (
+        <div
+          className="px-2.5 py-1.5 rounded-lg text-[11px] leading-relaxed flex items-start gap-1.5"
+          style={{
+            background: isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
+            border: isDark ? '1px solid rgba(139, 92, 246, 0.28)' : '1px solid rgba(139, 92, 246, 0.2)',
+            color: isDark ? '#e2e8f0' : '#334155',
+          }}
+        >
+          <Sparkles size={12} className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="font-bold text-purple-600 dark:text-purple-300 mr-1">Tóm tắt:</span>
+            <span>{task.summary}</span>
+          </div>
+        </div>
+      )}
 
       {/* Progress Bar */}
       {totalCount > 0 && (
@@ -105,10 +154,27 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
       )}
 
       {/* Checklist Items */}
-      <div className="space-y-1 max-h-[220px] overflow-y-auto pr-0.5">
+      <div className="space-y-1 max-h-[260px] overflow-y-auto pr-0.5">
         {checklist.length === 0 ? (
-          <div className="py-2 text-center text-[11px] text-slate-400 dark:text-slate-500 italic">
-            Chưa có đầu việc nào. Nhập mục việc bên dưới để bắt đầu.
+          <div className="py-2 text-center space-y-1.5">
+            <div className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+              Chưa có đầu việc nào. Nhập mục việc bên dưới để bắt đầu.
+            </div>
+            <div>
+              <button
+                type="button"
+                disabled={isSummarizing}
+                onClick={handleAutoSummarize}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 cursor-pointer transition-all bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-300 border border-purple-500/30 disabled:opacity-50"
+              >
+                {isSummarizing ? (
+                  <Loader2 size={11} className="animate-spin shrink-0" />
+                ) : (
+                  <Sparkles size={11} className="shrink-0" />
+                )}
+                <span>✨ Đọc công việc của {task.assigneeName || 'nhân sự'} & Tự động thêm Checklist</span>
+              </button>
+            </div>
           </div>
         ) : (
           checklist.map((item) => {

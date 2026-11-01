@@ -81,7 +81,7 @@ describe('MosChatTaskInlineChecklist UI Component', () => {
       fireEvent.change(input, { target: { value: 'Gửi ủy nhiệm chi cho kế toán' } });
     });
 
-    const addBtn = screen.getByRole('button', { name: /Thêm/i });
+    const addBtn = screen.getByRole('button', { name: /^Thêm$/i });
     await act(async () => {
       fireEvent.click(addBtn);
     });
@@ -91,6 +91,30 @@ describe('MosChatTaskInlineChecklist UI Component', () => {
         checklistAction: 'add',
         checklistItem: { title: 'Gửi ủy nhiệm chi cho kế toán' },
       });
+    });
+  });
+
+  it('renders task summary and triggers auto_summarize when clicking Tóm tắt & Thêm Checklist', async () => {
+    const handleUpdate = vi.fn().mockResolvedValue({});
+    const taskWithSummary: MosChatTaskItem = {
+      ...mockTask,
+      id: 'task-efe45',
+      assigneeName: 'Bảo Hân',
+      summary: '7 đầu việc (2 CS, 5 HR) · Tuần này: Triển khai 1 CV Lông ĐT',
+      checklist: [],
+    };
+
+    render(<MosChatTaskInlineChecklist task={taskWithSummary} onUpdateTask={handleUpdate} isDark={true} />);
+
+    expect(screen.getByText(/7 đầu việc \(2 CS, 5 HR\)/i)).toBeInTheDocument();
+
+    const summarizeBtn = screen.getByLabelText('Tự động tóm tắt và thêm checklist');
+    await act(async () => {
+      fireEvent.click(summarizeBtn);
+    });
+
+    expect(handleUpdate).toHaveBeenCalledWith('task-efe45', {
+      checklistAction: 'auto_summarize',
     });
   });
 });

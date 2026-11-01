@@ -169,6 +169,24 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
         </div>
       </div>
 
+      {/* Executive Summary Banner */}
+      {task.summary && !collapsed && (
+        <div
+          className="mx-3 mt-2 px-2.5 py-1.5 rounded-lg text-[11px] leading-relaxed flex items-start gap-1.5"
+          style={{
+            background: isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
+            border: isDark ? '1px solid rgba(139, 92, 246, 0.28)' : '1px solid rgba(139, 92, 246, 0.2)',
+            color: isDark ? '#e2e8f0' : '#334155',
+          }}
+        >
+          <Sparkles size={12} className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="font-bold text-purple-600 dark:text-purple-300 mr-1">Tóm tắt:</span>
+            <span>{task.summary}</span>
+          </div>
+        </div>
+      )}
+
       {/* Progress Bar */}
       {totalCount > 0 && (
         <div className="px-3 pt-1.5 pb-1">

@@ -63,6 +63,7 @@ export { calculateComboBonus } from './types/career-progression.js';
 export * from './types/pinned-links.js';
 export * from './types/telesale-target.js';
 export * from './types/mos-chat.js';
+export * from './utils/chat-checklist-summarizer.js';
 export * from './utils/phone.js';
 export * from './types/cash-flow.js';
 export * from './types/mos-notifications.js';

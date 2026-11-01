@@ -163,7 +163,13 @@ import type {
   MosChatWorkflowTemplate,
   SafeAny,
 } from '@mos-lab/shared';
-import { hexToRgba, isCanonicalSuperAdminIdentity, removeVietnameseTones } from '@mos-lab/shared';
+import {
+  hexToRgba,
+  isCanonicalSuperAdminIdentity,
+  removeVietnameseTones,
+  resolveBestSourceMessageForTaskChecklist,
+  summarizeAndExtractChecklistFromText,
+} from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { resolveMediaUrl } from '../../lib/api-base-url';
@@ -5839,6 +5845,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
 
     const tempTaskId = existingTask?.id || `task-${Date.now()}`;
+    const autoSummarized =
+      taskModalSourceMsg && !existingTask?.checklist?.length
+        ? summarizeAndExtractChecklistFromText({
+            rootText: taskModalSourceMsg.text,
+            rootSenderName: taskModalSourceMsg.senderName,
+            rootSenderId: taskModalSourceMsg.senderId,
+            replies: taskModalSourceMsg.thread || [],
+          })
+        : null;
+
+    const autoChecklistItems =
+      autoSummarized && autoSummarized.suggestions.length >= 2
+        ? autoSummarized.suggestions.map((s, idx) => ({
+            id: `chk-opt-${Date.now()}-${idx}`,
+            title: s.title,
+            done: false,
+            assigneeId: s.assigneeId ?? matchedAssignee?.id ?? null,
+            assigneeName: s.assigneeName ?? resolvedAssigneeName ?? null,
+            sourceReplyId: s.sourceReplyId ?? null,
+            createdBy: currentUser?.displayName || 'Danny Do',
+            createdAt: new Date().toISOString(),
+          }))
+        : existingTask?.checklist || [];
+
     const newTask: MosChatTaskItem = {
       ...(existingTask || {}),
       id: tempTaskId,
@@ -5848,6 +5878,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       sourceAuthorName:
         taskModalSourceMsg?.senderName || existingTask?.sourceAuthorName || currentUser?.displayName || 'Danny Do',
       title: cleanTitle,
+      summary:
+        autoSummarized && autoSummarized.suggestions.length >= 2
+          ? autoSummarized.summary
+          : existingTask?.summary || null,
       assigneeId: matchedAssignee?.id,
       assigneeName: resolvedAssigneeName,
       creatorName: currentUser?.displayName || 'Danny Do',
@@ -5860,7 +5894,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       done: false,
       fired: isNoReminder,
       createdAt: existingTask?.createdAt || new Date().toISOString(),
+      checklist: autoChecklistItems,
     };
+
+    if (autoChecklistItems.length > 0) {
+      setExpandedChecklistTaskIds((prev) => ({
+        ...prev,
+        [tempTaskId]: true,
+      }));
+    }
 
     setTasks((prev) => {
       if (existingTask) {
@@ -5904,9 +5946,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     antdMessage.success(
       existingTask
         ? `Đã cập nhật Task (${resolvedAssigneeName})`
-        : isNoReminder
-          ? `Đã giao Task cho ${resolvedAssigneeName}`
-          : `Đã giao Task & bật nhắc hẹn (${resolvedAssigneeName})`
+        : autoChecklistItems.length > 0
+          ? `Đã giao Task & tự động tạo ${autoChecklistItems.length} mục Checklist (${resolvedAssigneeName})`
+          : isNoReminder
+            ? `Đã giao Task cho ${resolvedAssigneeName}`
+            : `Đã giao Task & bật nhắc hẹn (${resolvedAssigneeName})`
     );
 
     try {
@@ -5922,9 +5966,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         deadline: deadlineIso,
         dueAt: deadlineIso,
         negotiationNote: cleanNegotiationNote,
+        autoSummarizeChecklist: true,
       });
       if (res?.task) {
         setTasks((prev) => prev.map((t) => (t.id === tempTaskId || t.id === res.task.id ? res.task : t)));
+        if (res.task.checklist && res.task.checklist.length > 0) {
+          setExpandedChecklistTaskIds((prev) => ({
+            ...prev,
+            [res.task.id]: true,
+          }));
+        }
       }
       notifyLivePeers();
     } catch (_) {}
@@ -5953,16 +6004,67 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleUpdateTask = useCallback(
     async (taskId: string, payload: UpdateMosChatTaskRequest) => {
       try {
+        if (payload.checklistAction === 'auto_summarize') {
+          setExpandedChecklistTaskIds((prev) => ({
+            ...prev,
+            [taskId]: true,
+          }));
+          // Optimistic client-side summarization before server round-trip
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id !== taskId) return t;
+              const targetConv = conversations.find((c) => c.id === t.conversationId) || activeConversation;
+              const bestMsg = resolveBestSourceMessageForTaskChecklist(targetConv, { task: t });
+              if (!bestMsg) return t;
+              const { summary, suggestions } = summarizeAndExtractChecklistFromText({
+                rootText: bestMsg.text,
+                rootSenderName: bestMsg.senderName,
+                rootSenderId: bestMsg.senderId,
+                replies: bestMsg.thread || [],
+              });
+              const existingChk = [...(t.checklist || [])];
+              for (const sug of suggestions) {
+                const exists = existingChk.some((c) => c.title.trim().toLowerCase() === sug.title.trim().toLowerCase());
+                if (!exists) {
+                  existingChk.push({
+                    id: `chk-opt-${Date.now()}-${existingChk.length}`,
+                    title: sug.title,
+                    done: false,
+                    assigneeId: sug.assigneeId ?? t.assigneeId ?? null,
+                    assigneeName: sug.assigneeName ?? t.assigneeName ?? null,
+                    sourceReplyId: sug.sourceReplyId ?? null,
+                    createdBy: currentUser?.displayName || 'Danny Do',
+                    createdAt: new Date().toISOString(),
+                  });
+                }
+              }
+              return {
+                ...t,
+                summary: summary || t.summary || null,
+                checklist: existingChk,
+              };
+            })
+          );
+        }
+
         const res = await apiClient.chat.updateTask(taskId, payload);
         if (res && res.task) {
           setTasks((prev) => prev.map((t) => (t.id === taskId ? res.task : t)));
+          if (payload.checklistAction === 'auto_summarize') {
+            const count = res.task.checklist?.length || 0;
+            antdMessage.success(
+              count > 0
+                ? `Đã tóm tắt công việc & cập nhật ${count} đầu việc vào Checklist!`
+                : 'Đã cập nhật bản tóm tắt công việc!'
+            );
+          }
         }
       } catch (err: any) {
         console.error('handleUpdateTask error:', err);
         antdMessage.error(err?.message || 'Không thể cập nhật công việc');
       }
     },
-    [antdMessage]
+    [antdMessage, conversations, activeConversation, currentUser?.displayName]
   );
 
   const handleSnoozeTask = async (taskId: string, snoozeSec = 600) => {
@@ -7217,6 +7319,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           {task.title}
         </div>
 
+        {/* Compact Summary Preview when Checklist Accordion is collapsed */}
+        {task.summary && !expandedChecklistTaskIds[task.id] && (
+          <div
+            onClick={() =>
+              setExpandedChecklistTaskIds((prev) => ({
+                ...prev,
+                [task.id]: true,
+              }))
+            }
+            role="button"
+            tabIndex={0}
+            className="px-2 py-1 rounded-lg text-[11px] leading-snug flex items-start gap-1.5 cursor-pointer transition-all hover:opacity-90"
+            style={{
+              background: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.07)',
+              border: isDark ? '1px solid rgba(139, 92, 246, 0.25)' : '1px solid rgba(139, 92, 246, 0.18)',
+              color: isDark ? '#cbd5e1' : '#334155',
+            }}
+          >
+            <Sparkles size={11} className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" />
+            <span className="line-clamp-2 flex-1 min-w-0">
+              <strong className="text-purple-500 dark:text-purple-300 mr-1">Tóm tắt:</strong>
+              {task.summary}
+            </span>
+          </div>
+        )}
+
         {/* Assignee-centric & Meta Row (People + Deadline) */}
         {(() => {
           const creator = task.sourceAuthorName || task.creatorName || 'Hệ thống';
@@ -7434,6 +7562,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {!isDone && (
+              <Tooltip title="Đọc tin nhắn công việc, tự động tóm tắt & thêm Checklist">
+                <button
+                  type="button"
+                  aria-label="Tự động tóm tắt và thêm checklist"
+                  onClick={() => handleUpdateTask(task.id, { checklistAction: 'auto_summarize' })}
+                  className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-purple-500/20 text-purple-400"
+                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                >
+                  <Sparkles size={11} />
+                </button>
+              </Tooltip>
+            )}
+
             {(!task.checklist || task.checklist.length === 0) && !isDone && (
               <Tooltip title="Thêm checklist cho công việc">
                 <button

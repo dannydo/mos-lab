@@ -8220,7 +8220,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1321
+        "line": 1323
       }
     },
     {
@@ -8234,7 +8234,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1406
+        "line": 1408
       }
     },
     {
@@ -8248,7 +8248,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1463
+        "line": 1465
       }
     },
     {
@@ -8262,7 +8262,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1538
+        "line": 1540
       }
     },
     {
@@ -8276,7 +8276,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1564
+        "line": 1566
       }
     },
     {
@@ -8290,7 +8290,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1654
+        "line": 1656
       }
     },
     {
@@ -8304,7 +8304,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1664
+        "line": 1666
       }
     },
     {
@@ -8318,7 +8318,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1674
+        "line": 1676
       }
     },
     {
@@ -8332,7 +8332,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1770
+        "line": 1772
       }
     },
     {
@@ -8346,7 +8346,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1775
+        "line": 1777
       }
     },
     {
@@ -8360,7 +8360,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1780
+        "line": 1782
       }
     },
     {
@@ -8374,7 +8374,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1917
+        "line": 1919
       }
     },
     {
@@ -8388,7 +8388,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2058
+        "line": 2060
       }
     },
     {
@@ -8402,7 +8402,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2142
+        "line": 2114
       }
     },
     {
@@ -8416,7 +8416,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2283
+        "line": 2255
       }
     },
     {
@@ -8430,7 +8430,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2372
+        "line": 2344
       }
     },
     {
@@ -8444,7 +8444,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2403
+        "line": 2375
       }
     },
     {
@@ -8458,7 +8458,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2485
+        "line": 2457
       }
     },
     {
@@ -8472,7 +8472,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2560
+        "line": 2532
       }
     },
     {
@@ -8486,7 +8486,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2642
+        "line": 2614
       }
     },
     {
@@ -8500,7 +8500,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2754
+        "line": 2726
       }
     },
     {
@@ -8514,7 +8514,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3014
+        "line": 3016
       }
     },
     {
@@ -8528,7 +8528,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3250
+        "line": 3295
       }
     },
     {
@@ -8542,7 +8542,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3299
+        "line": 3344
       }
     },
     {
@@ -8556,7 +8556,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3494
+        "line": 3539
       }
     },
     {
@@ -8570,7 +8570,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3578
+        "line": 3623
       }
     },
     {
@@ -8584,7 +8584,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3638
+        "line": 3683
       }
     },
     {
@@ -8598,7 +8598,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3682
+        "line": 3727
       }
     },
     {
@@ -8612,7 +8612,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3727
+        "line": 3772
       }
     },
     {
@@ -8626,7 +8626,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3833
+        "line": 3878
       }
     },
     {
@@ -8640,7 +8640,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3908
+        "line": 3953
       }
     },
     {
@@ -8654,7 +8654,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4014
+        "line": 4059
       }
     },
     {
@@ -8668,7 +8668,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4130
+        "line": 4175
       }
     },
     {
@@ -8682,7 +8682,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4211
+        "line": 4256
       }
     },
     {
@@ -8696,7 +8696,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4282
+        "line": 4327
       }
     },
     {
@@ -8710,7 +8710,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4305
+        "line": 4350
       }
     },
     {
@@ -8724,7 +8724,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4486
+        "line": 4531
       }
     },
     {
@@ -8738,7 +8738,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4663
+        "line": 4708
       }
     },
     {
@@ -8752,7 +8752,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4758
+        "line": 4803
       }
     },
     {
@@ -8766,7 +8766,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4771
+        "line": 4816
       }
     },
     {
@@ -8780,7 +8780,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4834
+        "line": 4879
       }
     },
     {
@@ -11192,6 +11192,62 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/financial-goals",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/financial-goals",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/financial-goals",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 8
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/financial-goals/months",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/financial-goals/months",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/financial-goals/months",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 29
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/financial-goals/config",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/financial-goals/config",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/financial-goals/config",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 48
+      }
+    },
+    {
+      "id": "route:POST:/api/kpi/financial-goals/config",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/financial-goals/config",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/financial-goals/config",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 72
+      }
+    },
+    {
       "id": "route:GET:/api/kpi/package-audit/list",
       "type": "FastifyRoute",
       "label": "GET /api/kpi/package-audit/list",
@@ -11426,7 +11482,7 @@
         "path": "/api/kpi/export-booker-salary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 240
+        "line": 242
       }
     },
     {
@@ -11440,7 +11496,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 606
+        "line": 608
       }
     },
     {
@@ -11454,7 +11510,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 612
+        "line": 614
       }
     },
     {
@@ -11468,7 +11524,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 653
+        "line": 655
       }
     },
     {
@@ -11482,7 +11538,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 672
+        "line": 674
       }
     },
     {
@@ -11496,7 +11552,7 @@
         "path": "/api/kpi/summary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 710
+        "line": 712
       }
     },
     {
@@ -11510,7 +11566,7 @@
         "path": "/api/kpi/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 870
+        "line": 872
       }
     },
     {
@@ -11524,7 +11580,7 @@
         "path": "/api/kpi/booker-appointments",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1174
+        "line": 1176
       }
     },
     {
@@ -11538,7 +11594,7 @@
         "path": "/api/kpi/trends",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1492
+        "line": 1494
       }
     },
     {
@@ -14231,6 +14287,18 @@
           "cashFlow.deleteEntry",
           "cashFlow.updateAccount"
         ]
+      }
+    },
+    {
+      "id": "page:/dashboard/financial-goals",
+      "type": "Component",
+      "label": "App Page: /dashboard/financial-goals",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/financial-goals/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/financial-goals",
+        "apiCallsCount": 2,
+        "apiCalls": ["financialGoals.getMonths", "financialGoals.getOverview"]
       }
     },
     {
@@ -24999,6 +25067,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:FinancialGoalKey",
+      "type": "SharedType",
+      "label": "FinancialGoalKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinancialGoalKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinancialGoalPacingStatus",
+      "type": "SharedType",
+      "label": "FinancialGoalPacingStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinancialGoalPacingStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinancialGoalItem",
+      "type": "SharedType",
+      "label": "FinancialGoalItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinancialGoalItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinancialGoalsConfigDto",
+      "type": "SharedType",
+      "label": "FinancialGoalsConfigDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinancialGoalsConfigDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinancialGoalDayBreakdown",
+      "type": "SharedType",
+      "label": "FinancialGoalDayBreakdown",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinancialGoalDayBreakdown",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinancialGoalsOverview",
+      "type": "SharedType",
+      "label": "FinancialGoalsOverview",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinancialGoalsOverview",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:FrontendIssueType",
       "type": "SharedType",
       "label": "FrontendIssueType",
@@ -33039,6 +33179,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatImageLightboxViewer.test",
+      "type": "UIComponent",
+      "label": "<MosChatImageLightboxViewer.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatImageLightboxViewer.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatImageLightboxViewer.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMathBlock.test",
       "type": "UIComponent",
       "label": "<MosChatMathBlock.test />",
@@ -33231,6 +33383,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatTaskInlineChecklist.test",
+      "type": "UIComponent",
+      "label": "<MosChatTaskInlineChecklist.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatTaskInlineChecklist.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatTaskInlineChecklist.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatThreadChecklist.test",
       "type": "UIComponent",
       "label": "<MosChatThreadChecklist.test />",
@@ -33239,6 +33403,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatThreadChecklist.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatThreadUtilities.test",
+      "type": "UIComponent",
+      "label": "<MosChatThreadUtilities.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatThreadUtilities.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatThreadUtilities.test",
         "isPrimitive": false
       }
     },
@@ -33287,6 +33463,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatDockedWindows",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatImageLightboxViewer",
+      "type": "UIComponent",
+      "label": "<MosChatImageLightboxViewer />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatImageLightboxViewer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatImageLightboxViewer",
         "isPrimitive": false
       }
     },
@@ -33359,6 +33547,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatSidebar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatTaskInlineChecklist",
+      "type": "UIComponent",
+      "label": "<MosChatTaskInlineChecklist />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatTaskInlineChecklist.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatTaskInlineChecklist",
         "isPrimitive": false
       }
     },
@@ -36499,8 +36699,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14568,
-        "lineCount": 409,
+        "sizeBytes": 14778,
+        "lineCount": 414,
         "ext": ".ts"
       }
     },
@@ -36525,7 +36725,7 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 113374,
+        "sizeBytes": 113380,
         "lineCount": 2846,
         "ext": ".ts"
       }
@@ -36811,8 +37011,8 @@
       "filePath": "apps/api/src/modules/chat/chat-task-checklist.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3155,
-        "lineCount": 102,
+        "sizeBytes": 7735,
+        "lineCount": 201,
         "ext": ".ts"
       }
     },
@@ -36876,8 +37076,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 188358,
-        "lineCount": 4898,
+        "sizeBytes": 190969,
+        "lineCount": 4943,
         "ext": ".ts"
       }
     },
@@ -38026,6 +38226,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/routes/financial-goals.routes.test.ts",
+      "type": "File",
+      "label": "financial-goals.routes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1825,
+        "lineCount": 62,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "type": "File",
+      "label": "financial-goals.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3993,
+        "lineCount": 98,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/routes/package-audit.routes.ts",
       "type": "File",
       "label": "package-audit.routes.ts",
@@ -38059,8 +38285,8 @@
       "filePath": "apps/api/src/modules/kpi/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 60187,
-        "lineCount": 1617,
+        "sizeBytes": 60317,
+        "lineCount": 1619,
         "ext": ".ts"
       }
     },
@@ -38243,6 +38469,32 @@
       "metadata": {
         "sizeBytes": 15217,
         "lineCount": 392,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/financial-goals.service.test.ts",
+      "type": "File",
+      "label": "financial-goals.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/financial-goals.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3762,
+        "lineCount": 122,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/financial-goals.service.ts",
+      "type": "File",
+      "label": "financial-goals.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/financial-goals.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14010,
+        "lineCount": 394,
         "ext": ".ts"
       }
     },
@@ -43025,8 +43277,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27509,
-        "lineCount": 612,
+        "sizeBytes": 27519,
+        "lineCount": 613,
         "ext": ".tsx"
       }
     },
@@ -43051,8 +43303,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 82255,
-        "lineCount": 1760,
+        "sizeBytes": 82263,
+        "lineCount": 1761,
         "ext": ".tsx"
       }
     },
@@ -43064,8 +43316,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36673,
-        "lineCount": 826,
+        "sizeBytes": 36641,
+        "lineCount": 824,
         "ext": ".tsx"
       }
     },
@@ -44292,6 +44544,71 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/financial-goals/components/FinancialGoalConfigModal.tsx",
+      "type": "File",
+      "label": "FinancialGoalConfigModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/financial-goals/components/FinancialGoalConfigModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9771,
+        "lineCount": 247,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/financial-goals/components/FinancialGoalDailyTable.tsx",
+      "type": "File",
+      "label": "FinancialGoalDailyTable.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/financial-goals/components/FinancialGoalDailyTable.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5877,
+        "lineCount": 191,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/financial-goals/components/FinancialGoalOverviewCards.tsx",
+      "type": "File",
+      "label": "FinancialGoalOverviewCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/financial-goals/components/FinancialGoalOverviewCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21153,
+        "lineCount": 548,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/financial-goals/components/__tests__/FinancialGoalOverviewCards.test.tsx",
+      "type": "File",
+      "label": "FinancialGoalOverviewCards.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/financial-goals/components/__tests__/FinancialGoalOverviewCards.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3183,
+        "lineCount": 110,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/financial-goals/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/financial-goals/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9893,
+        "lineCount": 280,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/funds/components/FundFormModal.tsx",
       "type": "File",
       "label": "FundFormModal.tsx",
@@ -44838,6 +45155,84 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/GiangHoLearningJourneyCard.test.tsx",
+      "type": "File",
+      "label": "GiangHoLearningJourneyCard.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/GiangHoLearningJourneyCard.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2811,
+        "lineCount": 65,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/GiangHoLearningJourneyCard.tsx",
+      "type": "File",
+      "label": "GiangHoLearningJourneyCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/GiangHoLearningJourneyCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16738,
+        "lineCount": 347,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/IphonePracticalExamRubric.test.tsx",
+      "type": "File",
+      "label": "IphonePracticalExamRubric.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/IphonePracticalExamRubric.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3993,
+        "lineCount": 102,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/IphonePracticalExamRubric.tsx",
+      "type": "File",
+      "label": "IphonePracticalExamRubric.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/IphonePracticalExamRubric.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 35443,
+        "lineCount": 753,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/LashLiftTheoryExamModal.test.tsx",
+      "type": "File",
+      "label": "LashLiftTheoryExamModal.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/LashLiftTheoryExamModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2032,
+        "lineCount": 51,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/LashLiftTheoryExamModal.tsx",
+      "type": "File",
+      "label": "LashLiftTheoryExamModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/LashLiftTheoryExamModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 35993,
+        "lineCount": 783,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
       "type": "File",
       "label": "PilotAssessmentCertSopDetail.test.tsx",
@@ -44845,8 +45240,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7864,
-        "lineCount": 194,
+        "sizeBytes": 8748,
+        "lineCount": 212,
         "ext": ".tsx"
       }
     },
@@ -44858,8 +45253,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 71772,
-        "lineCount": 1352,
+        "sizeBytes": 75277,
+        "lineCount": 1452,
         "ext": ".tsx"
       }
     },
@@ -45170,8 +45565,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24882,
-        "lineCount": 603,
+        "sizeBytes": 25208,
+        "lineCount": 608,
         "ext": ".tsx"
       }
     },
@@ -47165,6 +47560,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/financial-goals.api.ts",
+      "type": "File",
+      "label": "financial-goals.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/financial-goals.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1279,
+        "lineCount": 36,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/funds.api.ts",
       "type": "File",
       "label": "funds.api.ts",
@@ -47185,8 +47593,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1650,
-        "lineCount": 61,
+        "sizeBytes": 1772,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -47705,8 +48113,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2835,
-        "lineCount": 72,
+        "sizeBytes": 2933,
+        "lineCount": 74,
         "ext": ".ts"
       }
     },
@@ -48166,6 +48574,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/financial-goals.ts",
+      "type": "File",
+      "label": "financial-goals.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/financial-goals.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1491,
+        "lineCount": 60,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/frontend-telemetry.ts",
       "type": "File",
       "label": "frontend-telemetry.ts",
@@ -48251,8 +48672,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 26052,
-        "lineCount": 966,
+        "sizeBytes": 26274,
+        "lineCount": 979,
         "ext": ".ts"
       }
     },
@@ -48539,6 +48960,19 @@
       "metadata": {
         "sizeBytes": 6240,
         "lineCount": 208,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/utils/chat-checklist-summarizer.ts",
+      "type": "File",
+      "label": "chat-checklist-summarizer.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/chat-checklist-summarizer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 16308,
+        "lineCount": 449,
         "ext": ".ts"
       }
     },
@@ -53838,6 +54272,34 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/kpi/financial-goals:ws:apps/api",
+      "source": "route:GET:/api/kpi/financial-goals",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/financial-goals/months:ws:apps/api",
+      "source": "route:GET:/api/kpi/financial-goals/months",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/financial-goals/config:ws:apps/api",
+      "source": "route:GET:/api/kpi/financial-goals/config",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/financial-goals/config:ws:apps/api",
+      "source": "route:POST:/api/kpi/financial-goals/config",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/kpi/package-audit/list:ws:apps/api",
       "source": "route:GET:/api/kpi/package-audit/list",
       "target": "ws:apps/api",
@@ -55352,6 +55814,13 @@
     {
       "id": "edge:page:/dashboard/finance/cash-flow:ws:apps/web",
       "source": "page:/dashboard/finance/cash-flow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/financial-goals:ws:apps/web",
+      "source": "page:/dashboard/financial-goals",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -61587,6 +62056,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:FinancialGoalKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinancialGoalKey",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FinancialGoalPacingStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinancialGoalPacingStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FinancialGoalItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinancialGoalItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FinancialGoalsConfigDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinancialGoalsConfigDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FinancialGoalDayBreakdown:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinancialGoalDayBreakdown",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FinancialGoalsOverview:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinancialGoalsOverview",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:FrontendIssueType:ws:packages/shared",
       "source": "type:@mos-lab/shared:FrontendIssueType",
       "target": "ws:packages/shared",
@@ -67327,6 +67838,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatImageLightboxViewer.test:ws:apps/web",
+      "source": "uicomp:MosChatImageLightboxViewer.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatImageLightboxViewer.test:token:color:primary",
+      "source": "uicomp:MosChatImageLightboxViewer.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMathBlock.test:ws:apps/web",
       "source": "uicomp:MosChatMathBlock.test",
       "target": "ws:apps/web",
@@ -67551,6 +68076,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatTaskInlineChecklist.test:ws:apps/web",
+      "source": "uicomp:MosChatTaskInlineChecklist.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatTaskInlineChecklist.test:token:color:primary",
+      "source": "uicomp:MosChatTaskInlineChecklist.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatThreadChecklist.test:ws:apps/web",
       "source": "uicomp:MosChatThreadChecklist.test",
       "target": "ws:apps/web",
@@ -67560,6 +68099,20 @@
     {
       "id": "edge:uicomp:MosChatThreadChecklist.test:token:color:primary",
       "source": "uicomp:MosChatThreadChecklist.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatThreadUtilities.test:ws:apps/web",
+      "source": "uicomp:MosChatThreadUtilities.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatThreadUtilities.test:token:color:primary",
+      "source": "uicomp:MosChatThreadUtilities.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -67616,6 +68169,20 @@
     {
       "id": "edge:uicomp:MosChatDockedWindows:token:color:primary",
       "source": "uicomp:MosChatDockedWindows",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatImageLightboxViewer:ws:apps/web",
+      "source": "uicomp:MosChatImageLightboxViewer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatImageLightboxViewer:token:color:primary",
+      "source": "uicomp:MosChatImageLightboxViewer",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -67700,6 +68267,20 @@
     {
       "id": "edge:uicomp:MosChatSidebar:token:color:primary",
       "source": "uicomp:MosChatSidebar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatTaskInlineChecklist:ws:apps/web",
+      "source": "uicomp:MosChatTaskInlineChecklist",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatTaskInlineChecklist:token:color:primary",
+      "source": "uicomp:MosChatTaskInlineChecklist",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -70813,6 +71394,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/financial-goals.routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/routes/financial-goals.routes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/financial-goals.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/routes/package-audit.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/routes/package-audit.routes.ts",
       "target": "ws:packages/shared",
@@ -70892,6 +71487,20 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/cv-speed-seed.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/cv-speed-seed.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/financial-goals.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/financial-goals.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/financial-goals.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/financial-goals.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -72717,6 +73326,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/financial-goals/components/FinancialGoalConfigModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/financial-goals/components/FinancialGoalConfigModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/financial-goals/components/FinancialGoalDailyTable.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/financial-goals/components/FinancialGoalDailyTable.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/financial-goals/components/FinancialGoalOverviewCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/financial-goals/components/FinancialGoalOverviewCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/financial-goals/components/__tests__/FinancialGoalOverviewCards.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/financial-goals/components/__tests__/FinancialGoalOverviewCards.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/financial-goals/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/financial-goals/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/funds/components/FundFormModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/funds/components/FundFormModal.tsx",
       "target": "ws:packages/shared",
@@ -73727,6 +74371,13 @@
     {
       "id": "edge:file:apps/web/lib/api/customers.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/customers.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/financial-goals.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/financial-goals.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -76052,6 +76703,13 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi.service.ts:prisma:crm:CrmLashTypeBenchmark",
       "source": "file:apps/api/src/modules/kpi/services/cc-kpi.service.ts",
       "target": "prisma:crm:CrmLashTypeBenchmark",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/financial-goals.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/kpi/services/financial-goals.service.ts",
+      "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -82118,6 +82776,20 @@
       "label": "CALLS career.getConfig"
     },
     {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
       "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/telesale-target/config",
       "source": "page:/dashboard/career-path",
       "target": "route:POST:/api/kpi/telesale-target/config",
@@ -82842,6 +83514,34 @@
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/export-diamond/details",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/export-diamond/details",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/financial-goals",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/financial-goals",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/financial-goals/months",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/financial-goals/months",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/financial-goals/config",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -84398,6 +85098,27 @@
       "target": "route:PUT:/api/cash-flow/accounts/:id",
       "type": "API_CALL",
       "label": "CALLS cashFlow.updateAccount"
+    },
+    {
+      "id": "edge:page:/dashboard/financial-goals:route:GET:/api/campaigns/:id/shared-pool/overview",
+      "source": "page:/dashboard/financial-goals",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/overview",
+      "type": "API_CALL",
+      "label": "CALLS financialGoals.getOverview"
+    },
+    {
+      "id": "edge:page:/dashboard/financial-goals:route:GET:/api/kpi/financial-goals/months",
+      "source": "page:/dashboard/financial-goals",
+      "target": "route:GET:/api/kpi/financial-goals/months",
+      "type": "API_CALL",
+      "label": "CALLS financialGoals.getMonths"
+    },
+    {
+      "id": "edge:page:/dashboard/financial-goals:route:GET:/api/kpi/telesale-target/months",
+      "source": "page:/dashboard/financial-goals",
+      "target": "route:GET:/api/kpi/telesale-target/months",
+      "type": "API_CALL",
+      "label": "CALLS financialGoals.getMonths"
     },
     {
       "id": "edge:page:/dashboard/funds:route:POST:/api/chat/threads/:messageId/extract-checklist",
@@ -88358,6 +89079,34 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/export-diamond/details",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/export-diamond/details",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/financial-goals",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/financial-goals",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/financial-goals/months",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/financial-goals/months",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/financial-goals/config",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -93570,6 +94319,34 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/financial-goals",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/financial-goals",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/financial-goals/months",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/financial-goals/months",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/package-audit/list",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/package-audit/list",
@@ -95029,6 +95806,20 @@
       "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/cv-config",
       "source": "page:/dashboard/omicall",
       "target": "route:POST:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS omicall.deleteConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS omicall.deleteConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/omicall",
+      "target": "route:POST:/api/kpi/financial-goals/config",
       "type": "API_CALL",
       "label": "CALLS omicall.deleteConfig"
     },
@@ -102187,6 +102978,34 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/financial-goals",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/financial-goals",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/financial-goals/months",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/financial-goals/months",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/financial-goals/config",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/financial-goals/config",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/package-audit/list",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/package-audit/list",
@@ -103461,6 +104280,13 @@
       "label": "CALLS telesaleTarget.getOverview"
     },
     {
+      "id": "edge:page:/dashboard/telesale-target:route:GET:/api/kpi/financial-goals/months",
+      "source": "page:/dashboard/telesale-target",
+      "target": "route:GET:/api/kpi/financial-goals/months",
+      "type": "API_CALL",
+      "label": "CALLS telesaleTarget.getMonths"
+    },
+    {
       "id": "edge:page:/dashboard/telesale-target:route:GET:/api/kpi/telesale-target/months",
       "source": "page:/dashboard/telesale-target",
       "target": "route:GET:/api/kpi/telesale-target/months",
@@ -103539,31 +104365,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3738,
-    "totalEdges": 7845,
+    "totalNodes": 3772,
+    "totalEdges": 7901,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
-      "FastifyRoute": 744,
-      "Component": 64,
-      "SharedType": 1372,
+      "FastifyRoute": 748,
+      "Component": 65,
+      "SharedType": 1378,
       "DesignToken": 12,
-      "UIComponent": 323,
-      "File": 1038
+      "UIComponent": 328,
+      "File": 1056
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1566,
-      "HANDLES_ROUTE": 744,
-      "RENDERS": 387,
-      "USES_TOKEN": 325,
-      "IMPORTS": 581,
-      "QUERIES_MODEL": 423,
-      "API_CALL": 3819
+      "EXPORTS": 1572,
+      "HANDLES_ROUTE": 748,
+      "RENDERS": 393,
+      "USES_TOKEN": 330,
+      "IMPORTS": 591,
+      "QUERIES_MODEL": 424,
+      "API_CALL": 3843
     },
-    "fastifyRouteCount": 749,
+    "fastifyRouteCount": 753,
     "prismaModelCount": 182,
-    "nextPageCount": 64,
-    "sharedTypeCount": 1372
+    "nextPageCount": 65,
+    "sharedTypeCount": 1378
   },
   "routes": [
     {
@@ -107504,6 +108330,34 @@
       "method": "GET",
       "path": "/api/kpi/export-diamond/details",
       "filePath": "apps/api/src/modules/kpi/routes/export.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/financial-goals",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/financial-goals/months",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/financial-goals/config",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kpi/financial-goals/config",
+      "filePath": "apps/api/src/modules/kpi/routes/financial-goals.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"
     },

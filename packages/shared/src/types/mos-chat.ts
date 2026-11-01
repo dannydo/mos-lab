@@ -282,7 +282,14 @@ export interface MosChatTaskChecklistItem {
 }
 
 export type MosChatTaskActivityAction =
-  'CREATE_TASK' | 'ADD_ITEM' | 'TOGGLE_ITEM' | 'EDIT_ITEM' | 'DELETE_ITEM' | 'COMPLETE_TASK' | 'REOPEN_TASK';
+  | 'CREATE_TASK'
+  | 'ADD_ITEM'
+  | 'TOGGLE_ITEM'
+  | 'EDIT_ITEM'
+  | 'DELETE_ITEM'
+  | 'COMPLETE_TASK'
+  | 'REOPEN_TASK'
+  | 'SUMMARIZE_CHECKLIST';
 
 export interface MosChatTaskActivityLogItem {
   id: string;
@@ -300,6 +307,7 @@ export interface MosChatTaskItem {
   sourceMessageId?: string | null;
   sourceAuthorName?: string;
   title: string;
+  summary?: string | null;
   assigneeId?: number | string;
   assigneeName: string;
   creatorName: string;
@@ -551,6 +559,7 @@ export interface CreateMosChatTaskRequest {
   conversationId: string;
   sourceMessageId?: string | null;
   title: string;
+  summary?: string | null;
   assigneeId?: number | string;
   assigneeName: string;
   priority: MosChatTaskPriority;
@@ -567,6 +576,7 @@ export interface CreateMosChatTaskRequest {
     sourceReplyId?: string | null;
   }>;
   importRepliesAsChecklist?: boolean;
+  autoSummarizeChecklist?: boolean;
 }
 
 export interface CreateMosChatConversationRequest {
@@ -605,6 +615,7 @@ export interface UpdateMosChatNicknameRequest {
 
 export interface UpdateMosChatTaskRequest {
   title?: string;
+  summary?: string | null;
   assigneeId?: number | string;
   assigneeName?: string;
   priority?: MosChatTaskPriority;
@@ -623,7 +634,7 @@ export interface UpdateMosChatTaskRequest {
   archived?: boolean;
   triggerReminderNow?: boolean;
   checklist?: MosChatTaskChecklistItem[];
-  checklistAction?: 'add' | 'toggle' | 'edit' | 'delete' | 'reorder' | 'set';
+  checklistAction?: 'add' | 'toggle' | 'edit' | 'delete' | 'reorder' | 'set' | 'auto_summarize';
   checklistItem?: Partial<MosChatTaskChecklistItem>;
   checklistItemId?: string;
 }
@@ -631,6 +642,7 @@ export interface UpdateMosChatTaskRequest {
 export interface ExtractMosChatChecklistRequest {
   messageId: string;
   conversationId?: string;
+  taskId?: string;
 }
 
 export interface ExtractMosChatChecklistSuggestion {
@@ -642,6 +654,7 @@ export interface ExtractMosChatChecklistSuggestion {
 
 export interface ExtractMosChatChecklistResponse {
   success: boolean;
+  summary?: string | null;
   suggestions: ExtractMosChatChecklistSuggestion[];
 }
 

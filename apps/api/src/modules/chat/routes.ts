@@ -51,6 +51,8 @@ import {
   UploadMosChatImageResponse,
   isCanonicalSuperAdminIdentity,
   removeVietnameseTones,
+  resolveBestSourceMessageForTaskChecklist,
+  summarizeAndExtractChecklistFromText,
 } from '@mos-lab/shared';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 import { invalidateNotificationsCache } from '../notifications/routes.js';
@@ -2062,17 +2064,21 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const { messageId } = request.params as { messageId: string };
-      const body = (request.body || {}) as { conversationId?: string };
+      const body = (request.body || {}) as { conversationId?: string; taskId?: string };
       const user = request.user as JwtUserPayload;
 
-      const [{ conversations }, staffDirectory] = await Promise.all([
+      const [{ conversations, tasks }, staffDirectory] = await Promise.all([
         loadChatState(fastify),
         loadStaffDirectoryCached(fastify),
       ]);
 
+      const linkedTask = body.taskId ? tasks.find((t) => t.id === body.taskId) : null;
       let targetConv = conversations.find((c) => c.messages.some((m) => m.id === messageId));
       if (!targetConv && body.conversationId) {
         targetConv = conversations.find((c) => c.id === body.conversationId);
+      }
+      if (!targetConv && linkedTask?.conversationId) {
+        targetConv = conversations.find((c) => c.id === linkedTask.conversationId);
       }
       if (!targetConv) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
@@ -2081,58 +2087,24 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập hội thoại này' });
       }
 
-      const targetMsg = targetConv.messages.find((m) => m.id === messageId);
+      const targetMsg = resolveBestSourceMessageForTaskChecklist(targetConv, {
+        task: linkedTask,
+        messageId: messageId && messageId !== 'auto' ? messageId : linkedTask?.sourceMessageId || null,
+      });
       if (!targetMsg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn gốc' });
       }
 
-      const replies = (targetMsg.thread || []).filter((r) => !r.isDeleted && r.text?.trim() && !r.isAiBot);
-      const suggestions: ExtractMosChatChecklistSuggestion[] = [];
-
-      for (const rep of replies) {
-        const lines = rep.text
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean);
-        for (const line of lines) {
-          const clean = line
-            .replace(/^[-*•]\s*(\[[ xX]\])?\s*/, '')
-            .replace(/^\d+[.)]\s*/, '')
-            .trim();
-          if (clean.length >= 3 && !suggestions.some((s) => s.title.toLowerCase() === clean.toLowerCase())) {
-            suggestions.push({
-              title: clean.slice(0, 150),
-              assigneeName: rep.senderName,
-              assigneeId: rep.senderId,
-              sourceReplyId: rep.id,
-            });
-          }
-        }
-      }
-
-      if (suggestions.length === 0 && targetMsg.text?.trim()) {
-        const lines = targetMsg.text
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean);
-        for (const line of lines) {
-          const clean = line
-            .replace(/^[-*•]\s*(\[[ xX]\])?\s*/, '')
-            .replace(/^\d+[.)]\s*/, '')
-            .trim();
-          if (clean.length >= 3 && clean !== targetMsg.text.trim()) {
-            suggestions.push({
-              title: clean.slice(0, 150),
-              assigneeName: targetMsg.senderName,
-              assigneeId: targetMsg.senderId,
-              sourceReplyId: null,
-            });
-          }
-        }
-      }
+      const { summary, suggestions } = summarizeAndExtractChecklistFromText({
+        rootText: targetMsg.text,
+        rootSenderName: targetMsg.senderName,
+        rootSenderId: targetMsg.senderId,
+        replies: targetMsg.thread || [],
+      });
 
       return {
         success: true,
+        summary,
         suggestions,
       };
     }
@@ -2920,6 +2892,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       }
 
       const initialChecklist: MosChatTaskChecklistItem[] = [];
+      let initialSummary: string | null = typeof body.summary === 'string' ? body.summary.trim() || null : null;
+
       if (Array.isArray(body.checklist) && body.checklist.length > 0) {
         for (const item of body.checklist) {
           if (item && typeof item.title === 'string' && item.title.trim()) {
@@ -2953,6 +2927,36 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             }
           }
         }
+      } else if (body.autoSummarizeChecklist !== false && targetMsgId) {
+        const sourceMsg = conv.messages.find((m) => m.id === targetMsgId);
+        if (sourceMsg && !sourceMsg.isDeleted && !sourceMsg.isAiBot) {
+          const extracted = summarizeAndExtractChecklistFromText({
+            rootText: sourceMsg.text,
+            rootSenderName: sourceMsg.senderName,
+            rootSenderId: sourceMsg.senderId,
+            replies: sourceMsg.thread || [],
+          });
+          if (
+            extracted.suggestions.length >= 2 ||
+            (body.autoSummarizeChecklist === true && extracted.suggestions.length >= 1)
+          ) {
+            if (!initialSummary && extracted.summary) {
+              initialSummary = extracted.summary;
+            }
+            for (const sug of extracted.suggestions) {
+              initialChecklist.push({
+                id: `chk-${crypto.randomUUID().slice(0, 8)}`,
+                title: sug.title,
+                done: false,
+                assigneeId: sug.assigneeId ?? canonicalAssigneeId ?? null,
+                assigneeName: sug.assigneeName ?? canonicalAssigneeName ?? null,
+                sourceReplyId: sug.sourceReplyId ?? null,
+                createdBy: creatorName,
+                createdAt: now.toISOString(),
+              });
+            }
+          }
+        }
       }
 
       const initialActivityLog: MosChatTaskActivityLogItem[] = [
@@ -2968,10 +2972,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (initialChecklist.length > 0) {
         initialActivityLog.push({
           id: `act-${crypto.randomUUID().slice(0, 8)}`,
-          action: 'ADD_ITEM',
+          action: 'SUMMARIZE_CHECKLIST',
           actorId: user.id,
           actorName: creatorName,
-          description: `Khởi tạo ${initialChecklist.length} mục việc từ phản hồi subthread`,
+          description: `Tự động tóm tắt & khởi tạo ${initialChecklist.length} mục checklist`,
           timestamp: now.toISOString(),
         });
       }
@@ -2983,6 +2987,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         sourceMessageId: targetMsgId,
         sourceAuthorName,
         title,
+        summary: initialSummary,
         assigneeId: canonicalAssigneeId,
         assigneeName: canonicalAssigneeName,
         creatorName,
@@ -3038,6 +3043,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (typeof body.title === 'string' && body.title.trim()) {
         task.title = body.title.trim();
       }
+      if (body.summary !== undefined) {
+        task.summary = typeof body.summary === 'string' ? body.summary.trim() || null : null;
+      }
       if (body.assigneeId !== undefined) {
         task.assigneeId = body.assigneeId;
       }
@@ -3065,7 +3073,45 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       let activityDescription: string | null = null;
       let activityAction: MosChatTaskActivityAction | null = null;
 
-      if (body.checklistAction === 'add' && body.checklistItem?.title?.trim()) {
+      if (body.checklistAction === 'auto_summarize') {
+        const targetMsg = resolveBestSourceMessageForTaskChecklist(conv, { task });
+        if (targetMsg) {
+          const { summary, suggestions } = summarizeAndExtractChecklistFromText({
+            rootText: targetMsg.text,
+            rootSenderName: targetMsg.senderName,
+            rootSenderId: targetMsg.senderId,
+            replies: targetMsg.thread || [],
+          });
+          if (summary) {
+            task.summary = summary;
+          }
+          if (!task.sourceMessageId && targetMsg.id) {
+            task.sourceMessageId = targetMsg.id;
+          }
+          let addedCount = 0;
+          for (const sug of suggestions) {
+            const exists = task.checklist.some((c) => c.title.trim().toLowerCase() === sug.title.trim().toLowerCase());
+            if (!exists) {
+              task.checklist.push({
+                id: `chk-${crypto.randomUUID().slice(0, 8)}`,
+                title: sug.title,
+                done: false,
+                assigneeId: sug.assigneeId ?? task.assigneeId ?? null,
+                assigneeName: sug.assigneeName ?? task.assigneeName ?? null,
+                sourceReplyId: sug.sourceReplyId ?? null,
+                createdBy: actorName,
+                createdAt: now.toISOString(),
+              });
+              addedCount++;
+            }
+          }
+          activityAction = 'SUMMARIZE_CHECKLIST';
+          activityDescription =
+            addedCount > 0
+              ? `Tự động tóm tắt & thêm ${addedCount} đầu việc từ tin nhắn của ${targetMsg.senderName || task.assigneeName}`
+              : `Cập nhật bản tóm tắt công việc từ tin nhắn của ${targetMsg.senderName || task.assigneeName}`;
+        }
+      } else if (body.checklistAction === 'add' && body.checklistItem?.title?.trim()) {
         const newItem: MosChatTaskChecklistItem = {
           id: `chk-${crypto.randomUUID().slice(0, 8)}`,
           title: body.checklistItem.title.trim(),
