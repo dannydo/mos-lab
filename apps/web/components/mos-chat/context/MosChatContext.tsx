@@ -34,12 +34,13 @@ import {
 } from '../constants/chat-constants';
 import { useMosChatBridgeListener } from '../store/mos-chat-bridge';
 import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from '../store/useChatRealtimeSync';
-import { formatBackendAiMessage } from '../utils/chat-helpers';
+import { formatBackendAiMessage, toggleReactionState, hasUserReacted as hasUserReactedHelper } from '../utils/chat-helpers';
 import type {
   MosChatActiveSubtab,
   MosChatContextValue,
   MosChatMobileView,
   MosChatSidebarFilter,
+  MosChatReactionUsersTarget,
 } from '../types/mos-chat-types';
 
 async function convertAttachmentToDataUrl(attachment?: MosChatImageAttachment): Promise<string | undefined> {
@@ -328,6 +329,34 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const [mobileView, setMobileView] = useState<MosChatMobileView>('inbox');
   const [selectedMsgForAction, setSelectedMsgForAction] = useState<MosChatMessage | null>(null);
   const [replyingToMessage, setReplyingToMessage] = useState<MosChatMessage | null>(null);
+  const [reactionUsersTarget, setReactionUsersTarget] = useState<MosChatReactionUsersTarget | null>(null);
+
+  const openReactionUsersSheet = useCallback(
+    (
+      target: {
+        id?: string;
+        messageId?: string;
+        replyId?: string;
+        reactions?: Record<string, number>;
+        reactionUsers?: Record<string, Array<number | string>>;
+      },
+      initialEmoji?: string
+    ) => {
+      const resolvedMsgId = target.messageId || target.id || '';
+      setReactionUsersTarget({
+        messageId: resolvedMsgId,
+        replyId: target.replyId,
+        reactions: target.reactions || {},
+        reactionUsers: target.reactionUsers || {},
+        initialEmoji,
+      });
+    },
+    []
+  );
+
+  const closeReactionUsersSheet = useCallback(() => {
+    setReactionUsersTarget(null);
+  }, []);
 
   const activeConversation = useMemo(() => {
     if (activeConvId === AI_COPILOT_CONV_ID) {
@@ -1027,13 +1056,29 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     [activeThreadMsg, activeConvId, activeConversation, currentUser, fetchBootstrap]
   );
 
-  // React to message
+  const currentUserReactionKey = String(currentUser?.id || 'me');
+
+  const hasUserReactedMsg = useCallback(
+    (
+      target:
+        | { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
+        | undefined
+        | null,
+      emoji: string
+    ): boolean => {
+      return hasUserReactedHelper(target, emoji, currentUserReactionKey);
+    },
+    [currentUserReactionKey]
+  );
+
+  // React to message (supports toggle/cancel reaction)
   const reactToMessage = useCallback(
     async (msgId: string, emoji: string, replyId?: string) => {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate?.(10);
       }
 
+      // 1. Optimistic update using toggleReactionState
       setAllMessagesByConv((prev) => {
         const currentList = prev[activeConvId] || [];
         const nextList = currentList.map((m) => {
@@ -1043,21 +1088,33 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           if (replyId && m.thread) {
             const nextThread = m.thread.map((r) => {
               if (r.id !== replyId) return r;
-              const currentCount = r.reactions?.[emoji] || 0;
-              const nextReactions = { ...r.reactions };
-              nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
-              return { ...r, reactions: nextReactions };
+              return toggleReactionState(r, emoji, currentUserReactionKey);
             });
             return { ...m, thread: nextThread };
           }
 
-          const currentCount = m.reactions?.[emoji] || 0;
-          const nextReactions = { ...m.reactions };
-          nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
-          return { ...m, reactions: nextReactions };
+          return toggleReactionState(m, emoji, currentUserReactionKey);
         });
         return { ...prev, [activeConvId]: nextList };
       });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConvId) return c;
+          const nextMessages = (c.messages || []).map((m) => {
+            if (m.id !== msgId) return m;
+            if (replyId && m.thread) {
+              const nextThread = m.thread.map((r) => {
+                if (r.id !== replyId) return r;
+                return toggleReactionState(r, emoji, currentUserReactionKey);
+              });
+              return { ...m, thread: nextThread };
+            }
+            return toggleReactionState(m, emoji, currentUserReactionKey);
+          });
+          return { ...c, messages: nextMessages };
+        })
+      );
 
       setActiveThreadMsg((prev) => {
         if (!prev) return null;
@@ -1065,29 +1122,93 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           if (replyId && prev.thread) {
             const nextThread = prev.thread.map((r) => {
               if (r.id !== replyId) return r;
-              const currentCount = r.reactions?.[emoji] || 0;
-              const nextReactions = { ...r.reactions };
-              nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
-              return { ...r, reactions: nextReactions };
+              return toggleReactionState(r, emoji, currentUserReactionKey);
             });
             return { ...prev, thread: nextThread };
           } else if (!replyId) {
-            const currentCount = prev.reactions?.[emoji] || 0;
-            const nextReactions = { ...prev.reactions };
-            nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
-            return { ...prev, reactions: nextReactions };
+            return toggleReactionState(prev, emoji, currentUserReactionKey);
           }
         }
         return prev;
       });
 
+      // Update reactionUsersTarget if currently viewing this message/reply
+      setReactionUsersTarget((prev) => {
+        if (!prev || prev.messageId !== msgId || prev.replyId !== replyId) return prev;
+        return toggleReactionState(prev, emoji, currentUserReactionKey);
+      });
+
+      // 2. Call backend API and sync returned reactions / reactionUsers
       try {
-        await apiClient.chat.reactToMessage(msgId, activeConvId, emoji, replyId);
+        const res = await apiClient.chat.reactToMessage(msgId, activeConvId, emoji, replyId);
+        if (res?.success && res.reactions) {
+          const serverReactions = res.reactions;
+          const serverReactionUsers = res.reactionUsers || {};
+
+          setAllMessagesByConv((prev) => {
+            const currentList = prev[activeConvId] || [];
+            const nextList = currentList.map((m) => {
+              if (m.id !== msgId) return m;
+              if (replyId && m.thread) {
+                const nextThread = m.thread.map((r) => {
+                  if (r.id !== replyId) return r;
+                  return { ...r, reactions: serverReactions, reactionUsers: serverReactionUsers };
+                });
+                return { ...m, thread: nextThread };
+              }
+              return { ...m, reactions: serverReactions, reactionUsers: serverReactionUsers };
+            });
+            return { ...prev, [activeConvId]: nextList };
+          });
+
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id !== activeConvId) return c;
+              const nextMessages = (c.messages || []).map((m) => {
+                if (m.id !== msgId) return m;
+                if (replyId && m.thread) {
+                  const nextThread = m.thread.map((r) => {
+                    if (r.id !== replyId) return r;
+                    return { ...r, reactions: serverReactions, reactionUsers: serverReactionUsers };
+                  });
+                  return { ...m, thread: nextThread };
+                }
+                return { ...m, reactions: serverReactions, reactionUsers: serverReactionUsers };
+              });
+              return { ...c, messages: nextMessages };
+            })
+          );
+
+          setActiveThreadMsg((prev) => {
+            if (!prev) return null;
+            if (prev.id === msgId) {
+              if (replyId && prev.thread) {
+                const nextThread = prev.thread.map((r) => {
+                  if (r.id !== replyId) return r;
+                  return { ...r, reactions: serverReactions, reactionUsers: serverReactionUsers };
+                });
+                return { ...prev, thread: nextThread };
+              } else if (!replyId) {
+                return { ...prev, reactions: serverReactions, reactionUsers: serverReactionUsers };
+              }
+            }
+            return prev;
+          });
+
+          setReactionUsersTarget((prev) => {
+            if (!prev || prev.messageId !== msgId || prev.replyId !== replyId) return prev;
+            return {
+              ...prev,
+              reactions: serverReactions,
+              reactionUsers: serverReactionUsers,
+            };
+          });
+        }
       } catch {
         // ignore
       }
     },
-    [activeConvId]
+    [activeConvId, currentUserReactionKey]
   );
 
   // Toggle pin message
@@ -1754,6 +1875,10 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       isLoadingMessages,
       sendMessage,
       reactToMessage,
+      hasUserReacted: hasUserReactedMsg,
+      reactionUsersTarget,
+      openReactionUsersSheet,
+      closeReactionUsersSheet,
       togglePinMessage,
       deleteMessage,
       deleteThreadReply,
@@ -1814,6 +1939,10 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       isLoadingMessages,
       sendMessage,
       reactToMessage,
+      hasUserReactedMsg,
+      reactionUsersTarget,
+      openReactionUsersSheet,
+      closeReactionUsersSheet,
       togglePinMessage,
       deleteMessage,
       deleteThreadReply,

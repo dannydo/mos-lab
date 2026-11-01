@@ -21,6 +21,14 @@ export type MosChatMobileView = 'inbox' | 'room' | 'thread';
 export type MosChatSidebarFilter = 'all' | 'unread' | 'spaces' | 'dms';
 export type MosChatActiveSubtab = 'chat' | 'tasks' | 'pinned';
 
+export interface MosChatReactionUsersTarget {
+  messageId: string;
+  replyId?: string;
+  reactions?: Record<string, number>;
+  reactionUsers?: Record<string, Array<number | string>>;
+  initialEmoji?: string;
+}
+
 export interface MosChatContextValue {
   // Authentication & Directory
   currentUser: SafeAny;
@@ -59,6 +67,25 @@ export interface MosChatContextValue {
     }
   ) => Promise<boolean>;
   reactToMessage: (msgId: string, emoji: string, replyId?: string) => Promise<void>;
+  hasUserReacted: (
+    target:
+      | { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
+      | undefined
+      | null,
+    emoji: string
+  ) => boolean;
+  reactionUsersTarget: MosChatReactionUsersTarget | null;
+  openReactionUsersSheet: (
+    target: {
+      id?: string;
+      messageId?: string;
+      replyId?: string;
+      reactions?: Record<string, number>;
+      reactionUsers?: Record<string, Array<number | string>>;
+    },
+    initialEmoji?: string
+  ) => void;
+  closeReactionUsersSheet: () => void;
   togglePinMessage: (msgId: string) => Promise<void>;
   deleteMessage: (msgId: string) => Promise<void>;
   deleteThreadReply: (parentMsgId: string, replyId: string) => Promise<void>;

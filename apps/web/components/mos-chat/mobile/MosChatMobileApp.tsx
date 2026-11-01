@@ -17,6 +17,7 @@ import { MosChatMobileStream } from './MosChatMobileStream';
 import { MosChatMobileComposer } from './MosChatMobileComposer';
 import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
+import { MosChatMobileReactionUsersSheet } from './MosChatMobileReactionUsersSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
 import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
@@ -689,6 +690,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onEditMessage={(msg) => setEditingMessage(msg)}
         onOpenMoveThread={(msg) => setMovingMsgForThread(msg)}
       />
+
+      {/* Reaction Users Bottom Sheet (Xem ai đã react) */}
+      <MosChatMobileReactionUsersSheet />
 
       {/* Move / Merge to Thread Modals */}
       <MosChatMobileMoveThreadModal

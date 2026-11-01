@@ -1,7 +1,19 @@
 'use client';
 
 import React from 'react';
-import { MessageSquareReply, Copy, Pin, CheckSquare, Trash2, Share2, X, Pencil, CornerDownRight } from 'lucide-react';
+import {
+  MessageSquareReply,
+  Copy,
+  Pin,
+  CheckSquare,
+  Trash2,
+  Share2,
+  X,
+  Pencil,
+  CornerDownRight,
+  Users,
+  ChevronRight,
+} from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -25,9 +37,19 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   onEditMessage,
   onOpenMoveThread,
 }) => {
-  const { reactToMessage, togglePinMessage, deleteMessage, setReplyingToMessage, currentUser } = useMosChat();
+  const {
+    reactToMessage,
+    hasUserReacted,
+    openReactionUsersSheet,
+    togglePinMessage,
+    deleteMessage,
+    setReplyingToMessage,
+    currentUser,
+  } = useMosChat();
 
   if (!message) return null;
+
+  const totalReactions = Object.values(message.reactions || {}).reduce((sum, count) => sum + count, 0);
 
   const isMe = isUserMessageOwner(message, currentUser);
   const isDannyAccount =
@@ -89,20 +111,48 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
 
         {/* Quick Reaction Pills */}
         <div className="flex items-center justify-around bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
-          {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => handleEmojiClick(emoji)}
-              className="text-2xl p-1 active:scale-125 transition-transform"
-            >
-              {emoji}
-            </button>
-          ))}
+          {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+            const isReacted = hasUserReacted(message, emoji);
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => handleEmojiClick(emoji)}
+                className={`text-2xl p-1.5 rounded-xl active:scale-125 transition-all ${
+                  isReacted
+                    ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm'
+                    : 'hover:bg-slate-700/50'
+                }`}
+                title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
+              >
+                {emoji}
+              </button>
+            );
+          })}
         </div>
 
         {/* Actions List */}
         <div className="space-y-1 divide-y divide-slate-800/60">
+          {totalReactions > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                openReactionUsersSheet(message);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-slate-200 bg-slate-800/50 hover:bg-slate-800 rounded-xl transition-colors active:scale-98 border border-slate-700/40 mb-1"
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-4 h-4 text-amber-400" />
+                <span className="font-semibold text-amber-300">Xem người đã thả cảm xúc</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <span className="tabular-nums font-bold text-amber-400">{totalReactions}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              </div>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleReply}

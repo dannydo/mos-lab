@@ -20,6 +20,7 @@ import {
   Volume2,
   VolumeX,
   Copy,
+  Users,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -46,6 +47,8 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
     const {
       currentUser,
       reactToMessage,
+      hasUserReacted,
+      openReactionUsersSheet,
       setSelectedMsgForAction,
       setReplyingToMessage,
       messages,
@@ -607,21 +610,44 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
         {/* Reactions Bar Below Bubble */}
         {!message.isDeleted && message.reactions && Object.keys(message.reactions).length > 0 && (
-          <div className={`flex flex-wrap items-center gap-1 mt-1 px-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+          <div className={`flex flex-wrap items-center gap-1.5 mt-1 px-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
             {Object.entries(message.reactions).map(([emoji, count]) => {
               if (count <= 0) return null;
+              const isReacted = hasUserReacted(message, emoji);
               return (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => reactToMessage(message.id, emoji)}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-slate-800/90 border border-slate-700 text-slate-200 shadow-sm active:scale-90 transition-transform"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    openReactionUsersSheet(message, emoji);
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs shadow-sm active:scale-90 transition-all ${
+                    isReacted
+                      ? 'bg-amber-500/20 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40 font-semibold'
+                      : 'bg-slate-800/90 border border-slate-700 text-slate-200'
+                  }`}
+                  title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                 >
                   <span>{emoji}</span>
-                  <span className="text-[10px] font-semibold tabular-nums text-slate-400">{count}</span>
+                  <span className={`text-[10px] font-semibold tabular-nums ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {count}
+                  </span>
                 </button>
               );
             })}
+
+            {/* Button to view who reacted */}
+            <button
+              type="button"
+              onClick={() => openReactionUsersSheet(message)}
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 active:scale-95 transition-all shadow-sm"
+              title="Xem những ai đã thả cảm xúc"
+              aria-label="Xem người thả cảm xúc"
+            >
+              <Users className="w-3 h-3" />
+            </button>
           </div>
         )}
 

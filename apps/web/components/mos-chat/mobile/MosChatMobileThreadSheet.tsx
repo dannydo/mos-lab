@@ -25,6 +25,8 @@ import {
   Sparkles,
   UserCheck,
   Plus,
+  Users,
+  ChevronRight,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
@@ -83,6 +85,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     threadReplies,
     sendThreadReply,
     reactToMessage,
+    hasUserReacted,
+    openReactionUsersSheet,
     deleteThreadReply,
     moveThreadItem,
     markThreadAsRead,
@@ -895,9 +899,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           {!activeThreadMsg.isDeleted &&
             activeThreadMsg.reactions &&
             Object.keys(activeThreadMsg.reactions).length > 0 && (
-              <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-800/80">
                 {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
                   if (count <= 0) return null;
+                  const isReacted = hasUserReacted(activeThreadMsg, emoji);
                   return (
                     <button
                       key={emoji}
@@ -906,13 +911,38 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         e.stopPropagation();
                         reactToMessage(activeThreadMsg.id, emoji);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition-all shadow-sm"
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openReactionUsersSheet(activeThreadMsg, emoji);
+                      }}
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium active:scale-95 transition-all shadow-sm ${
+                        isReacted
+                          ? 'bg-amber-500/20 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40 font-semibold'
+                          : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200'
+                      }`}
+                      title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                     >
                       <span>{emoji}</span>
-                      <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                      <span className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}>
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openReactionUsersSheet(activeThreadMsg);
+                  }}
+                  className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 active:scale-95 transition-all shadow-sm"
+                  title="Xem người đã thả cảm xúc"
+                  aria-label="Xem người thả cảm xúc"
+                >
+                  <Users className="w-3 h-3" />
+                </button>
               </div>
             )}
 
@@ -1476,9 +1506,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
               {/* Reaction Badges for Reply */}
               {!reply.isDeleted && reply.reactions && Object.keys(reply.reactions).length > 0 && (
-                <div className="flex flex-wrap items-center gap-1 mt-1 px-1">
+                <div className="flex flex-wrap items-center gap-1.5 mt-1 px-1">
                   {Object.entries(reply.reactions).map(([emoji, count]) => {
                     if (count <= 0) return null;
+                    const isReacted = hasUserReacted(reply, emoji);
                     return (
                       <button
                         key={emoji}
@@ -1487,13 +1518,51 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           e.stopPropagation();
                           reactToMessage(activeThreadMsg.id, emoji, reply.id);
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 active:scale-95 transition-all shadow-sm"
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openReactionUsersSheet(
+                            {
+                              messageId: activeThreadMsg.id,
+                              replyId: reply.id,
+                              reactions: reply.reactions,
+                              reactionUsers: reply.reactionUsers,
+                            },
+                            emoji
+                          );
+                        }}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium active:scale-95 transition-all shadow-sm ${
+                          isReacted
+                            ? 'bg-amber-500/20 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40 font-semibold'
+                            : 'bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200'
+                        }`}
+                        title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                       >
                         <span>{emoji}</span>
-                        <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                        <span className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}>
+                          {count}
+                        </span>
                       </button>
                     );
                   })}
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openReactionUsersSheet({
+                        messageId: activeThreadMsg.id,
+                        replyId: reply.id,
+                        reactions: reply.reactions,
+                        reactionUsers: reply.reactionUsers,
+                      });
+                    }}
+                    className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 active:scale-95 transition-all shadow-sm"
+                    title="Xem người đã thả cảm xúc"
+                    aria-label="Xem người thả cảm xúc"
+                  >
+                    <Users className="w-3 h-3" />
+                  </button>
                 </div>
               )}
             </div>
@@ -1820,23 +1889,58 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
             {/* Quick Reactions */}
             <div className="flex items-center justify-around bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
-              {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    reactToMessage(activeThreadMsg.id, emoji, actionSheetReply.id);
-                    setActionSheetReply(null);
-                  }}
-                  className="text-2xl p-1 active:scale-125 transition-transform"
-                >
-                  {emoji}
-                </button>
-              ))}
+              {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+                const isReacted = hasUserReacted(actionSheetReply, emoji);
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      reactToMessage(activeThreadMsg.id, emoji, actionSheetReply.id);
+                      setActionSheetReply(null);
+                    }}
+                    className={`text-2xl p-1.5 rounded-xl active:scale-125 transition-all ${
+                      isReacted
+                        ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm'
+                        : 'hover:bg-slate-700/50'
+                    }`}
+                    title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Actions List */}
             <div className="space-y-1 divide-y divide-slate-800/60">
+              {Object.values(actionSheetReply.reactions || {}).reduce((s, c) => s + c, 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const replyObj = actionSheetReply;
+                    setActionSheetReply(null);
+                    openReactionUsersSheet({
+                      messageId: activeThreadMsg.id,
+                      replyId: replyObj.id,
+                      reactions: replyObj.reactions,
+                      reactionUsers: replyObj.reactionUsers,
+                    });
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-slate-200 bg-slate-800/50 hover:bg-slate-800 rounded-xl transition-colors active:scale-98 border border-slate-700/40 mb-1"
+                >
+                  <div className="flex items-center gap-3">
+                    <Users className="w-4 h-4 text-amber-400" />
+                    <span className="font-semibold text-amber-300">Xem người đã thả cảm xúc</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <span className="tabular-nums font-bold text-amber-400">
+                      {Object.values(actionSheetReply.reactions || {}).reduce((s, c) => s + c, 0)}
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

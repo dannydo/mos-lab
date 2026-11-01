@@ -1074,3 +1074,69 @@ export function formatBackendAiMessage(
   };
 }
 
+/**
+ * Toggles a reaction on a message or reply object.
+ * If userKey already reacted with emoji, removes it. Otherwise, adds it.
+ */
+export function toggleReactionState<
+  T extends { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
+>(target: T, emoji: string, userKey: string): T {
+  const nextReactions = { ...(target.reactions || {}) };
+  const nextReactionUsers = { ...(target.reactionUsers || {}) };
+  const existingUsers = nextReactionUsers[emoji];
+  const currentCount = nextReactions[emoji] || 0;
+
+  if (Array.isArray(existingUsers)) {
+    const normalized = existingUsers.map(String);
+    if (normalized.includes(userKey)) {
+      const remaining = normalized.filter((u) => u !== userKey);
+      if (remaining.length === 0) {
+        delete nextReactions[emoji];
+        delete nextReactionUsers[emoji];
+      } else {
+        nextReactionUsers[emoji] = remaining;
+        nextReactions[emoji] = remaining.length;
+      }
+    } else {
+      const updated = [...normalized, userKey];
+      nextReactionUsers[emoji] = updated;
+      nextReactions[emoji] = updated.length;
+    }
+  } else if (currentCount > 0) {
+    // Legacy reaction without per-user tracking: clicking undoes/clears it
+    delete nextReactions[emoji];
+    delete nextReactionUsers[emoji];
+  } else {
+    nextReactionUsers[emoji] = [userKey];
+    nextReactions[emoji] = 1;
+  }
+
+  return {
+    ...target,
+    reactions: nextReactions,
+    reactionUsers: nextReactionUsers,
+  };
+}
+
+/**
+ * Checks if a specific userKey has reacted to the message or reply with given emoji.
+ */
+export function hasUserReacted(
+  target:
+    | { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
+    | undefined
+    | null,
+  emoji: string,
+  userKey: string
+): boolean {
+  if (!target) return false;
+  const count = target.reactions?.[emoji] || 0;
+  if (count <= 0) return false;
+  const users = target.reactionUsers?.[emoji];
+  if (!Array.isArray(users)) {
+    return false;
+  }
+  return users.map(String).includes(userKey);
+}
+
+
