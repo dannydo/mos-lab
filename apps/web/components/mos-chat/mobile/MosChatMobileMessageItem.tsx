@@ -178,7 +178,9 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
     };
 
     // Find quoted message if replying
-    const quotedMessage = (message as any).replyToId ? messages.find((m) => m.id === (message as any).replyToId) : null;
+    const quotedMessage =
+      message.replyTo ||
+      (message.replyToId ? messages.find((m) => m.id === message.replyToId) : null);
 
     // Check pure sticker message
     const stickerItem = parsePureStickerMessage(message.text);
@@ -311,10 +313,25 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {/* Quoted Message Preview */}
             {quotedMessage && (
               <div
-                className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 flex items-center gap-2 ${
+                role="button"
+                tabIndex={0}
+                aria-label={`Đi tới tin nhắn gốc của ${quotedMessage.senderName}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const targetEl = document.getElementById(`mos-chat-msg-${quotedMessage.id}`);
+                  if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.remove('mos-chat-quote-flash');
+                    requestAnimationFrame(() => {
+                      targetEl.classList.add('mos-chat-quote-flash');
+                      setTimeout(() => targetEl.classList.remove('mos-chat-quote-flash'), 900);
+                    });
+                  }
+                }}
+                className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 flex items-center gap-2 cursor-pointer transition-all active:scale-[0.98] ${
                   isMe
-                    ? 'bg-amber-500/20 border-amber-400 text-slate-200'
-                    : 'bg-slate-900/60 border-amber-500 text-slate-300'
+                    ? 'bg-amber-500/20 border-amber-400 text-slate-200 hover:bg-amber-500/30'
+                    : 'bg-slate-900/60 border-amber-500 text-slate-300 hover:bg-slate-900/90'
                 }`}
               >
                 <MosChatAvatar

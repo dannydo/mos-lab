@@ -1,6 +1,7 @@
 import type {
   MosChatConversation,
   MosChatMessage,
+  MosChatQuotedMessage,
   MosChatThreadReply,
   MosChatTaskItem,
   MosChatStaffMember,
@@ -64,6 +65,7 @@ export interface MosChatContextValue {
       customerCard?: MosChatCustomerCard | null;
       targetConvId?: string;
       replyToId?: string;
+      replyTo?: MosChatQuotedMessage | null;
     }
   ) => Promise<boolean>;
   reactToMessage: (msgId: string, emoji: string, replyId?: string) => Promise<void>;

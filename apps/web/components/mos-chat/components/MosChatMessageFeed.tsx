@@ -665,6 +665,9 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
             const isDropTarget = Boolean(
               draggingRootMsgId && draggingRootMsgId !== m.id && dragOverTargetMsgId === m.id && !m.isDeleted
             );
+            const quotedMessage =
+              m.replyTo ||
+              (m.replyToId ? filteredMessages.find((x) => x.id === m.replyToId) : null);
 
             return (
               <div
@@ -1017,6 +1020,36 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                                       <Volume2 size={10} />
                                       <span>@MAI đọc</span>
                                     </button>
+                                  </div>
+                                )}
+
+                                {quotedMessage && (
+                                  <div
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Đi tới tin nhắn gốc của ${quotedMessage.senderName}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const targetEl = document.getElementById(`mos-chat-msg-${quotedMessage.id}`);
+                                      if (targetEl) {
+                                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        targetEl.classList.remove('mos-chat-quote-flash');
+                                        requestAnimationFrame(() => {
+                                          targetEl.classList.add('mos-chat-quote-flash');
+                                          setTimeout(() => targetEl.classList.remove('mos-chat-quote-flash'), 900);
+                                        });
+                                      }
+                                    }}
+                                    className={`text-xs px-2.5 py-1.5 rounded-lg mb-1.5 border-l-2 flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-90 select-none ${
+                                      isMine
+                                        ? 'bg-amber-500/20 border-amber-400 text-slate-200'
+                                        : 'bg-black/10 dark:bg-white/5 border-amber-500 text-slate-300'
+                                    }`}
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-bold text-[11px] truncate text-amber-400">{quotedMessage.senderName}</p>
+                                      <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
+                                    </div>
                                   </div>
                                 )}
 
