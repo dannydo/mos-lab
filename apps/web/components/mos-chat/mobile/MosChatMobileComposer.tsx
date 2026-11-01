@@ -131,8 +131,19 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
 
     setIsSending(true);
     const sendText = trimmed || (stagedCustomerCard?.name ? `Đính kèm thẻ khách hàng ${stagedCustomerCard.name}` : '');
+    const replyMeta = replyingToMessage
+      ? {
+          id: replyingToMessage.id,
+          senderId: replyingToMessage.senderId,
+          senderName: replyingToMessage.senderName,
+          senderAvatar: replyingToMessage.senderAvatar,
+          text: replyingToMessage.text,
+        }
+      : undefined;
+
     const success = await sendMessage(sendText, {
       replyToId: replyingToMessage?.id,
+      replyTo: replyMeta,
       attachments: hasAttachments ? attachedImages : undefined,
       customerCard: stagedCustomerCard || undefined,
     });

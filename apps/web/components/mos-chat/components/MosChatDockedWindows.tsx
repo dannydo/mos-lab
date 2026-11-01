@@ -1077,6 +1077,44 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   </div>
                                 </div>
 
+                                {/* Quoted Message Preview */}
+                                {(() => {
+                                  const dockQuotedMessage =
+                                    m.replyTo ||
+                                    (m.replyToId ? conv?.messages.find((x) => x.id === m.replyToId) : null);
+                                  if (!dockQuotedMessage) return null;
+                                  return (
+                                    <div
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label={`Đi tới tin nhắn gốc của ${dockQuotedMessage.senderName}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (dockQuotedMessage.id) {
+                                          scrollToMessageAndFlash(
+                                            dockQuotedMessage.id,
+                                            dockMessagesContainerRefs.current[cid]
+                                          );
+                                        }
+                                      }}
+                                      className={`text-[11px] px-2 py-1 rounded mb-1.5 border-l-2 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-90 select-none ${
+                                        isDockMine
+                                          ? 'bg-neutral-900/10 border-neutral-900 text-neutral-900'
+                                          : 'bg-black/10 dark:bg-white/5 border-amber-500 text-slate-300'
+                                      }`}
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-[10.5px] truncate text-amber-500">
+                                          {dockQuotedMessage.senderName}
+                                        </p>
+                                        <p className="line-clamp-1 text-[10.5px] opacity-80">
+                                          {dockQuotedMessage.text}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+
                                 {/* Message Text */}
                                 {m.text && (
                                   <div className="break-words leading-relaxed text-[12.5px]">

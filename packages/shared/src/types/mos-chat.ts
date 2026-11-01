@@ -207,6 +207,14 @@ export interface MosChatThreadReply {
   buzzHistory?: MosChatBuzzEvent[];
 }
 
+export interface MosChatQuotedMessage {
+  id: string;
+  senderId?: number | string;
+  senderName: string;
+  senderAvatar?: string | null;
+  text: string;
+}
+
 export interface MosChatMessage {
   id: string;
   conversationId: string;
@@ -218,6 +226,8 @@ export interface MosChatMessage {
   text: string;
   timeLabel: string;
   createdAt: string;
+  replyToId?: string | null;
+  replyTo?: MosChatQuotedMessage | null;
   pinned?: boolean;
   reactions?: Record<string, number>;
   reactionUsers?: Record<string, Array<number | string>>;
@@ -464,6 +474,8 @@ export interface MosChatUnreadSummaryResponse {
 export interface CreateMosChatMessageRequest {
   conversationId: string;
   text: string;
+  replyToId?: string | null;
+  replyTo?: MosChatQuotedMessage | null;
   customerCard?: MosChatCustomerCard | null;
   attachments?: MosChatImageAttachment[];
   isAiBot?: boolean;

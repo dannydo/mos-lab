@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import type {
   MosChatConversation,
   MosChatMessage,
+  MosChatQuotedMessage,
   MosChatThreadReply,
   MosChatTaskItem,
   MosChatStaffMember,
@@ -764,6 +765,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         customerCard?: MosChatCustomerCard | null;
         targetConvId?: string;
         replyToId?: string;
+        replyTo?: MosChatQuotedMessage | null;
       }
     ): Promise<boolean> => {
       const targetId = options?.targetConvId || activeConvId;
@@ -849,6 +851,21 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       const tempId = `temp_${Date.now()}`;
       const effectiveText =
         trimmed || (options?.customerCard?.name ? `Đính kèm thẻ khách hàng ${options.customerCard.name}` : '');
+
+      let resolvedReplyTo = options?.replyTo || null;
+      if (options?.replyToId && !resolvedReplyTo) {
+        const found = (allMessagesByConv[targetId] || []).find((m) => m.id === options.replyToId);
+        if (found) {
+          resolvedReplyTo = {
+            id: found.id,
+            senderId: found.senderId,
+            senderName: found.senderName,
+            senderAvatar: found.senderAvatar,
+            text: found.text,
+          };
+        }
+      }
+
       const optimisticMsg: MosChatMessage = {
         id: tempId,
         conversationId: targetId,
@@ -859,6 +876,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         text: effectiveText,
         timeLabel: dayjs().format('HH:mm'),
         createdAt: new Date().toISOString(),
+        replyToId: options?.replyToId,
+        replyTo: resolvedReplyTo || undefined,
         customerCard: options?.customerCard || null,
         attachments: options?.attachments,
         reactions: {},
@@ -876,6 +895,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           text: effectiveText,
           customerCard: options?.customerCard || null,
           attachments: options?.attachments,
+          replyToId: options?.replyToId,
+          replyTo: resolvedReplyTo || undefined,
         });
         if (res && res.message) {
           setAllMessagesByConv((prev) => ({

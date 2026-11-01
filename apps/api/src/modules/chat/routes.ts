@@ -26,6 +26,7 @@ import {
   MosChatImageAttachment,
   MosChatImageMimeType,
   MosChatMessage,
+  MosChatQuotedMessage,
   MosChatReadReceiptEntry,
   MosChatStaffMember,
   MosChatTaskItem,
@@ -1850,6 +1851,21 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           };
         }
       }
+      const replyToId = body.replyToId ? String(body.replyToId).trim() : null;
+      let replyToData: MosChatQuotedMessage | null = body.replyTo || null;
+      if (replyToId && !replyToData) {
+        const found = conv.messages.find((m) => m.id === replyToId);
+        if (found) {
+          replyToData = {
+            id: found.id,
+            senderId: found.senderId,
+            senderName: found.senderName,
+            senderAvatar: found.senderAvatar,
+            text: found.text,
+          };
+        }
+      }
+
       const newMessage = {
         id: `msg-${crypto.randomUUID().slice(0, 8)}`,
         conversationId: conv.id,
@@ -1861,6 +1877,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         text: fallbackText,
         timeLabel: formatTimeLabel(now),
         createdAt: now.toISOString(),
+        replyToId: replyToId || undefined,
+        replyTo: replyToData || undefined,
         reactions: {},
         customerCard: body.customerCard || null,
         attachments: attachments.length > 0 ? attachments : undefined,
