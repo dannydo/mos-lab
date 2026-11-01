@@ -37,8 +37,8 @@ export interface MosChatThreadChecklistProps {
   activeThreadMessage: MosChatMessage;
   onToggleChecklistItem: (checklistItemId: string) => Promise<void> | void;
   onAddChecklistItem: (title: string, sourceReplyId?: string | null) => Promise<void> | void;
-  onDeleteChecklistItem: (checklistItemId: string) => Promise<void> | void;
-  onUpdateTask?: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<void> | void;
+  onDeleteChecklistItem: (checklistItemId: string) => Promise<unknown> | unknown;
+  onUpdateTask?: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<unknown> | unknown;
   onScrollToReply?: (replyId: string) => void;
   staffList?: MosChatStaffMember[];
   isDark: boolean;
@@ -60,6 +60,7 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [quickTitle, setQuickTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const isAddingRef = React.useRef(false);
 
   // Expand "Xem thêm / Thu gọn" per item
   const [expandedItemIds, setExpandedItemIds] = useState<Record<string, boolean>>({});
@@ -133,14 +134,17 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
 
   const handleQuickAdd = async () => {
     const trimmed = quickTitle.trim();
-    if (!trimmed) return;
+    if (!trimmed || isAdding || isAddingRef.current) return;
+    isAddingRef.current = true;
     setIsAdding(true);
+    setQuickTitle('');
     try {
       await onAddChecklistItem(trimmed, null);
-      setQuickTitle('');
     } catch (err: any) {
+      setQuickTitle(trimmed);
       message.error(err?.message || 'Không thể thêm mục checklist');
     } finally {
+      isAddingRef.current = false;
       setIsAdding(false);
     }
   };
@@ -566,7 +570,7 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                             <button
                               type="button"
                               aria-label={`Đặt hạn cho mục ${item.title}`}
-                              className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 cursor-pointer transition-all"
+                              className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 cursor-pointer transition-all"
                             >
                               <Calendar size={11} />
                             </button>
@@ -696,7 +700,7 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                           type="button"
                           onClick={() => handleStartEdit(item)}
                           aria-label={`Sửa mục ${item.title}`}
-                          className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                          className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
                         >
                           <Pencil size={11} />
                         </button>
@@ -727,7 +731,11 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
               placeholder="Thêm việc cần làm... (Enter để lưu)"
               value={quickTitle}
               onChange={(e) => setQuickTitle(e.target.value)}
-              onPressEnter={handleQuickAdd}
+              onPressEnter={(e) => {
+                if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
+                e.preventDefault();
+                handleQuickAdd();
+              }}
               disabled={isAdding}
               className="text-xs"
               style={{

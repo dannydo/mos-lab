@@ -248,7 +248,7 @@ export const chatApi = {
     },
     extractChecklist: async (
       messageId: string,
-      payload?: { conversationId?: string }
+      payload?: { conversationId?: string; taskId?: string }
     ): Promise<ExtractMosChatChecklistResponse> => {
       const res = await api.post(`/chat/threads/${encodeURIComponent(messageId)}/extract-checklist`, payload || {});
       return res.data;

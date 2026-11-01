@@ -23,7 +23,7 @@ import {
 
 export interface MosChatTaskInlineChecklistProps {
   task: MosChatTaskItem;
-  onUpdateTask: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<void> | void;
+  onUpdateTask: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<unknown> | unknown;
   isDark: boolean;
   token?: any;
   staffList?: MosChatStaffMember[];
@@ -152,6 +152,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
 }) => {
   const [quickTitle, setQuickTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const isAddingRef = React.useRef(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [actingItemId, setActingItemId] = useState<string | null>(null);
 
@@ -314,15 +315,19 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
 
   const handleAdd = async () => {
     const trimmed = quickTitle.trim();
-    if (!trimmed || isAdding) return;
+    if (!trimmed || isAdding || isAddingRef.current) return;
+    isAddingRef.current = true;
     setIsAdding(true);
+    setQuickTitle('');
     try {
       await onUpdateTask(task.id, {
         checklistAction: 'add',
         checklistItem: { title: trimmed },
       });
-      setQuickTitle('');
+    } catch {
+      setQuickTitle(trimmed);
     } finally {
+      isAddingRef.current = false;
       setIsAdding(false);
     }
   };
@@ -637,7 +642,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                           <button
                             type="button"
                             aria-label={`Đặt hạn cho mục ${item.title}`}
-                            className="opacity-0 group-hover/chk:opacity-100 p-1 rounded text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 cursor-pointer transition-all"
+                            className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 cursor-pointer transition-all"
                           >
                             <Calendar size={11} />
                           </button>
@@ -763,7 +768,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                         disabled={isItemActing}
                         onClick={() => handleStartEdit(item)}
                         aria-label={`Sửa mục ${item.title}`}
-                        className="opacity-0 group-hover/chk:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-all shrink-0"
+                        className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-all shrink-0"
                       >
                         <Pencil size={11} />
                       </button>
@@ -776,7 +781,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                         disabled={isItemActing}
                         onClick={() => handleDelete(item.id)}
                         aria-label={`Xoá mục ${item.title}`}
-                        className="opacity-0 group-hover/chk:opacity-100 p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-all shrink-0"
+                        className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-all shrink-0"
                       >
                         <Trash2 size={11} />
                       </button>
@@ -796,7 +801,11 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
           placeholder="Thêm đầu việc mới (nhấn Enter)..."
           value={quickTitle}
           onChange={(e) => setQuickTitle(e.target.value)}
-          onPressEnter={handleAdd}
+          onPressEnter={(e) => {
+            if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
+            e.preventDefault();
+            handleAdd();
+          }}
           disabled={isAdding}
           className="text-xs"
           style={{
