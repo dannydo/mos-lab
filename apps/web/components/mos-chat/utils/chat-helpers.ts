@@ -1074,3 +1074,25 @@ export function formatBackendAiMessage(
   };
 }
 
+/**
+ * Kiểm tra xem người dùng hiện tại đã thả cảm xúc (emoji/sticker) vào tin nhắn này hay chưa.
+ */
+export function hasUserReactedToMessage(
+  m: { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> } | undefined | null,
+  emoji: string,
+  currentUser: { id?: number | string; username?: string } | undefined | null
+): boolean {
+  if (!m) return false;
+  const count = m.reactions?.[emoji] || 0;
+  if (count <= 0) return false;
+  const users = m.reactionUsers?.[emoji];
+  if (!Array.isArray(users)) {
+    // Legacy reaction trước khi có per-user tracking — mặc định coi như đã thả
+    return true;
+  }
+  const userKey = String(currentUser?.id ?? currentUser?.username ?? '');
+  if (!userKey) return false;
+  return users.map(String).includes(userKey);
+}
+
+

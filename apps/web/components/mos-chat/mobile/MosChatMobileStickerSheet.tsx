@@ -13,6 +13,9 @@ export interface MosChatMobileStickerSheetProps {
   onSelectEmoji: (emoji: string) => void;
   currentText?: string;
   onSend?: () => void;
+  mode?: 'composer' | 'reaction';
+  hasUserReacted?: (key: string) => boolean;
+  title?: string;
 }
 
 export const MosChatMobileStickerSheet: React.FC<MosChatMobileStickerSheetProps> = ({
@@ -23,6 +26,9 @@ export const MosChatMobileStickerSheet: React.FC<MosChatMobileStickerSheetProps>
   onSelectEmoji,
   currentText,
   onSend,
+  mode = 'composer',
+  hasUserReacted,
+  title,
 }) => {
   if (!open) return null;
 
@@ -47,7 +53,9 @@ export const MosChatMobileStickerSheet: React.FC<MosChatMobileStickerSheetProps>
               <Smile className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-sm font-bold text-white tracking-tight">Biểu cảm & Nhãn dán</span>
+              <span className="text-sm font-bold text-white tracking-tight">
+                {title || (mode === 'reaction' ? 'Thả biểu cảm phản hồi' : 'Biểu cảm & Nhãn dán')}
+              </span>
               <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
                 mOS Chat
               </span>
@@ -73,19 +81,23 @@ export const MosChatMobileStickerSheet: React.FC<MosChatMobileStickerSheetProps>
             popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
             defaultPack={initialPack}
             width="100%"
+            hasUserReacted={hasUserReacted}
             onSelectSticker={(sticker) => {
               onSelectSticker(sticker);
               onClose();
             }}
             onSelectEmoji={(emoji) => {
               onSelectEmoji(emoji);
+              if (mode === 'reaction') {
+                onClose();
+              }
             }}
-            mode="composer"
+            mode={mode}
           />
         </div>
 
         {/* Live Composer Preview & Fast Send Bar */}
-        {currentText && currentText.trim().length > 0 && onSend && (
+        {mode === 'composer' && currentText && currentText.trim().length > 0 && onSend && (
           <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 px-1 shrink-0">
             <div className="flex-1 truncate text-xs text-slate-200 bg-slate-800/90 rounded-xl px-3 py-1.5 border border-slate-700/60">
               {currentText}

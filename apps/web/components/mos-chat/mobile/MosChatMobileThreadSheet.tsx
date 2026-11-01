@@ -25,18 +25,31 @@ import {
   Sparkles,
   UserCheck,
   Plus,
+  SmilePlus,
+  ArrowLeft,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
-import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
+import {
+  formatStickerToken,
+  parseStickerReactionKey,
+  MosChatStickerVisual,
+  MosChatStickerAndEmojiPicker,
+  type MosChatStickerItem,
+} from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
-import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
+import {
+  GOOGLE_CHAT_QUICK_EMOJIS,
+  WINGS_SIGNATURE_EMOJIS,
+  GOOGLE_CHAT_REACTION_EMOJIS,
+} from '../constants/chat-constants';
+import { hasUserReactedToMessage } from '../utils/chat-helpers';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { syncTextareaHeightSmart } from '../components/MosChatComposer';
 import { apiClient } from '../../../lib/api-client';
@@ -132,6 +145,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
   // Action sheet for long-pressed reply
   const [actionSheetReply, setActionSheetReply] = useState<MosChatThreadReply | null>(null);
+  const [actionSheetReplyShowFullPicker, setActionSheetReplyShowFullPicker] = useState<boolean>(false);
+  const [parentReactionPickerOpen, setParentReactionPickerOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    setActionSheetReplyShowFullPicker(false);
+  }, [actionSheetReply?.id]);
 
   // Edit reply modal state
   const [editingReply, setEditingReply] = useState<MosChatThreadReply | null>(null);
@@ -898,6 +917,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
                 {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
                   if (count <= 0) return null;
+                  const stickerReaction = parseStickerReactionKey(emoji);
+                  const reactedByMe = hasUserReactedToMessage(activeThreadMsg, emoji, currentUser);
                   return (
                     <button
                       key={emoji}
@@ -906,13 +927,40 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         e.stopPropagation();
                         reactToMessage(activeThreadMsg.id, emoji);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition-all shadow-sm"
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border active:scale-95 transition-all shadow-sm ${
+                        reactedByMe
+                          ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                          : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                      }`}
+                      aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
                     >
-                      <span>{emoji}</span>
-                      <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                      {stickerReaction ? (
+                        <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                      ) : (
+                        <span>{emoji}</span>
+                      )}
+                      <span
+                        className={`tabular-nums text-[11px] font-semibold ${
+                          reactedByMe ? 'text-amber-300 font-bold' : 'text-amber-400'
+                        }`}
+                      >
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setParentReactionPickerOpen(true);
+                  }}
+                  className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-400 hover:text-amber-400 active:scale-95 transition-all"
+                  aria-label="Thêm biểu cảm"
+                  title="Thêm biểu cảm"
+                >
+                  <SmilePlus className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
 
@@ -1479,6 +1527,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <div className="flex flex-wrap items-center gap-1 mt-1 px-1">
                   {Object.entries(reply.reactions).map(([emoji, count]) => {
                     if (count <= 0) return null;
+                    const stickerReaction = parseStickerReactionKey(emoji);
+                    const reactedByMe = hasUserReactedToMessage(reply, emoji, currentUser);
                     return (
                       <button
                         key={emoji}
@@ -1487,13 +1537,40 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           e.stopPropagation();
                           reactToMessage(activeThreadMsg.id, emoji, reply.id);
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 active:scale-95 transition-all shadow-sm"
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border active:scale-95 transition-all shadow-sm ${
+                          reactedByMe
+                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                            : 'bg-slate-800/90 hover:bg-slate-700/80 border-slate-700/60 text-slate-200'
+                        }`}
+                        aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
                       >
-                        <span>{emoji}</span>
-                        <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                        {stickerReaction ? (
+                          <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                        ) : (
+                          <span>{emoji}</span>
+                        )}
+                        <span
+                          className={`tabular-nums text-[11px] font-semibold ${
+                            reactedByMe ? 'text-amber-300 font-bold' : 'text-amber-400'
+                          }`}
+                        >
+                          {count}
+                        </span>
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActionSheetReply(reply);
+                    }}
+                    className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-400 hover:text-amber-400 active:scale-95 transition-all"
+                    aria-label="Thêm biểu cảm"
+                    title="Thêm biểu cảm"
+                  >
+                    <SmilePlus className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </div>
@@ -1818,36 +1895,112 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200">
             <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-3" />
 
-            {/* Quick Reactions */}
-            <div className="flex items-center justify-around bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
-              {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    reactToMessage(activeThreadMsg.id, emoji, actionSheetReply.id);
-                    setActionSheetReply(null);
-                  }}
-                  className="text-2xl p-1 active:scale-125 transition-transform"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+            {actionSheetReplyShowFullPicker ? (
+              <div>
+                {/* Header with Back & Close */}
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setActionSheetReplyShowFullPicker(false)}
+                    className="flex items-center gap-1.5 text-xs text-amber-400 font-semibold active:scale-95 px-2 py-1 rounded-lg hover:bg-slate-800"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Quay lại</span>
+                  </button>
+                  <span className="text-xs font-bold text-slate-200">Kho biểu cảm & nhãn dán</span>
+                  <button
+                    type="button"
+                    onClick={() => setActionSheetReply(null)}
+                    className="p-1 rounded-full text-slate-400 hover:text-white active:scale-95"
+                    aria-label="Đóng"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-            {/* Actions List */}
-            <div className="space-y-1 divide-y divide-slate-800/60">
-              <button
-                type="button"
-                onClick={() => {
-                  setReplyingToReply(actionSheetReply);
-                  setActionSheetReply(null);
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
-              >
-                <MessageSquareReply className="w-4 h-4 text-amber-400" />
-                <span className="font-medium">Trả lời trích dẫn trong luồng</span>
-              </button>
+                {/* Scrollable Picker Container */}
+                <div className="max-h-[58vh] overflow-y-auto">
+                  <MosChatStickerAndEmojiPicker
+                    isDark={true}
+                    borderColor="#334155"
+                    surfaceRaised="#0f172a"
+                    wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
+                    popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+                    defaultPack="wings"
+                    width="100%"
+                    mode="reaction"
+                    hasUserReacted={(key) => hasUserReactedToMessage(actionSheetReply, key, currentUser)}
+                    onSelectEmoji={(emoji) => {
+                      reactToMessage(activeThreadMsg.id, emoji, actionSheetReply.id);
+                      setActionSheetReply(null);
+                      setActionSheetReplyShowFullPicker(false);
+                    }}
+                    onSelectSticker={(sticker) => {
+                      reactToMessage(activeThreadMsg.id, formatStickerToken(sticker.id), actionSheetReply.id);
+                      setActionSheetReply(null);
+                      setActionSheetReplyShowFullPicker(false);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Quick Reactions + Full Library Trigger */}
+                <div className="flex items-center justify-between gap-1 bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
+                  <div className="flex items-center justify-around flex-1">
+                    {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+                      const reacted = hasUserReactedToMessage(actionSheetReply, emoji, currentUser);
+                      return (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => {
+                            reactToMessage(activeThreadMsg.id, emoji, actionSheetReply.id);
+                            setActionSheetReply(null);
+                          }}
+                          className={`text-2xl p-1 active:scale-125 transition-transform rounded-xl ${
+                            reacted ? 'bg-amber-500/25 ring-1 ring-amber-400/60' : ''
+                          }`}
+                          aria-label={reacted ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActionSheetReplyShowFullPicker(true)}
+                    className="w-9 h-9 rounded-full bg-slate-700/70 border border-slate-600/70 flex items-center justify-center text-amber-400 active:scale-110 transition-transform shadow-sm ml-1 shrink-0"
+                    aria-label="Mở kho biểu cảm và nhãn dán"
+                    title="Mở thư viện biểu cảm & icon"
+                  >
+                    <SmilePlus className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Actions List */}
+                <div className="space-y-1 divide-y divide-slate-800/60">
+                  <button
+                    type="button"
+                    onClick={() => setActionSheetReplyShowFullPicker(true)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                  >
+                    <SmilePlus className="w-4 h-4 text-amber-400" />
+                    <span className="font-medium">Thả biểu cảm khác (Emoji & Nhãn dán)...</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplyingToReply(actionSheetReply);
+                      setActionSheetReply(null);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                  >
+                    <MessageSquareReply className="w-4 h-4 text-amber-400" />
+                    <span className="font-medium">Trả lời trích dẫn trong luồng</span>
+                  </button>
 
               <button
                 type="button"
@@ -1987,9 +2140,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 );
               })()}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
+    </div>
+  )}
 
       {/* Edit Reply Modal */}
       {editingReply && activeThreadMsg && (
@@ -2075,6 +2230,23 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         onSelectAiCopilot={() => {
           setText((prev) => (prev ? `${prev} @MAI ` : '@MAI '));
           textareaRef.current?.focus();
+        }}
+      />
+
+      {/* Sticker & Emoji Bottom Sheet for Parent Message Reaction */}
+      <MosChatMobileStickerSheet
+        open={parentReactionPickerOpen}
+        onClose={() => setParentReactionPickerOpen(false)}
+        mode="reaction"
+        title="Thả biểu cảm vào tin nhắn gốc"
+        hasUserReacted={(key) => hasUserReactedToMessage(activeThreadMsg, key, currentUser)}
+        onSelectSticker={(sticker) => {
+          reactToMessage(activeThreadMsg.id, formatStickerToken(sticker.id));
+          setParentReactionPickerOpen(false);
+        }}
+        onSelectEmoji={(emoji) => {
+          reactToMessage(activeThreadMsg.id, emoji);
+          setParentReactionPickerOpen(false);
         }}
       />
     </div>

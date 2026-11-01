@@ -20,15 +20,16 @@ import {
   Volume2,
   VolumeX,
   Copy,
+  SmilePlus,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
-import { parsePureStickerMessage, MosChatStickerVisual } from '../mos-chat-stickers';
+import { parsePureStickerMessage, parseStickerReactionKey, MosChatStickerVisual } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
-import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
+import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner, hasUserReactedToMessage } from '../utils/chat-helpers';
 import { speakText, stopSpeaking } from '../../voice-assistant/speech-utils';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
@@ -610,18 +611,44 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           <div className={`flex flex-wrap items-center gap-1 mt-1 px-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
             {Object.entries(message.reactions).map(([emoji, count]) => {
               if (count <= 0) return null;
+              const stickerReaction = parseStickerReactionKey(emoji);
+              const reactedByMe = hasUserReactedToMessage(message, emoji, currentUser);
               return (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => reactToMessage(message.id, emoji)}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-slate-800/90 border border-slate-700 text-slate-200 shadow-sm active:scale-90 transition-transform"
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs shadow-sm active:scale-95 transition-all ${
+                    reactedByMe
+                      ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300'
+                      : 'bg-slate-800/90 border border-slate-700 text-slate-200'
+                  }`}
+                  aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
                 >
-                  <span>{emoji}</span>
-                  <span className="text-[10px] font-semibold tabular-nums text-slate-400">{count}</span>
+                  {stickerReaction ? (
+                    <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                  ) : (
+                    <span>{emoji}</span>
+                  )}
+                  <span
+                    className={`text-[10px] font-semibold tabular-nums ${
+                      reactedByMe ? 'text-amber-300 font-bold' : 'text-slate-400'
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
               );
             })}
+            <button
+              type="button"
+              onClick={() => setSelectedMsgForAction(message)}
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-400 hover:text-amber-400 active:scale-95 transition-all"
+              aria-label="Thêm biểu cảm"
+              title="Thêm biểu cảm"
+            >
+              <SmilePlus className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 
