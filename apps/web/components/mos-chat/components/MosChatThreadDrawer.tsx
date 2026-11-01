@@ -55,6 +55,94 @@ import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { findSourceMessage, scrollToMessageAndFlash } from '../utils/quoteUtils';
+import { syncTextareaHeightSmart } from './MosChatComposer';
+
+const ThreadReplyInlineEditor: React.FC<{
+  initialText: string;
+  setEditingText: (text: string) => void;
+  handleCancelEdit: () => void;
+  handleSaveEdit: () => void;
+  isSavingEdit: boolean;
+  isComposingRef: React.MutableRefObject<boolean>;
+  lastCompositionEndMsRef: React.MutableRefObject<number>;
+  surfaceRaised: string;
+  colorText: string;
+}> = React.memo(
+  ({
+    initialText,
+    setEditingText,
+    handleCancelEdit,
+    handleSaveEdit,
+    isSavingEdit,
+    isComposingRef,
+    lastCompositionEndMsRef,
+    surfaceRaised,
+    colorText,
+  }) => {
+    const [localText, setLocalText] = useState(initialText);
+    React.useEffect(() => {
+      setLocalText(initialText);
+    }, [initialText]);
+    return (
+      <div
+        className="rounded-xl p-2 space-y-1.5 select-text"
+        style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
+      >
+        <textarea
+          autoFocus
+          value={localText}
+          onChange={(e) => {
+            const next = e.target.value;
+            setLocalText(next);
+            setEditingText(next);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              handleCancelEdit();
+            } else if (e.key === 'Enter' && !e.shiftKey) {
+              if (
+                e.nativeEvent.isComposing ||
+                isComposingRef.current ||
+                e.keyCode === 229 ||
+                Date.now() - lastCompositionEndMsRef.current < 60
+              ) {
+                return;
+              }
+              e.preventDefault();
+              handleSaveEdit();
+            }
+          }}
+          rows={2}
+          className="w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[12px] leading-relaxed resize-y p-0.5"
+          style={{ color: colorText, outline: 'none', boxShadow: 'none' }}
+        />
+        <div className="flex items-center justify-between pt-0.5 border-t border-white/10 text-[10px]">
+          <span className="text-slate-400">Esc: huỷ · Enter: lưu</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-2 py-0.5 rounded cursor-pointer hover:bg-white/10 text-slate-400"
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              disabled={isSavingEdit || !localText.trim()}
+              onClick={handleSaveEdit}
+              className="px-2 py-0.5 rounded font-bold cursor-pointer disabled:opacity-50"
+              style={{ background: '#d4a84b', color: '#000' }}
+            >
+              {isSavingEdit ? 'Đang lưu...' : 'Lưu'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+ThreadReplyInlineEditor.displayName = 'ThreadReplyInlineEditor';
 
 export interface MosChatThreadDrawerProps {
   threadOpen: boolean;
@@ -202,6 +290,11 @@ export interface MosChatThreadDrawerProps {
   setIsUrgentSendThread?: React.Dispatch<React.SetStateAction<boolean>>;
   setTriggerWorkflowModalOpen?: (open: boolean) => void;
   setInitialWorkflowCode?: (code: string) => void;
+  threadTextRef?: React.MutableRefObject<string>;
+  threadHasText?: boolean;
+  updateThreadInput?: (val: string) => void;
+  threadHasTextListenerRef?: React.MutableRefObject<((hasText: boolean) => void) | null>;
+  mentionRenderKey?: string;
 }
 
 export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.memo(
@@ -326,6 +419,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     setIsUrgentSendThread,
     setTriggerWorkflowModalOpen,
     setInitialWorkflowCode,
+    threadTextRef,
+    threadHasText,
+    updateThreadInput,
+    threadHasTextListenerRef,
   }) => {
     const [formatBarOpenThread, setFormatBarOpenThread] = useState<boolean>(true);
     const [isPreviewModeThread, setIsPreviewModeThread] = useState<boolean>(false);
@@ -338,21 +435,66 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     const isUrgent = isUrgentSendThread ?? localUrgentSend;
     const setIsUrgent = setIsUrgentSendThread ?? setLocalUrgentSend;
 
+    const fallbackThreadTextRef = React.useRef<string>(threadInput || '');
+    const effectiveThreadTextRef = threadTextRef || fallbackThreadTextRef;
+    const [localThreadHasText, setLocalThreadHasText] = useState<boolean>(() =>
+      Boolean(threadHasText || (effectiveThreadTextRef.current || threadInput || '').trim())
+    );
+
+    React.useEffect(() => {
+      if (threadHasTextListenerRef) {
+        threadHasTextListenerRef.current = (next: boolean) => {
+          setLocalThreadHasText((prev) => (prev === next ? prev : next));
+        };
+        return () => {
+          threadHasTextListenerRef.current = null;
+        };
+      }
+    }, [threadHasTextListenerRef]);
+
+    React.useEffect(() => {
+      if (!threadTextRef) {
+        fallbackThreadTextRef.current = threadInput || '';
+        const nextHas = Boolean((threadInput || '').trim());
+        setLocalThreadHasText((prev) => (prev === nextHas ? prev : nextHas));
+        if (threadInputRef.current && threadInputRef.current.value !== (threadInput || '')) {
+          threadInputRef.current.value = threadInput || '';
+          syncTextareaHeightSmart(threadInputRef.current, isMobile ? 120 : 140, 36);
+        }
+      }
+    }, [threadInput, threadTextRef, threadInputRef, isMobile]);
+
+    React.useEffect(() => {
+      if (threadHasText !== undefined) {
+        setLocalThreadHasText((prev) => (prev === threadHasText ? prev : threadHasText));
+      }
+    }, [threadHasText]);
+
+    const applyThreadTextUpdate = (updater: string | ((prev: string) => string)) => {
+      const prev = effectiveThreadTextRef.current || threadInputRef.current?.value || '';
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      effectiveThreadTextRef.current = next;
+      const nextHasText = Boolean(next.trim());
+      setLocalThreadHasText((old) => (old === nextHasText ? old : nextHasText));
+      if (threadInputRef.current && threadInputRef.current.value !== next) {
+        threadInputRef.current.value = next;
+        syncTextareaHeightSmart(threadInputRef.current, isMobile ? 120 : 140, 36);
+      }
+      if (updateThreadInput) {
+        updateThreadInput(next);
+      } else {
+        setThreadInput(next);
+      }
+    };
+
     // Auto reset reply quote when active subthread changes
     React.useEffect(() => {
       setReplyingToReply(null);
     }, [activeThreadMessage?.id, threadOpen]);
 
-    // Tự động căn chỉnh chiều cao textarea subthread khi có nhiều dòng (Shift+Enter)
-    React.useEffect(() => {
-      const el = threadInputRef.current;
-      if (!el) return;
-      el.style.height = 'auto';
-      el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
-    }, [threadInput, threadInputRef]);
-
     const handleThreadSubmit = () => {
-      const trimmed = threadInput.trim();
+      const rawText = effectiveThreadTextRef.current || threadInputRef.current?.value || threadInput || '';
+      const trimmed = rawText.trim();
       if (!trimmed && threadAttachments.length === 0 && !stagedCustomerCard) return;
       let finalText = trimmed;
       if (replyingToReply) {
@@ -1101,57 +1243,17 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
 
                     {/* Reply Content: Inline Edit vs Soft-Deleted vs Normal Text Bubble */}
                     {editingReplyId === r.id ? (
-                      <div
-                        className="rounded-xl p-2 space-y-1.5 select-text"
-                        style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
-                      >
-                        <textarea
-                          autoFocus
-                          value={editingText}
-                          onChange={(e) => setEditingText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                              e.preventDefault();
-                              handleCancelEdit();
-                            } else if (e.key === 'Enter' && !e.shiftKey) {
-                              if (
-                                e.nativeEvent.isComposing ||
-                                isComposingRef.current ||
-                                e.keyCode === 229 ||
-                                Date.now() - lastCompositionEndMsRef.current < 60
-                              ) {
-                                return;
-                              }
-                              e.preventDefault();
-                              handleSaveEdit();
-                            }
-                          }}
-                          rows={2}
-                          className="w-full bg-transparent border-0 outline-none text-[12px] leading-relaxed resize-y p-0.5"
-                          style={{ color: token.colorText }}
-                        />
-                        <div className="flex items-center justify-between pt-0.5 border-t border-white/10 text-[10px]">
-                          <span className="text-slate-400">Esc: huỷ · Enter: lưu</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={handleCancelEdit}
-                              className="px-2 py-0.5 rounded cursor-pointer hover:bg-white/10 text-slate-400"
-                            >
-                              Huỷ
-                            </button>
-                            <button
-                              type="button"
-                              disabled={isSavingEdit || !editingText.trim()}
-                              onClick={handleSaveEdit}
-                              className="px-2 py-0.5 rounded font-bold cursor-pointer disabled:opacity-50"
-                              style={{ background: '#d4a84b', color: '#000' }}
-                            >
-                              {isSavingEdit ? 'Đang lưu...' : 'Lưu'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <ThreadReplyInlineEditor
+                        initialText={editingText}
+                        setEditingText={setEditingText}
+                        handleCancelEdit={handleCancelEdit}
+                        handleSaveEdit={handleSaveEdit}
+                        isSavingEdit={isSavingEdit}
+                        isComposingRef={isComposingRef}
+                        lastCompositionEndMsRef={lastCompositionEndMsRef}
+                        surfaceRaised={surfaceRaised}
+                        colorText={token.colorText}
+                      />
                     ) : r.isDeleted ? (
                       <div className="text-[11.5px] italic text-slate-400 select-none">
                         <span>💬 Phản hồi này đã bị xoá</span>
@@ -1400,7 +1502,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                             onOpenChange={(vis) =>
                               setOpenStickerPopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null)
                             }
-                            content={renderReactionPickerContent(activeThreadMessage.id, r, r.id)}
+                            content={
+                              openStickerPopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                                ? renderReactionPickerContent(activeThreadMessage.id, r, r.id)
+                                : null
+                            }
                           >
                             <Tooltip title="Chọn biểu tượng cảm xúc">
                               <button
@@ -1515,7 +1621,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                             setOpenMovePopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null);
                             if (!vis) setMoveThreadSearchQuery('');
                           }}
-                          content={renderMoveReplyPopover(activeThreadMessage, r)}
+                          content={
+                            openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                              ? renderMoveReplyPopover(activeThreadMessage, r)
+                              : null
+                          }
                         >
                           <Tooltip title="Tách ra luồng chính hoặc chuyển sang luồng khác">
                             <button
@@ -1851,7 +1961,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <button
                       type="button"
                       onClick={() => {
-                        setThreadInput((prev) => {
+                        applyThreadTextUpdate((prev) => {
                           const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
                           setTimeout(() => {
                             threadInputRef.current?.focus();
@@ -1880,7 +1990,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <button
                         type="button"
                         onClick={() => {
-                          setThreadInput((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+                          applyThreadTextUpdate((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                           setMobileActionOpen(false);
                           threadInputRef.current?.focus();
                         }}
@@ -1967,18 +2077,23 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <textarea
                       ref={threadInputRef}
                       rows={1}
-                      value={threadInput}
+                      defaultValue={effectiveThreadTextRef.current}
                       onChange={(e) => {
                         const next = e.target.value;
+                        effectiveThreadTextRef.current = next;
+                        const nextHas = Boolean(next.trim());
+                        setLocalThreadHasText((old) => (old === nextHas ? old : nextHas));
+                        syncTextareaHeightSmart(e.target, 120, 36);
                         setThreadInput(next);
                         const pos = e.target.selectionEnd || 0;
                         setThreadCursorPos(pos);
                         checkForMentionTrigger(next, pos, 'thread');
                       }}
                       onSelect={(e) => {
-                        const pos = (e.target as HTMLTextAreaElement).selectionEnd || 0;
+                        const el = e.target as HTMLTextAreaElement;
+                        const pos = el.selectionEnd || 0;
                         setThreadCursorPos(pos);
-                        checkForMentionTrigger(threadInput, pos, 'thread');
+                        checkForMentionTrigger(el.value, pos, 'thread');
                       }}
                       onKeyDown={(e) => {
                         if (handleMentionKeyDown(e, 'thread')) return;
@@ -2016,8 +2131,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         }
                       }}
                       placeholder="Trả lời vào luồng..."
-                      className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
-                      style={{ color: token.colorText, maxHeight: 120 }}
+                      className="w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
+                      style={{ color: token.colorText, maxHeight: 120, outline: 'none', boxShadow: 'none' }}
                     />
 
                     <Popover
@@ -2025,7 +2140,9 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       placement="topRight"
                       open={openStickerPopoverKey === 'composer:thread'}
                       onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
-                      content={renderComposerEmojiPickerContent('thread')}
+                      content={
+                        openStickerPopoverKey === 'composer:thread' ? renderComposerEmojiPickerContent('thread') : null
+                      }
                     >
                       <button
                         type="button"
@@ -2043,15 +2160,15 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     type="button"
                     aria-label="Gửi phản hồi vào luồng"
                     onClick={() => void handleThreadSubmit()}
-                    disabled={!threadInput.trim() && threadAttachments.length === 0 && !stagedCustomerCard}
+                    disabled={!localThreadHasText && threadAttachments.length === 0 && !stagedCustomerCard}
                     className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden"
                     style={{
                       background:
-                        threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                        localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard
                           ? '#d4a84b'
                           : surfaceRaised,
                       color:
-                        threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                        localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard
                           ? '#000'
                           : token.colorTextQuaternary,
                       border: `1px solid ${borderStrong}`,
@@ -2085,8 +2202,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         Quay lại sửa
                       </button>
                     </div>
-                    {threadInput.trim() ? (
-                      <div className="prose max-w-none text-[13px]">{renderRichTextMessage(threadInput, false)}</div>
+                    {(effectiveThreadTextRef.current || '').trim() ? (
+                      <div className="prose max-w-none text-[13px]">
+                        {renderRichTextMessage(effectiveThreadTextRef.current, false)}
+                      </div>
                     ) : (
                       <div className="text-zinc-500 text-[11.5px] italic py-1">Chưa có nội dung để xem trước...</div>
                     )}
@@ -2095,7 +2214,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                   <textarea
                     ref={threadInputRef}
                     rows={1}
-                    value={threadInput}
+                    defaultValue={effectiveThreadTextRef.current}
                     onDragOver={(e) => {
                       if (draggingRootMsgId) return;
                       const hasFiles =
@@ -2120,15 +2239,20 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     }}
                     onChange={(e) => {
                       const next = e.target.value;
+                      effectiveThreadTextRef.current = next;
+                      const nextHas = Boolean(next.trim());
+                      setLocalThreadHasText((old) => (old === nextHas ? old : nextHas));
+                      syncTextareaHeightSmart(e.target, 140, 36);
                       setThreadInput(next);
                       const pos = e.target.selectionEnd || 0;
                       setThreadCursorPos(pos);
                       checkForMentionTrigger(next, pos, 'thread');
                     }}
                     onSelect={(e) => {
-                      const pos = (e.target as HTMLTextAreaElement).selectionEnd || 0;
+                      const el = e.target as HTMLTextAreaElement;
+                      const pos = el.selectionEnd || 0;
                       setThreadCursorPos(pos);
-                      checkForMentionTrigger(threadInput, pos, 'thread');
+                      checkForMentionTrigger(el.value, pos, 'thread');
                     }}
                     onKeyDown={(e) => {
                       if (handleMentionKeyDown(e, 'thread')) {
@@ -2151,14 +2275,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       }
                       if (e.key === 'Enter' && e.shiftKey) {
                         const el = e.currentTarget;
-                        const smart = handleSmartListEnterKey(
-                          threadInput,
-                          el.selectionStart || 0,
-                          el.selectionEnd || 0
-                        );
+                        const currentVal = effectiveThreadTextRef.current || el.value || '';
+                        const smart = handleSmartListEnterKey(currentVal, el.selectionStart || 0, el.selectionEnd || 0);
                         if (smart?.handled) {
                           e.preventDefault();
-                          setThreadInput(smart.nextText);
+                          applyThreadTextUpdate(smart.nextText);
                           setThreadCursorPos(smart.nextCursor);
                           setTimeout(() => {
                             el.focus();
@@ -2186,10 +2307,12 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       }
                     }}
                     placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
-                    className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
+                    className="w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
                     style={{
                       color: token.colorText,
                       maxHeight: 140,
+                      outline: 'none',
+                      boxShadow: 'none',
                     }}
                   />
                 )}
@@ -2264,7 +2387,9 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       placement="topRight"
                       open={openStickerPopoverKey === 'composer:thread'}
                       onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
-                      content={renderComposerEmojiPickerContent('thread')}
+                      content={
+                        openStickerPopoverKey === 'composer:thread' ? renderComposerEmojiPickerContent('thread') : null
+                      }
                     >
                       <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
                         <button
@@ -2338,7 +2463,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                           type="button"
                           aria-label="Gọi @MAI trong luồng"
                           onClick={() => {
-                            setThreadInput((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+                            applyThreadTextUpdate((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                             setTimeout(() => {
                               threadInputRef.current?.focus();
                             }, 20);
@@ -2357,7 +2482,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         type="button"
                         aria-label="Nhắc tên đồng nghiệp trong luồng"
                         onClick={() => {
-                          setThreadInput((prev) => {
+                          applyThreadTextUpdate((prev) => {
                             const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
                             setTimeout(() => {
                               threadInputRef.current?.focus();
@@ -2441,20 +2566,21 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         onClick={() => {
                           const el = threadInputRef.current;
                           if (!el) return;
+                          const currentVal = effectiveThreadTextRef.current || el.value || '';
                           const isFocused = typeof document !== 'undefined' && document.activeElement === el;
-                          const start = isFocused ? (el.selectionStart ?? threadInput.length) : threadInput.length;
-                          const end = isFocused ? (el.selectionEnd ?? threadInput.length) : threadInput.length;
-                          const smart = handleSmartListEnterKey(threadInput, start, end);
+                          const start = isFocused ? (el.selectionStart ?? currentVal.length) : currentVal.length;
+                          const end = isFocused ? (el.selectionEnd ?? currentVal.length) : currentVal.length;
+                          const smart = handleSmartListEnterKey(currentVal, start, end);
                           if (smart?.handled) {
-                            setThreadInput(smart.nextText);
+                            applyThreadTextUpdate(smart.nextText);
                             setThreadCursorPos(smart.nextCursor);
                             setTimeout(() => {
                               el.focus();
                               el.setSelectionRange(smart.nextCursor, smart.nextCursor);
                             }, 0);
                           } else {
-                            const next = threadInput.substring(0, start) + '\n' + threadInput.substring(end);
-                            setThreadInput(next);
+                            const next = currentVal.substring(0, start) + '\n' + currentVal.substring(end);
+                            applyThreadTextUpdate(next);
                             setThreadCursorPos(start + 1);
                             setTimeout(() => {
                               el.focus();
@@ -2482,17 +2608,17 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         type="button"
                         aria-label="Gửi vào luồng"
                         onClick={() => void handleThreadSubmit()}
-                        disabled={!threadInput.trim() && threadAttachments.length === 0 && !stagedCustomerCard}
+                        disabled={!localThreadHasText && threadAttachments.length === 0 && !stagedCustomerCard}
                         className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{
                           background:
-                            threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                            localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard
                               ? '#d4a84b'
                               : isDark
                                 ? 'rgba(255, 255, 255, 0.08)'
                                 : 'rgba(0, 0, 0, 0.06)',
                           color:
-                            threadInput.trim() || threadAttachments.length > 0 || stagedCustomerCard
+                            localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard
                               ? '#000'
                               : token.colorTextQuaternary,
                         }}
@@ -2507,6 +2633,43 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
           </div>
         </div>
       </aside>
+    );
+  },
+  (prev, next) => {
+    if (!prev.threadOpen && !next.threadOpen) return true;
+    return (
+      prev.threadOpen === next.threadOpen &&
+      prev.activeThreadMessage === next.activeThreadMessage &&
+      prev.activeConversation === next.activeConversation &&
+      prev.isMobile === next.isMobile &&
+      prev.mobileActiveView === next.mobileActiveView &&
+      prev.threadWidth === next.threadWidth &&
+      prev.isResizingTarget === next.isResizingTarget &&
+      prev.hoverResizeHandle === next.hoverResizeHandle &&
+      prev.isDark === next.isDark &&
+      prev.draggingRootMsgId === next.draggingRootMsgId &&
+      prev.dragOverTargetMsgId === next.dragOverTargetMsgId &&
+      prev.dragOverThreadPane === next.dragOverThreadPane &&
+      prev.isDraggingOverThread === next.isDraggingOverThread &&
+      prev.isDraggingOver === next.isDraggingOver &&
+      prev.highlightedMsgId === next.highlightedMsgId &&
+      prev.speakingMsgId === next.speakingMsgId &&
+      prev.ttsSpeed === next.ttsSpeed &&
+      prev.editingReplyId === next.editingReplyId &&
+      prev.isSavingEdit === next.isSavingEdit &&
+      prev.openStickerPopoverKey === next.openStickerPopoverKey &&
+      prev.openMovePopoverKey === next.openMovePopoverKey &&
+      prev.movingThreadItemKey === next.movingThreadItemKey &&
+      prev.threadInput === next.threadInput &&
+      prev.threadHasText === next.threadHasText &&
+      prev.threadAttachments === next.threadAttachments &&
+      prev.stagedCustomerCard === next.stagedCustomerCard &&
+      prev.isUrgentSendThread === next.isUrgentSendThread &&
+      prev.aiThinkingActive === next.aiThinkingActive &&
+      prev.aiElapsedSec === next.aiElapsedSec &&
+      prev.uniqueTasks === next.uniqueTasks &&
+      prev.stoppedReadersByReplyId === next.stoppedReadersByReplyId &&
+      prev.mentionRenderKey === next.mentionRenderKey
     );
   }
 );

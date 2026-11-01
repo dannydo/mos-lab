@@ -1014,34 +1014,48 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return () => clearInterval(interval);
   }, [aiThinkingActive]);
 
-  // Side Thread Pane state
+  // Side Thread Pane state — Performance: threadTextRef is stored in a ref (NOT useState)
+  // to avoid re-rendering the 11K+ line God Component + Main Feed + Thread Drawer on every keystroke.
   const [threadOpen, setThreadOpen] = useState(false);
   const [activeThreadMsgId, setActiveThreadMsgId] = useState<string | null>('msg-seed-1');
-  const [threadInput, setThreadInput] = useState('');
+  const threadTextRef = useRef('');
+  const [threadHasText] = useState(false);
+  const threadHasTextListenerRef = useRef<((hasText: boolean) => void) | null>(null);
   const [threadAttachments, setThreadAttachments] = useState<MosChatImageAttachment[]>([]);
 
   // Composer state — Performance: composerText is stored in a ref (NOT useState)
-  // to avoid re-rendering the entire 10K+ line God Component on every keystroke.
-  // Only `composerHasText` (boolean) is a state to control send-button styling.
+  // to avoid re-rendering the entire 11K+ line God Component on every keystroke.
   const composerTextRef = useRef('');
-  const [composerHasText, setComposerHasText] = useState(false);
-  const composerHasTextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [composerHasText] = useState(false);
+  const composerHasTextListenerRef = useRef<((hasText: boolean) => void) | null>(null);
 
-  /** Write to composerTextRef + sync DOM + debounce hasText boolean state */
-  const updateComposerText = useCallback(
-    (val: string) => {
-      composerTextRef.current = val;
-      if (composerInputRef.current && composerInputRef.current.value !== val) {
-        composerInputRef.current.value = val;
-      }
-      // Debounced boolean state update for send button styling (no full re-render per key)
-      if (composerHasTextTimerRef.current) clearTimeout(composerHasTextTimerRef.current);
-      const hasText = val.trim().length > 0;
-      if (hasText !== composerHasText) {
-        composerHasTextTimerRef.current = setTimeout(() => setComposerHasText(hasText), 80);
-      }
+  /** Write to composerTextRef + sync DOM + notify isolated composer hasText listener */
+  const updateComposerText = useCallback((val: string) => {
+    composerTextRef.current = val;
+    if (composerInputRef.current && composerInputRef.current.value !== val) {
+      composerInputRef.current.value = val;
+    }
+    const hasText = val.trim().length > 0;
+    composerHasTextListenerRef.current?.(hasText);
+  }, []);
+
+  /** Write to threadTextRef + sync DOM + notify isolated thread composer hasText listener */
+  const updateThreadInput = useCallback((val: string) => {
+    threadTextRef.current = val;
+    if (threadInputRef.current && threadInputRef.current.value !== val) {
+      threadInputRef.current.value = val;
+    }
+    const hasText = val.trim().length > 0;
+    threadHasTextListenerRef.current?.(hasText);
+  }, []);
+
+  // Legacy compatibility: setThreadInput alias for child components / callbacks
+  const setThreadInput = useCallback(
+    (valOrFn: string | ((prev: string) => string)) => {
+      const nextVal = typeof valOrFn === 'function' ? valOrFn(threadTextRef.current) : valOrFn;
+      updateThreadInput(nextVal);
     },
-    [composerHasText]
+    [updateThreadInput]
   );
 
   // Legacy compatibility: setComposerText alias for child components that still use the setter pattern
@@ -1053,9 +1067,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [updateComposerText]
   );
 
-  // Legacy compatibility: composerText getter for read-only usages (callbacks, memos)
-  // IMPORTANT: This is NOT reactive — do NOT use it in render paths that need re-render on change.
+  // Legacy compatibility: composerText / threadInput getters for read-only usages
   const composerText = composerTextRef.current;
+  const threadInput = threadTextRef.current;
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
   const [threadStagedCustomerCard, setThreadStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
@@ -1471,10 +1485,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const lastSentRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 
-  // Inline Message Edit & Delete History States
+  // Inline Message Edit & Delete History States — editingTextRef prevents root re-renders on every keystroke
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState<string>('');
+  const [editingTextState, setEditingTextState] = useState<string>('');
+  const editingTextRef = useRef<string>('');
+  const setEditingText = useCallback((valOrFn: string | ((prev: string) => string)) => {
+    const nextVal = typeof valOrFn === 'function' ? valOrFn(editingTextRef.current) : valOrFn;
+    editingTextRef.current = nextVal;
+  }, []);
+  const editingText = editingTextState;
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const [historyModalMessage, setHistoryModalMessage] = useState<MosChatMessage | MosChatThreadReply | null>(null);
   const [historyModalOpen, setHistoryModalOpen] = useState<boolean>(false);
@@ -2103,13 +2123,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           }
         }
         if (res?.tasks) {
-          setTasks(res.tasks);
+          setTasks((prev) => (JSON.stringify(prev) === JSON.stringify(res.tasks) ? prev : res.tasks));
         }
         if (Array.isArray(res?.workflowTemplates)) {
-          setWorkflowTemplates(res.workflowTemplates);
+          setWorkflowTemplates((prev) =>
+            JSON.stringify(prev) === JSON.stringify(res.workflowTemplates) ? prev : res.workflowTemplates!
+          );
         }
         if (Array.isArray(res?.workflowInstances)) {
-          setWorkflowInstances(res.workflowInstances);
+          setWorkflowInstances((prev) =>
+            JSON.stringify(prev) === JSON.stringify(res.workflowInstances) ? prev : res.workflowInstances!
+          );
         }
       } catch (_) {
         // Fallback state already initialized
@@ -4507,7 +4531,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
         setEditingMessageId(msg.id);
         setEditingReplyId(replyId);
-        setEditingText(reply.text);
+        editingTextRef.current = reply.text;
+        setEditingTextState(reply.text);
       }
     } else {
       if (!isMessageFromCurrentUser(msg)) {
@@ -4516,19 +4541,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       setEditingMessageId(msg.id);
       setEditingReplyId(null);
-      setEditingText(msg.text);
+      editingTextRef.current = msg.text;
+      setEditingTextState(msg.text);
     }
   };
 
   const handleCancelEdit = () => {
     setEditingMessageId(null);
     setEditingReplyId(null);
-    setEditingText('');
+    editingTextRef.current = '';
+    setEditingTextState('');
   };
 
   const handleSaveEdit = async () => {
     if (!editingMessageId || !activeConversation) return;
-    const trimmed = editingText.trim();
+    const trimmed = editingTextRef.current.trim();
     if (!trimmed) {
       antdMessage.warning('Nội dung tin nhắn không được để trống');
       return;
@@ -5244,7 +5271,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   };
 
   const handleSendThreadReply = async (replyTextOverride?: string, cardOverride?: MosChatCustomerCard | null) => {
-    const text = (typeof replyTextOverride === 'string' ? replyTextOverride : threadInput).trim();
+    const text = (typeof replyTextOverride === 'string' ? replyTextOverride : threadTextRef.current).trim();
     const cardToSend = cardOverride !== undefined ? cardOverride : threadStagedCustomerCard;
     const attachmentsToSend = threadAttachments;
     if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !activeThreadMsgId) return;
@@ -5253,7 +5280,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setIsUrgentSendThread(false);
     }
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
-    setThreadInput('');
+    updateThreadInput('');
     setThreadAttachments([]);
     setThreadStagedCustomerCard(null);
     if (threadInputRef.current) {
@@ -7772,8 +7799,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       customColorHex?: string
     ) => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
-      const currentValue = scope === 'main' ? composerTextRef.current : threadInput;
-      const setValue = scope === 'main' ? updateComposerText : setThreadInput;
+      const currentValue = scope === 'main' ? composerTextRef.current : threadTextRef.current;
+      const setValue = scope === 'main' ? updateComposerText : updateThreadInput;
       const setCursor = scope === 'main' ? setComposerCursorPos : setThreadCursorPos;
 
       if (!textarea) return;
@@ -7965,7 +7992,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
       }, 0);
     },
-    [composerTextRef, threadInput, inlineTextColor]
+    [inlineTextColor, updateComposerText, updateThreadInput]
   );
 
   /**
@@ -7976,7 +8003,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     (scope: 'main' | 'thread', variant: 'inline' | 'floating' = 'floating') => {
       const isMain = scope === 'main';
       const isPreview = isMain ? isPreviewModeMain : isPreviewModeThread;
-      const currentVal = isMain ? composerTextRef.current : threadInput;
+      const currentVal = isMain ? composerTextRef.current : threadTextRef.current;
       const currentPos = isMain ? composerCursorPosRef.current : threadCursorPosRef.current;
       const activeFormats = detectActiveFormatsAtCursor(currentVal, currentPos);
 
@@ -8265,9 +8292,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       isDark,
       isPreviewModeMain,
       isPreviewModeThread,
-      composerTextRef,
-      threadInput,
-      // composerCursorPosRef and threadCursorPosRef are refs — no dep needed
+      // composerTextRef, threadTextRef, composerCursorPosRef, threadCursorPosRef are refs — no dep needed
       colorPopoverScope,
       inlineTextColor,
       token.colorText,
@@ -8589,7 +8614,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleSelectMention = useCallback(
     (item: MentionItem, scope: 'main' | 'thread') => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
-      const currentVal = (textarea?.value ?? (scope === 'main' ? composerTextRef.current : threadInput)) || '';
+      const currentVal =
+        (textarea?.value ?? (scope === 'main' ? composerTextRef.current : threadTextRef.current)) || '';
       if (!textarea) return;
 
       const atIdx = mentionState.atIndex >= 0 ? mentionState.atIndex : currentVal.lastIndexOf('@');
@@ -8607,7 +8633,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (scope === 'main') {
         updateComposerText(nextVal);
       } else {
-        setThreadInput(nextVal);
+        updateThreadInput(nextVal);
       }
 
       setMentionState({
@@ -8627,7 +8653,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         textarea.style.height = `${Math.min(textarea.scrollHeight, scope === 'main' ? 180 : 140)}px`;
       });
     },
-    [composerTextRef, threadInput, mentionState.atIndex, mentionState.cursorIndex]
+    [mentionState.atIndex, updateComposerText, updateThreadInput]
   );
 
   // Điều hướng bằng phím mũi tên Lên/Xuống, Enter/Tab để chọn, Escape để đóng
@@ -9592,7 +9618,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           updateComposerText(composerTextRef.current + emoji);
           composerInputRef.current?.focus();
         } else if (target === 'thread') {
-          setThreadInput((prev) => `${prev}${emoji}`);
+          updateThreadInput(threadTextRef.current + emoji);
           threadInputRef.current?.focus();
         } else if (typeof target === 'object' && target.dockConvId) {
           const cid = target.dockConvId;
@@ -10535,6 +10561,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     composerHasText={composerHasText}
                     updateComposerText={updateComposerText}
                     setComposerText={setComposerText}
+                    composerHasTextListenerRef={composerHasTextListenerRef}
+                    mentionRenderKey={
+                      mentionState.open && mentionState.scope === 'main'
+                        ? `${mentionState.query}:${mentionState.highlightedIndex}`
+                        : ''
+                    }
                     composerCursorPos={composerCursorPosRef.current}
                     setComposerCursorPos={setComposerCursorPos}
                     composerInputRef={composerInputRef}
@@ -10691,8 +10723,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               handleStartEdit={handleStartEdit}
               handleDeleteMessage={handleDeleteMessage}
               threadInputRef={threadInputRef}
-              threadInput={threadInput}
+              threadInput={threadTextRef.current}
               setThreadInput={setThreadInput}
+              threadTextRef={threadTextRef}
+              threadHasText={threadHasText}
+              updateThreadInput={updateThreadInput}
+              threadHasTextListenerRef={threadHasTextListenerRef}
+              mentionRenderKey={
+                mentionState.open && mentionState.scope === 'thread'
+                  ? `${mentionState.query}:${mentionState.highlightedIndex}`
+                  : ''
+              }
               handleSendThreadReply={handleSendThreadReply}
               threadAttachments={threadAttachments}
               setThreadAttachments={setThreadAttachments}
@@ -11009,7 +11050,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setRichEditorModalState={setRichEditorModalState}
         composerText={composerTextRef.current}
         setComposerText={setComposerText}
-        threadInput={threadInput}
+        threadInput={threadTextRef.current}
         setThreadInput={setThreadInput}
         composerInputRef={composerInputRef}
         threadInputRef={threadInputRef}

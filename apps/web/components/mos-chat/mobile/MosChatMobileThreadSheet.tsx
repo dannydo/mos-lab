@@ -38,6 +38,7 @@ import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
+import { syncTextareaHeightSmart } from '../components/MosChatComposer';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import { MosChatAvatar } from '../MosChatAvatar';
@@ -367,12 +368,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     }
   }, [activeThreadMsg?.id, threadReplies.length, isAiThinking, scrollToBottom]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea without layout thrashing
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(100, el.scrollHeight)}px`;
+    syncTextareaHeightSmart(el, 100);
   }, [text]);
 
   const handleSend = async () => {
@@ -832,10 +832,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
           {/* Customer Card Attachment */}
           {!activeThreadMsg.isDeleted && activeThreadMsg.customerCard && (
-            <MosChatCustomerCardAttachment
-              card={activeThreadMsg.customerCard}
-              onOpenCustomer={openCustomerDetail}
-            />
+            <MosChatCustomerCardAttachment card={activeThreadMsg.customerCard} onOpenCustomer={openCustomerDetail} />
           )}
 
           {/* Parent Message Attachments */}
@@ -1773,7 +1770,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Trả lời trong luồng..."
-              className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
+              className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
+              style={{ outline: 'none', boxShadow: 'none' }}
             />
             {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
             <button
@@ -1792,7 +1790,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           <button
             type="button"
             onClick={handleSend}
-            disabled={(!text.trim() && attachedImages.length === 0 && !stagedCustomerCard) || isSending || isUploadingImages}
+            disabled={
+              (!text.trim() && attachedImages.length === 0 && !stagedCustomerCard) || isSending || isUploadingImages
+            }
             className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
             aria-label="Gửi phản hồi luồng"
           >

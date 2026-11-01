@@ -43,6 +43,96 @@ import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
 import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
 import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
 
+const MainMessageInlineEditor: React.FC<{
+  initialText: string;
+  setEditingText: (text: string) => void;
+  handleCancelEdit: () => void;
+  handleSaveEdit: () => void;
+  isSavingEdit: boolean;
+  isComposingRef: React.MutableRefObject<boolean>;
+  lastCompositionEndMsRef: React.MutableRefObject<number>;
+  surfaceRaised: string;
+  colorText: string;
+  colorTextSecondary: string;
+}> = React.memo(
+  ({
+    initialText,
+    setEditingText,
+    handleCancelEdit,
+    handleSaveEdit,
+    isSavingEdit,
+    isComposingRef,
+    lastCompositionEndMsRef,
+    surfaceRaised,
+    colorText,
+    colorTextSecondary,
+  }) => {
+    const [localText, setLocalText] = useState(initialText);
+    React.useEffect(() => {
+      setLocalText(initialText);
+    }, [initialText]);
+    return (
+      <div
+        className="w-full max-w-[85%] rounded-2xl p-2.5 space-y-2 select-text"
+        style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
+      >
+        <textarea
+          autoFocus
+          value={localText}
+          onChange={(e) => {
+            const next = e.target.value;
+            setLocalText(next);
+            setEditingText(next);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              handleCancelEdit();
+            } else if (e.key === 'Enter' && !e.shiftKey) {
+              if (
+                e.nativeEvent.isComposing ||
+                isComposingRef.current ||
+                e.keyCode === 229 ||
+                Date.now() - lastCompositionEndMsRef.current < 60
+              ) {
+                return;
+              }
+              e.preventDefault();
+              handleSaveEdit();
+            }
+          }}
+          rows={3}
+          className="w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13px] leading-relaxed resize-y p-1"
+          style={{ color: colorText, outline: 'none', boxShadow: 'none' }}
+        />
+        <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+          <span className="text-slate-400">Shift+Enter: xuống dòng · Esc: huỷ · Enter: lưu</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-2.5 py-1 rounded-md cursor-pointer hover:bg-white/10"
+              style={{ color: colorTextSecondary }}
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              disabled={isSavingEdit || !localText.trim()}
+              onClick={handleSaveEdit}
+              className="px-3 py-1 rounded-md font-bold cursor-pointer disabled:opacity-50"
+              style={{ background: '#d4a84b', color: '#000' }}
+            >
+              {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+MainMessageInlineEditor.displayName = 'MainMessageInlineEditor';
+
 export interface MosChatMessageFeedProps {
   isMobile: boolean;
   activeConversation: MosChatConversation | null;
@@ -272,11 +362,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
         .reverse()
         .filter((m) => {
           if (!qNorm) return true;
-          const linkedTask =
-            (m.taskId ? taskByMsgOrTaskId.get(m.taskId) : undefined) || taskByMsgOrTaskId.get(m.id);
-          const taskCode = linkedTask?.id
-            ? `TASK-${linkedTask.id.replace(/[^a-zA-Z0-9]/g, '').slice(-5)}`
-            : '';
+          const linkedTask = (m.taskId ? taskByMsgOrTaskId.get(m.taskId) : undefined) || taskByMsgOrTaskId.get(m.id);
+          const taskCode = linkedTask?.id ? `TASK-${linkedTask.id.replace(/[^a-zA-Z0-9]/g, '').slice(-5)}` : '';
           const hay = removeVietnameseTones(
             `${m.senderName} ${m.text || ''} ${linkedTask?.title || ''} ${taskCode} ${m.mission?.missionKey || ''}`.toLowerCase()
           );
@@ -794,58 +881,18 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
 
                   {/* Message Content: Inline Edit Mode vs Soft-Deleted vs Normal Text Bubble */}
                   {editingMessageId === m.id && !editingReplyId ? (
-                    <div
-                      className="w-full max-w-[85%] rounded-2xl p-2.5 space-y-2 select-text"
-                      style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
-                    >
-                      <textarea
-                        autoFocus
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') {
-                            e.preventDefault();
-                            handleCancelEdit();
-                          } else if (e.key === 'Enter' && !e.shiftKey) {
-                            if (
-                              e.nativeEvent.isComposing ||
-                              isComposingRef.current ||
-                              e.keyCode === 229 ||
-                              Date.now() - lastCompositionEndMsRef.current < 60
-                            ) {
-                              return;
-                            }
-                            e.preventDefault();
-                            handleSaveEdit();
-                          }
-                        }}
-                        rows={3}
-                        className="w-full bg-transparent border-0 outline-none text-[13px] leading-relaxed resize-y p-1"
-                        style={{ color: token.colorText }}
-                      />
-                      <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
-                        <span className="text-slate-400">Shift+Enter: xuống dòng · Esc: huỷ · Enter: lưu</span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={handleCancelEdit}
-                            className="px-2.5 py-1 rounded-md cursor-pointer hover:bg-white/10"
-                            style={{ color: token.colorTextSecondary }}
-                          >
-                            Huỷ
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isSavingEdit || !editingText.trim()}
-                            onClick={handleSaveEdit}
-                            className="px-3 py-1 rounded-md font-bold cursor-pointer disabled:opacity-50"
-                            style={{ background: '#d4a84b', color: '#000' }}
-                          >
-                            {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    <MainMessageInlineEditor
+                      initialText={editingText}
+                      setEditingText={setEditingText}
+                      handleCancelEdit={handleCancelEdit}
+                      handleSaveEdit={handleSaveEdit}
+                      isSavingEdit={isSavingEdit}
+                      isComposingRef={isComposingRef}
+                      lastCompositionEndMsRef={lastCompositionEndMsRef}
+                      surfaceRaised={surfaceRaised}
+                      colorText={token.colorText}
+                      colorTextSecondary={token.colorTextSecondary}
+                    />
                   ) : m.isDeleted ? (
                     <div
                       className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
@@ -1336,7 +1383,9 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         placement={isMine ? 'topRight' : 'topLeft'}
                         open={openStickerPopoverKey === `react:${m.id}`}
                         onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `react:${m.id}` : null)}
-                        content={renderReactionPickerContent(m.id, m)}
+                        content={
+                          openStickerPopoverKey === `react:${m.id}` ? renderReactionPickerContent(m.id, m) : null
+                        }
                       >
                         <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
                           <button
@@ -1373,7 +1422,11 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                             setOpenMovePopoverKey(vis ? `root:${m.id}` : null);
                             if (!vis) setMoveThreadSearchQuery('');
                           }}
-                          content={renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)}
+                          content={
+                            openMovePopoverKey === `root:${m.id}`
+                              ? renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)
+                              : null
+                          }
                         >
                           <Tooltip title="Gộp tin nhắn này vào luồng trả lời phụ (Subthread) của tin nhắn khác">
                             <button
@@ -1587,6 +1640,38 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
           <div ref={messagesEndRef} />
         </div>
       </>
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.isMobile === next.isMobile &&
+      prev.activeConversation === next.activeConversation &&
+      prev.isDark === next.isDark &&
+      prev.pinnedMessages === next.pinnedMessages &&
+      prev.pinnedBannerIndex === next.pinnedBannerIndex &&
+      prev.uniqueTasks === next.uniqueTasks &&
+      prev.stoppedReadersByMsgId === next.stoppedReadersByMsgId &&
+      prev.draggingRootMsgId === next.draggingRootMsgId &&
+      prev.dragOverTargetMsgId === next.dragOverTargetMsgId &&
+      prev.highlightedMsgId === next.highlightedMsgId &&
+      prev.expandedThinkingIds === next.expandedThinkingIds &&
+      prev.editingMessageId === next.editingMessageId &&
+      prev.editingReplyId === next.editingReplyId &&
+      prev.isSavingEdit === next.isSavingEdit &&
+      prev.heartFlyMsgId === next.heartFlyMsgId &&
+      prev.appliedActionIds === next.appliedActionIds &&
+      prev.speakingMsgId === next.speakingMsgId &&
+      prev.ttsSpeed === next.ttsSpeed &&
+      prev.mobileActiveMsgId === next.mobileActiveMsgId &&
+      prev.openMovePopoverKey === next.openMovePopoverKey &&
+      prev.openStickerPopoverKey === next.openStickerPopoverKey &&
+      prev.aiThinkingActive === next.aiThinkingActive &&
+      prev.aiElapsedSec === next.aiElapsedSec &&
+      prev.workflowInstances === next.workflowInstances &&
+      prev.movingThreadItemKey === next.movingThreadItemKey &&
+      prev.threadOpen === next.threadOpen &&
+      prev.activeThreadMessage === next.activeThreadMessage &&
+      prev.isDraggingOver === next.isDraggingOver
     );
   }
 );

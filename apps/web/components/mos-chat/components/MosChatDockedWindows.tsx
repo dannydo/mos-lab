@@ -40,6 +40,7 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { parseQuoteMeta, isStandardQuote, findSourceMessage, scrollToMessageAndFlash } from '../utils/quoteUtils';
+import { syncTextareaHeightSmart } from './MosChatComposer';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -805,8 +806,9 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               }
                             }}
                             placeholder="Trả lời trong luồng... (Enter gửi)"
-                            className="flex-1 h-9 rounded-full px-3.5 text-[12px] outline-none transition-all focus:ring-1 focus:ring-amber-500/50"
+                            className="flex-1 h-9 rounded-full px-3.5 text-[12px] outline-none focus:outline-none focus-visible:outline-none transition-all focus:ring-1 focus:ring-amber-500/50"
                             style={{
+                              outline: 'none',
                               background: surfaceRaised || 'rgba(255, 255, 255, 0.06)',
                               border: `1px solid ${borderColor || 'rgba(255, 255, 255, 0.1)'}`,
                               color: token.colorText,
@@ -912,7 +914,8 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               }
                             }}
                             placeholder="Thêm việc mới... (Nhấn Enter để tạo)"
-                            className="flex-1 text-[12px] bg-transparent outline-none text-neutral-200 placeholder:text-neutral-500"
+                            className="flex-1 text-[12px] bg-transparent outline-none focus:outline-none focus-visible:outline-none text-neutral-200 placeholder:text-neutral-500"
+                            style={{ outline: 'none', boxShadow: 'none' }}
                           />
                         </div>
                       </div>
@@ -1201,8 +1204,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                             onChange={(e) => {
                               const val = e.target.value;
                               setDockInputs((p) => ({ ...p, [cid]: val }));
-                              e.target.style.height = 'auto';
-                              e.target.style.height = `${Math.min(e.target.scrollHeight, 96)}px`;
+                              syncTextareaHeightSmart(e.target, 96);
                             }}
                             onPaste={(e) => handleClipboardPaste(e, 'dock', cid)}
                             onCompositionStart={() => {
@@ -1237,8 +1239,9 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               }
                             }}
                             placeholder="Nhắn tin..."
-                            className="flex-1 min-h-[32px] max-h-[96px] rounded-2xl px-3.5 py-1.5 text-[12.5px] outline-none resize-none leading-relaxed transition-all focus:ring-1 focus:ring-amber-500/40"
+                            className="flex-1 min-h-[32px] max-h-[96px] rounded-2xl px-3.5 py-1.5 text-[12.5px] outline-none focus:outline-none focus-visible:outline-none resize-none leading-relaxed transition-all focus:ring-1 focus:ring-amber-500/40"
                             style={{
+                              outline: 'none',
                               background: surfaceRaised || 'rgba(255, 255, 255, 0.06)',
                               border: `1px solid ${borderColor || 'rgba(255, 255, 255, 0.1)'}`,
                               color: token.colorText,
@@ -1251,7 +1254,11 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                             placement="topRight"
                             open={openStickerPopoverKey === `composer:dock:${cid}`}
                             onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `composer:dock:${cid}` : null)}
-                            content={renderComposerEmojiPickerContent({ dockConvId: cid })}
+                            content={
+                              openStickerPopoverKey === `composer:dock:${cid}`
+                                ? renderComposerEmojiPickerContent({ dockConvId: cid })
+                                : null
+                            }
                           >
                             <button
                               type="button"
@@ -1292,6 +1299,26 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
           );
         })}
       </div>
+    );
+  },
+  (prev, next) => {
+    if (!prev.dockedConvIds.length && !next.dockedConvIds.length) {
+      return true;
+    }
+    return (
+      prev.isMobile === next.isMobile &&
+      prev.dockedConvIds === next.dockedConvIds &&
+      prev.conversations === next.conversations &&
+      prev.collapsedDockIds === next.collapsedDockIds &&
+      prev.userPrefs === next.userPrefs &&
+      prev.dockAttachments === next.dockAttachments &&
+      prev.dockInputs === next.dockInputs &&
+      prev.openStickerPopoverKey === next.openStickerPopoverKey &&
+      prev.tasks === next.tasks &&
+      prev.dockDimensions === next.dockDimensions &&
+      prev.dockActiveTabs === next.dockActiveTabs &&
+      prev.dockActiveThreadMsgIds === next.dockActiveThreadMsgIds &&
+      prev.surfaceBg === next.surfaceBg
     );
   }
 );

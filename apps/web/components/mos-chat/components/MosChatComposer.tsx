@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Tooltip, Popover, Avatar, theme } from 'antd';
 import {
   Sparkles,
@@ -30,6 +30,55 @@ import type {
 } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
+
+/**
+ * Zero-thrash textarea auto-resizer:
+ * Avoids collapsing `style.height = 'auto'` on every single character typed,
+ * preventing forced synchronous layout reflows across the chat flex container.
+ */
+export function syncTextareaHeightSmart(
+  el: HTMLTextAreaElement | null,
+  maxHeight: number,
+  prevLenRefOrMinHeight?: React.MutableRefObject<number> | number,
+  singleLineMaxHeight = 46
+): void {
+  if (!el) return;
+  const val = el.value || '';
+  const len = val.length;
+  const prevLenRef =
+    typeof prevLenRefOrMinHeight === 'object' && prevLenRefOrMinHeight !== null ? prevLenRefOrMinHeight : undefined;
+  const effectiveSingleLineMax =
+    typeof prevLenRefOrMinHeight === 'number' ? Math.max(prevLenRefOrMinHeight, 44) : singleLineMaxHeight;
+  const prevLen = prevLenRef ? prevLenRef.current : len;
+  if (prevLenRef) prevLenRef.current = len;
+
+  if (len === 0) {
+    if (el.style.height && el.style.height !== 'auto') {
+      el.style.height = 'auto';
+    }
+    return;
+  }
+
+  // Fast path: short single-line typing never wraps, skip layout read/write completely
+  if (len >= prevLen && len < 45 && !val.includes('\n') && el.clientHeight <= effectiveSingleLineMax) {
+    return;
+  }
+
+  // Growing text: expand directly if scrollHeight exceeds clientHeight without collapsing to 'auto'
+  if (len >= prevLen) {
+    const sh = el.scrollHeight;
+    if (sh > el.clientHeight) {
+      el.style.height = `${Math.min(sh, maxHeight)}px`;
+    }
+    return;
+  }
+
+  // Shrinking text (backspace/delete): only collapse to 'auto' if currently taller than single line
+  if (el.clientHeight > effectiveSingleLineMax || val.includes('\n')) {
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+  }
+}
 
 export interface MosChatComposerProps {
   isMobile: boolean;
@@ -88,6 +137,8 @@ export interface MosChatComposerProps {
 
   isComposingRef: React.MutableRefObject<boolean>;
   lastCompositionEndMsRef: React.MutableRefObject<number>;
+  composerHasTextListenerRef?: React.MutableRefObject<((hasText: boolean) => void) | null>;
+  mentionRenderKey?: string;
 }
 
 export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
@@ -137,6 +188,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     setRichEditorModalState,
     isComposingRef,
     lastCompositionEndMsRef,
+    composerHasTextListenerRef,
   }) => {
     // Performance: get token locally via hook instead of receiving as prop
     // (parent's token object has a new identity on every render, defeating React.memo)
@@ -146,14 +198,36 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     const [formatBarOpenMain, setFormatBarOpenMain] = useState<boolean>(true);
     const [isPreviewModeMain, setIsPreviewModeMain] = useState<boolean>(false);
     const [openStickerPopoverKey, setOpenStickerPopoverKey] = useState<string | null>(null);
+    const [localHasText, setLocalHasText] = useState<boolean>(() =>
+      Boolean(composerHasText || (composerTextRef.current && composerTextRef.current.trim().length > 0))
+    );
+    const prevLenRef = useRef<number>((composerTextRef.current || '').length);
 
-    // Tự động căn chỉnh chiều cao textarea khi nội dung thay đổi từ bên ngoài (ví dụ Áp dụng từ CKEditor)
     useEffect(() => {
-      if (composerInputRef?.current) {
-        composerInputRef.current.style.height = 'auto';
-        composerInputRef.current.style.height = `${Math.min(composerInputRef.current.scrollHeight, 180)}px`;
-      }
-    }, [composerHasText, composerInputRef]);
+      setLocalHasText(
+        Boolean(composerHasText || (composerTextRef.current && composerTextRef.current.trim().length > 0))
+      );
+    }, [composerHasText, composerTextRef]);
+
+    const syncLocalHasText = useCallback(
+      (nextHasText: boolean) => {
+        setLocalHasText((prev) => (prev === nextHasText ? prev : nextHasText));
+        syncTextareaHeightSmart(composerInputRef?.current || null, isMobile ? 120 : 180, prevLenRef);
+      },
+      [composerInputRef, isMobile]
+    );
+
+    useEffect(() => {
+      if (!composerHasTextListenerRef) return;
+      composerHasTextListenerRef.current = syncLocalHasText;
+      return () => {
+        if (composerHasTextListenerRef.current === syncLocalHasText) {
+          composerHasTextListenerRef.current = null;
+        }
+      };
+    }, [composerHasTextListenerRef, syncLocalHasText]);
+
+    const effectiveHasText = localHasText || composerHasText;
 
     return (
       <div className="p-3" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>
@@ -443,9 +517,12 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   defaultValue={composerTextRef.current}
                   onChange={(e) => {
                     const val = e.target.value;
+                    const nextHasText = val.trim().length > 0;
+                    if (nextHasText !== localHasText) {
+                      setLocalHasText(nextHasText);
+                    }
                     updateComposerText(val);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                    syncTextareaHeightSmart(e.target, 120, prevLenRef, 42);
                     checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
                   }}
                   onClick={(e) => {
@@ -537,8 +614,8 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                     }
                   }}
                   placeholder="Nhắn tin... (Shift+Enter để xuống dòng)"
-                  className="flex-1 bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed py-1"
-                  style={{ color: token.colorText, maxHeight: 110 }}
+                  className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13.5px] resize-none leading-relaxed py-1"
+                  style={{ color: token.colorText, maxHeight: 110, outline: 'none', boxShadow: 'none' }}
                 />
 
                 {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
@@ -583,7 +660,9 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   placement="topRight"
                   open={openStickerPopoverKey === 'composer:main:mobile'}
                   onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:mobile' : null)}
-                  content={renderComposerEmojiPickerContent('main')}
+                  content={
+                    openStickerPopoverKey === 'composer:main:mobile' ? renderComposerEmojiPickerContent('main') : null
+                  }
                 >
                   <button
                     type="button"
@@ -604,10 +683,10 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
                 style={{
                   background:
-                    composerHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : surfaceRaised,
-                  border: `1px solid ${composerHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : borderStrong}`,
+                    effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : surfaceRaised,
+                  border: `1px solid ${effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : borderStrong}`,
                   color:
-                    composerHasText || stagedAttachments.length > 0 || stagedCustomerCard
+                    effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
                       ? '#000'
                       : token.colorTextSecondary,
                 }}
@@ -668,10 +747,13 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   onChange={(e) => {
                     const val = e.target.value;
                     const cur = e.target.selectionStart ?? val.length;
+                    const nextHasText = val.trim().length > 0;
+                    if (nextHasText !== localHasText) {
+                      setLocalHasText(nextHasText);
+                    }
                     updateComposerText(val);
                     setComposerCursorPos(cur);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
+                    syncTextareaHeightSmart(e.target, 180, prevLenRef, 46);
                     checkForMentionTrigger(val, cur, 'main');
                   }}
                   onClick={(e) => {
@@ -754,8 +836,8 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                         ? 'Nhắn tin, gõ @MAI để gọi mOS AI, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
                         : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
                   }
-                  className="w-full bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
-                  style={{ color: token.colorText, maxHeight: 180 }}
+                  className="w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
+                  style={{ color: token.colorText, maxHeight: 180, outline: 'none', boxShadow: 'none' }}
                 />
               )}
 
@@ -834,7 +916,11 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                     placement="topRight"
                     open={openStickerPopoverKey === 'composer:main:desktop'}
                     onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
-                    content={renderComposerEmojiPickerContent('main')}
+                    content={
+                      openStickerPopoverKey === 'composer:main:desktop'
+                        ? renderComposerEmojiPickerContent('main')
+                        : null
+                    }
                   >
                     <Tooltip title="Chèn biểu tượng cảm xúc Wings">
                       <button
@@ -1013,12 +1099,15 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-all"
                       style={{
                         background:
-                          composerHasText || stagedAttachments.length > 0
+                          effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
                             ? '#d4a84b'
                             : isDark
                               ? 'rgba(255, 255, 255, 0.08)'
                               : 'rgba(0, 0, 0, 0.06)',
-                        color: composerHasText || stagedAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
+                        color:
+                          effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
+                            ? '#000'
+                            : token.colorTextQuaternary,
                       }}
                     >
                       <SendHorizontal size={15} />
@@ -1050,7 +1139,8 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
       prev.isUrgentSend === next.isUrgentSend &&
       prev.activeConversation?.id === next.activeConversation?.id &&
       prev.stagedAttachments === next.stagedAttachments &&
-      prev.stagedCustomerCard === next.stagedCustomerCard
+      prev.stagedCustomerCard === next.stagedCustomerCard &&
+      prev.mentionRenderKey === next.mentionRenderKey
     );
   }
 );

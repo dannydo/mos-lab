@@ -8,6 +8,7 @@ import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
+import { syncTextareaHeightSmart } from '../components/MosChatComposer';
 import {
   extractMentionedStaff,
   isStaffInConversationMembers,
@@ -43,7 +44,14 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   stagedCustomerCard,
   onRemoveCustomerCard,
 }) => {
-  const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation, staffDirectory, openCustomerDetail } = useMosChat();
+  const {
+    sendMessage,
+    replyingToMessage,
+    setReplyingToMessage,
+    activeConversation,
+    staffDirectory,
+    openCustomerDetail,
+  } = useMosChat();
 
   const [internalText, setInternalText] = useState<string>('');
   const text = controlledText !== undefined ? controlledText : internalText;
@@ -87,12 +95,11 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     }
   }, [replyingToMessage]);
 
-  // Auto-resize textarea height
+  // Auto-resize textarea height without layout thrashing
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(120, el.scrollHeight)}px`;
+    syncTextareaHeightSmart(el, 120);
   }, [text]);
 
   const hasAttachments = attachedImages.length > 0;
@@ -409,7 +416,8 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[110px] py-1 leading-snug"
+            className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[110px] py-1 leading-snug"
+            style={{ outline: 'none', boxShadow: 'none' }}
           />
 
           {/* Quick Emoji / Sticker Icon */}
