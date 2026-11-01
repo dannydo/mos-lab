@@ -921,6 +921,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                 <MosChatThreadChecklist
                   task={linkedTask}
                   activeThreadMessage={activeThreadMessage}
+                  onUpdateTask={handleUpdateTask}
+                  staffList={activeConversation?.members || []}
                   onToggleChecklistItem={async (itemId) => {
                     await handleUpdateTask?.(linkedTask.id, {
                       checklistAction: 'toggle',

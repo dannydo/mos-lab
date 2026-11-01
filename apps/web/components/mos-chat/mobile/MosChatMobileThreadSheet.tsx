@@ -1018,6 +1018,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   <MosChatThreadChecklist
                     task={linkedTask}
                     activeThreadMessage={liveThreadMsg}
+                    onUpdateTask={updateTask}
+                    staffList={staffDirectory || []}
                     onToggleChecklistItem={async (itemId) => {
                       await updateTask(linkedTask.id, {
                         checklistAction: 'toggle',

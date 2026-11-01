@@ -117,4 +117,58 @@ describe('MosChatTaskInlineChecklist UI Component', () => {
       checklistAction: 'auto_summarize',
     });
   });
+
+  it('supports inline editing, Xem thêm toggle for long text, and renders 20px assignee avatar', async () => {
+    const handleUpdate = vi.fn().mockResolvedValue({});
+    const longTitle =
+      '[HR · Tháng 11] Đảm bảo các quy định về Off gấp/Đi trễ/Về sớm và Tác phong của Thiên thần shop, triển khai phạt bằng cách Đập chuối';
+    const richTask: MosChatTaskItem = {
+      ...mockTask,
+      id: 'task-rich-1',
+      assigneeName: 'Bảo Hân',
+      checklist: [
+        {
+          id: 'chk-long-1',
+          title: longTitle,
+          done: false,
+          deadline: '2026-11-30T11:00:00.000Z',
+          assigneeName: 'Bảo Hân',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    render(<MosChatTaskInlineChecklist task={richTask} onUpdateTask={handleUpdate} isDark={true} />);
+
+    // Renders parsed domain badge "HR" and timeframe badge "Tháng 11"
+    expect(screen.getByText('HR')).toBeInTheDocument();
+    expect(screen.getByText('Tháng 11')).toBeInTheDocument();
+
+    // Renders "Xem thêm" button for long text and toggles to "Thu gọn"
+    const moreBtn = screen.getByRole('button', { name: 'Xem thêm' });
+    await act(async () => {
+      fireEvent.click(moreBtn);
+    });
+    expect(screen.getByRole('button', { name: 'Thu gọn' })).toBeInTheDocument();
+
+    // Renders 20px avatar initials "BH" for Bảo Hân
+    expect(screen.getByText('BH')).toBeInTheDocument();
+
+    // Clicks edit button and saves updated title
+    const editBtn = screen.getByLabelText(`Sửa mục ${longTitle}`);
+    await act(async () => {
+      fireEvent.click(editBtn);
+    });
+
+    const saveBtn = screen.getByRole('button', { name: /Lưu \(Enter\)/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(handleUpdate).toHaveBeenCalledWith('task-rich-1', {
+      checklistAction: 'edit',
+      checklistItemId: 'chk-long-1',
+      checklistItem: { title: longTitle },
+    });
+  });
 });

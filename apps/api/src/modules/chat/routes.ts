@@ -50,8 +50,10 @@ import {
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
   isCanonicalSuperAdminIdentity,
+  normalizeAndEnrichTaskChecklist,
   removeVietnameseTones,
   resolveBestSourceMessageForTaskChecklist,
+  sortChecklistItemsByDeadline,
   summarizeAndExtractChecklistFromText,
 } from '@mos-lab/shared';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
@@ -2099,13 +2101,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         rootText: targetMsg.text,
         rootSenderName: targetMsg.senderName,
         rootSenderId: targetMsg.senderId,
+        referenceDate: targetMsg.createdAt || new Date(),
         replies: targetMsg.thread || [],
       });
 
       return {
         success: true,
         summary,
-        suggestions,
+        suggestions: sortChecklistItemsByDeadline(suggestions),
       };
     }
   );
@@ -2901,8 +2904,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
               id: `chk-${crypto.randomUUID().slice(0, 8)}`,
               title: item.title.trim(),
               done: Boolean(item.done),
-              assigneeId: item.assigneeId ?? null,
-              assigneeName: item.assigneeName ?? null,
+              deadline: item.deadline || null,
+              assigneeId: item.assigneeId ?? canonicalAssigneeId ?? null,
+              assigneeName: item.assigneeName ?? canonicalAssigneeName ?? null,
+              assigneeAvatar: item.assigneeAvatar ?? matchedAssignee?.avatarUrl ?? null,
               sourceReplyId: item.sourceReplyId ?? null,
               createdBy: creatorName,
               createdAt: now.toISOString(),
@@ -2934,6 +2939,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             rootText: sourceMsg.text,
             rootSenderName: sourceMsg.senderName,
             rootSenderId: sourceMsg.senderId,
+            referenceDate: sourceMsg.createdAt || now,
             replies: sourceMsg.thread || [],
           });
           if (
@@ -2943,13 +2949,15 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             if (!initialSummary && extracted.summary) {
               initialSummary = extracted.summary;
             }
-            for (const sug of extracted.suggestions) {
+            for (const sug of sortChecklistItemsByDeadline(extracted.suggestions)) {
               initialChecklist.push({
                 id: `chk-${crypto.randomUUID().slice(0, 8)}`,
                 title: sug.title,
                 done: false,
+                deadline: sug.deadline || null,
                 assigneeId: sug.assigneeId ?? canonicalAssigneeId ?? null,
                 assigneeName: sug.assigneeName ?? canonicalAssigneeName ?? null,
+                assigneeAvatar: matchedAssignee?.avatarUrl || null,
                 sourceReplyId: sug.sourceReplyId ?? null,
                 createdBy: creatorName,
                 createdAt: now.toISOString(),
@@ -3075,11 +3083,27 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       if (body.checklistAction === 'auto_summarize') {
         const targetMsg = resolveBestSourceMessageForTaskChecklist(conv, { task });
+        const assigneeStaff = staffDirectory.find(
+          (s) =>
+            (task.assigneeId && Number(s.id) === Number(task.assigneeId)) ||
+            (task.assigneeName && s.displayName?.trim().toLowerCase() === task.assigneeName.trim().toLowerCase())
+        );
+        const defaultAvatar = assigneeStaff?.avatarUrl || null;
+
+        // First clean out any conversational chatter items and enrich existing items
+        task.checklist = normalizeAndEnrichTaskChecklist(task.checklist, {
+          defaultAssigneeId: task.assigneeId ?? assigneeStaff?.id ?? null,
+          defaultAssigneeName: task.assigneeName || assigneeStaff?.displayName || null,
+          defaultAssigneeAvatar: defaultAvatar,
+          referenceDate: targetMsg?.createdAt || task.createdAt || now,
+        });
+
         if (targetMsg) {
           const { summary, suggestions } = summarizeAndExtractChecklistFromText({
             rootText: targetMsg.text,
             rootSenderName: targetMsg.senderName,
             rootSenderId: targetMsg.senderId,
+            referenceDate: targetMsg.createdAt || task.createdAt || now,
             replies: targetMsg.thread || [],
           });
           if (summary) {
@@ -3096,8 +3120,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
                 id: `chk-${crypto.randomUUID().slice(0, 8)}`,
                 title: sug.title,
                 done: false,
-                assigneeId: sug.assigneeId ?? task.assigneeId ?? null,
-                assigneeName: sug.assigneeName ?? task.assigneeName ?? null,
+                deadline: sug.deadline || null,
+                assigneeId: sug.assigneeId ?? task.assigneeId ?? assigneeStaff?.id ?? null,
+                assigneeName: sug.assigneeName ?? task.assigneeName ?? assigneeStaff?.displayName ?? null,
+                assigneeAvatar: defaultAvatar,
                 sourceReplyId: sug.sourceReplyId ?? null,
                 createdBy: actorName,
                 createdAt: now.toISOString(),
@@ -3105,19 +3131,27 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
               addedCount++;
             }
           }
+          task.checklist = sortChecklistItemsByDeadline(task.checklist);
           activityAction = 'SUMMARIZE_CHECKLIST';
           activityDescription =
             addedCount > 0
-              ? `Tự động tóm tắt & thêm ${addedCount} đầu việc từ tin nhắn của ${targetMsg.senderName || task.assigneeName}`
-              : `Cập nhật bản tóm tắt công việc từ tin nhắn của ${targetMsg.senderName || task.assigneeName}`;
+              ? `Tự động tóm tắt & chuẩn hóa ${task.checklist.length} đầu việc từ ${targetMsg.senderName || task.assigneeName}`
+              : `Làm sạch, gán hạn chót & chuẩn hóa checklist công việc của ${targetMsg.senderName || task.assigneeName}`;
         }
       } else if (body.checklistAction === 'add' && body.checklistItem?.title?.trim()) {
+        const assigneeStaff = staffDirectory.find(
+          (s) =>
+            (body.checklistItem?.assigneeId && Number(s.id) === Number(body.checklistItem.assigneeId)) ||
+            (task.assigneeId && Number(s.id) === Number(task.assigneeId))
+        );
         const newItem: MosChatTaskChecklistItem = {
           id: `chk-${crypto.randomUUID().slice(0, 8)}`,
           title: body.checklistItem.title.trim(),
           done: Boolean(body.checklistItem.done),
-          assigneeId: body.checklistItem.assigneeId ?? null,
-          assigneeName: body.checklistItem.assigneeName ?? null,
+          deadline: body.checklistItem.deadline || null,
+          assigneeId: body.checklistItem.assigneeId ?? task.assigneeId ?? null,
+          assigneeName: body.checklistItem.assigneeName ?? task.assigneeName ?? null,
+          assigneeAvatar: body.checklistItem.assigneeAvatar ?? assigneeStaff?.avatarUrl ?? null,
           sourceReplyId: body.checklistItem.sourceReplyId ?? null,
           createdBy: actorName,
           createdAt: now.toISOString(),
@@ -3140,11 +3174,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           if (typeof body.checklistItem.title === 'string' && body.checklistItem.title.trim()) {
             item.title = body.checklistItem.title.trim();
           }
+          if (body.checklistItem.deadline !== undefined) {
+            item.deadline = body.checklistItem.deadline || null;
+          }
           if (body.checklistItem.assigneeId !== undefined) {
             item.assigneeId = body.checklistItem.assigneeId;
           }
           if (body.checklistItem.assigneeName !== undefined) {
             item.assigneeName = body.checklistItem.assigneeName;
+          }
+          if (body.checklistItem.assigneeAvatar !== undefined) {
+            item.assigneeAvatar = body.checklistItem.assigneeAvatar;
           }
           activityAction = 'EDIT_ITEM';
           activityDescription = `Chỉnh sửa mục việc: "${item.title}"`;

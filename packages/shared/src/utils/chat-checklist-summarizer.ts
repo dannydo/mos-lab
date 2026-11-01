@@ -2,14 +2,20 @@ import type {
   ExtractMosChatChecklistSuggestion,
   MosChatConversation,
   MosChatMessage,
+  MosChatTaskChecklistItem,
   MosChatTaskItem,
-  MosChatThreadReply,
 } from '../types/mos-chat.js';
 
 export interface SummarizedChecklistResult {
   summary: string | null;
   suggestions: ExtractMosChatChecklistSuggestion[];
   sourceMessageId?: string | null;
+}
+
+export interface ParsedChecklistTitleBadges {
+  domainBadge: string | null;
+  timeframeBadge: string | null;
+  cleanTitle: string;
 }
 
 const GREETING_OR_INTRO_REGEX =
@@ -19,6 +25,68 @@ const RECAP_HEADER_REGEX = /^\*{0,4}\s*(?:tóm\s+lại|tổng\s+kết|kết\s+lu
 
 const SECTION_HEADER_REGEX =
   /^(?:(?:\d+|[IVX]+)[.)]\s*|\*{1,3}\s*)?(?:về\s+|mảng\s+|bộ\s+phận\s+|phần\s+)?(CSKH|CS|HR|Nhân\s+sự|Vận\s+hành|VH|Marketing|MKT|Sale|Telesales|Kế\s+toán|Đào\s+tạo|Kỹ\s+thuật|Chuyên\s+môn)\s*:?\s*$/i;
+
+const KNOWN_DOMAINS = new Set([
+  'CS',
+  'CSKH',
+  'HR',
+  'NHÂN SỰ',
+  'VẬN HÀNH',
+  'VH',
+  'MKT',
+  'MARKETING',
+  'SALE',
+  'KẾ TOÁN',
+  'ĐÀO TẠO',
+  'KỸ THUẬT',
+]);
+
+const ACTION_VERB_START_REGEX =
+  /^(?:đảm\s+bảo|triển\s+khai|hoàn\s+tất|hoàn\s+thành|xây\s+dựng|xây\s+công\s+cụ|kiểm\s+tra|báo\s+cáo|rà\s+soát|chuẩn\s+bị|cập\s+nhật|gửi|soạn|kê\s+khai|lưu\s+trữ|tuyển\s+dụng|tuyển|đào\s+tạo|lên\s+kế\s+hoạch|thiết\s+lập|tối\s+ưu|xử\s+lý|phối\s+hợp|theo\s+dõi|chốt|duyệt|nộp|làm\s+việc)\b/i;
+
+/**
+ * Detects casual chat/commentary lines (e.g. boss feedback, meta chat about the checklist UI,
+ * system logs, or casual acknowledgements) so they are never mistaken for checklist deliverables.
+ */
+export function isConversationalChatterLine(rawText: string): boolean {
+  const stripped = (rawText || '')
+    .replace(/^\[[^\]]+\]\s*/, '')
+    .replace(/^[-*•+]\s*(\[[ xX]\])?\s*/, '')
+    .replace(/^\d+[.)]\s*/, '')
+    .trim();
+
+  if (!stripped || stripped.length < 4) return true;
+
+  // System checklist log messages in subthreads
+  if (/^\[Checklist\]/i.test(rawText.trim()) || /^📋\s*mOS\s+Task/i.test(rawText.trim())) {
+    return true;
+  }
+
+  // Meta discussion about the checklist / AI / UI feature itself
+  if (
+    /(?:anh\s+đang\s+thiết\s+kế|tự\s+động\s+đọc\s+nội\s+dung|tóm\s+tắt\s+và\s+tạo\s+checklist|không\s+thích\s+cái\s+nào\s+thì\s+xo[áa]|khong\s+thich\s+cai\s+nao\s+thi\s+xoa|nhanh\s+hơn\s+tự\s+phải\s+viết)/i.test(
+      stripped
+    )
+  ) {
+    return true;
+  }
+
+  // Short casual chat / acknowledgements / questions
+  if (
+    /^(?:ok|oke|okay|dạ\s+ok|dạ\s+vâng|vâng\s+ạ|dạ\s+rồi|cảm\s+ơn|thank|thanks|để\s+anh\s+xem|để\s+em\s+xem|anh\s+ơi|em\s+ơi|thầy\s+ơi|alo|test\b)/i.test(
+      stripped
+    )
+  ) {
+    return true;
+  }
+
+  // Exclamatory or conversational remarks ending in "!" or "?" that don't start with an action verb
+  if (/[!?]$/.test(stripped) && !ACTION_VERB_START_REGEX.test(stripped)) {
+    return true;
+  }
+
+  return false;
+}
 
 function normalizeSectionCode(rawSection: string): string {
   const s = rawSection.trim();
@@ -35,7 +103,7 @@ function normalizeTimeframeLabel(raw: string): string | null {
   if (!text) return null;
 
   // Match "Tuần X của Tháng Y" or "Tuần X Tháng Y" or "Tuần X/Y"
-  const weekOfMonthMatch = text.match(/tuần\s*(\d+)\s*(?:của\s*)?(?:tháng\s*|\/)(\d+)/i);
+  const weekOfMonthMatch = text.match(/tuần\s*(\d+)\s*(?:của\s*)?(?:tháng\s*|\/|t)(\d+)/i);
   if (weekOfMonthMatch) {
     return `Tuần ${weekOfMonthMatch[1]}/T${weekOfMonthMatch[2]}`;
   }
@@ -66,13 +134,165 @@ function normalizeTimeframeLabel(raw: string): string | null {
     return 'Hôm nay';
   }
 
+  // Match "Ngày mai"
+  if (/ngày\s+mai/i.test(text)) {
+    return 'Ngày mai';
+  }
+
   // Match "Quý X"
   const quarterMatch = text.match(/quý\s*(\d)/i);
   if (quarterMatch) {
     return `Quý ${quarterMatch[1]}`;
   }
 
+  // Match KPI target hint like "Đạt tối thiểu 85%"
+  const kpiMatch = text.match(/^(?:đạt\s+)?(tối\s+thiểu\s+\d+%)$/i);
+  if (kpiMatch) {
+    const kpi = kpiMatch[1].trim();
+    return kpi.charAt(0).toUpperCase() + kpi.slice(1);
+  }
+
   return null;
+}
+
+/**
+ * Infers a concrete ISO deadline string from a timeframe label (e.g. "Tuần này", "Tuần 1/T11", "Tháng 11")
+ * so checklist items automatically have a real deadline set and can be sorted by urgency.
+ */
+export function inferChecklistDeadlineIso(
+  timeframeLabel: string | null | undefined,
+  fallbackPeriod?: string | null,
+  referenceDateInput?: Date | string | null
+): string | null {
+  const ref = referenceDateInput ? new Date(referenceDateInput) : new Date();
+  const baseDate = isNaN(ref.getTime()) ? new Date() : ref;
+  const year = baseDate.getFullYear();
+  const currentMonth0 = baseDate.getMonth(); // 0-indexed
+
+  const candidates = [timeframeLabel, fallbackPeriod].filter(Boolean) as string[];
+  for (const label of candidates) {
+    const norm = label.trim();
+    if (!norm) continue;
+
+    if (/^hôm\s+nay$/i.test(norm)) {
+      const d = new Date(baseDate);
+      d.setHours(18, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    if (/^ngày\s+mai$/i.test(norm)) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + 1);
+      d.setHours(18, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    if (/^tuần\s+này$/i.test(norm)) {
+      // End of current workweek (5 days out if on Sunday/Monday, otherwise upcoming Friday/Saturday)
+      const d = new Date(baseDate);
+      const dayOfWeek = d.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+      const daysUntilEndOfWeek = dayOfWeek === 0 ? 5 : Math.max(1, 6 - dayOfWeek);
+      d.setDate(d.getDate() + daysUntilEndOfWeek);
+      d.setHours(18, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    const weekMonthMatch = norm.match(/^tuần\s*(\d+)\/T(\d{1,2})$/i);
+    if (weekMonthMatch) {
+      const weekNum = Math.min(4, Math.max(1, Number(weekMonthMatch[1])));
+      const monthNum0 = Math.min(11, Math.max(0, Number(weekMonthMatch[2]) - 1));
+      const targetYear = monthNum0 < currentMonth0 - 1 ? year + 1 : year;
+      const targetDay = weekNum * 7;
+      const d = new Date(targetYear, monthNum0, targetDay, 18, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    if (/^tuần\s+sau$/i.test(norm)) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + 7);
+      d.setHours(18, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    const monthOnlyMatch = norm.match(/^tháng\s*(\d{1,2})$/i);
+    if (monthOnlyMatch) {
+      const monthNum0 = Math.min(11, Math.max(0, Number(monthOnlyMatch[1]) - 1));
+      const targetYear = monthNum0 < currentMonth0 - 1 ? year + 1 : year;
+      // Last day of target month at 18:00
+      const d = new Date(targetYear, monthNum0 + 1, 0, 18, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    if (/^trong\s+tháng$/i.test(norm)) {
+      const d = new Date(year, currentMonth0 + 1, 0, 18, 0, 0, 0);
+      return d.toISOString();
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parses a formatted checklist title like "[CS · Tuần 1/T11] Xây công cụ..."
+ * into structured badges (`domainBadge`, `timeframeBadge`) and `cleanTitle`.
+ */
+export function parseChecklistTitleBadges(rawTitle: string): ParsedChecklistTitleBadges {
+  const trimmed = (rawTitle || '').trim();
+  const bracketMatch = trimmed.match(/^\[([^\]]+)\]\s*(.+)$/);
+  if (!bracketMatch) {
+    return {
+      domainBadge: null,
+      timeframeBadge: null,
+      cleanTitle: trimmed,
+    };
+  }
+
+  const inside = bracketMatch[1].trim();
+  const cleanTitle = bracketMatch[2].trim();
+
+  if (inside.includes('·')) {
+    const [left, right] = inside.split('·').map((s) => s.trim());
+    return {
+      domainBadge: left || null,
+      timeframeBadge: right || null,
+      cleanTitle,
+    };
+  }
+
+  if (KNOWN_DOMAINS.has(inside.toUpperCase())) {
+    return {
+      domainBadge: normalizeSectionCode(inside),
+      timeframeBadge: null,
+      cleanTitle,
+    };
+  }
+
+  return {
+    domainBadge: null,
+    timeframeBadge: inside,
+    cleanTitle,
+  };
+}
+
+/**
+ * Sorts checklist items or suggestions so undone items with the nearest deadline appear first.
+ */
+export function sortChecklistItemsByDeadline<T extends { title: string; done?: boolean; deadline?: string | null }>(
+  items: T[]
+): T[] {
+  return [...items].sort((a, b) => {
+    const aDone = Boolean(a.done);
+    const bDone = Boolean(b.done);
+    if (aDone !== bDone) return aDone ? 1 : -1;
+
+    const aTime = a.deadline ? new Date(a.deadline).getTime() : Number.POSITIVE_INFINITY;
+    const bTime = b.deadline ? new Date(b.deadline).getTime() : Number.POSITIVE_INFINITY;
+    const aValid = Number.isFinite(aTime) ? aTime : Number.POSITIVE_INFINITY;
+    const bValid = Number.isFinite(bTime) ? bTime : Number.POSITIVE_INFINITY;
+
+    if (aValid !== bValid) return aValid - bValid;
+    return 0;
+  });
 }
 
 function extractTimeframeFromClause(clause: string): {
@@ -93,7 +313,6 @@ function extractTimeframeFromClause(clause: string): {
   const matches = Array.from(working.matchAll(parenRegex));
   for (let i = matches.length - 1; i >= 0; i--) {
     const inner = matches[i][1].trim();
-    // Only treat as a pure timeframe parenthetical if it starts with or mainly consists of time words
     const isPureTimeframe =
       /^(?:trong\s+)?(?:tuần|tháng|hôm\s+nay|ngày|quý)\b/i.test(inner) ||
       /(?:phải\s+xong|hoàn\s+tất|deadline|hạn\s+chót)$/i.test(inner);
@@ -112,7 +331,7 @@ function extractTimeframeFromClause(clause: string): {
   // 3. Check leading timeframe prefix like "Tuần này: ..." or "Tuần tiếp theo: ..."
   if (!detectedTimeframe) {
     const prefixMatch = working.match(
-      /^(tuần\s+này|tuần\s+tiếp\s+theo|tuần\s+sau|các\s+tuần\s+còn\s+lại|tháng\s*\d{1,2}|hôm\s+nay)\s*:\s*(.+)$/i
+      /^(tuần\s+này|tuần\s+tiếp\s+theo|tuần\s+sau|các\s+tuần\s+còn\s+lại|tháng\s*\d{1,2}|hôm\s+nay|ngày\s+mai)\s*:\s*(.+)$/i
     );
     if (prefixMatch) {
       detectedTimeframe = normalizeTimeframeLabel(prefixMatch[1]);
@@ -185,7 +404,6 @@ function isDuplicateSuggestion(existing: ExtractMosChatChecklistSuggestion[], ca
  * e.g. "Triển khai được 1 CV Lông ĐT (Trong tuần này) - Triển khai 1 CV Lông EP (Tuần 1 Tháng 11)"
  */
 function splitCompoundBulletLine(line: string): string[] {
-  // Split when a closing parenthesis is followed by " - " and an action phrase
   const parts = line
     .split(/(?<=\))\s+[-–—]\s+(?=[A-ZÀ-Ỹa-zà-ỹ0-9])/u)
     .map((p) => p.trim())
@@ -203,6 +421,7 @@ export function summarizeAndExtractChecklistFromText(params: {
   rootText?: string | null;
   rootSenderName?: string | null;
   rootSenderId?: number | string | null;
+  referenceDate?: Date | string | null;
   replies?: Array<{
     id: string;
     text: string;
@@ -233,7 +452,8 @@ export function summarizeAndExtractChecklistFromText(params: {
     textBlock: string,
     authorName?: string | null,
     authorId?: number | string | null,
-    sourceReplyId?: string | null
+    sourceReplyId?: string | null,
+    isThreadReply = false
   ) => {
     const rawLines = textBlock
       .split('\n')
@@ -245,7 +465,7 @@ export function summarizeAndExtractChecklistFromText(params: {
     const countBeforeBlock = suggestions.length;
 
     for (const rawLine of rawLines) {
-      // Strip bullet prefix for structural checks
+      const hasExplicitBullet = /^(?:[-*•+]|\d+[.)])\s+/.test(rawLine);
       const stripped = rawLine
         .replace(/^[-*•+]\s*(\[[ xX]\])?\s*/, '')
         .replace(/^\d+[.)]\s*/, '')
@@ -267,20 +487,33 @@ export function summarizeAndExtractChecklistFromText(params: {
         continue;
       }
 
-      // 3. Skip pure greeting / intro lines
+      // 3. Skip greetings, intros, and casual conversational chatter
       if (
         GREETING_OR_INTRO_REGEX.test(stripped) ||
         (/như\s+sau\s*:$/i.test(stripped) && stripped.length < 100) ||
         (/^(?:dạ|thưa|bẩm|chào|kính\s+gửi)\b/i.test(stripped) && stripped.length < 40) ||
         /^giao\s+việc\s+cho\b/i.test(stripped) ||
-        /^tự\s+tạo\s+việc\b/i.test(stripped)
+        /^tự\s+tạo\s+việc\b/i.test(stripped) ||
+        isConversationalChatterLine(rawLine)
       ) {
         continue;
       }
 
+      // 3b. For thread replies when root message already has structured items,
+      // only extract lines that have explicit bullets or start with a clear action verb!
+      if (isThreadReply && countBeforeBlock >= 2 && !hasExplicitBullet && !ACTION_VERB_START_REGEX.test(stripped)) {
+        continue;
+      }
+
       // 4. If we are in the "***Tóm lại:" recap section and we ALREADY extracted detailed items above,
-      // do not duplicate them into the checklist! Instead, only extract if no detailed items existed.
+      // record timeframe highlights for the Executive Summary if helpful, but do NOT duplicate into checklist!
       if (inRecapSection && suggestions.length > countBeforeBlock) {
+        const prefixMatch = stripped.match(/^(tuần\s+này|tuần\s+tiếp\s+theo|tuần\s+sau)\s*:\s*(.+)$/i);
+        if (prefixMatch) {
+          const tfLabel = prefixMatch[1].trim();
+          const normalizedKey = /^tuần\s+này$/i.test(tfLabel) ? 'Tuần này' : 'Tuần tiếp theo';
+          timeframeHighlights[normalizedKey] = [prefixMatch[2].trim()];
+        }
         continue;
       }
 
@@ -289,12 +522,9 @@ export function summarizeAndExtractChecklistFromText(params: {
 
       for (const clause of subClauses) {
         const { cleanedClause, timeframe } = extractTimeframeFromClause(clause);
-
-        // If this was a recap line like "Tuần tiếp theo: A, B, C" and we had no detailed items above,
-        // split by comma if needed
         const effectiveTimeframe = timeframe || defaultPeriod;
         const polished = polishActionText(cleanedClause);
-        if (!polished || polished.length < 4) continue;
+        if (!polished || polished.length < 4 || isConversationalChatterLine(polished)) continue;
 
         // Build tag prefix: [CS · Tháng 11] or [HR · Tuần này]
         let tagPrefix = '';
@@ -306,11 +536,13 @@ export function summarizeAndExtractChecklistFromText(params: {
           tagPrefix = `[${effectiveTimeframe}] `;
         }
 
-        const finalTitle = `${tagPrefix}${polished}`.slice(0, 180);
+        const finalTitle = `${tagPrefix}${polished}`.slice(0, 220);
+        const inferredDeadline = inferChecklistDeadlineIso(timeframe, defaultPeriod, params.referenceDate);
 
         if (!isDuplicateSuggestion(suggestions, finalTitle)) {
           suggestions.push({
             title: finalTitle,
+            deadline: inferredDeadline,
             assigneeName: authorName || null,
             assigneeId: authorId ?? null,
             sourceReplyId: sourceReplyId ?? null,
@@ -329,14 +561,14 @@ export function summarizeAndExtractChecklistFromText(params: {
     }
   };
 
-  // First process root message if it has multi-line or bullet content
+  // First process root message
   if (rootText) {
-    processTextBlock(rootText, params.rootSenderName, params.rootSenderId, null);
+    processTextBlock(rootText, params.rootSenderName, params.rootSenderId, null, false);
   }
 
-  // Then process thread replies for any additional action items
+  // Then process thread replies for any additional structured action items
   for (const rep of replies) {
-    processTextBlock(rep.text, rep.senderName, rep.senderId, rep.id);
+    processTextBlock(rep.text, rep.senderName, rep.senderId, rep.id, true);
   }
 
   if (suggestions.length === 0) {
@@ -354,34 +586,18 @@ export function summarizeAndExtractChecklistFromText(params: {
       : `${suggestions.length} đầu việc trọng tâm`;
 
   const priorityTimelineParts: string[] = [];
-  const orderedTimeKeys = Object.keys(timeframeHighlights).sort((a, b) => {
-    const rank = (k: string) => {
-      if (k === 'Hôm nay') return 1;
-      if (k === 'Tuần này') return 2;
-      if (k.startsWith('Tuần 1')) return 3;
-      if (k === 'Tuần sau') return 4;
-      return 5;
-    };
-    return rank(a) - rank(b);
-  });
-
-  for (const tfKey of orderedTimeKeys.slice(0, 3)) {
-    const items = timeframeHighlights[tfKey];
-    if (items && items.length > 0) {
-      const shortList = items
-        .slice(0, 3)
-        .map((it) => {
-          const shortIt = it.replace(/\([^)]*\)/g, '').trim();
-          return shortIt.length > 48 ? shortIt.slice(0, 45).trim() + '...' : shortIt;
-        })
-        .join(', ');
-      priorityTimelineParts.push(`${tfKey}: ${shortList}`);
-    }
+  if (timeframeHighlights['Tuần này']?.length) {
+    priorityTimelineParts.push(`Tuần này: ${timeframeHighlights['Tuần này'].slice(0, 2).join(', ')}`);
+  }
+  if (timeframeHighlights['Tuần tiếp theo']?.length) {
+    priorityTimelineParts.push(`Tuần tiếp theo: ${timeframeHighlights['Tuần tiếp theo'].slice(0, 2).join(', ')}`);
+  } else if (timeframeHighlights['Tuần 1/T11']?.length) {
+    priorityTimelineParts.push(`Tuần 1/T11: ${timeframeHighlights['Tuần 1/T11'].slice(0, 2).join(', ')}`);
   }
 
   const summary =
     priorityTimelineParts.length > 0
-      ? `${headerStat} · ${priorityTimelineParts.join(' | ')}`
+      ? `${headerStat} · ${priorityTimelineParts.join(' · ')}`
       : `${headerStat} đã được tóm tắt và chuẩn hóa tự động.`;
 
   return {
@@ -391,9 +607,36 @@ export function summarizeAndExtractChecklistFromText(params: {
 }
 
 /**
+ * Cleans up an existing checklist array by removing conversational chatter items,
+ * filling in missing deadlines/assignees, and sorting by deadline proximity.
+ */
+export function normalizeAndEnrichTaskChecklist(
+  items: MosChatTaskChecklistItem[],
+  options?: {
+    defaultAssigneeId?: number | string | null;
+    defaultAssigneeName?: string | null;
+    defaultAssigneeAvatar?: string | null;
+    referenceDate?: Date | string | null;
+  }
+): MosChatTaskChecklistItem[] {
+  const cleaned = items.filter((item) => !isConversationalChatterLine(item.title));
+  const enriched = cleaned.map((item) => {
+    const parsed = parseChecklistTitleBadges(item.title);
+    const inferredDeadline =
+      item.deadline || inferChecklistDeadlineIso(parsed.timeframeBadge, null, options?.referenceDate);
+    return {
+      ...item,
+      deadline: inferredDeadline || null,
+      assigneeId: item.assigneeId ?? options?.defaultAssigneeId ?? null,
+      assigneeName: item.assigneeName || options?.defaultAssigneeName || null,
+      assigneeAvatar: item.assigneeAvatar || options?.defaultAssigneeAvatar || null,
+    };
+  });
+  return sortChecklistItemsByDeadline(enriched);
+}
+
+/**
  * Resolves the best work-report message in a conversation for a given Task or Message ID.
- * If the task's direct sourceMessageId is missing or points to a short system stub ("Giao việc cho..."),
- * it automatically finds the most relevant multi-line/bullet message in the conversation (prioritizing the task's assignee).
  */
 export function resolveBestSourceMessageForTaskChecklist(
   conv: MosChatConversation | null | undefined,
@@ -412,24 +655,27 @@ export function resolveBestSourceMessageForTaskChecklist(
   const isSubstantiveWorkMessage = (m: MosChatMessage | null | undefined): boolean => {
     if (!m || m.isDeleted || m.isAiBot) return false;
     const txt = (m.text || '').trim();
-    if (!txt) return false;
+    if (!txt || isConversationalChatterLine(txt)) return false;
     if (/^(?:giao\s+việc\s+cho|tự\s+tạo\s+việc)/i.test(txt) && txt.length < 80) {
-      return Boolean(m.thread && m.thread.some((r) => !r.isDeleted && !r.isAiBot && (r.text || '').trim().length > 15));
+      return Boolean(
+        m.thread &&
+        m.thread.some(
+          (r) => !r.isDeleted && !r.isAiBot && (r.text || '').trim().length > 15 && !isConversationalChatterLine(r.text)
+        )
+      );
     }
     const lineCount = txt.split('\n').filter((l) => l.trim().length > 0).length;
     const hasBullets = /(?:^|\n)\s*(?:[-*•+]|\d+[.)])\s+/m.test(txt);
-    return lineCount >= 2 || hasBullets || txt.length >= 60 || Boolean(m.thread && m.thread.length > 0);
+    return lineCount >= 2 || hasBullets || txt.length >= 60;
   };
 
   if (directMsg && isSubstantiveWorkMessage(directMsg)) {
     return directMsg;
   }
 
-  // Otherwise, scan conversation messages (newest first, or near directMsg/task creation) for a substantive work report
   const assigneeNameNorm = (options.task?.assigneeName || '').trim().toLowerCase();
   const candidates = conv.messages.filter((m) => isSubstantiveWorkMessage(m));
 
-  // 1. Prefer a multi-line bulleted message sent by the task's assignee (e.g., Bảo Hân)
   if (assigneeNameNorm) {
     const byAssignee = [...candidates]
       .reverse()
@@ -441,7 +687,6 @@ export function resolveBestSourceMessageForTaskChecklist(
     if (byAssignee) return byAssignee;
   }
 
-  // 2. Prefer any recent message in this conversation that has bullet points or numbered lists
   const latestBulleted = [...candidates]
     .reverse()
     .find((m) => /(?:^|\n)\s*(?:[-*•+]|\d+[.)])\s+/m.test(m.text || '') || (m.text || '').split('\n').length >= 3);

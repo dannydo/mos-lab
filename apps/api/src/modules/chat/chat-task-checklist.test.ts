@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   summarizeAndExtractChecklistFromText,
   resolveBestSourceMessageForTaskChecklist,
+  normalizeAndEnrichTaskChecklist,
   type MosChatTaskItem,
   type MosChatTaskChecklistItem,
   type MosChatConversation,
@@ -196,5 +197,72 @@ Danny Do và Team, mục tiêu tuần này và Tháng 11 của em như sau:
 
     const resolved = resolveBestSourceMessageForTaskChecklist(conv, { task });
     assert.equal(resolved?.id, 'msg-baohan-goals');
+  });
+
+  it('filters out boss conversational chatter replies and sorts checklist items by deadline proximity', () => {
+    const rootText = `1. Về CS
+• Đảm bảo khách: 40 Book và 35 Done (Đạt tối thiểu 85%) (Trong Tháng 11)
+2. Về HR
+• Triển khai được 1 CV Lông ĐT (Trong tuần này)`;
+
+    const result = summarizeAndExtractChecklistFromText({
+      rootText,
+      rootSenderName: 'Bảo Hân',
+      rootSenderId: 9,
+      referenceDate: '2026-11-01T08:00:00.000Z',
+      replies: [
+        {
+          id: 'rep-chat-1',
+          text: 'Anh đang thiết kế cho nó tự động đọc nội dung em viết, tóm tắt và tạo checklist cho tiện',
+          senderName: 'Danny Do',
+          senderId: 1,
+        },
+        {
+          id: 'rep-chat-2',
+          text: 'Khong thích cái nào thì xoá đi sẽ nhanh hơn tự phải viết hết!',
+          senderName: 'Danny Do',
+          senderId: 1,
+        },
+      ],
+    });
+
+    assert.equal(result.suggestions.length, 2);
+    assert.ok(result.suggestions.every((s) => !s.title.includes('Anh đang thiết kế')));
+    assert.ok(result.suggestions.every((s) => !s.title.includes('Khong thích cái nào')));
+    assert.ok(result.suggestions[0].deadline);
+    assert.ok(result.suggestions[1].deadline);
+
+    const cleaned = normalizeAndEnrichTaskChecklist(
+      [
+        {
+          id: 'chk-a',
+          title: '[CS · Tháng 11] Đảm bảo khách: 40 Book và 35 Done',
+          done: false,
+          createdAt: '2026-11-01T08:00:00.000Z',
+        },
+        {
+          id: 'chk-noise',
+          title: '[Tháng 11] Khong thích cái nào thì xoá đi sẽ nhanh hơn tự phải viết hết!',
+          done: false,
+          createdAt: '2026-11-01T08:00:00.000Z',
+        },
+        {
+          id: 'chk-b',
+          title: '[HR · Tuần này] Triển khai 1 CV Lông ĐT',
+          done: false,
+          createdAt: '2026-11-01T08:00:00.000Z',
+        },
+      ],
+      {
+        defaultAssigneeName: 'Bảo Hân',
+        referenceDate: '2026-11-01T08:00:00.000Z',
+      }
+    );
+
+    assert.equal(cleaned.length, 2);
+    // "Tuần này" deadline is earlier than "Tháng 11", so chk-b is sorted first!
+    assert.equal(cleaned[0].id, 'chk-b');
+    assert.equal(cleaned[0].assigneeName, 'Bảo Hân');
+    assert.ok(cleaned[0].deadline);
   });
 });

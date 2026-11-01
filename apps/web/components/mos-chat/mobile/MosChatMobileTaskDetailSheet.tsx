@@ -400,7 +400,12 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           })()}
 
           {/* Inline Checklist & Auto-Summarizer */}
-          <MosChatTaskInlineChecklist task={task} onUpdateTask={updateTask} isDark={true} />
+          <MosChatTaskInlineChecklist
+            task={task}
+            onUpdateTask={updateTask}
+            isDark={true}
+            staffList={staffDirectory || []}
+          />
 
           {/* Negotiation Banner if requested */}
           {hasNegotiation && (

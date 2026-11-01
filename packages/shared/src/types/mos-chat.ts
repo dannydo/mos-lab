@@ -272,8 +272,10 @@ export interface MosChatTaskChecklistItem {
   id: string;
   title: string;
   done: boolean;
+  deadline?: string | null;
   assigneeId?: number | string | null;
   assigneeName?: string | null;
+  assigneeAvatar?: string | null;
   sourceReplyId?: string | null;
   createdBy?: string | null;
   createdAt: string;
@@ -571,8 +573,10 @@ export interface CreateMosChatTaskRequest {
   checklist?: Array<{
     title: string;
     done?: boolean;
+    deadline?: string | null;
     assigneeId?: number | string | null;
     assigneeName?: string | null;
+    assigneeAvatar?: string | null;
     sourceReplyId?: string | null;
   }>;
   importRepliesAsChecklist?: boolean;
@@ -647,8 +651,10 @@ export interface ExtractMosChatChecklistRequest {
 
 export interface ExtractMosChatChecklistSuggestion {
   title: string;
+  deadline?: string | null;
   assigneeName?: string | null;
   assigneeId?: number | string | null;
+  assigneeAvatar?: string | null;
   sourceReplyId?: string | null;
 }
 

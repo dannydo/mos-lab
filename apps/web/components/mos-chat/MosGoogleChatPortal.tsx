@@ -166,8 +166,10 @@ import type {
 import {
   hexToRgba,
   isCanonicalSuperAdminIdentity,
+  normalizeAndEnrichTaskChecklist,
   removeVietnameseTones,
   resolveBestSourceMessageForTaskChecklist,
+  sortChecklistItemsByDeadline,
   summarizeAndExtractChecklistFromText,
 } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
@@ -6009,27 +6011,39 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             ...prev,
             [taskId]: true,
           }));
-          // Optimistic client-side summarization before server round-trip
+          // Optimistic client-side summarization & noise cleanup before server round-trip
           setTasks((prev) =>
             prev.map((t) => {
               if (t.id !== taskId) return t;
               const targetConv = conversations.find((c) => c.id === t.conversationId) || activeConversation;
               const bestMsg = resolveBestSourceMessageForTaskChecklist(targetConv, { task: t });
-              if (!bestMsg) return t;
+              const cleanedExisting = normalizeAndEnrichTaskChecklist(t.checklist || [], {
+                defaultAssigneeId: t.assigneeId ?? null,
+                defaultAssigneeName: t.assigneeName ?? null,
+                referenceDate: bestMsg?.createdAt || t.createdAt,
+              });
+              if (!bestMsg) {
+                return {
+                  ...t,
+                  checklist: cleanedExisting,
+                };
+              }
               const { summary, suggestions } = summarizeAndExtractChecklistFromText({
                 rootText: bestMsg.text,
                 rootSenderName: bestMsg.senderName,
                 rootSenderId: bestMsg.senderId,
+                referenceDate: bestMsg.createdAt || t.createdAt,
                 replies: bestMsg.thread || [],
               });
-              const existingChk = [...(t.checklist || [])];
+              const mergedChk = [...cleanedExisting];
               for (const sug of suggestions) {
-                const exists = existingChk.some((c) => c.title.trim().toLowerCase() === sug.title.trim().toLowerCase());
+                const exists = mergedChk.some((c) => c.title.trim().toLowerCase() === sug.title.trim().toLowerCase());
                 if (!exists) {
-                  existingChk.push({
-                    id: `chk-opt-${Date.now()}-${existingChk.length}`,
+                  mergedChk.push({
+                    id: `chk-opt-${Date.now()}-${mergedChk.length}`,
                     title: sug.title,
                     done: false,
+                    deadline: sug.deadline || null,
                     assigneeId: sug.assigneeId ?? t.assigneeId ?? null,
                     assigneeName: sug.assigneeName ?? t.assigneeName ?? null,
                     sourceReplyId: sug.sourceReplyId ?? null,
@@ -6041,7 +6055,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               return {
                 ...t,
                 summary: summary || t.summary || null,
-                checklist: existingChk,
+                checklist: sortChecklistItemsByDeadline(mergedChk),
+              };
+            })
+          );
+        } else if (payload.checklistAction === 'edit' && payload.checklistItemId && payload.checklistItem) {
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id !== taskId) return t;
+              return {
+                ...t,
+                checklist: (t.checklist || []).map((c) =>
+                  c.id === payload.checklistItemId ? { ...c, ...payload.checklistItem } : c
+                ),
               };
             })
           );
@@ -7444,9 +7470,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           );
         })()}
 
-        {/* Inline Expandable Checklist Accordion */}
-        {expandedChecklistTaskIds[task.id] && (
-          <MosChatTaskInlineChecklist task={task} onUpdateTask={handleUpdateTask} isDark={isDark} token={token} />
+        {/* Inline Expandable Checklist Accordion (hidden in 'thread' mode where MosChatThreadChecklist is pinned below) */}
+        {mode !== 'thread' && expandedChecklistTaskIds[task.id] && (
+          <MosChatTaskInlineChecklist
+            task={task}
+            onUpdateTask={handleUpdateTask}
+            isDark={isDark}
+            token={token}
+            staffList={staffDirectory}
+          />
         )}
 
         {/* Embedded mOS Mission Section (Unified Card - avoids duplicated cards and titles) */}

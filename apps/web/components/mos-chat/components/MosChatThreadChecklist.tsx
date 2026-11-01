@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Check,
   Plus,
@@ -9,12 +9,28 @@ import {
   ChevronUp,
   MessageSquare,
   Clock,
-  User,
   ListTodo,
+  Pencil,
+  Calendar,
+  UserPlus,
 } from 'lucide-react';
-import { Tooltip, Modal, Input, Progress, message, Badge } from 'antd';
-import type { MosChatTaskItem, MosChatTaskChecklistItem, MosChatMessage } from '@mos-lab/shared';
+import { Tooltip, Modal, Input, Progress, message, Popover } from 'antd';
+import {
+  parseChecklistTitleBadges,
+  type MosChatTaskItem,
+  type MosChatTaskChecklistItem,
+  type MosChatMessage,
+  type MosChatStaffMember,
+  type UpdateMosChatTaskRequest,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
+import {
+  buildQuickDeadlineOptions,
+  formatShortDeadlineLabel,
+  getDomainBadgeStyle,
+  getStaffAvatarColor,
+  getStaffInitials,
+} from './MosChatTaskInlineChecklist';
 
 export interface MosChatThreadChecklistProps {
   task: MosChatTaskItem;
@@ -22,7 +38,9 @@ export interface MosChatThreadChecklistProps {
   onToggleChecklistItem: (checklistItemId: string) => Promise<void> | void;
   onAddChecklistItem: (title: string, sourceReplyId?: string | null) => Promise<void> | void;
   onDeleteChecklistItem: (checklistItemId: string) => Promise<void> | void;
+  onUpdateTask?: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<void> | void;
   onScrollToReply?: (replyId: string) => void;
+  staffList?: MosChatStaffMember[];
   isDark: boolean;
   token?: any;
   isMobile?: boolean;
@@ -34,20 +52,38 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
   onToggleChecklistItem,
   onAddChecklistItem,
   onDeleteChecklistItem,
+  onUpdateTask,
   onScrollToReply,
+  staffList = [],
   isDark,
-  token,
-  isMobile = false,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [quickTitle, setQuickTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
+  // Expand "Xem thêm / Thu gọn" per item
+  const [expandedItemIds, setExpandedItemIds] = useState<Record<string, boolean>>({});
+
+  // Inline Edit state
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+
+  // Popover states for Deadline & Assignee
+  const [openDeadlineItemId, setOpenDeadlineItemId] = useState<string | null>(null);
+  const [openAssigneeItemId, setOpenAssigneeItemId] = useState<string | null>(null);
+  const [staffSearch, setStaffSearch] = useState('');
+
   // AI Extraction state
   const [isAiExtracting, setIsAiExtracting] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<
-    Array<{ title: string; assigneeName?: string; sourceReplyId?: string; selected: boolean }>
+    Array<{
+      title: string;
+      deadline?: string | null;
+      assigneeName?: string;
+      sourceReplyId?: string;
+      selected: boolean;
+    }>
   >([]);
 
   // Activity Log Modal state
@@ -59,6 +95,41 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
   const totalCount = checklist.length;
   const doneCount = useMemo(() => checklist.filter((c) => c.done).length, [checklist]);
   const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+  const quickDeadlines = useMemo(() => buildQuickDeadlineOptions(), []);
+
+  const availableStaff = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: number | string; displayName: string; role?: string; avatarUrl?: string | null }
+    >();
+    for (const s of staffList) {
+      if (s && s.displayName) {
+        map.set(s.displayName.trim().toLowerCase(), {
+          id: s.id,
+          displayName: s.displayName,
+          role: s.role,
+          avatarUrl: s.avatarUrl,
+        });
+      }
+    }
+    const fallbacks = [
+      { id: task.assigneeId || 'assignee', displayName: task.assigneeName || 'Bảo Hân', role: 'Phụ trách Task' },
+      { id: task.assignerId || 'creator', displayName: task.creatorName || 'Danny Do', role: 'Người giao' },
+      { id: 'bao-han', displayName: 'Bảo Hân', role: 'Admin' },
+      { id: 'danny-do', displayName: 'Danny Do', role: 'CEO / Founder' },
+    ];
+    for (const f of fallbacks) {
+      const key = f.displayName.trim().toLowerCase();
+      if (key && !map.has(key)) {
+        map.set(key, f);
+      }
+    }
+    const list = Array.from(map.values());
+    const q = staffSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((s) => s.displayName.toLowerCase().includes(q) || (s.role && s.role.toLowerCase().includes(q)));
+  }, [staffList, task.assigneeId, task.assigneeName, task.assignerId, task.creatorName, staffSearch]);
 
   const handleQuickAdd = async () => {
     const trimmed = quickTitle.trim();
@@ -74,17 +145,81 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
     }
   };
 
+  const handleEditChecklistItem = async (itemId: string, checklistItemPatch: Partial<MosChatTaskChecklistItem>) => {
+    try {
+      if (onUpdateTask) {
+        await onUpdateTask(task.id, {
+          checklistAction: 'edit',
+          checklistItemId: itemId,
+          checklistItem: checklistItemPatch,
+        });
+      } else {
+        await apiClient.chat.updateTask(task.id, {
+          checklistAction: 'edit',
+          checklistItemId: itemId,
+          checklistItem: checklistItemPatch,
+        });
+      }
+    } catch (err: any) {
+      message.error(err?.message || 'Không thể cập nhật mục checklist');
+    }
+  };
+
+  const handleStartEdit = (item: MosChatTaskChecklistItem) => {
+    setEditingItemId(item.id);
+    setEditingTitle(item.title);
+  };
+
+  const handleSaveEdit = async (itemId: string) => {
+    const trimmed = editingTitle.trim();
+    if (!trimmed) {
+      setEditingItemId(null);
+      return;
+    }
+    await handleEditChecklistItem(itemId, { title: trimmed });
+    setEditingItemId(null);
+  };
+
+  const handleSetDeadline = async (itemId: string, deadlineIso: string | null) => {
+    setOpenDeadlineItemId(null);
+    await handleEditChecklistItem(itemId, { deadline: deadlineIso });
+  };
+
+  const handleSetAssignee = async (
+    itemId: string,
+    staff: { id: number | string; displayName: string; avatarUrl?: string | null } | null
+  ) => {
+    setOpenAssigneeItemId(null);
+    setStaffSearch('');
+    await handleEditChecklistItem(
+      itemId,
+      staff
+        ? {
+            assigneeId: staff.id,
+            assigneeName: staff.displayName,
+            assigneeAvatar: staff.avatarUrl || null,
+          }
+        : {
+            assigneeId: null,
+            assigneeName: null,
+            assigneeAvatar: null,
+          }
+    );
+  };
+
   const handleOpenAiExtract = async () => {
     setIsAiExtracting(true);
     try {
       const res = await apiClient.chat.extractChecklist(activeThreadMessage.id, {
         conversationId: activeThreadMessage.conversationId,
+        taskId: task.id,
       });
       if (res?.suggestions && res.suggestions.length > 0) {
         setAiSuggestions(
           res.suggestions.map((s) => ({
             title: s.title,
-            assigneeName: s.assigneeName || undefined,
+            deadline: s.deadline || null,
+            assigneeName: s.assigneeName || task.assigneeName || undefined,
             sourceReplyId: s.sourceReplyId || undefined,
             selected: true,
           }))
@@ -106,8 +241,14 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
       setAiModalOpen(false);
       return;
     }
-    for (const item of selected) {
-      await onAddChecklistItem(item.title, item.sourceReplyId || null);
+    if (onUpdateTask) {
+      await onUpdateTask(task.id, {
+        checklistAction: 'auto_summarize',
+      });
+    } else {
+      for (const item of selected) {
+        await onAddChecklistItem(item.title, item.sourceReplyId || null);
+      }
     }
     message.success(`Đã thêm ${selected.length} mục vào checklist!`);
     setAiModalOpen(false);
@@ -135,6 +276,19 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          {onUpdateTask && (
+            <Tooltip title="Đọc công việc, làm sạch câu chat thừa, tự động tóm tắt, gắn hạn & gán Avatar">
+              <button
+                type="button"
+                onClick={() => onUpdateTask(task.id, { checklistAction: 'auto_summarize' })}
+                className="px-2 py-1 rounded-md text-[10.5px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 border border-amber-500/30"
+              >
+                <Sparkles size={11} />
+                <span>Tóm tắt & Chuẩn hóa</span>
+              </button>
+            </Tooltip>
+          )}
+
           <Tooltip title="✨ AI trích xuất checklist từ thảo luận subthread">
             <button
               type="button"
@@ -208,78 +362,362 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
               Chưa có mục checklist nào. Bấm &quot;+ Checklist&quot; từ phản hồi bên dưới hoặc nhập đầu việc mới.
             </div>
           ) : (
-            checklist.map((item) => (
-              <div
-                key={item.id}
-                className={`group/item flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
-                  item.done
-                    ? 'bg-emerald-500/5 text-slate-400 dark:text-slate-500'
-                    : 'bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 text-slate-800 dark:text-slate-200'
-                }`}
-                style={{
-                  border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
-                }}
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {/* Circular Checkbox */}
-                  <button
-                    type="button"
-                    onClick={() => onToggleChecklistItem(item.id)}
-                    className={`w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                      item.done
-                        ? 'bg-emerald-500 text-white'
-                        : 'border border-slate-400 dark:border-slate-500 hover:border-emerald-500 text-transparent hover:text-emerald-500'
-                    }`}
-                  >
-                    <Check size={10} strokeWidth={item.done ? 3 : 2} />
-                  </button>
+            checklist.map((item) => {
+              const isEditing = editingItemId === item.id;
+              const isExpanded = Boolean(expandedItemIds[item.id]);
+              const parsed = parseChecklistTitleBadges(item.title);
+              const displayBody = parsed.cleanTitle || item.title;
+              const isLongText = displayBody.length > 72 || item.title.length > 85;
+              const deadlineMeta = formatShortDeadlineLabel(item.deadline);
+              const effectiveAssigneeName = item.assigneeName || task.assigneeName || null;
+              const matchedStaff = effectiveAssigneeName
+                ? availableStaff.find(
+                    (s) => s.displayName.trim().toLowerCase() === effectiveAssigneeName.trim().toLowerCase()
+                  )
+                : null;
+              const avatarUrl = item.assigneeAvatar || matchedStaff?.avatarUrl || null;
 
-                  {/* Title */}
-                  <span
-                    className={`truncate font-medium flex-1 ${
-                      item.done ? 'line-through text-slate-400 dark:text-slate-500' : ''
-                    }`}
-                  >
-                    {item.title}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Assignee pill */}
-                  {item.assigneeName && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-slate-500/10 text-slate-500 dark:text-slate-400">
-                      <User size={9} />
-                      <span className="max-w-[70px] truncate">{item.assigneeName}</span>
-                    </span>
-                  )}
-
-                  {/* Source reply jump button */}
-                  {item.sourceReplyId && (
-                    <Tooltip title="Cuộn tới tin nhắn thảo luận gốc trong luồng">
-                      <button
-                        type="button"
-                        aria-label="Cuộn tới tin nhắn thảo luận gốc"
-                        onClick={() => onScrollToReply && onScrollToReply(item.sourceReplyId!)}
-                        className="p-1 rounded text-amber-500 hover:bg-amber-500/15 cursor-pointer transition-colors"
-                      >
-                        <MessageSquare size={11} />
-                      </button>
-                    </Tooltip>
-                  )}
-
-                  {/* Delete button */}
-                  <Tooltip title="Xóa mục việc này">
+              return (
+                <div
+                  key={item.id}
+                  className={`group/item flex items-start justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
+                    item.done
+                      ? 'bg-emerald-500/5 text-slate-400 dark:text-slate-500'
+                      : 'bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 text-slate-800 dark:text-slate-200'
+                  }`}
+                  style={{
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
+                  }}
+                >
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    {/* Circular Checkbox */}
                     <button
                       type="button"
-                      onClick={() => onDeleteChecklistItem(item.id)}
-                      className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                      onClick={() => onToggleChecklistItem(item.id)}
+                      className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                        item.done
+                          ? 'bg-emerald-500 text-white'
+                          : 'border border-slate-400 dark:border-slate-500 hover:border-emerald-500 text-transparent hover:text-emerald-500'
+                      }`}
                     >
-                      <Trash2 size={11} />
+                      <Check size={10} strokeWidth={item.done ? 3 : 2} />
                     </button>
-                  </Tooltip>
+
+                    {isEditing ? (
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <Input.TextArea
+                          autoFocus
+                          autoSize={{ minRows: 1, maxRows: 4 }}
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setEditingItemId(null);
+                            } else if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSaveEdit(item.id);
+                            }
+                          }}
+                          className="text-xs"
+                          style={{
+                            borderRadius: '6px',
+                            background: isDark ? 'rgba(15, 23, 42, 0.9)' : '#ffffff',
+                          }}
+                        />
+                        <div className="flex items-center justify-end gap-1 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setEditingItemId(null)}
+                            className="px-2 py-0.5 rounded bg-slate-500/15 hover:bg-slate-500/25 text-slate-400 cursor-pointer"
+                          >
+                            Huỷ (Esc)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEdit(item.id)}
+                            className="px-2 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white font-bold cursor-pointer"
+                          >
+                            Lưu (Enter)
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="flex-1 min-w-0 select-text cursor-text"
+                        onDoubleClick={() => handleStartEdit(item)}
+                        title="Nhấp đúp để chỉnh sửa nội dung"
+                      >
+                        <div
+                          className={`font-medium leading-snug break-words ${
+                            !isExpanded ? 'line-clamp-2' : ''
+                          } ${item.done ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}
+                        >
+                          {parsed.domainBadge && (
+                            <span
+                              className="inline-flex items-center justify-center px-1.5 py-0.5 mr-1.5 rounded text-[9.5px] font-extrabold leading-none align-middle"
+                              style={getDomainBadgeStyle(parsed.domainBadge, isDark)}
+                            >
+                              {parsed.domainBadge}
+                            </span>
+                          )}
+                          {parsed.timeframeBadge && (
+                            <span className="inline-flex items-center justify-center px-1.5 py-0.5 mr-1.5 rounded text-[9.5px] font-semibold leading-none align-middle bg-slate-500/15 text-slate-500 dark:text-slate-300 border border-slate-500/20">
+                              {parsed.timeframeBadge}
+                            </span>
+                          )}
+                          <span>{displayBody}</span>
+                        </div>
+
+                        {isLongText && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedItemIds((prev) => ({
+                                ...prev,
+                                [item.id]: !prev[item.id],
+                              }));
+                            }}
+                            className="mt-0.5 text-[10px] font-bold text-amber-500 hover:text-amber-400 cursor-pointer underline-offset-2 hover:underline"
+                          >
+                            {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {!isEditing && (
+                    <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                      {/* Per-Item Deadline Picker Popover */}
+                      <Popover
+                        trigger="click"
+                        placement="bottomRight"
+                        open={openDeadlineItemId === item.id}
+                        onOpenChange={(open) => setOpenDeadlineItemId(open ? item.id : null)}
+                        content={
+                          <div className="w-52 p-1 space-y-1.5 text-xs">
+                            <div className="font-bold text-slate-700 dark:text-slate-200 px-1 py-0.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                              <span>Đặt hạn mục việc</span>
+                              {item.deadline && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetDeadline(item.id, null)}
+                                  className="text-[10px] text-rose-500 hover:underline cursor-pointer font-semibold"
+                                >
+                                  Xoá hạn
+                                </button>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {quickDeadlines.map((opt) => (
+                                <button
+                                  key={opt.label}
+                                  type="button"
+                                  onClick={() => handleSetDeadline(item.id, opt.value)}
+                                  className="w-full text-left px-2 py-1 rounded hover:bg-amber-500/15 hover:text-amber-500 transition-colors cursor-pointer text-[11px] font-medium"
+                                >
+                                  📅 {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="pt-1 border-t border-slate-200 dark:border-slate-700">
+                              <div className="text-[10px] text-slate-400 mb-1 px-1">Hoặc chọn ngày cụ thể:</div>
+                              <input
+                                type="date"
+                                aria-label="Chọn ngày hạn cụ thể"
+                                defaultValue={item.deadline ? new Date(item.deadline).toISOString().slice(0, 10) : ''}
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    const d = new Date(`${e.target.value}T18:00:00`);
+                                    if (!isNaN(d.getTime())) {
+                                      handleSetDeadline(item.id, d.toISOString());
+                                    }
+                                  }
+                                }}
+                                className="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-transparent text-[11px]"
+                              />
+                            </div>
+                          </div>
+                        }
+                      >
+                        {deadlineMeta ? (
+                          <Tooltip title={`Hạn mục việc: ${deadlineMeta.fullLabel} (Bấm để đổi hạn)`}>
+                            <button
+                              type="button"
+                              aria-label={`Đặt hạn cho mục ${item.title}`}
+                              className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold tabular-nums inline-flex items-center gap-0.5 cursor-pointer transition-all border ${
+                                item.done
+                                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                  : deadlineMeta.isOverdue
+                                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                                    : deadlineMeta.isDueSoon
+                                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                      : 'bg-violet-500/12 text-violet-400 border-violet-500/25'
+                              }`}
+                            >
+                              <Calendar size={9} className="shrink-0" />
+                              <span>{deadlineMeta.label}</span>
+                            </button>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Đặt hạn chót cho mục này">
+                            <button
+                              type="button"
+                              aria-label={`Đặt hạn cho mục ${item.title}`}
+                              className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 cursor-pointer transition-all"
+                            >
+                              <Calendar size={11} />
+                            </button>
+                          </Tooltip>
+                        )}
+                      </Popover>
+
+                      {/* Avatar-Only Assignee Picker (20px circular avatar) */}
+                      <Popover
+                        trigger="click"
+                        placement="bottomRight"
+                        open={openAssigneeItemId === item.id}
+                        onOpenChange={(open) => {
+                          setOpenAssigneeItemId(open ? item.id : null);
+                          if (!open) setStaffSearch('');
+                        }}
+                        content={
+                          <div className="w-52 p-1 space-y-1.5 text-xs">
+                            <div className="font-bold text-slate-700 dark:text-slate-200 px-1 py-0.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                              <span>Giao mục việc cho</span>
+                              {effectiveAssigneeName && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetAssignee(item.id, null)}
+                                  className="text-[10px] text-rose-500 hover:underline cursor-pointer font-semibold"
+                                >
+                                  Bỏ gán
+                                </button>
+                              )}
+                            </div>
+                            <Input
+                              size="small"
+                              placeholder="Tìm nhân sự..."
+                              value={staffSearch}
+                              onChange={(e) => setStaffSearch(e.target.value)}
+                              className="text-[11px]"
+                            />
+                            <div className="max-h-44 overflow-y-auto space-y-0.5">
+                              {availableStaff.map((st) => {
+                                const isSelected =
+                                  effectiveAssigneeName &&
+                                  st.displayName.trim().toLowerCase() === effectiveAssigneeName.trim().toLowerCase();
+                                return (
+                                  <button
+                                    key={`${st.id}-${st.displayName}`}
+                                    type="button"
+                                    onClick={() => handleSetAssignee(item.id, st)}
+                                    className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left cursor-pointer transition-colors ${
+                                      isSelected ? 'bg-amber-500/15 text-amber-500 font-bold' : 'hover:bg-slate-500/10'
+                                    }`}
+                                  >
+                                    {st.avatarUrl ? (
+                                      <img
+                                        src={st.avatarUrl}
+                                        alt={st.displayName}
+                                        className="w-5 h-5 rounded-full object-cover shrink-0"
+                                      />
+                                    ) : (
+                                      <span
+                                        className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                        style={{ background: getStaffAvatarColor(st.displayName) }}
+                                      >
+                                        {getStaffInitials(st.displayName)}
+                                      </span>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="truncate text-[11px]">{st.displayName}</div>
+                                      {st.role && <div className="truncate text-[9.5px] text-slate-400">{st.role}</div>}
+                                    </div>
+                                    {isSelected && <Check size={11} className="text-amber-500 shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        }
+                      >
+                        {effectiveAssigneeName ? (
+                          <Tooltip title={`Phụ trách: ${effectiveAssigneeName} · Bấm để đổi người`}>
+                            <button
+                              type="button"
+                              aria-label={`Giao người phụ trách mục ${item.title}`}
+                              className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[8.5px] font-extrabold text-white shrink-0 cursor-pointer ring-1 ring-white/20 hover:ring-amber-400 transition-all overflow-hidden"
+                              style={{ background: getStaffAvatarColor(effectiveAssigneeName) }}
+                            >
+                              {avatarUrl ? (
+                                <img
+                                  src={avatarUrl}
+                                  alt={effectiveAssigneeName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                getStaffInitials(effectiveAssigneeName)
+                              )}
+                            </button>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Gán người phụ trách">
+                            <button
+                              type="button"
+                              aria-label={`Giao người phụ trách mục ${item.title}`}
+                              className="w-5 h-5 rounded-full border border-dashed border-slate-400/60 hover:border-amber-400 inline-flex items-center justify-center text-slate-400 hover:text-amber-400 cursor-pointer transition-all shrink-0"
+                            >
+                              <UserPlus size={9} />
+                            </button>
+                          </Tooltip>
+                        )}
+                      </Popover>
+
+                      {/* Source reply jump button */}
+                      {item.sourceReplyId && (
+                        <Tooltip title="Cuộn tới tin nhắn thảo luận gốc trong luồng">
+                          <button
+                            type="button"
+                            aria-label="Cuộn tới tin nhắn thảo luận gốc"
+                            onClick={() => onScrollToReply && onScrollToReply(item.sourceReplyId!)}
+                            className="p-1 rounded text-amber-500 hover:bg-amber-500/15 cursor-pointer transition-colors"
+                          >
+                            <MessageSquare size={11} />
+                          </button>
+                        </Tooltip>
+                      )}
+
+                      {/* Edit button */}
+                      <Tooltip title="Sửa nội dung mục này">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(item)}
+                          aria-label={`Sửa mục ${item.title}`}
+                          className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                        >
+                          <Pencil size={11} />
+                        </button>
+                      </Tooltip>
+
+                      {/* Delete button */}
+                      <Tooltip title="Xóa mục việc này">
+                        <button
+                          type="button"
+                          onClick={() => onDeleteChecklistItem(item.id)}
+                          aria-label={`Xóa mục ${item.title}`}
+                          className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
 
           {/* Inline Quick Add Input */}
@@ -328,8 +766,8 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
         destroyOnHidden
       >
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-          AI đã phân tích các phản hồi trong luồng và phát hiện các đầu việc sau. Bạn có thể chọn lọc hoặc chỉnh sửa
-          tiêu đề trước khi áp dụng:
+          AI đã phân tích báo cáo công việc và luồng thảo luận (tự động lọc bỏ các câu chat trao đổi thường), gắn nhãn
+          mảng và hạn chót:
         </p>
 
         <div className="max-h-[340px] overflow-y-auto space-y-2 pr-1">
@@ -359,8 +797,12 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                 className="text-xs flex-1"
               />
               {sug.assigneeName && (
-                <span className="text-[10.5px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
-                  {sug.assigneeName}
+                <span
+                  className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[8.5px] font-bold text-white shrink-0"
+                  style={{ background: getStaffAvatarColor(sug.assigneeName) }}
+                  title={sug.assigneeName}
+                >
+                  {getStaffInitials(sug.assigneeName)}
                 </span>
               )}
             </div>
