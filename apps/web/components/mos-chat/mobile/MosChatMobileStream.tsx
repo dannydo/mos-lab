@@ -86,7 +86,30 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
   };
 
   // Robust scroll to bottom helper (sets scrollTop & calls scrollIntoView)
+  const isMountedRef = useRef<boolean>(true);
+  const scrollTimersRef = useRef<number[]>([]);
+  const scrollRafRef = useRef<number | null>(null);
+
+  const clearScheduledScrollTimers = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (scrollRafRef.current !== null) {
+      window.cancelAnimationFrame(scrollRafRef.current);
+      scrollRafRef.current = null;
+    }
+    scrollTimersRef.current.forEach((id) => window.clearTimeout(id));
+    scrollTimersRef.current = [];
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      clearScheduledScrollTimers();
+    };
+  }, [clearScheduledScrollTimers]);
+
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    if (!isMountedRef.current || typeof window === 'undefined') return;
     const el = containerRef.current;
     if (el) {
       if (typeof el.scrollTo === 'function') {
@@ -109,25 +132,31 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
         // Safe fallback
       }
     }
-    setUnreadBelowCount(0);
+    if (isMountedRef.current && typeof window !== 'undefined') {
+      setUnreadBelowCount(0);
+    }
   }, []);
 
   // Multi-pass scroll scheduler to handle image rendering & asynchronous DOM reflow
   const scheduleScrollToBottom = useCallback(
     (behavior: ScrollBehavior = 'auto') => {
+      clearScheduledScrollTimers();
       const execute = () => scrollToBottom(behavior);
       execute();
       if (typeof window !== 'undefined') {
-        window.requestAnimationFrame(() => {
+        scrollRafRef.current = window.requestAnimationFrame(() => {
+          if (!isMountedRef.current || typeof window === 'undefined') return;
           execute();
-          window.setTimeout(execute, 40);
-          window.setTimeout(execute, 120);
-          window.setTimeout(execute, 260);
-          window.setTimeout(execute, 500);
+          scrollTimersRef.current = [
+            window.setTimeout(execute, 40),
+            window.setTimeout(execute, 120),
+            window.setTimeout(execute, 260),
+            window.setTimeout(execute, 500),
+          ];
         });
       }
     },
-    [scrollToBottom]
+    [clearScheduledScrollTimers, scrollToBottom]
   );
 
   // INVARIANT (MOS-BUG-152): Auto scroll to bottom when switching spaces/conversations
