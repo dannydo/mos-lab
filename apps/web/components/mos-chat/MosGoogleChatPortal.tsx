@@ -2299,6 +2299,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return;
       }
       if (open && e.key === 'Escape') {
+        if (e.defaultPrevented) {
+          return;
+        }
         const hasInnerModalOpen =
           taskModalOpen ||
           newRoomModalOpen ||

@@ -87,6 +87,8 @@ const MainMessageInlineEditor: React.FC<{
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               e.preventDefault();
+              e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation?.();
               handleCancelEdit();
             } else if (e.key === 'Enter' && !e.shiftKey) {
               if (

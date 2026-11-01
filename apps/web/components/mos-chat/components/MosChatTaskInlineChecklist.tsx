@@ -11,6 +11,8 @@ import {
   UserPlus,
   X,
   MessageSquare,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Tooltip, Input, Progress, Popover } from 'antd';
 import {
@@ -346,21 +348,20 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
           <ListTodo size={13} className="text-amber-500 shrink-0" />
           <span className="text-[11.5px] font-bold text-slate-800 dark:text-slate-200">Checklist đầu việc</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Tooltip title="Đọc tin nhắn báo cáo công việc, lọc nhiễu, tự động tóm tắt, gắn hạn & thêm vào Checklist">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Tooltip title="Tóm tắt & chuẩn hóa Checklist từ báo cáo công việc">
             <button
               type="button"
               disabled={isSummarizing}
               onClick={handleAutoSummarize}
               aria-label="Tự động tóm tắt và thêm checklist"
-              className="px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-all bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-300 border border-purple-500/30 disabled:opacity-50"
+              className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer transition-all bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-300 border border-purple-500/30 disabled:opacity-50"
             >
               {isSummarizing ? (
-                <Loader2 size={10} className="animate-spin shrink-0" />
+                <Loader2 size={12} className="animate-spin shrink-0" />
               ) : (
-                <Sparkles size={10} className="shrink-0" />
+                <Sparkles size={12} className="shrink-0" />
               )}
-              <span>{isSummarizing ? 'Đang tóm tắt...' : 'Tóm tắt & Thêm Checklist'}</span>
             </button>
           </Tooltip>
           <div className="flex items-center gap-1 shrink-0 text-[10.5px] font-bold tabular-nums">
@@ -436,7 +437,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
             const isExpanded = Boolean(expandedItemIds[item.id]);
             const parsed = parseChecklistTitleBadges(item.title);
             const displayBody = parsed.cleanTitle || item.title;
-            const isLongText = displayBody.length > 72 || item.title.length > 85;
+            const isLongText = displayBody.length > 52 || item.title.length > 68;
             const deadlineMeta = formatShortDeadlineLabel(item.deadline);
             const effectiveAssigneeName = item.assigneeName || task.assigneeName || null;
             const matchedStaff = effectiveAssigneeName
@@ -479,7 +480,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                   </button>
 
                   {isEditing ? (
-                    <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex-1 min-w-0 flex items-start gap-1">
                       <Input.TextArea
                         autoFocus
                         autoSize={{ minRows: 1, maxRows: 4 }}
@@ -488,44 +489,71 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                         onKeyDown={(e) => {
                           if (e.key === 'Escape') {
                             e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.stopImmediatePropagation?.();
                             setEditingItemId(null);
                           } else if (e.key === 'Enter' && !e.shiftKey) {
+                            if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
                             e.preventDefault();
+                            e.stopPropagation();
                             handleSaveEdit(item.id);
                           }
                         }}
-                        className="text-xs"
+                        className="text-xs flex-1"
                         style={{
                           borderRadius: '6px',
                           background: isDark ? 'rgba(15, 23, 42, 0.9)' : '#ffffff',
                         }}
                       />
-                      <div className="flex items-center justify-end gap-1 text-[10px]">
-                        <button
-                          type="button"
-                          onClick={() => setEditingItemId(null)}
-                          className="px-2 py-0.5 rounded bg-slate-500/15 hover:bg-slate-500/25 text-slate-400 cursor-pointer"
-                        >
-                          Huỷ (Esc)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEdit(item.id)}
-                          className="px-2 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white font-bold cursor-pointer"
-                        >
-                          Lưu (Enter)
-                        </button>
+                      <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                        <Tooltip title="Lưu (Enter)">
+                          <button
+                            type="button"
+                            aria-label="Lưu (Enter)"
+                            onClick={() => handleSaveEdit(item.id)}
+                            className="w-6 h-6 rounded inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer transition-colors"
+                          >
+                            <Check size={12} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip title="Huỷ (Esc)">
+                          <button
+                            type="button"
+                            aria-label="Huỷ (Esc)"
+                            onClick={() => setEditingItemId(null)}
+                            className="w-6 h-6 rounded inline-flex items-center justify-center bg-slate-500/15 hover:bg-slate-500/25 text-slate-400 cursor-pointer transition-colors"
+                          >
+                            <X size={12} />
+                          </button>
+                        </Tooltip>
                       </div>
                     </div>
                   ) : (
                     <div
-                      className="flex-1 min-w-0 select-text cursor-text"
-                      onDoubleClick={() => handleStartEdit(item)}
-                      title="Nhấp đúp để chỉnh sửa nội dung"
+                      className={`flex-1 min-w-0 select-text ${isLongText ? 'cursor-pointer' : 'cursor-text'}`}
+                      onClick={() => {
+                        if (isLongText) {
+                          setExpandedItemIds((prev) => ({
+                            ...prev,
+                            [item.id]: !prev[item.id],
+                          }));
+                        }
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEdit(item);
+                      }}
+                      title={
+                        isLongText
+                          ? isExpanded
+                            ? 'Bấm để thu gọn 1 dòng · Nhấp đúp để sửa'
+                            : `${displayBody} (Bấm để mở rộng · Nhấp đúp để sửa)`
+                          : 'Nhấp đúp để chỉnh sửa nội dung'
+                      }
                     >
                       <div
-                        className={`font-medium leading-snug break-words ${
-                          !isExpanded ? 'line-clamp-2' : ''
+                        className={`font-medium leading-snug ${
+                          !isExpanded ? 'truncate' : 'whitespace-normal break-words'
                         } ${item.done ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}
                       >
                         {parsed.domainBadge && (
@@ -543,10 +571,18 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                         )}
                         <span>{displayBody}</span>
                       </div>
+                    </div>
+                  )}
+                </div>
 
-                      {isLongText && (
+                {/* Right: Expand Symbol + Deadline Pill + Avatar-only Assignee + Edit + Delete */}
+                {!isEditing && (
+                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                    {isLongText && (
+                      <Tooltip title={isExpanded ? 'Thu gọn 1 dòng' : 'Xem toàn bộ nội dung'}>
                         <button
                           type="button"
+                          aria-label={isExpanded ? 'Thu gọn' : 'Xem thêm'}
                           onClick={(e) => {
                             e.stopPropagation();
                             setExpandedItemIds((prev) => ({
@@ -554,18 +590,16 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                               [item.id]: !prev[item.id],
                             }));
                           }}
-                          className="mt-0.5 text-[10px] font-bold text-amber-500 hover:text-amber-400 cursor-pointer underline-offset-2 hover:underline"
+                          className={`p-1 rounded cursor-pointer transition-colors shrink-0 ${
+                            isExpanded
+                              ? 'text-amber-500 bg-amber-500/15 hover:bg-amber-500/25'
+                              : 'text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10'
+                          }`}
                         >
-                          {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+                          {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                         </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right: Deadline Pill + Avatar-only Assignee + Edit + Delete */}
-                {!isEditing && (
-                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                      </Tooltip>
+                    )}
                     {/* Per-Item Deadline Picker Popover */}
                     <Popover
                       trigger="click"
@@ -814,15 +848,17 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
             borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
           }}
         />
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={isAdding || !quickTitle.trim()}
-          className="h-6 px-2.5 rounded-md text-[11px] font-bold inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white cursor-pointer transition-all shrink-0 shadow-sm"
-        >
-          {isAdding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
-          <span>Thêm</span>
-        </button>
+        <Tooltip title="Thêm mục việc (Enter)">
+          <button
+            type="button"
+            aria-label="Thêm"
+            onClick={handleAdd}
+            disabled={isAdding || !quickTitle.trim()}
+            className="w-6 h-6 rounded-md inline-flex items-center justify-center bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white cursor-pointer transition-all shrink-0 shadow-sm"
+          >
+            {isAdding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={12} />}
+          </button>
+        </Tooltip>
       </div>
     </div>
   );
