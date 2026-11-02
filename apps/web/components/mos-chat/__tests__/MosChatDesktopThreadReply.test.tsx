@@ -325,4 +325,50 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     const toolbars = screen.getAllByTestId('apple-notes-toolbar-mock');
     expect(toolbars).toHaveLength(1);
   });
+
+  it('triggers setOpenMovePopoverKey and handles separating thread reply (MOS-BUG-188)', () => {
+    const setOpenMovePopoverKeyMock = vi.fn();
+    const handleMoveThreadItemMock = vi.fn();
+
+    const { rerender } = render(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        openMovePopoverKey={null}
+        setOpenMovePopoverKey={setOpenMovePopoverKeyMock}
+        handleMoveThreadItem={handleMoveThreadItemMock}
+        canManageChatThreads={true}
+      />
+    );
+
+    // Look for split button
+    const splitButtons = screen.getAllByRole('button', { name: 'Tách hoặc chuyển câu trả lời sang luồng khác' });
+    expect(splitButtons.length).toBeGreaterThan(0);
+
+    // Click the split button on first reply
+    fireEvent.click(splitButtons[0]);
+    expect(setOpenMovePopoverKeyMock).toHaveBeenCalledWith('reply:msg-root-101:reply-1');
+
+    // Rerender with popover open
+    rerender(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        openMovePopoverKey="reply:msg-root-101:reply-1"
+        setOpenMovePopoverKey={setOpenMovePopoverKeyMock}
+        handleMoveThreadItem={handleMoveThreadItemMock}
+        canManageChatThreads={true}
+      />
+    );
+
+    // Primary action button in popover
+    const promoteBtn = screen.getByRole('button', { name: /Tách ra thành tin nhắn riêng ở luồng chính/i });
+    expect(promoteBtn).toBeInTheDocument();
+
+    // Click promote
+    fireEvent.click(promoteBtn);
+    expect(handleMoveThreadItemMock).toHaveBeenCalledWith({
+      mode: 'PROMOTE_REPLY_TO_ROOT',
+      sourceMessageId: 'msg-root-101',
+      replyId: 'reply-1',
+    });
+  });
 });

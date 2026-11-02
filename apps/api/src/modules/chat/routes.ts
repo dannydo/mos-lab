@@ -790,14 +790,17 @@ export function moveChatThreadItemInMemory(
       attachments: replyItem.attachments && replyItem.attachments.length > 0 ? replyItem.attachments : undefined,
       timeLabel: replyItem.timeLabel,
       createdAt: replyItem.createdAt || new Date().toISOString(),
-      reactions: {},
+      reactions: replyItem.reactions || {},
+      reactionUsers: replyItem.reactionUsers,
       customerCard: replyItem.customerCard || null,
       thread: [],
-      aiThinking: null,
-      aiAction: null,
+      aiThinking: replyItem.aiThinking || null,
+      aiAction: replyItem.aiAction || null,
+      aiActions: replyItem.aiActions,
       editHistory: replyItem.editHistory,
       editedAt: replyItem.editedAt,
       editedBy: replyItem.editedBy,
+      isAiBot: replyItem.isAiBot,
     };
 
     const nextMessages = [...conv.messages];
@@ -2181,12 +2184,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         select: { displayName: true, username: true, role: true },
       });
       const effectiveRole = String(staffRecord?.role || user.role || '').toLowerCase();
+      const normUserId = String(user.id || '').replace(/^staff-/, '').trim();
+      const normItemSenderId = String(itemToMove.senderId || '').replace(/^staff-/, '').trim();
+      const normSourceSenderId = String(sourceMsg.senderId || '').replace(/^staff-/, '').trim();
       const isOwner =
-        String(itemToMove.senderId) === String(user.id) ||
-        (user.id && String(itemToMove.senderId) === 'me') ||
-        Boolean(staffRecord?.displayName && itemToMove.senderName === staffRecord.displayName);
+        Boolean(normUserId && normItemSenderId === normUserId) ||
+        Boolean(normUserId && normSourceSenderId === normUserId) ||
+        (Boolean(user.id) && String(itemToMove.senderId) === 'me') ||
+        Boolean(
+          staffRecord?.displayName &&
+            (itemToMove.senderName === staffRecord.displayName || sourceMsg.senderName === staffRecord.displayName)
+        );
+
+      const staffMemberInDir = staffDirectory.find(
+        (s) => Number(s.id) === Number(user.id) || (normUserId && String(s.id) === normUserId)
+      );
       const isAdminOrManager =
-        isDannyOrSuperAdminUser(user) || ['admin', 'manager', 'super_admin'].includes(effectiveRole);
+        isDannyOrSuperAdminUser(user) ||
+        ['admin', 'manager', 'super_admin', 'oc'].includes(effectiveRole) ||
+        Boolean(staffMemberInDir && matchesStaffGroupBackend(staffMemberInDir, 'TEAM_ADMIN_MANAGER'));
 
       if (!isOwner && !isAdminOrManager) {
         return reply.status(403).send({

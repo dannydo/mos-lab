@@ -1449,24 +1449,37 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                       </Tooltip>
 
                       {canMoveThisMsg && filteredMessages.length > 1 && (
-                        <Popover
-                          trigger="click"
-                          placement={isMine ? 'topRight' : 'topLeft'}
-                          open={openMovePopoverKey === `root:${m.id}`}
-                          onOpenChange={(vis) => {
-                            setOpenMovePopoverKey(vis ? `root:${m.id}` : null);
-                            if (!vis) setMoveThreadSearchQuery('');
-                          }}
-                          content={
+                        <Tooltip
+                          title={
                             openMovePopoverKey === `root:${m.id}`
-                              ? renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)
-                              : null
+                              ? undefined
+                              : 'Gộp tin nhắn này vào luồng trả lời phụ (Subthread) của tin nhắn khác'
                           }
                         >
-                          <Tooltip title="Gộp tin nhắn này vào luồng trả lời phụ (Subthread) của tin nhắn khác">
+                          <Popover
+                            trigger="click"
+                            placement={isMine ? 'topRight' : 'topLeft'}
+                            open={openMovePopoverKey === `root:${m.id}`}
+                            onOpenChange={(vis) => {
+                              setOpenMovePopoverKey(vis ? `root:${m.id}` : null);
+                              if (!vis) setMoveThreadSearchQuery('');
+                            }}
+                            content={
+                              openMovePopoverKey === `root:${m.id}`
+                                ? renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)
+                                : null
+                            }
+                          >
                             <button
                               type="button"
                               aria-label="Gộp tin nhắn vào luồng trả lời phụ"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rootKey = `root:${m.id}`;
+                                const nextOpen = openMovePopoverKey === rootKey ? null : rootKey;
+                                setOpenMovePopoverKey(nextOpen);
+                                if (!nextOpen) setMoveThreadSearchQuery('');
+                              }}
                               className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer transition-transform hover:scale-110"
                               style={{
                                 color: openMovePopoverKey === `root:${m.id}` ? '#d4a84b' : token.colorTextSecondary,
@@ -1474,8 +1487,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                             >
                               <CornerDownRight size={13} />
                             </button>
-                          </Tooltip>
-                        </Popover>
+                          </Popover>
+                        </Tooltip>
                       )}
 
                       <Tooltip title="Tạo Task & Hẹn giờ nhắc từ tin nhắn">

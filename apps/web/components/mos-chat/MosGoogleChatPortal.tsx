@@ -6708,6 +6708,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (res?.tasks) {
         setTasks(res.tasks);
       }
+      if (params.mode === 'PROMOTE_REPLY_TO_ROOT' && res?.promotedMessage?.id) {
+        setHighlightedMsgId(res.promotedMessage.id);
+      }
       if (
         (params.mode === 'MERGE_ROOT_TO_THREAD' || params.mode === 'MOVE_REPLY_TO_THREAD') &&
         params.targetMessageId
@@ -9208,7 +9211,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return false;
       }
       if (m.senderId === 'me') return true;
-      if (currentUser?.id && m.senderId && String(m.senderId) === String(currentUser.id)) {
+      const myIdStr = String(currentUser?.id || '').replace(/^staff-/, '');
+      const senderIdStr = String(m.senderId || '').replace(/^staff-/, '');
+      if (myIdStr && senderIdStr && myIdStr === senderIdStr) {
         return true;
       }
       const senderClean = String(m.senderName || '')
