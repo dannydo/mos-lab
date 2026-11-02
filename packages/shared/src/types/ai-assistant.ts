@@ -71,3 +71,30 @@ export interface GetAiSessionResponse {
   session: AiChatSession;
   messages: AiChatMessage[];
 }
+
+export interface StaffCareerLiveSnapshot {
+  staffId: number;
+  staffName: string;
+  currentLevel: string;
+  rawRole: string;
+  targetLevel?: string;
+  status: string;
+  levelPromotedDate: string | null;
+  promotedBy: string | null;
+  careerMilestones?: Array<{ title: string; date: string; notes: string }>;
+  performanceMetrics: {
+    locaRate: number;
+    requestRate?: number;
+    avgCsat: number;
+    totalDoneVisits: number;
+    periodVisits?: number;
+    selfComboCount?: number;
+    fixRate: number;
+    fixCount?: number;
+    tipRate: number;
+    totalTip?: number;
+    branchName?: string;
+  };
+  specialCertifications?: string[];
+}
+
