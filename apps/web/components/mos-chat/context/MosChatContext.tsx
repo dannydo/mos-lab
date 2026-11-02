@@ -35,7 +35,11 @@ import {
 } from '../constants/chat-constants';
 import { useMosChatBridgeListener } from '../store/mos-chat-bridge';
 import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from '../store/useChatRealtimeSync';
-import { formatBackendAiMessage, toggleReactionState, hasUserReacted as hasUserReactedHelper } from '../utils/chat-helpers';
+import {
+  formatBackendAiMessage,
+  toggleReactionState,
+  hasUserReacted as hasUserReactedHelper,
+} from '../utils/chat-helpers';
 import type {
   MosChatActiveSubtab,
   MosChatContextValue,
@@ -799,7 +803,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     ): Promise<boolean> => {
       const targetId = options?.targetConvId || activeConvId;
       const trimmed = text.trim();
-      if (!trimmed && (!options?.attachments || options.attachments.length === 0) && !options?.customerCard) return false;
+      if (!trimmed && (!options?.attachments || options.attachments.length === 0) && !options?.customerCard)
+        return false;
 
       // Handle Private 1-on-1 AI Copilot (MAI) Conversation
       if (targetId === AI_COPILOT_CONV_ID) {
@@ -1752,16 +1757,29 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       payload: { title?: string; type?: 'BUG' | 'FEATURE'; note?: string }
     ): Promise<SafeAny> => {
       try {
+        const convId = task.conversationId || activeConvId;
+        const msgId = task.sourceMessageId || '';
+        const sourceMessage =
+          convId === AI_COPILOT_CONV_ID
+            ? aiMessages.find((m) => m.id === msgId)
+            : allMessagesByConv[convId]?.find((m) => m.id === msgId);
+
         const res = await apiClient.chat.createMission({
-          conversationId: task.conversationId || activeConvId,
-          messageId: task.sourceMessageId || '',
+          conversationId: convId,
+          messageId: msgId,
           taskId: task.id,
           title: payload.title || task.title,
           type: payload.type || 'FEATURE',
           note: payload.note || undefined,
           pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/dashboard',
+          sourceMessage: sourceMessage || undefined,
         });
         if (res && res.mission) {
+          if (convId === AI_COPILOT_CONV_ID) {
+            setAiMessages((prev) =>
+              prev.map((m) => (m.id === msgId ? res.message || { ...m, mission: res.mission } : m))
+            );
+          }
           if (res.task) {
             const taskFromApi = res.task;
             setTasks((prev) => prev.map((t) => (t.id === taskFromApi.id ? taskFromApi : t)));
@@ -1787,7 +1805,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         throw err;
       }
     },
-    [activeConvId]
+    [activeConvId, aiMessages, allMessagesByConv]
   );
 
   // Execute mission action (Approve Cổng 1, Approve Commit Cổng 2, Approve Deploy Cổng 3, Nghiệm thu, Reopen)
@@ -1827,6 +1845,11 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
                 ),
               };
             });
+            if (mission.conversationId === AI_COPILOT_CONV_ID) {
+              setAiMessages((prev) =>
+                prev.map((m) => (m.id === mission.messageId ? res.message || { ...m, mission: res.mission } : m))
+              );
+            }
           }
           return res.mission;
         }

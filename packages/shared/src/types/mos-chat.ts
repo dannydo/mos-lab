@@ -704,6 +704,7 @@ export interface CreateMosChatMissionRequest {
   titleOverride?: string | null;
   title?: string | null;
   pageUrl?: string | null;
+  sourceMessage?: MosChatMessage | null;
 }
 
 export interface CreateMosChatMissionResponse {

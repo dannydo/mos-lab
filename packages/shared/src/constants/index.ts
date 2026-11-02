@@ -120,4 +120,16 @@ export const CALL_OUTCOME_LABELS: Record<CallOutcome, string> = {
   PENDING: 'Đang suy nghĩ/Chưa chốt',
 };
 
+export const AI_COPILOT_CONV_ID = 'dm-wings-ai-copilot';
+
+export function isAiCopilotConversationId(convId?: string | null): boolean {
+  if (!convId) return false;
+  return (
+    convId === AI_COPILOT_CONV_ID ||
+    convId === 'ai-copilot' ||
+    convId.startsWith('dm-wings-ai-') ||
+    convId.startsWith('dm-ai-')
+  );
+}
+
 export * from './system-constants.js';

@@ -6797,6 +6797,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         type: missionType,
         note: missionNote.trim() || undefined,
         pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/dashboard',
+        sourceMessage: missionSourceMsg || undefined,
       });
 
       if (res?.mission) {
@@ -6809,6 +6810,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             };
           })
         );
+        if (convId === AI_COPILOT_CONV_ID) {
+          setAiMessages((prev) =>
+            prev.map((m) => (m.id === msgId ? res.message || { ...m, mission: res.mission } : m))
+          );
+        }
         if (res.task) {
           setTasks((prev) => prev.map((t) => (t.id === res.task?.id ? res.task : t)));
         }
@@ -6857,6 +6863,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             };
           })
         );
+        if (mission.conversationId === AI_COPILOT_CONV_ID) {
+          setAiMessages((prev) =>
+            prev.map((m) => (m.id === mission.messageId ? res.message || { ...m, mission: res.mission } : m))
+          );
+        }
         if (res.task) {
           setTasks((prev) => prev.map((t) => (t.id === res.task?.id ? res.task : t)));
         } else if (action === 'REPORTER_ACCEPT' && mission.taskId) {

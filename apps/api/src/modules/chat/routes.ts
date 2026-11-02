@@ -5,6 +5,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve, sep } from 'node:path';
 import {
+  AI_COPILOT_CONV_ID,
   ActionMosChatMissionRequest,
   ActionMosChatWorkflowInstanceRequest,
   BuzzMosChatMessageRequest,
@@ -50,6 +51,7 @@ import {
   UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
+  isAiCopilotConversationId,
   isCanonicalSuperAdminIdentity,
   normalizeAndEnrichTaskChecklist,
   removeVietnameseTones,
@@ -4294,11 +4296,24 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           loadChatState(fastify),
           loadStaffDirectoryCached(fastify),
         ]);
-        const conv = conversations.find((c) => c.id === body.conversationId);
+        const isAiConv = isAiCopilotConversationId(body.conversationId);
+        let conv = conversations.find((c) => c.id === body.conversationId);
+        if (!conv && isAiConv) {
+          conv = {
+            id: body.conversationId,
+            name: '🤖 MAI',
+            type: 'dm',
+            roleTag: 'mOS AI',
+            color: '#8b5cf6',
+            unreadCount: 0,
+            messages: body.sourceMessage ? [body.sourceMessage] : [],
+            updatedAt: new Date().toISOString(),
+          };
+        }
         if (!conv) {
           return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
         }
-        if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        if (!isAiConv && !canUserAccessConversation(conv, user, staffDirectory)) {
           return reply.status(403).send({
             error: 'Forbidden',
             message: 'Bạn không có quyền truy cập cuộc hội thoại này.',
@@ -4315,15 +4330,23 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           mosChatMediaRoot()
         );
 
-        await Promise.all([
-          saveConversations(fastify, conversations, {
-            touchedConversation: conv,
-            touchedMessage: result.message,
-          }),
-          saveTasks(fastify, tasks, {
-            touchedTask: result.task || undefined,
-          }),
-        ]);
+        if (!isAiConv) {
+          await Promise.all([
+            saveConversations(fastify, conversations, {
+              touchedConversation: conv,
+              touchedMessage: result.message,
+            }),
+            saveTasks(fastify, tasks, {
+              touchedTask: result.task || undefined,
+            }),
+          ]);
+        } else {
+          if (result.task) {
+            await saveTasks(fastify, tasks, {
+              touchedTask: result.task || undefined,
+            });
+          }
+        }
 
         chatRealtimeHub.publish({
           type: 'MISSION_UPDATED',

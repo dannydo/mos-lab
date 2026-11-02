@@ -3,8 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import {
+  AI_COPILOT_CONV_ID,
   BUG_REPORT_MAX_ATTACHMENTS,
   formatBugReportKey,
+  isAiCopilotConversationId,
   isCanonicalSuperAdminIdentity,
   isSuperAdminRole,
   removeVietnameseTones,
@@ -301,7 +303,9 @@ export function buildMissionSummaryFromReport(
   );
   const canConfirmClose = report.status === 'FIXED';
 
-  const updatedAtDate = activeJob && activeJob.updatedAt > report.updatedAt ? activeJob.updatedAt : report.updatedAt;
+  const rawReportUpdated = report.updatedAt ? new Date(report.updatedAt) : new Date();
+  const rawJobUpdated = activeJob?.updatedAt ? new Date(activeJob.updatedAt) : null;
+  const updatedAtDate = rawJobUpdated && rawJobUpdated > rawReportUpdated ? rawJobUpdated : rawReportUpdated;
   const agentSummary = activeJob?.summary || report.resolution?.solutionSummary || null;
   const artifactPreview = buildMissionArtifactPreview(executionTrack, {
     changedFilesCount: changedFiles.length,
@@ -687,7 +691,20 @@ export class ChatMissionBridgeService {
       throw new BugReportError('Chỉ Super Admin Danny mới có quyền gửi công việc vào mOS Mission.', 403);
     }
 
-    const conv = conversations.find((c) => c.id === body.conversationId);
+    const isAiConv = isAiCopilotConversationId(body.conversationId);
+    let conv = conversations.find((c) => c.id === body.conversationId);
+    if (!conv && isAiConv) {
+      conv = {
+        id: body.conversationId,
+        name: '🤖 MAI',
+        type: 'dm',
+        roleTag: 'mOS AI',
+        color: '#8b5cf6',
+        unreadCount: 0,
+        messages: body.sourceMessage ? [body.sourceMessage] : [],
+        updatedAt: new Date().toISOString(),
+      };
+    }
     if (!conv) {
       throw new BugReportError('Không tìm thấy cuộc trò chuyện trong mOS Chat.', 404);
     }
@@ -699,6 +716,36 @@ export class ChatMissionBridgeService {
       : linkedTask?.sourceMessageId
         ? conv.messages.find((m) => m.id === linkedTask?.sourceMessageId)
         : undefined;
+
+    if (!targetMsg && body.sourceMessage) {
+      targetMsg = body.sourceMessage;
+      if (!conv.messages.some((m) => m.id === targetMsg!.id)) {
+        conv.messages.push(targetMsg);
+      }
+    }
+
+    if (!targetMsg && isAiConv && body.messageId && fastify?.prisma?.crm?.crmAiChatMessage) {
+      const aiRecord = await fastify.prisma.crm.crmAiChatMessage
+        .findFirst({
+          where: { id: body.messageId },
+        })
+        .catch(() => null);
+      if (aiRecord) {
+        targetMsg = {
+          id: aiRecord.id,
+          conversationId: conv.id,
+          senderId: aiRecord.role === 'assistant' ? 'wings-ai-copilot' : String(user.id),
+          senderName: aiRecord.role === 'assistant' ? '🤖 MAI' : user.displayName || user.username || 'Danny Do',
+          senderRole: aiRecord.role === 'assistant' ? 'mOS AI' : 'Super Admin',
+          text: aiRecord.content,
+          timeLabel: formatTimeLabel(aiRecord.createdAt),
+          createdAt: aiRecord.createdAt.toISOString(),
+          reactions: {},
+          thread: [],
+        };
+        conv.messages.push(targetMsg);
+      }
+    }
 
     if (!targetMsg && linkedTask) {
       // Create a root message for orphan task if needed
@@ -718,6 +765,23 @@ export class ChatMissionBridgeService {
       };
       conv.messages.push(targetMsg);
       linkedTask.sourceMessageId = targetMsg.id;
+    }
+
+    if (!targetMsg && isAiConv) {
+      const now = new Date();
+      targetMsg = {
+        id: body.messageId || `msg-ai-${randomUUID().slice(0, 8)}`,
+        conversationId: conv.id,
+        senderId: 'wings-ai-copilot',
+        senderName: '🤖 MAI',
+        senderRole: 'mOS AI',
+        text: (body.title || body.note || 'Nhiệm vụ từ 🤖 MAI').trim(),
+        timeLabel: formatTimeLabel(now),
+        createdAt: now.toISOString(),
+        reactions: {},
+        thread: [],
+      };
+      conv.messages.push(targetMsg);
     }
 
     if (!targetMsg) {
@@ -800,7 +864,7 @@ export class ChatMissionBridgeService {
     const title = rawTitleSource.slice(0, 180);
 
     const descriptionSections: string[] = [
-      `### 💬 Nguồn yêu cầu từ mOS Chat (${conv.type === 'dm' ? `Trò chuyện với ${conv.name}` : `#${conv.name}`})`,
+      `### 💬 Nguồn yêu cầu từ mOS Chat (${isAiConv ? 'Trò chuyện với 🤖 MAI' : conv.type === 'dm' ? `Trò chuyện với ${conv.name}` : `#${conv.name}`})`,
       `**Người khởi tạo / Phối hợp:** ${verifiedReporter?.displayName || targetMsg.senderName}`,
       `**Nội dung gốc ([${targetMsg.timeLabel}] ${targetMsg.senderName}):**\n${rawRootText}`,
     ];

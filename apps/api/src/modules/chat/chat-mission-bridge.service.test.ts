@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import type { MosChatConversation, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
+import type { FastifyInstance } from 'fastify';
+import type { MosChatConversation, MosChatMessage, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
+import type { JwtUserPayload } from '../../middlewares/auth.js';
+import { InboxImplementationService } from '../bug-reports/inbox-implementation.service.js';
 import { buildMissionSummaryFromReport, ChatMissionBridgeService } from './chat-mission-bridge.service.js';
 import { deduplicateMovedMessagesInConversation } from './chat-repository.service.js';
 import { deduplicateTasks, moveChatThreadItemInMemory } from './routes.js';
@@ -911,5 +914,117 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(dedupResult.changed, true);
     assert.equal(conv.messages.length, 1);
     assert.equal(conv.messages[0].id, 'msg-bf5499b3');
+  });
+
+  it('successfully creates a mission from AI Copilot conversation (dm-wings-ai-copilot)', async () => {
+    let createdReportData: Record<string, unknown> | null = null;
+
+    const mockReport = {
+      id: 999,
+      requestType: 'FEATURE',
+      title: 'Khi MAI được mở mắt để đọc trực tiếp dữ liệu live từ hệ thống',
+      status: 'APPROVED',
+      priority: 'P1',
+      clarificationStatus: 'READY',
+      clarificationSummary: 'Tạo từ MAI',
+      businessContext: 'Yêu cầu từ MAI',
+      reporterStaffId: 1,
+      reporter: { id: 1, displayName: 'Danny Do' },
+      resolution: null,
+      comments: [],
+      updatedAt: new Date(),
+    };
+
+    const fastify = {
+      prisma: {
+        crm: {
+          crmBugReport: {
+            create: async ({ data }: { data: Record<string, unknown> }) => {
+              createdReportData = data;
+              return { id: 999, ...data, updatedAt: new Date() };
+            },
+            findUnique: async () => mockReport,
+            findFirst: async () => mockReport,
+            findMany: async () => [mockReport],
+          },
+          crmBugReportComment: {
+            create: async ({ data }: { data: Record<string, unknown> }) => ({ id: 1001, ...data }),
+            count: async () => 0,
+          },
+          crmBugReportAudit: {
+            create: async () => ({}),
+          },
+          crmBugReportAttachment: {
+            create: async () => ({}),
+            findMany: async () => [],
+          },
+          crmInboxPlanJob: {
+            upsert: async ({ create }: { create: Record<string, unknown> }) => create,
+          },
+          crmInboxImplementationJob: {
+            findMany: async () => [],
+          },
+          crmStaff: {
+            findUnique: async () => ({ id: 1, displayName: 'Danny Do' }),
+          },
+          $transaction: async (cb: (tx: SafeAny) => Promise<SafeAny>) => cb(fastify.prisma.crm),
+        },
+      },
+      log: { warn: () => {}, error: () => {} },
+    } as unknown as FastifyInstance;
+
+    const user: JwtUserPayload = {
+      id: 1,
+      username: 'dannydo',
+      role: 'super_admin',
+      displayName: 'Danny Do',
+    };
+
+    const sourceMessage: MosChatMessage = {
+      id: 'msg-ai-12345',
+      conversationId: 'dm-wings-ai-copilot',
+      senderId: 'wings-ai-copilot',
+      senderName: '🤖 MAI',
+      senderRole: 'mOS AI',
+      text: 'Dạ tuyệt vời quá anh @Danny Do ơi! Khi MAI được mở mắt để đọc trực tiếp dữ liệu live',
+      timeLabel: '07:15',
+      createdAt: new Date().toISOString(),
+      thread: [],
+      reactions: {},
+    };
+
+    const origApprove = InboxImplementationService.approve;
+    InboxImplementationService.approve = (async () => ({})) as SafeAny;
+
+    try {
+      const result = await ChatMissionBridgeService.createMissionFromChat(
+        fastify,
+        user,
+        {
+          conversationId: 'dm-wings-ai-copilot',
+          messageId: 'msg-ai-12345',
+          title: 'Khi MAI được mở mắt để đọc trực tiếp dữ liệu live',
+          type: 'FEATURE',
+          sourceMessage,
+        },
+        [], // conversations is empty, AI conv is virtual!
+        [],
+        [{ id: 1, name: 'Danny Do', displayName: 'Danny Do', role: 'super_admin' } as SafeAny],
+        '/tmp'
+      );
+
+      assert.ok(result);
+      assert.ok(result.mission);
+      assert.equal(result.mission.reportId, 999);
+      assert.equal(result.mission.missionKey, 'MOS-FEAT-999');
+      assert.equal(result.mission.stage, 'RECEIVED');
+      assert.equal(result.message.id, 'msg-ai-12345');
+      assert.equal(result.message.missionId, 999);
+      assert.ok(createdReportData);
+      assert.equal((createdReportData as SafeAny).reporterStaffId, 1);
+      assert.match((createdReportData as SafeAny).description, /Trò chuyện với 🤖 MAI/);
+    } finally {
+      InboxImplementationService.approve = origApprove;
+    }
   });
 });
