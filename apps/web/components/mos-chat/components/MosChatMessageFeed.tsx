@@ -1377,14 +1377,18 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                     {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
                     <div
                       className={`${
-                        mobileActiveMsgId === m.id || openMovePopoverKey === `root:${m.id}`
+                        mobileActiveMsgId === m.id ||
+                        openMovePopoverKey === `root:${m.id}` ||
+                        openStickerPopoverKey === `react:${m.id}`
                           ? 'opacity-100 pointer-events-auto scale-100 ring-1 ring-amber-500/50 shadow-md'
                           : 'opacity-0 pointer-events-none'
                       } group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-all inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
                       style={{
                         background: surfaceRaised,
                         border: `1px solid ${
-                          mobileActiveMsgId === m.id || openMovePopoverKey === `root:${m.id}`
+                          mobileActiveMsgId === m.id ||
+                          openMovePopoverKey === `root:${m.id}` ||
+                          openStickerPopoverKey === `react:${m.id}`
                             ? 'rgba(212, 168, 75, 0.6)'
                             : borderStrong
                         }`,
@@ -1416,6 +1420,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                       <Popover
                         trigger="click"
                         placement={isMine ? 'topRight' : 'topLeft'}
+                        zIndex={1500}
                         open={openStickerPopoverKey === `react:${m.id}`}
                         onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `react:${m.id}` : null)}
                         content={

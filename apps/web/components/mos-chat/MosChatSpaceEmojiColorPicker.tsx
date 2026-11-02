@@ -199,6 +199,7 @@ export const MosChatSpaceEmojiColorPicker: React.FC<MosChatSpaceEmojiColorPicker
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
         placement="bottomLeft"
+        zIndex={1500}
         arrow={false}
       >
         <div

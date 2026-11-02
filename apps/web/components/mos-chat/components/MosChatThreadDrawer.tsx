@@ -988,26 +988,54 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                 <span className="truncate">{activeThreadMessage.senderName}</span>
                 <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
               </div>
-              <Tooltip title="Trả lời / Trích dẫn tin nhắn gốc này">
-                <button
-                  type="button"
-                  aria-label="Trả lời tin nhắn gốc trong luồng"
-                  onClick={() => {
-                    setReplyingToReply({
-                      id: activeThreadMessage.id,
-                      senderName: activeThreadMessage.senderName,
-                      text: activeThreadMessage.text || '',
-                    });
-                    setTimeout(() => {
-                      threadInputRef.current?.focus();
-                    }, 50);
-                  }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors shrink-0"
+              <div className="flex items-center gap-1 shrink-0">
+                <Popover
+                  trigger="click"
+                  placement="bottomRight"
+                  zIndex={1500}
+                  open={openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`}
+                  onOpenChange={(vis) =>
+                    setOpenStickerPopoverKey(vis ? `thread-root:${activeThreadMessage.id}` : null)
+                  }
+                  content={
+                    openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`
+                      ? renderReactionPickerContent(activeThreadMessage.id, activeThreadMessage)
+                      : null
+                  }
                 >
-                  <MessageSquareReply size={12} />
-                  <span>Trả lời</span>
-                </button>
-              </Tooltip>
+                  <Tooltip title="Thả biểu cảm vào tin nhắn gốc">
+                    <button
+                      type="button"
+                      aria-label="Thả biểu cảm vào tin nhắn gốc"
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      <SmilePlus size={12} />
+                      <span className="hidden sm:inline">Thả biểu cảm</span>
+                    </button>
+                  </Tooltip>
+                </Popover>
+
+                <Tooltip title="Trả lời / Trích dẫn tin nhắn gốc này">
+                  <button
+                    type="button"
+                    aria-label="Trả lời tin nhắn gốc trong luồng"
+                    onClick={() => {
+                      setReplyingToReply({
+                        id: activeThreadMessage.id,
+                        senderName: activeThreadMessage.senderName,
+                        text: activeThreadMessage.text || '',
+                      });
+                      setTimeout(() => {
+                        threadInputRef.current?.focus();
+                      }, 50);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors shrink-0"
+                  >
+                    <MessageSquareReply size={12} />
+                    <span>Trả lời</span>
+                  </button>
+                </Tooltip>
+              </div>
             </div>
             {activeThreadMessage.text && (
               <div className="text-[13px] leading-relaxed break-words">
@@ -1506,6 +1534,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                           <Popover
                             trigger="click"
                             placement={isReplyMine ? 'topRight' : 'topLeft'}
+                            zIndex={1500}
                             open={openStickerPopoverKey === `reply:${activeThreadMessage.id}:${r.id}`}
                             onOpenChange={(vis) =>
                               setOpenStickerPopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null)
@@ -2146,6 +2175,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <Popover
                       trigger="click"
                       placement="topRight"
+                      zIndex={1500}
                       open={openStickerPopoverKey === 'composer:thread'}
                       onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
                       content={
@@ -2393,6 +2423,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <Popover
                       trigger="click"
                       placement="topRight"
+                      zIndex={1500}
                       open={openStickerPopoverKey === 'composer:thread'}
                       onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
                       content={
