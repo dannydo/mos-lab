@@ -236,7 +236,11 @@ export interface MosChatThreadDrawerProps {
   threadInputRef: React.RefObject<HTMLTextAreaElement | null>;
   threadInput: string;
   setThreadInput: React.Dispatch<React.SetStateAction<string>>;
-  handleSendThreadReply: (replyTextOverride?: string) => Promise<void> | void;
+  handleSendThreadReply: (
+    replyTextOverride?: string,
+    cardOverride?: SafeAny,
+    targetMsgIdOverride?: string
+  ) => Promise<void> | void;
   threadAttachments: SafeAny[];
   setThreadAttachments: React.Dispatch<React.SetStateAction<SafeAny[]>>;
   triggerFilePicker: (scope: 'main' | 'thread') => void;
@@ -503,7 +507,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
         finalText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${trimmed}`;
         setReplyingToReply(null);
       }
-      handleSendThreadReply(finalText);
+      handleSendThreadReply(finalText, stagedCustomerCard, activeThreadMessage?.id);
     };
 
     if (!threadOpen || !activeThreadMessage) return null;

@@ -1025,7 +1025,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // Side Thread Pane state — Performance: threadTextRef is stored in a ref (NOT useState)
   // to avoid re-rendering the 11K+ line God Component + Main Feed + Thread Drawer on every keystroke.
   const [threadOpen, setThreadOpen] = useState(false);
-  const [activeThreadMsgId, setActiveThreadMsgId] = useState<string | null>('msg-seed-1');
+  const [activeThreadMsgId, setActiveThreadMsgId] = useState<string | null>(null);
   const threadTextRef = useRef('');
   const [threadHasText] = useState(false);
   const threadHasTextListenerRef = useRef<((hasText: boolean) => void) | null>(null);
@@ -5281,11 +5281,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
-  const handleSendThreadReply = async (replyTextOverride?: string, cardOverride?: MosChatCustomerCard | null) => {
+  const handleSendThreadReply = async (
+    replyTextOverride?: string,
+    cardOverride?: MosChatCustomerCard | null,
+    targetMsgIdOverride?: string
+  ) => {
     const text = (typeof replyTextOverride === 'string' ? replyTextOverride : threadTextRef.current).trim();
     const cardToSend = cardOverride !== undefined ? cardOverride : threadStagedCustomerCard;
     const attachmentsToSend = threadAttachments;
-    if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !activeThreadMsgId) return;
+    const targetMsgId = targetMsgIdOverride || activeThreadMessage?.id || activeThreadMsgId;
+
+    if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !targetMsgId) return;
+
+    if (activeThreadMsgId !== targetMsgId) {
+      setActiveThreadMsgId(targetMsgId);
+    }
+
     const wasUrgent = isUrgentSendThread;
     if (wasUrgent) {
       setIsUrgentSendThread(false);
@@ -5299,13 +5310,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       threadInputRef.current.style.height = 'auto';
     }
 
-    const senderName = currentUser?.displayName || 'Danny Do';
-    const newReply = {
+    const senderName = currentUser?.displayName || currentUser?.username || 'Danny Do';
+    const newReply: MosChatThreadReply = {
       id: `th-${Date.now()}`,
       senderId: currentUser?.id || 'me',
       senderName,
       senderRole: 'Super Admin',
-      senderAvatar: 'DD',
+      senderAvatar: senderName.slice(0, 2).toUpperCase(),
       text: text || (cardToSend ? `Đính kèm thẻ khách hàng ${cardToSend.name}:` : ''),
       attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
       customerCard: cardToSend || undefined,
@@ -5314,15 +5325,84 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       createdAt: new Date().toISOString(),
     };
 
+    // CASE 1: Private 1-1 Chat with 🤖 MAI (mOS AI)
+    if (activeConversation.id === AI_COPILOT_CONV_ID) {
+      setAiMessages((prev) =>
+        prev.map((m) =>
+          m.id === targetMsgId ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] } : m
+        )
+      );
+      scrollToChatBottom('thread', 'smooth');
+
+      if (canUseAiCopilot) {
+        setAiThinkingActive(true);
+        try {
+          const rootMsg = aiMessages.find((m) => m.id === targetMsgId);
+          const rootContent = rootMsg ? `[Tin nhắn gốc từ ${rootMsg.senderName}]: ${rootMsg.text || ''}` : '';
+          const threadReplies = (rootMsg?.thread || [])
+            .slice(-10)
+            .map((r) => `- ${r.senderName}: ${r.text || ''}`)
+            .join('\n');
+          const contextPayload = [
+            `[Bối cảnh Luồng thảo luận (Thread) với mOS AI]:`,
+            rootContent,
+            threadReplies ? `[Các phản hồi trước đó trong luồng]:\n${threadReplies}` : '',
+            `[Câu hỏi từ ${senderName}]: ${text}`,
+          ]
+            .filter(Boolean)
+            .join('\n\n');
+
+          const imageDataUrl = await convertAttachmentToDataUrl(attachmentsToSend?.[0]);
+          const aiRes = await apiClient.ai.sendMessage({
+            sessionId: aiSessionId || undefined,
+            message: contextPayload,
+            scope: `mos-chat-private-thread:${targetMsgId}`,
+            imageDataUrl,
+            context: {
+              page: `mos-chat-private-thread:${targetMsgId}`,
+              userName: senderName,
+              myRole: currentUser?.role || 'super_admin',
+            },
+          });
+          if (aiRes?.session?.id) {
+            setAiSessionId(aiRes.session.id);
+          }
+          const botReply: MosChatThreadReply = {
+            id: aiRes?.message?.id || `th-ai-${Date.now()}`,
+            senderId: 'wings-ai-copilot',
+            senderName: '🤖 MAI',
+            senderRole: 'mOS AI',
+            senderAvatar: 'MAI',
+            roleColor: '#8b5cf6',
+            text: (aiRes?.message?.content || 'MAI đã ghi nhận phản hồi trong luồng của bạn.')
+              .replace(/<action[\s\S]*?<\/action>/gi, '')
+              .replace(/<\/?action[^>]*>/gi, '')
+              .trim(),
+            isAiBot: true,
+            timeLabel: dayjs().format('HH:mm'),
+            createdAt: new Date().toISOString(),
+          };
+          setAiMessages((prev) =>
+            prev.map((m) => (m.id === targetMsgId ? { ...m, thread: [...(m.thread || []), botReply] } : m))
+          );
+          scrollToChatBottom('thread', 'smooth');
+        } catch (_) {
+          // ignore private thread AI error
+        } finally {
+          setAiThinkingActive(false);
+        }
+      }
+      return;
+    }
+
+    // CASE 2: Standard Space / 1-1 Conversation
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== activeConversation.id) return c;
         return {
           ...c,
           messages: c.messages.map((m) =>
-            m.id === activeThreadMsgId
-              ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] }
-              : m
+            m.id === targetMsgId ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] } : m
           ),
         };
       })
@@ -5332,19 +5412,56 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     try {
       const res = await apiClient.chat.sendThreadReply({
         conversationId: activeConversation.id,
-        messageId: activeThreadMsgId,
+        messageId: targetMsgId,
         text: text || (cardToSend ? `Đính kèm thẻ khách hàng ${cardToSend.name}:` : ''),
         attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         customerCard: cardToSend || undefined,
       });
       if (res?.conversation) {
         setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? res.conversation! : c)));
+      } else if (res?.reply) {
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== activeConversation.id) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) => {
+                if (m.id !== targetMsgId) return m;
+                const existing = m.thread || [];
+                const updatedThread = existing.map((r) => (r.id === newReply.id ? res.reply! : r));
+                if (!updatedThread.some((r) => r.id === res.reply?.id)) {
+                  updatedThread.push(res.reply!);
+                }
+                return { ...m, thread: updatedThread };
+              }),
+            };
+          })
+        );
       }
       if (wasUrgent && res?.reply?.id) {
-        void handleBuzzMessage(activeThreadMsgId, res.reply.id);
+        void handleBuzzMessage(targetMsgId, res.reply.id);
       }
       notifyLivePeers();
-    } catch (_) {}
+    } catch (err: SafeAny) {
+      // Restore user text on error so input does not disappear permanently
+      antdMessage.error(err?.message || 'Không thể gửi câu trả lời vào luồng. Vui lòng thử lại!');
+      updateThreadInput(text);
+      if (threadInputRef.current) {
+        threadInputRef.current.value = text;
+      }
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConversation.id) return c;
+          return {
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === targetMsgId ? { ...m, thread: (m.thread || []).filter((r) => r.id !== newReply.id) } : m
+            ),
+          };
+        })
+      );
+      return;
+    }
 
     // If user tagged @MAI in the thread reply, invoke MAI with full thread context!
     if (canUseAiCopilot && /(?:^|\s)@\s*mai\b/i.test(text)) {
@@ -5352,7 +5469,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         text.replace(/(?:^|\s)@\s*mai\b/gi, '').trim() || 'Hãy phân tích nội dung luồng thảo luận trên giúp nhóm.';
       setAiThinkingActive(true);
       try {
-        const rootMsg = activeConversation.messages.find((m) => m.id === activeThreadMsgId);
+        const rootMsg = activeConversation.messages.find((m) => m.id === targetMsgId);
         const rootContent = rootMsg ? `[Tin nhắn gốc từ ${rootMsg.senderName}]: ${rootMsg.text || ''}` : '';
         const threadReplies = (rootMsg?.thread || [])
           .slice(-10)
@@ -5371,10 +5488,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const aiRes = await apiClient.ai.sendMessage({
           sessionId: aiSessionId || undefined,
           message: contextPayload,
-          scope: `mos-chat-thread:${activeConversation.id}:${activeThreadMsgId}`,
+          scope: `mos-chat-thread:${activeConversation.id}:${targetMsgId}`,
           imageDataUrl,
           context: {
-            page: `mos-chat-thread:${activeConversation.id}:${activeThreadMsgId}`,
+            page: `mos-chat-thread:${activeConversation.id}:${targetMsgId}`,
             userName: senderName,
             myRole: currentUser?.role || 'super_admin',
           },
@@ -5382,7 +5499,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
         }
-        // Backend auto-delivers the bot reply directly to activeThreadMsgId in DB!
+        // Backend auto-delivers the bot reply directly to targetMsgId in DB!
         // Sync fresh conversation state from server to immediately display MAI's thread reply
         await fetchBootstrap(true);
         notifyLivePeers();
@@ -6450,11 +6567,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   const activeThreadMessage = useMemo(() => {
-    if (!activeConversation) return null;
-    return (
-      activeConversation.messages.find((m) => m.id === activeThreadMsgId) || activeConversation.messages[0] || null
-    );
+    if (!activeConversation || !activeConversation.messages?.length) return null;
+    if (activeThreadMsgId) {
+      const found = activeConversation.messages.find((m) => m.id === activeThreadMsgId);
+      if (found) return found;
+    }
+    return activeConversation.messages.find((m) => !m.isDeleted) || activeConversation.messages[0] || null;
   }, [activeConversation, activeThreadMsgId]);
+
+  // Keep activeThreadMsgId strictly synchronized with activeThreadMessage.id whenever thread drawer is open
+  useEffect(() => {
+    if (threadOpen && activeThreadMessage?.id && activeThreadMsgId !== activeThreadMessage.id) {
+      setActiveThreadMsgId(activeThreadMessage.id);
+    }
+  }, [threadOpen, activeThreadMessage?.id, activeThreadMsgId]);
+
+  // Reset thread id when changing conversations to avoid stale cross-channel thread ID leak
+  useEffect(() => {
+    setActiveThreadMsgId(null);
+  }, [activeConvId]);
 
   // Automatically scroll main conversation stream to bottom when switching conversations or when new messages arrive
   useEffect(() => {
@@ -10312,7 +10443,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     <button
                       type="button"
                       aria-label="Đóng / Mở cột Luồng trả lời"
-                      onClick={() => setThreadOpen((p) => !p)}
+                      onClick={() => {
+                        setThreadOpen((p) => {
+                          const next = !p;
+                          if (next && !activeThreadMsgId && activeConversation?.messages?.[0]) {
+                            setActiveThreadMsgId(activeConversation.messages[0].id);
+                          }
+                          return next;
+                        });
+                      }}
                       className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
                       style={{
                         background: threadOpen ? 'rgba(212, 168, 75, 0.16)' : 'transparent',
