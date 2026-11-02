@@ -661,25 +661,28 @@
   z-index: 50 !important;
 }
 
-.translate-x-full {
-  transform: translateX(100%);
-  -webkit-transform: translateX(100%);
-}
-.translate-x-0 {
-  transform: translateX(0%);
-  -webkit-transform: translateX(0%);
-}
-.-translate-x-full {
-  transform: translateX(-100%);
-  -webkit-transform: translateX(-100%);
-}
-.-translate-x-1\/2 {
-  transform: translateX(-50%);
-  -webkit-transform: translateX(-50%);
-}
-.-translate-y-1\/2 {
-  transform: translateY(-50%);
-  -webkit-transform: translateY(-50%);
+/* Legacy translate utilities fallback for Chrome < 91 (modern browsers use Tailwind v4 translate property) */
+@supports not (translate: 0) {
+  .translate-x-full {
+    transform: translateX(100%);
+    -webkit-transform: translateX(100%);
+  }
+  .translate-x-0 {
+    transform: translateX(0%);
+    -webkit-transform: translateX(0%);
+  }
+  .-translate-x-full {
+    transform: translateX(-100%);
+    -webkit-transform: translateX(-100%);
+  }
+  .-translate-x-1\/2 {
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
+  }
+  .-translate-y-1\/2 {
+    transform: translateY(-50%);
+    -webkit-transform: translateY(-50%);
+  }
 }
 
 .overflow-hidden {

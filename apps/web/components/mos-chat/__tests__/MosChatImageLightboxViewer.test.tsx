@@ -69,13 +69,13 @@ describe('MosChatImageLightboxViewer', () => {
     fireEvent.click(zoomOutBtn);
     expect(setLightboxImageMock).toHaveBeenCalled();
 
-    // Click Reset 100%
+    // Click Reset / Fit to frame
     const resetBtn = screen.getByRole('button', { name: /Vừa khung hình/i });
     fireEvent.click(resetBtn);
     expect(setLightboxImageMock).toHaveBeenCalled();
   });
 
-  it('handles preset zoom pills (50%, 150%, 200%, 300%)', () => {
+  it('handles preset zoom pills (Fit, 50%, 150%, 200%, 300%) and 100% actual size', () => {
     render(
       <MosChatImageLightboxViewer
         lightboxImage={{
@@ -88,9 +88,19 @@ describe('MosChatImageLightboxViewer', () => {
       />
     );
 
+    // Preset Fit
+    const presetFitBtn = screen.getByRole('button', { name: 'Fit' });
+    fireEvent.click(presetFitBtn);
+    expect(setLightboxImageMock).toHaveBeenCalledWith(expect.any(Function));
+
     // Preset 200%
     const preset200Btn = screen.getByRole('button', { name: '200%' });
     fireEvent.click(preset200Btn);
+    expect(setLightboxImageMock).toHaveBeenCalledWith(expect.any(Function));
+
+    // Click 100% Actual size button
+    const actual100Btn = screen.getByRole('button', { name: /Kích thước gốc 100%/i });
+    fireEvent.click(actual100Btn);
     expect(setLightboxImageMock).toHaveBeenCalledWith(expect.any(Function));
   });
 
@@ -137,6 +147,36 @@ describe('MosChatImageLightboxViewer', () => {
     // Close
     const closeBtn = screen.getByRole('button', { name: /Đóng xem ảnh/i });
     fireEvent.click(closeBtn);
+    expect(setLightboxImageMock).toHaveBeenCalledWith(null);
+  });
+
+  it('handles keyboard shortcuts (F, 0, 1, Escape, +, -, R)', () => {
+    render(
+      <MosChatImageLightboxViewer
+        lightboxImage={{
+          items: sampleItems,
+          currentIndex: 0,
+          zoom: 1,
+          rotate: 0,
+        }}
+        setLightboxImage={setLightboxImageMock}
+      />
+    );
+
+    // Shortcut 'f' for Fit
+    fireEvent.keyDown(window, { key: 'f' });
+    expect(setLightboxImageMock).toHaveBeenCalled();
+
+    // Shortcut '1' for 100%
+    fireEvent.keyDown(window, { key: '1' });
+    expect(setLightboxImageMock).toHaveBeenCalled();
+
+    // Shortcut '0' for Fit
+    fireEvent.keyDown(window, { key: '0' });
+    expect(setLightboxImageMock).toHaveBeenCalled();
+
+    // Shortcut 'Escape' for close
+    fireEvent.keyDown(window, { key: 'Escape' });
     expect(setLightboxImageMock).toHaveBeenCalledWith(null);
   });
 });
