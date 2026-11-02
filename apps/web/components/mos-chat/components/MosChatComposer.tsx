@@ -914,6 +914,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   <Popover
                     trigger="click"
                     placement="topRight"
+                    zIndex={1500}
                     open={openStickerPopoverKey === 'composer:main:desktop'}
                     onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
                     content={

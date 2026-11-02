@@ -129,15 +129,10 @@ export const MosChatSpaceEmojiColorPicker: React.FC<MosChatSpaceEmojiColorPicker
             Không tìm thấy emoji phù hợp. Bạn có thể tự gõ bên dưới.
           </div>
         ) : (
-          (searchQuery
-            ? filteredCategories
-            : filteredCategories.filter((c) => c.id === activeTab)
-          ).map((cat) => (
+          (searchQuery ? filteredCategories : filteredCategories.filter((c) => c.id === activeTab)).map((cat) => (
             <div key={cat.id} className="space-y-1">
               {searchQuery && (
-                <div className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
-                  {cat.label}
-                </div>
+                <div className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">{cat.label}</div>
               )}
               <div className="grid grid-cols-7 gap-1">
                 {cat.emojis.map((emoji) => {
@@ -199,6 +194,7 @@ export const MosChatSpaceEmojiColorPicker: React.FC<MosChatSpaceEmojiColorPicker
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
         placement="bottomLeft"
+        zIndex={1500}
         arrow={false}
       >
         <div
@@ -233,7 +229,10 @@ export const MosChatSpaceEmojiColorPicker: React.FC<MosChatSpaceEmojiColorPicker
       <div className="flex-1 min-w-0 space-y-2 text-center sm:text-left w-full">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-[12px] font-extrabold flex items-center justify-center sm:justify-start gap-1.5" style={{ color: token.colorText }}>
+            <div
+              className="text-[12px] font-extrabold flex items-center justify-center sm:justify-start gap-1.5"
+              style={{ color: token.colorText }}
+            >
               <span>Biểu tượng & Màu chủ đạo Space</span>
               <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-blue-500/10 text-blue-500">
                 Google Workspace

@@ -1464,6 +1464,240 @@ export const MosChatStickerVisual: React.FC<{
   );
 };
 
+export interface MosChatEmojiGroup {
+  id: string;
+  label: string;
+  shortLabel: string;
+  icon: string;
+  emojis: readonly string[];
+}
+
+export const MOS_CHAT_EXPANDED_EMOJI_GROUPS: readonly MosChatEmojiGroup[] = [
+  {
+    id: 'wings',
+    label: 'Wings & Sắc đẹp',
+    shortLabel: 'Wings',
+    icon: '🪽',
+    emojis: ['🪽', '🪶', '👑', '🌸', '💖', '🕊️', '🌿', '🍀', '🍓', '🥑', '☕', '💄', '💅', '🧘', '💆‍♀️', '🎀', '💎'],
+  },
+  {
+    id: 'popular',
+    label: 'Cảm xúc phổ biến',
+    shortLabel: 'Phổ biến',
+    icon: '❤️',
+    emojis: ['❤️', '👍', '🔥', '🎉', '🥰', '😂', '👏', '🙏', '✨'],
+  },
+  {
+    id: 'smileys',
+    label: 'Cảm xúc & Mặt cười',
+    shortLabel: 'Mặt cười',
+    icon: '😀',
+    emojis: [
+      '😀',
+      '😃',
+      '😄',
+      '😆',
+      '😅',
+      '🥲',
+      '🥹',
+      '☺️',
+      '😇',
+      '🙂',
+      '😉',
+      '😌',
+      '😍',
+      '😘',
+      '😋',
+      '😛',
+      '😜',
+      '🤪',
+      '😝',
+      '🤑',
+      '🤗',
+      '🤭',
+      '🤫',
+      '🤔',
+      '🫡',
+      '🤐',
+      '🤨',
+      '😐',
+      '😑',
+      '😶',
+      '😏',
+      '😒',
+      '🙄',
+      '😬',
+      '🤥',
+      '😔',
+      '😪',
+      '🤤',
+      '😴',
+      '😷',
+      '🤒',
+      '🤕',
+      '🤢',
+      '🤮',
+      '🤧',
+      '🥵',
+      '🥶',
+      '🥴',
+      '😵',
+      '🤯',
+      '🤠',
+      '🥳',
+      '😎',
+      '🤓',
+      '🧐',
+      '😕',
+      '😟',
+      '🙁',
+      '😮',
+      '😯',
+      '😲',
+      '😳',
+      '🥺',
+      '😦',
+      '😧',
+      '😨',
+      '😰',
+      '😥',
+      '😢',
+      '😭',
+      '😱',
+      '😖',
+      '😣',
+      '😞',
+      '😓',
+      '😩',
+      '😫',
+      '🥱',
+      '😤',
+      '😡',
+      '😠',
+      '🤬',
+    ],
+  },
+  {
+    id: 'gestures',
+    label: 'Bàn tay & Trái tim',
+    shortLabel: 'Cử chỉ',
+    icon: '🫶',
+    emojis: [
+      '👎',
+      '👐',
+      '🤲',
+      '🤝',
+      '✍️',
+      '🤳',
+      '💪',
+      '✌️',
+      '🤞',
+      '🤙',
+      '🖐️',
+      '🫶',
+      '👊',
+      '✊',
+      '🤛',
+      '🤜',
+      '🧡',
+      '💛',
+      '💚',
+      '💙',
+      '💜',
+      '🖤',
+      '🤍',
+      '🤎',
+      '💔',
+      '❤️‍🔥',
+      '❤️‍🩹',
+      '❣️',
+      '💕',
+      '💞',
+      '💓',
+      '💗',
+      '💘',
+      '💝',
+      '⭐',
+      '🌟',
+      '💥',
+      '👀',
+    ],
+  },
+  {
+    id: 'projects',
+    label: 'Dự án & Mục tiêu',
+    shortLabel: 'Dự án',
+    icon: '🚀',
+    emojis: [
+      '🚀',
+      '🎯',
+      '⚡',
+      '💡',
+      '📈',
+      '📊',
+      '🏆',
+      '🎖️',
+      '🥇',
+      '🔑',
+      '🧭',
+      '🏁',
+      '📦',
+      '🛠️',
+      '⚙️',
+      '🛡️',
+      '🤖',
+      '💻',
+      '🔒',
+      '📋',
+      '📝',
+      '📂',
+      '🏷️',
+      '⏰',
+      '⏳',
+      '🔍',
+      '🚨',
+      '🧹',
+      '🔌',
+      '📡',
+      '📢',
+      '📌',
+      '🔔',
+      '✅',
+      '🟢',
+      '⚫',
+    ],
+  },
+  {
+    id: 'teams',
+    label: 'Đội ngũ & Hoạt động',
+    shortLabel: 'Đội ngũ',
+    icon: '👥',
+    emojis: [
+      '👥',
+      '🏢',
+      '🎓',
+      '📞',
+      '🎧',
+      '🏅',
+      '🏠',
+      '💬',
+      '🗣️',
+      '💌',
+      '📬',
+      '🍵',
+      '🍕',
+      '🍔',
+      '🍟',
+      '🍻',
+      '🥂',
+      '🍹',
+      '🎈',
+      '🎁',
+      '🎂',
+    ],
+  },
+];
+
 export const MosChatStickerAndEmojiPicker: React.FC<{
   isDark: boolean;
   borderColor: string;
@@ -1516,6 +1750,225 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
     return MOS_CHAT_STICKERS.filter((s) => s.packId === activePack);
   }, [activePack, searchQuery]);
 
+  const filteredEmojis = useMemo(() => {
+    if (activePack !== 'emoji') return null;
+    const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
+    if (!q) return null;
+    const results: string[] = [];
+    const seen = new Set<string>();
+
+    // Keyword map for intuitive Vietnamese and English search
+    const KEYWORD_MAP: Record<string, string[]> = {
+      tim: [
+        '❤️',
+        '💖',
+        '💘',
+        '💝',
+        '💗',
+        '💓',
+        '💞',
+        '💕',
+        '❣️',
+        '🧡',
+        '💛',
+        '💚',
+        '💙',
+        '💜',
+        '🖤',
+        '🤍',
+        '🤎',
+        '💔',
+        '❤️‍🔥',
+        '❤️‍🩹',
+        '🫶',
+        '🥰',
+        '😍',
+      ],
+      heart: ['❤️', '💖', '💘', '💝', '💗', '💓', '💞', '💕', '❣️', '🫶', '🥰', '😍'],
+      cuoi: ['😀', '😃', '😄', '😆', '😅', '😂', '🤣', '😊', '😁', '🙂', '😉', '😝', '😜', '🤪', '🥳', '🤠'],
+      laugh: ['😀', '😃', '😄', '😆', '😅', '😂', '🤣', '😁'],
+      lua: ['🔥', '❤️‍🔥', '💥'],
+      fire: ['🔥', '❤️‍🔥', '💥'],
+      like: ['👍', '👏', '🙌', '💯', '✅'],
+      dislike: ['👎'],
+      ok: ['👌', '👍', '✅'],
+      wings: ['🪽', '🪶', '👑', '✨', '🌸', '💖', '🕊️', '💎'],
+      mat: [
+        '😀',
+        '😃',
+        '😄',
+        '😆',
+        '😅',
+        '😂',
+        '🤣',
+        '🥲',
+        '🥹',
+        '☺️',
+        '😊',
+        '😇',
+        '🙂',
+        '😉',
+        '😌',
+        '😍',
+        '🥰',
+        '😘',
+        '😋',
+        '😛',
+        '😜',
+        '🤪',
+        '😝',
+        '🤑',
+        '🤗',
+        '🤭',
+        '🤫',
+        '🤔',
+        '🫡',
+        '🤐',
+        '🤨',
+        '😐',
+        '😑',
+        '😶',
+        '😏',
+        '😒',
+        '🙄',
+        '😬',
+        '🤥',
+        '😔',
+        '😪',
+        '🤤',
+        '😴',
+        '😷',
+        '🤒',
+        '🤕',
+        '🤢',
+        '🤮',
+        '🤧',
+        '🥵',
+        '🥶',
+        '🥴',
+        '😵',
+        '🤯',
+        '🤠',
+        '🥳',
+        '😎',
+        '🤓',
+        '🧐',
+        '😕',
+        '😟',
+        '🙁',
+        '😮',
+        '😯',
+        '😲',
+        '😳',
+        '🥺',
+        '😦',
+        '😧',
+        '😨',
+        '😰',
+        '😥',
+        '😢',
+        '😭',
+        '😱',
+        '😖',
+        '😣',
+        '😞',
+        '😓',
+        '😩',
+        '😫',
+        '🥱',
+        '😤',
+        '😡',
+        '😠',
+        '🤬',
+      ],
+      tay: [
+        '👍',
+        '👎',
+        '👏',
+        '🙌',
+        '👐',
+        '🤲',
+        '🤝',
+        '🙏',
+        '✍️',
+        '🤳',
+        '💪',
+        '✌️',
+        '🤞',
+        '🤙',
+        '🖐️',
+        '🫶',
+        '👊',
+        '✊',
+        '🤛',
+        '🤜',
+      ],
+      hoa: ['🌸', '🌹', '🌺', '🌻', '🌼', '🌷', '🍀', '🌿'],
+      sao: ['⭐', '🌟', '✨'],
+      'cong viec': [
+        '🚀',
+        '🎯',
+        '⚡',
+        '💡',
+        '📈',
+        '📊',
+        '🏆',
+        '🎖️',
+        '🥇',
+        '🔑',
+        '🧭',
+        '🏁',
+        '📦',
+        '🛠️',
+        '⚙️',
+        '🛡️',
+        '🤖',
+        '💻',
+        '🔒',
+        '📋',
+        '📝',
+        '📂',
+        '🏷️',
+        '⏰',
+        '⏳',
+        '🔍',
+        '🚨',
+        '🧹',
+        '🔌',
+        '📡',
+        '📢',
+        '📌',
+        '🔔',
+        '✅',
+        '🟢',
+        '⚫',
+      ],
+    };
+
+    for (const [kw, list] of Object.entries(KEYWORD_MAP)) {
+      if (kw.includes(q) || q.includes(kw)) {
+        for (const em of list) {
+          if (!seen.has(em)) {
+            seen.add(em);
+            results.push(em);
+          }
+        }
+      }
+    }
+
+    for (const grp of MOS_CHAT_EXPANDED_EMOJI_GROUPS) {
+      const labelNorm = removeVietnameseTones(grp.label.toLowerCase());
+      const isGroupMatch = labelNorm.includes(q);
+      for (const em of grp.emojis) {
+        if (!seen.has(em) && (em.includes(q) || isGroupMatch)) {
+          seen.add(em);
+          results.push(em);
+        }
+      }
+    }
+    return results;
+  }, [activePack, searchQuery]);
+
   return (
     <div
       data-no-chat-autofocus="true"
@@ -1558,92 +2011,135 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
         })}
       </div>
 
-      {/* Search bar for Stickers / Memes */}
-      {activePack !== 'emoji' && (
-        <div
-          className="flex items-center gap-1.5 px-2.5 h-7 rounded-lg"
-          style={{
-            background: surfaceRaised,
-            border: `1px solid ${borderColor}`,
-          }}
-        >
-          <Search size={12} className="text-slate-400 shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm meme / sticker (VD: chốt đơn, mèo, khóc, sếp...)"
-            className="w-full bg-transparent text-[11.5px] outline-none"
-            style={{ color: 'var(--mos-text, #f8fafc)' }}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="text-[10px] text-slate-400 hover:text-amber-400 cursor-pointer font-bold"
-            >
-              Xoá
-            </button>
-          )}
-        </div>
-      )}
+      {/* Search bar for Both Stickers/Memes and Emojis */}
+      <div
+        className="flex items-center gap-1.5 px-2.5 h-7 rounded-lg"
+        style={{
+          background: surfaceRaised,
+          border: `1px solid ${borderColor}`,
+        }}
+      >
+        <Search size={12} className="text-slate-400 shrink-0" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={
+            activePack === 'emoji'
+              ? 'Tìm emoji (VD: cười, tim, lửa, like...)'
+              : 'Tìm meme / sticker (VD: chốt đơn, mèo, khóc, sếp...)'
+          }
+          className="w-full bg-transparent text-[11.5px] outline-none"
+          style={{ color: 'var(--mos-text, #f8fafc)' }}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="text-[10px] text-slate-400 hover:text-amber-400 cursor-pointer font-bold"
+          >
+            Xoá
+          </button>
+        )}
+      </div>
 
       {/* Pack Content: Either Classic Emoji Grid OR Animated Sticker Grid */}
-      {activePack === 'emoji' && !searchQuery.trim() ? (
-        <div className="space-y-2 max-h-[270px] overflow-y-auto pr-0.5">
-          <div>
-            <div
-              className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider"
-              style={{ color: 'var(--mos-accent, #f59e0b)' }}
-            >
-              Chèn biểu tượng Wings
+      {activePack === 'emoji' ? (
+        searchQuery.trim() ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <span
+                className="text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1"
+                style={{ color: 'var(--mos-accent, #f59e0b)' }}
+              >
+                <Sparkles size={11} />
+                <span>Kết quả emoji ({filteredEmojis?.length || 0})</span>
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {mode === 'reaction' ? '1 chạm để thả cảm xúc' : '1 chạm chèn emoji'}
+              </span>
             </div>
-            <div className="grid grid-cols-9 gap-1">
-              {wingsSignatureEmojis.map((emoji) => {
-                const reacted = hasUserReacted?.(emoji);
-                return (
-                  <button
-                    key={`wings-em-${emoji}`}
-                    type="button"
-                    onClick={() => onSelectEmoji(emoji)}
-                    className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
-                    style={{
-                      background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
-                      boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                );
-              })}
-            </div>
+            {!filteredEmojis || filteredEmojis.length === 0 ? (
+              <div className="py-8 text-center text-[11.5px] text-slate-400">
+                Không tìm thấy emoji phù hợp với &ldquo;{searchQuery}&rdquo;
+              </div>
+            ) : (
+              <div className="grid grid-cols-9 gap-1 max-h-[268px] overflow-y-auto pr-0.5 py-0.5">
+                {filteredEmojis.map((emoji, idx) => {
+                  const reacted = hasUserReacted?.(emoji);
+                  return (
+                    <button
+                      key={`search-em-${emoji}-${idx}`}
+                      type="button"
+                      data-emoji={emoji}
+                      onClick={() => onSelectEmoji(emoji)}
+                      className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+                      style={{
+                        background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
+                        boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
+        ) : (
+          <div className="space-y-2.5 max-h-[270px] overflow-y-auto pr-0.5">
+            {/* Quick Category Jump Bar */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
+              {MOS_CHAT_EXPANDED_EMOJI_GROUPS.map((grp) => (
+                <button
+                  key={grp.id}
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById(`emoji-group-${grp.id}`);
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }}
+                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 cursor-pointer transition-colors hover:bg-amber-500/15 text-slate-400 hover:text-amber-400 border border-slate-700/50"
+                >
+                  <span className="mr-1">{grp.icon}</span>
+                  <span>{grp.shortLabel}</span>
+                </button>
+              ))}
+            </div>
 
-          <div style={{ borderTop: `1px solid ${borderColor}` }} className="pt-1.5">
-            <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Cảm xúc phổ biến
-            </div>
-            <div className="grid grid-cols-9 gap-1">
-              {popularEmojis.map((emoji) => {
-                const reacted = hasUserReacted?.(emoji);
-                return (
-                  <button
-                    key={`pop-em-${emoji}`}
-                    type="button"
-                    onClick={() => onSelectEmoji(emoji)}
-                    className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
-                    style={{
-                      background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
-                      boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Categorized Emoji Groups */}
+            {MOS_CHAT_EXPANDED_EMOJI_GROUPS.map((grp) => (
+              <div key={grp.id} id={`emoji-group-${grp.id}`} className="space-y-1">
+                <div
+                  className="px-1 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1"
+                  style={{ color: 'var(--mos-accent, #f59e0b)' }}
+                >
+                  <span>{grp.icon}</span>
+                  <span>{grp.label}</span>
+                </div>
+                <div className="grid grid-cols-9 gap-1">
+                  {grp.emojis.map((emoji) => {
+                    const reacted = hasUserReacted?.(emoji);
+                    return (
+                      <button
+                        key={`${grp.id}-${emoji}`}
+                        type="button"
+                        data-emoji={emoji}
+                        onClick={() => onSelectEmoji(emoji)}
+                        className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+                        style={{
+                          background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
+                          boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        )
       ) : (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-1">

@@ -988,26 +988,52 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                 <span className="truncate">{activeThreadMessage.senderName}</span>
                 <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
               </div>
-              <Tooltip title="Trả lời / Trích dẫn tin nhắn gốc này">
-                <button
-                  type="button"
-                  aria-label="Trả lời tin nhắn gốc trong luồng"
-                  onClick={() => {
-                    setReplyingToReply({
-                      id: activeThreadMessage.id,
-                      senderName: activeThreadMessage.senderName,
-                      text: activeThreadMessage.text || '',
-                    });
-                    setTimeout(() => {
-                      threadInputRef.current?.focus();
-                    }, 50);
-                  }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors shrink-0"
+              <div className="flex items-center gap-1 shrink-0">
+                <Popover
+                  trigger="click"
+                  placement="bottomRight"
+                  zIndex={1500}
+                  open={openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`}
+                  onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `thread-root:${activeThreadMessage.id}` : null)}
+                  content={
+                    openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`
+                      ? renderReactionPickerContent(activeThreadMessage.id, activeThreadMessage)
+                      : null
+                  }
                 >
-                  <MessageSquareReply size={12} />
-                  <span>Trả lời</span>
-                </button>
-              </Tooltip>
+                  <Tooltip title="Thả biểu cảm vào tin nhắn gốc">
+                    <button
+                      type="button"
+                      aria-label="Thả biểu cảm vào tin nhắn gốc"
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      <SmilePlus size={12} />
+                      <span className="hidden sm:inline">Thả biểu cảm</span>
+                    </button>
+                  </Tooltip>
+                </Popover>
+
+                <Tooltip title="Trả lời / Trích dẫn tin nhắn gốc này">
+                  <button
+                    type="button"
+                    aria-label="Trả lời tin nhắn gốc trong luồng"
+                    onClick={() => {
+                      setReplyingToReply({
+                        id: activeThreadMessage.id,
+                        senderName: activeThreadMessage.senderName,
+                        text: activeThreadMessage.text || '',
+                      });
+                      setTimeout(() => {
+                        threadInputRef.current?.focus();
+                      }, 50);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors shrink-0"
+                  >
+                    <MessageSquareReply size={12} />
+                    <span>Trả lời</span>
+                  </button>
+                </Tooltip>
+              </div>
             </div>
             {activeThreadMessage.text && (
               <div className="text-[13px] leading-relaxed break-words">
@@ -1513,6 +1539,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                             <Popover
                               trigger="click"
                               placement={isReplyMine ? 'topRight' : 'topLeft'}
+                              zIndex={1500}
                               open={openStickerPopoverKey === `reply:${activeThreadMessage.id}:${r.id}`}
                               onOpenChange={(vis) =>
                                 setOpenStickerPopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null)
@@ -1631,51 +1658,53 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                           </Popconfirm>
                         </Tooltip>
                       )}
-                      {(isReplyMine || isMessageFromCurrentUser(activeThreadMessage) || canManageChatThreads) && !r.isDeleted && !r.isMissionMilestone && (
-                        <Tooltip
-                          title={
-                            openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
-                              ? undefined
-                              : 'Tách ra luồng chính hoặc chuyển sang luồng khác'
-                          }
-                        >
-                          <Popover
-                            trigger="click"
-                            placement="topRight"
-                            open={openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`}
-                            onOpenChange={(vis) => {
-                              setOpenMovePopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null);
-                              if (!vis) setMoveThreadSearchQuery('');
-                            }}
-                            content={
+                      {(isReplyMine || isMessageFromCurrentUser(activeThreadMessage) || canManageChatThreads) &&
+                        !r.isDeleted &&
+                        !r.isMissionMilestone && (
+                          <Tooltip
+                            title={
                               openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
-                                ? renderMoveReplyPopover(activeThreadMessage, r)
-                                : null
+                                ? undefined
+                                : 'Tách ra luồng chính hoặc chuyển sang luồng khác'
                             }
                           >
-                            <button
-                              type="button"
-                              aria-label="Tách hoặc chuyển câu trả lời sang luồng khác"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const replyKey = `reply:${activeThreadMessage.id}:${r.id}`;
-                                const nextOpen = openMovePopoverKey === replyKey ? null : replyKey;
-                                setOpenMovePopoverKey(nextOpen);
-                                if (!nextOpen) setMoveThreadSearchQuery('');
+                            <Popover
+                              trigger="click"
+                              placement="topRight"
+                              open={openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`}
+                              onOpenChange={(vis) => {
+                                setOpenMovePopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null);
+                                if (!vis) setMoveThreadSearchQuery('');
                               }}
-                              className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer"
-                              style={{
-                                color:
-                                  openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
-                                    ? '#d4a84b'
-                                    : token.colorTextSecondary,
-                              }}
+                              content={
+                                openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                                  ? renderMoveReplyPopover(activeThreadMessage, r)
+                                  : null
+                              }
                             >
-                              <ArrowUpRight size={11} />
-                            </button>
-                          </Popover>
-                        </Tooltip>
-                      )}
+                              <button
+                                type="button"
+                                aria-label="Tách hoặc chuyển câu trả lời sang luồng khác"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const replyKey = `reply:${activeThreadMessage.id}:${r.id}`;
+                                  const nextOpen = openMovePopoverKey === replyKey ? null : replyKey;
+                                  setOpenMovePopoverKey(nextOpen);
+                                  if (!nextOpen) setMoveThreadSearchQuery('');
+                                }}
+                                className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer"
+                                style={{
+                                  color:
+                                    openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                                      ? '#d4a84b'
+                                      : token.colorTextSecondary,
+                                }}
+                              >
+                                <ArrowUpRight size={11} />
+                              </button>
+                            </Popover>
+                          </Tooltip>
+                        )}
                       {/* Edit Reply Button (author only, and not deleted) */}
                       {isReplyMine && !r.isDeleted && (
                         <Tooltip title="Chỉnh sửa">
@@ -2170,6 +2199,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <Popover
                       trigger="click"
                       placement="topRight"
+                      zIndex={1500}
                       open={openStickerPopoverKey === 'composer:thread'}
                       onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
                       content={
@@ -2417,6 +2447,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <Popover
                       trigger="click"
                       placement="topRight"
+                      zIndex={1500}
                       open={openStickerPopoverKey === 'composer:thread'}
                       onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
                       content={

@@ -184,6 +184,7 @@ import {
   parsePureStickerMessage,
   parseStickerReactionKey,
   type MosChatStickerItem,
+  type MosChatStickerPackId,
 } from './mos-chat-stickers';
 import {
   AI_COPILOT_CONV_ID,
@@ -9916,6 +9917,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       surfaceRaised={surfaceRaised}
       wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
       popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+      defaultPack="emoji"
       mode="reaction"
       hasUserReacted={(key) => hasUserReacted(msgObj, key)}
       onSelectEmoji={(emoji) => {
@@ -9929,13 +9931,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     />
   );
 
-  const renderComposerEmojiPickerContent = (target: 'main' | 'thread' | { dockConvId: string } = 'main') => (
+  const renderComposerEmojiPickerContent = (
+    target: 'main' | 'thread' | { dockConvId: string } = 'main',
+    defaultPack: MosChatStickerPackId = 'emoji'
+  ) => (
     <MosChatStickerAndEmojiPicker
       isDark={isDark}
       borderColor={borderColor}
       surfaceRaised={surfaceRaised}
       wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
       popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+      defaultPack={defaultPack}
       mode="composer"
       onSelectEmoji={(emoji) => {
         if (target === 'main') {
