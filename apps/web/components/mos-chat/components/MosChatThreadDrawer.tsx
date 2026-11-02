@@ -2444,17 +2444,22 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       </button>
                     </Tooltip>
 
-                    <Popover
-                      trigger="click"
-                      placement="topRight"
-                      zIndex={1500}
-                      open={openStickerPopoverKey === 'composer:thread'}
-                      onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
-                      content={
-                        openStickerPopoverKey === 'composer:thread' ? renderComposerEmojiPickerContent('thread') : null
+                    <Tooltip
+                      title={
+                        openStickerPopoverKey === 'composer:thread'
+                          ? undefined
+                          : 'Gửi Sticker động / Meme / Emoji vào luồng'
                       }
                     >
-                      <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
+                      <Popover
+                        trigger="click"
+                        placement="topRight"
+                        zIndex={1500}
+                        destroyOnHidden
+                        open={openStickerPopoverKey === 'composer:thread'}
+                        onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
+                        content={renderComposerEmojiPickerContent('thread')}
+                      >
                         <button
                           type="button"
                           aria-label="Gửi Sticker động hoặc Emoji vào luồng"
@@ -2463,8 +2468,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         >
                           <SmilePlus size={15} />
                         </button>
-                      </Tooltip>
-                    </Popover>
+                      </Popover>
+                    </Tooltip>
 
                     <Tooltip title="Đính kèm tệp tin (PDF, Excel, Word...)">
                       <button

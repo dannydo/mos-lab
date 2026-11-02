@@ -667,6 +667,11 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   <button
                     type="button"
                     aria-label="Chèn biểu tượng cảm xúc Wings"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const key = 'composer:main:mobile';
+                      setOpenStickerPopoverKey((prev) => (prev === key ? null : key));
+                    }}
                     className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95"
                     style={{ color: token.colorTextSecondary }}
                   >
@@ -911,19 +916,22 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                     </button>
                   </Tooltip>
 
-                  <Popover
-                    trigger="click"
-                    placement="topRight"
-                    zIndex={1500}
-                    open={openStickerPopoverKey === 'composer:main:desktop'}
-                    onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
-                    content={
+                  <Tooltip
+                    title={
                       openStickerPopoverKey === 'composer:main:desktop'
-                        ? renderComposerEmojiPickerContent('main')
-                        : null
+                        ? undefined
+                        : 'Chèn biểu tượng cảm xúc Wings'
                     }
                   >
-                    <Tooltip title="Chèn biểu tượng cảm xúc Wings">
+                    <Popover
+                      trigger="click"
+                      placement="topRight"
+                      zIndex={1500}
+                      destroyOnHidden
+                      open={openStickerPopoverKey === 'composer:main:desktop'}
+                      onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
+                      content={renderComposerEmojiPickerContent('main')}
+                    >
                       <button
                         type="button"
                         aria-label="Chèn biểu tượng cảm xúc Wings"
@@ -932,8 +940,8 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       >
                         <SmilePlus size={16} />
                       </button>
-                    </Tooltip>
-                  </Popover>
+                    </Popover>
+                  </Tooltip>
 
                   <Tooltip title="Đính kèm tệp tin & tài liệu (PDF, Excel, Word, ZIP...)">
                     <button

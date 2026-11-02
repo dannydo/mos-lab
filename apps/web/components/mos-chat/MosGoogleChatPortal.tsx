@@ -9945,15 +9945,63 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       mode="composer"
       onSelectEmoji={(emoji) => {
         if (target === 'main') {
-          updateComposerText(composerTextRef.current + emoji);
-          composerInputRef.current?.focus();
+          const el = composerInputRef.current;
+          if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const currentVal = composerTextRef.current || el.value || '';
+            const nextVal = currentVal.slice(0, start) + emoji + currentVal.slice(end);
+            updateComposerText(nextVal);
+            const newCursor = start + emoji.length;
+            setTimeout(() => {
+              el.focus();
+              try {
+                el.setSelectionRange(newCursor, newCursor);
+              } catch {}
+            }, 0);
+          } else {
+            updateComposerText(composerTextRef.current + emoji);
+            composerInputRef.current?.focus();
+          }
         } else if (target === 'thread') {
-          updateThreadInput(threadTextRef.current + emoji);
-          threadInputRef.current?.focus();
+          const el = threadInputRef.current;
+          if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const currentVal = threadTextRef.current || el.value || '';
+            const nextVal = currentVal.slice(0, start) + emoji + currentVal.slice(end);
+            updateThreadInput(nextVal);
+            const newCursor = start + emoji.length;
+            setTimeout(() => {
+              el.focus();
+              try {
+                el.setSelectionRange(newCursor, newCursor);
+              } catch {}
+            }, 0);
+          } else {
+            updateThreadInput(threadTextRef.current + emoji);
+            threadInputRef.current?.focus();
+          }
         } else if (typeof target === 'object' && target.dockConvId) {
           const cid = target.dockConvId;
-          setDockInputs((p) => ({ ...p, [cid]: `${p[cid] || ''}${emoji}` }));
-          dockInputRefs.current[cid]?.focus();
+          const el = dockInputRefs.current[cid];
+          if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const currentVal = el.value || '';
+            const nextVal = currentVal.slice(0, start) + emoji + currentVal.slice(end);
+            setDockInputs((p) => ({ ...p, [cid]: nextVal }));
+            const newCursor = start + emoji.length;
+            setTimeout(() => {
+              el.focus();
+              try {
+                el.setSelectionRange(newCursor, newCursor);
+              } catch {}
+            }, 0);
+          } else {
+            setDockInputs((p) => ({ ...p, [cid]: `${p[cid] || ''}${emoji}` }));
+            dockInputRefs.current[cid]?.focus();
+          }
         }
       }}
       onSelectSticker={(sticker) => {
