@@ -76,3 +76,15 @@
 {"type":"SLOW_API","source":"fastify","timestamp":"2026-10-12T17:51:28.336Z","durationMs":1195,"method":"GET","url":"/api/career/staff-list?period=last_month","statusCode":200}
 {"type":"PRISMA_QUERY","source":"crm","timestamp":"2026-10-16T03:29:18.517Z","durationMs":19033,"query":"SELECT 1","params":"[]"}
 {"type":"PRISMA_QUERY","source":"crm","timestamp":"2026-10-16T03:29:18.523Z","durationMs":29040,"query":"SELECT `mos_lab`.`crm_request_classifier_worker_health`.`worker_id` FROM `mos_lab`.`crm_request_classifier_worker_health` WHERE 1=1 ORDER BY `mos_lab`.`crm_request_classifier_worker_health`.`worker_id` ASC LIMIT ? OFFSET ?","params":"[50,0]"}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T10:49:14.637Z","durationMs":6831,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T10:55:11.596Z","durationMs":8014,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T10:55:11.682Z","durationMs":8004,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T10:55:50.053Z","durationMs":5471,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T10:55:52.275Z","durationMs":7641,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T11:45:48.747Z","durationMs":7114,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T13:06:51.678Z","durationMs":1050,"method":"GET","url":"/api/kpi/cv-paystub?dateFrom=2026-01-01&dateTo=2026-01-31&storeId=ALL","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T13:06:51.686Z","durationMs":1057,"method":"GET","url":"/api/kpi/cv-paystub?dateFrom=2025-12-01&dateTo=2025-12-31&endAt=2025-12-31+23:59:59&storeId=ALL","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T15:26:57.832Z","durationMs":1283,"method":"POST","url":"/api/chat/tts","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T15:26:58.069Z","durationMs":1048,"method":"POST","url":"/api/chat/tts","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T15:26:58.143Z","durationMs":1118,"method":"POST","url":"/api/chat/tts","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-11-02T23:20:03.462Z","durationMs":6781,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}

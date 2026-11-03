@@ -75,10 +75,10 @@ const BIBLE_TOPICS_MAP: Record<CareerBibleTopic, BibleTopicContent> = {
     subtitle: 'Tiền tươi trao tay cây nào nhận ngay cây đó',
     commandments: [
       'Định mức khuyến khích: Tự tư vấn bán tối thiểu 1 cây dưỡng mi/tuần (~4 cây/tháng).',
-      'Tiền tươi trao tay: 100.000đ/cây khi bán giá gốc (1.100.000đ); 50.000đ/cây khi bán giá khuyến mãi/combo.',
+      'Tiền tươi trao tay theo 4 nấc thang: (1) Giá gốc 1.1M nhận 100K/cây; (2) Giảm giá nhẹ < 50% nhận 50K/cây; (3) Giảm sâu ≥ 50% (≤ 550k) nhận 10K/cây; (4) Tặng kèm Free (0đ) nhận 1K/cây ghi nhận công phục vụ.',
       'Dự kiến thu nhập tăng thêm: +400.000đ/tháng chỉ riêng từ dưỡng mi Yeppeum.',
     ],
-    rewardFormula: 'Hoa hồng: 100.000đ/cây giá gốc · 50.000đ/cây giảm giá',
+    rewardFormula: 'Hoa hồng: 100K giá gốc (1.1M) · 50K giảm giá (< 50%) · 10K giảm sâu (≥ 50%) · 1K Free',
     penalty: 'Chỉ được giải ngân khi tỷ lệ chốt combo đạt chuẩn ≥ 21%. Nếu < 21% thì tạm khóa.',
     routeScope: '/dashboard/career-path',
   },

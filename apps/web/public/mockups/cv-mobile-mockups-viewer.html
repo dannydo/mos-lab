@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4 iPhone 12 Pro HTML Mockups · CV Dashboard (Wings mOS)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-extrabold text-base">
+        📱
+      </div>
+      <div>
+        <h1 class="text-base font-extrabold text-slate-100 flex items-center gap-2">
+          4 HTML Mockups trên iPhone 12 Pro (390 × 844 px)
+          <span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">mOS Lab</span>
+        </h1>
+        <p class="text-xs text-slate-400">Thiết kế Mobile Dashboard cho <code class="text-amber-400 font-mono text-[11px]">/dashboard/cv</code></p>
+      </div>
+    </div>
+
+    <!-- View Mode Switcher -->
+    <div class="flex items-center gap-2 bg-slate-800/90 p-1 rounded-xl border border-slate-700 text-xs font-semibold">
+      <button onclick="setView('all')" id="btn-all" class="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-bold shadow-sm transition-all">
+        Xem cả 4 Thiết Kế (Grid)
+      </button>
+      <button onclick="setView(1)" id="btn-1" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">
+        1. Minimal Cards
+      </button>
+      <button onclick="setView(2)" id="btn-2" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">
+        2. Compact Ledger
+      </button>
+      <button onclick="setView(3)" id="btn-3" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">
+        3. CV+ Bottom Sheet
+      </button>
+      <button onclick="setView(4)" id="btn-4" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">
+        4. Tip & Performance
+      </button>
+    </div>
+  </header>
+
+  <!-- MOCKUPS WRAPPER -->
+  <main class="flex-1 p-6 lg:p-10 flex items-start justify-center">
+    
+    <!-- GRID CONTAINER -->
+    <div id="mockups-grid" class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-8 justify-items-center max-w-[1760px] w-full">
+      
+      <!-- COLUMN 1: MOCKUP 1 -->
+      <div id="col-1" class="flex flex-col items-center gap-3 w-[390px]">
+        <div class="text-center">
+          <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider block">PHƯƠNG ÁN 1</span>
+          <h2 class="text-sm font-bold text-slate-200">Minimalism Cards</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Nhấn mạnh số tiền, sub-row 4 chip CV+, icon lá 🌱 gọn gàng</p>
+        </div>
+        <iframe src="mockup-1-minimal-cards.html" class="w-[390px] h-[844px] rounded-[50px] border-0 shadow-2xl overflow-hidden pointer-events-auto"></iframe>
+        <a href="mockup-1-minimal-cards.html" target="_blank" class="text-xs text-amber-400 hover:underline flex items-center gap-1 font-semibold mt-1">
+          Mở riêng toàn màn hình ↗
+        </a>
+      </div>
+
+      <!-- COLUMN 2: MOCKUP 2 -->
+      <div id="col-2" class="flex flex-col items-center gap-3 w-[390px]">
+        <div class="text-center">
+          <span class="text-xs font-extrabold text-sky-400 uppercase tracking-wider block">PHƯƠNG ÁN 2</span>
+          <h2 class="text-sm font-bold text-slate-200">Compact Ledger Table</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Dạng sổ đối soát tài chính, sticky cột CV, cuộn ngang</p>
+        </div>
+        <iframe src="mockup-2-compact-ledger.html" class="w-[390px] h-[844px] rounded-[50px] border-0 shadow-2xl overflow-hidden pointer-events-auto"></iframe>
+        <a href="mockup-2-compact-ledger.html" target="_blank" class="text-xs text-sky-400 hover:underline flex items-center gap-1 font-semibold mt-1">
+          Mở riêng toàn màn hình ↗
+        </a>
+      </div>
+
+      <!-- COLUMN 3: MOCKUP 3 -->
+      <div id="col-3" class="flex flex-col items-center gap-3 w-[390px]">
+        <div class="text-center">
+          <span class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider block">PHƯƠNG ÁN 3</span>
+          <h2 class="text-sm font-bold text-slate-200">CV+ Detail Bottom Sheet</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Mở bung bảng kê CV+, chuẩn 30% (3/10 khách), 4 stat cards</p>
+        </div>
+        <iframe src="mockup-3-cv-plus-detail-sheet.html" class="w-[390px] h-[844px] rounded-[50px] border-0 shadow-2xl overflow-hidden pointer-events-auto"></iframe>
+        <a href="mockup-3-cv-plus-detail-sheet.html" target="_blank" class="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold mt-1">
+          Mở riêng toàn màn hình ↗
+        </a>
+      </div>
+
+      <!-- COLUMN 4: MOCKUP 4 -->
+      <div id="col-4" class="flex flex-col items-center gap-3 w-[390px]">
+        <div class="text-center">
+          <span class="text-xs font-extrabold text-pink-400 uppercase tracking-wider block">PHƯƠNG ÁN 4</span>
+          <h2 class="text-sm font-bold text-slate-200">Tip 20K & Speed Hub</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Tab Tip 90% theo Điều răn TIP-001 & Tốc độ làm mi iPad</p>
+        </div>
+        <iframe src="mockup-4-gamified-performance.html" class="w-[390px] h-[844px] rounded-[50px] border-0 shadow-2xl overflow-hidden pointer-events-auto"></iframe>
+        <a href="mockup-4-gamified-performance.html" target="_blank" class="text-xs text-pink-400 hover:underline flex items-center gap-1 font-semibold mt-1">
+          Mở riêng toàn màn hình ↗
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    function setView(mode) {
+      const cols = [1, 2, 3, 4];
+      const grid = document.getElementById('mockups-grid');
+
+      // Update buttons
+      ['all', 1, 2, 3, 4].forEach(id => {
+        const btn = document.getElementById('btn-' + id);
+        if (id === mode) {
+          btn.className = 'px-3 py-1.5 rounded-lg bg-amber-500 text-black font-bold shadow-sm transition-all';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all';
+        }
+      });
+
+      if (mode === 'all') {
+        grid.className = 'grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-8 justify-items-center max-w-[1760px] w-full';
+        cols.forEach(c => document.getElementById('col-' + c).style.display = 'flex');
+      } else {
+        grid.className = 'flex justify-center w-full';
+        cols.forEach(c => {
+          document.getElementById('col-' + c).style.display = (c === mode) ? 'flex' : 'none';
+        });
+      }
+    }
+  </script>
+
+</body>
+</html>

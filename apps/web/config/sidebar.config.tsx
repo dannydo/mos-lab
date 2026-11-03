@@ -92,12 +92,6 @@ export function getSidebarGroups(
       path: '/dashboard/labs',
     },
     {
-      key: 'career-path',
-      label: 'Career Path (CV → BOSS)',
-      icon: <AppIcon icon={Trophy} size="sm" />,
-      path: '/dashboard/career-path',
-    },
-    {
       key: 'pilot-dark-lashes',
       label: 'Pilot Uốn Mi Đề Thám',
       icon: <AppIcon icon={Sparkles} size="sm" />,
@@ -422,17 +416,50 @@ export function getSidebarGroups(
   };
 
   // Group 6: NHÂN SỰ & LỊCH LÀM VIỆC
+  const scheduleItems: SidebarItemConfig[] = [];
+  if (isAdmin || ['manager', 'hr', 'lead'].includes(normalizedRole)) {
+    scheduleItems.push(
+      {
+        key: 'staff-directory',
+        label: 'Danh sách nhân sự',
+        icon: <SolutionOutlined />,
+        path: '/dashboard/staff',
+      },
+      {
+        key: 'teams',
+        label: 'Cấu hình Đội nhóm',
+        icon: <TeamOutlined />,
+        path: '/dashboard/staff/teams',
+      }
+    );
+  }
+  scheduleItems.push(
+    {
+      key: 'career-path',
+      label: 'Career Path (Lộ trình CV)',
+      icon: <AppIcon icon={Trophy} size="sm" />,
+      path: '/dashboard/career-path',
+    },
+    {
+      key: 'holiday-work',
+      label: 'Lịch nghỉ lễ',
+      icon: <AppIcon icon={CalendarClock} size="sm" />,
+      path: '/dashboard/holiday-work',
+    }
+  );
+  if (isSuperAdmin) {
+    scheduleItems.push({
+      key: 'menu-access',
+      label: 'Quyền hiển thị menu',
+      icon: <AppIcon icon={Settings2} size="sm" />,
+      path: '/dashboard/staff/menu-access',
+    });
+  }
+
   const scheduleGroup: SidebarGroupConfig = {
     groupKey: 'grp-schedule',
     groupTitle: 'NHÂN SỰ & LỊCH LÀM VIỆC',
-    items: [
-      {
-        key: 'holiday-work',
-        label: 'Lịch nghỉ lễ',
-        icon: <AppIcon icon={CalendarClock} size="sm" />,
-        path: '/dashboard/holiday-work',
-      },
-    ],
+    items: scheduleItems,
   };
 
   // Group 7: BÁO CÁO & KPI
@@ -488,43 +515,13 @@ export function getSidebarGroups(
   // Group 8: QUẢN TRỊ HỆ THỐNG (Only for Admin)
   const systemGroupItems: SidebarItemConfig[] = [];
   if (isAdmin) {
-    const staffChildren: SidebarItemConfig[] = [
+    systemGroupItems.push(
       {
-        key: 'staff-directory',
-        label: 'Danh sách nhân sự',
-        icon: <SolutionOutlined />,
-        path: '/dashboard/staff',
-      },
-      {
-        key: 'teams',
-        label: 'Cấu hình Đội nhóm',
-        icon: <TeamOutlined />,
-        path: '/dashboard/staff/teams',
-      },
-    ];
-    if (isSuperAdmin) {
-      staffChildren.push({
-        key: 'menu-access',
-        label: 'Quyền hiển thị menu',
-        icon: <AppIcon icon={Settings2} size="sm" />,
-        path: '/dashboard/staff/menu-access',
-      });
-    }
-    if (isAdmin) {
-      systemGroupItems.push({
         key: 'bug-reports',
         label: 'mOS Mission',
         icon: <AppIcon icon={MessageSquareWarning} size="sm" />,
         badgeCount: bugInboxApprovalCount,
         path: '/dashboard/bug-reports',
-      });
-    }
-    systemGroupItems.push(
-      {
-        key: 'staff',
-        label: 'Nhân sự (HR)',
-        icon: <SolutionOutlined />,
-        children: staffChildren,
       },
       {
         key: 'catalog',

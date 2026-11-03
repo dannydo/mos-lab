@@ -8,8 +8,10 @@ export function resolveApiBaseUrl(): string {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL;
   if (configuredUrl) return configuredUrl;
 
-  if (typeof window !== 'undefined' && isPrivateLanHostname(window.location.hostname)) {
-    return '/api';
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return '/api';
+    }
   }
 
   return 'http://localhost:4001/api';
@@ -40,4 +42,3 @@ export function resolveMediaUrl(url: string | null | undefined): string {
 
   return trimmed;
 }
-

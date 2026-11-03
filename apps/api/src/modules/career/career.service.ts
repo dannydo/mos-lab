@@ -740,8 +740,22 @@ export class CareerProgressionService {
             ? Math.max(1, Math.round((staffOrders90d / 3) * 0.4 * 3))
             : 0;
 
-      const ratePeriod = notComboLivePeriod > 0 ? Number((comboPeriodCount / notComboLivePeriod).toFixed(3)) : 0;
-      const rate90d = notComboLive90d > 0 ? Number((combo90dCount / notComboLive90d).toFixed(3)) : 0;
+      const ratePeriod =
+        notComboLivePeriod > 0
+          ? Number((comboPeriodCount / notComboLivePeriod).toFixed(3))
+          : staffOrdersPeriod > 0
+            ? Number((comboPeriodCount / staffOrdersPeriod).toFixed(3))
+            : comboPeriodCount > 0
+              ? 1
+              : 0;
+      const rate90d =
+        notComboLive90d > 0
+          ? Number((combo90dCount / notComboLive90d).toFixed(3))
+          : staffOrders90d > 0
+            ? Number((combo90dCount / staffOrders90d).toFixed(3))
+            : combo90dCount > 0
+              ? 1
+              : 0;
 
       const selfComboRate = periodConfig.period === 'last_3_months' ? rate90d : ratePeriod;
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
@@ -1686,6 +1700,8 @@ export class CareerProgressionService {
     // Thưởng tiền tươi dưỡng mi: giá gốc 100K, giảm giá 50K (theo config của Danny)
     const serumOriginalPriceBonus = (activeReq as any).serumOriginalPriceBonus ?? 100000;
     const serumDiscountedPriceBonus = (activeReq as any).serumDiscountedPriceBonus ?? 50000;
+    const serumDeepDiscountPriceBonus = (activeReq as any).serumDeepDiscountPriceBonus ?? 10000;
+    const serumFreePriceBonus = (activeReq as any).serumFreePriceBonus ?? 1000;
     const serumCommissionAmount = serumOriginalPriceBonus; // Tính theo giá gốc cho kịch bản chuẩn
     const monthlySerumIncome = expectedSerumsPerMonth * serumCommissionAmount;
 
@@ -1866,6 +1882,8 @@ export class CareerProgressionService {
           singleComboBonus,
           serumOriginalPriceBonus,
           serumDiscountedPriceBonus,
+          serumDeepDiscountPriceBonus,
+          serumFreePriceBonus,
           crossConsultCvShareRate,
           crossConsultCvSharedAmount,
         },
@@ -2519,34 +2537,50 @@ export class CareerProgressionService {
   static async calculateCvPlusRewardsForStaff(
     fastify: FastifyInstance,
     staffId: number,
-    targetMonth?: string,
+    targetMonthOrRange?: string | { startStr: string; endStr: string },
     persist = false
   ): Promise<CvPlusRewardSnapshot> {
     const config = await this.getConfig(fastify);
     const cvReq = config.cvToCvPlus || config.cvToCc;
 
-    // Resolve month: default to previous month if not specified
-    let month = targetMonth;
-    if (!month) {
-      const now = new Date();
-      const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const y = prevDate.getFullYear();
-      const m = String(prevDate.getMonth() + 1).padStart(2, '0');
-      month = `${y}-${m}`;
+    // Resolve month or custom date range:
+    let month: string;
+    let startStr: string;
+    let endStr: string;
+
+    if (typeof targetMonthOrRange === 'object' && targetMonthOrRange?.startStr && targetMonthOrRange?.endStr) {
+      startStr = targetMonthOrRange.startStr.includes(' ')
+        ? targetMonthOrRange.startStr
+        : `${targetMonthOrRange.startStr} 00:00:00`;
+      endStr = targetMonthOrRange.endStr.includes(' ')
+        ? targetMonthOrRange.endStr
+        : `${targetMonthOrRange.endStr} 23:59:59`;
+      month = startStr.substring(0, 7);
+    } else {
+      month = (targetMonthOrRange as string) || '';
+      if (!month) {
+        const now = new Date();
+        const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const y = prevDate.getFullYear();
+        const m = String(prevDate.getMonth() + 1).padStart(2, '0');
+        month = `${y}-${m}`;
+      }
+
+      startStr = `${month}-01 00:00:00`;
+      const [yStr, mStr] = month.split('-');
+      const y = parseInt(yStr, 10);
+      const m = parseInt(mStr, 10);
+      const nextMonthDate = new Date(y, m, 1);
+      const nextY = nextMonthDate.getFullYear();
+      const nextM = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
+      endStr = `${nextY}-${nextM}-01 00:00:00`;
     }
 
-    const startStr = `${month}-01 00:00:00`;
-    const [yStr, mStr] = month.split('-');
-    const y = parseInt(yStr, 10);
-    const m = parseInt(mStr, 10);
-    const nextMonthDate = new Date(y, m, 1);
-    const nextY = nextMonthDate.getFullYear();
-    const nextM = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
-    const endStr = `${nextY}-${nextM}-01 00:00:00`;
-
     // 1. Resolve staff & legacy IDs
-    const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
-      where: { id: staffId },
+    const crmStaff = await fastify.prisma.crm.crmStaff.findFirst({
+      where: {
+        OR: [{ id: staffId }, { legacyStaffId: staffId }],
+      },
     });
 
     const targetLegacyStaffId = crmStaff?.legacyStaffId || staffId;
@@ -2657,9 +2691,28 @@ export class CareerProgressionService {
     const comboSoldCount = uniqueComboOrderIds.size;
 
     // Self combo conversion rate on NOT_COMBO_LIVE customer segment (Kinh Thánh mOS Điều răn CV-002)
-    const selfComboRate = notComboLiveOrders > 0 ? comboSoldCount / notComboLiveOrders : 0;
-    const minComboTarget = cvReq.minSelfComboRate ?? 0.21;
-    const isTargetHit = selfComboRate >= minComboTarget;
+    // Quy tắc:
+    // - Mẫu số: CHỈ ĐẾM NHỮNG KHÁCH HÀNG KHÔNG PHẢI COMBO LIVE (notComboLiveOrders).
+    // - Tử số: TẤT CẢ COMBO BÁN ĐƯỢC (cả khách không combo lẫn khách combo live gia hạn đều được cộng dồn).
+    let selfComboRate = 0;
+    let isTargetHit = false;
+
+    if (notComboLiveOrders > 0) {
+      selfComboRate = comboSoldCount / notComboLiveOrders;
+      const minComboTarget = cvReq.minSelfComboRate ?? 0.2;
+      isTargetHit = selfComboRate >= minComboTarget;
+    } else {
+      // Khi không có khách Not Combo Live nào (notComboLiveOrders = 0):
+      if (comboSoldCount > 0) {
+        // Chuyên viên xuất sắc bán được combo cho khách combo live -> Đạt 100% chỉ tiêu
+        selfComboRate = 1.0;
+        isTargetHit = true;
+      } else {
+        // 0 khách tiềm năng và 0 combo bán được -> Miễn trừ chế tài (không phạt oan)
+        selfComboRate = 0;
+        isTargetHit = true;
+      }
+    }
     const isPenalized = !isTargetHit;
 
     // 5. Query Tips
@@ -2705,11 +2758,68 @@ export class CareerProgressionService {
     const cvPlusBaseHourly = cvReq?.hourlyWage ?? 27000;
     const baseWageCv = workingHours * cvBaseHourly;
 
+    // 6.5. Query Products / Serums sold by this staff (Dưỡng mi Yeppeum per Kinh Thánh mOS CV-002)
+    let rawProductBonusTotal = 0;
+    let rawProductCount = 0;
+    try {
+      const productRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
+        SELECT 
+          op.id,
+          op.order_id,
+          op.total_price,
+          op.quantity,
+          COALESCE(pl.product_name, p.product_sku, 'Sản phẩm') as product_name
+        FROM order_product op
+        JOIN \`order\` o ON o.id = op.order_id
+        JOIN order_service os ON os.order_id = op.order_id AND os.assigned_staff_id = ?
+        LEFT JOIN product p ON p.id = op.product_id
+        LEFT JOIN product_language pl ON pl.product_id = op.product_id AND pl.language_id = 1
+        WHERE o.order_state = 'Completed'
+          AND o.booking_date_start >= ?
+          AND o.booking_date_start < ?
+        GROUP BY op.id
+        `,
+        targetLegacyStaffId,
+        startStr,
+        endStr
+      );
+
+      const serumOrigBonus = cvReq?.serumOriginalPriceBonus ?? 100000;
+      const serumDiscBonus = cvReq?.serumDiscountedPriceBonus ?? 50000;
+      const serumDeepDiscBonus = cvReq?.serumDeepDiscountPriceBonus ?? 10000;
+      const serumFreeBonus = cvReq?.serumFreePriceBonus ?? 1000;
+
+      for (const pr of productRows) {
+        const qty = Number(pr.quantity) || 1;
+        rawProductCount += qty;
+        const pricePerUnit = (Number(pr.total_price) || 0) / qty;
+        // Quy chế Dưỡng Mi Yeppeum (Kinh Thánh mOS Điều răn CV-002 cập nhật theo Danny):
+        // 1.1M (Giá gốc) -> 100K (100.000đ)
+        // Giảm giá < 50% (> 550.000đ) -> 50K (50.000đ)
+        // Giảm >= 50% (<= 550.000đ & > 0đ) -> 10K (10.000đ)
+        // Free (0đ) -> 1K (1.000đ)
+        let itemBonus = serumFreeBonus;
+        if (pricePerUnit >= 1000000) {
+          itemBonus = serumOrigBonus;
+        } else if (pricePerUnit > 550000) {
+          itemBonus = serumDiscBonus;
+        } else if (pricePerUnit > 0) {
+          itemBonus = serumDeepDiscBonus;
+        } else {
+          itemBonus = serumFreeBonus;
+        }
+        rawProductBonusTotal += itemBonus * qty;
+      }
+    } catch (prodErr) {
+      fastify.log.warn({ prodErr, targetLegacyStaffId }, 'Could not calculate product bonuses for CV+');
+    }
+
     // Penalty enforcement rule:
-    // If selfComboRate < 20%, maintain CV base hourly wage (no +2k increase) and forfeit combo bonus.
+    // If selfComboRate < minComboTarget, maintain CV base hourly wage (no +2k increase) and forfeit combo/product bonus.
     const baseWageCvPlus = isPenalized ? baseWageCv : workingHours * cvPlusBaseHourly;
     const comboBonusTotal = isPenalized ? 0 : rawComboBonusTotal;
-    const productBonusTotal = 0;
+    const productBonusTotal = isPenalized ? 0 : rawProductBonusTotal;
 
     const totalCvIncome = baseWageCv + tipCv;
     const totalCvPlusIncome = baseWageCvPlus + tipCvPlus + comboBonusTotal + productBonusTotal;

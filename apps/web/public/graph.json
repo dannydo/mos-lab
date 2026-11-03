@@ -8220,7 +8220,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1328
+        "line": 1331
       }
     },
     {
@@ -8234,7 +8234,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1413
+        "line": 1416
       }
     },
     {
@@ -8248,7 +8248,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1470
+        "line": 1473
       }
     },
     {
@@ -8262,7 +8262,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1545
+        "line": 1548
       }
     },
     {
@@ -8276,7 +8276,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1571
+        "line": 1574
       }
     },
     {
@@ -8290,7 +8290,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1661
+        "line": 1664
       }
     },
     {
@@ -8304,7 +8304,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1671
+        "line": 1674
       }
     },
     {
@@ -8318,7 +8318,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1681
+        "line": 1684
       }
     },
     {
@@ -8332,7 +8332,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1777
+        "line": 1780
       }
     },
     {
@@ -8346,7 +8346,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1782
+        "line": 1785
       }
     },
     {
@@ -8360,7 +8360,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1787
+        "line": 1790
       }
     },
     {
@@ -8374,7 +8374,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1941
+        "line": 1944
       }
     },
     {
@@ -8388,7 +8388,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2082
+        "line": 2085
       }
     },
     {
@@ -8402,7 +8402,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2137
+        "line": 2140
       }
     },
     {
@@ -8416,7 +8416,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2278
+        "line": 2294
       }
     },
     {
@@ -8430,7 +8430,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2367
+        "line": 2383
       }
     },
     {
@@ -8444,7 +8444,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2398
+        "line": 2414
       }
     },
     {
@@ -8458,7 +8458,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2480
+        "line": 2496
       }
     },
     {
@@ -8472,7 +8472,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2555
+        "line": 2571
       }
     },
     {
@@ -8486,7 +8486,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2637
+        "line": 2653
       }
     },
     {
@@ -8500,7 +8500,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2749
+        "line": 2765
       }
     },
     {
@@ -8514,7 +8514,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3057
+        "line": 3073
       }
     },
     {
@@ -8528,7 +8528,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3399
+        "line": 3415
       }
     },
     {
@@ -8542,7 +8542,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3448
+        "line": 3464
       }
     },
     {
@@ -8556,7 +8556,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3643
+        "line": 3659
       }
     },
     {
@@ -8570,7 +8570,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3727
+        "line": 3743
       }
     },
     {
@@ -8584,7 +8584,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3787
+        "line": 3803
       }
     },
     {
@@ -8598,7 +8598,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3831
+        "line": 3847
       }
     },
     {
@@ -8612,7 +8612,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3876
+        "line": 3892
       }
     },
     {
@@ -8626,7 +8626,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3982
+        "line": 3998
       }
     },
     {
@@ -8640,7 +8640,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4057
+        "line": 4073
       }
     },
     {
@@ -8654,7 +8654,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4163
+        "line": 4179
       }
     },
     {
@@ -8668,7 +8668,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4279
+        "line": 4295
       }
     },
     {
@@ -8682,7 +8682,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4381
+        "line": 4397
       }
     },
     {
@@ -8696,7 +8696,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4452
+        "line": 4468
       }
     },
     {
@@ -8710,7 +8710,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4475
+        "line": 4491
       }
     },
     {
@@ -8724,7 +8724,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4656
+        "line": 4672
       }
     },
     {
@@ -8738,7 +8738,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4833
+        "line": 4849
       }
     },
     {
@@ -8752,7 +8752,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4928
+        "line": 4944
       }
     },
     {
@@ -8766,7 +8766,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4941
+        "line": 4957
       }
     },
     {
@@ -8780,7 +8780,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5004
+        "line": 5020
       }
     },
     {
@@ -10992,7 +10992,7 @@
         "path": "/api/kpi/cv-seniority-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 35
+        "line": 38
       }
     },
     {
@@ -11006,7 +11006,7 @@
         "path": "/api/kpi/cv-seniority-config",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 57
+        "line": 60
       }
     },
     {
@@ -11020,7 +11020,7 @@
         "path": "/api/kpi/cv-paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 88
+        "line": 91
       }
     },
     {
@@ -11034,7 +11034,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 862
+        "line": 958
       }
     },
     {
@@ -11048,7 +11048,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1044
+        "line": 1140
       }
     },
     {
@@ -11062,7 +11062,7 @@
         "path": "/api/kpi/cv-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1090
+        "line": 1186
       }
     },
     {
@@ -11076,7 +11076,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1114
+        "line": 1210
       }
     },
     {
@@ -17831,6 +17831,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:StaffCareerLiveSnapshot",
+      "type": "SharedType",
+      "label": "StaffCareerLiveSnapshot",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StaffCareerLiveSnapshot",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:AllocationBatchStatus",
       "type": "SharedType",
       "label": "AllocationBatchStatus",
@@ -24427,6 +24439,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPaystubRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvPlusPaystubBreakdown",
+      "type": "SharedType",
+      "label": "CvPlusPaystubBreakdown",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusPaystubBreakdown",
         "package": "@mos-lab/shared"
       }
     },
@@ -33167,6 +33191,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatDesktopEmojiSelection.test",
+      "type": "UIComponent",
+      "label": "<MosChatDesktopEmojiSelection.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatDesktopEmojiSelection.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatDesktopEmojiSelection.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatDesktopThreadReply.test",
       "type": "UIComponent",
       "label": "<MosChatDesktopThreadReply.test />",
@@ -35992,8 +36028,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 40860,
-        "lineCount": 952,
+        "sizeBytes": 48768,
+        "lineCount": 1054,
         "ext": ".ts"
       }
     },
@@ -36033,6 +36069,32 @@
       "metadata": {
         "sizeBytes": 35017,
         "lineCount": 672,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/staff-career-context.service.test.ts",
+      "type": "File",
+      "label": "staff-career-context.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/staff-career-context.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9996,
+        "lineCount": 275,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/staff-career-context.service.ts",
+      "type": "File",
+      "label": "staff-career-context.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/staff-career-context.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16905,
+        "lineCount": 442,
         "ext": ".ts"
       }
     },
@@ -36785,8 +36847,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 113380,
-        "lineCount": 2846,
+        "sizeBytes": 117817,
+        "lineCount": 2956,
         "ext": ".ts"
       }
     },
@@ -37012,6 +37074,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-move-thread.test.ts",
+      "type": "File",
+      "label": "chat-move-thread.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-move-thread.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4547,
+        "lineCount": 136,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-reaction-toggle.test.ts",
       "type": "File",
       "label": "chat-reaction-toggle.test.ts",
@@ -37162,8 +37237,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 197102,
-        "lineCount": 5068,
+        "sizeBytes": 198006,
+        "lineCount": 5084,
         "ext": ".ts"
       }
     },
@@ -38254,8 +38329,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47512,
-        "lineCount": 1146,
+        "sizeBytes": 51886,
+        "lineCount": 1242,
         "ext": ".ts"
       }
     },
@@ -43311,7 +43386,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16517,
+        "sizeBytes": 16679,
         "lineCount": 326,
         "ext": ".tsx"
       }
@@ -43324,8 +43399,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78451,
-        "lineCount": 1502,
+        "sizeBytes": 81056,
+        "lineCount": 1554,
         "ext": ".tsx"
       }
     },
@@ -43402,8 +43477,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36641,
-        "lineCount": 824,
+        "sizeBytes": 37741,
+        "lineCount": 846,
         "ext": ".tsx"
       }
     },
@@ -44312,8 +44387,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 118248,
-        "lineCount": 2470,
+        "sizeBytes": 148954,
+        "lineCount": 2970,
         "ext": ".tsx"
       }
     },
@@ -44325,8 +44400,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42799,
-        "lineCount": 1077,
+        "sizeBytes": 43853,
+        "lineCount": 1106,
         "ext": ".tsx"
       }
     },
@@ -44338,8 +44413,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31587,
-        "lineCount": 834,
+        "sizeBytes": 32648,
+        "lineCount": 863,
         "ext": ".tsx"
       }
     },
@@ -44429,7 +44504,7 @@
       "filePath": "apps/web/app/dashboard/cv/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10455,
+        "sizeBytes": 10497,
         "lineCount": 294,
         "ext": ".tsx"
       }
@@ -45053,8 +45128,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70816,
-        "lineCount": 1788,
+        "sizeBytes": 71615,
+        "lineCount": 1807,
         "ext": ".tsx"
       }
     },
@@ -47822,8 +47897,8 @@
       "filePath": "apps/web/lib/api-base-url.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1211,
-        "lineCount": 44,
+        "sizeBytes": 1265,
+        "lineCount": 46,
         "ext": ".ts"
       }
     },
@@ -48147,8 +48222,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 129171,
-        "lineCount": 1777,
+        "sizeBytes": 130065,
+        "lineCount": 1779,
         "ext": ".ts"
       }
     },
@@ -48225,7 +48300,7 @@
       "filePath": "packages/shared/src/theme/tokens.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 37781,
+        "sizeBytes": 37783,
         "lineCount": 1294,
         "ext": ".ts"
       }
@@ -48303,8 +48378,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1634,
-        "lineCount": 74,
+        "sizeBytes": 2279,
+        "lineCount": 101,
         "ext": ".ts"
       }
     },
@@ -48433,8 +48508,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 29495,
-        "lineCount": 716,
+        "sizeBytes": 30357,
+        "lineCount": 730,
         "ext": ".ts"
       }
     },
@@ -48589,8 +48664,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9515,
-        "lineCount": 394,
+        "sizeBytes": 10168,
+        "lineCount": 421,
         "ext": ".ts"
       }
     },
@@ -57921,6 +57996,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:StaffCareerLiveSnapshot:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StaffCareerLiveSnapshot",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:AllocationBatchStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:AllocationBatchStatus",
       "target": "ws:packages/shared",
@@ -61766,6 +61848,13 @@
     {
       "id": "edge:type:@mos-lab/shared:CvPaystubRecord:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvPaystubRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvPlusPaystubBreakdown:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusPaystubBreakdown",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -67903,6 +67992,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatDesktopEmojiSelection.test:ws:apps/web",
+      "source": "uicomp:MosChatDesktopEmojiSelection.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatDesktopEmojiSelection.test:token:color:primary",
+      "source": "uicomp:MosChatDesktopEmojiSelection.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatDesktopThreadReply.test:ws:apps/web",
       "source": "uicomp:MosChatDesktopThreadReply.test",
       "target": "ws:apps/web",
@@ -70682,6 +70785,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ai/staff-career-context.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/staff-career-context.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/staff-career-context.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/staff-career-context.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/allocation/allocation.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/allocation/allocation.service.ts",
       "target": "ws:packages/shared",
@@ -71034,6 +71151,13 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-move-thread.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-move-thread.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -76663,6 +76787,13 @@
       "id": "edge:file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts:prisma:crm:CrmConfig",
       "source": "file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts:prisma:crm:CrmCareerProgression",
+      "source": "file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "target": "prisma:crm:CrmCareerProgression",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -104535,31 +104666,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3779,
-    "totalEdges": 7913,
+    "totalNodes": 3785,
+    "totalEdges": 7921,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
       "FastifyRoute": 748,
       "Component": 65,
-      "SharedType": 1379,
+      "SharedType": 1381,
       "DesignToken": 12,
-      "UIComponent": 332,
-      "File": 1058
+      "UIComponent": 333,
+      "File": 1061
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1573,
+      "EXPORTS": 1575,
       "HANDLES_ROUTE": 748,
-      "RENDERS": 397,
-      "USES_TOKEN": 334,
-      "IMPORTS": 593,
-      "QUERIES_MODEL": 425,
+      "RENDERS": 398,
+      "USES_TOKEN": 335,
+      "IMPORTS": 596,
+      "QUERIES_MODEL": 426,
       "API_CALL": 3843
     },
     "fastifyRouteCount": 753,
     "prismaModelCount": 182,
     "nextPageCount": 65,
-    "sharedTypeCount": 1379
+    "sharedTypeCount": 1381
   },
   "routes": [
     {

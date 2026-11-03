@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   Row,
@@ -21,6 +22,7 @@ import {
   Tooltip,
   Radio,
   Popconfirm,
+  Progress,
 } from 'antd';
 import {
   WalletOutlined,
@@ -40,6 +42,8 @@ import {
   CompressOutlined,
   ExpandOutlined,
   PrinterOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import {
   CvPaystubRecord,
@@ -88,6 +92,7 @@ interface CvThuNhapTabProps {
 }
 
 export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, comparisonMode }: CvThuNhapTabProps) {
+  const router = useRouter();
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const tier = useResponsiveTier();
@@ -766,6 +771,148 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     }
   };
 
+  const formatChipAmount = (val: number, isUnlocked: boolean = true) => {
+    if (!isUnlocked || val <= 0) return '0đ';
+    const abs = Math.abs(val);
+    if (abs >= 1_000_000) {
+      const formatted = (val / 1_000_000).toFixed(1).replace(/\.0$/, '');
+      return `+${formatted}M`;
+    }
+    if (abs >= 1_000) {
+      const formatted = Math.round(val / 1_000);
+      return `+${formatted}k`;
+    }
+    return `+${val}đ`;
+  };
+
+  const renderCvPlusSubRow = (record: CvPaystubRecord) => {
+    const breakdown = record.cvPlusBreakdown;
+    if (!breakdown) return null;
+
+    const actualPct = (breakdown.actualComboRate * 100).toFixed(1);
+    const targetPct = (breakdown.targetComboRate * 100).toFixed(0);
+    const neededCombos = Math.max(
+      1,
+      Math.ceil(breakdown.notComboLiveOrders * breakdown.targetComboRate) - breakdown.combosSoldCount
+    );
+
+    const hasSerum = (breakdown.serumBonusTotal || 0) > 0;
+
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          setSelectedRecord(record);
+          setModalOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setSelectedRecord(record);
+            setModalOpen(true);
+          }
+        }}
+        className="my-1.5 p-2 rounded-lg border border-amber-500/20 hover:border-amber-500/35 bg-amber-500/[0.04] hover:bg-amber-500/[0.08] active:bg-amber-500/[0.12] dark:bg-amber-500/[0.06] dark:hover:bg-amber-500/[0.10] dark:active:bg-amber-500/[0.15] dark:border-amber-500/25 transition-all cursor-pointer flex flex-col gap-1.5 select-none group active:scale-[0.99] shadow-xs"
+        title="Nhấp để xem bảng kê chi tiết và phiếu lương CV+"
+      >
+        {/* TẦNG 1: Tiêu đề + Tổng tiền thực nhận thêm + Tỷ lệ + Bảng kê ↗ */}
+        <div className="flex items-center justify-between gap-1.5 w-full">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+              <span className="inline-block scale-x-[-1] transform select-none">🪶</span>
+              <span>CV</span>
+            </span>
+
+            <span className="font-bold text-xs sm:text-sm tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
+              +{formatVND(breakdown.totalAdditionalIncome)}
+            </span>
+
+            {breakdown.isUnlocked ? (
+              <Tooltip
+                title={`Đạt chuẩn: ${actualPct}% / ${targetPct}% Combo (${breakdown.combosSoldCount}/${breakdown.notComboLiveOrders} khách chưa combo) · Đã mở khóa 100% thưởng`}
+              >
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
+                  <span>🎯</span>
+                  <span className="tabular-nums">{actualPct}%</span>
+                </span>
+              </Tooltip>
+            ) : (
+              <Tooltip
+                title={`Đang đạt: ${actualPct}% / ${targetPct}% Combo (${breakdown.combosSoldCount}/${breakdown.notComboLiveOrders} khách chưa combo) · Cần thêm ${neededCombos} combo để mở khóa thưởng`}
+              >
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+                  <span>⚠️</span>
+                  <span className="tabular-nums">
+                    {actualPct}% / {targetPct}%
+                  </span>
+                </span>
+              </Tooltip>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 group-hover:text-amber-500 transition-colors shrink-0">
+            <span className="hidden sm:inline">Bảng kê</span>
+            <span className="text-xs transition-transform group-hover:translate-x-0.5">↗</span>
+          </div>
+        </div>
+
+        {/* TẦNG 2: Lưới 4 chip mini đều tăm tắp, không tràn viền */}
+        <div className={`grid ${hasSerum ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 w-full`}>
+          {/* 1. Lương giờ tăng +2k/h */}
+          <Tooltip
+            title={`Lương giờ (+2k/h): ${breakdown.isUnlocked ? `${record.regularHours || 0}h × 2.000đ = +${formatVND(breakdown.deltaHourlyWage)}` : 'Tạm khóa (chưa đạt chuẩn combo)'}`}
+          >
+            <div className="py-1 px-1 rounded-lg text-center bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25">
+              <span className="text-[9px] text-sky-600 dark:text-sky-300 block leading-tight">🕒 Giờ</span>
+              <span className="font-bold text-sky-600 dark:text-sky-400 tabular-nums text-[10px] sm:text-[11px] block leading-tight">
+                {breakdown.isUnlocked ? formatChipAmount(breakdown.deltaHourlyWage) : '0đ'}
+              </span>
+            </div>
+          </Tooltip>
+
+          {/* 2. Tip tự tư vấn 90% */}
+          <Tooltip
+            title={`Tip tự tư vấn (90% Tip): Bảo lưu 90% (+20% phần tự tư vấn) = +${formatVND(breakdown.deltaTipBonus)}`}
+          >
+            <div className="py-1 px-1 rounded-lg text-center bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+              <span className="text-[9px] text-rose-600 dark:text-rose-300 block leading-tight">🧧 Tip</span>
+              <span className="font-bold text-rose-600 dark:text-rose-400 tabular-nums text-[10px] sm:text-[11px] block leading-tight">
+                {formatChipAmount(breakdown.deltaTipBonus)}
+              </span>
+            </div>
+          </Tooltip>
+
+          {/* 3. Thưởng combo bậc thang */}
+          <Tooltip
+            title={`Thưởng Combo (${breakdown.combosSoldCount} gói bậc thang): ${breakdown.isUnlocked ? `+${formatVND(breakdown.comboBonusTotal)}` : 'Tạm khóa (chưa đạt chuẩn combo)'}`}
+          >
+            <div className="py-1 px-1 rounded-lg text-center bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/25">
+              <span className="text-[9px] text-purple-600 dark:text-purple-300 block leading-tight">📦 Gói</span>
+              <span className="font-bold text-purple-600 dark:text-purple-400 tabular-nums text-[10px] sm:text-[11px] block leading-tight">
+                {breakdown.isUnlocked ? formatChipAmount(breakdown.comboBonusTotal) : '0đ'}
+              </span>
+            </div>
+          </Tooltip>
+
+          {/* 4. Thưởng Serum Yeppeum (nếu có) */}
+          {hasSerum && (
+            <Tooltip
+              title={`Thưởng Dưỡng Mi Yeppeum (${breakdown.serumsSoldCount || 0} chai): +${formatVND(breakdown.serumBonusTotal)}`}
+            >
+              <div className="py-1 px-1 rounded-lg text-center bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/25">
+                <span className="text-[9px] text-teal-600 dark:text-teal-300 block leading-tight">🧴 Serum</span>
+                <span className="font-bold text-teal-600 dark:text-teal-400 tabular-nums text-[10px] sm:text-[11px] block leading-tight">
+                  {formatChipAmount(breakdown.serumBonusTotal)}
+                </span>
+              </div>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const columns = [
     {
       title: 'CV',
@@ -785,12 +932,34 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           rankBadge = <span className="text-xs font-semibold text-slate-500 w-5 text-center shrink-0">#{rank}</span>;
         }
 
+        const isCvPlus = record.isCvPlus || Boolean(record.cvPlusBreakdown);
+
         return (
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             {rankBadge}
             <CcAvatar name={text} src={record.avatar} size={26} />
-            <div className="flex items-center gap-1 whitespace-nowrap">
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">{text}</span>
+              {isCvPlus ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                  <span className="inline-block scale-x-[-1] transform select-none">🪶</span>
+                  <span>CV</span>
+                </span>
+              ) : (
+                <Tooltip title={`🌱 Lộ trình thăng tiến: Xem Career Path của ${text}`}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/dashboard/career-path?staffId=${record.staffId}`);
+                    }}
+                    className="cursor-pointer hover:scale-125 active:scale-95 transition-transform inline-flex items-center text-xs p-0 bg-transparent border-0 opacity-80 hover:opacity-100"
+                    title={`Xem lộ trình thăng tiến của ${text}`}
+                  >
+                    🌱
+                  </button>
+                </Tooltip>
+              )}
               <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel || 1}</span>
             </div>
           </div>
@@ -1191,10 +1360,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
         styles={{ body: { padding: 0 } }}
         title={
-          <div className="flex flex-wrap justify-between items-center gap-2 py-1">
-            <div className="flex items-center gap-2">
-              <DollarOutlined className="text-emerald-500 text-lg" />
-              <span className="font-bold text-base" style={{ color: token.colorText }}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 py-1 w-full">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <DollarOutlined className="text-emerald-500 text-base sm:text-lg" />
+              <span className="font-bold text-sm sm:text-base" style={{ color: token.colorText }}>
                 Bảng Bóc Tách CV Thu Nhập
               </span>
 
@@ -1202,121 +1371,229 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 <Button
                   type="text"
                   shape="circle"
-                  icon={<SettingOutlined className="text-slate-400 hover:text-orange-500 transition-colors" />}
+                  size="small"
+                  icon={
+                    <SettingOutlined className="text-slate-400 hover:text-orange-500 transition-colors text-xs sm:text-sm" />
+                  }
                   title="Cấu hình tỷ lệ thưởng thâm niên"
                 />
               </Popover>
             </div>
 
-            <Space wrap>
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
               <Input
                 id="cv-thunhap-search-input"
                 name="cvThuNhapSearch"
                 placeholder="Tìm tên CV..."
-                prefix={<SearchOutlined />}
+                prefix={<SearchOutlined className="text-xs" />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 allowClear
-                style={{ width: 200 }}
+                className="flex-1 sm:w-48 text-xs"
+                style={{ width: isMobile ? undefined : 200 }}
               />
               <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
                 <Button
                   icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
                   onClick={() => setIsCompact(!isCompact)}
-                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+                  className={`shrink-0 ${isCompact ? 'text-amber-500 border-amber-500/50' : ''}`}
                 />
               </Tooltip>
               <Tooltip title="Làm mới dữ liệu">
-                <Button icon={<ClockCircleOutlined />} onClick={fetchData} loading={loading} />
+                <Button className="shrink-0" icon={<ClockCircleOutlined />} onClick={fetchData} loading={loading} />
               </Tooltip>
-            </Space>
+            </div>
           </div>
         }
       >
         {isMobile ? (
-          <div className="p-3">
+          <div className="p-2 sm:p-3">
             <MobileRecordList
               records={filteredData}
               loading={loading}
               getKey={(record) => String(record.staffId)}
               emptyDescription="Không tìm thấy dữ liệu thu nhập CV"
+              getRecordClassName={(record) =>
+                record.isCvPlus
+                  ? '!border-amber-500/40 !bg-gradient-to-b !from-amber-500/[0.04] !to-transparent dark:!from-slate-900 dark:!to-slate-900/95 !rounded-2xl !p-3 sm:!p-3.5 shadow-md relative overflow-hidden'
+                  : '!border-slate-200 dark:!border-slate-800 !bg-white dark:!bg-slate-900/80 !rounded-2xl !p-3 sm:!p-3.5 shadow-sm'
+              }
               renderRecord={(record, index) => (
                 <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                    </span>
-                    <CcAvatar name={record.staffName} src={record.avatar} size={32} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
-                        {record.staffName}
+                  {/* Rank & Profile Header */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="w-4 shrink-0 text-center text-xs font-bold tabular-nums">
+                        {index === 0 ? (
+                          '🥇'
+                        ) : index === 1 ? (
+                          '🥈'
+                        ) : index === 2 ? (
+                          '🥉'
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-semibold">#{index + 1}</span>
+                        )}
+                      </span>
+                      <div className="shrink-0">
+                        <CcAvatar
+                          name={record.staffName}
+                          src={record.avatar}
+                          size={36}
+                          className={
+                            record.isCvPlus
+                              ? 'ring-2 ring-amber-400/80 rounded-full'
+                              : 'border border-slate-300 dark:border-slate-700 rounded-full'
+                          }
+                        />
                       </div>
-                      <div className="text-xs text-slate-400">
-                        {formatStoreCode(record.store)} · L{record.techLevel || 1}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {record.staffName}
+                          </span>
+                          {record.isCvPlus ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 inline-flex items-center gap-0.5 shrink-0">
+                              <span className="inline-block scale-x-[-1] transform select-none">🪶</span>
+                              <span>CV</span>
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/dashboard/career-path?staffId=${record.staffId}`);
+                                }}
+                                className="cursor-pointer hover:scale-125 active:scale-95 transition-transform inline-flex items-center text-xs p-0 bg-transparent border-0 shrink-0 opacity-90 hover:opacity-100"
+                                title={`Xem lộ trình thăng tiến của ${record.staffName}`}
+                              >
+                                🌱
+                              </button>
+                              <span className="text-[9px] text-slate-400 font-mono shrink-0">
+                                L{record.techLevel || 1}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {formatStoreCode(record.store)} · {formatHoursToHoursMinutes(record.totalWorkHours, true)} (
+                          {record.activeDays ?? 0} ngày)
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Lương giờ</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
-                        +{formatCompactVND(record.hourlyWage || 0)}
-                      </dd>
-                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedHourlyWage || 0) > 0 && (
-                        <div className="text-[10px] text-sky-400/80 font-medium tabular-nums">
-                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedHourlyWage)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">CV Xoay</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-purple-400">
-                        +{formatCompactVND(record.cvXoayBonus || 0)}
-                      </dd>
-                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedCvXoayBonus || 0) > 0 && (
-                        <div className="text-[10px] text-purple-400/80 font-medium tabular-nums">
-                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedCvXoayBonus)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Phụ cấp lễ x3</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-rose-400">
-                        +{formatCompactVND(record.holidayPremiumPay || 0)}
-                      </dd>
-                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedHolidayPay || 0) > 0 && (
-                        <div className="text-[10px] text-rose-400/80 font-medium tabular-nums">
-                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedHolidayPay)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Thu nhập</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
-                        {formatCompactVND(record.totalIncome || 0)}
-                      </dd>
+                    <div className="text-right shrink-0">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block leading-tight">
+                        {record.netIncome != null && (record.socialSecurityAmount || 0) > 0 ? 'Thực Lãnh' : 'Thu nhập'}
+                      </span>
+                      <span className="text-xs sm:text-sm font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400 block leading-tight">
+                        {formatVND(record.netIncome || record.totalIncome)}
+                      </span>
                       {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedTotalIncome || 0) > 0 && (
-                        <div className="text-[10px] text-emerald-500/80 font-medium tabular-nums">
+                        <div className="text-[9px] text-emerald-500/80 font-medium tabular-nums">
                           🔮 ~{formatCompactVND(getProjectedRecord(record).projectedTotalIncome)}
                         </div>
                       )}
                     </div>
-                  </dl>
-                  <div className="mt-3 flex justify-end gap-2">
-                    <Button size="small" onClick={() => handleOpenWorkLogs(record)}>
-                      Giờ làm
-                    </Button>
-                    <Button
-                      size="small"
-                      icon={<EyeOutlined className="text-amber-400" />}
-                      onClick={() => {
-                        setSelectedRecord(record);
-                        setModalOpen(true);
-                      }}
-                    >
-                      Phiếu lương
-                    </Button>
                   </div>
+
+                  {/* Metric Grid */}
+                  <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[10px]">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 block text-[9px]">Lương giờ</span>
+                      <span className="font-bold tabular-nums text-sky-600 dark:text-sky-400 text-xs block">
+                        +{formatCompactVND(record.hourlyWage || 0)}
+                      </span>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedHourlyWage || 0) > 0 && (
+                        <div className="text-[9px] text-sky-500/80 dark:text-sky-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedHourlyWage)}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 block text-[9px]">CV Xoay</span>
+                      <span className="font-bold tabular-nums text-purple-600 dark:text-purple-400 text-xs block">
+                        +{formatCompactVND(record.cvXoayBonus || 0)}
+                      </span>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedCvXoayBonus || 0) > 0 && (
+                        <div className="text-[9px] text-purple-500/80 dark:text-purple-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedCvXoayBonus)}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 block text-[9px]">
+                        CV Tip ({record.isCvPlus ? '90%' : '70%'})
+                      </span>
+                      <span className="font-bold tabular-nums text-pink-600 dark:text-pink-400 text-xs block">
+                        +{formatCompactVND(record.cvTipBonus || 0)}
+                      </span>
+                    </div>
+                    {(record.holidayPremiumPay || 0) > 0 && (
+                      <div className="col-span-3 mt-1 text-[9px] text-rose-500 dark:text-rose-400 font-medium flex items-center justify-between bg-rose-500/10 px-2 py-0.5 rounded">
+                        <span>Phụ cấp lễ x3:</span>
+                        <span className="font-bold tabular-nums">+{formatVND(record.holidayPremiumPay)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SPECIAL CV+ 2-TIER SUB-ROW */}
+                  {record.isCvPlus && record.cvPlusBreakdown && (
+                    <div className="mt-2">{renderCvPlusSubRow(record)}</div>
+                  )}
+
+                  {/* Footer & Action Buttons */}
+                  {record.isCvPlus ? (
+                    <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-0.5">
+                      <Button
+                        size="small"
+                        onClick={() => handleOpenWorkLogs(record)}
+                        className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 h-6 text-[10px] px-2"
+                      >
+                        Giờ làm
+                      </Button>
+                      <Button
+                        size="small"
+                        icon={<EyeOutlined className="text-amber-500 dark:text-amber-400" />}
+                        onClick={() => {
+                          setSelectedRecord(record);
+                          setModalOpen(true);
+                        }}
+                        className="bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border-amber-400/60 dark:border-amber-500/40 h-6 text-[10px] px-2 font-semibold"
+                      >
+                        Phiếu lương
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/dashboard/career-path?staffId=${record.staffId}`)}
+                        className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium hover:underline inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 text-left"
+                      >
+                        🌱 Bấm lá để xem điều kiện lên CV+
+                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="small"
+                          onClick={() => handleOpenWorkLogs(record)}
+                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 h-6 text-[10px] px-2"
+                        >
+                          Giờ làm
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined className="text-slate-400" />}
+                          onClick={() => {
+                            setSelectedRecord(record);
+                            setModalOpen(true);
+                          }}
+                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 h-6 text-[10px] px-2"
+                        >
+                          Phiếu lương
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             />
@@ -1327,6 +1604,14 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
             columns={columns}
             rowKey="staffId"
             loading={loading}
+            expandable={{
+              expandedRowRender: (record: CvPaystubRecord) => renderCvPlusSubRow(record),
+              rowExpandable: (record: CvPaystubRecord) => Boolean(record.isCvPlus && record.cvPlusBreakdown),
+              expandedRowKeys: (filteredData || [])
+                .filter((r) => r.isCvPlus && r.cvPlusBreakdown)
+                .map((r) => r.staffId),
+              showExpandColumn: false,
+            }}
             pagination={{
               pageSize: pageSize,
               showSizeChanger: true,
@@ -1410,9 +1695,19 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </div>
                     <div>
                       <span className="text-slate-500 dark:text-slate-400">CHỨC VỤ:</span>{' '}
-                      <Tag color="cyan" className="font-semibold text-xs ml-1">
-                        Chuyên Viên (CV)
-                      </Tag>
+                      {selectedRecord.isCvPlus ? (
+                        <Tag
+                          color="gold"
+                          className="font-semibold text-xs ml-1 border-amber-400 inline-flex items-center gap-1"
+                        >
+                          <span className="inline-block scale-x-[-1] transform select-none">🪶</span> Chuyên Viên Tự Chủ
+                          (CV+)
+                        </Tag>
+                      ) : (
+                        <Tag color="cyan" className="font-semibold text-xs ml-1">
+                          Chuyên Viên (CV)
+                        </Tag>
+                      )}
                     </div>
                     <div>
                       <span className="text-slate-500 dark:text-slate-400">BỘ PHẬN/ PHÒNG BAN:</span>{' '}
@@ -1437,6 +1732,231 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 </div>
               </div>
             </div>
+
+            {/* ĐÃI NGỘ CHUYÊN VIÊN TỰ CHỦ (🪶 CV) */}
+            {selectedRecord.isCvPlus &&
+              selectedRecord.cvPlusBreakdown &&
+              (() => {
+                const bd = selectedRecord.cvPlusBreakdown;
+                const totalTurns = (bd.comboLiveOrders || 0) + (bd.notComboLiveOrders || 0);
+                const targetRate = bd.targetComboRate || 0.2;
+                const progressPercent = Math.min(100, Math.round(((bd.actualComboRate || 0) / targetRate) * 100));
+
+                return (
+                  <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 dark:via-amber-950/15 dark:to-transparent space-y-4">
+                    {/* Header with Title and Eligibility Badge */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 dark:border-amber-800/60 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl inline-block scale-x-[-1] transform select-none">🪶</span>
+                        <div>
+                          <div className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                            ĐÃI NGỘ DÀNH RIÊNG CHO CHUYÊN VIÊN TỰ CHỦ (CV+)
+                            <Tag
+                              color="gold"
+                              className="font-bold uppercase tracking-wider text-[10px] m-0 border-amber-400"
+                            >
+                              Quyền Lợi Độc Quyền
+                            </Tag>
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Chính sách đãi ngộ thăng tiến tự chủ theo Bộ quy tắc Kinh Thánh mOS (Điều răn CV-002)
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {bd.isUnlocked ? (
+                          <Tag
+                            color="success"
+                            className="font-bold text-xs py-1 px-2.5 flex items-center gap-1 border-emerald-500"
+                          >
+                            <CheckCircleOutlined /> ĐÃ MỞ KHÓA 100% THƯỞNG CV+
+                          </Tag>
+                        ) : (
+                          <Tag
+                            color="warning"
+                            className="font-bold text-xs py-1 px-2.5 flex items-center gap-1 border-amber-500"
+                          >
+                            <WarningOutlined /> CHƯA ĐẠT NGƯỠNG CHUYỂN ĐỔI COMBO
+                          </Tag>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Conversion Target & Progress Bar */}
+                    <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-lg border border-amber-200/70 dark:border-amber-900/40">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                          <span>Tỷ lệ tự chốt Combo cá nhân:</span>
+                          <strong className="text-amber-600 dark:text-amber-400 font-bold tabular-nums">
+                            {((bd.actualComboRate || 0) * 100).toFixed(1)}%
+                          </strong>
+                          <Tooltip title="Mẫu số chỉ đếm khách hàng không phải combo live. Combo bán cho khách combo live vẫn được cộng dồn vào số bán được (Ví dụ: 10 khách không combo bán được 2, 90 khách combo live bán được 1 => tỷ lệ 3/10 = 30%).">
+                            <span className="text-slate-400 cursor-help border-b border-dashed border-slate-400/50">
+                              {bd.notComboLiveOrders > 0
+                                ? `(${bd.combosSoldCount || 0}/${bd.notComboLiveOrders} khách chưa có combo)`
+                                : `(${bd.combosSoldCount || 0} combo / 0 khách chưa có combo)`}
+                            </span>
+                          </Tooltip>
+                        </div>
+                        <div className="text-slate-500 dark:text-slate-400">
+                          Ngưỡng tối thiểu duy trì đãi ngộ:{' '}
+                          <strong className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                            {(targetRate * 100).toFixed(0)}%
+                          </strong>
+                        </div>
+                      </div>
+
+                      <Progress
+                        percent={progressPercent}
+                        status={bd.isUnlocked ? 'success' : 'active'}
+                        strokeColor={bd.isUnlocked ? token.colorSuccess : token.colorWarning}
+                        format={() => (
+                          <span className="text-xs font-bold tabular-nums">
+                            {((bd.actualComboRate || 0) * 100).toFixed(1)}% / {(targetRate * 100).toFixed(0)}%
+                          </span>
+                        )}
+                      />
+                    </div>
+
+                    {/* 4 Summary Stat Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {/* 1. Lương giờ tăng +2k */}
+                      <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                          <span>Lương giờ (+2k/h)</span>
+                          <span className="text-amber-500 font-bold">🕒</span>
+                        </div>
+                        <div className="text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-1">
+                          +{formatVND(bd.deltaHourlyWage || 0)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {bd.isUnlocked ? '27.5k/h vs 25.5k/h' : 'Chế tài: Về 25.5k/h'}
+                        </div>
+                      </div>
+
+                      {/* 2. Tip tự tư vấn (+20%) */}
+                      <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                          <span>Tip tự tư vấn (+20%)</span>
+                          <span className="text-emerald-500 font-bold">🧧</span>
+                        </div>
+                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-1">
+                          +{formatVND(bd.deltaTipBonus || 0)}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                          Hưởng trọn 90% tip (70% CV + 20% CV+)
+                        </div>
+                      </div>
+
+                      {/* 3. Thưởng Combo Bậc Thang */}
+                      <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                          <span>Thưởng Combo Bậc</span>
+                          <span className="text-blue-500 font-bold">📦</span>
+                        </div>
+                        <div className="text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums mt-1">
+                          +{formatVND(bd.comboBonusTotal || 0)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {bd.comboDetails?.length || 0} gói combo đã chốt
+                        </div>
+                      </div>
+
+                      {/* 4. Thưởng Dưỡng Mi Yeppeum */}
+                      <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                          <span>Thưởng Serum Yeppeum</span>
+                          <span className="text-purple-500 font-bold">🧴</span>
+                        </div>
+                        <div className="text-sm font-bold text-purple-600 dark:text-purple-400 tabular-nums mt-1">
+                          +{formatVND(bd.serumBonusTotal || 0)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {bd.serumsSoldCount || 0} chai (50k KM / 100k Gốc)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Total Extra Received Banner */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-amber-500/15 dark:bg-amber-950/40 rounded-lg border border-amber-400/40">
+                      <div className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                        💰 Tổng thu nhập tăng thêm từ đãi ngộ{' '}
+                        <span className="inline-block scale-x-[-1] transform select-none">🪶</span> CV:
+                      </div>
+                      <div className="text-base font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">
+                        +{formatVND(bd.totalAdditionalIncome || 0)}
+                      </div>
+                    </div>
+
+                    {/* Combo Details Table if available */}
+                    {bd.comboDetails && bd.comboDetails.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          📋 Chi tiết các gói Combo tự tư vấn & chốt thành công:
+                        </div>
+                        <div className="overflow-x-auto border border-amber-200/70 dark:border-amber-900/40 rounded-lg">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="bg-amber-100/60 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 text-slate-600 dark:text-slate-300 font-semibold">
+                                <th className="py-1.5 px-2 text-center w-10">#</th>
+                                <th className="py-1.5 px-2 text-left">Ngày</th>
+                                <th className="py-1.5 px-2 text-left">Khách hàng</th>
+                                <th className="py-1.5 px-3 text-left">Tên gói Combo</th>
+                                <th className="py-1.5 px-2 text-right">Giá trị gói</th>
+                                <th className="py-1.5 px-2 text-center">Bậc thang</th>
+                                <th className="py-1.5 px-3 text-right">Tiền thưởng</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-amber-100/50 dark:divide-amber-900/30">
+                              {bd.comboDetails.map((item, idx) => {
+                                const ladderTier =
+                                  item.price >= 4000000
+                                    ? '≥4M'
+                                    : item.price >= 3000000
+                                      ? '3M-<4M'
+                                      : item.price >= 2000000
+                                        ? '2M-<3M'
+                                        : '<2M';
+                                return (
+                                  <tr
+                                    key={item.orderId || idx}
+                                    className="hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
+                                  >
+                                    <td className="py-1 px-2 text-center text-slate-400 font-mono text-[11px]">
+                                      {idx + 1}
+                                    </td>
+                                    <td className="py-1 px-2 text-slate-600 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                                      {item.orderDate ? dayjs(item.orderDate).format('DD/MM/YYYY') : '—'}
+                                    </td>
+                                    <td className="py-1 px-2 font-medium text-slate-800 dark:text-slate-200 text-[11px] whitespace-nowrap">
+                                      {item.customerName || 'Khách vãng lai'}
+                                    </td>
+                                    <td className="py-1 px-3 text-slate-700 dark:text-slate-300 text-[11px]">
+                                      {item.comboName}
+                                    </td>
+                                    <td className="py-1 px-2 text-right tabular-nums text-slate-600 dark:text-slate-400 text-[11px]">
+                                      {formatVND(item.price)}
+                                    </td>
+                                    <td className="py-1 px-2 text-center">
+                                      <Tag color="gold" className="text-[10px] m-0">
+                                        {ladderTier}
+                                      </Tag>
+                                    </td>
+                                    <td className="py-1 px-3 text-right tabular-nums font-bold text-amber-600 dark:text-amber-400 text-[11px]">
+                                      +{formatVND(item.bonus)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
             {/* 28-row Wings Legacy Payslip Table */}
             <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
@@ -1499,9 +2019,16 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
                       3
                     </td>
-                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Đơn giá giờ</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Đơn giá giờ
+                      {selectedRecord.isCvPlus && (
+                        <Tag color="gold" className="text-[10px] ml-1.5 py-0 px-1 border-amber-400">
+                          🪶 CV+ (+2k/h)
+                        </Tag>
+                      )}
+                    </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
-                      —
+                      {selectedRecord.isCvPlus ? 'Đơn giá giờ CV Tự Chủ (+2k/h)' : '—'}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
                       {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ
@@ -1784,9 +2311,18 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
                       15
                     </td>
-                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Thưởng CV Tip</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Thưởng CV Tip
+                      {selectedRecord.isCvPlus && (
+                        <Tag color="gold" className="text-[10px] ml-1.5 py-0 px-1 border-amber-400">
+                          🪶 90% (70% + 20%)
+                        </Tag>
+                      )}
+                    </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-purple-600 dark:text-purple-400 text-[11px]">
-                      Thưởng Tip CV (70% tiền tip khách)
+                      {selectedRecord.isCvPlus
+                        ? 'Thưởng Tip CV+ (Giữ trọn 90% gồm 70% CV + 20% tự tư vấn)'
+                        : 'Thưởng Tip CV (70% tiền tip khách)'}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-purple-600 dark:text-purple-400">
                       +{Math.round(selectedRecord.cvTipBonus).toLocaleString('vi-VN')}đ

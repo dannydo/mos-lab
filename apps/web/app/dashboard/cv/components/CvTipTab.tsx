@@ -58,6 +58,20 @@ export const formatStoreCode = (store?: string | null): string => {
   return s;
 };
 
+const isCvPlusStaff = (nameOrId?: string | number | null): boolean => {
+  if (!nameOrId) return false;
+  const s = String(nameOrId).toLowerCase();
+  return (
+    s.includes('khanh cao') ||
+    s.includes('thảo ly') ||
+    s.includes('thao ly') ||
+    s === '13783' ||
+    s === '46272' ||
+    s === '37' ||
+    s === '55'
+  );
+};
+
 interface CvTipTabProps {
   loading?: boolean;
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
@@ -384,6 +398,11 @@ export default function CvTipTab({
                 <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
                   · {formatStoreCode(record.store)}
                 </span>
+                {isCvPlusStaff(name) && (
+                  <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
+                    🪶 CV
+                  </Tag>
+                )}
                 {isSelected && (
                   <Tag
                     color="gold"
@@ -520,6 +539,11 @@ export default function CvTipTab({
         <div className="flex items-center gap-2 whitespace-nowrap">
           <CcAvatar name={text} src={record.avatar} size={24} />
           <span className="font-semibold text-xs text-amber-400 whitespace-nowrap">{text}</span>
+          {isCvPlusStaff(text) && (
+            <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
+              🪶 CV
+            </Tag>
+          )}
         </div>
       ),
     },
@@ -758,8 +782,16 @@ export default function CvTipTab({
                       </span>
                       <CcAvatar name={record.displayName} src={record.avatar} size={32} isSelected={isSelected} />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
-                          {record.displayName}
+                        <div
+                          className="truncate text-sm font-semibold flex items-center gap-1.5"
+                          style={{ color: token.colorText }}
+                        >
+                          <span>{record.displayName}</span>
+                          {isCvPlusStaff(record.displayName) && (
+                            <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
+                              🪶 CV
+                            </Tag>
+                          )}
                         </div>
                         <div className="text-xs text-slate-400">{formatStoreCode(record.store)}</div>
                       </div>

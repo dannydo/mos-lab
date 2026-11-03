@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
 import { Settings, Zap, Award, ChevronDown, UserCheck } from 'lucide-react';
 import {
@@ -30,6 +31,8 @@ import { playCareerSound, triggerCareerConfetti } from './career-path-fx';
 
 export default function CareerPathPage() {
   const { themeMode } = useTheme();
+  const searchParams = useSearchParams();
+  const queryStaffId = searchParams.get('staffId');
   const [currentUser, setCurrentUser] = useState<{
     id?: number;
     role?: string;
@@ -179,7 +182,12 @@ export default function CareerPathPage() {
           });
           setStaffList(sortedList);
 
-          // 2. Ưu tiên chọn hồ sơ của chính người đang đăng nhập trước, fallback người có số bộ mi cao nhất
+          // 2. Ưu tiên chọn hồ sơ từ URL param staffId, fallback người đăng nhập, fallback người có số bộ mi cao nhất
+          const targetParamId = queryStaffId ? Number(queryStaffId) : null;
+          const queryStaff = targetParamId
+            ? sortedList.find((s) => s.id === targetParamId || (s.legacyStaffId && s.legacyStaffId === targetParamId))
+            : null;
+
           const currentStaffId = currentUser?.id;
           const ownStaff = currentStaffId
             ? sortedList.find((s) => s.id === currentStaffId || (s.legacyStaffId && s.legacyStaffId === currentStaffId))
@@ -190,6 +198,7 @@ export default function CareerPathPage() {
           const highestOrdersStaff = targetPool[0];
 
           const defaultStaff =
+            queryStaff ||
             (selectedStaffId ? sortedList.find((s) => s.id === selectedStaffId) : null) ||
             ownStaff ||
             highestOrdersStaff;
@@ -207,8 +216,21 @@ export default function CareerPathPage() {
         setLoading(false);
       }
     },
-    [selectedPeriod, selectedStaffId, fetchStaffProgression]
+    [selectedPeriod, selectedStaffId, fetchStaffProgression, queryStaffId, currentUser]
   );
+
+  useEffect(() => {
+    if (queryStaffId && staffList.length > 0) {
+      const targetId = Number(queryStaffId);
+      const matched = staffList.find((s) => s.id === targetId || (s.legacyStaffId && s.legacyStaffId === targetId));
+      if (matched && matched.id !== selectedStaffId) {
+        setSelectedStaffId(matched.id);
+        const targetRole = matched.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+        setSimulationTarget(targetRole);
+        fetchStaffProgression(matched.id, false, targetRole, selectedPeriod);
+      }
+    }
+  }, [queryStaffId, staffList, selectedStaffId, selectedPeriod, fetchStaffProgression]);
 
   const handlePeriodChange = (newPeriod: CareerPeriod) => {
     playSound('pop');

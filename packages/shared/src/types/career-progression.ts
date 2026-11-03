@@ -35,10 +35,14 @@ export interface CvToCvPlusRequirements {
   expectedSerumsPerWeek?: number;
   /** Số gói combo dự kiến bán mỗi tháng (mặc định: 6 combo/tháng) */
   expectedCombosPerMonth?: number;
-  /** Thưởng tiền tươi dưỡng mi giá gốc (100.000đ/cây) */
+  /** Thưởng tiền tươi dưỡng mi giá gốc (1.100.000đ -> 100.000đ/cây) */
   serumOriginalPriceBonus?: number;
-  /** Thưởng tiền tươi dưỡng mi giá khuyến mãi / combo (50.000đ/cây) */
+  /** Thưởng tiền tươi dưỡng mi giá khuyến mãi nhẹ < 50% (50.000đ/cây) */
   serumDiscountedPriceBonus?: number;
+  /** Thưởng dưỡng mi giá giảm sâu >= 50% (1.000đ/cây) */
+  serumDeepDiscountPriceBonus?: number;
+  /** Thưởng dưỡng mi tặng kèm Free (1.000đ/cây) */
+  serumFreePriceBonus?: number;
   /** Thưởng combo giá trị < 2 triệu (50.000đ) */
   comboUnder2mBonus?: number;
   /** Thưởng combo giá trị 2 triệu - < 3 triệu (100.000đ) */
@@ -96,10 +100,14 @@ export interface CvPlusToCvPlusPlusRequirements {
   expectedSerumsPerWeek?: number;
   /** Số gói combo dự kiến bán mỗi tháng (mặc định: 10 combo/tháng) */
   expectedCombosPerMonth?: number;
-  /** Thưởng tiền tươi dưỡng mi giá gốc (100.000đ/cây) */
+  /** Thưởng tiền tươi dưỡng mi giá gốc (1.100.000đ -> 100.000đ/cây) */
   serumOriginalPriceBonus?: number;
-  /** Thưởng tiền tươi dưỡng mi giá khuyến mãi / combo (50.000đ/cây) */
+  /** Thưởng tiền tươi dưỡng mi giá khuyến mãi nhẹ < 50% (50.000đ/cây) */
   serumDiscountedPriceBonus?: number;
+  /** Thưởng dưỡng mi giá giảm sâu >= 50% (1.000đ/cây) */
+  serumDeepDiscountPriceBonus?: number;
+  /** Thưởng dưỡng mi tặng kèm Free (1.000đ/cây) */
+  serumFreePriceBonus?: number;
   /** Thưởng combo giá trị < 2 triệu (50.000đ) */
   comboUnder2mBonus?: number;
   /** Thưởng combo giá trị 2 triệu - < 3 triệu (100.000đ) */
@@ -280,8 +288,10 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   allowSelfConsultTrial: true,
   expectedSerumsPerWeek: 1, // 1 cây dưỡng mi / tuần (+100.000đ/tuần ~ +400.000đ/tháng)
   expectedCombosPerMonth: 8, // 8 combo / tháng (+1.600.000đ/tháng theo bậc thang combo 4.5M -> 200k)
-  serumOriginalPriceBonus: 100000, // 100K/cây giá gốc
-  serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi
+  serumOriginalPriceBonus: 100000, // 100K/cây giá gốc (1.1M)
+  serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi nhẹ (< 50%)
+  serumDeepDiscountPriceBonus: 10000, // 10K/cây giá giảm sâu (>= 50%)
+  serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
   comboUnder2mBonus: 50000, // 50K cho combo < 2M
   comboUnder3mBonus: 100000, // 100K cho combo < 3M
   comboUnder4mBonus: 150000, // 150K cho combo < 4M
@@ -311,8 +321,10 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   minSelfComboRate: 0.3, // Tự chốt combo khách mình >= 30%
   expectedSerumsPerWeek: 4, // 4 cây dưỡng mi / tuần
   expectedCombosPerMonth: 10, // 10 combo / tháng
-  serumOriginalPriceBonus: 100000, // 100K/cây giá gốc
-  serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi
+  serumOriginalPriceBonus: 100000, // 100K/cây giá gốc (1.1M)
+  serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi nhẹ (< 50%)
+  serumDeepDiscountPriceBonus: 10000, // 10K/cây giá giảm sâu (>= 50%)
+  serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
   comboUnder2mBonus: 50000, // 50K cho combo < 2M
   comboUnder3mBonus: 100000, // 100K cho combo < 3M
   comboUnder4mBonus: 150000, // 150K cho combo < 4M
@@ -566,6 +578,8 @@ export interface StaffCareerStatus {
       singleComboBonus?: number;
       serumOriginalPriceBonus?: number;
       serumDiscountedPriceBonus?: number;
+      serumDeepDiscountPriceBonus?: number;
+      serumFreePriceBonus?: number;
       crossConsultCvShareRate?: number;
       crossConsultCvSharedAmount?: number;
       currentGrossIncome?: number;

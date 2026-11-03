@@ -53,6 +53,8 @@ export function CareerConfigDrawer({
       expectedCombosPerMonth: 8,
       serumOriginalPriceBonus: 100000,
       serumDiscountedPriceBonus: 50000,
+      serumDeepDiscountPriceBonus: 10000,
+      serumFreePriceBonus: 1000,
       comboUnder2mBonus: 50000,
       comboUnder3mBonus: 100000,
       comboUnder4mBonus: 150000,
@@ -78,6 +80,8 @@ export function CareerConfigDrawer({
     expectedCombosPerMonth: 10,
     serumOriginalPriceBonus: 100000,
     serumDiscountedPriceBonus: 50000,
+    serumDeepDiscountPriceBonus: 10000,
+    serumFreePriceBonus: 1000,
     comboUnder2mBonus: 50000,
     comboUnder3mBonus: 100000,
     comboUnder4mBonus: 150000,
@@ -325,7 +329,7 @@ export function CareerConfigDrawer({
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                        Giá Giảm / Combo:
+                        Giảm giá &lt; 50%:
                       </label>
                       <InputNumber
                         className="w-full"
@@ -342,6 +346,54 @@ export function CareerConfigDrawer({
                             cvToCvPlus: {
                               ...(config.cvToCvPlus || cvToCc),
                               serumDiscountedPriceBonus: Number(val || 0),
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                        Giảm sâu &ge; 50% (&le; 550k):
+                      </label>
+                      <InputNumber
+                        className="w-full"
+                        value={cvToCc.serumDeepDiscountPriceBonus ?? 10000}
+                        step={1000}
+                        min={0}
+                        formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                        addonAfter="đ"
+                        onChange={(val) =>
+                          onConfigChange({
+                            ...config,
+                            cvToCc: { ...cvToCc, serumDeepDiscountPriceBonus: Number(val || 0) },
+                            cvToCvPlus: {
+                              ...(config.cvToCvPlus || cvToCc),
+                              serumDeepDiscountPriceBonus: Number(val || 0),
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                        Tặng kèm Free (0đ):
+                      </label>
+                      <InputNumber
+                        className="w-full"
+                        value={cvToCc.serumFreePriceBonus ?? 1000}
+                        step={500}
+                        min={0}
+                        formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                        addonAfter="đ"
+                        onChange={(val) =>
+                          onConfigChange({
+                            ...config,
+                            cvToCc: { ...cvToCc, serumFreePriceBonus: Number(val || 0) },
+                            cvToCvPlus: {
+                              ...(config.cvToCvPlus || cvToCc),
+                              serumFreePriceBonus: Number(val || 0),
                             },
                           })
                         }
@@ -370,8 +422,8 @@ export function CareerConfigDrawer({
                       }
                     />
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
-                      * Bán giá gốc nhận 100K, giảm giá nhận 50K, tặng kèm 0K. Dự kiến {serumsPerWeek} cây giá gốc = +
-                      {formatVnd(serumCommissionMonthly)}/tháng.
+                      * Bán giá gốc nhận 100K, giảm giá nhận 50K, giảm sâu ≥ 50% nhận 10K, tặng kèm Free nhận 1K. Dự
+                      kiến {serumsPerWeek} cây giá gốc = +{formatVnd(serumCommissionMonthly)}/tháng.
                     </p>
                   </div>
                 </div>

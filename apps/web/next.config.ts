@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
   // "Đang vào workshop…" shell forever.
   // Resolve the current interfaces at server start so DHCP changes do not
   // silently break newly generated workshop QR links.
-  allowedDevOrigins: localIpv4Hosts(),
+  allowedDevOrigins: [...localIpv4Hosts(), '*.trycloudflare.com'],
   // Keeps an explicit production build isolated from the live dev server when
   // responsive performance QA runs locally. Defaults to Next's `.next`.
   distDir: process.env.NEXT_DIST_DIR || '.next',

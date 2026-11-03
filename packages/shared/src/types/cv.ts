@@ -202,6 +202,33 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   guaranteedIncome?: number;
   dayOffAvailable?: number;
   congratulationMessage?: string;
+  isCvPlus?: boolean;
+  cvPlusBreakdown?: CvPlusPaystubBreakdown | null;
+}
+
+export interface CvPlusPaystubBreakdown {
+  isCvPlus: boolean;
+  targetComboRate: number;
+  actualComboRate: number;
+  comboLiveOrders: number;
+  notComboLiveOrders: number;
+  combosSoldCount: number;
+  isUnlocked: boolean;
+  deltaHourlyWage: number;
+  deltaTipBonus: number;
+  comboBonusTotal: number;
+  serumBonusTotal: number;
+  serumsSoldCount?: number;
+  totalAdditionalIncome: number;
+  comboDetails?: Array<{
+    orderId: number;
+    orderCode: string;
+    orderDate: string;
+    customerName?: string;
+    comboName: string;
+    price: number;
+    bonus: number;
+  }>;
 }
 
 export interface CvOtherAllowanceItem {

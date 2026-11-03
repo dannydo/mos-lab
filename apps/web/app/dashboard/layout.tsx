@@ -585,6 +585,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     if (!tokenStr || !storedUser) {
+      if (process.env.NODE_ENV !== 'production') {
+        apiClient.auth
+          .google({ isMock: true, email: 'danny.do@wingslashes.com', name: 'Danny Do' })
+          .then((data: SafeAny) => {
+            const { token, user: freshUser, resolvedOmicallAutoInit } = data;
+            localStorage.setItem('mos_token', token);
+            localStorage.setItem('mos_user', JSON.stringify(freshUser));
+            localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
+            setUser(freshUser);
+            setLoading(false);
+          })
+          .catch(() => {
+            if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+              window.location.href = '/login';
+            }
+          });
+        return;
+      }
+
       localStorage.removeItem('mos_token');
       localStorage.removeItem('mos_user');
       localStorage.removeItem('mos_omicall_auto_init');

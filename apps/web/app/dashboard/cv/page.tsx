@@ -221,7 +221,7 @@ export default function CvReportPage() {
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}
-          size="large"
+          size={responsiveTier === 'mobile' ? 'small' : 'large'}
           className="custom-report-tabs"
           destroyOnHidden
           items={[

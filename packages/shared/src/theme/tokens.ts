@@ -408,12 +408,12 @@ export const themeTokens: DesignTokens = {
       cellPadding: '14px 16px',
     },
     mobileCompact: {
-      controlHeight: '44px',
-      iconSize: '20px',
-      padding: '12px',
+      controlHeight: '38px',
+      iconSize: '18px',
+      padding: '8px 12px',
       gap: '8px',
-      fontSize: '14px',
-      cellPadding: '10px 12px',
+      fontSize: '12px',
+      cellPadding: '6px 8px',
     },
   },
   radii: {

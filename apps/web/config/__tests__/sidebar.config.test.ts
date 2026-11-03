@@ -44,10 +44,10 @@ describe('Sidebar Configuration CV Invariants', () => {
     expect(allItemKeys.has('bk')).toBe(false);
     expect(allItemKeys.has('cs')).toBe(false);
 
-    // CV must see ONLY cv and career-path (inside labs-parent) by default
+    // CV must see ONLY cv and career-path by default
     expect(allItemKeys.has('cv')).toBe(true);
     expect(allItemKeys.has('career-path')).toBe(true);
-    expect([...allItemKeys].sort()).toEqual(['career-path', 'cv', 'labs-parent']);
+    expect([...allItemKeys].sort()).toEqual(['career-path', 'cv']);
   });
 
   it('should allow CV to see an additional item only when explicitly unlocked via menuVisibility', () => {
@@ -108,19 +108,7 @@ describe('Sidebar Configuration CV Invariants', () => {
       { id: 'fund-telesale', code: 'FUND_TELESALE', name: 'Quỹ Telesale' },
       { id: 'fund-marketing', code: 'FUND_MARKETING', name: 'Quỹ Marketing' },
     ];
-    const adminGroups = getSidebarGroups(
-      'admin',
-      [],
-      true,
-      {},
-      [],
-      false,
-      {},
-      {},
-      {},
-      0,
-      mockFunds
-    );
+    const adminGroups = getSidebarGroups('admin', [], true, {}, [], false, {}, {}, {}, 0, mockFunds);
     const financeGroup = adminGroups.find((g) => g.groupKey === 'grp-finance');
     const fundsParent = financeGroup?.items.find((item) => item.key === 'finance-funds-parent');
     expect(fundsParent?.children).toHaveLength(3);

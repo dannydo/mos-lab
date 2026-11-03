@@ -4,13 +4,16 @@ import {
   CvOtherAllowanceItem,
   CvPaystubRecord,
   CvPaystubResponse,
+  CvPlusPaystubBreakdown,
   CvWorkLogDetailRecord,
   CvWorkLogDetailResponse,
+  DEFAULT_CAREER_PROGRESSION_CONFIG,
   SafeAny,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
+import { CareerProgressionService } from '../../career/career.service.js';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -367,6 +370,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         holidayWorkedDateMap,
         extraSupportRows,
         mosAllowances,
+        careerConfigRecord,
+        cvPlusProgressions,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(contractRatesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(periodPayrollQuery),
@@ -385,6 +390,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             month: startPart.substring(0, 7),
           },
           orderBy: { id: 'asc' },
+        }),
+        fastify.prisma.crm.crmConfig.findUnique({ where: { key: 'CAREER_PROGRESSION_RULES' } }).catch(() => null),
+        fastify.prisma.crm.crmCareerProgression.findMany({
+          where: {
+            staff: { legacyStaffId: { in: validStaffIds } },
+            OR: [{ targetRole: 'CV_PLUS', status: 'PROMOTED' }, { currentRole: { in: ['CV_PLUS', 'CV_PLUS_PLUS'] } }],
+            promotedAt: { not: null },
+          },
+          include: { staff: true },
         }),
       ]);
 
@@ -561,6 +575,41 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       });
       const sortedSeniorityBonusRules = [...seniorityBonusConfig].sort((a, b) => b.minMonths - a.minMonths);
 
+      let careerRules = DEFAULT_CAREER_PROGRESSION_CONFIG;
+      try {
+        if (careerConfigRecord?.value) {
+          careerRules = JSON.parse(careerConfigRecord.value);
+        }
+      } catch {
+        careerRules = DEFAULT_CAREER_PROGRESSION_CONFIG;
+      }
+      const cvToCvPlusConfig = careerRules.cvToCvPlus || DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCvPlus;
+
+      const cvPlusStaffMap = new Map<number, SafeAny>();
+      (cvPlusProgressions || []).forEach((p: SafeAny) => {
+        if (p.staff?.legacyStaffId) {
+          cvPlusStaffMap.set(p.staff.legacyStaffId, p);
+        }
+      });
+
+      // Pre-calculate CV+ reward snapshots for all active 🪶 CV staff
+      const cvPlusRewardMap = new Map<number, SafeAny>();
+      await Promise.all(
+        Array.from(cvPlusStaffMap.entries()).map(async ([legacyStaffId, progression]) => {
+          try {
+            const snapshot = await CareerProgressionService.calculateCvPlusRewardsForStaff(
+              fastify,
+              progression.staffId,
+              { startStr: `${startPart} 00:00:00`, endStr: `${endPart} 23:59:59` },
+              false
+            );
+            cvPlusRewardMap.set(legacyStaffId, snapshot);
+          } catch (err) {
+            fastify.log.warn({ err, legacyStaffId }, 'Error calculating cvPlus rewards');
+          }
+        })
+      );
+
       const records: CvPaystubRecord[] = filteredStaffProfiles.map((staff) => {
         const staffId = Number(staff.userId);
         const hourlyRate = hourlyRateMap.get(staffId) || 21500;
@@ -676,16 +725,59 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         // Holiday paid leave pay (nghỉ lễ 2/9 tách riêng dòng độc lập per HR decision, chỉ cộng vào phiếu lương nếu legacy staff_payroll có ghi nhận)
         const holidayPaidLeavePay = Number(sp?.total_off_public_holiday_amount || 0);
         const holidayPaystubAdjustment = holidayPaidLeavePay;
+
+        // Quyền lợi Chuyên Viên Tự Chủ (🪶 CV) theo Điều răn CV-002 & CAREER_PROGRESSION_RULES
+        const cvPlusSnapshot = cvPlusRewardMap.get(staffId);
+        let cvPlusBreakdown: CvPlusPaystubBreakdown | null = null;
+        let isCvPlus = false;
+
+        if (cvPlusSnapshot) {
+          isCvPlus = true;
+          const cvReq = cvToCvPlusConfig;
+          const targetComboRate = cvReq.minSelfComboRate ?? 0.2;
+          const isUnlocked = cvPlusSnapshot.isTargetHit;
+          const targetWage = cvReq.hourlyWage || 27500;
+          const wageDiffPerHour = Math.max(0, targetWage - hourlyRate);
+          const deltaHourlyWage = isUnlocked ? Math.round(regularHours * wageDiffPerHour) : 0;
+          // Tip difference: 20% consultation tip share is always preserved per Điều răn CV-002 (90% total tip)
+          const deltaTipBonus = Math.round(cvTipBonus * (2 / 7));
+          const comboBonusTotal = isUnlocked ? cvPlusSnapshot.comboBonusTotal : 0;
+          const serumBonusTotal = isUnlocked ? cvPlusSnapshot.productBonusTotal : 0;
+          const totalAdditionalIncome = deltaHourlyWage + deltaTipBonus + comboBonusTotal + serumBonusTotal;
+
+          cvPlusBreakdown = {
+            isCvPlus: true,
+            targetComboRate,
+            actualComboRate: cvPlusSnapshot.selfComboRate,
+            comboLiveOrders: cvPlusSnapshot.comboLiveOrders,
+            notComboLiveOrders: cvPlusSnapshot.notComboLiveOrders,
+            combosSoldCount: cvPlusSnapshot.comboSoldCount,
+            isUnlocked,
+            deltaHourlyWage,
+            deltaTipBonus,
+            comboBonusTotal,
+            serumBonusTotal,
+            totalAdditionalIncome,
+            comboDetails: cvPlusSnapshot.comboDetails,
+          };
+        }
+
+        const effectiveHourlyRate =
+          isCvPlus && cvPlusBreakdown?.isUnlocked ? cvToCvPlusConfig.hourlyWage || 27500 : hourlyRate;
+        const effectiveHourlyWage = hourlyWage + (cvPlusBreakdown?.deltaHourlyWage || 0);
+        const effectiveCvTipBonus = cvTipBonus + (cvPlusBreakdown?.deltaTipBonus || 0);
+
         const totalIncome = Math.round(
-          hourlyWage +
+          effectiveHourlyWage +
             offDaysWorkWage +
             cvXoayBonus +
-            cvTipBonus +
+            effectiveCvTipBonus +
             seniorityBonus +
             otherAllowances +
             holidayPaystubAdjustment +
             parkingAllowance +
-            offMonthWage
+            offMonthWage +
+            (cvPlusBreakdown ? cvPlusBreakdown.comboBonusTotal + cvPlusBreakdown.serumBonusTotal : 0)
         );
 
         // Social Security deduction (10.5% for employee)
@@ -694,9 +786,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const socialSecurityAmount = ssInfo.amount;
         const netIncome = Math.round(totalIncome - socialSecurityAmount);
 
-        grandTotalHourlyWage += hourlyWage;
+        grandTotalHourlyWage += effectiveHourlyWage;
         grandTotalCvXoayBonus += cvXoayBonus;
-        grandTotalCvTipBonus += cvTipBonus;
+        grandTotalCvTipBonus += effectiveCvTipBonus;
         grandTotalSeniorityBonus += seniorityBonus;
         grandTotalHolidayBasePay += holiday.holidayBasePay;
         grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
@@ -776,11 +868,13 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           totalWorkHours,
           regularHours,
           regularHourlyWage,
-          hourlyRate,
-          hourlyWage,
+          hourlyRate: effectiveHourlyRate,
+          hourlyWage: effectiveHourlyWage,
           cvXoayBonus,
-          cvTipBonus,
+          cvTipBonus: effectiveCvTipBonus,
           totalIncome,
+          isCvPlus,
+          cvPlusBreakdown,
           serviceCount,
           seniorityMonths,
           seniorityBonus,
