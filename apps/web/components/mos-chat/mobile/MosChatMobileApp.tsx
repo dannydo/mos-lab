@@ -329,14 +329,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     sourceMsg?: MosChatMessage | null;
     existingTask?: MosChatTaskItem | null;
     sourceReply?: MosChatThreadReply | null;
+    isNew?: boolean;
   }) => {
     const sourceMsg = params?.sourceMsg || activeThreadMsg || null;
-    const existing =
-      params?.existingTask ||
-      (sourceMsg
-        ? tasks.find((t) => t.sourceMessageId === sourceMsg.id || (sourceMsg.taskId && t.id === sourceMsg.taskId)) ||
-          null
-        : null);
+    // CRITICAL (MOS-BUG-190): Only set editingTaskForModal if existingTask is explicitly passed.
+    // If user is adding a subtask/task in the thread (or isNew is true), do NOT fallback to the thread's main task.
+    const existing = params?.isNew ? null : (params?.existingTask || null);
 
     setEditingTaskForModal(existing);
     setTaskSourceMsg(sourceMsg);

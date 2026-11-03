@@ -336,6 +336,7 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
 
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       className="mt-2 rounded-xl p-2.5 space-y-2 text-left transition-all border"
       style={{
         background: isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(248, 250, 252, 0.95)',
@@ -829,15 +830,21 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
       </div>
 
       {/* Quick Add Row */}
-      <div className="pt-1 flex items-center gap-1.5">
+      <div
+        className="pt-1 flex items-center gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Input
           size="small"
           placeholder="Thêm đầu việc mới (nhấn Enter)..."
           value={quickTitle}
+          onClick={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
           onChange={(e) => setQuickTitle(e.target.value)}
           onPressEnter={(e) => {
             if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
             e.preventDefault();
+            e.stopPropagation();
             handleAdd();
           }}
           disabled={isAdding}
@@ -852,7 +859,10 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
           <button
             type="button"
             aria-label="Thêm"
-            onClick={handleAdd}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAdd();
+            }}
             disabled={isAdding || !quickTitle.trim()}
             className="w-6 h-6 rounded-md inline-flex items-center justify-center bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white cursor-pointer transition-all shrink-0 shadow-sm"
           >

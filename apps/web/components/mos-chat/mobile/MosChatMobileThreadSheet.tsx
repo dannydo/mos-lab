@@ -70,6 +70,7 @@ export interface MosChatMobileThreadSheetProps {
     sourceMsg?: MosChatMessage | null;
     existingTask?: MosChatTaskItem | null;
     sourceReply?: MosChatThreadReply | null;
+    isNew?: boolean;
   }) => void;
   onOpenMoveReply?: (sourceMsg: MosChatMessage, replyId: string) => void;
 }
@@ -949,16 +950,18 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           {/* Interactive Main Task Card embedded in Parent Message */}
           {linkedTask ? (
             <div
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenTaskModal?.({
-                  sourceMsg: liveThreadMsg,
-                  existingTask: linkedTask,
-                });
-              }}
-              className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 hover:border-slate-600 transition-colors shadow-sm cursor-pointer"
+              className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 hover:border-slate-600 transition-colors shadow-sm"
             >
-              <div className="flex items-start gap-2.5">
+              <div
+                className="flex items-start gap-2.5 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTaskModal?.({
+                    sourceMsg: liveThreadMsg,
+                    existingTask: linkedTask,
+                  });
+                }}
+              >
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1044,7 +1047,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
               {/* Mobile Thread Task Checklist */}
               {liveThreadMsg && (
-                <div className="mt-2.5">
+                <div
+                  className="mt-2.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
                   <MosChatThreadChecklist
                     task={linkedTask}
                     activeThreadMessage={liveThreadMsg}
@@ -2162,7 +2170,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         }}
         onSelectTask={() => {
           if (onOpenTaskModal) {
-            onOpenTaskModal({ sourceMsg: liveThreadMsg });
+            onOpenTaskModal({ sourceMsg: liveThreadMsg, existingTask: null, isNew: true });
           } else {
             antdMessage.info('Giao việc trong luồng');
           }

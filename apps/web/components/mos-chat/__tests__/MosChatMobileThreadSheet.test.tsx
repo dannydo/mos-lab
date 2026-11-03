@@ -639,4 +639,104 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     fireEvent.click(screen.getByText('Giao việc & Hạn chót'));
     expect(mockOnOpenTaskModal).toHaveBeenCalled();
   });
+
+  it('does NOT trigger edit Main Task modal when interacting with subtask checklist (MOS-BUG-190)', async () => {
+    const mockTask = {
+      id: 'task-main-190',
+      conversationId: 'dm-pair-1-6',
+      conversationName: 'Nguyễn Quang Khải',
+      sourceMessageId: 'msg-parent-190',
+      title: 'Main Task kiểm tra thiết bị Estella',
+      assigneeName: 'Nguyễn Quang Khải',
+      assigneeId: 6,
+      creatorName: 'Danny Do',
+      priority: 'HIGH' as const,
+      done: false,
+      createdAt: new Date().toISOString(),
+      remindAt: new Date().toISOString(),
+      checklist: [
+        { id: 'chk-1', title: 'Subtask 1: Soi máy quạt', done: false },
+      ],
+    };
+
+    const mockMsgWithTask = {
+      id: 'msg-parent-190',
+      conversationId: 'dm-pair-1-6',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'Super Admin',
+      text: 'Báo lỗi thiết bị quạt Estella',
+      timeLabel: '14:00',
+      createdAt: new Date().toISOString(),
+      taskId: 'task-main-190',
+      reactions: {},
+      attachments: [],
+      thread: [],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [
+        {
+          id: 'dm-pair-1-6',
+          type: 'dm',
+          name: 'Nguyễn Quang Khải',
+          messages: [mockMsgWithTask],
+        },
+      ],
+      tasks: [mockTask],
+      staffDirectory: [
+        { id: 1, displayName: 'Danny Do', role: 'Super Admin' },
+        { id: 6, displayName: 'Nguyễn Quang Khải', role: 'Admin' },
+      ],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+    (apiClient.chat.updateTask as any) = vi.fn().mockResolvedValue({ success: true, task: mockTask });
+
+    const mockOnOpenTaskModal = vi.fn();
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockMsgWithTask as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet onOpenTaskModal={mockOnOpenTaskModal} />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Main Task')).toBeTruthy();
+      expect(screen.getByText('Main Task kiểm tra thiết bị Estella')).toBeTruthy();
+      expect(screen.getByPlaceholderText('Thêm việc cần làm... (Enter để lưu)')).toBeTruthy();
+    });
+
+    const subtaskInput = screen.getByPlaceholderText('Thêm việc cần làm... (Enter để lưu)');
+
+    // 1. Tapping / clicking on subtask input should NOT trigger edit main task modal!
+    fireEvent.click(subtaskInput);
+    fireEvent.focus(subtaskInput);
+    expect(mockOnOpenTaskModal).not.toHaveBeenCalled();
+
+    // 2. Typing in subtask input and clicking Add should NOT trigger edit main task modal!
+    fireEvent.change(subtaskInput, { target: { value: 'Subtask 2: Báo hardware sửa quạt' } });
+    const addSubtaskBtn = screen.getByRole('button', { name: 'Thêm' });
+    fireEvent.click(addSubtaskBtn);
+    expect(mockOnOpenTaskModal).not.toHaveBeenCalled();
+
+    // 3. Tapping the Main Task header row SHOULD trigger edit main task modal with linkedTask
+    const mainTaskTitle = screen.getByText('Main Task kiểm tra thiết bị Estella');
+    fireEvent.click(mainTaskTitle);
+    expect(mockOnOpenTaskModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        existingTask: expect.objectContaining({ id: 'task-main-190' }),
+      })
+    );
+  });
 });
