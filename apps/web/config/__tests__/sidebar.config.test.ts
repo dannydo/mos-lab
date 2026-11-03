@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getSidebarGroups, getSelectedMenuKey } from '../sidebar.config';
 
 describe('Sidebar Configuration CV Invariants', () => {
-  const cvRoles = ['cv', 'lt', 'technician', 'ktv'];
+  const cvRoles = ['cv', 'lt', 'technician', 'ktv', 'cv_plus', 'cv_plus_plus', 'cv+', 'cv++'];
 
   it.each(cvRoles)('should hide dashboard, CRM customer list, and telesales for CV role: %s', (role) => {
     const groups = getSidebarGroups(role);

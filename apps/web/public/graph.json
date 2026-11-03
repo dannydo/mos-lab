@@ -11034,7 +11034,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 958
+        "line": 956
       }
     },
     {
@@ -11048,7 +11048,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1140
+        "line": 1138
       }
     },
     {
@@ -11062,7 +11062,7 @@
         "path": "/api/kpi/cv-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1186
+        "line": 1184
       }
     },
     {
@@ -11076,7 +11076,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1210
+        "line": 1208
       }
     },
     {
@@ -36847,7 +36847,7 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 117817,
+        "sizeBytes": 117816,
         "lineCount": 2956,
         "ext": ".ts"
       }
@@ -38329,8 +38329,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51886,
-        "lineCount": 1242,
+        "sizeBytes": 51848,
+        "lineCount": 1240,
         "ext": ".ts"
       }
     },
@@ -38849,8 +38849,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47167,
-        "lineCount": 1153,
+        "sizeBytes": 48380,
+        "lineCount": 1187,
         "ext": ".ts"
       }
     },
@@ -40905,6 +40905,19 @@
       "metadata": {
         "sizeBytes": 1056,
         "lineCount": 31,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/data-migrations/20261103073000_seed_restricted_new_menu_policies.ts",
+      "type": "File",
+      "label": "20261103073000_seed_restricted_new_menu_policies.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261103073000_seed_restricted_new_menu_policies.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1467,
+        "lineCount": 45,
         "ext": ".ts"
       }
     },
@@ -43399,7 +43412,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 81056,
+        "sizeBytes": 81055,
         "lineCount": 1554,
         "ext": ".tsx"
       }
@@ -44387,8 +44400,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 148954,
-        "lineCount": 2970,
+        "sizeBytes": 150317,
+        "lineCount": 3006,
         "ext": ".tsx"
       }
     },
@@ -44400,8 +44413,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43853,
-        "lineCount": 1106,
+        "sizeBytes": 43930,
+        "lineCount": 1109,
         "ext": ".tsx"
       }
     },
@@ -44413,8 +44426,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32648,
-        "lineCount": 863,
+        "sizeBytes": 32725,
+        "lineCount": 866,
         "ext": ".tsx"
       }
     },
@@ -47897,8 +47910,8 @@
       "filePath": "apps/web/lib/api-base-url.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1265,
-        "lineCount": 46,
+        "sizeBytes": 1264,
+        "lineCount": 45,
         "ext": ".ts"
       }
     },
@@ -48222,8 +48235,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 130065,
-        "lineCount": 1779,
+        "sizeBytes": 130094,
+        "lineCount": 1783,
         "ext": ".ts"
       }
     },
@@ -48430,7 +48443,7 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6684,
+        "sizeBytes": 6726,
         "lineCount": 252,
         "ext": ".ts"
       }
@@ -48807,8 +48820,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22815,
-        "lineCount": 771,
+        "sizeBytes": 24223,
+        "lineCount": 821,
         "ext": ".ts"
       }
     },
@@ -104666,7 +104679,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3785,
+    "totalNodes": 3786,
     "totalEdges": 7921,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -104676,7 +104689,7 @@
       "SharedType": 1381,
       "DesignToken": 12,
       "UIComponent": 333,
-      "File": 1061
+      "File": 1062
     },
     "edgeTypeCounts": {
       "EXPORTS": 1575,

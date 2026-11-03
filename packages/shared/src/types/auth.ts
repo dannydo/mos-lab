@@ -126,7 +126,7 @@ export function isCvRole(role?: string | null): boolean {
   const normalizedRole = String(role || '')
     .trim()
     .toLowerCase();
-  return ['cv', 'lt', 'technician', 'ktv'].includes(normalizedRole);
+  return ['cv', 'lt', 'technician', 'ktv', 'cv_plus', 'cv_plus_plus', 'cv+', 'cv++'].includes(normalizedRole);
 }
 
 /**

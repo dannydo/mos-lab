@@ -15,7 +15,7 @@ export const MENU_ACCESS_ROLE_GROUPS: readonly MenuAccessRoleGroupOption[] = [
     id: 1,
     code: 'CV',
     name: 'Chuyên Viên (CV / KTV / LT)',
-    roles: ['cv', 'lt', 'technician', 'ktv'],
+    roles: ['cv', 'lt', 'technician', 'ktv', 'cv_plus', 'cv_plus_plus', 'cv+', 'cv++'],
     description: 'Đội ngũ Chuyên Viên Kỹ Thuật & Nghệ Nhân Mi (Mặc định chỉ xem Báo Cáo CV, Career Path & mOS Chat)',
   },
   {
@@ -181,6 +181,9 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
     return ['bk', 'kpi', 'dashboard'];
   }
   if (clean.startsWith('/kpi/cs')) return ['cs', 'cs-hub', 'kpi', 'dashboard'];
+  if (clean.startsWith('/kpi/financial-goals') || clean.startsWith('/financial-goals')) {
+    return ['financial-goals', 'kpi'];
+  }
   if (clean.startsWith('/kpi')) return ['kpi', 'dashboard', 'cc', 'bk', 'cs', 'telesale-target'];
 
   // 5. Home & Operations & CRM
@@ -266,7 +269,10 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
       'academy-campaigns',
     ];
   }
-  if (clean.startsWith('/telesale-competency') || clean.startsWith('/telesale-target')) {
+  if (clean.startsWith('/telesale-competency')) {
+    return ['telesale-competency', 'bk', 'kpi'];
+  }
+  if (clean.startsWith('/telesale-target')) {
     return ['telesale-target', 'bk', 'kpi'];
   }
 
@@ -289,7 +295,10 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
   }
   if (clean.startsWith('/pilot')) return ['pilot-dark-lashes', 'labs-hub'];
   if (clean.startsWith('/payroll-ledger')) return ['cc-payroll-pilot'];
-  if (clean.startsWith('/cash-flow')) return ['dashboard'];
+  if (clean.startsWith('/funds-management') || clean.startsWith('/funds')) {
+    return ['finance-funds-manage', 'dashboard'];
+  }
+  if (clean.startsWith('/cash-flow')) return ['finance-cash-flow', 'dashboard'];
   if (clean.startsWith('/catalog')) return ['catalog'];
   if (clean.startsWith('/teams')) return ['teams'];
   if (clean.startsWith('/staff') || clean.startsWith('/roles')) return ['staff-directory', 'teams'];
@@ -362,6 +371,12 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     label: 'Sản phẩm phát triển (Labs)',
     menuGroupKeys: ['labs'],
     description: 'Vườn ươm sản phẩm, Career Path (CV -> BOSS) và các tính năng R&D đang thử nghiệm.',
+  },
+  {
+    key: 'finance',
+    label: 'Tài chính',
+    menuGroupKeys: ['finance'],
+    description: 'Quản lý quỹ tiền và dòng tiền mặt.',
   },
 ] as const;
 
@@ -630,6 +645,41 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     groupKey: 'labs',
     groupLabel: 'Sản phẩm phát triển (Labs)',
     path: '/dashboard/payroll-pilot',
+  },
+  {
+    key: 'financial-goals',
+    label: 'Mục Tiêu Tài Chính',
+    groupKey: 'reports',
+    groupLabel: 'Báo cáo & KPI',
+    path: '/dashboard/financial-goals',
+  },
+  {
+    key: 'telesale-competency',
+    label: 'Khung Năng Lực Telesales',
+    groupKey: 'operations',
+    groupLabel: 'Vận hành cuộc gọi',
+    path: '/dashboard/telesale-competency',
+  },
+  {
+    key: 'bug-reports',
+    label: 'Nhiệm Vụ mOS',
+    groupKey: 'reports',
+    groupLabel: 'Báo cáo & KPI',
+    path: '/dashboard/bug-reports',
+  },
+  {
+    key: 'finance-funds-manage',
+    label: 'Quản lý Quỹ',
+    groupKey: 'finance',
+    groupLabel: 'Tài chính',
+    path: '/dashboard/funds',
+  },
+  {
+    key: 'finance-cash-flow',
+    label: 'Dự báo dòng tiền',
+    groupKey: 'finance',
+    groupLabel: 'Tài chính',
+    path: '/dashboard/finance/cash-flow',
   },
 ] as const;
 

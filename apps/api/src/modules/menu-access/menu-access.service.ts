@@ -193,11 +193,28 @@ export class MenuAccessService {
     if (typeof crm?.crmMenuAccessPolicy?.findMany !== 'function') {
       return [];
     }
-    const policies = await fastify.prisma.crm.crmMenuAccessPolicy.findMany({
-      where: { isRestricted: true },
-      include: { rules: true },
-    });
+    const [policies, allPolicies] = await Promise.all([
+      fastify.prisma.crm.crmMenuAccessPolicy.findMany({
+        where: { isRestricted: true },
+        include: { rules: true },
+      }),
+      fastify.prisma.crm.crmMenuAccessPolicy.findMany({
+        select: { menuKey: true },
+      }),
+    ]);
     const snapshots = policies.map(policySnapshot);
+    const configuredKeys = new Set(allPolicies.map((p) => p.menuKey));
+    // Default Invariant: Any menu in MENU_ACCESS_DEFINITIONS without an explicit DB policy
+    // defaults to restricted with empty rules (hidden from non-admins).
+    for (const def of MENU_ACCESS_DEFINITIONS) {
+      if (!configuredKeys.has(def.key)) {
+        snapshots.push({
+          menuKey: def.key,
+          isRestricted: true,
+          rules: [],
+        });
+      }
+    }
     cachedPolicies = { snapshots, expiresAt: now + 10_000 };
     return snapshots;
   }
@@ -405,11 +422,28 @@ export class MenuAccessService {
     fastify: FastifyInstance,
     actor: MenuAccessActor
   ): Promise<MenuAccessSidebarResponse> {
-    const policies = await fastify.prisma.crm.crmMenuAccessPolicy.findMany({
-      where: { isRestricted: true },
-      include: { rules: true },
-    });
+    const [policies, allPolicies] = await Promise.all([
+      fastify.prisma.crm.crmMenuAccessPolicy.findMany({
+        where: { isRestricted: true },
+        include: { rules: true },
+      }),
+      fastify.prisma.crm.crmMenuAccessPolicy.findMany({
+        select: { menuKey: true },
+      }),
+    ]);
     const snapshots = policies.map(policySnapshot);
+    const configuredKeys = new Set(allPolicies.map((p) => p.menuKey));
+    // Default Invariant: Any menu in MENU_ACCESS_DEFINITIONS without an explicit DB policy
+    // defaults to restricted with empty rules (hidden from non-admins).
+    for (const def of MENU_ACCESS_DEFINITIONS) {
+      if (!configuredKeys.has(def.key)) {
+        snapshots.push({
+          menuKey: def.key,
+          isRestricted: true,
+          rules: [],
+        });
+      }
+    }
     const menuPolicies = snapshots.filter((policy) => isManagedMenuAccessKey(policy.menuKey));
     const categoryPolicies = snapshots.filter((policy) => isManagedMenuAccessCategoryPolicyKey(policy.menuKey));
     const isAdmin = isAdminOrSuperAdminRole(actor.role);
@@ -1107,7 +1141,7 @@ export class MenuAccessService {
     policy: { menuKey: string; isRestricted: boolean; updatedAt: Date; rules: PolicyRule[] } | undefined,
     labels: Map<string, string>
   ): MenuAccessPolicy {
-    if (!policy) return { menuKey, isRestricted: false, subjects: [] };
+    if (!policy) return { menuKey, isRestricted: true, subjects: [] };
     return {
       menuKey: policy.menuKey,
       isRestricted: Boolean(policy.isRestricted),
