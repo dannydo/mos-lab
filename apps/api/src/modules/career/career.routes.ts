@@ -383,8 +383,8 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
         );
         return reply.send({ success: true, data: result });
       } catch (err: any) {
-        fastify.log.error({ err, staffId }, 'Failed to calculate CV+ rewards');
-        return reply.status(500).send({ success: false, message: 'Lỗi tính toán quyền lợi CV+' });
+        fastify.log.error({ err, staffId }, 'Failed to calculate CV🪶 rewards');
+        return reply.status(500).send({ success: false, message: 'Lỗi tính toán quyền lợi CV🪶' });
       }
     }
   );
@@ -405,8 +405,8 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
         const result = await CareerProgressionService.getAllCvPlusSimulations(fastify, request.query?.month);
         return reply.send({ success: true, data: result });
       } catch (err: any) {
-        fastify.log.error({ err }, 'Failed to get CV+ simulation summary');
-        return reply.status(500).send({ success: false, message: 'Lỗi lấy tổng hợp mô phỏng CV+' });
+        fastify.log.error({ err }, 'Failed to get CV🪶 simulation summary');
+        return reply.status(500).send({ success: false, message: 'Lỗi lấy tổng hợp mô phỏng CV🪶' });
       }
     }
   );

@@ -22,6 +22,7 @@ import { useMosChat } from '../context/MosChatContext';
 import type { MosChatPresenceStatus } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { MosChatAvatar } from '../MosChatAvatar';
+import HeaderRoleQuickSwitch from '../../layout/HeaderRoleQuickSwitch';
 
 export interface MosChatMobileHeaderProps {
   onOpenSettings?: () => void;
@@ -37,6 +38,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   onOpenMembersModal,
 }) => {
   const {
+    currentUser,
     mobileView,
     setMobileView,
     activeConversation,
@@ -99,44 +101,51 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   // View: INBOX
   if (mobileView === 'inbox') {
     return (
-      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 px-4 pt-[max(env(safe-area-inset-top),14px)] pb-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center shadow-md shadow-amber-500/20 text-white font-bold text-base">
-            🪽
+      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 shadow-sm flex flex-col">
+        <HeaderRoleQuickSwitch
+          variant="standalone-bar"
+          userRole={currentUser?.role}
+          unreadChatCount={totalUnreadCount}
+        />
+        <div className="px-4 pt-2.5 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center shadow-md shadow-amber-500/20 text-white font-bold text-base">
+              🪽
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-tight leading-none flex items-center gap-2">
+                mOS Chat
+                {totalUnreadCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs font-semibold bg-rose-500 text-white rounded-full leading-none tabular-nums animate-pulse">
+                    {totalUnreadCount}
+                  </span>
+                )}
+              </h1>
+              <p className="text-[11px] text-slate-400 mt-0.5">Wings Enterprise Hub</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-white tracking-tight leading-none flex items-center gap-2">
-              mOS Chat
-              {totalUnreadCount > 0 && (
-                <span className="px-1.5 py-0.5 text-xs font-semibold bg-rose-500 text-white rounded-full leading-none tabular-nums animate-pulse">
-                  {totalUnreadCount}
-                </span>
-              )}
-            </h1>
-            <p className="text-[11px] text-slate-400 mt-0.5">Wings Enterprise Hub</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <Dropdown menu={{ items: presenceMenuItems }} trigger={['click']} placement="bottomRight">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300 active:scale-95 transition-transform"
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  presence === 'active'
-                    ? 'bg-emerald-500 shadow-sm shadow-emerald-500/80'
-                    : presence === 'dnd'
-                      ? 'bg-rose-500'
-                      : 'bg-amber-500'
-                }`}
-              />
-              <span className="capitalize">
-                {presence === 'active' ? 'Online' : presence === 'dnd' ? 'Bận' : 'Vắng'}
-              </span>
-            </button>
-          </Dropdown>
+          <div className="flex items-center gap-2">
+            <Dropdown menu={{ items: presenceMenuItems }} trigger={['click']} placement="bottomRight">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300 active:scale-95 transition-transform"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    presence === 'active'
+                      ? 'bg-emerald-500 shadow-sm shadow-emerald-500/80'
+                      : presence === 'dnd'
+                        ? 'bg-rose-500'
+                        : 'bg-amber-500'
+                  }`}
+                />
+                <span className="capitalize">
+                  {presence === 'active' ? 'Online' : presence === 'dnd' ? 'Bận' : 'Vắng'}
+                </span>
+              </button>
+            </Dropdown>
+          </div>
         </div>
       </header>
     );

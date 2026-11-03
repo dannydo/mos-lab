@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   Users,
   Plus,
-  TrendingUp,
   MoreHorizontal,
   Home,
   FileText,
@@ -15,10 +14,12 @@ import {
   Banknote,
   Package,
   Layers,
-  ArrowLeftRight,
+  Sparkles,
+  Wallet,
 } from 'lucide-react';
+import { IosUserRole } from '../../state/useIosAppState';
 
-export type IosUserRole = 'CC' | 'CV' | 'STORE' | 'INVENTORY';
+export type { IosUserRole };
 
 interface IosTabBarProps {
   role?: IosUserRole;
@@ -29,7 +30,7 @@ interface IosTabBarProps {
 }
 
 export function IosTabBar({
-  role = 'CC',
+  role = 'CVL',
   activeTab,
   onTabChange,
   onCenterPlusClick,
@@ -47,10 +48,71 @@ export function IosTabBar({
   return (
     <div className="w-full bg-white border-t border-[#E5E5EA] pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none z-40 relative shadow-[0_-2px_10px_rgba(0,0,0,0.04)] flex-shrink-0">
       <div className="h-12 px-2 flex items-center justify-around relative">
+        {/* VAI TRÒ CV🪶 (CVL) & 🪶CV🪶 (CVLL): TỰ TƯ VẤN & CHECKOUT */}
+        {(role === 'CVL' || role === 'CVLL') && (
+          <>
+            <button
+              onClick={() => onTabChange('booking')}
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
+                activeTab === 'booking' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              }`}
+            >
+              <div className="relative">
+                <CalendarCheck className="w-5 h-5 mb-0.5 stroke-[2.2]" />
+                {renderBadge(badgeCounts.booking)}
+              </div>
+              <span className="text-[10px] font-semibold leading-none">Khách Hàng</span>
+            </button>
+
+            <button
+              onClick={() => onTabChange('task')}
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
+                activeTab === 'task' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              }`}
+            >
+              <div className="relative">
+                <FileText className="w-5 h-5 mb-0.5 stroke-[2.2]" />
+                {renderBadge(badgeCounts.task || 1)}
+              </div>
+              <span className="text-[10px] font-semibold leading-none">Ca Làm Mi</span>
+            </button>
+
+            <div className="w-14 flex items-center justify-center -mt-6">
+              <button
+                onClick={onCenterPlusClick}
+                className="w-13 h-13 rounded-full bg-black text-[#FFB400] shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center active:scale-95 transition-transform border-[3px] border-white"
+                title="Tư vấn & Checkout nhanh"
+              >
+                <Sparkles className="w-5 h-5 stroke-[2.5]" />
+                <span className="text-[8px] font-black leading-none mt-0.5">{role === 'CVLL' ? '🪶CV🪶' : 'CV🪶'}</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => onTabChange('paystub')}
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
+                activeTab === 'paystub' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              }`}
+            >
+              <Wallet className="w-5 h-5 mb-0.5 stroke-[2]" />
+              <span className="text-[10px] font-medium leading-none">Thu Nhập</span>
+            </button>
+
+            <button
+              onClick={() => onTabChange('more')}
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
+                activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              }`}
+            >
+              <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
+              <span className="text-[10px] font-medium leading-none">Vai Trò</span>
+            </button>
+          </>
+        )}
+
         {/* VAI TRÒ 1: TƯ VẤN VIÊN (CC) */}
         {role === 'CC' && (
           <>
-            {/* Tab 1: Booking */}
             <button
               onClick={() => onTabChange('booking')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
@@ -64,7 +126,6 @@ export function IosTabBar({
               <span className="text-[10px] font-semibold leading-none">Booking</span>
             </button>
 
-            {/* Tab 2: Customer */}
             <button
               onClick={() => onTabChange('customer')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -75,7 +136,6 @@ export function IosTabBar({
               <span className="text-[10px] font-medium leading-none">Customer</span>
             </button>
 
-            {/* Tab 3: Center Elevated Button (+) */}
             <div className="w-14 flex items-center justify-center -mt-6">
               <button
                 onClick={onCenterPlusClick}
@@ -86,7 +146,6 @@ export function IosTabBar({
               </button>
             </div>
 
-            {/* Tab 4: Target (iOS Swift ConfigTabBar.clientConsultantHomeVC) */}
             <button
               onClick={() => onTabChange('target')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -101,7 +160,6 @@ export function IosTabBar({
               <span className="text-[10px] font-medium leading-none">Target</span>
             </button>
 
-            {/* Tab 5: More */}
             <button
               onClick={() => onTabChange('more')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -117,7 +175,6 @@ export function IosTabBar({
         {/* VAI TRÒ 2: CHUYÊN VIÊN (CV) */}
         {role === 'CV' && (
           <>
-            {/* CV Tab 1: Home */}
             <button
               onClick={() => onTabChange('home')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -128,7 +185,6 @@ export function IosTabBar({
               <span className="text-[10px] font-medium leading-none">Home</span>
             </button>
 
-            {/* CV Tab 2: Booking */}
             <button
               onClick={() => onTabChange('booking')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -139,7 +195,6 @@ export function IosTabBar({
               <span className="text-[10px] font-medium leading-none">Booking</span>
             </button>
 
-            {/* CV Tab 3: Staff Task */}
             <button
               onClick={() => onTabChange('task')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
@@ -153,7 +208,6 @@ export function IosTabBar({
               <span className="text-[10px] font-semibold leading-none">Staff Task</span>
             </button>
 
-            {/* CV Tab 4: Shift */}
             <button
               onClick={() => onTabChange('shift')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -164,7 +218,6 @@ export function IosTabBar({
               <span className="text-[10px] font-medium leading-none">Shift</span>
             </button>
 
-            {/* CV Tab 5: More */}
             <button
               onClick={() => onTabChange('more')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
@@ -252,23 +305,13 @@ export function IosTabBar({
             </button>
 
             <button
-              onClick={() => onTabChange('orders')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'orders' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
-            >
-              <ArrowLeftRight className="w-5 h-5 mb-0.5 stroke-[2]" />
-              <span className="text-[10px] font-medium leading-none">Nhập/Xuất</span>
-            </button>
-
-            <button
               onClick={() => onTabChange('more')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
                 activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
               }`}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
-              <span className="text-[10px] font-medium leading-none">Kiểm Kê</span>
+              <span className="text-[10px] font-medium leading-none">Cài Đặt</span>
             </button>
           </>
         )}

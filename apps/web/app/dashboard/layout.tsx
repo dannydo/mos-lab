@@ -67,6 +67,7 @@ const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBible
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
+import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
 import { HeaderNotificationCenter } from '../../components/notification-center/HeaderNotificationCenter';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
@@ -944,6 +945,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     />
                   </>
                 )}
+                <HeaderRoleQuickSwitch userRole={user?.role} unreadChatCount={mosChatUnreadCount} />
               </div>
               <div className="dashboard-header-right">
                 {isImpersonating && (
@@ -1106,6 +1108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             : 'Thao tác phụ'
                         }
                         icon={EllipsisVertical}
+                        showTooltip={false}
                       />
                     </HeaderActionIndicator>
                   </Dropdown>
@@ -1214,6 +1217,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
               </div>
             </Header>
+            <HeaderRoleQuickSwitch variant="sub-header" userRole={user?.role} unreadChatCount={mosChatUnreadCount} />
 
             <Content
               className={`dashboard-content${

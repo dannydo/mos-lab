@@ -22,7 +22,7 @@ export const CV_PERSONAL_QA_TEMPLATE: QaChecklistTemplate = {
   branchName: 'Tất Cả Chi Nhánh',
   title: 'Kiểm Định Tác Phong & Phòng Nối Mi Cá Nhân CV',
   description:
-    'Tiêu chuẩn kiểm định định kỳ tác phong diện mạo và phòng nối mi cá nhân của Chuyên Viên (CV/CV+/CV++). Đạt chuẩn là điều kiện tiên quyết để được nâng cấp lộ trình nghề nghiệp.',
+    'Tiêu chuẩn kiểm định định kỳ tác phong diện mạo và phòng nối mi cá nhân của Chuyên Viên (CV / CV🪶 / 🪶CV🪶). Đạt chuẩn là điều kiện tiên quyết để được nâng cấp lộ trình nghề nghiệp.',
   updatedAt: new Date().toISOString(),
   sections: [
     {

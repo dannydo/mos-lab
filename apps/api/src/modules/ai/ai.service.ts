@@ -33,8 +33,9 @@ NGUỒN CHÂN LÝ & VĂN HÓA CỐT LÕI (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐ
    - CHÂN THÀNH: Sự ân cần được thực hành nhất quán và bền bỉ trong một thời gian dài chính là Chân Thành; không phải lời hứa đầu môi mà là hành động kiểm chứng qua thời gian (chăm sóc khách qua nhiều năm, tư vấn đúng sức khỏe mi thật).
    - KHOA HỌC: Ba điều trên là cảm xúc và định tính; nếu đã làm đủ ba điều mà tổ chức không phát triển thì bắt buộc phải nhìn lại. Wings luôn tin vào khoa học, làm việc có phương pháp khoa học. Khoa học là thước đo thực tế chứng minh chúng ta đang đi đúng hướng (dữ liệu mOS, NYC, tỷ lệ quay lại, LoCa, conversion), tuyệt đối không đoán mò hay tự huyễn hoặc theo cảm xúc.
 3. Kỷ luật Ngôn từ Tôn trọng Nhân sự Wings:
-   - Tuyệt đối KHÔNG BAO GIỜ dùng các từ "thợ", "thợ mi", "thợ kỹ thuật", "thợ tự chủ", "thợ lash", "thợ cứng".
-   - Bắt buộc dùng các danh xưng chuẩn mực: "CV" (Chuyên Viên), "Chuyên Viên Tự Chủ" (CV+), "Nghệ Nhân Mi", "Thiên Thần".
+   - Tuyệt đối KHÔNG BAO GIỜ dùng các từ "thợ", "thợ mi", "thợ kỹ thuật", "thợ tự chủ", "thợ lash", "thợ cứng", hay ký hiệu cũ có dấu cộng.
+   - Bắt buộc dùng các danh xưng chuẩn mực: "CV" (Chuyên Viên), "Chuyên Viên Tự Chủ" (CV🪶 / CVL), "Chuyên Viên Tự Chủ Cấp Cao" (🪶CV🪶 / CVLL), "Nghệ Nhân Mi", "Thiên Thần".
+   - Các tên gọi CV Lông, CV 1 lông, 🪶CV, CV🪶, CV L, CV 1L, CV 𝓁, CV 1𝓁, CV Lờ, CV 1 Lờ, CVL đều hoàn toàn đồng nhất và chỉ cấp bậc Chuyên Viên Tự Chủ (CV🪶).
 
 QUY TẮC GIAO TIẾP & PHẢN HỒI:
 - Luôn xưng danh là "MAI" (hoặc "mOS AI").
@@ -75,8 +76,8 @@ MỤC TIÊU & TÁC VỤ CHÍNH:
 
 4. Hồ sơ Năng lực Chuyên Viên & Lộ trình Thăng Tiến (Career Path) Live Context:
    - Khi có khối dữ liệu <LIVE_STAFF_CONTEXT>, MAI BẮT BUỘC sử dụng các số liệu thực chứng live này (cấp bậc, ngày thăng cấp, người phê duyệt, tổng số lượt phục vụ hoàn tất, tỷ lệ nhận tip, tỷ lệ khách quay lại/tự chốt combo LoCa rate, tỷ lệ bảo hành 0%) để giải đáp chuẩn xác 100%.
-   - Khi được hỏi lý do vì sao một Chuyên Viên (như Khanh Cao, Thảo Ly) được thăng cấp lên Chuyên Viên Tự Chủ (🪶CV), phân tích cụ thể dựa trên 4 trụ cột thực tế trong hệ thống: tay nghề kỹ thuật vững vàng (0% ca lỗi bảo hành), năng lực tự chủ cao (tỷ lệ tự chốt combo/LoCa vượt trội), tỷ lệ nhận tip cao hơn trung bình salon, và quyết định phê duyệt chính thức từ ban điều hành (Danny Do).
-   - Luôn tuân thủ danh xưng: 'Chuyên Viên', 'Chuyên Viên Tự Chủ' (🪶CV), 'Nghệ Nhân Mi'. Tuyệt đối không dùng từ 'thợ'.`;
+   - Khi được hỏi lý do vì sao một Chuyên Viên (như Khanh Cao, Thảo Ly) được thăng cấp lên Chuyên Viên Tự Chủ (CV🪶), phân tích cụ thể dựa trên 4 trụ cột thực tế trong hệ thống: tay nghề kỹ thuật vững vàng (0% ca lỗi bảo hành), năng lực tự chủ cao (tỷ lệ tự chốt combo/LoCa vượt trội), tỷ lệ nhận tip cao hơn trung bình salon, và quyết định phê duyệt chính thức từ ban điều hành (Danny Do).
+   - Luôn tuân thủ danh xưng: 'Chuyên Viên', 'Chuyên Viên Tự Chủ' (CV🪶), 'Nghệ Nhân Mi'. Tuyệt đối không dùng từ 'thợ'.`;
 
 export interface ParsedAiResponse {
   content: string;
@@ -374,19 +375,19 @@ export function generateAssistantFallback(
     const isAskingLy = lower.includes('thảo ly') || lower.includes('ly');
 
     let thinking =
-      'Truy xuất dữ liệu live từ hệ thống mOS về Career Path và hồ sơ năng lực của Chuyên Viên. Trình bày số liệu thực chứng khoa học, cấp bậc Chuyên Viên Tự Chủ (🪶CV) và quyết định thăng cấp ngày 01/11/2026.';
+      'Truy xuất dữ liệu live từ hệ thống mOS về Career Path và hồ sơ năng lực của Chuyên Viên. Trình bày số liệu thực chứng khoa học, cấp bậc Chuyên Viên Tự Chủ (CV🪶) và quyết định thăng cấp ngày 01/11/2026.';
     let content: string;
 
     if (isAskingWhy && (isAskingKhanh || isAskingLy)) {
       thinking =
-        'Phân tích cơ sở thực chứng và lý do thăng cấp lên Chuyên Viên Tự Chủ (🪶CV) cho Khanh Cao / Thảo Ly dựa trên 4 trụ cột: tay nghề chuẩn xác 0% bảo hành, năng lực tự chủ LoCa chốt Combo, tỷ lệ nhận tip vượt chuẩn salon và quyết định phê duyệt chính thức.';
+        'Phân tích cơ sở thực chứng và lý do thăng cấp lên Chuyên Viên Tự Chủ (CV🪶) cho Khanh Cao / Thảo Ly dựa trên 4 trụ cột: tay nghề chuẩn xác 0% bảo hành, năng lực tự chủ LoCa chốt Combo, tỷ lệ nhận tip vượt chuẩn salon và quyết định phê duyệt chính thức.';
 
-      content = `Chào ${context?.userName ? `@${context.userName}` : 'anh/chị'}, MAI xin trích xuất số liệu thực chứng khoa học từ cơ sở dữ liệu live của hệ thống mOS về lý do thăng cấp **Chuyên Viên Tự Chủ (🪶CV)**:\n\n`;
+      content = `Chào ${context?.userName ? `@${context.userName}` : 'anh/chị'}, MAI xin trích xuất số liệu thực chứng khoa học từ cơ sở dữ liệu live của hệ thống mOS về lý do thăng cấp **Chuyên Viên Tự Chủ (CV🪶)**:\n\n`;
 
       if (isAskingKhanh || !isAskingLy) {
         content +=
           `### 🪶 Chuyên Viên Tự Chủ: Khanh Cao (ID: 37)\n` +
-          `- **Cấp bậc hiện tại**: Chuyên Viên Tự Chủ (🪶CV / CV+)\n` +
+          `- **Cấp bậc hiện tại**: Chuyên Viên Tự Chủ (CV🪶)\n` +
           `- **Ngày thăng cấp**: **01/11/2026** — Người phê duyệt: **Danny Do (Super Admin)**\n` +
           `- **Bốn trụ cột thực chứng khoa học đủ điều kiện thăng cấp**:\n` +
           `  1. 🎯 **Kỹ thuật & Độ bền tuyệt đối**: Hoàn tất **397 lượt phục vụ** với **Tỷ lệ bảo hành (Fix Rate) 0%** (0 ca lỗi), thể hiện tay nghề tinh xảo và tính an toàn cao.\n` +
@@ -398,7 +399,7 @@ export function generateAssistantFallback(
       if (isAskingLy || !isAskingKhanh) {
         content +=
           `### 🪶 Chuyên Viên Tự Chủ: Thảo Ly (ID: 55)\n` +
-          `- **Cấp bậc hiện tại**: Chuyên Viên Tự Chủ (🪶CV / CV+)\n` +
+          `- **Cấp bậc hiện tại**: Chuyên Viên Tự Chủ (CV🪶)\n` +
           `- **Ngày thăng cấp**: **01/11/2026** — Người phê duyệt: **Danny Do (Super Admin)**\n` +
           `- **Bốn trụ cột thực chứng khoa học đủ điều kiện thăng cấp**:\n` +
           `  1. 🎯 **Kỹ thuật xuất sắc (Fix Rate 0%)**: Hoàn thành **386 lượt phục vụ** mà không phát sinh bất kỳ ca bảo hành nào (0 ca lỗi).\n` +
@@ -407,24 +408,24 @@ export function generateAssistantFallback(
           `  4. 🪽 **Tiên phong văn hóa 4 Chìa Khóa**: Phục vụ Vui Vẻ, Ân Cần, Chân Thành và Khoa Học bền bỉ tại cơ sở Đề Thám (DT).\n\n`;
       }
 
-      content += `💡 *Quyết định thăng cấp 🪶CV dựa trên dữ liệu thực tế 100%, phản ánh đúng phẩm chất của Chuyên Viên Tự Chủ.*`;
+      content += `💡 *Quyết định thăng cấp CV🪶 dựa trên dữ liệu thực tế 100%, phản ánh đúng phẩm chất của Chuyên Viên Tự Chủ.*`;
     } else {
       // General Career Path / Rank query (Khanh Cao, Thảo Ly)
       content =
         `Chào ${context?.userName ? `@${context.userName}` : 'anh/chị'}, MAI xin báo cáo dữ liệu live từ hệ thống mOS về cấp bậc và lộ trình **Career Path** của Chuyên Viên:\n\n` +
         `### 🪶 Hồ Sơ Cấp Bậc Hiện Tại:\n` +
         `1. **Khanh Cao (ID: 37)**:\n` +
-        `   - **Cấp bậc**: **Chuyên Viên Tự Chủ (🪶CV / CV+)**\n` +
+        `   - **Cấp bậc**: **Chuyên Viên Tự Chủ (CV🪶)**\n` +
         `   - **Trạng thái**: Đã thăng cấp chính thức (**PROMOTED**)\n` +
         `   - **Ngày thăng cấp**: **01/11/2026** bởi **Danny Do (Super Admin)**\n` +
         `   - **Chỉ số nổi bật**: 397 lượt phục vụ hoàn tất | Tỷ lệ nhận tip 53.6% | 9 gói Combo (17.3%) | Tỷ lệ lỗi 0% | CSAT 58.4%\n` +
-        `   - **Mục tiêu tiếp theo**: **CV++** (Chuyên Viên Tự Chủ Nâng Cao)\n\n` +
+        `   - **Mục tiêu tiếp theo**: **🪶CV🪶** (Chuyên Viên Tự Chủ Cấp Cao)\n\n` +
         `2. **Thảo Ly (ID: 55)**:\n` +
-        `   - **Cấp bậc**: **Chuyên Viên Tự Chủ (🪶CV / CV+)**\n` +
+        `   - **Cấp bậc**: **Chuyên Viên Tự Chủ (CV🪶)**\n` +
         `   - **Trạng thái**: Đã thăng cấp chính thức (**PROMOTED**)\n` +
         `   - **Ngày thăng cấp**: **01/11/2026** bởi **Danny Do (Super Admin)**\n` +
         `   - **Chỉ số nổi bật**: 386 lượt phục vụ hoàn tất | Tỷ lệ nhận tip 59.3% | 16 gói Combo (47.1%) | Tỷ lệ lỗi 0% | CSAT 74.8%\n` +
-        `   - **Mục tiêu tiếp theo**: **CV++** (Chuyên Viên Tự Chủ Nâng Cao)\n\n` +
+        `   - **Mục tiêu tiếp theo**: **🪶CV🪶** (Chuyên Viên Tự Chủ Cấp Cao)\n\n` +
         `Cả hai bạn đều đã vượt qua các bài sát hạch kỹ năng tay nghề và đang hoạt động tại chi nhánh **Đề Thám (DT)**.`;
     }
 

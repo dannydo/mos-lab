@@ -5,6 +5,7 @@ import { Button, Tooltip, theme } from 'antd';
 import type { ButtonProps } from 'antd';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 export type HeaderActionTone = 'quiet' | 'accent';
 
@@ -40,6 +41,13 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
   ref
 ) {
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isTouchOrCompactTier =
+    responsiveTier === 'mobile' ||
+    responsiveTier === 'tablet' ||
+    (typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(hover: none)').matches);
   const hasDesktopLabel = Boolean(desktopLabel);
   const semanticStyle = {
     '--mos-header-action-bg': tone === 'accent' ? token.colorPrimaryBg : 'transparent',
@@ -81,7 +89,7 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
     </Button>
   );
 
-  if (!showTooltip) {
+  if (!showTooltip || isTouchOrCompactTier) {
     return button;
   }
 

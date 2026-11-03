@@ -7,15 +7,13 @@ import { thermalPrinterService, PrinterConnectionType } from '../../services/the
 import {
   UserCheck,
   Printer,
-  Wifi,
-  RefreshCw,
   CheckCircle2,
   Sliders,
-  ChevronRight,
   Database,
   Smartphone,
   ShieldCheck,
   Sparkles,
+  Award,
 } from 'lucide-react';
 
 interface ScreenSettingsRoleSwitchProps {
@@ -33,15 +31,27 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
 
   const roles: Array<{ id: IosUserRole; name: string; desc: string; icon: any }> = [
     {
+      id: 'CVL',
+      name: 'CV🪶 · Chuyên Viên Tự Chủ (1 Lông · Thảo Ly)',
+      desc: 'Xem khách của mình, tự Check-in, Tư vấn gói Combo, bán Dưỡng mi & tự Checkout (Hưởng 90% Tip + Thưởng bậc thang CV🪶)',
+      icon: Sparkles,
+    },
+    {
+      id: 'CVLL',
+      name: '🪶CV🪶 · Chuyên Viên Tự Chủ Cấp Cao (2 Lông · Tuyết Nhi)',
+      desc: 'Xem khách của mình & toàn chi nhánh để hỗ trợ Check-in / Tư vấn / Checkout chéo giùm CV khác (Ai Checkout người đó hưởng)',
+      icon: Award,
+    },
+    {
       id: 'CC',
-      name: 'Tư Vấn Viên (Client Consultant)',
-      desc: 'Tiếp đón khách, Check-in, Bán Combo & POS',
+      name: 'Tư Vấn Viên (Client Consultant · Diễm Hương)',
+      desc: 'Tiếp đón khách sảnh, Check-in, Bán Combo & POS theo quy chế CC',
       icon: Sparkles,
     },
     {
       id: 'CV',
-      name: 'Chuyên Viên (Technician)',
-      desc: 'Ca làm của tôi, Bấm giờ thi công mi, Chụp Before/After',
+      name: 'Chuyên Viên Kỹ Thuật (CV · Phương Nhi)',
+      desc: 'Ca làm của tôi, Bấm giờ thi công mi, Chụp Before/After (70% Tip)',
       icon: UserCheck,
     },
     {
@@ -68,19 +78,20 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
     const testReceipt = {
       orderId: 'TEST-8888',
       customerName: 'Khách Kiểm Thử Máy In',
-      staffName: 'Diễm Hương (🪶 CV)',
+      staffName: 'Thảo Ly (CV🪶)',
       storeName: 'Wings Lashes Q.1',
-      storeAddress: '123 Lê Thánh Tôn, Bến Nghé, Q.1',
-      storePhone: '1900 8888',
+      storeAddress: '112 Đề Thám, Cầu Ông Lãnh, Q.1',
+      storePhone: '1800 8154',
       dateStr: new Date().toLocaleString('vi-VN'),
       services: [
-        { name: 'Flawless 3D Design', price: 450000, qty: 1 },
-        { name: 'Serum Dưỡng Mi Wings Pro', price: 280000, qty: 1 },
+        { name: 'New Flawless Mink', price: 770000, qty: 1 },
+        { name: 'Combo 5 lần New Flawless', price: 4500000, qty: 1 },
+        { name: 'Cây dưỡng mi Yeppeum 6ml', price: 1100000, qty: 1 },
       ],
-      subtotal: 730000,
+      subtotal: 6370000,
       discount: 0,
-      tipAmount: 50000,
-      total: 780000,
+      tipAmount: 100000,
+      total: 6470000,
       paymentMethod: 'Chuyển khoản VietQR',
     };
 
@@ -98,7 +109,7 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
         {/* Role Switcher Section */}
         <div>
           <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider mb-2 px-1">
-            Chuyển Đổi Không Gian Làm Việc (Role Switcher)
+            Chuyển Đổi Vai Trò Vận Hành (Role Switcher)
           </h3>
 
           <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs">
@@ -113,7 +124,7 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
                 >
                   <div className="flex items-center space-x-3">
                     <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                         isSelected ? 'bg-black text-[#FFB400]' : 'bg-[#F2F2F7] text-[#8E8E93]'
                       }`}
                     >
@@ -121,11 +132,11 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
                     </div>
                     <div>
                       <div className="text-xs font-bold text-[#1C1C1E]">{r.name}</div>
-                      <div className="text-[11px] text-[#8E8E93] mt-0.5">{r.desc}</div>
+                      <div className="text-[11px] text-[#8E8E93] mt-0.5 leading-snug">{r.desc}</div>
                     </div>
                   </div>
 
-                  {isSelected && <CheckCircle2 className="w-5 h-5 text-[#FF9500] stroke-[2.5]" />}
+                  {isSelected && <CheckCircle2 className="w-5 h-5 text-[#FF9500] stroke-[2.5] shrink-0 ml-2" />}
                 </div>
               );
             })}
@@ -139,7 +150,6 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
           </h3>
 
           <div className="bg-white rounded-xl border border-[#E5E5EA] p-3.5 space-y-3 shadow-xs">
-            {/* Connection Type */}
             <div>
               <label className="text-xs font-medium text-[#8E8E93] block mb-1">Phương thức kết nối</label>
               <div className="grid grid-cols-3 gap-2">
@@ -163,7 +173,6 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
               </div>
             </div>
 
-            {/* Paper Width */}
             <div className="pt-2 border-t border-[#E5E5EA] flex items-center justify-between">
               <span className="text-xs font-medium text-[#1C1C1E]">Khổ giấy máy in</span>
               <div className="flex space-x-2">
@@ -183,21 +192,6 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
               </div>
             </div>
 
-            {/* LAN IP Input if LAN_IP */}
-            {printerType === 'LAN_IP' && (
-              <div className="pt-2 border-t border-[#E5E5EA]">
-                <label className="text-xs font-medium text-[#8E8E93] block mb-1">Địa chỉ IP máy in mạng LAN</label>
-                <input
-                  type="text"
-                  value={ipAddress}
-                  onChange={(e) => setIpAddress(e.target.value)}
-                  className="w-full bg-[#F2F2F7] rounded-lg px-3 py-2 text-xs font-mono text-[#1C1C1E] focus:outline-none"
-                  placeholder="192.168.1.200"
-                />
-              </div>
-            )}
-
-            {/* Test Print Button */}
             <div className="pt-2">
               <button
                 onClick={handleTestPrint}
@@ -216,38 +210,35 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
           </div>
         </div>
 
-        {/* Offline & App Info Section */}
+        {/* App Info Section */}
         <div>
           <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider mb-2 px-1">
-            Bộ Nhớ Đệm & Trạng Thái Ứng Dụng
+            Quy Chế Ghi Nhận Thưởng CV🪶 & 🪶CV🪶 (Điều Răn CV-002 & TIP-001)
           </h3>
 
           <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs text-xs">
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Database className="w-4 h-4 text-[#FF9500]" />
-                <span className="font-medium text-[#1C1C1E]">Trạng thái IndexedDB</span>
+                <span className="font-medium text-[#1C1C1E]">Chia Tip Tư Vấn (20%)</span>
               </div>
-              <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Đang kích hoạt
-              </span>
+              <span className="text-emerald-600 font-bold">Check-in 10% · Check-out 10%</span>
             </div>
 
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Smartphone className="w-4 h-4 text-blue-500" />
-                <span className="font-medium text-[#1C1C1E]">Capacitor Hybrid Shell</span>
+                <span className="font-medium text-[#1C1C1E]">Thưởng Combo & Dưỡng mi</span>
               </div>
-              <span className="text-[#8E8E93] font-medium">Sẵn sàng đóng gói iOS</span>
+              <span className="text-[#FF9500] font-bold">Ai Checkout người đó nhận</span>
             </div>
 
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-purple-500" />
-                <span className="font-medium text-[#1C1C1E]">Phiên bản Clone Bit-by-Bit</span>
+                <span className="font-medium text-[#1C1C1E]">Thang thưởng CV🪶 (Khác CC)</span>
               </div>
-              <span className="font-mono text-[#8E8E93]">v2.0-master-hybrid</span>
+              <span className="font-semibold text-[#1C1C1E]">Combo 50K–200K · Serum 1K–100K</span>
             </div>
           </div>
         </div>

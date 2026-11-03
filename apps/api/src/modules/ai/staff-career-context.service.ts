@@ -1,7 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import type { PrismaClient as CrmPrismaClient } from '../../generated/crm-client/index.js';
 import type { PrismaClient as LegacyPrismaClient } from '../../generated/legacy-client/index.js';
-import type { SafeAny, StaffCareerLiveSnapshot } from '@mos-lab/shared';
+import {
+  type SafeAny,
+  type StaffCareerLiveSnapshot,
+  containsCvFeather1Alias,
+  containsCvFeather2Alias,
+  normalizeCvFeatherRole,
+} from '@mos-lab/shared';
 import { CareerProgressionService } from '../career/career.service.js';
 
 interface CachedSnapshotEntry {
@@ -27,14 +33,15 @@ export function isManagerRole(role?: string | null): boolean {
 
 export function mapRoleToRespectfulTitle(role?: string | null): string {
   if (!role) return 'Chuyên Viên (CV)';
+  const featherTier = normalizeCvFeatherRole(role);
+  if (featherTier === 'CVL') {
+    return 'Chuyên Viên Tự Chủ (CV🪶)';
+  }
+  if (featherTier === 'CVLL') {
+    return 'Chuyên Viên Tự Chủ Cấp Cao (🪶CV🪶)';
+  }
   const normalized = role.toUpperCase().trim();
   switch (normalized) {
-    case 'CV_PLUS':
-    case 'CV+':
-      return 'Chuyên Viên Tự Chủ (🪶CV)';
-    case 'CV_PLUS_PLUS':
-    case 'CV++':
-      return 'Chuyên Viên Tự Chủ Nâng Cao (🪶CV+ / CV++)';
     case 'ARTISAN':
       return 'Nghệ Nhân Mi';
     case 'LT':
@@ -42,7 +49,7 @@ export function mapRoleToRespectfulTitle(role?: string | null): string {
     case 'CV':
       return 'Chuyên Viên (CV)';
     default:
-      if (normalized.includes('PLUS')) return 'Chuyên Viên Tự Chủ (🪶CV)';
+      if (normalized.includes('PLUS')) return 'Chuyên Viên Tự Chủ (CV🪶)';
       return `Chuyên Viên (${role})`;
   }
 }
@@ -71,6 +78,9 @@ export class StaffCareerContextService {
    */
   static isCareerQuery(message: string): boolean {
     if (!message || typeof message !== 'string') return false;
+    if (containsCvFeather1Alias(message) || containsCvFeather2Alias(message)) {
+      return true;
+    }
     const lower = message.toLowerCase();
     const keywords = [
       'career path',
@@ -82,8 +92,14 @@ export class StaffCareerContextService {
       'cấp bậc',
       'nâng bậc',
       'lên bậc',
+      'cv🪶',
       '🪶cv',
-      'cv+',
+      '🪶cv🪶',
+      'cv lông',
+      'cv 1 lông',
+      'cv 2 lông',
+      'cvl',
+      'cvll',
       'cv_plus',
       'chuyên viên tự chủ',
       'nghệ nhân mi',
@@ -213,7 +229,9 @@ export class StaffCareerContextService {
             avgCsat = Math.round((prog.metrics?.happinessIndex || 0) * 1000) / 10;
             fixRate = Math.round((prog.metrics?.fixRate || 0) * 1000) / 10;
             fixCount = prog.metrics?.fixCount || 0;
-            branchName = prog.metrics?.branchName ? `${prog.metrics.branchName} (${prog.metrics.branchCode || ''})`.trim() : 'Đề Thám (DT)';
+            branchName = prog.metrics?.branchName
+              ? `${prog.metrics.branchName} (${prog.metrics.branchCode || ''})`.trim()
+              : 'Đề Thám (DT)';
             currentRole = prog.currentRole || currentRole;
             targetRole = prog.targetRole || targetRole;
             status = prog.status || status;
@@ -317,7 +335,11 @@ export class StaffCareerContextService {
           totalTip,
           branchName,
         },
-        specialCertifications: ['UltraLight Lash Design', 'Kỹ thuật Phục hồi Mi Tự Nhiên', 'Chăm sóc Khách hàng 4 Chìa Khóa'],
+        specialCertifications: [
+          'UltraLight Lash Design',
+          'Kỹ thuật Phục hồi Mi Tự Nhiên',
+          'Chăm sóc Khách hàng 4 Chìa Khóa',
+        ],
       };
 
       snapshotsCache.set(staffId, { snapshot, cachedAt: now });
@@ -354,12 +376,13 @@ export class StaffCareerContextService {
       if (mentioned.length > 0) {
         targetStaffList = mentioned;
       } else {
-        // General career query: load prominent CV+ staff (Khanh Cao, Thảo Ly)
+        // General career query: load prominent CV🪶 staff (Khanh Cao, Thảo Ly)
         const promotedStaff = await crm.crmStaff.findMany({
           where: {
             OR: [
               { displayName: { contains: 'Khanh Cao' } },
               { displayName: { contains: 'Thảo Ly' } },
+              { role: 'cvl' },
               { role: 'cv_plus' },
             ],
             isActive: true,
@@ -415,7 +438,7 @@ export class StaffCareerContextService {
     for (const snap of snapshots) {
       const p = snap.performanceMetrics;
       contextText += `- Chuyên Viên: ${snap.staffName} (ID: ${snap.staffId}) | Cấp bậc: ${snap.currentLevel}\n`;
-      contextText += `  + Trạng thái: ${snap.status === 'PROMOTED' ? 'Đã thăng cấp chính thức (PROMOTED)' : 'Đang thử thách / hoàn thiện năng lực (IN_PROGRESS)'}, Mục tiêu tiếp theo: ${snap.targetLevel || 'CV++'}\n`;
+      contextText += `  + Trạng thái: ${snap.status === 'PROMOTED' ? 'Đã thăng cấp chính thức (PROMOTED)' : 'Đang thử thách / hoàn thiện năng lực (IN_PROGRESS)'}, Mục tiêu tiếp theo: ${snap.targetLevel || '🪶CV🪶'}\n`;
       if (snap.levelPromotedDate) {
         contextText += `  + Ngày thăng cấp: ${snap.levelPromotedDate} bởi ${snap.promotedBy || 'Danny Do (Super Admin)'}\n`;
       }
@@ -433,7 +456,7 @@ export class StaffCareerContextService {
 
     contextText += `\n[Quy định giải đáp của MAI]:\n`;
     contextText += `- Khi người dùng hỏi về cấp bậc hoặc lý do thăng cấp của các bạn trên, MAI BẮT BUỘC sử dụng các số liệu thực chứng live này để giải đáp rõ ràng, khoa học.\n`;
-    contextText += `- Tuyệt đối tuân thủ văn hóa Wings: bắt buộc dùng danh xưng chuẩn mực 'Chuyên Viên', 'Chuyên Viên Tự Chủ (🪶CV)', 'Nghệ Nhân Mi'.\n`;
+    contextText += `- Tuyệt đối tuân thủ văn hóa Wings: bắt buộc dùng danh xưng chuẩn mực 'Chuyên Viên', 'Chuyên Viên Tự Chủ (CV🪶)', 'Nghệ Nhân Mi'.\n`;
     contextText += `</LIVE_STAFF_CONTEXT>\n`;
 
     return contextText;

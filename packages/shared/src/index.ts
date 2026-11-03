@@ -71,3 +71,4 @@ export * from './types/telesale-competency.js';
 export * from './types/cb-telemetry.js';
 export * from './types/fund.js';
 export * from './types/financial-goals.js';
+export * from './utils/cv-role-aliases.js';

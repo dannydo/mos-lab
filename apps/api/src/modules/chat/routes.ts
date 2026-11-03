@@ -176,14 +176,14 @@ function buildDefaultConversations(): MosChatConversation[] {
           customerCard: {
             name: 'Chị Nguyễn Bích Ngọc',
             meta: 'VIP Diamond · Hẹn 15:15 hôm nay',
-            cvName: 'Chuyên Viên Minh Thư (CV+)',
+            cvName: 'Chuyên Viên Minh Thư (CV🪶)',
           },
           thread: [
             {
               id: 'th-seed-2',
               senderId: 'staff-mt',
               senderName: 'Chuyên Viên Minh Thư',
-              senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+              senderRole: 'Chuyên Viên Tự Chủ (CV🪶)',
               senderAvatar: 'MT',
               text: 'Giường VIP 02 đã khử khuẩn sẵn sàng đón khách.',
               timeLabel: '14:44',
@@ -196,7 +196,7 @@ function buildDefaultConversations(): MosChatConversation[] {
           conversationId: 'space-cc',
           senderId: 'staff-mt',
           senderName: 'Chuyên Viên Minh Thư',
-          senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+          senderRole: 'Chuyên Viên Tự Chủ (CV🪶)',
           senderAvatar: 'MT',
           roleColor: '#14b8a6',
           text: 'Em vừa hoàn tất ca trước, khay dụng cụ mi thiết kế đã sẵn sàng.',
@@ -250,7 +250,7 @@ function buildDefaultConversations(): MosChatConversation[] {
           conversationId: 'space-cv',
           senderId: 'staff-mt',
           senderName: 'Chuyên Viên Minh Thư',
-          senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+          senderRole: 'Chuyên Viên Tự Chủ (CV🪶)',
           senderAvatar: 'MT',
           roleColor: '#14b8a6',
           text: 'Nhờ kho bổ sung thêm 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1 trước 16:00.',
@@ -2184,16 +2184,22 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         select: { displayName: true, username: true, role: true },
       });
       const effectiveRole = String(staffRecord?.role || user.role || '').toLowerCase();
-      const normUserId = String(user.id || '').replace(/^staff-/, '').trim();
-      const normItemSenderId = String(itemToMove.senderId || '').replace(/^staff-/, '').trim();
-      const normSourceSenderId = String(sourceMsg.senderId || '').replace(/^staff-/, '').trim();
+      const normUserId = String(user.id || '')
+        .replace(/^staff-/, '')
+        .trim();
+      const normItemSenderId = String(itemToMove.senderId || '')
+        .replace(/^staff-/, '')
+        .trim();
+      const normSourceSenderId = String(sourceMsg.senderId || '')
+        .replace(/^staff-/, '')
+        .trim();
       const isOwner =
         Boolean(normUserId && normItemSenderId === normUserId) ||
         Boolean(normUserId && normSourceSenderId === normUserId) ||
         (Boolean(user.id) && String(itemToMove.senderId) === 'me') ||
         Boolean(
           staffRecord?.displayName &&
-            (itemToMove.senderName === staffRecord.displayName || sourceMsg.senderName === staffRecord.displayName)
+          (itemToMove.senderName === staffRecord.displayName || sourceMsg.senderName === staffRecord.displayName)
         );
 
       const staffMemberInDir = staffDirectory.find(

@@ -750,16 +750,16 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
         </div>
 
-        {/* Right Side: Operational Scope Badge - 🪶 CV (Đang triển khai) */}
+        {/* Right Side: Operational Scope Badge - CV🪶 (Đang triển khai) */}
         <div className="flex items-center gap-1.5 p-1 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 dark:bg-slate-800/90 rounded-xl border border-amber-500/30 shrink-0 self-start md:self-auto">
           <span className="inline-flex items-center gap-1 font-black text-xs py-1 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
-            <WingRoleLabel text="🪶 CV" />
+            <WingRoleLabel text="CV🪶" />
           </span>
           <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold px-1.5 py-0.5">
             🔥 Đang triển khai
           </span>
           <span className="text-[9px] text-slate-400 font-normal hidden lg:inline pl-1 border-l border-slate-200 dark:border-slate-700">
-            🪶 CV 🪶 đang nghiên cứu
+            🪶CV🪶 đang nghiên cứu
           </span>
         </div>
       </div>
@@ -811,9 +811,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
           {status.currentRole === 'CV' && onSetRole && (
             <Popconfirm
-              title="Đưa nhân sự này lên 🪶 CV?"
-              description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV ngay lập tức.`}
-              okText="Lên 🪶 CV"
+              title="Đưa nhân sự này lên CV🪶?"
+              description={`Thăng cấp thủ công cho ${status.staffName} lên CV🪶 ngay lập tức.`}
+              okText="Lên CV🪶"
               cancelText="Hủy"
               onConfirm={() => onSetRole('CV_PLUS')}
             >
@@ -824,7 +824,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <Sparkles className="w-3.5 h-3.5" />
                 <span className="inline-flex items-center gap-1">
                   <span>Lên</span>
-                  <WingRoleLabel text="🪶 CV" />
+                  <WingRoleLabel text="CV🪶" />
                 </span>
               </button>
             </Popconfirm>
@@ -834,9 +834,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             <>
               {onSetRole && (
                 <Popconfirm
-                  title="Đưa nhân sự này lên 🪶 CV 🪶?"
-                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV 🪶 ngay lập tức.`}
-                  okText="Lên 🪶 CV 🪶"
+                  title="Đưa nhân sự này lên 🪶CV🪶?"
+                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶CV🪶 ngay lập tức.`}
+                  okText="Lên 🪶CV🪶"
                   cancelText="Hủy"
                   onConfirm={() => onSetRole('CV_PLUS_PLUS')}
                 >
@@ -847,7 +847,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <Sparkles className="w-3.5 h-3.5" />
                     <span className="inline-flex items-center gap-1">
                       <span>Lên</span>
-                      <WingRoleLabel text="🪶 CV 🪶" />
+                      <WingRoleLabel text="🪶CV🪶" />
                     </span>
                   </button>
                 </Popconfirm>
@@ -875,9 +875,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
           {status.currentRole === 'CV_PLUS_PLUS' && onDemote && (
             <Popconfirm
-              title="Hạ cấp nhân sự về 🪶 CV?"
-              description={`Chuyển cấp bậc của ${status.staffName} về 🪶 CV.`}
-              okText="Hạ về 🪶 CV"
+              title="Hạ cấp nhân sự về CV🪶?"
+              description={`Chuyển cấp bậc của ${status.staffName} về CV🪶.`}
+              okText="Hạ về CV🪶"
               cancelText="Hủy"
               okType="danger"
               onConfirm={onDemote}
@@ -889,7 +889,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <ArrowDownCircle className="w-3.5 h-3.5" />
                 <span className="inline-flex items-center gap-1">
                   <span>🔻 Hạ về</span>
-                  <WingRoleLabel text="🪶 CV" />
+                  <WingRoleLabel text="CV🪶" />
                 </span>
               </button>
             </Popconfirm>
@@ -1936,7 +1936,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   </span>
                 </span>
                 <span className="text-[10px] text-pink-400 font-normal">
-                  {isTargetCvPlusPlus ? 'Đạt chuẩn 🪶 CV 🪶' : 'Cần vượt tối thiểu 4 ải cốt lõi'}
+                  {isTargetCvPlusPlus ? 'Đạt chuẩn 🪶CV🪶' : 'Cần vượt tối thiểu 4 ải cốt lõi'}
                 </span>
               </div>
               {/* Card 1: 300 Ca / 3 Tháng */}

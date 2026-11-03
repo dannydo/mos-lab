@@ -2,9 +2,10 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { isAdminOrSuperAdminRole, isCvRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
+import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
 import { Screen02CheckInProfile } from './components/screens/Screen02CheckInProfile';
@@ -30,8 +31,12 @@ function IosAppInner() {
   const [authorized, setAuthorized] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const stepStr = searchParams.get('step');
-  const initialStep = stepStr ? parseInt(stepStr, 10) : undefined;
-  const state = useIosAppState(initialStep, authorized);
+  const roleParam = searchParams.get('role')?.toUpperCase() as IosUserRole | undefined;
+  const initialStep = stepStr ? parseInt(stepStr, 10) : 1;
+  const initialRole: IosUserRole =
+    roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
+
+  const state = useIosAppState(initialStep, authorized, initialRole);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -43,24 +48,39 @@ function IosAppInner() {
         return;
       }
       const parsed = JSON.parse(rawUser);
-      if (isCvRole(parsed?.role)) {
-        window.location.replace('/dashboard/cv');
-        return;
-      }
-      if (!isAdminOrSuperAdminRole(parsed?.role)) {
+      const userRole = String(parsed?.role || '').trim();
+      const normalizedCv = normalizeCvFeatherRole(userRole);
+      const isAllowed =
+        isAdminOrSuperAdminRole(userRole) ||
+        isCvRole(userRole) ||
+        normalizedCv === 'CVL' ||
+        normalizedCv === 'CVLL' ||
+        ['cc', 'consultant', 'manager', 'fm', 'cho', 'boss', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus'].includes(
+          userRole.toLowerCase()
+        );
+
+      if (!isAllowed) {
         window.location.replace('/dashboard');
         return;
+      }
+
+      if (!roleParam) {
+        if (normalizedCv === 'CVLL' || userRole.toLowerCase() === 'cv_plus_plus') {
+          state.setRole('CVLL');
+        } else if (normalizedCv === 'CVL' || userRole.toLowerCase() === 'cv_plus' || isCvRole(userRole)) {
+          state.setRole('CVL');
+        }
       }
       setAuthorized(true);
     } catch {
       window.location.replace('/login');
     }
-  }, []);
+  }, [roleParam]);
 
   if (!authorized) {
     return (
       <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold">
-        Đang kiểm tra quyền truy cập...
+        Đang mở ứng dụng Tư vấn & Checkout (CV🪶)...
       </div>
     );
   }
@@ -86,7 +106,7 @@ function IosAppInner() {
         <ScreenStoreDashboard
           onSelectBooking={(id) => {
             state.setActiveBookingId(id);
-            state.setRole('CC');
+            state.setRole('CVL');
             state.setCurrentStep(2);
           }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
@@ -99,17 +119,20 @@ function IosAppInner() {
       return <ScreenInventoryStock onOpenSettings={() => state.setIsSettingsOpen(true)} />;
     }
 
-    // 4. Vai trò Chuyên Viên (CV) - Tab Thu nhập tạm tính (More)
-    if (state.role === 'CV' && state.activeTab === 'more') {
+    // 4. Tab Thu nhập tạm tính (Paystub) cho CV🪶 / 🪶CV🪶 / CV
+    if (['CV', 'CVL', 'CVLL'].includes(state.role) && state.activeTab === 'paystub') {
       return (
         <ScreenCvPaystub
-          onBack={() => state.setActiveTab('task')}
+          onBack={() => {
+            state.setActiveTab('booking');
+            state.setCurrentStep(1);
+          }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
       );
     }
 
-    // 5. Core Service Flow (14 màn hình chuẩn iOS)
+    // 5. Core Service Flow (14 màn hình chuẩn iOS kết nối DB thực tế cho CV🪶 & 🪶CV🪶)
     switch (state.currentStep) {
       case 1:
         return (
@@ -122,6 +145,11 @@ function IosAppInner() {
             lastRefreshedAt={state.lastRefreshedAt}
             isLiveDb={state.isLiveDb}
             onRefreshDb={() => state.refreshDb()}
+            role={state.role}
+            onRoleChange={state.setRole}
+            actor={state.actor}
+            scopeMode={state.scopeMode}
+            onScopeModeChange={state.setScopeMode}
             onSelectBooking={(id) => {
               state.setActiveBookingId(id);
               state.setCurrentStep(2);
@@ -132,13 +160,19 @@ function IosAppInner() {
         return (
           <Screen02CheckInProfile
             booking={state.activeBooking}
+            actor={state.actor}
             onBack={() => state.setCurrentStep(1)}
             onCheckIn={state.handleCheckIn}
           />
         );
       case 3:
         return (
-          <Screen03ConsultationMatrix onBack={() => state.setCurrentStep(2)} onSave={state.handleSaveConsultation} />
+          <Screen03ConsultationMatrix
+            booking={state.activeBooking}
+            actor={state.actor}
+            onBack={() => state.setCurrentStep(2)}
+            onSave={state.handleSaveConsultation}
+          />
         );
       case 4:
         return <Screen04StaffQueueAssign onBack={() => state.setCurrentStep(3)} onAssign={state.handleAssignStaff} />;
@@ -180,17 +214,31 @@ function IosAppInner() {
         );
       case 11:
         return (
-          <Screen11ProductUpsell onBack={() => state.setCurrentStep(10)} onGoToBilling={state.handleGoToBilling} />
+          <Screen11ProductUpsell
+            booking={state.activeBooking}
+            actor={state.actor}
+            onBack={() => state.setCurrentStep(10)}
+            onGoToBilling={state.handleGoToBilling}
+          />
         );
       case 12:
         return (
           <Screen12CheckoutBilling
+            booking={state.activeBooking}
+            actor={state.actor}
             onBack={() => state.setCurrentStep(11)}
             onChoosePayment={state.handleChoosePaymentMethod}
           />
         );
       case 13:
-        return <Screen13CheckoutTip onBack={() => state.setCurrentStep(12)} onRecordTip={state.handleRecordTip} />;
+        return (
+          <Screen13CheckoutTip
+            booking={state.activeBooking}
+            actor={state.actor}
+            onBack={() => state.setCurrentStep(12)}
+            onRecordTip={state.handleRecordTip}
+          />
+        );
       case 14:
         return <Screen14ThermalReceiptDone booking={state.activeBooking} onFinishOrder={state.handleFinishOrder} />;
       default:
@@ -199,6 +247,11 @@ function IosAppInner() {
             bookings={state.bookings}
             bookingSegment={state.bookingSegment}
             setBookingSegment={state.setBookingSegment}
+            role={state.role}
+            onRoleChange={state.setRole}
+            actor={state.actor}
+            scopeMode={state.scopeMode}
+            onScopeModeChange={state.setScopeMode}
             onSelectBooking={(id) => {
               state.setActiveBookingId(id);
               state.setCurrentStep(2);
@@ -217,16 +270,21 @@ function IosAppInner() {
       return;
     }
 
-    if (state.role === 'CC') {
-      if (tab === 'booking') state.setCurrentStep(1);
-    } else if (state.role === 'CV') {
-      if (tab === 'task') state.setCurrentStep(6);
+    if (tab === 'booking') {
+      state.setCurrentStep(1);
+    } else if (tab === 'task') {
+      state.setCurrentStep(6);
+    } else if (tab === 'paystub') {
+      state.setActiveTab('paystub');
     }
   };
 
   return (
     <div className="w-full min-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-x-hidden">
       <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col bg-black relative">
+        {/* Global Quick-Switch Header Bar for CV🪶, 🪶CV🪶 & CC */}
+        <HeaderRoleQuickSwitch variant="standalone-bar" userRole={state.role} />
+
         {/* Screen Body */}
         <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-black">{renderActiveScreen()}</div>
 
@@ -237,12 +295,12 @@ function IosAppInner() {
             activeTab={state.activeTab}
             onTabChange={handleTabChange}
             onCenterPlusClick={() => {
-              state.setRole('CC');
-              state.setCurrentStep(1);
+              state.setActiveTab('booking');
+              state.setCurrentStep(3);
             }}
             badgeCounts={{
-              booking: 0,
-              task: 0,
+              booking: state.counts.incoming,
+              task: state.counts.servicing || 1,
               staff: 0,
               dispense: 0,
             }}
@@ -253,12 +311,12 @@ function IosAppInner() {
   );
 }
 
-export default function IosAppClonePage() {
+export default function IosAppPage() {
   return (
     <Suspense
       fallback={
         <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold">
-          Loading Wings App...
+          Đang tải ứng dụng Tư vấn & Checkout (CV🪶)...
         </div>
       }
     >

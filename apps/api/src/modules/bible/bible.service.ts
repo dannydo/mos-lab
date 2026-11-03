@@ -141,7 +141,7 @@ export const EXPANDED_BIBLE_QUIZ_POOL: readonly MosBibleQuizQuestion[] = [
       },
       {
         key: 'C',
-        text: 'Chuyên Viên (CV), Chuyên Viên Tự Chủ (CV+), Nghệ Nhân Mi hoặc Thiên Thần.',
+        text: 'Chuyên Viên (CV), Chuyên Viên Tự Chủ (CV🪶), Nghệ Nhân Mi hoặc Thiên Thần.',
       },
       {
         key: 'D',

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BookingItem, INITIAL_BOOKINGS, SALON_INFO, STAFF_QUEUE } from './mockData';
+import { BookingItem, INITIAL_BOOKINGS, COMBO_PACKAGES_CVL, SERUM_TIERS_CVL } from './mockData';
 
-export type IosUserRole = 'CC' | 'CV' | 'STORE' | 'INVENTORY';
+export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
+export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
 
 export interface SegmentCounts {
   incoming: number;
@@ -12,17 +13,58 @@ export interface SegmentCounts {
   cancel: number;
 }
 
-export function useIosAppState(initialStep: number = 1, enabled: boolean = true) {
+export interface ActiveActorProfile {
+  staffId: number;
+  name: string;
+  tier: 'CVL' | 'CVLL' | 'CV' | 'CC' | 'ADMIN';
+  badgeLabel: string;
+}
+
+export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): ActiveActorProfile {
+  if (role === 'CVLL') {
+    return {
+      staffId: Number(loggedInUser?.legacyStaffId) || 25337,
+      name: loggedInUser?.role === 'cvll' && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️',
+      tier: 'CVLL',
+      badgeLabel: '🪶CV🪶 · Chuyên Viên Tự Chủ Cấp Cao',
+    };
+  }
+  if (role === 'CVL') {
+    return {
+      staffId: Number(loggedInUser?.legacyStaffId) || 46272,
+      name: loggedInUser?.role === 'cvl' && loggedInUser?.displayName ? loggedInUser.displayName : 'Thảo Ly',
+      tier: 'CVL',
+      badgeLabel: 'CV🪶 · Chuyên Viên Tự Chủ',
+    };
+  }
+  if (role === 'CV') {
+    return {
+      staffId: Number(loggedInUser?.legacyStaffId) || 49076,
+      name: 'Phương Nhi',
+      tier: 'CV',
+      badgeLabel: 'CV · Chuyên Viên Kỹ Thuật',
+    };
+  }
+  return {
+    staffId: 37790,
+    name: 'Diễm Hương',
+    tier: 'CC',
+    badgeLabel: 'CC · Tư Vấn Viên',
+  };
+}
+
+export function useIosAppState(initialStep: number = 1, enabled: boolean = true, initialRole: IosUserRole = 'CVL') {
   const [bookings, setBookings] = useState<BookingItem[]>(INITIAL_BOOKINGS);
   const [activeBookingId, setActiveBookingId] = useState<number>(336695);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
-  const [role, setRole] = useState<IosUserRole>('CC');
+  const [role, setRoleState] = useState<IosUserRole>(initialRole);
+  const [scopeMode, setScopeMode] = useState<BookingScopeMode>(initialRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
   const [deviceMode, setDeviceMode] = useState<'iphone' | 'ipad' | 'fullscreen'>('iphone');
   const [activeTab, setActiveTab] = useState<string>('booking');
   const [bookingSegment, setBookingSegment] = useState<'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL'>('INCOMING');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [loggedInUser, setLoggedInUser] = useState<any>(null);
 
-  // Real Database state
   const [counts, setCounts] = useState<SegmentCounts>({
     incoming: 4,
     servicing: 0,
@@ -33,21 +75,79 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [isLiveDb, setIsLiveDb] = useState<boolean>(false);
 
-  const activeBooking = bookings.find((b) => b.id === activeBookingId) || bookings[0] || INITIAL_BOOKINGS[2];
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('mos_user');
+      if (raw) {
+        setLoggedInUser(JSON.parse(raw));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
-  // Refresh DB function connecting to /api/ios/bookings
+  const actor = resolveActorProfile(role, loggedInUser);
+
+  const setRole = useCallback((nextRole: IosUserRole) => {
+    setRoleState(nextRole);
+    if (nextRole === 'CVL') {
+      setScopeMode('MY_CUSTOMERS');
+    } else if (nextRole === 'CVLL' || nextRole === 'CC' || nextRole === 'STORE') {
+      setScopeMode('STORE_ALL');
+    }
+  }, []);
+
+  const activeBooking = bookings.find((b) => b.id === activeBookingId) || bookings[0] || INITIAL_BOOKINGS[0];
+
+  const postAction = useCallback(
+    async (action: string, payload: Record<string, any> = {}) => {
+      try {
+        const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
+        await fetch('/api/ios/bookings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            bookingId: activeBookingId,
+            action,
+            actorStaffId: actor.staffId,
+            actorStaffName: actor.name,
+            actorStaffTier: actor.tier,
+            ...payload,
+          }),
+        });
+      } catch (err) {
+        console.warn('[useIosAppState] Failed to persist action:', action, err);
+      }
+    },
+    [activeBookingId, actor.staffId, actor.name, actor.tier]
+  );
+
   const refreshDb = useCallback(
-    async (options?: { segment?: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL'; storeId?: number }) => {
+    async (options?: {
+      segment?: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
+      storeId?: number;
+      scope?: BookingScopeMode;
+      staffId?: number;
+    }) => {
       const seg = options?.segment || bookingSegment;
-      const storeId = options?.storeId ?? 6; // Đề Thám default
+      const storeId = options?.storeId ?? 6;
+      const effScope = options?.scope || scopeMode;
+      const effStaffId = options?.staffId ?? actor.staffId;
 
       setIsRefreshing(true);
       try {
         const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
-        const res = await fetch(`/api/ios/bookings?storeId=${storeId}&segment=${seg}&date=2026-10-04&limit=30`, {
-          cache: 'no-store',
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
+        const res = await fetch(
+          `/api/ios/bookings?storeId=${storeId}&segment=${seg}&scope=${effScope}&staffId=${effStaffId}&date=2026-11-03&limit=40`,
+          {
+            cache: 'no-store',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          }
+        );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -65,7 +165,6 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
             })
           );
 
-          // Keep activeBookingId if it exists in new data, otherwise select the first item
           const exists = data.bookings.some((b: BookingItem) => b.id === activeBookingId);
           if (!exists && data.bookings.length > 0) {
             setActiveBookingId(data.bookings[0].id);
@@ -77,43 +176,111 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
         setIsRefreshing(false);
       }
     },
-    [bookingSegment, activeBookingId]
+    [bookingSegment, scopeMode, actor.staffId, activeBookingId]
   );
 
-  // Auto fetch live data on mount and segment change
   useEffect(() => {
     if (!enabled) return;
-    console.log('[useIosAppState] Auto-fetching live bookings for segment:', bookingSegment);
     refreshDb();
-  }, [bookingSegment, enabled, refreshDb]);
+  }, [bookingSegment, scopeMode, role, enabled, refreshDb]);
 
-  // Helper to update active booking
   const updateActiveBooking = (updater: (prev: BookingItem) => BookingItem) => {
     setBookings((prev) => prev.map((b) => (b.id === activeBookingId ? updater(b) : b)));
   };
 
-  // Step 2: Check in action
+  // Step 2: Check-in action (Ai bấm Check-in nhận 10% Tip Check-in)
   const handleCheckIn = () => {
     updateActiveBooking((prev) => ({
       ...prev,
       status: 'CHECKED_IN',
+      checkInStaffId: actor.staffId,
+      checkInStaffName: actor.name,
+      checkInStaffTier: actor.tier,
     }));
-    setCurrentStep(3); // Go to consultation
+    void postAction('CHECK_IN');
+    setCurrentStep(3); // Go to Consultation Matrix + Combo Selection
   };
 
-  // Step 3: Save Consultation
-  const handleSaveConsultation = (attributes: {
-    style: string;
-    curl: string;
-    length: string;
-    thickness: string;
-    notes?: string;
-  }) => {
-    updateActiveBooking((prev) => ({
-      ...prev,
+  // Step 3: Save Consultation & Optional Combo Upsell
+  const handleSaveConsultation = (
+    attributes: {
+      style: string;
+      curl: string;
+      length: string;
+      thickness: string;
+      material?: string;
+      color?: string;
+      volume?: string;
+      count?: string;
+      eyeShape?: string;
+      naturalLashLength?: string;
+      naturalLashThickness?: string;
+      naturalLashDensity?: string;
+      isNewClientDiagnosticDone?: boolean;
+      lashHealth?: string;
+      lashTrail?: string;
+      medicalProblem?: string;
+      notes?: string;
+    },
+    selectedCombo?: {
+      id: string;
+      name: string;
+      price: number;
+      bonus: number;
+      sessions: number;
+    } | null
+  ) => {
+    const isSelfAssignedCv =
+      role === 'CVL' ||
+      (role === 'CVLL' && (!activeBooking.assignedStaffId || activeBooking.assignedStaffId === actor.staffId));
+
+    updateActiveBooking((prev) => {
+      const nextCombo = selectedCombo !== undefined ? selectedCombo : prev.selectedCombo || null;
+      const comboPrice = nextCombo ? nextCombo.price : 0;
+      const productTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
+      const subtotal = prev.servicePrice + comboPrice + productTotal;
+      const tipAmount = prev.billing?.tipAmount ?? 50000;
+
+      return {
+        ...prev,
+        attributes,
+        selectedCombo: nextCombo,
+        checkInStaffId: prev.checkInStaffId || actor.staffId,
+        checkInStaffName: prev.checkInStaffName || actor.name,
+        checkInStaffTier: prev.checkInStaffTier || actor.tier,
+        assignedStaffId: prev.assignedStaffId || actor.staffId,
+        assignedStaffName: prev.assignedStaffName || actor.name,
+        status: isSelfAssignedCv ? 'SERVICING' : prev.status,
+        billing: {
+          subtotal,
+          serviceTotal: prev.servicePrice,
+          comboTotal: comboPrice,
+          productTotal,
+          paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
+          tipAmount,
+          tipCvShare: Math.round(tipAmount * 0.7),
+          tipCheckInShare: Math.round(tipAmount * 0.1),
+          tipCheckOutShare: Math.round(tipAmount * 0.1),
+          tipCcShare: Math.round(tipAmount * 0.2),
+          grandTotal: subtotal + tipAmount,
+        },
+      };
+    });
+
+    void postAction('SAVE_CONSULTATION', {
       attributes,
-    }));
-    setCurrentStep(4); // Go to staff queue
+      selectedCombo: selectedCombo !== undefined ? selectedCombo : activeBooking.selectedCombo || null,
+      nextStatus: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
+    });
+
+    if (isSelfAssignedCv) {
+      // CV🪶 tự tư vấn khách của mình -> vào thẳng màn hình Nhận ca / Chụp ảnh tiến trình mi, không cần qua CC chia ca!
+      setBookingSegment('SERVICING');
+      setCurrentStep(6);
+    } else {
+      // 🪶CV🪶 tư vấn chéo hộ CV khác hoặc CC -> sang bước xác nhận CV làm mi
+      setCurrentStep(4);
+    }
   };
 
   // Step 4: Assign Staff & Bed
@@ -125,33 +292,39 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
       assignedBed: bed,
       status: 'SERVICING',
     }));
+    void postAction('ASSIGN_STAFF', {
+      assignedStaffId: staffId,
+      assignedStaffName: staffName,
+      assignedBed: bed,
+    });
     setBookingSegment('SERVICING');
-    setCurrentStep(5); // Show servicing tab
+    setCurrentStep(5);
   };
 
   // Step 5 -> Step 6: Handover to CV
   const handleTransferToCv = () => {
-    setRole('CV');
-    setCurrentStep(6); // CV Dashboard
+    setCurrentStep(6);
   };
 
   // Step 6 -> Step 7: CV starts task
   const handleCvStartTask = () => {
-    setCurrentStep(7); // Before Photo
+    setCurrentStep(7);
   };
 
   // Step 7 -> Step 8: Save Before Photo & Start Timer
   const handleSaveBeforePhoto = (photoUrl: string) => {
+    const progressPatch = {
+      ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
+      beforePhotoUrl: photoUrl,
+      timerRunning: true,
+      startedAt: new Date().toISOString(),
+    };
     updateActiveBooking((prev) => ({
       ...prev,
-      progress: {
-        ...(prev.progress || { elapsedSeconds: 0, timerRunning: true }),
-        beforePhotoUrl: photoUrl,
-        timerRunning: true,
-        startedAt: new Date().toISOString(),
-      },
+      progress: progressPatch,
     }));
-    setCurrentStep(8); // Service Timer
+    void postAction('UPDATE_PROGRESS', { orderState: 'Service Start', progress: progressPatch });
+    setCurrentStep(8);
   };
 
   // Step 8: Timer controls
@@ -166,30 +339,34 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
   };
 
   const handleFinishTimer = () => {
+    const progressPatch = {
+      ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
+      timerRunning: false,
+      completedAt: new Date().toISOString(),
+    };
     updateActiveBooking((prev) => ({
       ...prev,
-      progress: {
-        ...(prev.progress || { elapsedSeconds: 4468, timerRunning: false }),
-        timerRunning: false,
-        completedAt: new Date().toISOString(),
-      },
+      progress: progressPatch,
     }));
-    setCurrentStep(9); // After Photo
+    void postAction('UPDATE_PROGRESS', { orderState: 'Service End', progress: progressPatch });
+    setCurrentStep(9);
   };
 
-  // Step 9 -> Step 10: Save After Photo & Go to Survey
+  // Step 9 -> Step 10: Save After Photo & Go to Survey (Mở khóa cho CV🪶 tự bấm Done mà không cần CC!)
   const handleSaveAfterPhoto = (photoUrl: string) => {
+    const progressPatch = {
+      ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
+      afterPhotoUrl: photoUrl,
+    };
     updateActiveBooking((prev) => ({
       ...prev,
-      progress: {
-        ...(prev.progress || { elapsedSeconds: 4468, timerRunning: false }),
-        afterPhotoUrl: photoUrl,
-      },
+      progress: progressPatch,
     }));
-    setCurrentStep(10); // Survey
+    void postAction('UPDATE_PROGRESS', { orderState: 'Service Completed', progress: progressPatch });
+    setCurrentStep(10);
   };
 
-  // Step 10: Complete Survey & Handover to CC checkout
+  // Step 10: Complete Survey -> Giữ nguyên quyền điều khiển của CV🪶 / 🪶CV🪶 để tự bán Dưỡng mi / Combo & Tự Checkout!
   const handleCompleteSurvey = (survey: {
     rating: number;
     emotion: 'happy' | 'satisfied' | 'neutral' | 'unhappy';
@@ -199,55 +376,80 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
       ...prev,
       survey,
     }));
-    setRole('CC');
-    setCurrentStep(11); // Product Upsell
+    void postAction('COMPLETE_SURVEY', { survey });
+    setCurrentStep(11); // Go directly to Product Upsell & Combo Checkout as CV🪶 / 🪶CV🪶!
   };
 
-  // Step 11: Add Retail Product
-  const handleAddProduct = (product: { productId: number; productName: string; price: number; quantity: number }) => {
+  // Step 11 -> Step 12: Save Product Upsell (Yeppeum) & Optional Combo + Lock in check_out_staff_id = actor!
+  const handleGoToBilling = (upsellPayload?: {
+    cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
+    selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null;
+  }) => {
     updateActiveBooking((prev) => {
-      const currentProducts = prev.cartProducts || [];
-      const updatedProducts = [...currentProducts, product];
-      const productTotal = updatedProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
-      const subtotal = prev.servicePrice + productTotal;
+      const nextProducts =
+        upsellPayload?.cartProducts !== undefined
+          ? upsellPayload.cartProducts
+          : prev.cartProducts && prev.cartProducts.length > 0
+            ? prev.cartProducts
+            : [
+                {
+                  productId: 36,
+                  productName: 'Cây dưỡng mi Yeppeum 6ml (Giá gốc)',
+                  price: SERUM_TIERS_CVL[0].price,
+                  quantity: 1,
+                  cvBonus: SERUM_TIERS_CVL[0].cvBonus,
+                },
+              ];
+      const nextCombo =
+        upsellPayload?.selectedCombo !== undefined ? upsellPayload.selectedCombo : prev.selectedCombo || null;
+      const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
+      const comboTotal = nextCombo ? nextCombo.price : 0;
+      const subtotal = prev.servicePrice + comboTotal + productTotal;
+      const tipAmount = prev.billing?.tipAmount ?? 50000;
+
+      const comboBonusAmount = nextCombo ? nextCombo.bonus : 0;
+      const serumBonusAmount = nextProducts.reduce((sum, p) => sum + (p.cvBonus || 0) * p.quantity, 0);
+
+      void postAction('SAVE_UPSELL_AND_CHECKOUT', {
+        cartProducts: nextProducts,
+        selectedCombo: nextCombo,
+      });
 
       return {
         ...prev,
-        cartProducts: updatedProducts,
+        checkOutStaffId: actor.staffId,
+        checkOutStaffName: actor.name,
+        checkOutStaffTier: actor.tier,
+        cartProducts: nextProducts,
+        selectedCombo: nextCombo,
+        cvRewardBreakdown: {
+          techTipPercent: 70,
+          checkInTipPercent: 10,
+          checkOutTipPercent: 10,
+          cvTotalTipPercent:
+            (prev.assignedStaffId === actor.staffId ? 70 : 0) +
+            ((prev.checkInStaffId || actor.staffId) === actor.staffId ? 10 : 0) +
+            10,
+          comboBonusAmount,
+          serumBonusAmount,
+          totalOrderBonusForCheckoutStaff: comboBonusAmount + serumBonusAmount,
+        },
         billing: {
           subtotal,
           serviceTotal: prev.servicePrice,
+          comboTotal,
           productTotal,
           paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
-          tipAmount: prev.billing?.tipAmount || 0,
-          tipCvShare: prev.billing?.tipCvShare || 0,
-          tipCcShare: prev.billing?.tipCcShare || 0,
-          grandTotal: subtotal + (prev.billing?.tipAmount || 0),
+          tipAmount,
+          tipCvShare: Math.round(tipAmount * 0.7),
+          tipCheckInShare: Math.round(tipAmount * 0.1),
+          tipCheckOutShare: Math.round(tipAmount * 0.1),
+          tipCcShare: Math.round(tipAmount * 0.2),
+          grandTotal: subtotal + tipAmount,
         },
       };
     });
-  };
-
-  // Step 11 -> Step 12: Go to Billing
-  const handleGoToBilling = () => {
-    updateActiveBooking((prev) => {
-      const productTotal = (prev.cartProducts || []).reduce((sum, p) => sum + p.price * p.quantity, 0);
-      const subtotal = prev.servicePrice + productTotal;
-      return {
-        ...prev,
-        billing: {
-          subtotal,
-          serviceTotal: prev.servicePrice,
-          productTotal,
-          paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
-          tipAmount: prev.billing?.tipAmount || 0,
-          tipCvShare: prev.billing?.tipCvShare || 0,
-          tipCcShare: prev.billing?.tipCcShare || 0,
-          grandTotal: subtotal + (prev.billing?.tipAmount || 0),
-        },
-      };
-    });
-    setCurrentStep(12); // Billing
+    setCurrentStep(12);
   };
 
   // Step 12: Choose Payment Method
@@ -258,41 +460,56 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
         ...(prev.billing || {
           subtotal: prev.servicePrice,
           serviceTotal: prev.servicePrice,
+          comboTotal: 0,
           productTotal: 0,
-          tipAmount: 0,
-          tipCvShare: 0,
-          tipCcShare: 0,
-          grandTotal: prev.servicePrice,
+          tipAmount: 50000,
+          tipCvShare: 35000,
+          tipCheckInShare: 5000,
+          tipCheckOutShare: 5000,
+          tipCcShare: 10000,
+          grandTotal: prev.servicePrice + 50000,
         }),
         paymentMethod: method,
       },
     }));
-    setCurrentStep(13); // Tip
+    setCurrentStep(13);
   };
 
-  // Step 13: Record Tip (Kinh Thánh mOS Điều răn TIP-001)
+  // Step 13: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
   const handleRecordTip = (tipAmount: number) => {
     updateActiveBooking((prev) => {
       const cvShare = Math.round(tipAmount * 0.7);
-      const ccShare = Math.round(tipAmount * 0.2);
+      const checkInShare = Math.round(tipAmount * 0.1);
+      const checkOutShare = Math.round(tipAmount * 0.1);
+      const ccShare = checkInShare + checkOutShare;
       const currentBilling = prev.billing || {
         subtotal: prev.servicePrice,
         serviceTotal: prev.servicePrice,
+        comboTotal: 0,
         productTotal: 0,
-        paymentMethod: 'VIETQR',
+        paymentMethod: 'VIETQR' as const,
       };
+      const nextBilling = {
+        ...currentBilling,
+        tipAmount,
+        tipCvShare: cvShare,
+        tipCheckInShare: checkInShare,
+        tipCheckOutShare: checkOutShare,
+        tipCcShare: ccShare,
+        grandTotal: currentBilling.subtotal + tipAmount,
+      };
+
+      void postAction('COMPLETE_ORDER', { billing: nextBilling });
+
       return {
         ...prev,
-        billing: {
-          ...currentBilling,
-          tipAmount,
-          tipCvShare: cvShare,
-          tipCcShare: ccShare,
-          grandTotal: currentBilling.subtotal + tipAmount,
-        },
+        checkOutStaffId: prev.checkOutStaffId || actor.staffId,
+        checkOutStaffName: prev.checkOutStaffName || actor.name,
+        checkOutStaffTier: prev.checkOutStaffTier || actor.tier,
+        billing: nextBilling,
       };
     });
-    setCurrentStep(14); // Thermal Receipt
+    setCurrentStep(14);
   };
 
   // Step 14: Finish Order
@@ -302,17 +519,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
       status: 'DONE',
     }));
     setBookingSegment('DONE');
-    setCurrentStep(1); // Return to booking list with DONE status
-  };
-
-  // Reset to initial demo state
-  const handleResetDemo = () => {
-    setBookings(INITIAL_BOOKINGS);
-    setActiveBookingId(103);
     setCurrentStep(1);
-    setRole('CC');
-    setBookingSegment('INCOMING');
-    setActiveTab('booking');
   };
 
   return {
@@ -324,6 +531,9 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
     setCurrentStep,
     role,
     setRole,
+    actor,
+    scopeMode,
+    setScopeMode,
     deviceMode,
     setDeviceMode,
     activeTab,
@@ -332,17 +542,11 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
     setBookingSegment,
     isSettingsOpen,
     setIsSettingsOpen,
-    staffQueue: STAFF_QUEUE,
-    salonInfo: SALON_INFO,
-
-    // Real DB controls
     counts,
     isRefreshing,
     lastRefreshedAt,
     isLiveDb,
     refreshDb,
-
-    // Step Actions
     handleCheckIn,
     handleSaveConsultation,
     handleAssignStaff,
@@ -353,11 +557,9 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true)
     handleFinishTimer,
     handleSaveAfterPhoto,
     handleCompleteSurvey,
-    handleAddProduct,
     handleGoToBilling,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,
-    handleResetDemo,
   };
 }

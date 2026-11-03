@@ -21,7 +21,12 @@ import {
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import { WingRoleLabel, LashIcon } from './IslandGameIcon';
-import type { CareerStaffSummary, CareerRole, CareerProgressionConfig } from '@mos-lab/shared';
+import {
+  normalizeCvFeatherRole,
+  type CareerStaffSummary,
+  type CareerRole,
+  type CareerProgressionConfig,
+} from '@mos-lab/shared';
 
 export interface MobileStaffCareerSheetProps {
   staffList: CareerStaffSummary[];
@@ -37,8 +42,8 @@ const ROLE_TABS = [
   { key: 'ALL', label: 'Tất cả' },
   { key: 'KTV', label: 'KTV' },
   { key: 'CV', label: 'CV' },
-  { key: 'CV_PLUS', label: '🪶 CV' },
-  { key: 'CV_PLUS_PLUS', label: '🪶 CV 🪶' },
+  { key: 'CV_PLUS', label: 'CV🪶' },
+  { key: 'CV_PLUS_PLUS', label: '🪶CV🪶' },
   { key: 'CC', label: 'CC' },
   { key: 'FM', label: 'FM' },
 ];
@@ -225,7 +230,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
         return (
           <StatusTag
             status="purple"
-            label={<WingRoleLabel text="🪶 CV" iconSize={11} />}
+            label={<WingRoleLabel text="CV🪶" iconSize={11} />}
             className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40"
           />
         );
@@ -233,7 +238,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
         return (
           <StatusTag
             status="gold"
-            label={<WingRoleLabel text="🪶 CV 🪶" iconSize={11} />}
+            label={<WingRoleLabel text="🪶CV🪶" iconSize={11} />}
             className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
           />
         );
@@ -289,13 +294,20 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     }
 
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter((s) => {
-        const nameMatch = (s.displayName || '').toLowerCase().includes(q);
-        const userMatch = (s.username || '').toLowerCase().includes(q);
-        const branchMatch = (s.branchName || '').toLowerCase().includes(q);
-        return nameMatch || userMatch || branchMatch;
-      });
+      const featherRole = normalizeCvFeatherRole(searchQuery);
+      if (featherRole === 'CVL') {
+        result = result.filter((s) => s.careerRole === 'CV_PLUS');
+      } else if (featherRole === 'CVLL') {
+        result = result.filter((s) => s.careerRole === 'CV_PLUS_PLUS');
+      } else {
+        const q = searchQuery.toLowerCase().trim();
+        result = result.filter((s) => {
+          const nameMatch = (s.displayName || '').toLowerCase().includes(q);
+          const userMatch = (s.username || '').toLowerCase().includes(q);
+          const branchMatch = (s.branchName || '').toLowerCase().includes(q);
+          return nameMatch || userMatch || branchMatch;
+        });
+      }
     }
 
     return [...result].sort((a, b) => {
@@ -374,8 +386,8 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                     <span>CV</span>
                   </span>
                 )}
-                {tab.key === 'CV_PLUS' && <WingRoleLabel text="🪶 CV" iconSize={11} />}
-                {tab.key === 'CV_PLUS_PLUS' && <WingRoleLabel text="🪶 CV 🪶" iconSize={11} />}
+                {tab.key === 'CV_PLUS' && <WingRoleLabel text="CV🪶" iconSize={11} />}
+                {tab.key === 'CV_PLUS_PLUS' && <WingRoleLabel text="🪶CV🪶" iconSize={11} />}
                 {tab.key === 'ALL' && <span>Tất cả</span>}
                 <span
                   className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${

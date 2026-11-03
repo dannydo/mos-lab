@@ -66,15 +66,15 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng giữ chân khách quen (Retention Bonus)',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp 🪶 CV!`,
+      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp CV🪶!`,
     },
     {
       id: 'cv_plus',
-      name: '🪶 CV',
+      name: 'CV🪶',
       badge: 'Đang Triển Khai',
       icon: '👁️',
       sub: 'Tự Vấn + 90% Tip',
-      title: 'Chuyên Viên · 🪶 CV',
+      title: 'Chuyên Viên · CV🪶',
       desc: 'Sang trọng kiểu quý cô, tự tin tư vấn, đĩnh đạc và cuốn hút. Độc lập tác chiến tại giường: tự hiểu dáng mắt, tự tư vấn dáng mi & combo dưỡng mi cho khách của chính mình.',
       focus:
         'Trực tiếp tư vấn trọn gói cho khách mình, chốt combo ≥ 20% trên khách Not Combo Live, chăm sóc khách ruột',
@@ -92,15 +92,15 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Hoa hồng Combo bậc thang tiền tươi: 50K - 150K - 500K/gói + Thưởng Dưỡng mi 100K/cây',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Duy trì 🪶 CV: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV!`,
+      gateText: `Duy trì CV🪶: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV!`,
     },
     {
       id: 'cv_plus_plus',
-      name: '🪶 CV 🪶',
+      name: '🪶CV🪶',
       badge: 'Đang Nghiên Cứu',
       icon: '👁️',
       sub: 'Sảnh + Hộ 20%',
-      title: 'Chuyên Viên Cấp Cao · 🪶 CV 🪶',
+      title: 'Chuyên Viên Cấp Cao · 🪶CV🪶',
       desc: 'Bản lĩnh vững vàng, phong thái đỉnh đạc. Vừa tự làm khách ruột, vừa đứng sảnh đón tiếp & tư vấn giùm cho khách của Chuyên Viên CV khi FM vắng.',
       focus: 'Tư vấn chốt combo toàn sàn khi FM vắng, làm chủ ca trực ngày lễ, nâng đỡ đàn em',
       skills: [
@@ -123,7 +123,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay',
         'Quy hoạch hạt giống số 1 để bổ nhiệm lên Floor Manager (FM) chính thức!',
       ],
-      gateText: `Duy trì 🪶 CV 🪶 ≥ ${cvPlusPlusToFm?.minMonthsInRole || 3} tháng + Đạt ≥ ${cvPlusPlusToFm?.minMonthlyGoogleReviews || 30} Google Review 5★/tháng + Kiểm tra kho & CSVC hàng tuần + Tỷ lệ combo shop ≥ ${((cvPlusPlusToFm?.minShopComboRate || 0.25) * 100).toFixed(0)}% ➔ Thăng cấp Floor Manager (🪽 FM 🪽)!`,
+      gateText: `Duy trì 🪶CV🪶 ≥ ${cvPlusPlusToFm?.minMonthsInRole || 3} tháng + Đạt ≥ ${cvPlusPlusToFm?.minMonthlyGoogleReviews || 30} Google Review 5★/tháng + Kiểm tra kho & CSVC hàng tuần + Tỷ lệ combo shop ≥ ${((cvPlusPlusToFm?.minShopComboRate || 0.25) * 100).toFixed(0)}% ➔ Thăng cấp Floor Manager (🪽 FM 🪽)!`,
     },
     {
       id: 'fm',
@@ -138,7 +138,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       skills: [
         {
           name: 'Tư Vấn Trưởng Sàn',
-          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các Chuyên Viên CV (chưa lên 🪶 CV)',
+          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các Chuyên Viên CV (chưa lên CV🪶)',
         },
         { name: 'Mắt Thần Kho Bãi', desc: 'Kiểm kê kho & CSVC hàng tuần, chống thất thoát ≤ 0.5%' },
         { name: 'Nâng Tầm Đồng Đội', desc: 'Chăm sóc và kèm cặp giúp nhân sự có điểm HI thấp tiến bộ hơn' },
@@ -150,7 +150,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng Cán Mốc Hòa Vốn (2.0M) + Thưởng 2.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
         'Thưởng Đánh Giá Sàn (1.0M - 1.5M): Đạt chuẩn CSVC ≥ 95 điểm & shop đạt ≥ 30 Google Review 5★/tháng',
         'Thưởng Tiết Kiệm: Nhận 10% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
-        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được 🪶 CV 🪶 quán xuyến sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
+        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được 🪶CV🪶 quán xuyến sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
         `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
       ],
       gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Giúp đỡ người có HI thấp tiến bộ + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
@@ -175,7 +175,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       perks: [
         'Gói đãi ngộ Executive cấp Trưởng Ban (Lương cứng 11M)',
         'Thưởng Cán Mốc Hòa Vốn (3.0M) + Thưởng 3.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
-        'Thưởng Phát Triển Thiên Thần (1.5M - 4.5M): Khoán theo số lượng Chuyên Viên đạt chuẩn 🪶 CV & 🪶 CV 🪶 duy trì tại shop (kèm cơ chế tụt cấp)',
+        'Thưởng Phát Triển Thiên Thần (1.5M - 4.5M): Khoán theo số lượng Chuyên Viên đạt chuẩn CV🪶 & 🪶CV🪶 duy trì tại shop (kèm cơ chế tụt cấp)',
         `Thưởng trực tiếp theo số lượng khách mới đến shop (Đạt ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách mới/tháng hoặc 50K/khách)`,
         'Thưởng Tiết Kiệm: Đồng hưởng 10% chi phí vận hành tiết kiệm được cùng FM',
         'Nghỉ lễ trọn vẹn hưởng nguyên gói 11M (không tính thưởng giờ x3-x4); chịu trách nhiệm tối hậu về kết quả và vận hành chi nhánh',
@@ -215,9 +215,9 @@ export function formatCareerRoleName(role?: string | null, compact = false): str
     case 'CV':
       return 'CV';
     case 'CV_PLUS':
-      return '🪶 CV';
+      return 'CV🪶';
     case 'CV_PLUS_PLUS':
-      return '🪶 CV 🪶';
+      return '🪶CV🪶';
     case 'MASTER_TECH':
       return 'Master Tech';
     case 'CC':

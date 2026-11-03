@@ -64,6 +64,12 @@ export function Screen06CvDashboardReceive({ booking, onStartTask }: Screen06CvD
 
           {/* Consultation Notes Box */}
           <div className="bg-[#2C2C2E] rounded-xl p-3 space-y-1.5 text-xs">
+            {booking.attributes?.naturalLashLength && (
+              <div className="text-blue-300 leading-relaxed font-semibold">
+                <strong>Mi thật đã khám:</strong> Dài {booking.attributes.naturalLashLength} · Sợi{' '}
+                {booking.attributes.naturalLashThickness || '0.07mm'} ({booking.attributes.eyeShape || 'Mí lót'})
+              </div>
+            )}
             <div className="text-neutral-200 leading-relaxed">
               <strong className="text-white">Thông số tư vấn:</strong> Dáng {booking.attributes?.style || 'Flawless'} ·
               Cong {booking.attributes?.curl || 'C'} · Dài {booking.attributes?.length || '10-12mm'} · Dày{' '}

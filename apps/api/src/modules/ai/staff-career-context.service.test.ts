@@ -123,9 +123,22 @@ const mockPrisma = {
 };
 
 test('StaffCareerContextService - mapRoleToRespectfulTitle respects Wings language invariant', () => {
-  assert.equal(mapRoleToRespectfulTitle('cv_plus'), 'Chuyên Viên Tự Chủ (🪶CV)');
-  assert.equal(mapRoleToRespectfulTitle('CV_PLUS'), 'Chuyên Viên Tự Chủ (🪶CV)');
-  assert.equal(mapRoleToRespectfulTitle('CV_PLUS_PLUS'), 'Chuyên Viên Tự Chủ Nâng Cao (🪶CV+ / CV++)');
+  assert.equal(mapRoleToRespectfulTitle('cv_plus'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV_PLUS'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CVL'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV Lông'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV 1 lông'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('🪶CV'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV🪶'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV L'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV 1L'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV 𝓁'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV 1𝓁'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV Lờ'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV 1 Lờ'), 'Chuyên Viên Tự Chủ (CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CV_PLUS_PLUS'), 'Chuyên Viên Tự Chủ Cấp Cao (🪶CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('CVLL'), 'Chuyên Viên Tự Chủ Cấp Cao (🪶CV🪶)');
+  assert.equal(mapRoleToRespectfulTitle('🪶CV🪶'), 'Chuyên Viên Tự Chủ Cấp Cao (🪶CV🪶)');
   assert.equal(mapRoleToRespectfulTitle('cv'), 'Chuyên Viên (CV)');
   assert.equal(mapRoleToRespectfulTitle('lt'), 'Chuyên Viên Kỹ Thuật');
   assert.equal(mapRoleToRespectfulTitle('artisan'), 'Nghệ Nhân Mi');
@@ -139,15 +152,29 @@ test('StaffCareerContextService - mapRoleToRespectfulTitle respects Wings langua
   assert.equal(formatDateVN(null), null);
 
   // Forbidden words check
-  const titles = ['cv_plus', 'cv', 'lt', 'artisan', 'CV_PLUS_PLUS'].map(mapRoleToRespectfulTitle);
+  const titles = ['cv_plus', 'CVL', 'CVLL', 'cv', 'lt', 'artisan', 'CV_PLUS_PLUS'].map(mapRoleToRespectfulTitle);
   for (const t of titles) {
     assert.ok(!t.toLowerCase().includes('thợ'), `Title "${t}" must not contain "thợ"`);
+    assert.ok(!t.includes('CV+'), `Title "${t}" must not contain retired "CV+"`);
   }
 });
 
 test('StaffCareerContextService - isCareerQuery accurately identifies career intents', () => {
-  assert.equal(StaffCareerContextService.isCareerQuery('Hôm nay Khanh Cao và Thảo Ly đang ở cấp bậc nào trong career path?'), true);
+  assert.equal(
+    StaffCareerContextService.isCareerQuery('Hôm nay Khanh Cao và Thảo Ly đang ở cấp bậc nào trong career path?'),
+    true
+  );
+  assert.equal(StaffCareerContextService.isCareerQuery('Vì sao Khanh Cao được lên CV🪶?'), true);
   assert.equal(StaffCareerContextService.isCareerQuery('Vì sao Khanh Cao được lên 🪶CV?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV Lông là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV 1 lông là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV L là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV 1L là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV 𝓁 là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV 1𝓁 là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV Lờ là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CV 1 Lờ là gì?'), true);
+  assert.equal(StaffCareerContextService.isCareerQuery('Điều kiện lên CVL và CVLL?'), true);
   assert.equal(StaffCareerContextService.isCareerQuery('Lý do Thảo Ly được thăng cấp chuyên viên tự chủ?'), true);
   assert.equal(StaffCareerContextService.isCareerQuery('Lộ trình career path của chuyên viên tại Wings'), true);
   assert.equal(StaffCareerContextService.isCareerQuery('Lọc khách NYC 60 có chi tiêu trên 1 triệu'), false);
@@ -163,20 +190,21 @@ test('Test Case 1: Super Admin / Manager queries Career Path of Khanh Cao & Th�
   assert.ok(context.includes('<LIVE_STAFF_CONTEXT>'));
   assert.ok(context.includes('Khanh Cao'));
   assert.ok(context.includes('Thảo Ly'));
-  assert.ok(context.includes('Chuyên Viên Tự Chủ (🪶CV)'));
+  assert.ok(context.includes('Chuyên Viên Tự Chủ (CV🪶)'));
   assert.ok(context.includes('01/11/2026'));
   assert.ok(context.includes('Danny Do (Super Admin)'));
   assert.ok(context.includes('PROMOTED'));
-  assert.ok(context.includes('CV++'));
+  assert.ok(context.includes('🪶CV🪶'));
 
   // Ensure no forbidden terms
   assert.ok(!context.toLowerCase().includes('thợ'));
+  assert.ok(!context.includes('CV+'));
 });
 
 test('Test Case 2: Analyze promotion reasons with live performance metrics', async () => {
   StaffCareerContextService.clearCache();
 
-  const query = 'Vì sao Khanh Cao và Thảo Ly được lên 🪶CV?';
+  const query = 'Vì sao Khanh Cao và Thảo Ly được lên CV🪶?';
   const context = await StaffCareerContextService.getStaffCareerContext(mockPrisma as SafeAny, 1, 'super_admin', query);
 
   // Check Khanh Cao metrics
@@ -228,13 +256,15 @@ test('Test Case 4: RBAC & Data Governance - non-manager cannot inspect another C
     mockPrisma as SafeAny,
     77,
     'cv',
-    'Vì sao Khanh Cao được lên 🪶CV?'
+    'Vì sao Khanh Cao được lên CV🪶?'
   );
 
   // Must NOT leak Khanh Cao's metrics, must return privacy restriction
   assert.ok(!contextForOther.includes('397 lượt'));
   assert.ok(contextForOther.includes('Chính Sách Bảo Mật Hồ Sơ Nhân Sự mOS'));
-  assert.ok(contextForOther.includes('chỉ được phép truy cập hồ sơ năng lực và lộ trình Career Path của chính bản thân mình'));
+  assert.ok(
+    contextForOther.includes('chỉ được phép truy cập hồ sơ năng lực và lộ trình Career Path của chính bản thân mình')
+  );
 
   // When CV Staff 77 asks about self career path -> allowed
   const contextSelf = await StaffCareerContextService.getStaffCareerContext(
@@ -254,13 +284,14 @@ test('generateAssistantFallback correctly answers Khanh Cao & Thảo Ly career p
   assert.ok(res1.thinking && res1.thinking.includes('Career Path'));
   assert.ok(res1.content.includes('Khanh Cao'));
   assert.ok(res1.content.includes('Thảo Ly'));
-  assert.ok(res1.content.includes('Chuyên Viên Tự Chủ (🪶CV / CV+)'));
+  assert.ok(res1.content.includes('Chuyên Viên Tự Chủ (CV🪶)'));
   assert.ok(res1.content.includes('01/11/2026'));
   assert.ok(res1.content.includes('Danny Do (Super Admin)'));
   assert.ok(!res1.content.toLowerCase().includes('thợ'));
+  assert.ok(!res1.content.includes('CV+'));
 
   // Query 2: Why promoted inquiry
-  const res2 = generateAssistantFallback('Vì sao Khanh Cao và Thảo Ly được lên 🪶CV?');
+  const res2 = generateAssistantFallback('Vì sao Khanh Cao và Thảo Ly được lên CV🪶?');
   assert.ok(res2.thinking && res2.thinking.includes('Phân tích cơ sở thực chứng'));
   assert.ok(res2.content.includes('397 lượt phục vụ'));
   assert.ok(res2.content.includes('17.3%'));
@@ -271,4 +302,5 @@ test('generateAssistantFallback correctly answers Khanh Cao & Thảo Ly career p
   assert.ok(res2.content.includes('59.3%'));
   assert.ok(res2.content.includes('Danny Do (Super Admin)'));
   assert.ok(!res2.content.toLowerCase().includes('thợ'));
+  assert.ok(!res2.content.includes('CV+'));
 });

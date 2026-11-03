@@ -3717,6 +3717,13 @@ body {
   }
 }
 
+/* Suppress hover tooltips on touch devices & mobile viewports to prevent sticky tooltip bubbles upon tap */
+@media (hover: none), (pointer: coarse), (max-width: 768px) {
+  .ant-tooltip {
+    display: none !important;
+  }
+}
+
 /* iPad keeps dense staff/admin data, but its navigation and tables own any
    necessary horizontal movement instead of widening the application canvas. */
 @media (max-width: 1199px) {

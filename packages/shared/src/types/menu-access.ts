@@ -14,8 +14,8 @@ export const MENU_ACCESS_ROLE_GROUPS: readonly MenuAccessRoleGroupOption[] = [
   {
     id: 1,
     code: 'CV',
-    name: 'Chuyên Viên (CV / KTV / LT)',
-    roles: ['cv', 'lt', 'technician', 'ktv', 'cv_plus', 'cv_plus_plus', 'cv+', 'cv++'],
+    name: 'Chuyên Viên (CV / CV🪶 / KTV / LT)',
+    roles: ['cv', 'lt', 'technician', 'ktv', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus'],
     description: 'Đội ngũ Chuyên Viên Kỹ Thuật & Nghệ Nhân Mi (Mặc định chỉ xem Báo Cáo CV, Career Path & mOS Chat)',
   },
   {
@@ -94,7 +94,9 @@ export function isCvAllowedPath(pathname?: string | null, menuVisibility?: Recor
     cleanPath === '/dashboard/chat' ||
     cleanPath.startsWith('/dashboard/chat/') ||
     cleanPath === '/chat' ||
-    cleanPath.startsWith('/chat/')
+    cleanPath.startsWith('/chat/') ||
+    cleanPath === '/ios-app' ||
+    cleanPath.startsWith('/ios-app/')
   ) {
     return true;
   }

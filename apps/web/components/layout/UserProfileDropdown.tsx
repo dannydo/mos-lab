@@ -17,7 +17,7 @@ import {
   Moon,
   Phone,
 } from 'lucide-react';
-import { isAdminOrSuperAdminRole, isCvRole, type SafeAny } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole, type SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
@@ -76,7 +76,24 @@ function getRoleBadge(role?: string | null, token?: SafeAny) {
       border: 'rgba(16, 185, 129, 0.25)',
     };
   }
-  if (normalized === 'technician' || normalized === 'ktv' || normalized === 'cv') {
+  const featherRole = normalizeCvFeatherRole(String(role || ''));
+  if (featherRole === 'CVLL' || normalized === 'cvll' || normalized === 'cv_plus_plus') {
+    return {
+      label: 'Chuyên Viên Cấp Cao (🪶CV🪶)',
+      bg: 'rgba(245, 158, 11, 0.14)',
+      color: '#f59e0b',
+      border: 'rgba(245, 158, 11, 0.3)',
+    };
+  }
+  if (featherRole === 'CVL' || normalized === 'cvl' || normalized === 'cv_plus') {
+    return {
+      label: 'Chuyên Viên Tự Chủ (CV🪶)',
+      bg: 'rgba(245, 158, 11, 0.12)',
+      color: '#d97706',
+      border: 'rgba(245, 158, 11, 0.25)',
+    };
+  }
+  if (normalized === 'technician' || normalized === 'ktv' || normalized === 'cv' || normalized === 'lt') {
     return {
       label: 'Chuyên Viên (CV)',
       bg: 'rgba(20, 184, 166, 0.12)',

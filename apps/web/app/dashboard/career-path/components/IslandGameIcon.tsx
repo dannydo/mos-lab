@@ -1,5 +1,11 @@
 import React from 'react';
 import { HardHat, Castle, HeartHandshake, Gem, HelpCircle, LucideProps, Feather } from 'lucide-react';
+import {
+  CV_FEATHER_1_PATTERN,
+  CV_FEATHER_2_PATTERN,
+  containsCvFeather1Alias,
+  containsCvFeather2Alias,
+} from '@mos-lab/shared';
 
 /**
  * Biểu tượng Hàng Mi Nàng Thơ (Lash Icon) chuyên biệt chuẩn nét Lucide (2px stroke)
@@ -86,14 +92,14 @@ export const BothWingsIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 
 };
 
 /**
- * Biểu tượng Lông Vũ (Feather) cho Ải 2 (🪶 CV) - Lật sang trái (-scale-x-100) vươn ra ngoài
+ * Biểu tượng Lông Vũ (Feather) cho Ải 2 (CV🪶) - Hướng sang phải chuẩn xác
  */
 export const SingleFeatherIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => (
-  <Feather size={size} strokeWidth={strokeWidth} className={`-scale-x-100 ${className}`} />
+  <Feather size={size} strokeWidth={strokeWidth} className={className} />
 );
 
 /**
- * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái Flip -scale-x-100 + Phải Chuẩn) cho Ải 3 (🪶 CV 🪶)
+ * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái Flip -scale-x-100 + Phải Chuẩn) cho Ải 3 (🪶CV🪶)
  */
 export const PairOfFeathersIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => {
   const numSize = typeof size === 'number' ? size : 20;
@@ -150,7 +156,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-purple-500/20 border-purple-500/50 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/40 shadow-md shadow-purple-500/30',
     iconColor: 'text-purple-600 dark:text-purple-400',
     glowColor: 'shadow-purple-500/30',
-    name: '🪶 CV',
+    name: 'CV🪶',
   },
   cv_plus_plus: {
     Icon: PairOfFeathersIcon,
@@ -159,7 +165,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-md shadow-amber-500/30',
     iconColor: 'text-amber-600 dark:text-amber-400',
     glowColor: 'shadow-amber-500/30',
-    name: '🪶 CV 🪶',
+    name: '🪶CV🪶',
   },
   fm: {
     Icon: BothWingsIcon,
@@ -244,10 +250,10 @@ export const IslandGameIcon: React.FC<IslandGameIconProps> = ({
 };
 
 /**
- * Component hiển thị nhãn cấp bậc lông (🪶 CV) và cánh (🪽 FM) với hiệu ứng lật đối xứng (-scale-x-100)
+ * Component hiển thị nhãn cấp bậc lông (CV🪶 / 🪶CV🪶) và cánh (🪽 FM 🪽) với hiệu ứng lật đối xứng (-scale-x-100)
  * Chuẩn định dạng:
- * - 🪶 CV 🪶: [lông trái chuẩn] CV [lông phải flip đối xứng ngang]
- * - 🪶 CV: [lông chuẩn] CV
+ * - 🪶CV🪶: [lông trái flip đối xứng ngang] CV [lông phải chuẩn]
+ * - CV🪶: CV [lông phải chuẩn] (nhận diện đồng nhất: CV Lông, CV 1 lông, 🪶CV, CV🪶, CV L, CV 1L, CV 𝓁, CV 1𝓁, CV Lờ, CV 1 Lờ, CVL)
  * - 🪽 FM 🪽: [cánh trái flip đối xứng ngang] FM [cánh phải chuẩn]
  * - FM 🪽: FM [cánh phải chuẩn]
  */
@@ -259,18 +265,11 @@ export const WingRoleLabel: React.FC<{
 }> = ({ text, className = '', wingClassName = '', iconSize = 11 }) => {
   if (!text) return null;
 
-  // 1. Nếu text chứa "CV 2 Lông" hoặc "🪶 CV 🪶" hoặc "CV++" (2 lông hai bên đối xứng)
-  if (
-    text.includes('CV 2 Lông') ||
-    text.includes('CV 2 lông') ||
-    text.includes('🪶 CV 🪶') ||
-    text.includes('🪶CV🪶') ||
-    text.includes('CV++')
-  ) {
-    const rawNoFeathers = text.replace(/🪶/g, '').trim();
-    const parts = rawNoFeathers.split(/CV\s*2\s*[Ll]ông|CV\+\+|CV/);
+  // 1. Nếu text chứa từ đồng nghĩa 2 lông ("🪶CV🪶", "CV 2 Lông", "CVLL", "CV 2L", "CV 2𝓁", "CV 2 Lờ"...)
+  if (containsCvFeather2Alias(text)) {
+    const parts = text.split(CV_FEATHER_2_PATTERN);
     return (
-      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+      <span className={`inline-flex items-center justify-center gap-0.5 ${className}`}>
         {parts[0]?.trim() && <span>{parts[0].trim()} </span>}
         <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
         <span className="font-black">CV</span>
@@ -280,21 +279,14 @@ export const WingRoleLabel: React.FC<{
     );
   }
 
-  // 2. Nếu text chứa "CV 1 Lông" hoặc "🪶 CV" hoặc "CV+" (1 lông bên trái)
-  if (
-    text.includes('CV 1 Lông') ||
-    text.includes('CV 1 lông') ||
-    text.includes('🪶 CV') ||
-    text.includes('🪶CV') ||
-    text.includes('CV+')
-  ) {
-    const rawNoFeathers = text.replace(/🪶/g, '').trim();
-    const parts = rawNoFeathers.split(/CV\s*1\s*[Ll]ông|CV\+|CV/);
+  // 2. Nếu text chứa từ đồng nghĩa 1 lông ("CV🪶", "🪶CV", "CV Lông", "CV 1 lông", "CV L", "CV 1L", "CV 𝓁", "CV 1𝓁", "CV Lờ", "CV 1 Lờ", "CVL")
+  if (containsCvFeather1Alias(text)) {
+    const parts = text.split(CV_FEATHER_1_PATTERN);
     return (
-      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+      <span className={`inline-flex items-center justify-center gap-0.5 ${className}`}>
         {parts[0]?.trim() && <span>{parts[0].trim()} </span>}
-        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
         <span className="font-black">CV</span>
+        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
         {parts[1]?.trim() && <span> {parts[1].trim()}</span>}
       </span>
     );

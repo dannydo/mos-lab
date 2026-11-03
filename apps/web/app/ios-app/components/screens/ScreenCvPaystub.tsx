@@ -11,8 +11,8 @@ interface ScreenCvPaystubProps {
 
 export function ScreenCvPaystub({ onBack, onOpenSettings }: ScreenCvPaystubProps) {
   const paystubData = {
-    staffName: 'Diễm Hương (🪶 CV)',
-    level: '🪶 CV (Level 3)',
+    staffName: 'Diễm Hương (CV🪶)',
+    level: 'CV🪶 (Level 3)',
     currentMonth: 'Tháng 10/2026',
     totalEstimatedEarnings: 18450000,
     breakdown: [

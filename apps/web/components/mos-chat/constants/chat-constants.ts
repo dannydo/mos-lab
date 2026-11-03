@@ -201,7 +201,7 @@ export const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
         customerCard: {
           name: 'Chị Nguyễn Bích Ngọc',
           meta: 'VIP Diamond · 15:15 hôm nay',
-          cvName: 'Chuyên Viên Minh Thư (CV+)',
+          cvName: 'Chuyên Viên Minh Thư (CV🪶)',
           avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
         },
         thread: [
@@ -209,7 +209,7 @@ export const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
             id: 'th-seed-2',
             senderId: 'staff-mt',
             senderName: 'Chuyên Viên Minh Thư',
-            senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+            senderRole: 'Chuyên Viên Tự Chủ (CV🪶)',
             senderAvatar: 'MT',
             text: 'Giường VIP 02 đã khử khuẩn sẵn sàng đón khách.',
             timeLabel: '14:44',
@@ -222,7 +222,7 @@ export const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
         conversationId: 'space-cc',
         senderId: 'staff-mt',
         senderName: 'Chuyên Viên Minh Thư',
-        senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+        senderRole: 'Chuyên Viên Tự Chủ (CV🪶)',
         senderAvatar: 'MT',
         roleColor: '#14b8a6',
         text: 'Em vừa xong ca trước, khay dụng cụ mi thiết kế đã khử khuẩn đầy đủ.',
@@ -276,7 +276,7 @@ export const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
         conversationId: 'space-cv',
         senderId: 'staff-mt',
         senderName: 'Chuyên Viên Minh Thư',
-        senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+        senderRole: 'Chuyên Viên Tự Chủ (CV🪶)',
         senderAvatar: 'MT',
         roleColor: '#14b8a6',
         text: 'Nhờ kho bổ sung thêm 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1 trước 16:00.',
@@ -296,7 +296,7 @@ export const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
     customerId: 45103,
     name: 'Chị Nguyễn Bích Ngọc',
     meta: 'VIP Diamond · 15:15 hôm nay',
-    cvName: 'Chuyên Viên Minh Thư (CV+)',
+    cvName: 'Chuyên Viên Minh Thư (CV🪶)',
     avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
   },
   {
@@ -310,7 +310,7 @@ export const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
     customerId: 45105,
     name: 'Chị Lê Hoàng Yến',
     meta: 'Cần xác nhận · 17:30 hôm nay',
-    cvName: 'Chuyên Viên Ngọc Ánh (CV+)',
+    cvName: 'Chuyên Viên Ngọc Ánh (CV🪶)',
     avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80',
   },
 ];

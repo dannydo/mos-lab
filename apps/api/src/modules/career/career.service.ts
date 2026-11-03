@@ -761,7 +761,7 @@ export class CareerProgressionService {
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
-      // Determine Career Role (Chuyên Viên Mi: KTV, CV, CV+, CV++, CC, FM)
+      // Determine Career Role (Chuyên Viên Mi: KTV, CV, CV🪶, 🪶CV🪶, CC, FM)
       let careerRole: CareerRole = 'CV';
       if (
         staff.careerProgression?.currentRole &&
@@ -770,6 +770,10 @@ export class CareerProgressionService {
         )
       ) {
         careerRole = staff.careerProgression.currentRole as CareerRole;
+      } else if (staff.role === 'cvll' || staff.role === 'cv_plus_plus') {
+        careerRole = 'CV_PLUS_PLUS';
+      } else if (staff.role === 'cvl' || staff.role === 'cv_plus') {
+        careerRole = 'CV_PLUS';
       } else if (staff.role === 'cc' || activeCcLegacyIds.includes(legacyId)) {
         careerRole = 'CC';
       } else if (
@@ -1498,7 +1502,11 @@ export class CareerProgressionService {
     const normalizedRole = (staff.role || '').toLowerCase();
 
     if (!progression?.currentRole) {
-      if (['lt', 'technician', 'cv', 'ktv'].includes(normalizedRole)) {
+      if (['cvll', 'cv_plus_plus'].includes(normalizedRole)) {
+        currentRole = 'CV_PLUS_PLUS';
+      } else if (['cvl', 'cv_plus'].includes(normalizedRole)) {
+        currentRole = 'CV_PLUS';
+      } else if (['lt', 'technician', 'cv', 'ktv'].includes(normalizedRole)) {
         if (selfComboRate >= 0.25 && ordersCount >= 250) {
           currentRole = 'CV_PLUS_PLUS';
         } else if (selfComboRate >= 0.15 && ordersCount >= 150) {
@@ -2643,7 +2651,7 @@ export class CareerProgressionService {
       else notComboLiveOrders++;
     }
 
-    // 4. Query Combos sold by this staff
+    // 4. Query Combos sold by this staff (Kinh Thánh mOS Điều răn CV-002: Ai Checkout người đó được nhận thưởng Combo theo thang CV🪶)
     const combos = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
       `
       SELECT 
@@ -2652,11 +2660,14 @@ export class CareerProgressionService {
         osc.total_price,
         o.id as order_code,
         o.booking_date_start,
+        os.assigned_staff_id,
+        os.check_in_staff_id,
+        os.check_out_staff_id,
         up.full_name as client_name,
         COALESCE(sl.service_name, s.service_key, 'Gói combo') AS combo_name
       FROM order_service_combo osc
       JOIN \`order\` o ON o.id = osc.order_id
-      JOIN order_service os ON os.order_id = osc.order_id AND os.assigned_staff_id = ?
+      JOIN order_service os ON os.order_id = osc.order_id AND (os.check_out_staff_id = ? OR os.assigned_staff_id = ?)
       LEFT JOIN user_profile up ON up.user_id = o.user_id
       LEFT JOIN service s ON s.id = osc.service_id
       LEFT JOIN service_language sl ON sl.service_id = osc.service_id AND sl.language_id = 1
@@ -2667,6 +2678,7 @@ export class CareerProgressionService {
       GROUP BY osc.id
       ORDER BY o.booking_date_start ASC
       `,
+      targetLegacyStaffId,
       targetLegacyStaffId,
       startStr,
       endStr
@@ -2758,7 +2770,7 @@ export class CareerProgressionService {
     const cvPlusBaseHourly = cvReq?.hourlyWage ?? 27000;
     const baseWageCv = workingHours * cvBaseHourly;
 
-    // 6.5. Query Products / Serums sold by this staff (Dưỡng mi Yeppeum per Kinh Thánh mOS CV-002)
+    // 6.5. Query Products / Serums sold by this staff (Dưỡng mi Yeppeum per Kinh Thánh mOS CV-002: Ai Checkout người đó được nhận)
     let rawProductBonusTotal = 0;
     let rawProductCount = 0;
     try {
@@ -2769,10 +2781,12 @@ export class CareerProgressionService {
           op.order_id,
           op.total_price,
           op.quantity,
+          os.assigned_staff_id,
+          os.check_out_staff_id,
           COALESCE(pl.product_name, p.product_sku, 'Sản phẩm') as product_name
         FROM order_product op
         JOIN \`order\` o ON o.id = op.order_id
-        JOIN order_service os ON os.order_id = op.order_id AND os.assigned_staff_id = ?
+        JOIN order_service os ON os.order_id = op.order_id AND (os.check_out_staff_id = ? OR os.assigned_staff_id = ?)
         LEFT JOIN product p ON p.id = op.product_id
         LEFT JOIN product_language pl ON pl.product_id = op.product_id AND pl.language_id = 1
         WHERE o.order_state = 'Completed'
@@ -2780,6 +2794,7 @@ export class CareerProgressionService {
           AND o.booking_date_start < ?
         GROUP BY op.id
         `,
+        targetLegacyStaffId,
         targetLegacyStaffId,
         startStr,
         endStr

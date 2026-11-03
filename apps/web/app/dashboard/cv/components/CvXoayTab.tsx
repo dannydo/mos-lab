@@ -355,7 +355,7 @@ export default function CvXoayTab({
                 <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel}</span>
                 {isCvPlusStaff(name) && (
                   <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                    🪶 CV
+                    CV🪶
                   </Tag>
                 )}
               </div>
@@ -444,7 +444,7 @@ export default function CvXoayTab({
             <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">· L{record.techLevel}</span>
             {isCvPlusStaff(text) && (
               <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                🪶 CV
+                CV🪶
               </Tag>
             )}
           </div>
@@ -720,7 +720,7 @@ export default function CvXoayTab({
                           <span>{record.techName}</span>
                           {isCvPlusStaff(record.techName) && (
                             <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                              🪶 CV
+                              CV🪶
                             </Tag>
                           )}
                         </div>

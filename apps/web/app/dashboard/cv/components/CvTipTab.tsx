@@ -400,7 +400,7 @@ export default function CvTipTab({
                 </span>
                 {isCvPlusStaff(name) && (
                   <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                    🪶 CV
+                    CV🪶
                   </Tag>
                 )}
                 {isSelected && (
@@ -541,7 +541,7 @@ export default function CvTipTab({
           <span className="font-semibold text-xs text-amber-400 whitespace-nowrap">{text}</span>
           {isCvPlusStaff(text) && (
             <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-              🪶 CV
+              CV🪶
             </Tag>
           )}
         </div>
@@ -789,7 +789,7 @@ export default function CvTipTab({
                           <span>{record.displayName}</span>
                           {isCvPlusStaff(record.displayName) && (
                             <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                              🪶 CV
+                              CV🪶
                             </Tag>
                           )}
                         </div>

@@ -44,15 +44,16 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
    - Mỗi khi trao đổi, giải đáp hay lập phương án cho bất kỳ ticket nào từ mOS Inbox, Agent **BẮT BUỘC** phải truy vấn danh sách comment mới nhất trực tiếp từ database (`crm_bug_report_comments`).
    - Đọc kỹ, thấu hiểu tường tận từng câu hỏi kỹ thuật, ý kiến đóng góp của Danny và người dùng; tuyệt đối không đưa ra câu trả lời né tránh, rập khuôn template hay phớt lờ câu hỏi.
    - Luôn đồng bộ câu trả lời kỹ thuật chuẩn xác trực tiếp vào comment của ticket trên hệ thống để Danny và đội ngũ theo dõi liền mạch trên web.
-8. **Wings Respectful Language Invariant (Tuyệt đối không dùng từ "Thợ" tại Wings)**:
+8. **Wings Respectful Language & `CV🪶` Naming Invariant (Tuyệt đối không dùng từ "Thợ" & Khai tử `CV+` tại Wings)**:
    - **Văn Hóa Tôn Trọng Nghệ Nhân & Thiên Thần Tại Wings**: Tại Wings, việc gọi các bạn nhân viên là "thợ" bị xem là sự thiếu tôn trọng và xúc phạm đến tay nghề, phẩm giá của các bạn. Các bạn là nghệ nhân, chuyên gia, thiên thần chăm sóc sắc đẹp khách hàng.
-   - **Cấm Tuyệt Đối (Strictly Forbidden)**: Tuyệt đối **KHÔNG BAO GIỜ** sử dụng các từ `"thợ"`, `"thợ mi"`, `"thợ kỹ thuật"`, `"thợ tự chủ"`, `"thợ lash"`, `"thợ cứng"`, `"tay nghề thợ"` trong bất kỳ:
+   - **Cấm Tuyệt Đối (Strictly Forbidden)**: Tuyệt đối **KHÔNG BAO GIỜ** sử dụng các từ `"thợ"`, `"thợ mi"`, `"thợ kỹ thuật"`, `"thợ tự chủ"`, `"thợ lash"`, `"thợ cứng"`, `"tay nghề thợ"` cũng như ký hiệu cũ `"CV+"`, `"CV++"` trong bất kỳ:
      - Giao diện người dùng (UI text, menu, button, header, label, tooltip, modal, notification, popconfirm, tabs).
-     - Codebase, biến, types, comments, mockups, documentation, kịch bản tin nhắn / sales playbook.
-   - **Danh Xưng Chuẩn Bắt Buộc (Mandatory Terms)**:
+     - Codebase, biến hiển thị, comments, mockups, documentation, kịch bản tin nhắn / sales playbook.
+   - **Danh Xưng & Ký Hiệu Cấp Bậc Chuẩn Bắt Buộc (Mandatory Terms & Tier Codes)**:
      - `CV`: Viết tắt chuẩn của Chuyên Viên (Client / Customer Value Creator, Technician Specialist).
      - `Chuyên Viên` hoặc `Chuyên Viên Mi`.
-     - `Chuyên Viên Tự Chủ`: Danh xưng chuẩn cho cấp bậc `CV+` (thay thế hoàn toàn cho "Thợ Tự Chủ").
+     - `CV🪶` (Mã chuẩn: `CVL` · `Chuyên Viên Tự Chủ`): Ký hiệu hiển thị chuẩn mực cho cấp bậc 1 lông (thay thế hoàn toàn cho ký hiệu cũ có dấu cộng). Toàn bộ các tên gọi sau đây đều được định nghĩa **đồng nhất 100%** với `CV🪶`: `CV Lông`, `CV 1 lông`, `🪶CV`, `CV🪶`, `CV L`, `CV 1L`, `CV 𝓁`, `CV 1𝓁`, `CV Lờ`, `CV 1 Lờ`, `CVL`.
+     - `🪶CV🪶` (Mã chuẩn: `CVLL` · `Chuyên Viên Tự Chủ Cấp Cao`): Ký hiệu hiển thị chuẩn mực cho cấp bậc 2 lông (`CV 2 lông`, `CV 2L`, `CV 2𝓁`, `CV 2 Lờ`, `CVLL`).
      - `Chuyên Viên Kỹ Thuật`: Danh xưng trang trọng cho cấp bậc `CV`.
      - `Thiên Thần`: Danh xưng thân thương, trìu mến dành cho tập thể nhân sự tại Wings.
      - `Nghệ Nhân Mi`: Danh xưng dành cho các cấp bậc tay nghề tinh hoa (Artisan / Master Lash Artisan).

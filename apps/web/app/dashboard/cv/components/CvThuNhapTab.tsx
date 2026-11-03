@@ -49,6 +49,7 @@ import {
   CvPaystubRecord,
   CvWorkLogDetailRecord,
   isAdminOrSuperAdminRole,
+  normalizeCvFeatherRole,
   removeVietnameseTones,
   type ReportComparisonMode,
   calculateFractionToday,
@@ -738,6 +739,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
 
   const filteredData = React.useMemo(() => {
     if (!searchText) return paystubData;
+    const featherRole = normalizeCvFeatherRole(searchText);
+    if (featherRole === 'CVL') {
+      return paystubData.filter((item) => Boolean(item.isCvPlus || item.cvPlusBreakdown));
+    }
     const q = removeVietnameseTones(searchText);
     return paystubData.filter(
       (item) => removeVietnameseTones(item.staffName).includes(q) || removeVietnameseTones(item.store).includes(q)
@@ -814,14 +819,14 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           }
         }}
         className="my-1.5 p-2 rounded-lg border border-amber-500/20 hover:border-amber-500/35 bg-amber-500/[0.04] hover:bg-amber-500/[0.08] active:bg-amber-500/[0.12] dark:bg-amber-500/[0.06] dark:hover:bg-amber-500/[0.10] dark:active:bg-amber-500/[0.15] dark:border-amber-500/25 transition-all cursor-pointer flex flex-col gap-1.5 select-none group active:scale-[0.99] shadow-xs"
-        title="Nhấp để xem bảng kê chi tiết và phiếu lương CV+"
+        title="Nhấp để xem bảng kê chi tiết và phiếu lương CV🪶"
       >
         {/* TẦNG 1: Tiêu đề + Tổng tiền thực nhận thêm + Tỷ lệ + Bảng kê ↗ */}
         <div className="flex items-center justify-between gap-1.5 w-full">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
-              <span className="inline-block scale-x-[-1] transform select-none">🪶</span>
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
               <span>CV</span>
+              <span className="inline-block select-none">🪶</span>
             </span>
 
             <span className="font-bold text-xs sm:text-sm tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -941,9 +946,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
             <div className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">{text}</span>
               {isCvPlus ? (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                  <span className="inline-block scale-x-[-1] transform select-none">🪶</span>
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
                   <span>CV</span>
+                  <span className="inline-block select-none">🪶</span>
                 </span>
               ) : (
                 <Tooltip title={`🌱 Lộ trình thăng tiến: Xem Career Path của ${text}`}>
@@ -1453,8 +1458,8 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                           </span>
                           {record.isCvPlus ? (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 inline-flex items-center gap-0.5 shrink-0">
-                              <span className="inline-block scale-x-[-1] transform select-none">🪶</span>
                               <span>CV</span>
+                              <span className="inline-block select-none">🪶</span>
                             </span>
                           ) : (
                             <>
@@ -1570,7 +1575,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                         onClick={() => router.push(`/dashboard/career-path?staffId=${record.staffId}`)}
                         className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium hover:underline inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 text-left"
                       >
-                        🌱 Bấm lá để xem điều kiện lên CV+
+                        🌱 Bấm lá để xem điều kiện lên CV🪶
                       </button>
                       <div className="flex items-center gap-1.5">
                         <Button
@@ -1700,8 +1705,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                           color="gold"
                           className="font-semibold text-xs ml-1 border-amber-400 inline-flex items-center gap-1"
                         >
-                          <span className="inline-block scale-x-[-1] transform select-none">🪶</span> Chuyên Viên Tự Chủ
-                          (CV+)
+                          Chuyên Viên Tự Chủ (CV🪶)
                         </Tag>
                       ) : (
                         <Tag color="cyan" className="font-semibold text-xs ml-1">
@@ -1733,7 +1737,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
               </div>
             </div>
 
-            {/* ĐÃI NGỘ CHUYÊN VIÊN TỰ CHỦ (🪶 CV) */}
+            {/* ĐÃI NGỘ CHUYÊN VIÊN TỰ CHỦ (CV🪶) */}
             {selectedRecord.isCvPlus &&
               selectedRecord.cvPlusBreakdown &&
               (() => {
@@ -1747,10 +1751,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     {/* Header with Title and Eligibility Badge */}
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 dark:border-amber-800/60 pb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl inline-block scale-x-[-1] transform select-none">🪶</span>
+                        <span className="text-2xl inline-block select-none">🪶</span>
                         <div>
                           <div className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
-                            ĐÃI NGỘ DÀNH RIÊNG CHO CHUYÊN VIÊN TỰ CHỦ (CV+)
+                            ĐÃI NGỘ DÀNH RIÊNG CHO CHUYÊN VIÊN TỰ CHỦ (CV🪶)
                             <Tag
                               color="gold"
                               className="font-bold uppercase tracking-wider text-[10px] m-0 border-amber-400"
@@ -1770,7 +1774,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                             color="success"
                             className="font-bold text-xs py-1 px-2.5 flex items-center gap-1 border-emerald-500"
                           >
-                            <CheckCircleOutlined /> ĐÃ MỞ KHÓA 100% THƯỞNG CV+
+                            <CheckCircleOutlined /> ĐÃ MỞ KHÓA 100% THƯỞNG CV🪶
                           </Tag>
                         ) : (
                           <Tag
@@ -1845,7 +1849,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                           +{formatVND(bd.deltaTipBonus || 0)}
                         </div>
                         <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                          Hưởng trọn 90% tip (70% CV + 20% CV+)
+                          Hưởng trọn 90% tip (70% CV + 20% CV🪶)
                         </div>
                       </div>
 
@@ -2023,7 +2027,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       Đơn giá giờ
                       {selectedRecord.isCvPlus && (
                         <Tag color="gold" className="text-[10px] ml-1.5 py-0 px-1 border-amber-400">
-                          🪶 CV+ (+2k/h)
+                          CV🪶 (+2k/h)
                         </Tag>
                       )}
                     </td>
@@ -2321,7 +2325,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-purple-600 dark:text-purple-400 text-[11px]">
                       {selectedRecord.isCvPlus
-                        ? 'Thưởng Tip CV+ (Giữ trọn 90% gồm 70% CV + 20% tự tư vấn)'
+                        ? 'Thưởng Tip CV🪶 (Giữ trọn 90% gồm 70% CV + 20% tự tư vấn)'
                         : 'Thưởng Tip CV (70% tiền tip khách)'}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-purple-600 dark:text-purple-400">

@@ -118,6 +118,8 @@ export function isCanonicalSuperAdminIdentity(
   return SUPER_ADMIN_IDENTITIES.some((value) => value === username || value === email);
 }
 
+import { normalizeCvFeatherRole } from '../utils/cv-role-aliases.js';
+
 /**
  * Chuyên Viên (CV) and Lash Technician roles.
  * Invariant: CV accounts must be restricted from management dashboard and default to CV reports.
@@ -126,7 +128,10 @@ export function isCvRole(role?: string | null): boolean {
   const normalizedRole = String(role || '')
     .trim()
     .toLowerCase();
-  return ['cv', 'lt', 'technician', 'ktv', 'cv_plus', 'cv_plus_plus', 'cv+', 'cv++'].includes(normalizedRole);
+  if (normalizeCvFeatherRole(normalizedRole)) {
+    return true;
+  }
+  return ['cv', 'lt', 'technician', 'ktv', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus'].includes(normalizedRole);
 }
 
 /**

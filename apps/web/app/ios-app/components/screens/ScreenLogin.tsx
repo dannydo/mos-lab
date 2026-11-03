@@ -32,10 +32,10 @@ export function ScreenLogin({ onLoginSuccess }: ScreenLoginProps) {
     },
     {
       role: 'CV',
-      name: 'Diễm Hương (🪶 CV)',
+      name: 'Diễm Hương (CV🪶)',
       phone: '0937554430',
       store: 'Chi Nhánh Đề Thám, Q.1',
-      roleLabel: '🪶 CV',
+      roleLabel: 'CV🪶',
     },
     {
       role: 'STORE',

@@ -1,3 +1,86 @@
+export interface ComboPackageOption {
+  id: string;
+  name: string;
+  sessions: number;
+  price: number;
+  cvBonus: number;
+  badge: string;
+}
+
+export interface SerumTierOption {
+  id: string;
+  label: string;
+  price: number;
+  cvBonus: number;
+  desc: string;
+}
+
+export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
+  {
+    id: 'combo-flawless-5',
+    name: 'Combo 5 lần New Flawless Mink',
+    sessions: 5,
+    price: 4500000,
+    cvBonus: 200000,
+    badge: 'Thưởng CV🪶 +200.000đ',
+  },
+  {
+    id: 'combo-hyperlight-5',
+    name: 'Combo 5 lần New Hyperlight',
+    sessions: 5,
+    price: 3500000,
+    cvBonus: 150000,
+    badge: 'Thưởng CV🪶 +150.000đ',
+  },
+  {
+    id: 'combo-classic-3',
+    name: 'Combo 3 lần Classic Design',
+    sessions: 3,
+    price: 2500000,
+    cvBonus: 100000,
+    badge: 'Thưởng CV🪶 +100.000đ',
+  },
+  {
+    id: 'combo-under-5',
+    name: 'Combo 5 lần Mi Dưới (LashesUnder)',
+    sessions: 5,
+    price: 1500000,
+    cvBonus: 50000,
+    badge: 'Thưởng CV🪶 +50.000đ',
+  },
+];
+
+export const SERUM_TIERS_CVL: SerumTierOption[] = [
+  {
+    id: 'serum-orig',
+    label: 'Giá gốc 1.100.000đ',
+    price: 1100000,
+    cvBonus: 100000,
+    desc: 'Thưởng tiền tươi CV🪶: +100.000đ/cây',
+  },
+  {
+    id: 'serum-disc-light',
+    label: 'Ưu đãi < 50% (770.000đ)',
+    price: 770000,
+    cvBonus: 50000,
+    desc: 'Thưởng tiền tươi CV🪶: +50.000đ/cây',
+  },
+  {
+    id: 'serum-disc-deep',
+    label: 'Giảm sâu ≥ 50% (550.000đ)',
+    price: 550000,
+    cvBonus: 10000,
+    desc: 'Thưởng tiền tươi CV🪶: +10.000đ/cây',
+  },
+  {
+    id: 'serum-free',
+    label: 'Tặng kèm Combo (0đ)',
+    price: 0,
+    cvBonus: 1000,
+    desc: 'Thưởng tiền tươi CV🪶: +1.000đ/cây',
+  },
+];
+
 export interface BookingItem {
   id: number;
   orderNumber: string;
@@ -18,14 +101,50 @@ export interface BookingItem {
   assignedStaffName?: string;
   assignedStaffId?: number;
   assignedStaffAvatar?: string;
+  checkInStaffId?: number;
+  checkInStaffName?: string;
+  checkInStaffTier?: string;
+  checkOutStaffId?: number;
+  checkOutStaffName?: string;
+  checkOutStaffTier?: string;
   customerAvatar?: string;
   assignedBed?: string;
   status: 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
+  comboLiveStatus?: {
+    isComboLive: boolean;
+    remainingSessions: number;
+    comboName: string;
+    upsellOpportunity: boolean;
+  };
+  lashHistory?: Array<{
+    date: string;
+    serviceName: string;
+    staffName: string;
+  }>;
+  selectedCombo?: {
+    id: string;
+    name: string;
+    price: number;
+    bonus: number;
+    sessions: number;
+  } | null;
   attributes?: {
     style: string;
     curl: string;
     length: string;
     thickness: string;
+    material?: string;
+    color?: string;
+    volume?: string;
+    count?: string;
+    eyeShape?: string;
+    naturalLashLength?: string;
+    naturalLashThickness?: string;
+    naturalLashDensity?: string;
+    isNewClientDiagnosticDone?: boolean;
+    lashHealth?: string;
+    lashTrail?: string;
+    medicalProblem?: string;
     notes?: string;
   };
   progress?: {
@@ -46,14 +165,27 @@ export interface BookingItem {
     productName: string;
     price: number;
     quantity: number;
+    cvBonus?: number;
   }>;
+  cvRewardBreakdown?: {
+    techTipPercent: number;
+    checkInTipPercent: number;
+    checkOutTipPercent: number;
+    cvTotalTipPercent: number;
+    comboBonusAmount: number;
+    serumBonusAmount: number;
+    totalOrderBonusForCheckoutStaff: number;
+  };
   billing?: {
     subtotal: number;
     serviceTotal: number;
+    comboTotal?: number;
     productTotal: number;
     paymentMethod: 'CASH' | 'POS' | 'VIETQR';
     tipAmount: number;
     tipCvShare: number;
+    tipCheckInShare?: number;
+    tipCheckOutShare?: number;
     tipCcShare: number;
     grandTotal: number;
   };
@@ -61,14 +193,59 @@ export interface BookingItem {
 
 export const INITIAL_BOOKINGS: BookingItem[] = [
   {
+    id: 337001,
+    orderNumber: 'BK-337001',
+    customerName: 'Chị Mai Linh (Khách Mới)',
+    customerPhone: '0908.112.334',
+    customerId: 62105,
+    customerAvatar: undefined,
+    customerVisits: 1,
+    customerNote:
+      'Khách mới lần đầu ghé Wings! Mắt nhạy cảm nhẹ, chưa từng nối mi. Bắt buộc kiểm tra độ dài & độ dày mi thật trước khi nối.',
+    timeSlot: '08:30 - 10:00',
+    time12h: '08:30 am',
+    serviceName: 'New Flawless Mink 770',
+    serviceType: 'Normal',
+    servicePrice: 770000,
+    serviceDuration: 90,
+    bookerName: 'Quỳnh Như',
+    customerTypeIcon: '🌟',
+    hasDiscountTag: false,
+    assignedStaffId: 46272,
+    assignedStaffName: 'Thảo Ly',
+    assignedBed: 'Giường 01',
+    status: 'INCOMING',
+    comboLiveStatus: {
+      isComboLive: false,
+      remainingSessions: 0,
+      comboName: 'Chưa có gói Combo Live',
+      upsellOpportunity: true,
+    },
+    lashHistory: [],
+    attributes: {
+      style: 'Natural',
+      curl: 'C',
+      length: '9-11 mm',
+      thickness: '0.07 mm',
+      naturalLashLength: '7mm',
+      naturalLashThickness: '0.05-0.07mm',
+      naturalLashDensity: 'Thưa (< 80 sợi/mắt)',
+      eyeShape: 'Mí lót / Sụp mí (Hooded)',
+      lashHealth: 'Khách mới lần đầu nối mi (Virgin Lashes)',
+      lashTrail: 'Chúc xuống (Downwards)',
+      isNewClientDiagnosticDone: false,
+      notes: 'Khách mới lần đầu ghé, cần đo mi thật & test keo êm dịu.',
+    },
+  },
+  {
     id: 336695,
     orderNumber: 'BK-336695',
-    customerName: 'Trúc',
+    customerName: 'Chị Trúc',
     customerPhone: '0933.779.207',
     customerId: 25212,
     customerAvatar: 'https://cdn.wingslashes.com/uploads/user/avatar/830/thumbnail/26830.jpg',
-    customerVisits: 1,
-    customerNote: '3/10 ib nhắc lịch\n30/9 ib nhắc lịch, c dời (c nhờ nhắc sớm 1\nngày chị quên)',
+    customerVisits: 4,
+    customerNote: 'Khách thích mi tự nhiên nhẹ nhàng, mí lót nhẹ góc trong, nối êm không cay mắt.',
     timeSlot: '09:00 - 10:30',
     time12h: '09:00 am',
     serviceName: 'New Flawless Mink 770',
@@ -78,25 +255,44 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     bookerName: 'Thanh Vũ',
     customerTypeIcon: '☕',
     hasDiscountTag: false,
+    assignedStaffId: 46272,
+    assignedStaffName: 'Thảo Ly',
     assignedBed: 'Giường 01',
     status: 'INCOMING',
+    comboLiveStatus: {
+      isComboLive: false,
+      remainingSessions: 0,
+      comboName: 'Chưa có gói Combo Live',
+      upsellOpportunity: true,
+    },
+    lashHistory: [
+      { date: '19/10/2026', serviceName: 'New Flawless Mink', staffName: 'Thảo Ly' },
+      { date: '02/10/2026', serviceName: 'Dặm New Flawless', staffName: 'Thảo Ly' },
+    ],
     attributes: {
-      style: 'New Flawless Mink',
+      style: 'New Flawless',
       curl: 'CC',
-      length: '10-12mm',
-      thickness: '0.07mm',
+      length: '10-12 mm',
+      thickness: '0.07 mm',
+      naturalLashLength: '8mm',
+      naturalLashThickness: '0.05-0.07mm',
+      naturalLashDensity: 'Vừa (80 - 120 sợi/mắt)',
+      eyeShape: 'Mí lót / Sụp mí (Hooded)',
+      lashHealth: 'Mi khỏe (Healthy)',
+      lashTrail: 'Chúc xuống (Downwards)',
+      isNewClientDiagnosticDone: true,
       notes: 'Khách thích mi tự nhiên nhẹ nhàng',
     },
   },
   {
     id: 336971,
     orderNumber: 'BK-336971',
-    customerName: 'Thảo',
+    customerName: 'Chị Thảo',
     customerPhone: '0916.492.727',
     customerId: 51634,
     customerAvatar: undefined,
     customerVisits: 2,
-    customerNote: '4/10 ĐXN, chị báo đợt này rụng hết 80%\ntìm bạn nối chắc cho chị, CANCEL\n3/10 c book',
+    customerNote: 'Chị báo đợt trước rụng nhanh, cần khóa chân keo kỹ và tư vấn thêm dưỡng mi Yeppeum.',
     timeSlot: '10:30 - 12:00',
     time12h: '10:30 am',
     serviceName: 'New Hyperlight 550',
@@ -106,25 +302,34 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     bookerName: 'Bảo Hân',
     customerTypeIcon: '🔄',
     hasDiscountTag: false,
+    assignedStaffId: 46272,
+    assignedStaffName: 'Thảo Ly',
     assignedBed: 'Giường 02',
     status: 'INCOMING',
+    comboLiveStatus: {
+      isComboLive: false,
+      remainingSessions: 0,
+      comboName: 'Chưa có gói Combo Live',
+      upsellOpportunity: true,
+    },
+    lashHistory: [{ date: '15/10/2026', serviceName: 'New Hyperlight 550', staffName: 'Thảo Ly' }],
     attributes: {
-      style: 'New Hyperlight',
+      style: 'Hyperlight',
       curl: 'C',
-      length: '10-11mm',
-      thickness: '0.07mm',
+      length: '10-12 mm',
+      thickness: '0.07 mm',
       notes: 'Nối chắc chân mi',
     },
   },
   {
     id: 336941,
     orderNumber: 'BK-336941',
-    customerName: 'Thủy',
+    customerName: 'Chị Thủy',
     customerPhone: '0908.356.640',
     customerId: 16817,
     customerAvatar: 'https://cdn.wingslashes.com/uploads/user/avatar/435/thumbnail/18435.png',
-    customerVisits: 3,
-    customerNote: '4/10 kbm, sms nhắc lịch\n3/10 chị book\n[50%] 💤 Wake Up V1: Wellcome Back',
+    customerVisits: 8,
+    customerNote: '[50%] 💤 Wake Up V1: Welcome Back',
     timeSlot: '11:00 - 12:30',
     time12h: '11:00 am',
     serviceName: 'New Flawless Under Mink 390',
@@ -134,25 +339,34 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     bookerName: 'Tâm Nguyễn',
     customerTypeIcon: '🙃',
     hasDiscountTag: true,
+    assignedStaffId: 25337,
+    assignedStaffName: 'Tuyết Nhi ❤️',
     assignedBed: 'Giường 03',
     status: 'INCOMING',
+    comboLiveStatus: {
+      isComboLive: true,
+      remainingSessions: 3,
+      comboName: 'Combo 5 lần New Flawless',
+      upsellOpportunity: false,
+    },
+    lashHistory: [{ date: '12/10/2026', serviceName: 'New Flawless Mink', staffName: 'Tuyết Nhi ❤️' }],
     attributes: {
-      style: 'New Flawless Under Mink',
-      curl: 'J',
-      length: '6-8mm',
-      thickness: '0.07mm',
+      style: 'New Flawless',
+      curl: 'C',
+      length: '9-11 mm',
+      thickness: '0.07 mm',
       notes: 'Mi dưới tự nhiên',
     },
   },
   {
     id: 336952,
     orderNumber: 'BK-336952',
-    customerName: 'Dương Thị Thanh Thuỷ',
+    customerName: 'Dương Thị Thanh Thủy',
     customerPhone: '0949.898.569',
     customerId: 18661,
     customerAvatar: 'https://cdn.wingslashes.com/uploads/user/avatar/279/thumbnail/20279.jpg',
     customerVisits: 5,
-    customerNote: '4/10 ib nhắc lịch, 14h gọi chị kêu bận k\nqua với mưa và xa quá tắt rụp\n3/10 c book',
+    customerNote: 'Khách VIP thích form mắt mèo sắc nét, đang quan tâm gói Combo 5 lần.',
     timeSlot: '12:00 - 13:30',
     time12h: '12:00 pm',
     serviceName: 'New Hyperlight 660',
@@ -162,35 +376,68 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     bookerName: 'Bích Phượng',
     customerTypeIcon: '🙃',
     hasDiscountTag: true,
+    assignedStaffId: 49076,
+    assignedStaffName: 'Phương Nhi',
     assignedBed: 'Giường 04',
     status: 'INCOMING',
+    comboLiveStatus: {
+      isComboLive: false,
+      remainingSessions: 0,
+      comboName: 'Chưa có gói Combo Live',
+      upsellOpportunity: true,
+    },
+    lashHistory: [{ date: '08/10/2026', serviceName: 'New Hyperlight 660', staffName: 'Phương Nhi' }],
     attributes: {
-      style: 'New Hyperlight 660',
+      style: 'Hyperlight',
       curl: 'CC',
-      length: '11-13mm',
-      thickness: '0.07mm',
+      length: '11-13 mm',
+      thickness: '0.07 mm',
       notes: 'Thích dày đậm sắc nét',
     },
   },
 ];
 
 export const STAFF_QUEUE = [
-  { id: 46272, name: 'Thảo Ly', role: 'Chuyên Viên Mi', status: 'READY', bed: 'Giường 03', rating: 4.95, avatar: '👩‍🦰' },
-  { id: 46110, name: 'Bảo Trâm', role: 'Chuyên Viên Mi', status: 'BUSY', bed: 'Giường 01', rating: 4.88, avatar: '👱‍♀️' },
-  { id: 46188, name: 'Ngọc Lan', role: 'Chuyên Viên Mi', status: 'BUSY', bed: 'Giường 02', rating: 4.92, avatar: '👩' },
   {
-    id: 46305,
+    id: 46272,
+    name: 'Thảo Ly',
+    role: 'CV🪶 · Chuyên Viên Tự Chủ',
+    status: 'READY',
+    bed: 'Giường 03',
+    rating: 4.95,
+    avatar: '👩‍🦰',
+  },
+  {
+    id: 25337,
+    name: 'Tuyết Nhi ❤️',
+    role: '🪶CV🪶 · Tự Chủ Cấp Cao',
+    status: 'READY',
+    bed: 'Giường 01',
+    rating: 4.98,
+    avatar: '👱‍♀️',
+  },
+  {
+    id: 49076,
+    name: 'Phương Nhi',
+    role: 'Chuyên Viên Mi (CV)',
+    status: 'READY',
+    bed: 'Giường 02',
+    rating: 4.92,
+    avatar: '👩',
+  },
+  {
+    id: 3832,
     name: 'Ánh Tuyết',
-    role: 'Chuyên Viên Mi',
+    role: 'Chuyên Viên Mi (CV)',
     status: 'READY',
     bed: 'Giường 04',
     rating: 4.85,
     avatar: '👩‍🦱',
   },
   {
-    id: 46320,
-    name: 'Hồng Hạnh',
-    role: 'Chuyên Viên Mi',
+    id: 13783,
+    name: 'Khanh Cao',
+    role: 'Chuyên Viên Mi (CV)',
     status: 'READY',
     bed: 'Giường 05',
     rating: 4.9,
