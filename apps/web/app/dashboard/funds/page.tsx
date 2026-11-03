@@ -34,6 +34,7 @@ import {
 } from '~/components/ui';
 import { removeVietnameseTones } from '~/lib/utils/search';
 import FundFormModal from './components/FundFormModal';
+import FundDetailDrawer from './components/FundDetailDrawer';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -44,6 +45,8 @@ export default function FundsManagementPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFund, setSelectedFund] = useState<Fund | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedFundForDrawer, setSelectedFundForDrawer] = useState<string | null>(null);
 
   const loadFunds = async () => {
     try {
@@ -76,6 +79,11 @@ export default function FundsManagementPage() {
   const handleOpenEdit = (fund: Fund) => {
     setSelectedFund(fund);
     setIsModalOpen(true);
+  };
+
+  const handleOpenDetail = (fund: Fund) => {
+    setSelectedFundForDrawer(fund.id);
+    setIsDrawerOpen(true);
   };
 
   const filteredFunds = useMemo(() => {
@@ -132,9 +140,13 @@ export default function FundsManagementPage() {
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: Fund) => (
-        <div>
-          <div className="font-bold text-base text-emerald-600 dark:text-emerald-400">
-            {text}
+        <div
+          className="cursor-pointer group"
+          onClick={() => handleOpenDetail(record)}
+        >
+          <div className="font-bold text-base text-emerald-600 dark:text-emerald-400 group-hover:underline flex items-center gap-1.5">
+            <span>{text}</span>
+            <AppIcon icon={Eye} size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           {record.description && (
             <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
@@ -215,18 +227,28 @@ export default function FundsManagementPage() {
       title: 'Thao tác',
       key: 'actions',
       align: 'center' as const,
-      width: 120,
+      width: 140,
       render: (_: unknown, record: Fund) => (
         <Space size={6} align="center">
-          <Tooltip title={`Chỉnh sửa / Cấu hình quỹ ${record.name}`}>
+          <Tooltip title={`Vận hành & Xem sổ quỹ ${record.name}`}>
             <Button
               type="primary"
               size="small"
               className="bg-emerald-600 hover:bg-emerald-500 text-white"
               icon={<AppIcon icon={Eye} size="sm" />}
-              onClick={() => handleOpenEdit(record)}
+              onClick={() => handleOpenDetail(record)}
             />
           </Tooltip>
+          {record.status === 'DRAFT' && (
+            <Tooltip title="Kích hoạt quỹ ngay">
+              <Button
+                size="small"
+                className="bg-purple-600 hover:bg-purple-500 text-white border-none"
+                icon={<AppIcon icon={Sparkles} size="sm" />}
+                onClick={() => handleOpenDetail(record)}
+              />
+            </Tooltip>
+          )}
           <Tooltip title="Cấu hình quỹ">
             <Button
               size="small"
@@ -373,6 +395,17 @@ export default function FundsManagementPage() {
           loadFunds();
         }}
         initialFund={selectedFund}
+      />
+
+      {/* Fund Detail Operational Drawer (MOS-FEAT-192 Bước 3-6) */}
+      <FundDetailDrawer
+        open={isDrawerOpen}
+        fundId={selectedFundForDrawer}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedFundForDrawer(null);
+        }}
+        onRefreshList={loadFunds}
       />
     </div>
   );

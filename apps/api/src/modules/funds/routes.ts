@@ -3,6 +3,7 @@ import type {
   ApproveProposalRequest,
   CreateProposalRequest,
   DisburseProposalRequest,
+  ConfirmReceiptRequest,
   RecordExpenseRequest,
   ReconcileAndLockPeriodRequest,
   UpdateFundConfigRequest,
@@ -97,6 +98,21 @@ export async function fundRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // 2b. Kích hoạt Quỹ (DRAFT/FROZEN -> ACTIVE) (MOS-FEAT-192 Bước 3)
+  fastify.post<{ Params: { fundId: string } }>(
+    '/funds/:fundId/activate',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const actor = getActor(request);
+        const data = await FundService.activateFund(fastify.prisma.crm, request.params.fundId, actor);
+        return reply.send({ success: true, data, message: 'Kích hoạt quỹ thành công.' });
+      } catch (err) {
+        return handleFundError(fastify, reply, err, 'funds:activate');
+      }
+    }
+  );
+
   // 3. Ghi nhận Chi tiêu (Nạp Card Telesale)
   fastify.post<{ Params: { fundId: string }; Body: RecordExpenseRequest }>(
     '/funds/:fundId/expense',
@@ -178,6 +194,31 @@ export async function fundRoutes(fastify: FastifyInstance) {
         });
       } catch (err) {
         return handleFundError(fastify, reply, err, 'funds:disburse-proposal');
+      }
+    }
+  );
+
+  // 6b. CƠ CHẾ 2B: Thủ quỹ xác nhận thực nhận tiền (MOS-FEAT-192 Bước 3)
+  fastify.post<{ Params: { proposalId: string }; Body: ConfirmReceiptRequest }>(
+    '/funds/proposals/:proposalId/confirm-receipt',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const actor = getActor(request);
+        const result = await FundService.confirmProposalReceipt(
+          fastify.prisma.crm,
+          request.params.proposalId,
+          request.body || {},
+          actor
+        );
+        return reply.send({
+          success: result.success,
+          message: result.message,
+          data: result.proposal,
+          newBalance: result.newBalance,
+        });
+      } catch (err) {
+        return handleFundError(fastify, reply, err, 'funds:confirm-receipt');
       }
     }
   );

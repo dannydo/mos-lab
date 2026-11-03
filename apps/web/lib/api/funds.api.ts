@@ -2,6 +2,7 @@ import type {
   ApproveProposalRequest,
   CreateProposalRequest,
   DisburseProposalRequest,
+  ConfirmReceiptRequest,
   Fund,
   FundPeriod,
   FundProposal,
@@ -47,6 +48,20 @@ export const fundsApi = {
       return response.data;
     },
 
+    activate: async (
+      fundId: string
+    ): Promise<{
+      success: boolean;
+      message?: string;
+      data: Fund & {
+        recentTransactions: FundTransaction[];
+        pendingProposals: FundProposal[];
+      };
+    }> => {
+      const response = await api.post(`/funds/${encodeURIComponent(fundId)}/activate`);
+      return response.data;
+    },
+
     recordExpense: async (
       fundId: string,
       data: RecordExpenseRequest
@@ -88,6 +103,22 @@ export const fundsApi = {
       data: FundProposal;
     }> => {
       const response = await api.post(`/funds/proposals/${encodeURIComponent(proposalId)}/disburse`, data);
+      return response.data;
+    },
+
+    confirmProposalReceipt: async (
+      proposalId: string,
+      data?: ConfirmReceiptRequest
+    ): Promise<{
+      success: boolean;
+      message?: string;
+      data: FundProposal;
+      newBalance?: number;
+    }> => {
+      const response = await api.post(
+        `/funds/proposals/${encodeURIComponent(proposalId)}/confirm-receipt`,
+        data || {}
+      );
       return response.data;
     },
 

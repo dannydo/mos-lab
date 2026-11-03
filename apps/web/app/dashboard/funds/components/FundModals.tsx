@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Form, Input, InputNumber, Select, Row, Col, Button } from 'antd';
-import { Phone } from 'lucide-react';
+import React, { useState } from 'react';
+import { Form, Input, InputNumber, Select, Row, Col, Button, Segmented } from 'antd';
+import { Phone, Receipt, Smartphone } from 'lucide-react';
 import type {
   ApproveProposalRequest,
   CreateProposalRequest,
@@ -25,49 +25,112 @@ interface ExpenseModalProps {
 }
 
 export function ExpenseModal({ open, onCancel, onSubmit, loading, form, unitQuota = 30000 }: ExpenseModalProps) {
+  const [expenseMode, setExpenseMode] = useState<'CARD' | 'GENERAL'>('CARD');
+
   return (
     <AdaptiveModal
-      title="📱 Nạp Card Cho Nhân Sự Telesale"
+      title="💸 Ghi Nhận Chi Tiêu & Thu/Chi Quỹ"
       open={open}
       onCancel={onCancel}
       footer={null}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <div className="mb-4">
+        <Segmented
+          block
+          value={expenseMode}
+          onChange={(val) => setExpenseMode(val as 'CARD' | 'GENERAL')}
+          options={[
+            {
+              label: (
+                <span className="flex items-center justify-center gap-1.5 py-1">
+                  <AppIcon icon={Smartphone} size="sm" />
+                  <span>Nạp Card Telesale</span>
+                </span>
+              ),
+              value: 'CARD',
+            },
+            {
+              label: (
+                <span className="flex items-center justify-center gap-1.5 py-1">
+                  <AppIcon icon={Receipt} size="sm" />
+                  <span>Chi Hoạt Động Chung</span>
+                </span>
+              ),
+              value: 'GENERAL',
+            },
+          ]}
+        />
+      </div>
+
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) => {
+          if (expenseMode === 'GENERAL') {
+            values.telco = undefined;
+            values.beneficiaryPhone = undefined;
+          }
+          return onSubmit(values);
+        }}
+      >
         <Form.Item
           name="beneficiaryStaffName"
-          label="Nhân viên Telesale nhận cước"
-          rules={[{ required: true, message: 'Vui lòng nhập tên nhân viên Telesale' }]}
+          label={expenseMode === 'CARD' ? 'Nhân viên Telesale nhận cước' : 'Người nhận / Đơn vị thụ hưởng'}
+          rules={[{ required: true, message: 'Vui lòng nhập người/đơn vị nhận tiền' }]}
         >
-          <Input placeholder="Ví dụ: Nguyễn Văn A (Telesale Ca Sáng)" />
+          <Input
+            placeholder={
+              expenseMode === 'CARD'
+                ? 'Ví dụ: Nguyễn Văn A (Telesale Ca Sáng)'
+                : 'Ví dụ: Nhà cung cấp văn phòng phẩm / Chuyên viên tiếp khách'
+            }
+          />
         </Form.Item>
 
-        <Row gutter={12}>
-          <Col span={14}>
-            <Form.Item
-              name="beneficiaryPhone"
-              label="Số điện thoại nhận cước"
-              rules={[{ required: true, message: 'Vui lòng nhập SĐT' }]}
-            >
-              <Input prefix={<AppIcon icon={Phone} size="sm" />} placeholder="0987654321" />
-            </Form.Item>
-          </Col>
-          <Col span={10}>
-            <Form.Item name="telco" label="Nhà mạng" rules={[{ required: true }]}>
-              <Select
-                options={[
-                  { label: 'Viettel', value: 'VIETTEL' },
-                  { label: 'VinaPhone', value: 'VINAPHONE' },
-                  { label: 'MobiFone', value: 'MOBIFONE' },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
+        {expenseMode === 'CARD' && (
+          <Row gutter={12}>
+            <Col span={14}>
+              <Form.Item
+                name="beneficiaryPhone"
+                label="Số điện thoại nhận cước"
+                rules={[{ required: true, message: 'Vui lòng nhập SĐT' }]}
+              >
+                <Input prefix={<AppIcon icon={Phone} size="sm" />} placeholder="0987654321" />
+              </Form.Item>
+            </Col>
+            <Col span={10}>
+              <Form.Item name="telco" label="Nhà mạng" rules={[{ required: true, message: 'Chọn mạng' }]}>
+                <Select
+                  options={[
+                    { label: 'Viettel', value: 'VIETTEL' },
+                    { label: 'VinaPhone', value: 'VINAPHONE' },
+                    { label: 'MobiFone', value: 'MOBIFONE' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        )}
+
+        {expenseMode === 'GENERAL' && (
+          <Form.Item name="expenseCategory" label="Danh mục chi phí">
+            <Select
+              placeholder="Chọn danh mục chi"
+              options={[
+                { label: 'Văn phòng phẩm & Tiêu hao', value: 'OFFICE_SUPPLIES' },
+                { label: 'Tiếp khách & Trà nước', value: 'HOSPITALITY' },
+                { label: 'Sửa chữa & Bảo trì gấp', value: 'MAINTENANCE' },
+                { label: 'Cước vận chuyển & Giao nhận', value: 'SHIPPING' },
+                { label: 'Chi phí nghiệp vụ khác', value: 'OTHER' },
+              ]}
+            />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="amount"
-          label="Số tiền nạp (VNĐ)"
+          label="Số tiền chi (VNĐ)"
           rules={[{ required: true, message: 'Vui lòng nhập số tiền' }]}
         >
           <InputNumber
@@ -78,49 +141,57 @@ export function ExpenseModal({ open, onCancel, onSubmit, loading, form, unitQuot
           />
         </Form.Item>
 
-        <div className="flex gap-2 mb-4">
-          <Button
-            size="small"
-            onClick={() => {
-              form.setFieldValue('amount', unitQuota);
-            }}
-          >
-            {unitQuota.toLocaleString('vi-VN')}đ (Định Mức)
-          </Button>
-          <Button
-            size="small"
-            onClick={() => {
-              form.setFieldValue('amount', 50000);
-            }}
-          >
-            50.000đ
-          </Button>
-          <Button
-            size="small"
-            onClick={() => {
-              form.setFieldValue('amount', 100000);
-            }}
-          >
-            100.000đ
-          </Button>
-        </div>
+        {expenseMode === 'CARD' && (
+          <div className="flex gap-2 mb-4">
+            <Button
+              size="small"
+              onClick={() => {
+                form.setFieldValue('amount', unitQuota);
+              }}
+            >
+              {unitQuota.toLocaleString('vi-VN')}đ (Định Mức)
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                form.setFieldValue('amount', 50000);
+              }}
+            >
+              50.000đ
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                form.setFieldValue('amount', 100000);
+              }}
+            >
+              100.000đ
+            </Button>
+          </div>
+        )}
 
         <Form.Item
           name="description"
           label="Nội dung chi"
           rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}
         >
-          <Input placeholder="Nạp cước Viettel 30k cho Telesale tư vấn khách hàng" />
+          <Input
+            placeholder={
+              expenseMode === 'CARD'
+                ? 'Nạp cước Viettel 30k cho Telesale tư vấn khách hàng'
+                : 'Mua giấy in, nước suối phục vụ chi nhánh...'
+            }
+          />
         </Form.Item>
 
-        <Form.Item name="receiptUrl" label="Link ảnh chứng từ / Bill SMS nạp tiền thành công (Tùy chọn)">
-          <Input placeholder="https://example.com/bill-nap-card.jpg" />
+        <Form.Item name="receiptUrl" label="Link ảnh chứng từ / Hóa đơn điện tử (Tùy chọn)">
+          <Input placeholder="https://example.com/chung-tu-hoa-don.jpg" />
         </Form.Item>
 
         <div className="flex justify-end gap-2 pt-2">
           <Button onClick={onCancel}>Hủy</Button>
           <Button type="primary" htmlType="submit" loading={loading} className="bg-emerald-600 hover:bg-emerald-700">
-            Xác Nhận Nạp Tiền (Trừ Quỹ)
+            Xác Nhận Chi Tiêu (Trừ Quỹ)
           </Button>
         </div>
       </Form>
@@ -464,6 +535,91 @@ export function ConfigModal({ open, onCancel, onSubmit, loading, form }: ConfigM
           <Button onClick={onCancel}>Hủy</Button>
           <Button type="primary" htmlType="submit" loading={loading}>
             Lưu Cấu Hình
+          </Button>
+        </div>
+      </Form>
+    </AdaptiveModal>
+  );
+}
+
+interface ConfirmReceiptModalProps {
+  open: boolean;
+  onCancel: () => void;
+  onSubmit: (values: any) => Promise<void>;
+  loading: boolean;
+  form: any;
+  proposal?: FundProposal | null;
+}
+
+export function ConfirmReceiptModal({
+  open,
+  onCancel,
+  onSubmit,
+  loading,
+  form,
+  proposal,
+}: ConfirmReceiptModalProps) {
+  const amount = Number(
+    proposal?.actualDisbursedAmount || proposal?.approvedAmount || proposal?.requestedAmount || 0
+  );
+
+  return (
+    <AdaptiveModal
+      title="📥 Thủ Quỹ Xác Nhận Đã Nhận Tiền"
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      destroyOnHidden
+    >
+      <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 mb-4 text-xs text-emerald-900 dark:text-emerald-200">
+        <strong>Xác nhận thực nhận tiền:</strong> Chỉ khi Thủ quỹ bấm xác nhận đã nhận đủ tiền vào tài khoản hoặc két của quỹ thì hệ thống mới chính thức ghi tăng số dư quỹ và tạo bút toán sổ quỹ.
+      </div>
+
+      <div className="space-y-2 mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">
+        <div className="flex justify-between">
+          <span className="text-slate-500">Phiếu đề xuất:</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200">{proposal?.title}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500">Số tiền giải ngân:</span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+            {amount.toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+        {proposal?.paymentMethod && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">Kênh chuyển:</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{proposal.paymentMethod}</span>
+          </div>
+        )}
+        {proposal?.bankRefCode && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">Mã chuẩn chi / Giao dịch:</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300">{proposal.bankRefCode}</span>
+          </div>
+        )}
+        {proposal?.disbursedByName && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">Kế toán giải ngân:</span>
+            <span className="text-slate-700 dark:text-slate-300">{proposal.disbursedByName}</span>
+          </div>
+        )}
+      </div>
+
+      <Form form={form} layout="vertical" onFinish={onSubmit}>
+        <Form.Item name="note" label="Ghi chú xác nhận của Thủ quỹ (Tùy chọn)">
+          <Input.TextArea rows={2} placeholder="Đã nhận đủ tiền vào tài khoản/két tiền mặt..." />
+        </Form.Item>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button onClick={onCancel}>Hủy</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+          >
+            Xác Nhận Đã Nhận Tiền (Ghi Tăng Quỹ)
           </Button>
         </div>
       </Form>

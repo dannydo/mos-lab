@@ -7,6 +7,7 @@ export type ProposalStatus =
   | 'APPROVED'
   | 'PENDING_REAPPROVAL'
   | 'DISBURSED'
+  | 'COMPLETED'
   | 'REJECTED'
   | 'CANCELLED';
 export type TransactionType = 'TOPUP' | 'EXPENSE' | 'ADJUSTMENT';
@@ -159,6 +160,7 @@ export interface RecordExpenseRequest {
   beneficiaryPhone?: string;
   telco?: string;
   receiptUrls?: string[];
+  expenseCategory?: string;
 }
 
 export interface CreateProposalRequest {
@@ -181,6 +183,12 @@ export interface DisburseProposalRequest {
   disbursementReceiptUrls?: string[];
   disbursementNote?: string;
   disbursedAt?: string;
+  autoConfirmReceipt?: boolean;
+}
+
+export interface ConfirmReceiptRequest {
+  receiptConfirmedAmount?: number;
+  note?: string;
 }
 
 export interface ReconcileAndLockPeriodRequest {

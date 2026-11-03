@@ -163,12 +163,14 @@ test('FundService - Tolerance Control allows disbursement within tolerance', asy
   const mockCrm: any = {
     crmFundProposal: {
       findUnique: async () => proposal,
-      update: async ({ data }: any) => ({
-        ...proposal,
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
+      update: async ({ data }: any) => {
+        Object.assign(proposal, data);
+        return {
+          ...proposal,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      },
     },
     crmFund: {
       findUnique: async () => ({ id: 'fund-telesale-card', currentBalance, name: 'Quỹ Nạp Card' }),
@@ -208,6 +210,19 @@ test('FundService - Tolerance Control allows disbursement within tolerance', asy
   assert.equal(result.success, true);
   assert.equal(result.proposal.status, 'DISBURSED');
   assert.equal(result.proposal.actualDisbursedAmount, 515000);
+  // Số dư chưa tăng trước khi Thủ quỹ xác nhận nhận tiền (MOS-FEAT-192 Bước 3 Invariant)
+  assert.equal(currentBalance, 200000);
+
+  // Thủ quỹ xác nhận nhận tiền -> lúc này số dư mới tăng
+  const confirmResult = await FundService.confirmProposalReceipt(
+    mockCrm,
+    'prop-2',
+    { note: 'Đã nhận đủ tiền' },
+    { id: 5, name: 'Thủ quỹ Phạm Thị B' }
+  );
+
+  assert.equal(confirmResult.success, true);
+  assert.equal(confirmResult.proposal.status, 'COMPLETED');
   assert.equal(currentBalance, 715000); // 200k + 515k
   assert.equal(transactions[0].type, 'TOPUP');
   assert.equal(Number(transactions[0].amount), 515000);
@@ -497,4 +512,198 @@ test('FundService - createFund creates new fund with 0 balance, DRAFT status, ro
   assert.equal(updatedFund.maxQuota, 10000000);
   assert.equal(updatedFund.unitQuota, 500000);
   assert.equal(updatedFund.status, 'ACTIVE');
+});
+
+test('FundService - activateFund validates requirements and transitions DRAFT -> ACTIVE with first OPEN period (MOS-FEAT-192 Step 3)', async () => {
+  let fundStatus = 'DRAFT';
+  let createdPeriod: any = null;
+
+  const fundData: any = {
+    id: 'fund-draft-test',
+    code: 'FUND_DRAFT_TEST',
+    name: 'Quỹ Dự Thảo Thử Nghiệm',
+    maxQuota: 5000000,
+    unitQuota: 200000,
+    currentBalance: 0,
+    alertThresholdPercent: 80,
+    status: fundStatus,
+    roles: [{ id: 'role-1', roleKey: 'HOLDER', roleName: 'Thủ quỹ', permissionsJson: '[]' }],
+    assignments: [{ id: 'assign-1', roleKey: 'HOLDER', staffId: 99, staffName: 'Thủ Quỹ Test' }],
+    periods: [],
+    transactions: [],
+    proposals: [],
+  };
+
+  const mockCrm: any = {
+    crmFund: {
+      findUnique: async () => ({
+        ...fundData,
+        status: fundStatus,
+        roles: fundData.roles,
+        assignments: fundData.assignments,
+        periods: createdPeriod ? [createdPeriod] : [],
+        transactions: [],
+        proposals: [],
+      }),
+      update: async ({ data }: any) => {
+        fundStatus = data.status;
+        fundData.status = data.status;
+        return { ...fundData, status: fundStatus };
+      },
+    },
+    crmFundPeriod: {
+      findFirst: async () => createdPeriod,
+      create: async ({ data }: any) => {
+        createdPeriod = {
+          ...data,
+          openingBalance: Number(data.openingBalance),
+          systemBalance: Number(data.systemBalance),
+          totalIncome: Number(data.totalIncome),
+          totalExpense: Number(data.totalExpense),
+          closingBalance: null,
+          variance: null,
+          lockedByStaffId: null,
+          lockedByName: null,
+          lockedAt: null,
+          notes: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        return createdPeriod;
+      },
+    },
+    $transaction: async (fn: any) => fn(mockCrm),
+  };
+
+  const actor = { id: 1, name: 'Admin' };
+
+  // 1. Thất bại nếu quỹ chưa có HOLDER
+  const fundWithoutHolder = { ...fundData, roles: [], assignments: [] };
+  const mockCrmNoHolder: any = {
+    crmFund: { findUnique: async () => fundWithoutHolder },
+  };
+  await assert.rejects(
+    async () => {
+      await FundService.activateFund(mockCrmNoHolder, 'fund-draft-test', actor);
+    },
+    (err: any) => err instanceof FundError && err.message.includes('HOLDER')
+  );
+
+  // 2. Kích hoạt thành công khi có đủ điều kiện
+  const activated = await FundService.activateFund(mockCrm, 'fund-draft-test', actor);
+  assert.equal(activated.status, 'ACTIVE');
+  assert.ok(createdPeriod);
+  assert.equal(createdPeriod.status, 'OPEN');
+  assert.equal(createdPeriod.fundId, 'fund-draft-test');
+});
+
+test('FundService - Multi-step Dynamic Approval & Replenishment Receipt Confirmation (MOS-FEAT-192 Step 3-5)', async () => {
+  let fundBalance = 100000;
+  const transactions: any[] = [];
+
+  const approvalConfig = {
+    enabled: true,
+    steps: [
+      { level: 1, name: 'Quản lý duyệt cấp 1', requiredAmountAbove: 0 },
+      { level: 2, name: 'Danny duyệt cấp 2', requiredAmountAbove: 1000000 },
+    ],
+  };
+
+  const proposal: any = {
+    id: 'prop-dyn-1',
+    fundId: 'fund-dyn',
+    proposalType: 'REPLENISHMENT',
+    title: 'Bổ sung vốn quỹ 2 triệu',
+    description: 'Cần nạp quỹ hoạt động',
+    requestedAmount: 2000000,
+    approvedAmount: null,
+    actualDisbursedAmount: null,
+    status: 'PENDING_APPROVAL',
+    currentApprovalLevel: 1,
+    approvalsJson: null,
+    fund: {
+      id: 'fund-dyn',
+      name: 'Quỹ Động',
+      currentBalance: fundBalance,
+      toleranceMode: 'STRICT',
+      toleranceAmount: 0,
+      approvalConfigJson: JSON.stringify(approvalConfig),
+    },
+  };
+
+  const mockCrm: any = {
+    crmFundProposal: {
+      findUnique: async () => proposal,
+      update: async ({ data }: any) => {
+        Object.assign(proposal, data);
+        return { ...proposal, createdAt: new Date(), updatedAt: new Date() };
+      },
+    },
+    crmFund: {
+      findUnique: async () => ({ id: 'fund-dyn', name: 'Quỹ Động', currentBalance: fundBalance }),
+      update: async ({ data }: any) => {
+        fundBalance = Number(data.currentBalance);
+        return { id: 'fund-dyn', currentBalance: fundBalance };
+      },
+    },
+    crmFundPeriod: {
+      findFirst: async () => ({ id: 'period-dyn-1', status: 'OPEN' }),
+      update: async () => ({}),
+    },
+    crmFundTransaction: {
+      create: async ({ data }: any) => {
+        transactions.push(data);
+        return { ...data, createdAt: new Date() };
+      },
+    },
+    $transaction: async (fn: any) => fn(mockCrm),
+  };
+
+  // Bước A: Cấp 1 duyệt -> Vì số tiền 2.000.000đ >= 1.000.000đ của cấp 2, chuyển tiếp sang Level 2 chờ duyệt
+  const step1 = await FundService.approveProposal(
+    mockCrm,
+    'prop-dyn-1',
+    { approved: true, approvedAmount: 2000000, note: 'Quản lý OK' },
+    { id: 2, name: 'Quản Lý Chi Nhánh' }
+  );
+  assert.equal(step1.status, 'PENDING_APPROVAL');
+  assert.equal(step1.currentApprovalLevel, 2);
+
+  // Bước B: Cấp 2 (Danny) duyệt -> Hoàn tất quy trình duyệt -> Chuyển sang APPROVED
+  const step2 = await FundService.approveProposal(
+    mockCrm,
+    'prop-dyn-1',
+    { approved: true, approvedAmount: 2000000, note: 'Danny duyệt' },
+    { id: 1, name: 'Danny Do' }
+  );
+  assert.equal(step2.status, 'APPROVED');
+
+  // Bước C: Kế toán giải ngân -> Trạng thái sang DISBURSED nhưng số dư quỹ CHƯA TĂNG (Bước 3 Invariant)
+  const disburseRes = await FundService.disburseProposal(
+    mockCrm,
+    'prop-dyn-1',
+    {
+      actualDisbursedAmount: 2000000,
+      paymentMethod: 'VCB',
+      bankRefCode: 'VCB_DYN_888',
+    },
+    { id: 4, name: 'Kế toán Bùi Tổng' }
+  );
+  assert.equal(disburseRes.success, true);
+  assert.equal(disburseRes.proposal.status, 'DISBURSED');
+  assert.equal(fundBalance, 100000); // Vẫn là 100k, chưa được cộng!
+
+  // Bước D: Thủ quỹ xác nhận nhận tiền -> Trạng thái sang COMPLETED, số dư TĂNG lên 2.100.000đ
+  const confirmRes = await FundService.confirmProposalReceipt(
+    mockCrm,
+    'prop-dyn-1',
+    { note: 'Đã nhận đủ 2.000.000đ vào két quỹ' },
+    { id: 5, name: 'Thủ Quỹ Chi Nhánh' }
+  );
+  assert.equal(confirmRes.success, true);
+  assert.equal(confirmRes.proposal.status, 'COMPLETED');
+  assert.equal(fundBalance, 2100000); // 100k + 2000k
+  assert.equal(transactions.length, 1);
+  assert.equal(transactions[0].type, 'TOPUP');
+  assert.equal(Number(transactions[0].amount), 2000000);
 });

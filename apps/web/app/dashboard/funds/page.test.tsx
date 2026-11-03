@@ -8,11 +8,13 @@ const { mockFundsApi, mockStaffApi } = vi.hoisted(() => {
     list: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    activate: vi.fn(),
     getOverview: vi.fn(),
     recordExpense: vi.fn(),
     createProposal: vi.fn(),
     approveProposal: vi.fn(),
     disburseProposal: vi.fn(),
+    confirmProposalReceipt: vi.fn(),
     reconcileAndLockPeriod: vi.fn(),
     updateConfig: vi.fn(),
   };
@@ -211,6 +213,92 @@ describe('FundsManagementPage Component (MOS-BUG-174 Step 1)', () => {
       expect(callArg.name).toBe('Quỹ Hoạt Động Mới');
       expect(callArg.code).toBe('FUND_HOAT_DONG_MOI');
       expect(callArg.status).toBe('DRAFT');
+    });
+  });
+
+  it('opens FundDetailDrawer with 4 operational tabs when clicking fund name or action (MOS-FEAT-192 Steps 3-6)', async () => {
+    const mockFund = {
+      id: 'fund-ops-192',
+      code: 'FUND_OPS_192',
+      name: 'Quỹ Vận Hành Chi Nhánh 192',
+      description: 'Quỹ thực thi vận hành',
+      currentBalance: 3000000,
+      maxQuota: 10000000,
+      unitQuota: 100000,
+      alertThresholdPercent: 80,
+      toleranceMode: 'STRICT' as const,
+      toleranceAmount: 0,
+      status: 'ACTIVE' as const,
+      isLowBalance: false,
+      usedAmount: 7000000,
+      usedPercent: 70,
+      createdAt: '2026-11-01T00:00:00.000Z',
+      updatedAt: '2026-11-01T00:00:00.000Z',
+      recentTransactions: [
+        {
+          id: 'tx-1',
+          fundId: 'fund-ops-192',
+          type: 'TOPUP' as const,
+          amount: 3000000,
+          balanceBefore: 0,
+          balanceAfter: 3000000,
+          description: 'Cấp vốn ban đầu',
+          status: 'COMPLETED' as const,
+          actorStaffId: 1,
+          actorStaffName: 'Danny Do',
+          receiptUrls: [],
+          createdAt: '2026-11-01T08:00:00.000Z',
+        },
+      ],
+      pendingProposals: [],
+      assignments: [
+        {
+          id: 'a-1',
+          fundId: 'fund-ops-192',
+          roleKey: 'HOLDER',
+          staffId: 5,
+          staffName: 'Thủ Quỹ Chi Nhánh',
+          createdAt: '2026-11-01T00:00:00.000Z',
+          updatedAt: '2026-11-01T00:00:00.000Z',
+        },
+      ],
+      currentPeriod: {
+        id: 'p-1',
+        fundId: 'fund-ops-192',
+        periodName: 'Kỳ Tháng 11/2026',
+        startDate: '2026-11-01T00:00:00.000Z',
+        endDate: '2026-11-30T23:59:59.000Z',
+        openingBalance: 0,
+        closingBalance: null,
+        totalIncome: 3000000,
+        totalExpense: 0,
+        systemBalance: 3000000,
+        status: 'OPEN' as const,
+        createdAt: '2026-11-01T00:00:00.000Z',
+        updatedAt: '2026-11-01T00:00:00.000Z',
+      },
+    };
+
+    mockFundsApi.list.mockResolvedValueOnce({ success: true, data: [mockFund] });
+    mockFundsApi.getOverview.mockResolvedValueOnce({ success: true, data: mockFund });
+
+    render(<FundsManagementPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Quỹ Vận Hành Chi Nhánh 192')).toBeDefined();
+    });
+
+    // Click on fund name to open drawer
+    const fundNameEl = screen.getByText('Quỹ Vận Hành Chi Nhánh 192');
+    fireEvent.click(fundNameEl);
+
+    // Verify FundDetailDrawer opens with the 4 operational tabs
+    await waitFor(() => {
+      expect(mockFundsApi.getOverview).toHaveBeenCalledWith('fund-ops-192');
+      expect(screen.getByText('1. Tổng Quan & Số Dư')).toBeDefined();
+      expect(screen.getByText('2. Sổ Giao Dịch & Chứng Từ')).toBeDefined();
+      expect(screen.getByText('3. Đề Xuất & Cấp Vốn')).toBeDefined();
+      expect(screen.getByText('4. Kỳ Sổ Quỹ & Đối Soát')).toBeDefined();
     });
   });
 });

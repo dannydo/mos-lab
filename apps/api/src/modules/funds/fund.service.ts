@@ -4,12 +4,15 @@ import type {
   ApproveProposalRequest,
   CreateProposalRequest,
   DisburseProposalRequest,
+  ConfirmReceiptRequest,
   Fund,
   FundPeriod,
   FundProposal,
   FundRole,
   FundRoleAssignment,
   FundTransaction,
+  FundApprovalWorkflowConfig,
+  ProposalStatus,
   RecordExpenseRequest,
   ReconcileAndLockPeriodRequest,
   UpdateFundConfigRequest,
@@ -143,6 +146,85 @@ export class FundService {
   }
 
   /**
+   * Kích hoạt Quỹ từ trạng thái DRAFT / FROZEN -> ACTIVE (Bước 3)
+   * - Kiểm tra các điều kiện bắt buộc:
+   *   + Hạn mức tối đa > 0.
+   *   + Có ít nhất 1 Thủ quỹ / Người giữ quỹ (HOLDER).
+   * - Tự động mở kỳ sổ quỹ đầu tiên nếu chưa có kỳ nào mở.
+   */
+  static async activateFund(
+    crm: CrmPrismaClient,
+    fundId: string,
+    _actor: FundActor
+  ): Promise<Fund & { recentTransactions: FundTransaction[]; pendingProposals: FundProposal[] }> {
+    const fund = await crm.crmFund.findUnique({
+      where: { id: fundId },
+      include: {
+        roles: true,
+        assignments: true,
+      },
+    });
+
+    if (!fund) throw new FundError(`Quỹ không tồn tại (id: ${fundId})`, 404);
+    if (fund.status === 'ACTIVE') {
+      return await this.getFundOverview(crm, fundId);
+    }
+
+    const maxQuota = Number(fund.maxQuota);
+    if (maxQuota <= 0) {
+      throw new FundError('Hạn mức tối đa của quỹ phải lớn hơn 0 trước khi kích hoạt', 400);
+    }
+
+    const hasHolder =
+      fund.assignments.some((a) => a.roleKey === 'HOLDER') ||
+      fund.roles.some((r) => r.roleKey === 'HOLDER');
+    if (!hasHolder) {
+      throw new FundError(
+        'Quỹ bắt buộc phải được phân công ít nhất 1 Thủ quỹ / Người giữ quỹ (HOLDER) trước khi kích hoạt',
+        400
+      );
+    }
+
+    await crm.$transaction(async (tx) => {
+      await tx.crmFund.update({
+        where: { id: fundId },
+        data: { status: 'ACTIVE' },
+      });
+
+      const existingPeriod = await tx.crmFundPeriod.findFirst({
+        where: { fundId, status: 'OPEN' },
+      });
+
+      if (!existingPeriod) {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        const startDate = new Date(year, now.getMonth(), 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59);
+        const periodName = `Kỳ Tháng ${month}/${year}`;
+        const periodId = `${fundId}-period-${year}-${String(month).padStart(2, '0')}`;
+
+        await tx.crmFundPeriod.create({
+          data: {
+            id: periodId,
+            fundId,
+            periodName,
+            startDate,
+            endDate,
+            openingBalance: new Prisma.Decimal(fund.currentBalance || 0),
+            systemBalance: new Prisma.Decimal(fund.currentBalance || 0),
+            totalIncome: new Prisma.Decimal(0),
+            totalExpense: new Prisma.Decimal(0),
+            status: 'OPEN',
+          },
+        });
+      }
+    });
+
+    return await this.getFundOverview(crm, fundId);
+  }
+
+  /**
    * Chi tiết & Tổng quan một Quỹ
    */
   static async getFundOverview(crm: CrmPrismaClient, fundId: string): Promise<Fund & { recentTransactions: FundTransaction[]; pendingProposals: FundProposal[] }> {
@@ -183,8 +265,8 @@ export class FundService {
       roleKey: r.roleKey,
       roleName: r.roleName,
       permissions: r.permissionsJson ? JSON.parse(r.permissionsJson) : [],
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
+      createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: r.updatedAt ? new Date(r.updatedAt).toISOString() : new Date().toISOString(),
     }));
 
     const assignments: FundRoleAssignment[] = f.assignments.map((a) => ({
@@ -194,8 +276,8 @@ export class FundService {
       staffId: a.staffId,
       staffName: a.staffName,
       assignedByStaffId: a.assignedByStaffId,
-      createdAt: a.createdAt.toISOString(),
-      updatedAt: a.updatedAt.toISOString(),
+      createdAt: a.createdAt ? new Date(a.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: a.updatedAt ? new Date(a.updatedAt).toISOString() : new Date().toISOString(),
     }));
 
     const activePeriod = f.periods[0];
@@ -289,8 +371,8 @@ export class FundService {
       roles,
       assignments,
       currentPeriod,
-      createdAt: f.createdAt.toISOString(),
-      updatedAt: f.updatedAt.toISOString(),
+      createdAt: f.createdAt ? new Date(f.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: f.updatedAt ? new Date(f.updatedAt).toISOString() : new Date().toISOString(),
       recentTransactions,
       pendingProposals,
     };
@@ -489,6 +571,7 @@ export class FundService {
   ): Promise<FundProposal> {
     const proposal = await crm.crmFundProposal.findUnique({
       where: { id: proposalId },
+      include: { fund: true },
     });
 
     if (!proposal) throw new FundError(`Phiếu đề xuất không tồn tại (id: ${proposalId})`, 404);
@@ -545,11 +628,40 @@ export class FundService {
       timestamp: new Date().toISOString(),
     });
 
-    // Duyệt hoàn tất -> Chuyển sang APPROVED (Sẵn sàng giải ngân)
+    // Kiểm tra quy trình duyệt động (FundApprovalWorkflowConfig)
+    let nextStatus: ProposalStatus = 'APPROVED';
+    let nextLevel = proposal.currentApprovalLevel;
+
+    if (proposal.fund?.approvalConfigJson) {
+      try {
+        const config: FundApprovalWorkflowConfig = JSON.parse(proposal.fund.approvalConfigJson);
+        if (config.enabled && Array.isArray(config.steps) && config.steps.length > 0) {
+          const currentStepIdx = config.steps.findIndex((s) => s.level === proposal.currentApprovalLevel);
+          let foundNextStep = false;
+          for (let i = currentStepIdx + 1; i < config.steps.length; i++) {
+            const step = config.steps[i];
+            if (!step.requiredAmountAbove || approvedAmount >= step.requiredAmountAbove) {
+              nextStatus = 'PENDING_APPROVAL';
+              nextLevel = step.level;
+              foundNextStep = true;
+              break;
+            }
+          }
+          if (!foundNextStep) {
+            nextStatus = 'APPROVED';
+          }
+        }
+      } catch {
+        nextStatus = 'APPROVED';
+      }
+    }
+
+    // Cập nhật trạng thái phiếu sau khi duyệt
     const updated = await crm.crmFundProposal.update({
       where: { id: proposalId },
       data: {
-        status: 'APPROVED',
+        status: nextStatus,
+        currentApprovalLevel: nextLevel,
         approvedAmount: new Prisma.Decimal(approvedAmount),
         approvalsJson: JSON.stringify(existingApprovals),
         reapprovalReason: null, // Xóa lý do duyệt lại cũ nếu có
@@ -587,6 +699,7 @@ export class FundService {
    * CƠ CHẾ KIỂM SOÁT 2: Thực Thi Giải Ngân Kế Toán & Kiểm Soát Dung Sai (Tolerance Control)
    * - Kế toán (Bùi Tổng) xác nhận tiền đã ra khỏi tài khoản/két: bắt buộc mã GD, bill, kênh chuyển.
    * - Nếu actual > approved + tolerance => Tự động KHÓA và chuyển PENDING_REAPPROVAL.
+   * - Chỉ cập nhật số dư khi có cờ autoConfirmReceipt hoặc khi Thủ quỹ xác nhận nhận tiền (Bước 3).
    */
   static async disburseProposal(
     crm: CrmPrismaClient,
@@ -669,13 +782,6 @@ export class FundService {
       if (!fund) throw new FundError('Quỹ không tồn tại', 404);
 
       const disbursedAt = input.disbursedAt ? new Date(input.disbursedAt) : new Date();
-      const currentBalance = Number(fund.currentBalance);
-      const newBalance = currentBalance + input.actualDisbursedAmount;
-
-      const activePeriod = await tx.crmFundPeriod.findFirst({
-        where: { fundId: fund.id, status: 'OPEN' },
-        orderBy: { startDate: 'desc' },
-      });
 
       // 1. Cập nhật phiếu sang DISBURSED
       const updated = await tx.crmFundProposal.update({
@@ -694,41 +800,49 @@ export class FundService {
         },
       });
 
-      // 2. Tạo giao dịch TOPUP vào sổ quỹ
-      const txId = `tx-topup-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-      await tx.crmFundTransaction.create({
-        data: {
-          id: txId,
-          fundId: fund.id,
-          periodId: activePeriod?.id || null,
-          proposalId: proposal.id,
-          type: 'TOPUP',
-          amount: new Prisma.Decimal(input.actualDisbursedAmount),
-          balanceBefore: new Prisma.Decimal(currentBalance),
-          balanceAfter: new Prisma.Decimal(newBalance),
-          description: `Giải ngân bổ sung vốn theo phiếu: ${proposal.title} (Mã GD: ${input.bankRefCode})`,
-          status: 'COMPLETED',
-          receiptUrlsJson: input.disbursementReceiptUrls ? JSON.stringify(input.disbursementReceiptUrls) : null,
-          actorStaffId: actor.id,
-          actorStaffName: actor.name,
-        },
-      });
+      let newBalance = Number(fund.currentBalance);
 
-      // 3. Tăng số dư thực tế của quỹ
-      await tx.crmFund.update({
-        where: { id: fund.id },
-        data: { currentBalance: new Prisma.Decimal(newBalance) },
-      });
+      // Nếu có cờ autoConfirmReceipt: thực hiện cập nhật số dư ngay (cho backward compatibility hoặc auto flow)
+      if (input.autoConfirmReceipt) {
+        newBalance = Number(fund.currentBalance) + input.actualDisbursedAmount;
+        const activePeriod = await tx.crmFundPeriod.findFirst({
+          where: { fundId: fund.id, status: 'OPEN' },
+          orderBy: { startDate: 'desc' },
+        });
 
-      // 4. Cập nhật kỳ kế toán
-      if (activePeriod) {
-        await tx.crmFundPeriod.update({
-          where: { id: activePeriod.id },
+        const txId = `tx-topup-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        await tx.crmFundTransaction.create({
           data: {
-            totalIncome: { increment: new Prisma.Decimal(input.actualDisbursedAmount) },
-            systemBalance: new Prisma.Decimal(newBalance),
+            id: txId,
+            fundId: fund.id,
+            periodId: activePeriod?.id || null,
+            proposalId: proposal.id,
+            type: 'TOPUP',
+            amount: new Prisma.Decimal(input.actualDisbursedAmount),
+            balanceBefore: fund.currentBalance,
+            balanceAfter: new Prisma.Decimal(newBalance),
+            description: `Giải ngân bổ sung vốn theo phiếu: ${proposal.title} (Mã GD: ${input.bankRefCode})`,
+            status: 'COMPLETED',
+            receiptUrlsJson: input.disbursementReceiptUrls ? JSON.stringify(input.disbursementReceiptUrls) : null,
+            actorStaffId: actor.id,
+            actorStaffName: actor.name,
           },
         });
+
+        await tx.crmFund.update({
+          where: { id: fund.id },
+          data: { currentBalance: new Prisma.Decimal(newBalance) },
+        });
+
+        if (activePeriod) {
+          await tx.crmFundPeriod.update({
+            where: { id: activePeriod.id },
+            data: {
+              totalIncome: { increment: new Prisma.Decimal(input.actualDisbursedAmount) },
+              systemBalance: new Prisma.Decimal(newBalance),
+            },
+          });
+        }
       }
 
       return {
@@ -758,7 +872,160 @@ export class FundService {
           createdAt: updated.createdAt.toISOString(),
           updatedAt: updated.updatedAt.toISOString(),
         },
-        message: `Giải ngân thành công ${input.actualDisbursedAmount.toLocaleString('vi-VN')}đ vào Quỹ ${fund.name}. Số dư mới: ${newBalance.toLocaleString('vi-VN')}đ.`,
+        message: input.autoConfirmReceipt
+          ? `Giải ngân thành công ${input.actualDisbursedAmount.toLocaleString('vi-VN')}đ vào Quỹ ${fund.name}. Số dư mới: ${newBalance.toLocaleString('vi-VN')}đ.`
+          : `Kế toán đã giải ngân ${input.actualDisbursedAmount.toLocaleString('vi-VN')}đ. Đang chờ Thủ quỹ xác nhận thực nhận tiền để ghi tăng số dư.`,
+      };
+    });
+  }
+
+  /**
+   * CƠ CHẾ 2B: Thủ quỹ xác nhận thực nhận tiền (Bước 3)
+   * - Chỉ cập nhật số dư thực tế của quỹ KHI VÀ CHỈ KHI Thủ quỹ xác nhận nhận tiền.
+   */
+  static async confirmProposalReceipt(
+    crm: CrmPrismaClient,
+    proposalId: string,
+    input: ConfirmReceiptRequest,
+    actor: FundActor
+  ): Promise<{ success: boolean; proposal: FundProposal; message: string; newBalance: number }> {
+    const proposal = await crm.crmFundProposal.findUnique({
+      where: { id: proposalId },
+      include: { fund: true },
+    });
+
+    if (!proposal) throw new FundError(`Phiếu đề xuất không tồn tại (id: ${proposalId})`, 404);
+    if (proposal.status !== 'DISBURSED') {
+      throw new FundError(
+        `Phiếu đề xuất đang ở trạng thái ${proposal.status}, chỉ có thể xác nhận nhận tiền khi phiếu ở trạng thái ĐÃ GIẢI NGÂN (DISBURSED)`,
+        400
+      );
+    }
+
+    const disbursedAmount = Number(
+      proposal.actualDisbursedAmount || proposal.approvedAmount || proposal.requestedAmount
+    );
+    if (disbursedAmount <= 0) {
+      throw new FundError('Số tiền giải ngân trên phiếu không hợp lệ', 400);
+    }
+
+    return await crm.$transaction(async (tx) => {
+      const fund = await tx.crmFund.findUnique({ where: { id: proposal.fundId } });
+      if (!fund) throw new FundError('Quỹ không tồn tại', 404);
+
+      const currentBalance = Number(fund.currentBalance);
+      const newBalance = currentBalance + disbursedAmount;
+
+      let activePeriod = await tx.crmFundPeriod.findFirst({
+        where: { fundId: fund.id, status: 'OPEN' },
+        orderBy: { startDate: 'desc' },
+      });
+
+      if (!activePeriod) {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        activePeriod = await tx.crmFundPeriod.create({
+          data: {
+            id: `${fund.id}-period-${year}-${String(month).padStart(2, '0')}`,
+            fundId: fund.id,
+            periodName: `Kỳ Tháng ${month}/${year}`,
+            startDate: new Date(year, now.getMonth(), 1),
+            endDate: new Date(year, month, 0, 23, 59, 59),
+            openingBalance: new Prisma.Decimal(currentBalance),
+            systemBalance: new Prisma.Decimal(newBalance),
+            totalIncome: new Prisma.Decimal(disbursedAmount),
+            totalExpense: new Prisma.Decimal(0),
+            status: 'OPEN',
+          },
+        });
+      }
+
+      // 1. Tạo giao dịch TOPUP vào sổ quỹ
+      const txId = `tx-topup-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      await tx.crmFundTransaction.create({
+        data: {
+          id: txId,
+          fundId: fund.id,
+          periodId: activePeriod?.id || null,
+          proposalId: proposal.id,
+          type: 'TOPUP',
+          amount: new Prisma.Decimal(disbursedAmount),
+          balanceBefore: new Prisma.Decimal(currentBalance),
+          balanceAfter: new Prisma.Decimal(newBalance),
+          description: `Thủ quỹ xác nhận thực nhận vốn bổ sung theo phiếu: ${proposal.title} (Mã GD: ${proposal.bankRefCode || 'N/A'})`,
+          status: 'COMPLETED',
+          receiptUrlsJson: proposal.disbursementReceiptUrlsJson,
+          actorStaffId: actor.id,
+          actorStaffName: actor.name,
+        },
+      });
+
+      // 2. Tăng số dư thực tế của quỹ
+      await tx.crmFund.update({
+        where: { id: fund.id },
+        data: { currentBalance: new Prisma.Decimal(newBalance) },
+      });
+
+      // 3. Tăng tổng thu trong kỳ
+      if (activePeriod) {
+        await tx.crmFundPeriod.update({
+          where: { id: activePeriod.id },
+          data: {
+            totalIncome: { increment: new Prisma.Decimal(disbursedAmount) },
+            systemBalance: new Prisma.Decimal(newBalance),
+          },
+        });
+      }
+
+      // 4. Cập nhật phiếu sang COMPLETED
+      const existingApprovals = proposal.approvalsJson ? JSON.parse(proposal.approvalsJson) : [];
+      existingApprovals.push({
+        level: proposal.currentApprovalLevel + 1,
+        staffId: actor.id,
+        staffName: actor.name,
+        status: 'CONFIRMED_RECEIVED',
+        note: input.note || 'Thủ quỹ xác nhận đã nhận đủ tiền',
+        timestamp: new Date().toISOString(),
+      });
+
+      const updated = await tx.crmFundProposal.update({
+        where: { id: proposalId },
+        data: {
+          status: 'COMPLETED',
+          approvalsJson: JSON.stringify(existingApprovals),
+        },
+      });
+
+      return {
+        success: true,
+        message: `Thủ quỹ đã xác nhận nhận ${disbursedAmount.toLocaleString('vi-VN')}đ. Số dư Quỹ cập nhật thành công: ${newBalance.toLocaleString('vi-VN')}đ.`,
+        newBalance,
+        proposal: {
+          id: updated.id,
+          fundId: updated.fundId,
+          proposalType: updated.proposalType as any,
+          title: updated.title,
+          description: updated.description,
+          requestedAmount: Number(updated.requestedAmount),
+          approvedAmount: updated.approvedAmount ? Number(updated.approvedAmount) : null,
+          actualDisbursedAmount: updated.actualDisbursedAmount ? Number(updated.actualDisbursedAmount) : null,
+          status: 'COMPLETED',
+          currentApprovalLevel: updated.currentApprovalLevel,
+          approvals: existingApprovals,
+          disbursedByStaffId: updated.disbursedByStaffId,
+          disbursedByName: updated.disbursedByName,
+          disbursedAt: updated.disbursedAt?.toISOString() || null,
+          paymentMethod: updated.paymentMethod,
+          bankRefCode: updated.bankRefCode,
+          disbursementReceiptUrls: updated.disbursementReceiptUrlsJson ? JSON.parse(updated.disbursementReceiptUrlsJson) : [],
+          disbursementNote: updated.disbursementNote,
+          reapprovalReason: updated.reapprovalReason,
+          createdByStaffId: updated.createdByStaffId,
+          createdByName: updated.createdByName,
+          createdAt: updated.createdAt.toISOString(),
+          updatedAt: updated.updatedAt.toISOString(),
+        },
       };
     });
   }
