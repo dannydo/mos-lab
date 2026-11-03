@@ -8,9 +8,15 @@ interface Screen08LashProgressTimerProps {
   booking: BookingItem;
   onBack: () => void;
   onFinishTimer: () => void;
+  onEditService?: () => void;
 }
 
-export function Screen08LashProgressTimer({ booking, onBack, onFinishTimer }: Screen08LashProgressTimerProps) {
+export function Screen08LashProgressTimer({
+  booking,
+  onBack,
+  onFinishTimer,
+  onEditService,
+}: Screen08LashProgressTimerProps) {
   const [seconds, setSeconds] = useState(booking.progress?.elapsedSeconds || 4468); // 01:14:28
   const [isRunning, setIsRunning] = useState(true);
 
@@ -69,10 +75,28 @@ export function Screen08LashProgressTimer({ booking, onBack, onFinishTimer }: Sc
         {/* Progress Card */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 space-y-2.5 mx-1">
           <div className="flex items-center justify-between text-[14px]">
-            <span className="text-gray-500">Định mức ca New Flawless</span>
-            <span className="text-black font-bold">75 - 90 phút</span>
+            <span className="text-gray-500">Dịch vụ đang làm</span>
+            <div className="flex items-center gap-2">
+              <span className="text-black font-bold">{booking?.serviceName || 'New Flawless Mink'}</span>
+              {onEditService && (
+                <button
+                  type="button"
+                  onClick={onEditService}
+                  className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1 active:scale-95 cursor-pointer"
+                >
+                  ✏️ Đổi / Sửa mi
+                </button>
+              )}
+            </div>
           </div>
-          <div className="flex items-center justify-between text-[14px]">
+          <div className="flex items-center justify-between text-[12px] text-gray-500">
+            <span>Thông số mi:</span>
+            <span className="font-semibold text-gray-800">
+              Dáng {booking?.attributes?.style || 'Natural'} · Cong {booking?.attributes?.curl || 'C'} · Dài{' '}
+              {booking?.attributes?.length || '10-12mm'} · Dày {booking?.attributes?.thickness || '0.07mm'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[13px] pt-1 border-t border-gray-100">
             <span className="text-gray-500">Tiến độ thực hiện</span>
             <span className="text-[#22C55E] font-bold">82% (Đúng tiến độ)</span>
           </div>

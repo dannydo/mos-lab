@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
-import { BookingItem, COMBO_PACKAGES_CVL } from '../../state/mockData';
+import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import {
   Sparkles,
@@ -22,6 +22,7 @@ import {
   Activity,
   Check,
   Info,
+  RotateCw,
 } from 'lucide-react';
 import { isSuperAdminRole, isCanonicalSuperAdminIdentity } from '@mos-lab/shared';
 import { LASH_CURL_LIST } from './LashCurlData';
@@ -37,6 +38,7 @@ import {
   MATERIAL_MATRIX_UPDATED_EVENT,
   loadMaterialCatalog,
   resolveMaterialSpec,
+  calculateLashPricingAndCvPoints,
   type LashMaterialSpec,
 } from './LashMaterialConstraintMatrix';
 import {
@@ -73,7 +75,15 @@ interface Screen03ConsultationMatrixProps {
       medicalProblem?: string;
       notes?: string;
     },
-    selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null
+    selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null,
+    skuPricing?: {
+      skuName?: string;
+      skuPrice?: number;
+      upgradePrice?: number;
+      cvPoints?: number;
+      cvBreakdown?: string;
+      serviceType?: string;
+    } | null
   ) => void;
 }
 
@@ -141,6 +151,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   const [selectedColor, setSelectedColor] = useState<string>(booking?.attributes?.color || 'Đen Tuyền (Jet Black)');
   const [selectedVolume, setSelectedVolume] = useState<string>(booking?.attributes?.volume || initialMat.defaultVolume);
   const [selectedCount, setSelectedCount] = useState<string>(booking?.attributes?.count || initialMat.defaultCount);
+  const [serviceType, setServiceType] = useState<'Normal' | 'Retain'>(
+    booking?.serviceType === 'Retain' || booking?.serviceName?.toLowerCase().includes('dặm') ? 'Retain' : 'Normal'
+  );
 
   // Tự động đồng bộ khi danh mục cấu hình thay đổi hoặc khi chọn chất liệu mới
   useEffect(() => {
@@ -255,6 +268,18 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     isNewClient,
   ]);
 
+  // Mapping Giá Niêm Yết SKU & Điểm Thưởng Vòng Xoay CV trực tiếp theo thông số mi
+  const livePricingAndCvPoints = useMemo(() => {
+    return calculateLashPricingAndCvPoints({
+      materialId: selectedMaterial,
+      countStr: selectedCount,
+      volumeStr: selectedVolume,
+      designId: selectedStyle,
+      originalBookedPrice: booking?.servicePrice || 550000,
+      serviceType,
+    });
+  }, [selectedMaterial, selectedCount, selectedVolume, selectedStyle, booking?.servicePrice, serviceType, isNewClient]);
+
   // Áp dụng khuyến nghị an toàn vào thông số nối mi
   const handleApplyRecommendation = () => {
     setSelectedStyle(recommendation.recommendedDesign);
@@ -295,16 +320,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     return null;
   }, [naturalThickness, selectedThickness]);
 
-  // ---------------------------------------------------------------------------
-  // TAB 3: TƯ VẤN COMBO & GHI CHÚ KỸ THUẬT
-  // ---------------------------------------------------------------------------
-  const [selectedComboId, setSelectedComboId] = useState<string>(booking?.selectedCombo?.id || 'combo-flawless-5');
   const [notes, setNotes] = useState(
     booking?.attributes?.notes ||
       'Khách mí lót nhẹ, mi thật góc trong yếu. Chuyên Viên dán pad êm, nối form cánh quạt nhẹ ôm đuôi mắt.'
   );
 
-  const [activeSubTab, setActiveSubTab] = useState<'SPECS' | 'PROFILE' | 'COMBO'>(() => {
+  const [activeSubTab, setActiveSubTab] = useState<'SPECS' | 'PROFILE'>(() => {
     return (booking?.customerVisits ?? 1) <= 1 ? 'PROFILE' : 'SPECS';
   });
   const [isCurlZoomOpen, setIsCurlZoomOpen] = useState(false);
@@ -340,8 +361,6 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     }
   }, []);
 
-  const chosenComboOption = COMBO_PACKAGES_CVL.find((c) => c.id === selectedComboId) || null;
-
   const handleSubmit = () => {
     onSave(
       {
@@ -363,15 +382,15 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         medicalProblem: selectedMedicalProblem,
         notes,
       },
-      chosenComboOption
-        ? {
-            id: chosenComboOption.id,
-            name: chosenComboOption.name,
-            price: chosenComboOption.price,
-            bonus: chosenComboOption.cvBonus,
-            sessions: chosenComboOption.sessions,
-          }
-        : null
+      null,
+      {
+        skuName: livePricingAndCvPoints.skuName,
+        skuPrice: livePricingAndCvPoints.skuPrice,
+        upgradePrice: livePricingAndCvPoints.upgradePrice,
+        cvPoints: livePricingAndCvPoints.totalPoints,
+        cvBreakdown: livePricingAndCvPoints.breakdownLabel,
+        serviceType,
+      }
     );
   };
 
@@ -465,12 +484,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           </div>
         )}
 
-        {/* 2. Sub-tab Filter Segment Bar */}
-        <div className="bg-white/80 backdrop-blur-xs p-1 rounded-xl shadow-xs border border-gray-200/80 flex items-center gap-1">
+        {/* 2. Sub-tab Filter Segment Bar (Chỉ gồm 2 bước chuyên môn kỹ thuật) */}
+        <div className="bg-white/80 backdrop-blur-xs p-1 rounded-xl shadow-xs border border-gray-200/80 grid grid-cols-2 gap-1.5">
           <button
             type="button"
             onClick={() => setActiveSubTab('PROFILE')}
-            className={`py-1.5 px-2 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1 leading-none relative cursor-pointer ${
+            className={`py-2 px-2 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1.5 leading-none relative cursor-pointer ${
               activeSubTab === 'PROFILE' ? 'bg-black text-[#FFB400] shadow-sm' : 'text-gray-600 hover:text-black'
             }`}
           >
@@ -482,23 +501,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           <button
             type="button"
             onClick={() => setActiveSubTab('SPECS')}
-            className={`flex-1 py-1.5 px-1 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1 leading-none cursor-pointer ${
+            className={`py-2 px-2 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1.5 leading-none cursor-pointer ${
               activeSubTab === 'SPECS' ? 'bg-black text-[#FFB400] shadow-sm' : 'text-gray-600 hover:text-black'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>1. Dòng Mi → Dáng → Thông Số</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('COMBO')}
-            className={`py-1.5 px-2.5 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1 leading-none cursor-pointer ${
-              activeSubTab === 'COMBO' ? 'bg-black text-[#FFB400] shadow-sm' : 'text-gray-600 hover:text-black'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Combo</span>
           </button>
         </div>
 
@@ -507,6 +515,62 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         {/* ========================================================================= */}
         {activeSubTab === 'SPECS' && (
           <div className="space-y-3.5">
+            {/* QUY CÁCH DỊCH VỤ: NỐI MỚI (FULL SET) vs DẶM MI (REFILL) */}
+            <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-extrabold text-neutral-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#FFB400]" />
+                  QUY CÁCH DỊCH VỤ NỐI MI
+                </span>
+                <span
+                  className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    serviceType === 'Retain'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  }`}
+                >
+                  {serviceType === 'Retain'
+                    ? '🔄 Ca Dặm Mi (Refill) · Giá dặm niêm yết'
+                    : '✨ Ca Nối Mới Toàn Bộ (Full Set)'}
+                </span>
+              </div>
+
+              <div className="bg-[#1C1C1E] p-1 rounded-xl grid grid-cols-2 gap-1.5 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setServiceType('Normal')}
+                  className={`py-2 px-3 rounded-lg font-black text-[12px] flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    serviceType === 'Normal' ? 'bg-[#FFB400] text-black shadow-md' : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>NỐI MỚI (FULL SET)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServiceType('Retain');
+                    if (
+                      selectedCount.includes('100') ||
+                      selectedCount.includes('110') ||
+                      selectedCount.includes('120') ||
+                      selectedCount.includes('130')
+                    ) {
+                      const m = currentMaterialSpec.allowedCounts.find((c) => c.includes('60') || c.includes('50'));
+                      if (m) setSelectedCount(m);
+                    }
+                  }}
+                  className={`py-2 px-3 rounded-lg font-black text-[12px] flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    serviceType === 'Retain' ? 'bg-[#34C759] text-white shadow-md' : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  <span>DẶM MI (REFILL)</span>
+                </button>
+              </div>
+            </div>
+
             {/* --------------------------------------------------------------------- */}
             {/* BƯỚC 1: CHỌN CHẤT LIỆU / DÒNG MI (MATERIAL FAMILY)                    */}
             {/* --------------------------------------------------------------------- */}
@@ -956,24 +1020,38 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   </div>
                 </div>
 
-                {/* Mật độ hoàn thành */}
+                {/* Mật độ sợi / fan hoàn thành (50, 60, 70, 80, 90, 100, 110, 120, 130+) */}
                 <div className="pt-1.5 border-t border-gray-100">
-                  <div className="text-[10px] font-semibold text-gray-500 mb-1">Mật độ sợi / fan hoàn thành:</div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-semibold text-gray-500">Số sợi / fan mỗi mắt (50 – 130+):</span>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      {selectedCount}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-9">
                     {currentMaterialSpec.allowedCounts.map((cnt) => {
                       const active = selectedCount === cnt;
+                      const numStr = cnt.split(' ')[0];
+                      const tagStr = cnt.includes('Chuẩn')
+                        ? 'Chuẩn'
+                        : cnt.includes('Mỏng')
+                          ? 'Mỏng'
+                          : cnt.includes('Dày')
+                            ? 'Dày'
+                            : 'sợi';
                       return (
                         <button
                           key={cnt}
                           type="button"
                           onClick={() => setSelectedCount(cnt)}
-                          className={`p-1.5 rounded-lg border text-center text-[10px] font-bold transition-all cursor-pointer ${
+                          className={`py-1.5 px-0.5 rounded-xl border text-center transition-all cursor-pointer ${
                             active
-                              ? 'bg-[#FFB400] border-[#FFB400] text-black shadow-xs'
-                              : 'bg-[#F9F9FB] border-gray-100 text-gray-700'
+                              ? 'bg-[#FFB400] border-[#FFB400] text-black font-black shadow-xs ring-1 ring-amber-400'
+                              : 'bg-[#F9F9FB] border-gray-100 text-gray-700 hover:bg-gray-100 font-semibold'
                           }`}
                         >
-                          {cnt}
+                          <div className="text-[11px] leading-tight tabular-nums font-black">{numStr}</div>
+                          <div className="text-[8.5px] text-gray-500 mt-0.5 leading-none">{tagStr}</div>
                         </button>
                       );
                     })}
@@ -1402,70 +1480,6 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 3: TƯ VẤN GÓI COMBO MỚI (ĐIỀU RĂN CV-002)                              */}
-        {/* ========================================================================= */}
-        {activeSubTab === 'COMBO' && (
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between px-1 mb-1.5">
-                <span className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#FF9500]" />
-                  TƯ VẤN GÓI COMBO (THƯỞNG BẬC THANG CV🪶)
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700">Ai Checkout người đó nhận</span>
-              </div>
-
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border-2 border-[#FFB400] space-y-2">
-                {COMBO_PACKAGES_CVL.map((pkg) => {
-                  const active = selectedComboId === pkg.id;
-                  return (
-                    <div
-                      key={pkg.id}
-                      onClick={() => setSelectedComboId(pkg.id)}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                        active
-                          ? 'bg-amber-50/90 border-[#FF9500] shadow-xs'
-                          : 'bg-[#F9F9FB] border-transparent hover:border-gray-200'
-                      }`}
-                    >
-                      <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] font-bold text-black truncate">{pkg.name}</span>
-                        </div>
-                        <div className="text-[11px] text-gray-600 font-medium mt-0.5 tabular-nums">
-                          Giá gói: <strong className="text-black">{pkg.price.toLocaleString('vi-VN')} đ</strong> (
-                          {pkg.sessions} lần)
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full tabular-nums">
-                          +{pkg.cvBonus.toLocaleString('vi-VN')}đ
-                        </span>
-                        {active && (
-                          <span className="text-[10px] font-bold text-[#FF9500] mt-1 flex items-center gap-0.5">
-                            <CheckCircle2 className="w-3 h-3" /> Đã chọn
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedComboId('NONE')}
-                  className={`w-full py-2 px-3 rounded-xl text-[12px] font-semibold text-center transition-all ${
-                    selectedComboId === 'NONE' ? 'bg-gray-800 text-white font-bold' : 'bg-[#F2F2F7] text-gray-600'
-                  }`}
-                >
-                  {selectedComboId === 'NONE' ? '✓ ' : ''}Khách chỉ làm dịch vụ lẻ hôm nay (Không mua thêm gói Combo)
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Ghi Chú Kỹ Thuật & Cam Kết Với Khách */}
         <div>
           <div className="text-[11px] font-extrabold text-gray-600 uppercase tracking-wider px-1 mb-1.5 flex items-center gap-1">
@@ -1484,9 +1498,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         </div>
 
         {/* Live Matrix Summary Chips (Theo đúng thứ tự 1. Chất liệu -> 2. Thiết kế -> 3. Độ cong, Dày, Dài) */}
-        <div className="bg-neutral-900 rounded-2xl p-2.5 text-white shadow-sm space-y-1.5">
+        <div className="bg-neutral-900 rounded-2xl p-3 text-white shadow-sm space-y-2">
           <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider flex items-center justify-between">
-            <span>TÓM TẮT QUY TRÌNH 3 BƯỚC (LIVE MATRIX):</span>
+            <span>TÓM TẮT QUY TRÌNH 3 BƯỚC & ĐỊNH GIÁ:</span>
             <span className="text-gray-400 font-normal">CV🪶 {actorName}</span>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px] font-medium">
@@ -1507,11 +1521,41 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             <span className="px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
               Volume: <strong className="text-emerald-400">{selectedVolume}</strong>
             </span>
-            {chosenComboOption && (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Combo: <strong>+{chosenComboOption.cvBonus.toLocaleString('vi-VN')}đ</strong>
-              </span>
-            )}
+          </div>
+
+          {/* Dòng mapping SKU Giá Tiền & Huy Hiệu Điểm Vòng Xoay CV */}
+          <div className="pt-2 border-t border-neutral-800 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between flex-wrap gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[12px] font-bold text-white">{livePricingAndCvPoints.skuName}</span>
+                <span className="text-[13px] font-black text-[#FFB400] tabular-nums">
+                  {livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ
+                  <span className="text-[10px] font-medium text-amber-200/90 ml-1">
+                    (+8% VAT: {livePricingAndCvPoints.totalPriceWithVat.toLocaleString('vi-VN')} đ)
+                  </span>
+                </span>
+                {livePricingAndCvPoints.upgradePrice > 0 && (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 tabular-nums">
+                    Phụ thu nâng cấp: +{livePricingAndCvPoints.upgradePrice.toLocaleString('vi-VN')}đ (+8% VAT = +
+                    {livePricingAndCvPoints.upgradePriceWithVat.toLocaleString('vi-VN')}đ)
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1">
+                <span
+                  className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-600/30 text-blue-200 border border-blue-400/40 shadow-xs tabular-nums"
+                  title={livePricingAndCvPoints.breakdownLabel}
+                >
+                  {livePricingAndCvPoints.summaryLabel}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-gray-400 flex items-center justify-between pt-0.5">
+              <span>{livePricingAndCvPoints.breakdownLabel}</span>
+              <span className="text-[#FFB400]/80">Mapping tự động theo Ma trận SKU Wings</span>
+            </div>
           </div>
         </div>
 
@@ -1522,9 +1566,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             onClick={handleSubmit}
             className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[14px] shadow-md active:scale-98 transition-transform text-center cursor-pointer"
           >
-            {chosenComboOption
-              ? `CHỐT ${chosenComboOption.name.toUpperCase()} (+${chosenComboOption.cvBonus.toLocaleString('vi-VN')}Đ) & BẮT ĐẦU LÀM MI`
-              : 'LƯU TƯ VẤN & BẮT ĐẦU LÀM MI'}
+            LƯU TƯ VẤN & BẮT ĐẦU LÀM MI
           </button>
         </div>
       </div>

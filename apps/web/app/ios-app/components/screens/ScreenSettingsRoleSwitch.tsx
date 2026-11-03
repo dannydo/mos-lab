@@ -220,9 +220,9 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Database className="w-4 h-4 text-[#FF9500]" />
-                <span className="font-medium text-[#1C1C1E]">Chia Tip Tư Vấn (20%)</span>
+                <span className="font-medium text-[#1C1C1E]">Chia Tip Tư Vấn (In / Out)</span>
               </div>
-              <span className="text-emerald-600 font-bold">Check-in 10% · Check-out 10%</span>
+              <span className="text-emerald-600 font-bold">Theo ca trực Check-in / Out</span>
             </div>
 
             <div className="p-3.5 flex items-center justify-between">

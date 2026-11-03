@@ -92,7 +92,7 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
         <div className="bg-white border-2 border-[#FFB400] rounded-2xl p-3.5 space-y-2 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold text-amber-900 uppercase tracking-wide">
-              PHÂN BỔ TIP (70% MI + 10% CHECK-IN + 10% CHECK-OUT)
+              PHÂN BỔ TIỀN TIP THEO QUY ĐỊNH
             </span>
             <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
               {isSameStaffAllThree ? 'Trọn 90% Tip' : 'Chia 50/50 In/Out'}
@@ -102,13 +102,13 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
           <div className="space-y-1.5 text-[12px]">
             <div className="flex justify-between items-center">
               <span className="text-gray-700 font-medium">
-                1. Làm mi (70%) · <strong className="text-black">{assignedStaffName}</strong>:
+                1. Chuyên Viên làm mi · <strong className="text-black">{assignedStaffName}</strong>:
               </span>
               <span className="font-bold text-black tabular-nums">{techShare70.toLocaleString('vi-VN')} đ</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-700 font-medium">
-                2. Check-in (10%) · <strong className="text-black">{checkInStaffName}</strong>:
+                2. Người Check-in · <strong className="text-black">{checkInStaffName}</strong>:
               </span>
               <span className="font-bold text-emerald-700 tabular-nums">
                 +{checkInShare10.toLocaleString('vi-VN')} đ
@@ -116,14 +116,14 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-700 font-medium">
-                3. Check-out (10%) · <strong className="text-black">{checkOutStaffName}</strong>:
+                3. Người Check-out · <strong className="text-black">{checkOutStaffName}</strong>:
               </span>
               <span className="font-bold text-emerald-700 tabular-nums">
                 +{checkOutShare10.toLocaleString('vi-VN')} đ
               </span>
             </div>
             <div className="flex justify-between items-center text-gray-500">
-              <span>4. Quỹ chung / CS (10%):</span>
+              <span>4. Quỹ chung / CS:</span>
               <span className="font-semibold tabular-nums">{fundShare10.toLocaleString('vi-VN')} đ</span>
             </div>
           </div>

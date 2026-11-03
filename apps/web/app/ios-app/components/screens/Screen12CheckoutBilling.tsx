@@ -10,9 +10,16 @@ interface Screen12CheckoutBillingProps {
   actor?: ActiveActorProfile;
   onBack: () => void;
   onChoosePayment: (method: 'CASH' | 'POS' | 'VIETQR') => void;
+  onEditService?: () => void;
 }
 
-export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePayment }: Screen12CheckoutBillingProps) {
+export function Screen12CheckoutBilling({
+  booking,
+  actor,
+  onBack,
+  onChoosePayment,
+  onEditService,
+}: Screen12CheckoutBillingProps) {
   const [selectedMethod, setSelectedMethod] = useState<'CASH' | 'POS' | 'VIETQR'>(
     booking?.billing?.paymentMethod || 'VIETQR'
   );
@@ -28,6 +35,8 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
   const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
   const serviceName = booking?.serviceName || 'New Flawless Mink';
   const servicePrice = booking?.servicePrice || 770000;
+  const upgradePrice = booking?.upgradePrice || 0;
+  const originalBookedPrice = booking?.originalBookedServicePrice || servicePrice;
   const selectedCombo = booking?.selectedCombo || null;
   const cartProducts = booking?.cartProducts || [];
   const subtotal =
@@ -35,6 +44,9 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
     servicePrice +
       (selectedCombo ? selectedCombo.price : 0) +
       cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const vatRate = booking?.billing?.vatRate ?? 0.08;
+  const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
+  const totalWithVat = subtotal + vatAmount;
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
@@ -71,11 +83,11 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
 
           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100 text-[11px]">
             <div className="bg-amber-50 rounded-xl px-2.5 py-1.5 border border-amber-200">
-              <span className="text-gray-500 block text-[10px]">Người Check-in (10% Tip):</span>
+              <span className="text-gray-500 block text-[10px]">Người Check-in:</span>
               <span className="font-bold text-black">{checkInStaff} (CV🪶)</span>
             </div>
             <div className="bg-emerald-50 rounded-xl px-2.5 py-1.5 border border-emerald-200">
-              <span className="text-gray-500 block text-[10px]">Người Check-out (10% + Combo):</span>
+              <span className="text-gray-500 block text-[10px]">Người Check-out:</span>
               <span className="font-bold text-emerald-800">{checkOutStaff} (CV🪶)</span>
             </div>
           </div>
@@ -90,12 +102,40 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
             {/* Item 1: Service */}
             <div className="p-3.5 flex items-center justify-between">
               <div>
-                <div className="text-[13px] font-bold text-black">1. {serviceName}</div>
-                <div className="text-[11px] text-gray-500 mt-0.5">Chuyên viên làm mi: {assignedStaff}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[13px] font-bold text-black">1. {serviceName}</span>
+                  {onEditService && (
+                    <button
+                      type="button"
+                      onClick={onEditService}
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1 active:scale-95 cursor-pointer"
+                    >
+                      ✏️ Đổi dịch vụ / Nâng cấp
+                    </button>
+                  )}
+                </div>
+                <div className="text-[11px] text-gray-500 mt-0.5">
+                  Chuyên viên làm mi: {assignedStaff}
+                  {booking?.attributes?.style && ` · Dáng ${booking.attributes.style}`}
+                </div>
+                {upgradePrice > 0 && (
+                  <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
+                    Gốc: {originalBookedPrice.toLocaleString('vi-VN')}đ + Nâng cấp: +
+                    {upgradePrice.toLocaleString('vi-VN')}đ (+8% VAT:{' '}
+                    {Math.round(upgradePrice * 1.08).toLocaleString('vi-VN')}đ)
+                  </div>
+                )}
               </div>
-              <span className="text-[13px] text-gray-800 font-bold tabular-nums">
-                {servicePrice.toLocaleString('vi-VN')} đ
-              </span>
+              <div className="text-right">
+                <span className="text-[13px] text-gray-800 font-bold tabular-nums block">
+                  {servicePrice.toLocaleString('vi-VN')} đ
+                </span>
+                {upgradePrice > 0 && (
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    Đã nâng cấp
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Item 2: Combo if selected */}
@@ -131,13 +171,46 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
               </div>
             ))}
 
+            {/* Subtotal Row */}
+            <div className="p-3 bg-white flex items-center justify-between border-t border-gray-100 text-[12px]">
+              <span className="text-gray-500 font-medium">Tạm tính dịch vụ & SP</span>
+              <span className="text-gray-900 font-bold tabular-nums">{subtotal.toLocaleString('vi-VN')} đ</span>
+            </div>
+
+            {/* VAT 8% Row */}
+            <div className="p-3 bg-white flex items-center justify-between border-t border-gray-100 text-[12px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-600 font-medium">Thuế VAT (8%)</span>
+                <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                  Chuẩn hóa đơn Wings
+                </span>
+              </div>
+              <span className="text-gray-900 font-bold tabular-nums">+{vatAmount.toLocaleString('vi-VN')} đ</span>
+            </div>
+
             {/* Total Row */}
-            <div className="p-3.5 bg-[#FFFBEB] flex items-center justify-between">
-              <span className="text-[14px] font-extrabold text-black">TỔNG TIỀN ĐƠN HÀNG</span>
+            <div className="p-3.5 bg-[#FFFBEB] flex items-center justify-between border-t border-amber-200">
+              <div>
+                <span className="text-[13px] font-extrabold text-black block">TỔNG TIỀN ĐƠN HÀNG</span>
+                <span className="text-[10px] text-gray-500 font-medium">Đã bao gồm 8% thuế VAT</span>
+              </div>
               <span className="text-[18px] font-black text-[#FF9500] tabular-nums">
-                {subtotal.toLocaleString('vi-VN')} đ
+                {totalWithVat.toLocaleString('vi-VN')} đ
               </span>
             </div>
+
+            {/* CV Rotation Points Recording Banner */}
+            {booking?.cvRotationPoints && (
+              <div className="p-3 bg-blue-50/80 border-t border-blue-100 flex items-center justify-between text-[12px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-blue-950">💎 Ghi nhận Vòng Xoay CV:</span>
+                  <span className="text-[11px] text-blue-700 font-medium">
+                    {booking.cvRotationBreakdown || 'Điểm thưởng cá nhân'}
+                  </span>
+                </div>
+                <span className="font-black text-blue-800 tabular-nums">+{booking.cvRotationPoints} pts</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -168,7 +241,7 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
                     {m.label}
                   </span>
                   <span className={`text-[14px] tabular-nums ${active ? 'text-[#15803D] font-bold' : 'text-gray-400'}`}>
-                    {active ? `${subtotal.toLocaleString('vi-VN')} đ` : '0 đ'}
+                    {active ? `${totalWithVat.toLocaleString('vi-VN')} đ` : '0 đ'}
                   </span>
                 </div>
               );
@@ -182,7 +255,7 @@ export function Screen12CheckoutBilling({ booking, actor, onBack, onChoosePaymen
             onClick={handleProceed}
             className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[15px] shadow-md active:scale-98 transition-transform text-center"
           >
-            TIẾP TỤC: GHI NHẬN TIỀN TIP (CHIA 70% / 10% / 10%)
+            TIẾP TỤC: GHI NHẬN TIỀN TIP
           </button>
         </div>
       </div>

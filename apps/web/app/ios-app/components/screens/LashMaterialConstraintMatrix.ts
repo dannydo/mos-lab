@@ -206,7 +206,7 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     allowedDesigns: ['Natural', 'Doll', 'Wing'],
     defaultDesign: 'Natural',
     lockedDesignReasons: {
-      'Kim - K': 'Flawless Mink đi sợi đơn mượt đều, chuyển sang Hyperlight nếu khách muốn đánh trụ Kim-K',
+      'Kim - K': 'Flawless Mink đi sợi đơn mượt đều, chuyển sang HyperLight nếu khách muốn đánh trụ Kim-K',
     },
     allowedCurls: ['B', 'C'],
     defaultCurl: 'C',
@@ -221,18 +221,28 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     defaultLength: '10-12 mm',
     allowedVolumes: ['1D (Classic)'],
     defaultVolume: '1D (Classic)',
-    allowedCounts: ['60 - 70 sợi/mắt (Tự nhiên)', '90 - 110 sợi/mắt (Chuẩn)', '130+ sợi/mắt (Đầy đặn)'],
-    defaultCount: '90 - 110 sợi/mắt (Chuẩn)',
+    allowedCounts: [
+      '50 sợi (Mỏng)',
+      '60 sợi',
+      '70 sợi',
+      '80 sợi',
+      '90 sợi',
+      '100 sợi (Chuẩn)',
+      '110 sợi',
+      '120 sợi',
+      '130+ sợi (Dày)',
+    ],
+    defaultCount: '100 sợi (Chuẩn)',
     allowedColors: STANDARD_COLORS,
   },
   {
-    id: 'Hyperlight Cashmere',
+    id: 'HyperLight',
     code: 'HYPERLIGHT',
-    name: 'Hyperlight / Ultralight (Cashmere Siêu Nhẹ)',
-    shortLabel: 'Hyperlight Cashmere',
+    name: 'HyperLight (Siêu Nhẹ Kháng Nước)',
+    shortLabel: 'HyperLight',
     badge: 'FAN 3D-5D · 440K+',
     priceRange: '440.000đ – 1.770.000đ',
-    summary: 'Sợi lông thỏ Cashmere siêu mảnh kháng nước, chuyên tạo fan Volume 2D–5D bồng bềnh và sắc sảo.',
+    summary: 'Sợi mi siêu mảnh kháng nước, chuyên tạo fan Volume 2D–5D bồng bềnh và sắc sảo.',
     constraintReason:
       'Mở đủ 4 thiết kế (Natural, Doll, Wing, Kim-K), chỉ sử dụng 3 độ cong B, C, D và sợi siêu mảnh 0.05mm – 0.07mm.',
     allowedDesigns: ['Natural', 'Doll', 'Wing', 'Kim - K'],
@@ -240,7 +250,7 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     lockedDesignReasons: {},
     allowedCurls: ['B', 'C', 'D'],
     defaultCurl: 'C',
-    lockedCurlReason: 'Hyperlight Cashmere chỉ sử dụng 3 độ cong B (45°), C (55°) và D (70°)',
+    lockedCurlReason: 'HyperLight chỉ sử dụng 3 độ cong B (45°), C (55°) và D (70°)',
     allowedThicknesses: ['0.05 mm', '0.07 mm'],
     defaultThickness: '0.05 mm',
     lockedThicknessReason: 'Fan 3D–5D bắt buộc dùng sợi 0.05mm – 0.07mm siêu mảnh để bảo vệ gốc mi thật',
@@ -251,8 +261,18 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     defaultLength: '10-12 mm',
     allowedVolumes: ['2D (Double Volume)', '3D (Natural Vol)', '4D (Glamour Vol)', '5D (Mega Vol)'],
     defaultVolume: '3D (Natural Vol)',
-    allowedCounts: ['70 - 90 fan/mắt', '110 fan/mắt (Chuẩn)', '130 fan/mắt (Đậm sắc sảo)'],
-    defaultCount: '110 fan/mắt (Chuẩn)',
+    allowedCounts: [
+      '50 fan (Mỏng)',
+      '60 fan',
+      '70 fan',
+      '80 fan',
+      '90 fan',
+      '100 fan (Chuẩn)',
+      '110 fan',
+      '120 fan',
+      '130+ fan (Dày)',
+    ],
+    defaultCount: '100 fan (Chuẩn)',
     allowedColors: STANDARD_COLORS,
   },
   {
@@ -285,8 +305,18 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     defaultLength: '8-10-12 mm',
     allowedVolumes: ['3D (Ivylight 3L)', '4D (Ivylight 4L)', '5D (Ivylight 5L)'],
     defaultVolume: '4D (Ivylight 4L)',
-    allowedCounts: ['70 - 90 nhịp/mắt', '110 nhịp/mắt (Chuẩn)', '130 nhịp/mắt (Đầy đặn)'],
-    defaultCount: '110 nhịp/mắt (Chuẩn)',
+    allowedCounts: [
+      '50 nhịp (Mỏng)',
+      '60 nhịp',
+      '70 nhịp',
+      '80 nhịp',
+      '90 nhịp',
+      '100 nhịp (Chuẩn)',
+      '110 nhịp',
+      '120 nhịp',
+      '130+ nhịp (Dày)',
+    ],
+    defaultCount: '100 nhịp (Chuẩn)',
     allowedColors: [STANDARD_COLORS[0], STANDARD_COLORS[1]],
   },
   {
@@ -314,8 +344,18 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     defaultLength: '9-11 mm',
     allowedVolumes: ['2D (Double Volume)'],
     defaultVolume: '2D (Double Volume)',
-    allowedCounts: ['60 - 80 fan/mắt', '100 fan/mắt (Chuẩn)', '120 fan/mắt'],
-    defaultCount: '100 fan/mắt (Chuẩn)',
+    allowedCounts: [
+      '50 fan (Mỏng)',
+      '60 fan',
+      '70 fan',
+      '80 fan',
+      '90 fan',
+      '100 fan (Chuẩn)',
+      '110 fan',
+      '120 fan',
+      '130+ fan (Dày)',
+    ],
+    defaultCount: '100 fan (Chuẩn)',
     allowedColors: STANDARD_COLORS,
   },
   {
@@ -346,8 +386,18 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     defaultLength: '9-11 mm',
     allowedVolumes: ['1D (Classic)'],
     defaultVolume: '1D (Classic)',
-    allowedCounts: ['60 - 80 sợi/mắt', '100 sợi/mắt (Chuẩn)', '120 sợi/mắt'],
-    defaultCount: '100 sợi/mắt (Chuẩn)',
+    allowedCounts: [
+      '50 sợi (Mỏng)',
+      '60 sợi',
+      '70 sợi',
+      '80 sợi',
+      '90 sợi',
+      '100 sợi (Chuẩn)',
+      '110 sợi',
+      '120 sợi',
+      '130+ sợi (Dày)',
+    ],
+    defaultCount: '100 sợi (Chuẩn)',
     allowedColors: STANDARD_COLORS,
   },
   {
@@ -378,15 +428,15 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     defaultLength: '6-7 mm',
     allowedVolumes: ['1D (Classic)'],
     defaultVolume: '1D (Classic)',
-    allowedCounts: ['20 - 30 sợi/mắt', '30 - 40 sợi/mắt (Chuẩn)'],
-    defaultCount: '30 - 40 sợi/mắt (Chuẩn)',
+    allowedCounts: ['20 sợi (Mỏng)', '25 sợi', '30 sợi (Chuẩn)', '35 sợi', '40 sợi', '50+ sợi (Dày)'],
+    defaultCount: '30 sợi (Chuẩn)',
     allowedColors: [STANDARD_COLORS[0], STANDARD_COLORS[1]],
   },
 ];
 
 export const LASH_MATERIAL_CATALOG: LashMaterialSpec[] = DEFAULT_LASH_MATERIAL_CATALOG;
 
-export const MATERIAL_MATRIX_STORAGE_KEY = 'mos_lash_material_constraint_matrix_v3';
+export const MATERIAL_MATRIX_STORAGE_KEY = 'mos_lash_material_constraint_matrix_v4';
 export const MATERIAL_MATRIX_UPDATED_EVENT = 'mos-lash-material-catalog-updated';
 
 /**
@@ -459,7 +509,7 @@ export function resolveMaterialSpec(
   if (norm.includes('ivylight') || norm.includes('ivy light')) {
     return list.find((m) => m.code === 'IVYLIGHT') || list[0];
   }
-  if (norm.includes('hyperlight') || norm.includes('ultralight') || norm.includes('cashmere')) {
+  if (norm.includes('hyperlight') || norm.includes('hyper_light') || norm.includes('ultralight')) {
     return list.find((m) => m.code === 'HYPERLIGHT') || list[0];
   }
   if (norm.includes('volume') || norm.includes('2d')) {
@@ -560,5 +610,295 @@ export function sanitizeSelectionForMaterial(
     count,
     color,
     autoAdjustedFields,
+  };
+}
+
+// ============================================================================
+// MA TRẬN MAPPING GIÁ TIỀN & ĐIỂM THƯỞNG VÒNG XOAY CHUYÊN VIÊN (CV ROTATION)
+// Chuẩn Điều răn CV-001, CV-002 & Danh mục Dịch Vụ Wings Lashes
+// ============================================================================
+
+export interface LashRotationPointsBreakdown {
+  skuName: string;
+  skuPrice: number;
+  upgradePrice: number;
+  originalPrice: number;
+  vatRate: number;
+  vatAmount: number;
+  totalPriceWithVat: number;
+  upgradeVat: number;
+  upgradePriceWithVat: number;
+  lashPts: number;
+  designPts: number;
+  fanPts: number;
+  typePts: number;
+  totalPoints: number;
+  summaryLabel: string;
+  breakdownLabel: string;
+  isRetain?: boolean;
+  serviceType?: string;
+}
+
+/**
+ * Tra cứu mã SKU Wings và Giá niêm yết chuẩn theo [Chất Liệu + Số Lượng Sợi/Kỹ Thuật Fan]
+ */
+export function resolveLashSkuPricing(
+  materialId: string,
+  countStr?: string,
+  volumeStr?: string,
+  serviceType?: string
+): { skuName: string; price: number; lashPts: number; fanPts: number; isRetain: boolean } {
+  const mid = String(materialId || '').toLowerCase();
+  const c = String(countStr || '').toLowerCase();
+  const v = String(volumeStr || '').toLowerCase();
+  const isRetain =
+    String(serviceType || '')
+      .toLowerCase()
+      .includes('retain') ||
+    String(serviceType || '')
+      .toLowerCase()
+      .includes('dặm');
+
+  // 1. New Flawless Mink
+  if (mid.includes('flawless') || mid.includes('mink')) {
+    let fanPts = 0;
+    if (v.includes('2d')) fanPts = 1;
+    else if (v.includes('3d')) fanPts = 3;
+
+    if (isRetain) {
+      const lashPts = 20;
+      if (c.includes('50'))
+        return { skuName: 'Dặm Flawless Mink 350K (50 sợi)', price: 350000, lashPts: 18, fanPts, isRetain };
+      if (c.includes('60') || c.includes('70'))
+        return { skuName: 'Dặm Flawless Mink 390K (Chuẩn dặm)', price: 390000, lashPts: 20, fanPts, isRetain };
+      if (c.includes('80'))
+        return { skuName: 'Dặm Flawless Mink 450K (80 sợi)', price: 450000, lashPts: 21, fanPts, isRetain };
+      if (c.includes('90') || c.includes('100') || c.includes('chuẩn'))
+        return { skuName: 'Dặm Flawless Mink 490K (100 sợi)', price: 490000, lashPts: 22, fanPts, isRetain };
+      if (c.includes('110') || c.includes('120'))
+        return { skuName: 'Dặm Flawless Mink 590K (120 sợi)', price: 590000, lashPts: 24, fanPts, isRetain };
+      return { skuName: 'Dặm Flawless Mink 690K (130+ sợi)', price: 690000, lashPts: 26, fanPts, isRetain };
+    } else {
+      const lashPts = 32;
+      if (c.includes('50'))
+        return { skuName: 'New Flawless Mink 660K (50 sợi)', price: 660000, lashPts: 25, fanPts, isRetain };
+      if (c.includes('60') || c.includes('70'))
+        return { skuName: 'New Flawless Mink 770K (Tự nhiên)', price: 770000, lashPts: 28, fanPts, isRetain };
+      if (c.includes('80'))
+        return { skuName: 'New Flawless Mink 880K (80 sợi)', price: 880000, lashPts: 30, fanPts, isRetain };
+      if (c.includes('110') || c.includes('120'))
+        return { skuName: 'New Flawless Mink 1110K (Dày vừa)', price: 1110000, lashPts: 34, fanPts, isRetain };
+      if (c.includes('130') || c.includes('đầy đặn') || c.includes('dày'))
+        return { skuName: 'New Flawless Mink 1440K (Đầy đặn)', price: 1440000, lashPts: 36, fanPts, isRetain };
+      return { skuName: 'New Flawless Mink 990K (Chuẩn)', price: 990000, lashPts: 32, fanPts, isRetain };
+    }
+  }
+
+  // 2. Ivylight 3L / 4L / 5L
+  if (mid.includes('ivylight')) {
+    if (isRetain) {
+      if (v.includes('5l') || v.includes('5d') || c.includes('130') || c.includes('120')) {
+        return { skuName: 'Dặm Ivylight 5L 790K', price: 790000, lashPts: 24, fanPts: 5, isRetain };
+      }
+      if (v.includes('4l') || v.includes('4d') || c.includes('100') || c.includes('110')) {
+        return { skuName: 'Dặm Ivylight 4L 680K', price: 680000, lashPts: 22, fanPts: 4, isRetain };
+      }
+      return { skuName: 'Dặm Ivylight 3L 550K (Chuẩn dặm)', price: 550000, lashPts: 20, fanPts: 3, isRetain };
+    } else {
+      if (v.includes('5l') || v.includes('5d') || c.includes('130') || c.includes('120')) {
+        return { skuName: 'Ivylight 5L 1440K', price: 1440000, lashPts: 30, fanPts: 5, isRetain };
+      }
+      if (v.includes('4l') || v.includes('4d') || c.includes('100') || c.includes('110')) {
+        return { skuName: 'Ivylight 4L 1220K', price: 1220000, lashPts: 27, fanPts: 4, isRetain };
+      }
+      return { skuName: 'Ivylight 3L 990K (Chuẩn)', price: 990000, lashPts: 25, fanPts: 3, isRetain };
+    }
+  }
+
+  // 3. HyperLight (Siêu Nhẹ Kháng Nước)
+  if (mid.includes('hyperlight') || mid.includes('hyper_light') || mid.includes('ultralight')) {
+    let fanPts = 3;
+    if (v.includes('2d')) fanPts = 1;
+    else if (v.includes('4d')) fanPts = 4;
+    else if (v.includes('5d')) fanPts = 5;
+
+    if (isRetain) {
+      const lashPts = 18;
+      if (c.includes('50'))
+        return { skuName: 'Dặm HyperLight 280K (50 fan)', price: 280000, lashPts: 15, fanPts, isRetain };
+      if (c.includes('60') || c.includes('70'))
+        return { skuName: 'Dặm HyperLight 350K (Chuẩn dặm)', price: 350000, lashPts: 17, fanPts, isRetain };
+      if (c.includes('80'))
+        return { skuName: 'Dặm HyperLight 390K (80 fan)', price: 390000, lashPts: 18, fanPts, isRetain };
+      if (c.includes('90') || c.includes('100') || c.includes('chuẩn'))
+        return { skuName: 'Dặm HyperLight 450K (100 fan)', price: 450000, lashPts: 19, fanPts, isRetain };
+      if (c.includes('110') || c.includes('120'))
+        return { skuName: 'Dặm HyperLight 550K (120 fan)', price: 550000, lashPts: 21, fanPts, isRetain };
+      return { skuName: 'Dặm HyperLight 660K (130+ fan)', price: 660000, lashPts: 23, fanPts, isRetain };
+    } else {
+      const lashPts = 23;
+      if (c.includes('50'))
+        return { skuName: 'New HyperLight 440K (50 fan)', price: 440000, lashPts: 18, fanPts, isRetain };
+      if (c.includes('60'))
+        return { skuName: 'New HyperLight 550K (60 fan)', price: 550000, lashPts: 20, fanPts, isRetain };
+      if (c.includes('70') || c.includes('80'))
+        return { skuName: 'New HyperLight 660K (Nhẹ nhàng)', price: 660000, lashPts: 21, fanPts, isRetain };
+      if (c.includes('110') || c.includes('120'))
+        return { skuName: 'New HyperLight 1110K (Dày vừa)', price: 1110000, lashPts: 25, fanPts, isRetain };
+      if (c.includes('130') || c.includes('đầy đặn') || c.includes('dày'))
+        return { skuName: 'New HyperLight 1440K (Đầy đặn)', price: 1440000, lashPts: 27, fanPts, isRetain };
+      return { skuName: 'New HyperLight 880K (Chuẩn)', price: 880000, lashPts: 23, fanPts, isRetain };
+    }
+  }
+
+  // 4. New Volume 2D
+  if (mid.includes('volume') || mid.includes('2d')) {
+    const fanPts = 1;
+    if (isRetain) {
+      if (c.includes('50'))
+        return { skuName: 'Dặm New Volume 2D 220K (50 fan)', price: 220000, lashPts: 12, fanPts, isRetain };
+      if (c.includes('60') || c.includes('70'))
+        return { skuName: 'Dặm New Volume 2D 260K (Chuẩn dặm)', price: 260000, lashPts: 14, fanPts, isRetain };
+      if (c.includes('80'))
+        return { skuName: 'Dặm New Volume 2D 300K (80 fan)', price: 300000, lashPts: 15, fanPts, isRetain };
+      if (c.includes('90') || c.includes('100') || c.includes('chuẩn'))
+        return { skuName: 'Dặm New Volume 2D 350K (100 fan)', price: 350000, lashPts: 16, fanPts, isRetain };
+      if (c.includes('110') || c.includes('120'))
+        return { skuName: 'Dặm New Volume 2D 420K (120 fan)', price: 420000, lashPts: 18, fanPts, isRetain };
+      return { skuName: 'Dặm New Volume 2D 490K (130+ fan)', price: 490000, lashPts: 20, fanPts, isRetain };
+    } else {
+      if (c.includes('50'))
+        return { skuName: 'New Volume 2D 390K (Tự nhiên)', price: 390000, lashPts: 16, fanPts, isRetain };
+      if (c.includes('60') || c.includes('70'))
+        return { skuName: 'New Volume 2D 490K (70 fan)', price: 490000, lashPts: 18, fanPts, isRetain };
+      if (c.includes('80'))
+        return { skuName: 'New Volume 2D 550K (80 fan)', price: 550000, lashPts: 19, fanPts, isRetain };
+      if (c.includes('110') || c.includes('120'))
+        return { skuName: 'New Volume 2D 690K (120 fan)', price: 690000, lashPts: 22, fanPts, isRetain };
+      if (c.includes('130') || c.includes('đầy đặn') || c.includes('dày'))
+        return { skuName: 'New Volume 2D 880K (Đầy đặn)', price: 880000, lashPts: 24, fanPts, isRetain };
+      return { skuName: 'New Volume 2D 590K (Chuẩn)', price: 590000, lashPts: 20, fanPts, isRetain };
+    }
+  }
+
+  // 5. Mi Dưới Under
+  if (mid.includes('dưới') || mid.includes('under')) {
+    if (isRetain) {
+      if (c.includes('20') || c.includes('25'))
+        return { skuName: 'Dặm Mi Dưới 150K', price: 150000, lashPts: 8, fanPts: 0, isRetain };
+      if (c.includes('50')) return { skuName: 'Dặm Mi Dưới 280K', price: 280000, lashPts: 12, fanPts: 0, isRetain };
+      return { skuName: 'Dặm Mi Dưới 220K (Chuẩn dặm)', price: 220000, lashPts: 10, fanPts: 0, isRetain };
+    } else {
+      if (c.includes('20') || c.includes('25'))
+        return { skuName: 'Mi Dưới 250K', price: 250000, lashPts: 12, fanPts: 0, isRetain };
+      if (c.includes('50')) return { skuName: 'Mi Dưới 450K (Dày)', price: 450000, lashPts: 16, fanPts: 0, isRetain };
+      return { skuName: 'Mi Dưới 390K (Chuẩn)', price: 390000, lashPts: 15, fanPts: 0, isRetain };
+    }
+  }
+
+  // 6. Classic 1D / Mặc định
+  const fanPts = 0;
+  if (isRetain) {
+    if (c.includes('50'))
+      return { skuName: 'Dặm New Classic 1D 190K (50 sợi)', price: 190000, lashPts: 10, fanPts, isRetain };
+    if (c.includes('60') || c.includes('70'))
+      return { skuName: 'Dặm New Classic 1D 230K (Chuẩn dặm)', price: 230000, lashPts: 12, fanPts, isRetain };
+    if (c.includes('80'))
+      return { skuName: 'Dặm New Classic 1D 260K (80 sợi)', price: 260000, lashPts: 13, fanPts, isRetain };
+    if (c.includes('90') || c.includes('100') || c.includes('chuẩn'))
+      return { skuName: 'Dặm New Classic 1D 300K (100 sợi)', price: 300000, lashPts: 14, fanPts, isRetain };
+    if (c.includes('110') || c.includes('120'))
+      return { skuName: 'Dặm New Classic 1D 360K (120 sợi)', price: 360000, lashPts: 15, fanPts, isRetain };
+    return { skuName: 'Dặm New Classic 1D 440K (130+ sợi)', price: 440000, lashPts: 16, fanPts, isRetain };
+  } else {
+    if (c.includes('50'))
+      return { skuName: 'New Classic 1D 390K (50 sợi)', price: 390000, lashPts: 14, fanPts, isRetain };
+    if (c.includes('60') || c.includes('70'))
+      return { skuName: 'New Classic 1D 450K (70 sợi)', price: 450000, lashPts: 15, fanPts, isRetain };
+    if (c.includes('80'))
+      return { skuName: 'New Classic 1D 490K (80 sợi)', price: 490000, lashPts: 16, fanPts, isRetain };
+    if (c.includes('110') || c.includes('120'))
+      return { skuName: 'New Classic 1D 660K (120 sợi)', price: 660000, lashPts: 18, fanPts, isRetain };
+    if (c.includes('130') || c.includes('đầy đặn') || c.includes('dày'))
+      return { skuName: 'New Classic 1D 770K (Đầy đặn)', price: 770000, lashPts: 19, fanPts, isRetain };
+    return { skuName: 'New Classic 1D 550K (Chuẩn)', price: 550000, lashPts: 17, fanPts, isRetain };
+  }
+}
+
+/**
+ * Tính điểm Thiết kế Dáng mi
+ */
+export function getLashDesignPoints(designId?: string): number {
+  const d = String(designId || '').toLowerCase();
+  if (d.includes('kim') || d.includes('katun')) return 7; // Kim-K / Sole Katun: +7 pts
+  if (d.includes('doll') || d.includes('búp bê')) return 6; // Doll: +6 pts
+  if (d.includes('wing') || d.includes('mèo') || d.includes('sexy')) return 6; // Wing: +6 pts
+  return 0; // Natural: 0 pts
+}
+
+/**
+ * Tính toàn bộ thông số Vòng xoay CV & Giá tiền mi nối
+ * - Không phân biệt khách mới/cũ theo chỉ đạo Danny
+ * - Áp dụng thuế suất VAT 8% chuẩn Wings
+ */
+export function calculateLashPricingAndCvPoints(params: {
+  materialId: string;
+  countStr?: string;
+  volumeStr?: string;
+  designId?: string;
+  originalBookedPrice?: number;
+  serviceType?: string; // "Normal" | "Retain" | "Fix" | "Adjust"
+}): LashRotationPointsBreakdown {
+  const { materialId, countStr, volumeStr, designId, originalBookedPrice = 550000, serviceType = 'Normal' } = params;
+
+  // 1. SKU & Giá niêm yết
+  const skuInfo = resolveLashSkuPricing(materialId, countStr, volumeStr, serviceType);
+  const skuPrice = skuInfo.price;
+  const originalPrice = originalBookedPrice;
+  const upgradePrice = Math.max(0, skuPrice - originalPrice);
+
+  // Thuế VAT 8% (Chuẩn Wings Lashes & mos-lab)
+  const vatRate = 0.08;
+  const vatAmount = Math.round(skuPrice * vatRate);
+  const totalPriceWithVat = skuPrice + vatAmount;
+  const upgradeVat = Math.round(upgradePrice * vatRate);
+  const upgradePriceWithVat = upgradePrice + upgradeVat;
+
+  // 2. Điểm Vòng Xoay CV (Chỉ tính theo kỹ thuật & chất liệu ca làm - Không phân biệt khách mới/cũ)
+  const lashPts = skuInfo.lashPts;
+  const designPts = getLashDesignPoints(designId);
+  const fanPts = skuInfo.fanPts;
+
+  const isRetain = skuInfo.isRetain;
+  let typePts = isRetain ? 4 : 7; // Normal: +7 pts, Retain: +4 pts
+  const st = String(serviceType).toLowerCase();
+  if (st.includes('fix') || st.includes('adjust')) {
+    typePts = 15; // FAL 15 chuối
+  }
+
+  const totalPoints = Math.round((lashPts + designPts + fanPts + typePts) * 10) / 10;
+
+  const breakdownLabel = `+${lashPts}p Chất liệu · +${designPts}p Dáng · +${fanPts}p Fan · +${typePts}p ${isRetain ? 'Ca dặm' : 'Ca mới'}`;
+  const summaryLabel = `💎 +${totalPoints} pts Vòng Xoay CV`;
+
+  return {
+    skuName: skuInfo.skuName,
+    skuPrice,
+    upgradePrice,
+    originalPrice,
+    vatRate,
+    vatAmount,
+    totalPriceWithVat,
+    upgradeVat,
+    upgradePriceWithVat,
+    lashPts,
+    designPts,
+    fanPts,
+    typePts,
+    totalPoints,
+    summaryLabel,
+    breakdownLabel,
+    isRetain,
+    serviceType: isRetain ? 'Retain' : 'Normal',
   };
 }

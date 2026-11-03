@@ -26,7 +26,7 @@ export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
   },
   {
     id: 'combo-hyperlight-5',
-    name: 'Combo 5 lần New Hyperlight',
+    name: 'Combo 5 lần New HyperLight',
     sessions: 5,
     price: 3500000,
     cvBonus: 150000,
@@ -95,6 +95,11 @@ export interface BookingItem {
   serviceType?: string;
   servicePrice: number;
   serviceDuration: number; // minutes
+  originalBookedServiceName?: string;
+  originalBookedServicePrice?: number;
+  upgradePrice?: number;
+  cvRotationPoints?: number;
+  cvRotationBreakdown?: string;
   bookerName?: string;
   customerTypeIcon?: string;
   hasDiscountTag?: boolean;
@@ -178,6 +183,8 @@ export interface BookingItem {
   };
   billing?: {
     subtotal: number;
+    vatRate?: number;
+    vatAmount?: number;
     serviceTotal: number;
     comboTotal?: number;
     productTotal: number;
@@ -216,9 +223,9 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedBed: 'Giường 01',
     status: 'INCOMING',
     comboLiveStatus: {
-      isComboLive: false,
-      remainingSessions: 0,
-      comboName: 'Chưa có gói Combo Live',
+      isComboLive: true,
+      remainingSessions: 2,
+      comboName: 'Combo 5 lần New Hyperlight',
       upsellOpportunity: true,
     },
     lashHistory: [],

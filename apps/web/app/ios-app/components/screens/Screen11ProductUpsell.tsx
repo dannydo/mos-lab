@@ -93,8 +93,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
           <div className="text-[11px] text-neutral-300 leading-snug">
             Khi bấm chốt Check-out bên dưới, hệ thống ghi nhận{' '}
-            <strong className="text-white">check_out_staff_id = {actorName}</strong>: nhận ngay{' '}
-            <strong className="text-emerald-400">+10% Tip Check-out</strong> cùng{' '}
+            <strong className="text-white">check_out_staff_id = {actorName}</strong>: nhận{' '}
             <strong className="text-[#FFB400]">
               +{(comboBonus + serumBonus).toLocaleString('vi-VN')}đ Thưởng Tiền Tươi
             </strong>{' '}

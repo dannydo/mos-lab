@@ -58,11 +58,11 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
             Khách hàng: <strong className="font-bold">{customerName}</strong> ({customerPhone})
           </div>
           <div>
-            Làm mi (70% Tip): <strong className="font-bold">{assignedStaff} (CV🪶)</strong>
+            Chuyên Viên làm mi: <strong className="font-bold">{assignedStaff} (CV🪶)</strong>
           </div>
           <div>
-            Check-in (10% Tip): <strong className="font-bold text-emerald-700">{checkInStaff}</strong> · Check-out (10%
-            + Combo): <strong className="font-bold text-emerald-700">{checkOutStaff}</strong>
+            Check-in: <strong className="font-bold text-emerald-700">{checkInStaff}</strong> · Check-out:{' '}
+            <strong className="font-bold text-emerald-700">{checkOutStaff}</strong>
           </div>
         </div>
 
@@ -114,7 +114,7 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
             🎉 QUYỀN LỢI GHI NHẬN CHO {checkOutStaff.toUpperCase()} (CV🪶):
           </div>
           <div className="flex justify-between text-emerald-800">
-            <span>• Tiền Tip (70% Mi + 10% In + 10% Out = 90%):</span>
+            <span>• Tiền Tip phân bổ nhận được:</span>
             <span className="font-bold tabular-nums">+{tipEarned90.toLocaleString('vi-VN')} đ</span>
           </div>
           {comboBonus > 0 && (

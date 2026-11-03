@@ -179,7 +179,13 @@ function IosAppInner() {
       case 5:
         return <Screen05ServicingTransfer booking={state.activeBooking} onTransferToCv={state.handleTransferToCv} />;
       case 6:
-        return <Screen06CvDashboardReceive booking={state.activeBooking} onStartTask={state.handleCvStartTask} />;
+        return (
+          <Screen06CvDashboardReceive
+            booking={state.activeBooking}
+            onStartTask={state.handleCvStartTask}
+            onEditService={() => state.handleOpenConsultation(6)}
+          />
+        );
       case 7:
         return (
           <Screen07LashProgressBefore
@@ -193,6 +199,7 @@ function IosAppInner() {
             booking={state.activeBooking}
             onBack={() => state.setCurrentStep(7)}
             onFinishTimer={state.handleFinishTimer}
+            onEditService={() => state.handleOpenConsultation(8)}
           />
         );
       case 9:
@@ -228,6 +235,7 @@ function IosAppInner() {
             actor={state.actor}
             onBack={() => state.setCurrentStep(11)}
             onChoosePayment={state.handleChoosePaymentMethod}
+            onEditService={() => state.handleOpenConsultation(12)}
           />
         );
       case 13:

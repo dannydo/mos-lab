@@ -175,6 +175,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
         `(<[aA]\\s+[^>]*[hH][rR][eE][fF]=["'][^"']+["'][^>]*>[\\s\\S]+?<\\/[aA]>)|` +
         `(\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)]+)\\))|` +
         `(<(?:[bB]|[sS][tT][rR][oO][nN][gG])[^>]*>[\\s\\S]+?<\\/(?:[bB]|[sS][tT][rR][oO][nN][gG])>)|` +
+        `(\\*\\*\\*(.+?)\\*\\*\\*)|` +
         `(\\*\\*(.+?)\\*\\*)|` +
         `(<(?:[iI]|[eE][mM])[^>]*>[\\s\\S]+?<\\/(?:[iI]|[eE][mM])>)|` +
         `(\\*([^\\*\\n]+)\\*)|` +
@@ -310,6 +311,18 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                 className={isDark ? 'font-bold text-amber-300 drop-shadow-xs' : 'font-bold text-amber-800'}
               >
                 {parseInlineRichText(inner, `${key}-b`, depth + 1)}
+              </strong>
+            );
+          }
+          // 5.5 In đậm và in nghiêng Markdown ***...***
+          else if (fullMatch.startsWith('***') && fullMatch.endsWith('***') && fullMatch.length >= 6) {
+            const inner = fullMatch.slice(3, -3);
+            elements.push(
+              <strong
+                key={key}
+                className={isDark ? 'font-bold text-amber-300 drop-shadow-xs' : 'font-bold text-amber-800'}
+              >
+                <em className="italic opacity-95">{parseInlineRichText(inner, `${key}-bi`, depth + 1)}</em>
               </strong>
             );
           }
@@ -1167,12 +1180,15 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           continue;
         }
 
-        // Bullet List Markdown: - item, * item, • item, hoặc **- item** / **• item**
-        const boldBulletMatch = trimmed.match(/^\*\*[-*•\u2022]\s+([\s\S]+)\*\*$/);
-        if (boldBulletMatch || /^[-*•\u2022](?:\s|$)/.test(trimmed)) {
+        // Bullet List Markdown: - item, + item, * item, • item, hoặc **- item** / **• item** / *- item
+        const boldBulletMatch = trimmed.match(/^\*\*[-+*•\u2022]\s+([\s\S]+)\*\*$/);
+        const isBulletLine =
+          Boolean(boldBulletMatch) || /^[-+*•\u2022](?:\s|$)/.test(trimmed) || /^\*[-•]\s*/.test(trimmed);
+
+        if (isBulletLine) {
           const itemContent = boldBulletMatch
             ? `**${boldBulletMatch[1]}**`
-            : trimmed.replace(/^[-*•\u2022](?:\s+|$)/, '');
+            : trimmed.replace(/^(\*[-•]\s*|[-+*•\u2022](?:\s+|$))/, '');
           const indentMatch = line.match(/^(\s+)/);
           const indentSpaces = indentMatch ? indentMatch[1].replace(/\t/g, '  ').length : 0;
           const indentLevel = Math.min(Math.floor(indentSpaces / 2), 4);
@@ -1195,11 +1211,17 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           continue;
         }
 
-        // Numbered List Markdown: 1. item hoặc **1. item**
-        const boldNumMatch = trimmed.match(/^\*\*(\d+)\.\s+([\s\S]+)\*\*$/);
+        // Numbered List Markdown: 1. item, 2.1. item, **1. item**, hoặc *2.1. item
+        const boldNumMatch = trimmed.match(/^\*\*(\d+(?:\.\d+)*)\.\s+([\s\S]+)\*\*$/);
+        const starNumMatch = trimmed.match(/^\*{1,3}(\d+(?:\.\d+)*)\.(?:\s+(.*)|$)/);
+        const standardNumMatch = trimmed.match(/^(\d+(?:\.\d+)*)\.(?:\s+(.*)|$)/);
+
         const numMatch = boldNumMatch
           ? ([boldNumMatch[0], boldNumMatch[1], `**${boldNumMatch[2]}**`] as RegExpMatchArray)
-          : trimmed.match(/^(\d+)\.(?:\s+(.*)|$)/);
+          : starNumMatch
+            ? ([starNumMatch[0], starNumMatch[1], starNumMatch[2] || ''] as RegExpMatchArray)
+            : standardNumMatch;
+
         if (numMatch) {
           const num = numMatch[1];
           const itemContent = numMatch[2] || '';
@@ -1224,6 +1246,50 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
               <span className="flex-1 break-words text-left">
                 {itemContent ? parseInlineRichText(itemContent, `n-${idx}`) : <span className="opacity-0">&nbsp;</span>}
               </span>
+            </div>
+          );
+          continue;
+        }
+
+        // Smart Section Label / Header: ***Nhãn: Nội dung hoặc **Nhãn: Nội dung
+        // Ví dụ: "***24/04/2026: Chị sử dụng..." hoặc "**Phần gói mua còn: 2 Mới + 6 Dặm"
+        const sectionLabelMatch = trimmed.match(/^(\*{2,3})\s*([^:\n]{1,40}:)\s*(.*)$/);
+        if (sectionLabelMatch) {
+          const label = sectionLabelMatch[2].trim();
+          const body = sectionLabelMatch[3].trim();
+          result.push(
+            <div
+              key={`sec-lbl-${idx}`}
+              className="break-words leading-relaxed text-left select-text whitespace-pre-wrap my-0.5"
+            >
+              <strong className={isDark ? 'font-bold text-amber-300 drop-shadow-xs' : 'font-bold text-amber-800'}>
+                {parseInlineRichText(label, `sec-lbl-l-${idx}`)}
+              </strong>
+              {body ? (
+                <>
+                  {' '}
+                  <span>{parseInlineRichText(body, `sec-lbl-b-${idx}`)}</span>
+                </>
+              ) : null}
+            </div>
+          );
+          continue;
+        }
+
+        // Smart Section Header: ***Tóm lại: hoặc **3. Tình trạng gói hiện tại: (hoặc có dấu đóng lỡ cỡ)
+        const sectionHeaderMatch = trimmed.match(/^(\*{2,3})\s*(.+?)(?:\s*\1)?$/);
+        if (sectionHeaderMatch) {
+          const headerText = sectionHeaderMatch[2].trim();
+          result.push(
+            <div
+              key={`sec-head-${idx}`}
+              className={
+                isDark
+                  ? 'text-xs font-bold text-amber-300 drop-shadow-xs mt-2 mb-1 text-left select-text'
+                  : 'text-xs font-bold text-amber-800 mt-2 mb-1 text-left select-text'
+              }
+            >
+              {parseInlineRichText(headerText, `sec-head-${idx}`)}
             </div>
           );
           continue;

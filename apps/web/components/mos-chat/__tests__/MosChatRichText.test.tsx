@@ -392,4 +392,61 @@ describe('MosChatRichText', () => {
       expect(row.className).not.toContain('text-right');
     });
   });
+
+  it('renders triple-asterisk bold+italic (***text***) without leaving leading asterisk', () => {
+    const text = 'Combo: ***2.1. Thông tin gói:*** áp dụng cho khách hàng.';
+    const { container } = render(<MosChatRichText content={text} isDark={true} />);
+
+    // Strong element should contain em element and not have leading asterisk
+    const strongEl = container.querySelector('strong');
+    expect(strongEl).not.toBeNull();
+    expect(strongEl?.textContent).toBe('2.1. Thông tin gói:');
+    expect(strongEl?.querySelector('em')).not.toBeNull();
+  });
+
+  it('renders smart section headers (***Tóm lại: and **3. Tình trạng gói hiện tại:) cleanly without raw asterisks', () => {
+    const msg =
+      '***Tóm lại:\n' +
+      '• Tuần này: Triển khai 1 CV Lông ĐT\n\n' +
+      '**3. Tình trạng gói hiện tại:\n' +
+      '• Phần gói mua còn: 2 Mới + 6 Dặm';
+
+    const { container } = render(<MosChatRichText content={msg} isDark={true} />);
+
+    // No raw *** or ** should leak out in headings
+    expect(container.textContent).not.toContain('***Tóm lại:');
+    expect(container.textContent).not.toContain('**3. Tình trạng gói hiện tại:');
+    expect(screen.getByText('Tóm lại:')).toBeDefined();
+    // **3. Tình trạng gói hiện tại: is rendered as numbered list item 3. with text
+    expect(screen.getByText('3.')).toBeDefined();
+    expect(screen.getByText('Tình trạng gói hiện tại:')).toBeDefined();
+  });
+
+  it('renders smart section labels (***24/04/2026: ... and **Phần gói mua còn: ...) with bold amber label', () => {
+    const msg = '***24/04/2026: Chị sử dụng 1 lần nối mới trong gói cũ.\n' + '**Phần gói mua còn: 2 Mới + 6 Dặm';
+
+    const { container } = render(<MosChatRichText content={msg} isDark={true} />);
+
+    expect(container.textContent).not.toContain('***24/04/2026:');
+    expect(container.textContent).not.toContain('**Phần gói mua còn:');
+    expect(screen.getByText('24/04/2026:')).toBeDefined();
+    expect(screen.getByText('Phần gói mua còn:')).toBeDefined();
+  });
+
+  it('renders plus (+) and hybrid (*-) bullet items and multi-level numbered lists (2.1.)', () => {
+    const msg =
+      '+ Gói Volume 550: 1 Mới + 2 Dặm\n' + '*- Trước khi mua gói, chị còn:\n' + '*2.1. Thông tin gói: Combo VIP';
+
+    const { container } = render(<MosChatRichText content={msg} isDark={true} />);
+
+    // Plus and *- should be rendered as bullet points
+    const bullets = screen.getAllByText('•');
+    expect(bullets.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/Gói Volume 550/)).toBeDefined();
+    expect(screen.getByText(/Trước khi mua gói/)).toBeDefined();
+
+    // Multi-level numbered item (*2.1.) should render as numbered marker 2.1.
+    expect(screen.getByText('2.1.')).toBeDefined();
+    expect(screen.getByText(/Thông tin gói: Combo VIP/)).toBeDefined();
+  });
 });

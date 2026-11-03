@@ -57,6 +57,12 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   const [bookings, setBookings] = useState<BookingItem[]>(INITIAL_BOOKINGS);
   const [activeBookingId, setActiveBookingId] = useState<number>(336695);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
+  const [consultationReturnStep, setConsultationReturnStep] = useState<number | null>(null);
+
+  const handleOpenConsultation = (returnStep?: number) => {
+    setConsultationReturnStep(returnStep ?? currentStep);
+    setCurrentStep(3);
+  };
   const [role, setRoleState] = useState<IosUserRole>(initialRole);
   const [scopeMode, setScopeMode] = useState<BookingScopeMode>(initialRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
   const [deviceMode, setDeviceMode] = useState<'iphone' | 'ipad' | 'fullscreen'>('iphone');
@@ -228,6 +234,14 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       price: number;
       bonus: number;
       sessions: number;
+    } | null,
+    skuPricing?: {
+      skuName?: string;
+      skuPrice?: number;
+      upgradePrice?: number;
+      cvPoints?: number;
+      cvBreakdown?: string;
+      serviceType?: string;
     } | null
   ) => {
     const isSelfAssignedCv =
@@ -236,14 +250,31 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
     updateActiveBooking((prev) => {
       const nextCombo = selectedCombo !== undefined ? selectedCombo : prev.selectedCombo || null;
+      const nextServiceName = skuPricing?.skuName || prev.serviceName;
+      const nextServicePrice = skuPricing?.skuPrice || prev.servicePrice;
+      const nextUpgradePrice = skuPricing?.upgradePrice ?? prev.upgradePrice ?? 0;
+      const originalBookedServiceName = prev.originalBookedServiceName || prev.serviceName;
+      const originalBookedServicePrice = prev.originalBookedServicePrice || prev.servicePrice;
+
       const comboPrice = nextCombo ? nextCombo.price : 0;
       const productTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
-      const subtotal = prev.servicePrice + comboPrice + productTotal;
+      const subtotal = nextServicePrice + comboPrice + productTotal;
+      const vatRate = 0.08;
+      const vatAmount = Math.round(subtotal * vatRate);
       const tipAmount = prev.billing?.tipAmount ?? 50000;
+      const grandTotal = subtotal + vatAmount + tipAmount;
 
       return {
         ...prev,
         attributes,
+        serviceType: skuPricing?.serviceType || prev.serviceType || 'Normal',
+        serviceName: nextServiceName,
+        servicePrice: nextServicePrice,
+        originalBookedServiceName,
+        originalBookedServicePrice,
+        upgradePrice: nextUpgradePrice,
+        cvRotationPoints: skuPricing?.cvPoints ?? prev.cvRotationPoints,
+        cvRotationBreakdown: skuPricing?.cvBreakdown ?? prev.cvRotationBreakdown,
         selectedCombo: nextCombo,
         checkInStaffId: prev.checkInStaffId || actor.staffId,
         checkInStaffName: prev.checkInStaffName || actor.name,
@@ -253,7 +284,9 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         status: isSelfAssignedCv ? 'SERVICING' : prev.status,
         billing: {
           subtotal,
-          serviceTotal: prev.servicePrice,
+          vatRate,
+          vatAmount,
+          serviceTotal: nextServicePrice,
           comboTotal: comboPrice,
           productTotal,
           paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
@@ -262,7 +295,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           tipCheckInShare: Math.round(tipAmount * 0.1),
           tipCheckOutShare: Math.round(tipAmount * 0.1),
           tipCcShare: Math.round(tipAmount * 0.2),
-          grandTotal: subtotal + tipAmount,
+          grandTotal,
         },
       };
     });
@@ -272,6 +305,13 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       selectedCombo: selectedCombo !== undefined ? selectedCombo : activeBooking.selectedCombo || null,
       nextStatus: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
     });
+
+    if (consultationReturnStep) {
+      const nextStep = consultationReturnStep;
+      setConsultationReturnStep(null);
+      setCurrentStep(nextStep);
+      return;
+    }
 
     if (isSelfAssignedCv) {
       // CV🪶 tự tư vấn khách của mình -> vào thẳng màn hình Nhận ca / Chụp ảnh tiến trình mi, không cần qua CC chia ca!
@@ -436,6 +476,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         },
         billing: {
           subtotal,
+          vatRate: 0.08,
+          vatAmount: Math.round(subtotal * 0.08),
           serviceTotal: prev.servicePrice,
           comboTotal,
           productTotal,
@@ -445,7 +487,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           tipCheckInShare: Math.round(tipAmount * 0.1),
           tipCheckOutShare: Math.round(tipAmount * 0.1),
           tipCcShare: Math.round(tipAmount * 0.2),
-          grandTotal: subtotal + tipAmount,
+          grandTotal: subtotal + Math.round(subtotal * 0.08) + tipAmount,
         },
       };
     });
@@ -459,6 +501,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       billing: {
         ...(prev.billing || {
           subtotal: prev.servicePrice,
+          vatRate: 0.08,
+          vatAmount: Math.round(prev.servicePrice * 0.08),
           serviceTotal: prev.servicePrice,
           comboTotal: 0,
           productTotal: 0,
@@ -467,7 +511,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           tipCheckInShare: 5000,
           tipCheckOutShare: 5000,
           tipCcShare: 10000,
-          grandTotal: prev.servicePrice + 50000,
+          grandTotal: prev.servicePrice + Math.round(prev.servicePrice * 0.08) + 50000,
         }),
         paymentMethod: method,
       },
@@ -484,19 +528,28 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       const ccShare = checkInShare + checkOutShare;
       const currentBilling = prev.billing || {
         subtotal: prev.servicePrice,
+        vatRate: 0.08,
+        vatAmount: Math.round(prev.servicePrice * 0.08),
         serviceTotal: prev.servicePrice,
         comboTotal: 0,
         productTotal: 0,
         paymentMethod: 'VIETQR' as const,
       };
+      const subtotal = currentBilling.subtotal;
+      const vatRate = currentBilling.vatRate ?? 0.08;
+      const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
+      const grandTotal = subtotal + vatAmount + tipAmount;
+
       const nextBilling = {
         ...currentBilling,
+        vatRate,
+        vatAmount,
         tipAmount,
         tipCvShare: cvShare,
         tipCheckInShare: checkInShare,
         tipCheckOutShare: checkOutShare,
         tipCcShare: ccShare,
-        grandTotal: currentBilling.subtotal + tipAmount,
+        grandTotal,
       };
 
       void postAction('COMPLETE_ORDER', { billing: nextBilling });
@@ -547,6 +600,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     lastRefreshedAt,
     isLiveDb,
     refreshDb,
+    handleOpenConsultation,
+    consultationReturnStep,
     handleCheckIn,
     handleSaveConsultation,
     handleAssignStaff,

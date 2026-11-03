@@ -139,7 +139,7 @@ export const LASH_CURL_LIST: LashCurlDetail[] = [
       'Độ uốn vòm tròn sâu nhất (tương đương D/U Curl trên bảng chuẩn), ngọn mi uốn vòng ngược nhẹ về phía mí mắt.',
     suitableEyes: 'Khách mắt sâu, mí to, mi mọc chúc nhiều hoặc khách chuộng phong cách sắc sảo.',
     aestheticEffect: 'Mắt mở to tròn cực đại như búp bê, hàng mi vút cong nổi bật.',
-    recommendedStyles: 'Doll (Búp bê tròn mắt), New Volume 2D, Hyperlight Cashmere, New Classic 1D.',
+    recommendedStyles: 'Doll (Búp bê tròn mắt), New Volume 2D, HyperLight, New Classic 1D.',
     technicianTip: 'Kiểm tra khoảng cách mí mắt trên để ngọn mi uốn cong không chạm bầu mắt khi mở to.',
     p0: { x: 16, y: 43.2 },
     p1: { x: 39, y: 61.5 },

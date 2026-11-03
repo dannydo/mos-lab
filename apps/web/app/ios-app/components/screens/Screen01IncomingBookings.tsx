@@ -115,7 +115,7 @@ export function Screen01IncomingBookings({
               <UserCheck className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
               <span>Khách của {actorName} (CV🪶 tự Tư vấn & Checkout)</span>
             </div>
-            <span className="text-[#34C759] font-extrabold text-[10px] shrink-0">90% Tip + Combo</span>
+            <span className="text-[#34C759] font-extrabold text-[10px] shrink-0">Tip + Thưởng Combo</span>
           </div>
         )}
 
@@ -203,6 +203,25 @@ export function Screen01IncomingBookings({
         </button>
       </div>
 
+      {/* 3.1 Mini Avatar Ring Status Legend */}
+      <div className="bg-[#F2F2F7] px-3 py-1 border-b border-[#E5E5EA] flex items-center justify-between text-[10px] text-[#636366]">
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-center gap-1 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#34C759] bg-white inline-block" />
+            <span>Not Combo</span>
+          </span>
+          <span className="flex items-center gap-1 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#8E8E93] bg-white inline-block" />
+            <span>Combo Live</span>
+          </span>
+          <span className="flex items-center gap-1 font-bold text-amber-700">
+            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#FF9500] bg-white inline-block" />
+            <span>Còn 1-2 lần</span>
+          </span>
+        </div>
+        <span className="text-[9.5px] text-[#8E8E93] font-medium">Viền avatar</span>
+      </div>
+
       {/* 4. Booking List */}
       <div className="flex-1 bg-white overflow-y-auto divide-y divide-[#E5E5EA]">
         {filteredBookings.length === 0 ? (
@@ -213,7 +232,22 @@ export function Screen01IncomingBookings({
           </div>
         ) : (
           filteredBookings.map((b, idx) => {
-            const isComboLive = b.comboLiveStatus?.isComboLive;
+            const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
+            const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
+
+            // Quy tắc màu viền avatar (Avatar Ring Color Invariant theo chỉ đạo Danny):
+            // -> vòng xanh quanh ngoài avatar -> not combo live
+            // -> vòng xám -> combo live
+            // -> còn 1-2 lần -> vòng vàng
+            let avatarRingClass = 'border-[2.5px] border-[#34C759]'; // Vòng xanh (Not combo live)
+            if (isComboLive && remainingSessions > 0) {
+              if (remainingSessions <= 2) {
+                avatarRingClass = 'border-[2.5px] border-[#FF9500] ring-1 ring-[#FF9500]/40'; // Vòng vàng (Còn 1-2 lần)
+              } else {
+                avatarRingClass = 'border-[2.5px] border-[#8E8E93]'; // Vòng xám (Combo live)
+              }
+            }
+
             return (
               <div
                 key={b.id}
@@ -234,9 +268,7 @@ export function Screen01IncomingBookings({
                   )}
 
                   <div
-                    className={`w-13 h-13 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-xs ${
-                      b.customerAvatar ? 'border-2 border-[#34C759]' : 'border border-[#D1D1D6]'
-                    }`}
+                    className={`w-13 h-13 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-xs ${avatarRingClass}`}
                   >
                     {b.customerAvatar ? (
                       <img
@@ -267,18 +299,20 @@ export function Screen01IncomingBookings({
                     {b.customerPhone} · Lần {b.customerVisits || 1}
                   </div>
 
-                  {/* Combo Live vs Not Combo Live Badge for CV🪶 consultation */}
-                  <div className="mt-1 flex flex-wrap items-center gap-1">
-                    {isComboLive ? (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
-                        💎 Combo Live ({b.comboLiveStatus?.remainingSessions} lượt)
+                  {/* Đã bỏ box Not Combo Live theo chỉ đạo anh Danny. Chỉ hiển thị nhẹ nhàng số lượt còn nếu đang có Combo Live */}
+                  {isComboLive && remainingSessions > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          remainingSessions <= 2
+                            ? 'bg-amber-50 text-amber-800 border border-amber-300'
+                            : 'bg-gray-100 text-gray-700 border border-gray-200'
+                        }`}
+                      >
+                        💎 Còn {remainingSessions} lượt
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-extrabold">
-                        🎯 Not Combo Live · Tư vấn gói Combo
-                      </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {b.customerNote && (
                     <div className="text-[11px] text-[#8E8E93] leading-[14px] mt-1 line-clamp-2 whitespace-pre-line font-normal">
@@ -306,7 +340,7 @@ export function Screen01IncomingBookings({
                       ? `Out: ${b.checkOutStaffName}`
                       : b.checkInStaffName
                         ? `In: ${b.checkInStaffName}`
-                        : 'Chờ Check-in (10%)'}
+                        : 'Chờ Check-in'}
                   </span>
                 </div>
               </div>
