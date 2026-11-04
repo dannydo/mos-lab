@@ -210,6 +210,49 @@ export async function computeNotificationsFeed(
           createdAt: report.updatedAt.toISOString(),
         });
       }
+
+      // Past completed tickets for Danny (shown in Read / Earlier section)
+      const recentCompletedTickets = await fastify.prisma.crm.crmBugReport.findMany({
+        where: {
+          status: {
+            in: ['FIXED', 'AWAITING_REPORTER_ACCEPTANCE'],
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          reporter: {
+            select: { displayName: true },
+          },
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 5,
+      });
+
+      for (const report of recentCompletedTickets) {
+        const notifId = `inbox-completed-${report.id}`;
+        readIdsSet.add(notifId);
+        items.push({
+          id: notifId,
+          title: `[Đã hoàn tất] Ticket #${report.id}`,
+          summary: report.title,
+          category: 'inbox_approval',
+          priority: 'low',
+          action: {
+            type: 'navigate_bug_report',
+            payload: { reportId: report.id, status: report.status },
+          },
+          badgeText: report.status === 'FIXED' ? 'Đã đóng' : 'Chờ nghiệm thu',
+          isActionable: false,
+          actor: {
+            name: report.reporter?.displayName || 'mOS Inbox',
+            role: 'Reporter',
+          },
+          createdAt: report.updatedAt.toISOString(),
+        });
+      }
     }
 
     // Reporter acceptance review (for whoever reported a ticket that is now fixed)
@@ -246,11 +289,10 @@ export async function computeNotificationsFeed(
       });
     }
 
-    // Bug report personal notifications
+    // Bug report personal notifications (both unread and recently read)
     const bugNotifs = await fastify.prisma.crm.crmBugReportNotification.findMany({
       where: {
         recipientStaffId: staffId,
-        readAt: null,
       },
       include: {
         report: {
@@ -258,17 +300,20 @@ export async function computeNotificationsFeed(
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 20,
     });
 
     for (const bn of bugNotifs) {
       const notifId = `inbox-notif-${bn.id}`;
+      if (bn.readAt) {
+        readIdsSet.add(notifId);
+      }
       items.push({
         id: notifId,
         title: bn.title || `[mOS Inbox] Cập nhật ticket #${bn.reportId}`,
         summary: bn.message || bn.report?.title || '',
         category: 'inbox_approval',
-        priority: 'normal',
+        priority: bn.readAt ? 'low' : 'normal',
         action: {
           type: 'navigate_bug_report',
           payload: { reportId: bn.reportId, actionUrl: bn.actionUrl },
@@ -500,14 +545,55 @@ export async function computeNotificationsFeed(
         createdAt: task.createdAt || new Date().toISOString(),
       });
     }
+
+    // Past completed tasks (shown in Read / Earlier section)
+    const completedTasks = accessibleTasks.filter((t) => {
+      if (!t.done) return false;
+      if (Number(t.assigneeId) === staffId) return true;
+      return false;
+    });
+
+    for (const task of completedTasks.slice(0, 5)) {
+      const notifId = `chat-task-${task.id}`;
+      readIdsSet.add(notifId);
+      items.push({
+        id: notifId,
+        title: `[Đã xong] ${task.title}`,
+        summary: task.remindAt ? formatRemindAtVi(task.remindAt) : 'Nhiệm vụ đã hoàn tất',
+        category: 'task_reminder',
+        priority: 'low',
+        action: {
+          type: 'open_chat',
+          payload: {
+            openTab: 'tasks',
+            taskId: task.id,
+            conversationId: task.conversationId,
+            messageId: task.sourceMessageId || undefined,
+          },
+        },
+        badgeText: 'Đã xong',
+        isActionable: false,
+        createdAt: (task as { completedAt?: string }).completedAt || task.createdAt || new Date().toISOString(),
+      });
+    }
   } catch (err) {
     fastify.log.warn({ err }, 'Fetch chat notifications error');
   }
 
-  // Populate readAt based on readState
+  // Deduplicate items by id
+  const seenIds = new Set<string>();
+  const uniqueItems: MosNotificationItem[] = [];
   for (const item of items) {
+    if (!seenIds.has(item.id)) {
+      seenIds.add(item.id);
+      uniqueItems.push(item);
+    }
+  }
+
+  // Populate readAt based on readState
+  for (const item of uniqueItems) {
     if (readIdsSet.has(item.id)) {
-      item.readAt = readState.updatedAt;
+      item.readAt = item.readAt || readState.updatedAt || new Date().toISOString();
     } else if (lastMarkedAllIso && item.createdAt <= lastMarkedAllIso) {
       item.readAt = lastMarkedAllIso;
     } else {
@@ -516,7 +602,7 @@ export async function computeNotificationsFeed(
   }
 
   // Sort items: unread first, then by priority (urgent > high > normal > low), then by createdAt desc
-  items.sort((a, b) => {
+  uniqueItems.sort((a, b) => {
     const aUnread = a.readAt ? 1 : 0;
     const bUnread = b.readAt ? 1 : 0;
     if (aUnread !== bUnread) return aUnread - bUnread;
@@ -526,11 +612,11 @@ export async function computeNotificationsFeed(
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const unreadCount = items.filter((i) => !i.readAt).length;
-  const urgentCount = items.filter((i) => !i.readAt && (i.priority === 'urgent' || i.priority === 'high')).length;
+  const unreadCount = uniqueItems.filter((i) => !i.readAt).length;
+  const urgentCount = uniqueItems.filter((i) => !i.readAt && (i.priority === 'urgent' || i.priority === 'high')).length;
 
   return {
-    items,
+    items: uniqueItems,
     unreadCount,
     urgentCount,
     updatedAt: new Date().toISOString(),
@@ -594,6 +680,28 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
 
     const readState = await loadUserReadState(fastify, staffId);
     const readIdsSet = new Set(readState.readIds);
+
+    if (body.unread && body.notificationId) {
+      readIdsSet.delete(body.notificationId);
+      readState.readIds = Array.from(readIdsSet);
+
+      if (body.notificationId.startsWith('inbox-notif-')) {
+        const notifIdNum = parseInt(body.notificationId.replace('inbox-notif-', ''), 10);
+        if (Number.isFinite(notifIdNum) && notifIdNum > 0) {
+          try {
+            await fastify.prisma.crm.crmBugReportNotification.updateMany({
+              where: { id: notifIdNum, recipientStaffId: staffId },
+              data: { readAt: null },
+            });
+          } catch (err) {
+            fastify.log.warn({ err }, 'Mark single bug notification unread error');
+          }
+        }
+      }
+      await saveUserReadState(fastify, staffId, readState);
+      userNotificationsCache.delete(staffId);
+      return reply.send({ success: true, message: 'Đã đánh dấu thông báo là chưa đọc.' });
+    }
 
     if (body.all) {
       readState.lastMarkedAllAt = new Date().toISOString();

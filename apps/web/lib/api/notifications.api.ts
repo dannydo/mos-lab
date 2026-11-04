@@ -26,5 +26,16 @@ export const notificationsApi = {
       );
       return res.data;
     },
+    markAsUnread: async (
+      notificationId: string,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; message: string }> => {
+      const res = await api.post<{ success: boolean; message: string }>(
+        '/notifications/read',
+        { notificationId, unread: true } satisfies MarkNotificationReadRequest,
+        options
+      );
+      return res.data;
+    },
   },
 };

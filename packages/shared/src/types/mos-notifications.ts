@@ -48,4 +48,5 @@ export interface MosNotificationFeedResponse {
 export interface MarkNotificationReadRequest {
   notificationId?: string;
   all?: boolean;
+  unread?: boolean;
 }

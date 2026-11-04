@@ -336,4 +336,103 @@ describe('mOS Notification Center Privacy & Personal Message Detection (MOS-BUG-
     assert.equal(threadNotif?.action.payload.conversationId, 'dm-pair-1-6');
     assert.equal(threadNotif?.action.payload.messageId, 'reply-dm-1-6-thread');
   });
+
+  it('distinguishes read vs unread notifications and retains completed/read items with readAt timestamp (MOS-FEAT-194)', async () => {
+    invalidateNotificationsCache();
+
+    const userDanny: JwtUserPayload = {
+      id: 1,
+      username: 'danny',
+      displayName: 'Danny Do',
+      role: 'super_admin',
+    };
+
+    const mockFastify = {
+      log: { warn: () => {}, error: () => {} },
+      prisma: {
+        crm: {
+          crmStaff: {
+            findUnique: async () => ({
+              id: 1,
+              username: 'danny',
+              displayName: 'Danny Do',
+              email: 'danny@wingslashes.com',
+              role: 'super_admin',
+              avatarUrl: null,
+            }),
+            findMany: async () => [],
+          },
+          crmTeamMember: {
+            findMany: async () => [],
+          },
+          crmBugReport: {
+            findMany: async ({ where }: { where: Record<string, unknown> }) => {
+              const statusIn = (where?.status as { in?: string[] })?.in;
+              if (statusIn?.includes('AWAITING_DANNY_COMMIT_REVIEW')) {
+                return [
+                  {
+                    id: 194,
+                    title: 'Bổ sung tính năng hiện thông báo đã đọc và thông báo mới',
+                    status: 'AWAITING_DANNY_COMMIT_REVIEW',
+                    reporter: { displayName: 'Danny Do' },
+                    updatedAt: new Date('2026-11-04T05:00:00Z'),
+                  },
+                ];
+              }
+              if (where?.status?.in?.includes('FIXED')) {
+                return [
+                  {
+                    id: 192,
+                    title: 'mOS FUND MASTER hoàn thiện nền tảng',
+                    status: 'FIXED',
+                    reporter: { displayName: 'Danny Do' },
+                    updatedAt: new Date('2026-11-03T10:00:00Z'),
+                  },
+                ];
+              }
+              return [];
+            },
+          },
+          crmBugReportNotification: {
+            findMany: async () => [
+              {
+                id: 88,
+                title: 'Bản sửa lỗi đã duyệt',
+                message: 'Ticket #192 đã được triển khai',
+                reportId: 192,
+                actionUrl: '/dashboard/bug-reports?reportId=192',
+                readAt: new Date('2026-11-03T12:00:00Z'),
+                createdAt: new Date('2026-11-03T10:00:00Z'),
+                report: { id: 192, title: 'mOS FUND MASTER hoàn thiện nền tảng', status: 'FIXED' },
+              },
+            ],
+          },
+          crmConfig: {
+            findUnique: async () => null,
+            upsert: async () => ({}),
+          },
+        },
+        legacy: {},
+      },
+    } as unknown as FastifyInstance;
+
+    const feed = await computeNotificationsFeed(mockFastify, userDanny, 1, true);
+
+    const unreadItem = feed.items.find((i) => i.id === 'inbox-194-awaiting_danny_commit_review');
+    assert.ok(unreadItem, 'Should find unread ticket 194');
+    assert.equal(unreadItem?.readAt, null, 'Unread item must have readAt as null');
+
+    const readCompletedItem = feed.items.find((i) => i.id === 'inbox-completed-192');
+    assert.ok(readCompletedItem, 'Should retain completed ticket 192 in feed');
+    assert.ok(readCompletedItem?.readAt, 'Completed item must have readAt set');
+
+    const readNotif = feed.items.find((i) => i.id === 'inbox-notif-88');
+    assert.ok(readNotif, 'Should retain already-read bug notification 88');
+    assert.ok(readNotif?.readAt, 'Read notification must have readAt set');
+
+    const unreadCount = feed.items.filter((i) => !i.readAt).length;
+    const readCount = feed.items.filter((i) => Boolean(i.readAt)).length;
+    assert.equal(feed.unreadCount, unreadCount, 'Unread count matches items without readAt');
+    assert.ok(readCount >= 2, 'Retains read notifications in feed');
+  });
 });
