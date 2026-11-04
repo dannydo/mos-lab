@@ -41,6 +41,7 @@ import {
   CV_DEFAULT_ALLOWED_MENU_KEYS,
   isAdminOrSuperAdminRole,
   isCvRole,
+  isManagedMenuAccessKey,
   isSuperAdminRole,
   SafeAny,
 } from '@mos-lab/shared';
@@ -610,11 +611,23 @@ export function getSidebarGroups(
       // parent category therefore enforces the category policy for every child.
       if (!isCrmCategoryVisible && item.key === 'nyc-parent') return [];
       if (!isAcademyCategoryVisible && (item.key === 'academy' || item.key === 'post-hub')) return [];
+      if (item.allowedRoles?.length && !isAdmin && !item.allowedRoles.includes(normalizedRole)) {
+        return [];
+      }
       if (item.children?.length) {
         const visibleChildren = filterItems(item.children);
         // A parent is navigational structure, not a separate permission gate.
         // It stays when at least one visible child remains.
         return visibleChildren.length > 0 ? [{ ...item, children: visibleChildren }] : [];
+      }
+      // Zero-Trust Admin-Only Default: Any newly added static sidebar entry not yet registered
+      // in MENU_ACCESS_DEFINITIONS is strictly locked to Admin-only by default.
+      const isDynamicKey =
+        item.key.startsWith('nyc-campaign-') ||
+        item.key.startsWith('academy-campaign-') ||
+        item.key.startsWith('finance-fund-');
+      if (!isAdmin && !isDynamicKey && item.key !== 'menu-access' && !isManagedMenuAccessKey(item.key)) {
+        return [];
       }
       // Strict CV Allowlist Invariant: CV accounts only see 'cv' and 'career-path'
       // unless an admin explicitly enabled a module via menuVisibility[item.key] === true.

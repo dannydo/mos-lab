@@ -203,7 +203,7 @@ export function Screen12CheckoutBilling({
             {booking?.cvRotationPoints && (
               <div className="p-3 bg-blue-50/80 border-t border-blue-100 flex items-center justify-between text-[12px]">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-blue-950">💎 Ghi nhận Vòng Xoay CV:</span>
+                  <span className="font-extrabold text-blue-950">◔ Ghi nhận Vòng Xoay CV:</span>
                   <span className="text-[11px] text-blue-700 font-medium">
                     {booking.cvRotationBreakdown || 'Điểm thưởng cá nhân'}
                   </span>

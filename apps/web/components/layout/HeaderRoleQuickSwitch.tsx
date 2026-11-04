@@ -5,7 +5,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { theme } from 'antd';
 import { BarChart3, CalendarCheck, MessageSquare, Sparkles, Trophy, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole } from '@mos-lab/shared';
+import {
+  canAccessIosConsultationApp,
+  isAdminOrSuperAdminRole,
+  isCvRole,
+  normalizeCvFeatherRole,
+} from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { HeaderIconButton } from '../ui/HeaderIconButton';
@@ -33,7 +38,7 @@ export function resolveQuickSwitchRoleGroup(role?: string | null): QuickSwitchRo
     return 'CV_STANDARD';
   }
 
-  if (isAdminOrSuperAdminRole(raw) || ['manager', 'fm', 'cho', 'boss'].includes(lower)) {
+  if (isAdminOrSuperAdminRole(raw)) {
     return 'ADMIN_MANAGER';
   }
 
@@ -41,8 +46,7 @@ export function resolveQuickSwitchRoleGroup(role?: string | null): QuickSwitchRo
 }
 
 export function canAccessConsultationApp(role?: string | null): boolean {
-  const group = resolveQuickSwitchRoleGroup(role);
-  return group === 'CV_FEATHER' || group === 'CC' || group === 'ADMIN_MANAGER';
+  return canAccessIosConsultationApp(role);
 }
 
 export interface QuickSwitchItem {

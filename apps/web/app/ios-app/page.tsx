@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole } from '@mos-lab/shared';
+import { canAccessIosConsultationApp, isCvRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
@@ -49,28 +49,15 @@ function IosAppInner() {
       }
       const parsed = JSON.parse(rawUser);
       const userRole = String(parsed?.role || '').trim();
-      const normalizedCv = normalizeCvFeatherRole(userRole);
-      const isAllowed =
-        isAdminOrSuperAdminRole(userRole) ||
-        isCvRole(userRole) ||
-        normalizedCv === 'CVL' ||
-        normalizedCv === 'CVLL' ||
-        ['cc', 'consultant', 'manager', 'fm', 'cho', 'boss', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus'].includes(
-          userRole.toLowerCase()
-        );
+      const isAllowed = canAccessIosConsultationApp(userRole);
 
       if (!isAllowed) {
-        window.location.replace('/dashboard');
+        window.location.replace(isCvRole(userRole) ? '/dashboard/cv' : '/dashboard');
         return;
       }
 
-      if (!roleParam) {
-        if (normalizedCv === 'CVLL' || userRole.toLowerCase() === 'cv_plus_plus') {
-          state.setRole('CVLL');
-        } else if (normalizedCv === 'CVL' || userRole.toLowerCase() === 'cv_plus' || isCvRole(userRole)) {
-          state.setRole('CVL');
-        }
-      }
+      const lockedRole = resolveLockedIosRoleForUser(userRole, roleParam);
+      state.setRole(lockedRole);
       setAuthorized(true);
     } catch {
       window.location.replace('/login');
@@ -91,6 +78,7 @@ function IosAppInner() {
       return (
         <ScreenSettingsRoleSwitch
           currentRole={state.role}
+          canSwitchRole={state.canSwitchRole}
           onRoleChange={(r) => {
             state.setRole(r);
             state.setIsSettingsOpen(false);
@@ -146,6 +134,7 @@ function IosAppInner() {
             isLiveDb={state.isLiveDb}
             onRefreshDb={() => state.refreshDb()}
             role={state.role}
+            canSwitchRole={state.canSwitchRole}
             onRoleChange={state.setRole}
             actor={state.actor}
             scopeMode={state.scopeMode}
@@ -163,6 +152,7 @@ function IosAppInner() {
             actor={state.actor}
             onBack={() => state.setCurrentStep(1)}
             onCheckIn={state.handleCheckIn}
+            onQuickCheckIn={state.handleSaveConsultation}
           />
         );
       case 3:
@@ -256,6 +246,7 @@ function IosAppInner() {
             bookingSegment={state.bookingSegment}
             setBookingSegment={state.setBookingSegment}
             role={state.role}
+            canSwitchRole={state.canSwitchRole}
             onRoleChange={state.setRole}
             actor={state.actor}
             scopeMode={state.scopeMode}

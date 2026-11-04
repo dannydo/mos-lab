@@ -63,20 +63,55 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
             </div>
           </div>
 
-          {/* Consultation Notes Box */}
-          <div className="bg-[#2C2C2E] rounded-xl p-3 space-y-1.5 text-xs">
+          {/* Khay Nguyên Vật Liệu Cần Chuẩn Bị Cho CV & CV🪶 Sau Check-in */}
+          <div className="bg-[#2C2C2E] rounded-xl p-3 space-y-2 text-xs border border-neutral-700/70">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-[#FFB400] uppercase tracking-wider">
+                📦 KHAY NGUYÊN VẬT LIỆU CẦN CHUẨN BỊ
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {booking.attributes?.hasUnderMink ? '2 Khay (Mi Trên + Mi Dưới)' : '1 Khay (Mi Trên)'}
+              </span>
+            </div>
+
+            {/* Khay 1: Mi Trên */}
+            <div className="bg-black/40 rounded-lg p-2 border border-white/10 space-y-0.5">
+              <div className="text-[10px] font-extrabold text-amber-400 uppercase">
+                Khay 1 · Mi Trên ({booking.attributes?.material || 'HyperLight'} · {booking.attributes?.volume || '4X'}{' '}
+                · {booking.attributes?.count || '70 fan'})
+              </div>
+              <div className="text-white font-bold text-[11.5px] leading-snug">
+                Dáng {booking.attributes?.style || 'Flawless'} · Cong {booking.attributes?.curl || 'C'} · Dày{' '}
+                {booking.attributes?.thickness || '0.07 mm'} · Dài {booking.attributes?.length || '10-12 mm'}
+              </div>
+            </div>
+
+            {/* Khay 2: Mi Dưới khi khách chọn nối luôn Mi Dưới */}
+            {booking.attributes?.hasUnderMink && (
+              <div className="bg-purple-950/60 rounded-lg p-2 border border-purple-400/50 space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold text-purple-300 uppercase">
+                    Khay 2 · Mi Dưới ({booking.attributes?.underMinkServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'} · 1D)
+                  </span>
+                  <span className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200">
+                    {booking.attributes?.underMinkCount || '30 sợi'}
+                  </span>
+                </div>
+                <div className="text-purple-100 font-bold text-[11.5px] leading-snug">
+                  Cong {booking.attributes?.underMinkCurl || 'B'} · Dày{' '}
+                  {booking.attributes?.underMinkThickness || '0.10 mm'} · Dài{' '}
+                  {booking.attributes?.underMinkLength || '7 mm'} · {booking.attributes?.underMinkCount || '30 sợi'}
+                </div>
+              </div>
+            )}
+
             {booking.attributes?.naturalLashLength && (
-              <div className="text-blue-300 leading-relaxed font-semibold">
+              <div className="text-blue-300 leading-relaxed font-semibold text-[11px] pt-0.5">
                 <strong>Mi thật đã khám:</strong> Dài {booking.attributes.naturalLashLength} · Sợi{' '}
                 {booking.attributes.naturalLashThickness || '0.07mm'} ({booking.attributes.eyeShape || 'Mí lót'})
               </div>
             )}
-            <div className="text-neutral-200 leading-relaxed">
-              <strong className="text-white">Thông số tư vấn:</strong> Dáng {booking.attributes?.style || 'Flawless'} ·
-              Cong {booking.attributes?.curl || 'C'} · Dài {booking.attributes?.length || '10-12mm'} · Dày{' '}
-              {booking.attributes?.thickness || '0.07mm'} siêu nhẹ
-            </div>
-            <div className="text-[#FF9500] leading-relaxed">
+            <div className="text-[#FF9500] leading-relaxed text-[11px]">
               <strong>Nốt CC:</strong>{' '}
               {booking.customerNote || 'Mắt mí lót nhẹ, dán gel pad êm ái, khách thích tự nhiên.'}
             </div>

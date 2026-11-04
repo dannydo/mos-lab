@@ -58,6 +58,10 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
      - `Thiên Thần`: Danh xưng thân thương, trìu mến dành cho tập thể nhân sự tại Wings.
      - `Nghệ Nhân Mi`: Danh xưng dành cho các cấp bậc tay nghề tinh hoa (Artisan / Master Lash Artisan).
    - **Ngoại Lệ Kỹ Thuật Duy Nhất**: Chỉ duy nhất chuỗi SQL query `ugl.user_group_name LIKE '%Thợ%'` trong legacy database query (để khớp tên nhóm người dùng lịch sử trong MySQL cũ) được phép tồn tại ngầm dưới backend và tuyệt đối không bao giờ được lộ ra ngoài UI.
+9. **Zero-Trust Admin-Only Default for New Features & `/ios-app` `CV🪶` Customer Privacy Invariant (Kinh Thánh mOS Điều răn UI-010)**:
+   - **Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới (4-Layer Zero-Trust)**: Khi bất kỳ tính năng, màn hình (`/dashboard/*`), mục menu hay API mới nào được thiết kế và đưa vào mOS, mặc định **chỉ duy nhất `admin` / `super_admin`** được phép truy cập. Tất cả các vai trò khác đều bị khóa mặc định ở cả 4 lớp: (1) Sidebar (`sidebar.config.tsx`) ẩn mọi mục chưa đăng ký mở quyền; (2) Route Guard (`DashboardLayout` + `isNonAdminAllowedDashboardPath`) chặn gõ URL trực tiếp; (3) Backend API Guard (`resolveMenuKeysForApiPath` -> `__ADMIN_ONLY_DEFAULT__`) trả về `403 Forbidden`; (4) Chỉ mở cho vai trò khác khi có chỉ đạo tường minh từ Danny.
+   - **Khóa Cổng Truy Cập `/ios-app`**: Chỉ duy nhất **`CV🪶` (`CVL`)**, **`🪶CV🪶` (`CVLL`)**, **`CC`** và **`Admin / Super Admin`** (`canAccessIosConsultationApp`) được phép vào `/ios-app`. Mọi vai trò khác (bao gồm `CV` tiêu chuẩn, `Manager`, `FM`, `CHO`, `BOSS`, `Telesales`, `CS`, `HR`, `QA/QC`) đều bị chặn tuyệt đối.
+   - **Bảo Mật Phạm Vi Khách Hàng Của `CV🪶` (`CVL`)**: Tài khoản `CV🪶` bị khóa cứng ở vai trò `CVL` (không được chuyển sang `CVLL` / `CC`, ẩn nút `"Toàn Bộ Sảnh"`), **tuyệt đối không được xem thông tin khách hàng của người khác**, mà chỉ được xem **1 khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua)** và **khách book đích danh của chính mình** (`filterBookingsForCvlScope`).
 
 ---
 

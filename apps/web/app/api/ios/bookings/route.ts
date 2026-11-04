@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
-import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole } from '@mos-lab/shared';
+import {
+  canAccessIosConsultationApp,
+  isAdminOrSuperAdminRole,
+  isCcRole,
+  normalizeCvFeatherRole,
+} from '@mos-lab/shared';
 
 interface AuthContext {
   ok: boolean;
@@ -12,7 +17,7 @@ interface AuthContext {
     username?: string;
     displayName?: string;
     role?: string;
-    careerTier?: 'CV' | 'CVL' | 'CVLL' | 'CC' | 'ADMIN';
+    careerTier?: 'CVL' | 'CVLL' | 'CC' | 'ADMIN';
   };
 }
 
@@ -42,32 +47,26 @@ async function verifyIosAppAuth(request: NextRequest): Promise<AuthContext> {
       const body = await res.json();
       const user = body?.user || body;
       const rawRole = String(user?.role || '').trim();
-      const normalizedAlias = normalizeCvFeatherRole(rawRole);
-      const isAllowed =
-        isAdminOrSuperAdminRole(rawRole) ||
-        isCvRole(rawRole) ||
-        ['cc', 'consultant', 'manager', 'fm', 'cho', 'boss', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus'].includes(
-          rawRole.toLowerCase()
-        ) ||
-        normalizedAlias === 'CVL' ||
-        normalizedAlias === 'CVLL';
+      const isAllowed = canAccessIosConsultationApp(rawRole);
 
       if (!isAllowed) {
         return {
           ok: false,
           status: 403,
-          message: 'Tài khoản không có quyền truy cập ứng dụng Tư vấn & Checkout /ios-app.',
+          message:
+            'Chỉ tài khoản CV🪶 (CVL), 🪶CV🪶 (CVLL), CC hoặc Admin mới được phép truy cập ứng dụng Tư vấn & Checkout /ios-app.',
         };
       }
 
-      let careerTier: 'CV' | 'CVL' | 'CVLL' | 'CC' | 'ADMIN' = 'CVL';
-      if (isAdminOrSuperAdminRole(rawRole) || ['manager', 'fm', 'cho', 'boss'].includes(rawRole.toLowerCase())) {
+      let careerTier: 'CVL' | 'CVLL' | 'CC' | 'ADMIN' = 'CVL';
+      const normalizedFeather = normalizeCvFeatherRole(rawRole);
+      if (isAdminOrSuperAdminRole(rawRole)) {
         careerTier = 'ADMIN';
-      } else if (normalizedAlias === 'CVLL' || rawRole.toLowerCase() === 'cv_plus_plus') {
+      } else if (normalizedFeather === 'CVLL' || rawRole.toLowerCase() === 'cv_plus_plus') {
         careerTier = 'CVLL';
-      } else if (normalizedAlias === 'CVL' || rawRole.toLowerCase() === 'cv_plus' || isCvRole(rawRole)) {
+      } else if (normalizedFeather === 'CVL' || rawRole.toLowerCase() === 'cv_plus') {
         careerTier = 'CVL';
-      } else if (['cc', 'consultant'].includes(rawRole.toLowerCase())) {
+      } else if (isCcRole(rawRole)) {
         careerTier = 'CC';
       }
 
@@ -266,15 +265,36 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get('storeId') ? Number(searchParams.get('storeId')) : 6;
     const segment = (searchParams.get('segment') || 'INCOMING').toUpperCase();
-    const requestedDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
-    const scope = (searchParams.get('scope') || 'STORE_ALL').toUpperCase();
-    const activeStaffId = Number(searchParams.get('staffId')) || authCheck.user?.legacyStaffId || 46272;
+    const todayVn = (() => {
+      try {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date());
+      } catch {
+        return new Date().toISOString().split('T')[0];
+      }
+    })();
+    const requestedDate = searchParams.get('date') || todayVn;
+    const effectiveRole =
+      authCheck.user?.careerTier === 'ADMIN'
+        ? (searchParams.get('role') || 'CVL').toUpperCase()
+        : authCheck.user?.careerTier || 'CVL';
+    const rawScope = (searchParams.get('scope') || 'STORE_ALL').toUpperCase();
+    // CV🪶 (CVL) bị khoá cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp + khách book của mình)
+    const scope = effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : rawScope;
+    const activeStaffId =
+      authCheck.user?.careerTier === 'CVL'
+        ? authCheck.user?.legacyStaffId || 46272
+        : Number(searchParams.get('staffId')) || authCheck.user?.legacyStaffId || 46272;
     const limit = Math.min(Number(searchParams.get('limit')) || 40, 100);
 
     const pool = getLegacyPool();
     const liveOverrides = await loadLiveOverrides();
 
-    // Determine effective targetDate: use requestedDate if it has rows, otherwise fallback to latest busy date (e.g. 2026-11-03)
+    // Determine effective targetDate: use requestedDate if it has rows, otherwise fallback to latest busy date
     let targetDate = requestedDate;
     const [dateCheck] = await pool.query<mysql.RowDataPacket[]>(
       `SELECT COUNT(*) AS cnt FROM \`order\` WHERE (? = 0 OR client_store_id = ?) AND (DATE(booking_date_start) = ? OR CAST(booking_date_only AS CHAR) = ?)`,
@@ -287,7 +307,7 @@ export async function GET(request: NextRequest) {
          WHERE (? = 0 OR client_store_id = ?) AND booking_date_start IS NOT NULL
          GROUP BY d
          HAVING cnt >= 5
-         ORDER BY (d = '2026-11-03') DESC, d DESC
+         ORDER BY d DESC
          LIMIT 1`,
         [storeId, storeId]
       );
@@ -320,6 +340,7 @@ export async function GET(request: NextRequest) {
         COALESCE(uc.phone_number, '0901.xxx.xxx') AS customer_phone,
         up.avatar AS customer_avatar,
         COALESCE(booker_up.full_name, 'Tư vấn') AS booker_name,
+        booker_up.avatar AS booker_avatar,
         COALESCE(sl.service_name, s.service_key, 'New Flawless Mink 770') AS service_name,
         COALESCE(os.service_type, 'Normal') AS service_type,
         COALESCE(sp.full_name, 'Chưa phân công') AS staff_name,
@@ -328,7 +349,9 @@ export async function GET(request: NextRequest) {
         os.check_in_staff_id,
         os.check_out_staff_id,
         COALESCE(checkin_up.full_name, NULL) AS check_in_staff_name,
+        checkin_up.avatar AS check_in_staff_avatar,
         COALESCE(checkout_up.full_name, NULL) AS check_out_staff_name,
+        checkout_up.avatar AS check_out_staff_avatar,
         (SELECT COUNT(*) FROM \`order\` o2 WHERE o2.user_id = o.user_id AND o2.order_state = 'Completed') AS total_visits
       FROM \`order\` o
       LEFT JOIN user_profile up ON up.user_id = o.user_id
@@ -357,44 +380,50 @@ export async function GET(request: NextRequest) {
 
     // Batch query customer Combo Live balances (user_service_balance) and recent lash history
     const customerIds = Array.from(new Set(rows.map((r) => Number(r.user_id)).filter((id) => id > 0)));
-    const comboBalanceMap = new Map<number, { isComboLive: boolean; remainingSessions: number; comboName: string }>();
+    const comboBalanceMap = new Map<
+      number,
+      {
+        isComboLive: boolean;
+        remainingSessions: number;
+        normalRemaining: number;
+        retainRemaining: number;
+        comboName: string;
+        serviceKey?: string;
+        packageKey?: string;
+        retainDaysLimit?: number;
+      }
+    >();
+    const underMinkComboMap = new Map<
+      number,
+      {
+        hasUnderCombo: boolean;
+        remainingSessions: number;
+        normalRemaining: number;
+        retainRemaining: number;
+        comboName: string;
+        packageKey?: string;
+      }
+    >();
     const lashHistoryMap = new Map<number, Array<{ date: string; serviceName: string; staffName: string }>>();
+    const lastVisitSpecsMap = new Map<
+      number,
+      {
+        serviceKey?: string;
+        volume?: string;
+        count?: string;
+        style?: string;
+        color?: string;
+      }
+    >();
 
     if (customerIds.length > 0) {
-      try {
-        const [balanceRows] = await pool.query<mysql.RowDataPacket[]>(
-          `SELECT 
-             usb.user_id,
-             SUM(usb.amount) AS remaining_sessions,
-             MAX(COALESCE(sl.service_name, s.service_key, 'Gói Combo Mi')) AS combo_name
-           FROM user_service_balance usb
-           LEFT JOIN service s ON s.id = usb.service_id
-           LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
-           WHERE usb.user_id IN (${customerIds.join(',')})
-             AND usb.amount > 0
-             AND (s.service_type IS NULL OR s.service_type != 'LashesUnder')
-           GROUP BY usb.user_id`
-        );
-        for (const br of balanceRows) {
-          const uid = Number(br.user_id);
-          const rem = Number(br.remaining_sessions) || 0;
-          if (rem > 0) {
-            comboBalanceMap.set(uid, {
-              isComboLive: true,
-              remainingSessions: rem,
-              comboName: String(br.combo_name || 'Gói Combo Mi'),
-            });
-          }
-        }
-      } catch {
-        // fallback if balance query fails
-      }
-
       try {
         const [historyRows] = await pool.query<mysql.RowDataPacket[]>(
           `SELECT 
              o.user_id,
+             os.id AS os_id,
              DATE_FORMAT(o.booking_date_start, '%d/%m/%Y') AS visit_date,
+             s.service_key,
              COALESCE(sl.service_name, s.service_key, 'Nối mi') AS service_name,
              COALESCE(up.full_name, 'Chuyên Viên') AS staff_name
            FROM \`order\` o
@@ -404,23 +433,186 @@ export async function GET(request: NextRequest) {
            LEFT JOIN user_profile up ON up.user_id = os.assigned_staff_id
            WHERE o.user_id IN (${customerIds.join(',')})
              AND o.order_state = 'Completed'
-           ORDER BY o.booking_date_start DESC
-           LIMIT 60`
+           ORDER BY o.booking_date_start DESC, os.id ASC
+           LIMIT 80`
         );
+        const latestUpperOsIds: number[] = [];
+        const osToUserMap = new Map<number, { userId: number; serviceKey: string }>();
         for (const hr of historyRows) {
           const uid = Number(hr.user_id);
           const list = lashHistoryMap.get(uid) || [];
+          const svcName = String(hr.service_name || 'Nối mi');
+          const svcKey = String(hr.service_key || '');
           if (list.length < 3) {
             list.push({
               date: String(hr.visit_date || ''),
-              serviceName: String(hr.service_name || 'Nối mi'),
+              serviceName: svcName,
               staffName: String(hr.staff_name || 'Chuyên Viên'),
             });
             lashHistoryMap.set(uid, list);
           }
+          const isUnder =
+            svcKey.toLowerCase().includes('under') ||
+            svcKey.toLowerCase().includes('flawless.mink-390') ||
+            svcName.toLowerCase().includes('under') ||
+            svcName.toLowerCase().includes('mi dưới');
+          if (!isUnder && !lastVisitSpecsMap.has(uid) && hr.os_id) {
+            const osId = Number(hr.os_id);
+            lastVisitSpecsMap.set(uid, { serviceKey: svcKey });
+            latestUpperOsIds.push(osId);
+            osToUserMap.set(osId, { userId: uid, serviceKey: svcKey });
+          }
+        }
+
+        if (latestUpperOsIds.length > 0) {
+          const [bonusAttrRows] = await pool.query<mysql.RowDataPacket[]>(
+            `SELECT 
+               sb.order_service_id,
+               sbr.type,
+               COALESCE(ao.attribute_option_key, sbr.value_required, '') AS opt_key
+             FROM staff_bonus sb
+             JOIN staff_bonus_rule sbr ON sbr.id = sb.staff_bonus_rule_id
+             LEFT JOIN attribute_option ao ON sbr.value_required REGEXP '^[0-9]+$' AND ao.id = CAST(sbr.value_required AS UNSIGNED)
+             WHERE sb.order_service_id IN (${latestUpperOsIds.join(',')})
+               AND sb.bonus_type = 'BonusPoint'`
+          );
+          for (const bar of bonusAttrRows) {
+            const osId = Number(bar.order_service_id);
+            const info = osToUserMap.get(osId);
+            if (!info) continue;
+            const current = lastVisitSpecsMap.get(info.userId) || { serviceKey: info.serviceKey };
+            const t = String(bar.type || '');
+            const k = String(bar.opt_key || '').toLowerCase();
+            const svcLower = info.serviceKey.toLowerCase();
+
+            if (t === 'OrderServiceAttributeLashes' && /^\d+$/.test(k)) {
+              const unit =
+                svcLower.includes('mink') || svcLower.includes('classic') || svcLower.includes('ivy') ? 'sợi' : 'fan';
+              current.count = `${k} ${unit}`;
+            } else if (t === 'OrderServiceAttributeFan' && k) {
+              const numMatch = k.match(/\d+/);
+              const dNum = numMatch ? numMatch[0] : '';
+              if (svcLower.includes('hyperlight')) {
+                current.volume = dNum === '1' || dNum === '2' ? '2X' : `${dNum}X`;
+              } else if (svcLower.includes('ivylight')) {
+                current.volume = `${dNum || '4'}L`;
+              } else if (svcLower.includes('ultralight')) {
+                current.volume = `${dNum || '4'}D`;
+              }
+            } else if (t === 'OrderServiceAttributeDesign' && k) {
+              if (k === 'doll') current.style = 'Doll';
+              else if (k === 'wing') current.style = 'Cat Eye';
+              else if (k === 'kim-k') current.style = 'Katun';
+              else if (k === 'natural') current.style = 'Natural';
+            } else if (t === 'OrderServiceAttributeColor' && k) {
+              if (k === 'brown' || k === 'purple' || k === 'blue') {
+                current.color = 'Nâu Tự Nhiên (Choco Brown)';
+              } else if (k === 'black') {
+                current.color = 'Đen Tuyền (Jet Black)';
+              }
+            }
+            lastVisitSpecsMap.set(info.userId, current);
+          }
         }
       } catch {
         // ignore history error
+      }
+
+      try {
+        const [balanceRows] = await pool.query<mysql.RowDataPacket[]>(
+          `SELECT 
+             usb.id,
+             usb.user_id,
+             (usb.normal_count + usb.retain_count) AS remaining_sessions,
+             usb.normal_count AS normal_remaining,
+             usb.retain_count AS retain_remaining,
+             COALESCE(sl.service_name, s.service_key, 'Gói Combo Mi') AS combo_name,
+             s.service_key AS service_key,
+             sp.service_price_package_key AS package_key,
+             sp.retain_last_day_required AS retain_days_limit
+           FROM user_service_balance usb
+           LEFT JOIN service s ON s.id = usb.service_id
+           LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+           LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+           WHERE usb.user_id IN (${customerIds.join(',')})
+             AND (usb.normal_count > 0 OR usb.retain_count > 0)
+             AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
+             AND (s.service_type IS NULL OR s.service_type != 'LashesUnder')
+             AND (s.service_key IS NULL OR s.service_key NOT LIKE '%under%')
+           ORDER BY usb.id DESC`
+        );
+        // Gom theo từng khách nhưng giữ đúng cặp (package_key, service_key, combo_name) của gói đang dùng gần nhất (tránh trộn MAX giữa 2 gói khác nhau)
+        const groupedByUser = new Map<number, mysql.RowDataPacket[]>();
+        for (const br of balanceRows) {
+          const uid = Number(br.user_id);
+          const arr = groupedByUser.get(uid) || [];
+          arr.push(br);
+          groupedByUser.set(uid, arr);
+        }
+        for (const [uid, userRows] of groupedByUser.entries()) {
+          const lastVisitSvcKey = (lastVisitSpecsMap.get(uid)?.serviceKey || '').replace(/-refill$/i, '');
+          // Ưu tiên dòng gói trùng với dịch vụ khách vừa nối lần gần nhất (nếu có), nếu không lấy dòng gói mới nhất
+          const primaryRow =
+            (lastVisitSvcKey &&
+              userRows.find((r) => String(r.service_key || '').replace(/-refill$/i, '') === lastVisitSvcKey)) ||
+            userRows[0];
+          const rem = Number(primaryRow.remaining_sessions) || 0;
+          if (rem > 0) {
+            const rawServiceName = String(primaryRow.combo_name || 'Gói Combo Mi');
+            const pkgKey = String(primaryRow.package_key || '').trim();
+            const displayComboName = pkgKey ? `Combo (${pkgKey}) · ${rawServiceName}` : `Combo ${rawServiceName}`;
+            comboBalanceMap.set(uid, {
+              isComboLive: true,
+              remainingSessions: rem,
+              normalRemaining: Number(primaryRow.normal_remaining) || 0,
+              retainRemaining: Number(primaryRow.retain_remaining) || 0,
+              comboName: displayComboName,
+              serviceKey: primaryRow.service_key ? String(primaryRow.service_key) : undefined,
+              packageKey: pkgKey || undefined,
+              retainDaysLimit: Number(primaryRow.retain_days_limit) || 25,
+            });
+          }
+        }
+      } catch {
+        // fallback if balance query fails
+      }
+
+      try {
+        const [underBalanceRows] = await pool.query<mysql.RowDataPacket[]>(
+          `SELECT 
+             usb.user_id,
+             SUM(usb.normal_count + usb.retain_count) AS remaining_sessions,
+             SUM(usb.normal_count) AS normal_remaining,
+             SUM(usb.retain_count) AS retain_remaining,
+             MAX(COALESCE(sl.service_name, s.service_key, 'Under Mink 390')) AS combo_name,
+             MAX(sp.service_price_package_key) AS package_key
+           FROM user_service_balance usb
+           LEFT JOIN service s ON s.id = usb.service_id
+           LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+           LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+           WHERE usb.user_id IN (${customerIds.join(',')})
+             AND (usb.normal_count > 0 OR usb.retain_count > 0)
+             AND (usb.service_group = 'LashesUnder' OR s.service_type = 'LashesUnder' OR s.service_key LIKE '%under%')
+           GROUP BY usb.user_id`
+        );
+        for (const ubr of underBalanceRows) {
+          const uid = Number(ubr.user_id);
+          const rem = Number(ubr.remaining_sessions) || 0;
+          if (rem > 0) {
+            const pkgKey = String(ubr.package_key || '').trim();
+            const rawName = String(ubr.combo_name || 'Under Mink 390');
+            underMinkComboMap.set(uid, {
+              hasUnderCombo: true,
+              remainingSessions: rem,
+              normalRemaining: Number(ubr.normal_remaining) || 0,
+              retainRemaining: Number(ubr.retain_remaining) || 0,
+              comboName: pkgKey ? `Combo Mi Dưới (${pkgKey}) · ${rawName}` : `Combo Mi Dưới · ${rawName}`,
+              packageKey: pkgKey || undefined,
+            });
+          }
+        }
+      } catch {
+        // ignore under combo query error
       }
     }
 
@@ -459,18 +651,28 @@ export async function GET(request: NextRequest) {
       const isNew = Number(r.is_new) || 0;
       const customerId = Number(r.user_id) || 0;
 
-      // For demo/operational clarity, if an order has no assigned staff yet on 2026-11-03, assign the first few to Thảo Ly (46272, CV🪶) and Tuyết Nhi (25337, 🪶CV🪶)
+      // For operational clarity:
+      // - Keep index === 0 (or any DB row without assigned_staff_id when first encountered) as the 1 next unassigned customer at the salon lobby (Đầu tua), unless overridden.
+      // - Assign subsequent unassigned demo rows across Thảo Ly (46272, CV🪶), Tuyết Nhi (25337, 🪶CV🪶), and Phương Nhi (49076, CV).
+      const isFirstIncomingQueue =
+        index === 0 && !override.assignedStaffId && (status === 'INCOMING' || status === 'CHECKED_IN');
+      const isDbUnassigned = !r.assigned_staff_id || Number(r.assigned_staff_id) === 0;
+      const isUnassignedQueue = !override.assignedStaffId && (isFirstIncomingQueue || (isDbUnassigned && index === 0));
+
       const defaultDemoStaff =
-        index % 3 === 0
+        index % 3 === 1
           ? { id: 46272, name: 'Thảo Ly', tier: 'CVL' as const }
-          : index % 3 === 1
+          : index % 3 === 2
             ? { id: 25337, name: 'Tuyết Nhi ❤️', tier: 'CVLL' as const }
             : { id: 49076, name: 'Phương Nhi', tier: 'CV' as const };
 
-      const assignedStaffId = Number(override.assignedStaffId ?? r.assigned_staff_id ?? defaultDemoStaff.id);
-      const assignedStaffName =
-        override.assignedStaffName ||
-        (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : defaultDemoStaff.name);
+      const assignedStaffId = isUnassignedQueue
+        ? 0
+        : Number(override.assignedStaffId ?? r.assigned_staff_id ?? defaultDemoStaff.id);
+      const assignedStaffName = isUnassignedQueue
+        ? 'Chờ phân công (Đầu tua)'
+        : override.assignedStaffName ||
+          (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : defaultDemoStaff.name);
 
       const checkInStaffId = override.checkInStaffId ?? (r.check_in_staff_id ? Number(r.check_in_staff_id) : undefined);
       const checkInStaffName = override.checkInStaffName ?? r.check_in_staff_name ?? undefined;
@@ -481,11 +683,52 @@ export async function GET(request: NextRequest) {
       const checkOutStaffName = override.checkOutStaffName ?? r.check_out_staff_name ?? undefined;
       const checkOutStaffTier = override.checkOutStaffTier ?? undefined;
 
-      const comboInfo = comboBalanceMap.get(customerId) || {
-        isComboLive: false,
-        remainingSessions: 0,
-        comboName: 'Chưa có gói Combo Live',
-      };
+      const demoComboFallback =
+        visits >= 2 && index % 4 === 0
+          ? {
+              isComboLive: true,
+              remainingSessions: 3,
+              normalRemaining: 1,
+              retainRemaining: 2,
+              comboName: 'Combo 5 lần New HyperLight 770 (4X · 70 fan)',
+              serviceKey: 'new-hyperlight-770',
+              packageKey: '4+1-hyperlight-770',
+              retainDaysLimit: 25,
+            }
+          : visits >= 2 && index % 4 === 1
+            ? {
+                isComboLive: true,
+                remainingSessions: 4,
+                normalRemaining: 4,
+                retainRemaining: 0,
+                comboName: 'Combo 7+3 New Flawless Mink 880 (70 sợi)',
+                serviceKey: 'new-flawless.mink-880',
+                packageKey: '7+3-flawless-mink-880',
+                retainDaysLimit: 25,
+              }
+            : visits >= 2 && index % 4 === 2
+              ? {
+                  isComboLive: true,
+                  remainingSessions: 5,
+                  normalRemaining: 5,
+                  retainRemaining: 0,
+                  comboName: 'Combo 7+3 Ivylight 4L 1220 (90 nhịp)',
+                  serviceKey: 'ivylight-4L-1220',
+                  packageKey: '7+3-ivylight-1220',
+                  retainDaysLimit: 25,
+                }
+              : {
+                  isComboLive: false,
+                  remainingSessions: 0,
+                  normalRemaining: 0,
+                  retainRemaining: 0,
+                  comboName: 'Chưa có gói Combo Live',
+                  serviceKey: undefined,
+                  packageKey: undefined,
+                  retainDaysLimit: 21,
+                };
+
+      const comboInfo = comboBalanceMap.get(customerId) || demoComboFallback;
 
       const selectedCombo = override.selectedCombo || null;
       const cartProducts = override.cartProducts || [];
@@ -524,34 +767,57 @@ export async function GET(request: NextRequest) {
         timeSlot: formatTimeSlot(r.booking_date_start, duration),
         time12h: formatTime12h(r.booking_date_start),
         serviceName: override.serviceName || r.service_name,
-        serviceType: r.service_type || 'Normal',
+        serviceType: override.serviceType || r.service_type || 'Normal',
         servicePrice,
         serviceDuration: duration,
         bookerName: r.booker_name,
+        bookerAvatar: resolveCustomerAvatar(r.booker_avatar),
         customerTypeIcon: resolveCustomerTypeIcon(note, visits, isNew, customerId),
         hasDiscountTag: resolveHasDiscountTag(note, Number(r.combo_sale_required), r.promotion_id, customerId),
         assignedStaffName,
         assignedStaffId,
+        isUnassignedQueue,
+        isNextQueueCustomer: isUnassignedQueue,
+        bookingAccessTag: isUnassignedQueue
+          ? ('NEXT_QUEUE_CUSTOMER' as const)
+          : assignedStaffId === activeStaffId || checkInStaffId === activeStaffId || checkOutStaffId === activeStaffId
+            ? ('MY_BOOKED_CUSTOMER' as const)
+            : ('STORE_CUSTOMER' as const),
         checkInStaffId,
         checkInStaffName,
         checkInStaffTier,
+        checkInStaffAvatar: resolveCustomerAvatar(r.check_in_staff_avatar),
         checkOutStaffId,
         checkOutStaffName,
         checkOutStaffTier,
+        checkOutStaffAvatar: resolveCustomerAvatar(r.check_out_staff_avatar),
         assignedBed: override.assignedBed || `Giường 0${(index % 6) + 1}`,
         status,
         comboLiveStatus: {
           isComboLive: comboInfo.isComboLive,
           remainingSessions: comboInfo.remainingSessions,
+          normalRemaining: comboInfo.normalRemaining,
+          retainRemaining: comboInfo.retainRemaining,
           comboName: comboInfo.comboName,
+          serviceKey: comboInfo.serviceKey,
+          packageKey: comboInfo.packageKey,
+          retainDaysLimit: comboInfo.retainDaysLimit ?? 25,
           upsellOpportunity: !comboInfo.isComboLive,
         },
+        underMinkComboStatus: underMinkComboMap.get(customerId),
         lashHistory: lashHistoryMap.get(customerId) || [
-          { date: '19/10/2026', serviceName: r.service_name || 'New Flawless', staffName: assignedStaffName },
+          {
+            date: index % 4 === 2 ? '01/10/2026' : '19/10/2026',
+            serviceName: comboInfo.isComboLive ? comboInfo.comboName : r.service_name || 'New Flawless',
+            staffName: assignedStaffName,
+          },
         ],
         selectedCombo,
         attributes: override.attributes || {
-          style: r.service_name || 'New Flawless',
+          style: lastVisitSpecsMap.get(customerId)?.style || 'Doll',
+          volume: lastVisitSpecsMap.get(customerId)?.volume,
+          count: lastVisitSpecsMap.get(customerId)?.count,
+          color: lastVisitSpecsMap.get(customerId)?.color,
           curl: 'CC',
           length: '10-12 mm',
           thickness: '0.07 mm',
@@ -585,18 +851,30 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Filter by scope (MY_CUSTOMERS for CV🪶 1 lông vs STORE_ALL for 🪶CV🪶 2 lông / Admin / CC)
-    const scopedBookings =
-      scope === 'MY_CUSTOMERS'
-        ? allMappedBookings.filter(
-            (b) =>
-              b.assignedStaffId === activeStaffId ||
-              b.checkInStaffId === activeStaffId ||
-              b.checkOutStaffId === activeStaffId
-          )
-        : allMappedBookings;
+    // Filter by scope:
+    // - CV🪶 (CVL) or MY_CUSTOMERS: Strictly ONLY see (a) 1 next upcoming unassigned customer at salon lobby + (b) own booked/assigned customers.
+    //   Strictly NEVER see customers booked/assigned to other Chuyên Viên!
+    // - 🪶CV🪶 (CVLL) / CC / Admin with STORE_ALL: See all salon bookings.
+    let nextUnassignedIncluded = false;
+    const effectiveList =
+      effectiveRole === 'CVL' || scope === 'MY_CUSTOMERS'
+        ? allMappedBookings.filter((b) => {
+            const isOwnCustomer =
+              !b.isUnassignedQueue &&
+              b.assignedStaffId > 0 &&
+              (b.assignedStaffId === activeStaffId ||
+                b.checkInStaffId === activeStaffId ||
+                b.checkOutStaffId === activeStaffId);
+            if (isOwnCustomer) return true;
 
-    const effectiveList = scopedBookings.length > 0 ? scopedBookings : allMappedBookings;
+            const isNextCandidate = b.isUnassignedQueue && (b.status === 'INCOMING' || b.status === 'CHECKED_IN');
+            if (isNextCandidate && !nextUnassignedIncluded) {
+              nextUnassignedIncluded = true;
+              return true;
+            }
+            return false;
+          })
+        : allMappedBookings;
 
     const counts = {
       incoming: effectiveList.filter((b) => b.status === 'INCOMING' || b.status === 'CHECKED_IN').length,
@@ -610,6 +888,7 @@ export async function GET(request: NextRequest) {
       source: 'mysql_live',
       storeId,
       segment,
+      role: effectiveRole,
       scope,
       activeStaffId,
       targetDate,
@@ -645,9 +924,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const bookingId = Number(body?.bookingId);
     const action = String(body?.action || '').toUpperCase();
-    const actorStaffId = Number(body?.actorStaffId) || authCheck.user?.legacyStaffId || 46272;
+    const isLockedCvl = authCheck.user?.careerTier === 'CVL';
+    const actorStaffId = isLockedCvl
+      ? authCheck.user?.legacyStaffId || 46272
+      : Number(body?.actorStaffId) || authCheck.user?.legacyStaffId || 46272;
     const actorStaffName = String(body?.actorStaffName || authCheck.user?.displayName || 'Thảo Ly');
-    const actorStaffTier = String(body?.actorStaffTier || authCheck.user?.careerTier || 'CVL');
+    const actorStaffTier = isLockedCvl ? 'CVL' : String(body?.actorStaffTier || authCheck.user?.careerTier || 'CVL');
 
     if (!bookingId || !action) {
       return NextResponse.json({ success: false, error: 'Thiếu bookingId hoặc action.' }, { status: 400 });
@@ -655,6 +937,26 @@ export async function POST(request: NextRequest) {
 
     const overrides = await loadLiveOverrides();
     const current = overrides[String(bookingId)] || {};
+
+    // Bức tường bảo mật CV🪶 (CVL): Không được thao tác trên khách đã phân công cho Chuyên Viên khác
+    if (
+      isLockedCvl &&
+      action !== 'RESET_DEMO' &&
+      current.assignedStaffId &&
+      Number(current.assignedStaffId) > 0 &&
+      Number(current.assignedStaffId) !== actorStaffId &&
+      Number(current.checkInStaffId) !== actorStaffId &&
+      Number(current.checkOutStaffId) !== actorStaffId
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'CV🪶 chỉ được phép thao tác trên khách hàng kế tiếp (Đầu tua) hoặc khách book của chính mình, không được truy cập khách của Chuyên Viên khác.',
+        },
+        { status: 403 }
+      );
+    }
 
     if (action === 'CHECK_IN') {
       // Quy tắc 50/50: Ai bấm Check-in ghi nhận check_in_staff_id -> hưởng 10% Tip Check-in
@@ -678,6 +980,12 @@ export async function POST(request: NextRequest) {
         checkInStaffTier: current.checkInStaffTier || actorStaffTier,
         attributes: body.attributes || current.attributes,
         selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
+        serviceName: body.skuPricing?.skuName || current.serviceName,
+        servicePrice: body.skuPricing?.skuPrice ?? current.servicePrice,
+        serviceType: body.skuPricing?.serviceType || current.serviceType,
+        upgradePrice: body.skuPricing?.upgradePrice ?? current.upgradePrice,
+        cvRotationPoints: body.skuPricing?.cvPoints ?? current.cvRotationPoints,
+        cvRotationBreakdown: body.skuPricing?.cvBreakdown ?? current.cvRotationBreakdown,
         consultedByStaffId: actorStaffId,
         consultedByStaffName: actorStaffName,
         consultedAt: new Date().toISOString(),

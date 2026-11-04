@@ -1,3 +1,5 @@
+import { canAccessIosConsultationApp, isAdminOrSuperAdminRole, isCvRole } from './auth.js';
+
 /** Principal types that can receive a menu & API permission grant. */
 export type MenuAccessScopeType = 'ROLE' | 'DEPARTMENT' | 'TEAM' | 'STAFF';
 
@@ -82,8 +84,13 @@ export const CV_DEFAULT_ALLOWED_MENU_KEYS = ['cv', 'career-path'] as const;
 /**
  * Strict allowlist of frontend paths accessible to CV accounts by default.
  * Only Báo Cáo CV (/dashboard/cv), Career Path (/dashboard/career-path), and mOS Chat (/dashboard/chat, /chat) are allowed.
+ * `/ios-app` is allowed ONLY for CV🪶 (CVL) and 🪶CV🪶 (CVLL), never for standard CV ('cv', 'technician', 'lt', 'ktv').
  */
-export function isCvAllowedPath(pathname?: string | null, menuVisibility?: Record<string, boolean>): boolean {
+export function isCvAllowedPath(
+  pathname?: string | null,
+  menuVisibility?: Record<string, boolean>,
+  userRole?: string | null
+): boolean {
   if (!pathname) return false;
   const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
   if (
@@ -94,11 +101,12 @@ export function isCvAllowedPath(pathname?: string | null, menuVisibility?: Recor
     cleanPath === '/dashboard/chat' ||
     cleanPath.startsWith('/dashboard/chat/') ||
     cleanPath === '/chat' ||
-    cleanPath.startsWith('/chat/') ||
-    cleanPath === '/ios-app' ||
-    cleanPath.startsWith('/ios-app/')
+    cleanPath.startsWith('/chat/')
   ) {
     return true;
+  }
+  if (cleanPath === '/ios-app' || cleanPath.startsWith('/ios-app/')) {
+    return userRole ? canAccessIosConsultationApp(userRole) : false;
   }
   if (menuVisibility) {
     for (const def of MENU_ACCESS_DEFINITIONS) {
@@ -112,6 +120,68 @@ export function isCvAllowedPath(pathname?: string | null, menuVisibility?: Recor
     }
   }
   return false;
+}
+
+/**
+ * Zero-Trust Admin-Only Default Route Guard (Layer 2):
+ * Every new page/feature introduced into mOS is Admin-only by default.
+ * Non-admin accounts may only visit paths that are explicitly granted to them in `menuVisibility`
+ * (or universal session routes like `/chat` and `/dashboard/chat`).
+ */
+export function isNonAdminAllowedDashboardPath(
+  pathname?: string | null,
+  menuVisibility?: Record<string, boolean>,
+  userRole?: string | null
+): boolean {
+  if (!pathname) return false;
+  if (isAdminOrSuperAdminRole(userRole)) return true;
+
+  const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
+  if (cleanPath === '/ios-app' || cleanPath.startsWith('/ios-app/')) {
+    return canAccessIosConsultationApp(userRole);
+  }
+  if (isCvRole(userRole)) {
+    return isCvAllowedPath(cleanPath, menuVisibility, userRole);
+  }
+  if (
+    cleanPath === '/dashboard/chat' ||
+    cleanPath.startsWith('/dashboard/chat/') ||
+    cleanPath === '/chat' ||
+    cleanPath.startsWith('/chat/') ||
+    cleanPath === '/login' ||
+    cleanPath.startsWith('/login/')
+  ) {
+    return true;
+  }
+
+  // Once menuVisibility is loaded from /api/menu-access/sidebar, enforce strict default-deny:
+  // Any route not matched to an explicitly allowed menuVisibility[key] === true is blocked for non-admins.
+  if (menuVisibility && Object.keys(menuVisibility).length > 0) {
+    if (cleanPath === '/dashboard') {
+      return menuVisibility.dashboard === true;
+    }
+
+    // Match the most specific menu definition(s) for this path
+    const matchingDefs = MENU_ACCESS_DEFINITIONS.filter((def) => {
+      const defBasePath = def.path.split('?')[0].replace(/\/+$/, '');
+      return (
+        defBasePath &&
+        defBasePath !== '/dashboard' &&
+        (cleanPath === defBasePath || cleanPath.startsWith(`${defBasePath}/`))
+      );
+    });
+
+    if (matchingDefs.length > 0) {
+      const maxLen = Math.max(...matchingDefs.map((d) => d.path.split('?')[0].replace(/\/+$/, '').length));
+      const mostSpecificDefs = matchingDefs.filter((d) => d.path.split('?')[0].replace(/\/+$/, '').length === maxLen);
+      return mostSpecificDefs.some((d) => menuVisibility[d.key] === true);
+    }
+
+    // Any unregistered / newly created route under /dashboard/* defaults to Admin-only (false for non-admins)
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -141,6 +211,8 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
     clean === '/menu-access/sidebar' ||
     clean.startsWith('/chat/') ||
     clean === '/chat' ||
+    clean.startsWith('/ai/') ||
+    clean === '/ai' ||
     clean.startsWith('/notifications') ||
     clean.startsWith('/ui-experiences/active') ||
     clean.startsWith('/user-preferences') ||
@@ -305,7 +377,9 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
   if (clean.startsWith('/teams')) return ['teams'];
   if (clean.startsWith('/staff') || clean.startsWith('/roles')) return ['staff-directory', 'teams'];
 
-  return ['dashboard'];
+  // Zero-Trust Admin-Only Default: Any newly designed API route not yet mapped
+  // to an explicit module key defaults to Admin-only access.
+  return ['__ADMIN_ONLY_DEFAULT__'];
 }
 
 /** Static sidebar entries governed by the organizational visibility matrix. */

@@ -30,13 +30,14 @@ export function Screen05ServicingTransfer({ booking, onTransferToCv }: Screen05S
       </header>
 
       {/* Sub-navbar Category Tabs on Black */}
-      <div className="bg-black px-4 pt-1 pb-2 flex items-center border-b border-neutral-900 shrink-0">
-        <div className="mr-8 pb-1 relative">
-          <span className="text-[14px] font-bold text-[#FFB400] tracking-tight">LASHES</span>
+      <div className="bg-black px-4 pt-1 pb-2 flex items-center justify-between border-b border-neutral-900 shrink-0 text-[12px] font-bold">
+        <div className="pb-1 relative">
+          <span className="text-[#FFB400] tracking-tight">LASHES</span>
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />
         </div>
-        <div className="mr-8 pb-1 text-neutral-400 text-[14px] font-medium">SAUNA</div>
-        <div className="pb-1 text-neutral-400 text-[14px] font-medium">ALL</div>
+        <div className="pb-1 text-neutral-400">LASH LIFT</div>
+        <div className="pb-1 text-neutral-400">NAILS</div>
+        <div className="pb-1 text-neutral-400">ALL</div>
       </div>
 
       {/* Segmented Control on Black */}

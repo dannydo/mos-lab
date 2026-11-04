@@ -1800,6 +1800,49 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'mOS Mission Page', reference: 'apps/web/app/dashboard/bug-reports/page.tsx' },
     ],
   },
+  {
+    id: 'UI-010',
+    book: 'SYSTEM',
+    title: 'Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới & Bảo Mật Phạm Vi Khách Hàng Của CV🪶 Trên /ios-app',
+    summary:
+      'Mọi chức năng, màn hình hoặc API mới đưa vào mOS mặc định chỉ Admin / Super Admin được phép sử dụng (Zero-Trust Admin-Only Default). Riêng ứng dụng /ios-app chỉ mở cho CV🪶 (CVL), 🪶CV🪶 (CVLL), CC và Admin; trong đó CV🪶 tuyệt đối không được xem khách của người khác mà chỉ được xem 1 khách hàng kế tiếp (Đầu tua) và khách book của chính mình.',
+    commandments: [
+      'Zero-Trust Admin-Only Default (4 Lớp Bảo Vệ): Khi bất kỳ tính năng, trang giao diện (/dashboard/*), mục menu hoặc API mới nào được thiết kế và đưa vào mOS, mặc định chỉ duy nhất Admin / Super Admin được quyền truy cập. Tất cả các vai trò khác đều bị chặn mặc định ở cả 4 lớp: (1) Sidebar ẩn mọi menu chưa khai báo trong MENU_ACCESS_DEFINITIONS hoặc chưa cấp quyền; (2) Route Guard chặn truy cập URL trực tiếp; (3) Backend API Guard trả về 403 Forbidden với mọi API chưa mở quyền (__ADMIN_ONLY_DEFAULT__); (4) Chỉ mở quyền khi Admin cấu hình tường minh.',
+      'Khóa Cổng Truy Cập /ios-app: Chỉ duy nhất 4 nhóm tài khoản được phép vào /ios-app gồm: CV🪶 (CVL), 🪶CV🪶 (CVLL), Tư Vấn Viên (CC) và Admin / Super Admin. Toàn bộ các vai trò khác (bao gồm Chuyên Viên Kỹ Thuật tiêu chuẩn CV, Manager, FM, CHO, BOSS, Telesales, CSKH, HR, QA/QC) đều bị từ chối truy cập ở cả giao diện và API.',
+      'Khóa Cứng Vai Trò Theo Tài Khoản Đăng Nhập: Trên /ios-app, nhân sự đăng nhập vai trò nào bị khóa cứng ở đúng vai trò đó (kể cả khi tự sửa tham số ?role= trên URL). Chỉ duy nhất Admin / Super Admin mới có thanh chuyển đổi vai trò (Role Switcher) để kiểm thử.',
+      'Bảo Mật Tuyệt Đối Thông Tin Khách Hàng Của CV🪶 (CVL): Tài khoản CV🪶 bị ẩn nút "Toàn Bộ Sảnh" (STORE_ALL) và tuyệt đối không được xem hay thao tác trên khách hàng đã được phân công cho Chuyên Viên khác. CV🪶 chỉ được hiển thị đúng: (a) 1 khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua) để nhận ca, và (b) danh sách khách hàng book đích danh / được phân công cho chính mình trong ngày.',
+    ],
+    rationale:
+      'Đảm bảo an toàn phân quyền tuyệt đối khi phát triển tính năng mới và bảo vệ quyền riêng tư dữ liệu khách hàng tại sảnh salon, giúp mỗi Chuyên Viên Tự Chủ (CV🪶) tập trung chăm sóc khách hàng của mình và khách đầu tua kế tiếp mà không xem chồng chéo tệp khách của đồng nghiệp.',
+    examples: [
+      'Một trang mới /dashboard/experimental-report vừa được tạo nhưng chưa khai báo mở quyền: Chỉ Admin nhìn thấy và truy cập được; mọi nhân sự khác gõ trực tiếp URL hoặc gọi API đều bị chặn.',
+      'Tài khoản CV🪶 (Thảo Ly) mở http://localhost:4000/ios-app?role=CVL: Chỉ nhìn thấy 1 khách kế tiếp đầu tua (Chị Mai Linh) và các khách book của Thảo Ly (Chị Ngọc Hân, Chị Bảo Trâm); hoàn toàn không thấy khách của Tuyết Nhi hay Phương Nhi, và không thể tự đổi URL sang ?role=CVLL hay ?role=CC.',
+    ],
+    tags: [
+      'admin-only',
+      'zero-trust',
+      'phân quyền',
+      'ios-app',
+      'CV🪶',
+      'CVL',
+      '🪶CV🪶',
+      'CVLL',
+      'CC',
+      'khách hàng kế tiếp',
+      'khách book của mình',
+      'bảo mật khách hàng',
+    ],
+    routeScopes: ['/ios-app', '/dashboard', '/dashboard/settings'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-04',
+    sources: [
+      { label: 'Shared Auth & Role Guards', reference: 'packages/shared/src/types/auth.ts' },
+      { label: 'Menu & API Access Guard Definitions', reference: 'packages/shared/src/types/menu-access.ts' },
+      { label: 'iOS App State & Scope Lock', reference: 'apps/web/app/ios-app/state/useIosAppState.ts' },
+      { label: 'iOS Bookings API Route Guard', reference: 'apps/web/app/api/ios/bookings/route.ts' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

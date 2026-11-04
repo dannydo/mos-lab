@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
-import { Calendar, ShoppingCart, Camera, Sparkles, Users, UserCheck } from 'lucide-react';
+import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { Calendar, ShoppingCart, Camera, Lock, Users, UserCheck } from 'lucide-react';
 
 interface SegmentCounts {
   incoming: number;
@@ -23,6 +24,7 @@ interface Screen01IncomingBookingsProps {
   isLiveDb?: boolean;
   onRefreshDb?: () => void;
   role?: IosUserRole;
+  canSwitchRole?: boolean;
   onRoleChange?: (role: IosUserRole) => void;
   actor?: ActiveActorProfile;
   scopeMode?: BookingScopeMode;
@@ -38,22 +40,49 @@ export function Screen01IncomingBookings({
   isRefreshing,
   onRefreshDb,
   role = 'CVL',
+  canSwitchRole = false,
   onRoleChange,
   actor,
   scopeMode = 'MY_CUSTOMERS',
   onScopeModeChange,
 }: Screen01IncomingBookingsProps) {
-  const [activeCategory, setActiveCategory] = useState<'LASHES' | 'SAUNA' | 'ALL'>('LASHES');
+  const [activeCategory, setActiveCategory] = useState<'LASHES' | 'LASH_LIFT' | 'NAILS' | 'ALL'>('LASHES');
 
   const filteredBookings = bookings.filter((b) => {
-    if (bookingSegment === 'INCOMING') return b.status === 'INCOMING' || b.status === 'CHECKED_IN';
-    if (bookingSegment === 'SERVICING') return b.status === 'SERVICING';
-    if (bookingSegment === 'DONE') return b.status === 'DONE';
-    return b.status === 'CANCELLED';
+    // 1. Status segment filter
+    const statusMatch =
+      bookingSegment === 'INCOMING'
+        ? b.status === 'INCOMING' || b.status === 'CHECKED_IN'
+        : bookingSegment === 'SERVICING'
+          ? b.status === 'SERVICING'
+          : bookingSegment === 'DONE'
+            ? b.status === 'DONE'
+            : b.status === 'CANCELLED';
+
+    if (!statusMatch) return false;
+
+    // 2. Category filter
+    if (activeCategory === 'ALL') return true;
+    const nameLower = (b.serviceName || '').toLowerCase();
+    if (activeCategory === 'LASH_LIFT') {
+      return nameLower.includes('lift') || nameLower.includes('uốn');
+    }
+    if (activeCategory === 'NAILS') {
+      return nameLower.includes('nail') || nameLower.includes('móng');
+    }
+    if (activeCategory === 'LASHES') {
+      return (
+        !nameLower.includes('nail') &&
+        !nameLower.includes('móng') &&
+        !nameLower.includes('lift') &&
+        !nameLower.includes('uốn')
+      );
+    }
+    return true;
   });
 
   const actorName = actor?.name || 'Thảo Ly';
-  const actorTierBadge = role === 'CVLL' ? '🪶CV🪶' : role === 'CVL' ? 'CV🪶' : role;
+  const actorTierBadge = role === 'CVLL' ? <CvFeather2Badge /> : role === 'CVL' ? 'CV🪶' : role;
 
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden select-none">
@@ -65,11 +94,11 @@ export function Screen01IncomingBookings({
           title="Làm mới dữ liệu từ MySQL"
         >
           <Calendar className="w-4.5 h-4.5" />
-          <span className="text-[11px] font-bold text-amber-400/90">Đề Thám</span>
+          <span className="text-[11px] font-bold text-amber-400/90">Đề Thám · Hôm nay</span>
         </button>
 
         <div className="flex items-center gap-1.5">
-          <span className="bg-[#FFB400] text-black text-[11px] font-black px-2 py-0.5 rounded-full">
+          <span className="bg-[#FFB400] text-black text-[11px] font-black px-2 py-0.5 rounded-full inline-flex items-center">
             {actorTierBadge}
           </span>
           <span className="text-white font-bold text-[13px] truncate max-w-[130px]">{actorName}</span>
@@ -86,36 +115,57 @@ export function Screen01IncomingBookings({
         </div>
       </div>
 
-      {/* 1.5 Quick Role & Scope Bar for CV🪶 (1 Lông) & 🪶CV🪶 (2 Lông) */}
+      {/* 1.5 Quick Role & Scope Bar for CV🪶 & 🪶CV🪶 */}
       <div className="bg-[#121214] px-3 py-2 border-b border-neutral-800 space-y-1.5 flex-shrink-0">
-        <div className="flex items-center justify-between gap-1.5">
-          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chế độ vận hành:</span>
-          <div className="flex items-center gap-1">
-            {(['CVL', 'CVLL', 'CC'] as const).map((r) => {
-              const active = role === r;
-              const label = r === 'CVL' ? 'CV🪶 (1 Lông)' : r === 'CVLL' ? '🪶CV🪶 (2 Lông)' : 'CC Sảnh';
-              return (
-                <button
-                  key={r}
-                  onClick={() => onRoleChange?.(r)}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition-all ${
-                    active ? 'bg-[#FFB400] text-black shadow-xs' : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
+        {canSwitchRole ? (
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+              Kiểm thử Admin (Chuyển vai trò):
+            </span>
+            <div className="flex items-center gap-1">
+              {(['CVL', 'CVLL', 'CC'] as const).map((r) => {
+                const active = role === r;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => onRoleChange?.(r)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all ${
+                      active
+                        ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                        : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
+                    }`}
+                  >
+                    {r === 'CVL' ? 'CV🪶' : r === 'CVLL' ? <CvFeather2Badge /> : 'CC Sảnh'}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span>Vai trò vận hành cố định:</span>
+            </span>
+            <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-[#FFB400] text-black inline-flex items-center gap-1">
+              {role === 'CVL' ? (
+                'CV🪶 · Chuyên Viên Tự Chủ'
+              ) : role === 'CVLL' ? (
+                <CvFeather2Badge />
+              ) : (
+                'CC · Tư Vấn Viên'
+              )}
+            </span>
+          </div>
+        )}
 
         {role === 'CVL' && (
           <div className="bg-amber-500/15 border border-amber-500/40 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
-              <UserCheck className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
-              <span>Khách của {actorName} (CV🪶 tự Tư vấn & Checkout)</span>
+            <div className="flex items-center gap-1.5 text-amber-300 font-semibold truncate">
+              <Lock className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
+              <span className="truncate">Chỉ hiển thị Khách Kế Tiếp &amp; Khách Book Của {actorName} (CV🪶)</span>
             </div>
-            <span className="text-[#34C759] font-extrabold text-[10px] shrink-0">Tip + Thưởng Combo</span>
+            <span className="text-[#34C759] font-extrabold text-[10px] shrink-0 ml-1">Đã khoá khách CV khác</span>
           </div>
         )}
 
@@ -124,30 +174,36 @@ export function Screen01IncomingBookings({
             <button
               onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}
               className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
-                scopeMode === 'MY_CUSTOMERS' ? 'bg-[#FFB400] text-black' : 'bg-[#2C2C2E] text-neutral-300'
+                scopeMode === 'MY_CUSTOMERS'
+                  ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                  : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Khách Của Tôi</span>
+              <span>
+                Khách Của Em (<CvFeather2Badge />)
+              </span>
             </button>
             <button
               onClick={() => onScopeModeChange?.('STORE_ALL')}
               className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
-                scopeMode === 'STORE_ALL' ? 'bg-[#FFB400] text-black' : 'bg-[#2C2C2E] text-neutral-300'
+                scopeMode === 'STORE_ALL'
+                  ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                  : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Toàn Tiệm (Checkout Chéo)</span>
+              <span>Toàn Bộ Sảnh</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* 2. Sub-navbar Row 1 (LASHES | SAUNA | ALL) */}
-      <div className="bg-[#1C1C1E] h-8.5 px-4 flex items-center justify-around text-[12px] font-bold tracking-wider flex-shrink-0">
+      {/* 2. Sub-navbar Row 1 (LASHES | LASH LIFT | NAILS | ALL) */}
+      <div className="bg-[#1C1C1E] h-8.5 px-2.5 flex items-center justify-between text-[11.5px] font-bold tracking-wider flex-shrink-0">
         <button
           onClick={() => setActiveCategory('LASHES')}
-          className={`h-full flex items-center justify-center px-4 transition-colors ${
+          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
             activeCategory === 'LASHES'
               ? 'text-[#FFB400] border-b-2 border-[#FFB400]'
               : 'text-[#8E8E93] hover:text-white'
@@ -156,18 +212,28 @@ export function Screen01IncomingBookings({
           LASHES
         </button>
         <button
-          onClick={() => setActiveCategory('SAUNA')}
-          className={`h-full flex items-center justify-center px-4 transition-colors ${
-            activeCategory === 'SAUNA'
+          onClick={() => setActiveCategory('LASH_LIFT')}
+          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
+            activeCategory === 'LASH_LIFT'
               ? 'text-[#FFB400] border-b-2 border-[#FFB400]'
               : 'text-[#8E8E93] hover:text-white'
           }`}
         >
-          SAUNA
+          LASH LIFT
+        </button>
+        <button
+          onClick={() => setActiveCategory('NAILS')}
+          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
+            activeCategory === 'NAILS'
+              ? 'text-[#FFB400] border-b-2 border-[#FFB400]'
+              : 'text-[#8E8E93] hover:text-white'
+          }`}
+        >
+          NAILS
         </button>
         <button
           onClick={() => setActiveCategory('ALL')}
-          className={`h-full flex items-center justify-center px-4 transition-colors ${
+          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
             activeCategory === 'ALL' ? 'text-[#FFB400] border-b-2 border-[#FFB400]' : 'text-[#8E8E93] hover:text-white'
           }`}
         >
@@ -299,6 +365,21 @@ export function Screen01IncomingBookings({
                     {b.customerPhone} · Lần {b.customerVisits || 1}
                   </div>
 
+                  {/* Nhãn phân biệt Khách hàng kế tiếp (Đầu tua) vs Khách book của mình dành cho CV🪶 */}
+                  {(role === 'CVL' || b.isNextQueueCustomer || b.isUnassignedQueue) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      {b.isNextQueueCustomer || b.isUnassignedQueue || b.bookingAccessTag === 'NEXT_QUEUE_CUSTOMER' ? (
+                        <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
+                          ⏭️ Khách kế tiếp (Đầu tua)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                          📌 Khách book của {actorName || 'tôi'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Đã bỏ box Not Combo Live theo chỉ đạo anh Danny. Chỉ hiển thị nhẹ nhàng số lượt còn nếu đang có Combo Live */}
                   {isComboLive && remainingSessions > 0 && (
                     <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -330,7 +411,7 @@ export function Screen01IncomingBookings({
                     className="text-[#FF3B30] text-[11px] font-medium truncate leading-tight mt-0.5"
                     title={b.serviceName}
                   >
-                    {b.serviceName}
+                    {b.serviceName?.toLowerCase().includes('any') ? 'Chưa chọn mẫu mi' : b.serviceName}
                   </span>
                   <span className="text-[#1C1C1E] text-[10px] font-bold leading-tight mt-1 truncate">
                     Mi: {b.assignedStaffName || 'Thảo Ly'}

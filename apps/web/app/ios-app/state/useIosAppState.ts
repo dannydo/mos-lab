@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { BookingItem, INITIAL_BOOKINGS, COMBO_PACKAGES_CVL, SERUM_TIERS_CVL } from './mockData';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { isAdminOrSuperAdminRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
+import { BookingItem, INITIAL_BOOKINGS, SERUM_TIERS_CVL, filterBookingsForCvlScope } from './mockData';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -21,26 +22,35 @@ export interface ActiveActorProfile {
 }
 
 export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): ActiveActorProfile {
+  const userRole = String(loggedInUser?.role || '').toLowerCase();
+  const isActualCvUser =
+    userRole === 'cvl' ||
+    userRole === 'cvll' ||
+    userRole === 'cv' ||
+    userRole === 'cv_plus' ||
+    userRole === 'cv_plus_plus' ||
+    userRole === 'technician';
+
   if (role === 'CVLL') {
     return {
-      staffId: Number(loggedInUser?.legacyStaffId) || 25337,
-      name: loggedInUser?.role === 'cvll' && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️',
+      staffId: isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 25337 : 25337,
+      name: isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️',
       tier: 'CVLL',
       badgeLabel: '🪶CV🪶 · Chuyên Viên Tự Chủ Cấp Cao',
     };
   }
   if (role === 'CVL') {
     return {
-      staffId: Number(loggedInUser?.legacyStaffId) || 46272,
-      name: loggedInUser?.role === 'cvl' && loggedInUser?.displayName ? loggedInUser.displayName : 'Thảo Ly',
+      staffId: isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 46272 : 46272,
+      name: isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Thảo Ly',
       tier: 'CVL',
       badgeLabel: 'CV🪶 · Chuyên Viên Tự Chủ',
     };
   }
   if (role === 'CV') {
     return {
-      staffId: Number(loggedInUser?.legacyStaffId) || 49076,
-      name: 'Phương Nhi',
+      staffId: isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 49076 : 49076,
+      name: isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Phương Nhi',
       tier: 'CV',
       badgeLabel: 'CV · Chuyên Viên Kỹ Thuật',
     };
@@ -64,15 +74,17 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(3);
   };
   const [role, setRoleState] = useState<IosUserRole>(initialRole);
-  const [scopeMode, setScopeMode] = useState<BookingScopeMode>(initialRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
+  const [scopeModeState, setScopeModeState] = useState<BookingScopeMode>(
+    initialRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL'
+  );
   const [deviceMode, setDeviceMode] = useState<'iphone' | 'ipad' | 'fullscreen'>('iphone');
   const [activeTab, setActiveTab] = useState<string>('booking');
   const [bookingSegment, setBookingSegment] = useState<'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL'>('INCOMING');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
 
-  const [counts, setCounts] = useState<SegmentCounts>({
-    incoming: 4,
+  const [countsState, setCounts] = useState<SegmentCounts>({
+    incoming: 3,
     servicing: 0,
     done: 0,
     cancel: 0,
@@ -86,25 +98,75 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     try {
       const raw = window.localStorage.getItem('mos_user');
       if (raw) {
-        setLoggedInUser(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        setLoggedInUser(parsed);
+        const lockedRole = resolveLockedIosRoleForUser(parsed?.role, initialRole);
+        setRoleState(lockedRole);
+        setScopeModeState(lockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
       }
     } catch {
       // ignore
     }
-  }, []);
+  }, [initialRole]);
 
+  const canSwitchRole = Boolean(loggedInUser && isAdminOrSuperAdminRole(loggedInUser?.role));
   const actor = resolveActorProfile(role, loggedInUser);
 
-  const setRole = useCallback((nextRole: IosUserRole) => {
-    setRoleState(nextRole);
-    if (nextRole === 'CVL') {
-      setScopeMode('MY_CUSTOMERS');
-    } else if (nextRole === 'CVLL' || nextRole === 'CC' || nextRole === 'STORE') {
-      setScopeMode('STORE_ALL');
-    }
-  }, []);
+  // Invariant: CV🪶 (CVL) is strictly locked to MY_CUSTOMERS scope (only next customer + own booked customers)
+  const scopeMode: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : scopeModeState;
 
-  const activeBooking = bookings.find((b) => b.id === activeBookingId) || bookings[0] || INITIAL_BOOKINGS[0];
+  const setScopeMode = useCallback(
+    (nextScope: BookingScopeMode) => {
+      if (role === 'CVL') {
+        setScopeModeState('MY_CUSTOMERS');
+        return;
+      }
+      setScopeModeState(nextScope);
+    },
+    [role]
+  );
+
+  const setRole = useCallback(
+    (nextRole: IosUserRole) => {
+      const effectiveRole =
+        loggedInUser && !isAdminOrSuperAdminRole(loggedInUser?.role)
+          ? resolveLockedIosRoleForUser(loggedInUser?.role, nextRole)
+          : nextRole;
+      setRoleState(effectiveRole);
+      if (effectiveRole === 'CVL') {
+        setScopeModeState('MY_CUSTOMERS');
+      } else if (effectiveRole === 'CVLL' || effectiveRole === 'CC' || effectiveRole === 'STORE') {
+        setScopeModeState('STORE_ALL');
+      }
+    },
+    [loggedInUser]
+  );
+
+  const visibleBookings = useMemo(() => {
+    if (role === 'CVL' || scopeMode === 'MY_CUSTOMERS') {
+      return filterBookingsForCvlScope(bookings, actor.staffId);
+    }
+    return bookings;
+  }, [bookings, role, scopeMode, actor.staffId]);
+
+  const counts: SegmentCounts = useMemo(() => {
+    if (role === 'CVL' || scopeMode === 'MY_CUSTOMERS') {
+      return {
+        incoming: visibleBookings.filter((b) => b.status === 'INCOMING' || b.status === 'CHECKED_IN').length,
+        servicing: visibleBookings.filter((b) => b.status === 'SERVICING').length,
+        done: visibleBookings.filter((b) => b.status === 'DONE').length,
+        cancel: visibleBookings.filter((b) => b.status === 'CANCELLED').length,
+      };
+    }
+    return countsState;
+  }, [role, scopeMode, visibleBookings, countsState]);
+
+  const activeBooking =
+    visibleBookings.find((b) => b.id === activeBookingId) ||
+    visibleBookings[0] ||
+    bookings.find((b) => b.id === activeBookingId) ||
+    bookings[0] ||
+    INITIAL_BOOKINGS[0];
 
   const postAction = useCallback(
     async (action: string, payload: Record<string, any> = {}) => {
@@ -138,17 +200,19 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       storeId?: number;
       scope?: BookingScopeMode;
       staffId?: number;
+      date?: string;
     }) => {
       const seg = options?.segment || bookingSegment;
       const storeId = options?.storeId ?? 6;
-      const effScope = options?.scope || scopeMode;
+      const effScope: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
       const effStaffId = options?.staffId ?? actor.staffId;
+      const dateQuery = options?.date ? `&date=${encodeURIComponent(options.date)}` : '';
 
       setIsRefreshing(true);
       try {
         const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
         const res = await fetch(
-          `/api/ios/bookings?storeId=${storeId}&segment=${seg}&scope=${effScope}&staffId=${effStaffId}&date=2026-11-03&limit=40`,
+          `/api/ios/bookings?storeId=${storeId}&segment=${seg}&scope=${effScope}&role=${role}&staffId=${effStaffId}${dateQuery}&limit=40`,
           {
             cache: 'no-store',
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -157,8 +221,26 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        if (data.success && Array.isArray(data.bookings) && data.bookings.length > 0) {
-          setBookings(data.bookings);
+        if (data.success && Array.isArray(data.bookings)) {
+          setBookings((prev) => {
+            const prevMap = new Map(prev.map((p) => [p.id, p]));
+            return data.bookings.map((incoming: BookingItem) => {
+              const existing = prevMap.get(incoming.id);
+              if (existing && existing.cvRotationPoints !== undefined) {
+                return {
+                  ...incoming,
+                  serviceName: existing.serviceName,
+                  servicePrice: existing.servicePrice,
+                  serviceType: existing.serviceType,
+                  attributes: existing.attributes,
+                  cvRotationPoints: existing.cvRotationPoints,
+                  cvRotationBreakdown: existing.cvRotationBreakdown,
+                  status: existing.status,
+                };
+              }
+              return incoming;
+            });
+          });
           if (data.counts) {
             setCounts(data.counts);
           }
@@ -182,7 +264,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         setIsRefreshing(false);
       }
     },
-    [bookingSegment, scopeMode, actor.staffId, activeBookingId]
+    [bookingSegment, scopeMode, role, actor.staffId, activeBookingId]
   );
 
   useEffect(() => {
@@ -218,6 +300,14 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       color?: string;
       volume?: string;
       count?: string;
+      hasUnderMink?: boolean;
+      underMinkServiceType?: 'Normal' | 'Retain';
+      underMinkCurl?: string;
+      underMinkThickness?: string;
+      underMinkLength?: string;
+      underMinkCount?: string;
+      isOverridden?: boolean;
+      overrideReason?: string;
       eyeShape?: string;
       naturalLashLength?: string;
       naturalLashThickness?: string;
@@ -303,6 +393,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     void postAction('SAVE_CONSULTATION', {
       attributes,
       selectedCombo: selectedCombo !== undefined ? selectedCombo : activeBooking.selectedCombo || null,
+      skuPricing,
       nextStatus: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
     });
 
@@ -576,7 +667,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   };
 
   return {
-    bookings,
+    bookings: visibleBookings,
     activeBooking,
     activeBookingId,
     setActiveBookingId,
@@ -584,6 +675,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep,
     role,
     setRole,
+    canSwitchRole,
     actor,
     scopeMode,
     setScopeMode,

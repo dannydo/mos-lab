@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, COMBO_PACKAGES_CVL, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
+import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 interface Screen11ProductUpsellProps {
@@ -30,7 +31,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const serviceName = booking?.serviceName || 'New Flawless Mink';
   const customerName = booking?.customerName || 'Chị Trúc';
   const actorName = actor?.name || 'Thảo Ly';
-  const actorTierBadge = actor?.tier === 'CVLL' ? '🪶CV🪶' : actor?.tier === 'CVL' ? 'CV🪶' : 'CC';
+  const actorTierBadge = actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? 'CV🪶' : 'CC';
 
   const serumTotal = yeppeumCount > 0 ? selectedSerumTier.price * yeppeumCount : 0;
   const serumBonus = yeppeumCount > 0 ? selectedSerumTier.cvBonus * yeppeumCount : 0;

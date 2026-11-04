@@ -11,7 +11,7 @@ interface Screen04StaffQueueAssignProps {
 
 export function Screen04StaffQueueAssign({ onBack, onAssign }: Screen04StaffQueueAssignProps) {
   const [selectedStaffId, setSelectedStaffId] = useState<number>(46272); // Thảo Ly
-  const [activeTab, setActiveTab] = useState<'LASHES' | 'SAUNA' | 'ALL'>('LASHES');
+  const [activeTab, setActiveTab] = useState<'LASHES' | 'LASH_LIFT' | 'NAILS' | 'ALL'>('LASHES');
 
   const handleConfirm = () => {
     onAssign(46272, 'Thảo Ly', 'Giường 03');
@@ -34,16 +34,22 @@ export function Screen04StaffQueueAssign({ onBack, onAssign }: Screen04StaffQueu
       />
 
       {/* Sub-navbar Category Tabs on Black */}
-      <div className="bg-black px-4 pt-1 pb-2 flex items-center border-b border-neutral-900 shrink-0">
-        <button onClick={() => setActiveTab('LASHES')} className="mr-6 pb-1 relative">
-          <span className="text-[13px] font-bold text-[#FFB400] tracking-tight">LASHES (CHUYÊN VIÊN MI)</span>
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />
+      <div className="bg-black px-3 pt-1 pb-2 flex items-center justify-between border-b border-neutral-900 shrink-0 text-[12px]">
+        <button onClick={() => setActiveTab('LASHES')} className="pb-1 relative font-bold">
+          <span className={activeTab === 'LASHES' ? 'text-[#FFB400]' : 'text-neutral-400'}>LASHES</span>
+          {activeTab === 'LASHES' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />}
         </button>
-        <button onClick={() => setActiveTab('SAUNA')} className="mr-6 pb-1 text-neutral-400 text-[13px] font-medium">
-          SAUNA
+        <button onClick={() => setActiveTab('LASH_LIFT')} className="pb-1 relative font-bold">
+          <span className={activeTab === 'LASH_LIFT' ? 'text-[#FFB400]' : 'text-neutral-400'}>LASH LIFT</span>
+          {activeTab === 'LASH_LIFT' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />}
         </button>
-        <button onClick={() => setActiveTab('ALL')} className="pb-1 text-neutral-400 text-[13px] font-medium">
-          ALL
+        <button onClick={() => setActiveTab('NAILS')} className="pb-1 relative font-bold">
+          <span className={activeTab === 'NAILS' ? 'text-[#FFB400]' : 'text-neutral-400'}>NAILS</span>
+          {activeTab === 'NAILS' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />}
+        </button>
+        <button onClick={() => setActiveTab('ALL')} className="pb-1 relative font-bold">
+          <span className={activeTab === 'ALL' ? 'text-[#FFB400]' : 'text-neutral-400'}>ALL</span>
+          {activeTab === 'ALL' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />}
         </button>
       </div>
 

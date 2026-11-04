@@ -1,7 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isCvRole, getDefaultRouteForRole, isTelesalesRole } from './auth.js';
-import { resolveMenuKeysForApiPath } from './menu-access.js';
+import {
+  isCvRole,
+  getDefaultRouteForRole,
+  isTelesalesRole,
+  canAccessIosConsultationApp,
+  resolveLockedIosRoleForUser,
+} from './auth.js';
+import { resolveMenuKeysForApiPath, isCvAllowedPath, isNonAdminAllowedDashboardPath } from './menu-access.js';
 
 describe('Auth Role Invariants & Routing Tests', () => {
   it('should correctly identify CV roles', () => {
@@ -64,5 +70,50 @@ describe('Auth Role Invariants & Routing Tests', () => {
     assert.equal(getDefaultRouteForRole('cs'), '/dashboard');
     assert.equal(getDefaultRouteForRole(null), '/dashboard');
     assert.equal(getDefaultRouteForRole(undefined), '/dashboard');
+  });
+
+  it('should strictly lock /ios-app access to only CVL, CVLL, CC, and Admin/SuperAdmin', () => {
+    // Allowed roles
+    assert.equal(canAccessIosConsultationApp('admin'), true);
+    assert.equal(canAccessIosConsultationApp('super_admin'), true);
+    assert.equal(canAccessIosConsultationApp('cvl'), true);
+    assert.equal(canAccessIosConsultationApp('CV🪶'), true);
+    assert.equal(canAccessIosConsultationApp('cvll'), true);
+    assert.equal(canAccessIosConsultationApp('🪶CV🪶'), true);
+    assert.equal(canAccessIosConsultationApp('cc'), true);
+    assert.equal(canAccessIosConsultationApp('consultant'), true);
+
+    // Strictly blocked roles (including standard CV, Manager, FM, CHO, BOSS, Telesales, CS)
+    assert.equal(canAccessIosConsultationApp('cv'), false);
+    assert.equal(canAccessIosConsultationApp('technician'), false);
+    assert.equal(canAccessIosConsultationApp('lt'), false);
+    assert.equal(canAccessIosConsultationApp('ktv'), false);
+    assert.equal(canAccessIosConsultationApp('manager'), false);
+    assert.equal(canAccessIosConsultationApp('fm'), false);
+    assert.equal(canAccessIosConsultationApp('cho'), false);
+    assert.equal(canAccessIosConsultationApp('boss'), false);
+    assert.equal(canAccessIosConsultationApp('telesales'), false);
+    assert.equal(canAccessIosConsultationApp('cs'), false);
+    assert.equal(canAccessIosConsultationApp('qa_qc'), false);
+
+    // Lock role param to account role for non-admins
+    assert.equal(resolveLockedIosRoleForUser('cvl', 'CVLL'), 'CVL');
+    assert.equal(resolveLockedIosRoleForUser('cvl', 'CC'), 'CVL');
+    assert.equal(resolveLockedIosRoleForUser('cvll', 'CC'), 'CVLL');
+    assert.equal(resolveLockedIosRoleForUser('cc', 'CVL'), 'CC');
+    assert.equal(resolveLockedIosRoleForUser('admin', 'CVLL'), 'CVLL');
+    assert.equal(resolveLockedIosRoleForUser('super_admin', 'CC'), 'CC');
+  });
+
+  it('should enforce Zero-Trust Admin-Only default on unregistered APIs and paths', () => {
+    assert.deepEqual(resolveMenuKeysForApiPath('/api/brand-new-unregistered-feature'), ['__ADMIN_ONLY_DEFAULT__']);
+    assert.equal(isCvAllowedPath('/ios-app', undefined, 'cv'), false);
+    assert.equal(isCvAllowedPath('/ios-app', undefined, 'cvl'), true);
+    assert.equal(isCvAllowedPath('/ios-app', undefined, 'cvll'), true);
+    assert.equal(
+      isNonAdminAllowedDashboardPath('/dashboard/brand-new-unregistered-page', { dashboard: true }, 'cc'),
+      false
+    );
+    assert.equal(isNonAdminAllowedDashboardPath('/dashboard/cc', { cc: true }, 'cc'), true);
   });
 });

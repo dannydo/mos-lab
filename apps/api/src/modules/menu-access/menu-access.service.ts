@@ -258,6 +258,13 @@ export class MenuAccessService {
     if (requiredKeys.includes('__SESSION_ALLOWED__')) {
       return { allowed: true, moduleKey: 'session' };
     }
+    if (requiredKeys.includes('__ADMIN_ONLY_DEFAULT__')) {
+      return {
+        allowed: false,
+        moduleKey: 'admin-only-default',
+        message: 'Chức năng mới mặc định chỉ dành cho Admin. Các vai trò khác không có quyền truy cập.',
+      };
+    }
 
     const isCv = isCvRole(actor.role);
 

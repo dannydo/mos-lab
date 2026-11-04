@@ -89,12 +89,24 @@ export function Screen08LashProgressTimer({
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[12px] text-gray-500">
-            <span>Thông số mi:</span>
-            <span className="font-semibold text-gray-800">
-              Dáng {booking?.attributes?.style || 'Natural'} · Cong {booking?.attributes?.curl || 'C'} · Dài{' '}
-              {booking?.attributes?.length || '10-12mm'} · Dày {booking?.attributes?.thickness || '0.07mm'}
-            </span>
+          <div className="space-y-1.5 text-[12px]">
+            <div className="flex items-center justify-between text-gray-500">
+              <span>Khay 1 · Mi trên:</span>
+              <span className="font-bold text-gray-900">
+                Dáng {booking?.attributes?.style || 'Natural'} · Cong {booking?.attributes?.curl || 'C'} · Dài{' '}
+                {booking?.attributes?.length || '10-12mm'} · Dày {booking?.attributes?.thickness || '0.07mm'}
+              </span>
+            </div>
+            {booking?.attributes?.hasUnderMink && (
+              <div className="flex items-center justify-between text-purple-700 bg-purple-50 rounded-lg px-2 py-1 border border-purple-200">
+                <span className="font-bold text-[11px]">Khay 2 · Mi dưới:</span>
+                <span className="font-black text-[11.5px] text-purple-900">
+                  1D · Cong {booking?.attributes?.underMinkCurl || 'B'} ·{' '}
+                  {booking?.attributes?.underMinkThickness || '0.10 mm'} ·{' '}
+                  {booking?.attributes?.underMinkLength || '7 mm'} · {booking?.attributes?.underMinkCount || '30 sợi'}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between text-[13px] pt-1 border-t border-gray-100">
             <span className="text-gray-500">Tiến độ thực hiện</span>

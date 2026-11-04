@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { CvFeather2Badge } from './CvFeatherLabels';
 import {
   CalendarCheck,
   Users,
@@ -84,7 +85,9 @@ export function IosTabBar({
                 title="Tư vấn & Checkout nhanh"
               >
                 <Sparkles className="w-5 h-5 stroke-[2.5]" />
-                <span className="text-[8px] font-black leading-none mt-0.5">{role === 'CVLL' ? '🪶CV🪶' : 'CV🪶'}</span>
+                <span className="text-[8px] font-black leading-none mt-0.5">
+                  {role === 'CVLL' ? <CvFeather2Badge /> : 'CV🪶'}
+                </span>
               </button>
             </div>
 

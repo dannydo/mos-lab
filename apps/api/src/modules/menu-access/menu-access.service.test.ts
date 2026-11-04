@@ -292,10 +292,7 @@ test('simulates Production policies: locks CV strictly while preserving BK_TELES
     (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/catalog/services', 'GET')).allowed,
     true
   );
-  assert.equal(
-    (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/nyc/config', 'GET')).allowed,
-    true
-  );
+  assert.equal((await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/nyc/config', 'GET')).allowed, true);
   assert.equal(
     (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/saved-filters', 'GET')).allowed,
     true
@@ -330,6 +327,22 @@ test('simulates Production policies: locks CV strictly while preserving BK_TELES
   assert.equal(
     (await MenuAccessService.checkApiAccess(mockFastify, ccActor, '/api/kpi/cv-xoay', 'GET')).allowed,
     false
+  );
+  // Zero-Trust Admin-Only Default: any new unmapped API path is blocked for non-admins and allowed for admin
+  assert.equal(
+    (await MenuAccessService.checkApiAccess(mockFastify, ccActor, '/api/new-unregistered-feature', 'GET')).allowed,
+    false
+  );
+  assert.equal(
+    (
+      await MenuAccessService.checkApiAccess(
+        mockFastify,
+        { id: 1, role: 'admin' },
+        '/api/new-unregistered-feature',
+        'GET'
+      )
+    ).allowed,
+    true
   );
 
   MenuAccessService.invalidateRuntimeCache();

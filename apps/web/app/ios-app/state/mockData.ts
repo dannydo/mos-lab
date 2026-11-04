@@ -101,6 +101,7 @@ export interface BookingItem {
   cvRotationPoints?: number;
   cvRotationBreakdown?: string;
   bookerName?: string;
+  bookerAvatar?: string;
   customerTypeIcon?: string;
   hasDiscountTag?: boolean;
   assignedStaffName?: string;
@@ -109,17 +110,35 @@ export interface BookingItem {
   checkInStaffId?: number;
   checkInStaffName?: string;
   checkInStaffTier?: string;
+  checkInStaffAvatar?: string;
   checkOutStaffId?: number;
   checkOutStaffName?: string;
   checkOutStaffTier?: string;
+  checkOutStaffAvatar?: string;
   customerAvatar?: string;
   assignedBed?: string;
+  isUnassignedQueue?: boolean;
+  isNextQueueCustomer?: boolean;
+  bookingAccessTag?: 'NEXT_CUSTOMER' | 'NEXT_QUEUE_CUSTOMER' | 'MY_BOOKED_CUSTOMER' | 'STORE_CUSTOMER';
   status: 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
   comboLiveStatus?: {
     isComboLive: boolean;
     remainingSessions: number;
+    normalRemaining?: number;
+    retainRemaining?: number;
     comboName: string;
+    serviceKey?: string;
+    packageKey?: string;
+    retainDaysLimit?: number;
     upsellOpportunity: boolean;
+  };
+  underMinkComboStatus?: {
+    hasUnderCombo: boolean;
+    remainingSessions: number;
+    normalRemaining: number;
+    retainRemaining: number;
+    comboName: string;
+    packageKey?: string;
   };
   lashHistory?: Array<{
     date: string;
@@ -142,6 +161,15 @@ export interface BookingItem {
     color?: string;
     volume?: string;
     count?: string;
+    hasUnderMink?: boolean;
+    underMinkServiceType?: 'Normal' | 'Retain';
+    underMinkCurl?: string;
+    underMinkThickness?: string;
+    underMinkLength?: string;
+    underMinkCount?: string;
+    underMinkColor?: string;
+    isOverridden?: boolean;
+    overrideReason?: string;
     eyeShape?: string;
     naturalLashLength?: string;
     naturalLashThickness?: string;
@@ -218,8 +246,11 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     bookerName: 'Quỳnh Như',
     customerTypeIcon: '🌟',
     hasDiscountTag: false,
-    assignedStaffId: 46272,
-    assignedStaffName: 'Thảo Ly',
+    assignedStaffId: 0,
+    assignedStaffName: 'Chờ phân công (Đầu tua)',
+    isUnassignedQueue: true,
+    isNextQueueCustomer: true,
+    bookingAccessTag: 'NEXT_CUSTOMER',
     assignedBed: 'Giường 01',
     status: 'INCOMING',
     comboLiveStatus: {
@@ -267,20 +298,25 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedBed: 'Giường 01',
     status: 'INCOMING',
     comboLiveStatus: {
-      isComboLive: false,
-      remainingSessions: 0,
-      comboName: 'Chưa có gói Combo Live',
-      upsellOpportunity: true,
+      isComboLive: true,
+      remainingSessions: 3,
+      normalRemaining: 3,
+      retainRemaining: 0,
+      comboName: 'Combo 5 lần New Flawless Mink 880 (70 sợi)',
+      serviceKey: 'new-flawless.mink-880',
+      packageKey: '4+1-flawless-mink-880',
+      retainDaysLimit: 25,
+      upsellOpportunity: false,
     },
     lashHistory: [
-      { date: '19/10/2026', serviceName: 'New Flawless Mink', staffName: 'Thảo Ly' },
-      { date: '02/10/2026', serviceName: 'Dặm New Flawless', staffName: 'Thảo Ly' },
+      { date: '19/10/2026', serviceName: 'New Flawless Mink 880', staffName: 'Thảo Ly' },
+      { date: '02/10/2026', serviceName: 'New Flawless Mink 880', staffName: 'Thảo Ly' },
     ],
     attributes: {
-      style: 'New Flawless',
-      curl: 'CC',
+      style: 'Natural',
+      curl: 'C',
       length: '10-12 mm',
-      thickness: '0.07 mm',
+      thickness: '0.10 mm',
       naturalLashLength: '8mm',
       naturalLashThickness: '0.05-0.07mm',
       naturalLashDensity: 'Vừa (80 - 120 sợi/mắt)',
@@ -302,9 +338,9 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     customerNote: 'Chị báo đợt trước rụng nhanh, cần khóa chân keo kỹ và tư vấn thêm dưỡng mi Yeppeum.',
     timeSlot: '10:30 - 12:00',
     time12h: '10:30 am',
-    serviceName: 'New Hyperlight 550',
+    serviceName: 'New Hyperlight 770',
     serviceType: 'Normal',
-    servicePrice: 550000,
+    servicePrice: 770000,
     serviceDuration: 90,
     bookerName: 'Bảo Hân',
     customerTypeIcon: '🔄',
@@ -314,17 +350,22 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedBed: 'Giường 02',
     status: 'INCOMING',
     comboLiveStatus: {
-      isComboLive: false,
-      remainingSessions: 0,
-      comboName: 'Chưa có gói Combo Live',
-      upsellOpportunity: true,
+      isComboLive: true,
+      remainingSessions: 2,
+      normalRemaining: 1,
+      retainRemaining: 1,
+      comboName: 'Combo 5 lần New HyperLight 770 (4X · 70 fan)',
+      serviceKey: 'new-hyperlight-770',
+      packageKey: '4+1-hyperlight-770',
+      retainDaysLimit: 25,
+      upsellOpportunity: false,
     },
-    lashHistory: [{ date: '15/10/2026', serviceName: 'New Hyperlight 550', staffName: 'Thảo Ly' }],
+    lashHistory: [{ date: '01/10/2026', serviceName: 'New Hyperlight 770', staffName: 'Thảo Ly' }],
     attributes: {
-      style: 'Hyperlight',
+      style: 'Doll',
       curl: 'C',
       length: '10-12 mm',
-      thickness: '0.07 mm',
+      thickness: '0.05 mm',
       notes: 'Nối chắc chân mi',
     },
   },
@@ -339,9 +380,9 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     customerNote: '[50%] 💤 Wake Up V1: Welcome Back',
     timeSlot: '11:00 - 12:30',
     time12h: '11:00 am',
-    serviceName: 'New Flawless Under Mink 390',
+    serviceName: 'Ivylight 4L 1220',
     serviceType: 'Normal',
-    servicePrice: 390000,
+    servicePrice: 1220000,
     serviceDuration: 90,
     bookerName: 'Tâm Nguyễn',
     customerTypeIcon: '🙃',
@@ -352,17 +393,22 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     status: 'INCOMING',
     comboLiveStatus: {
       isComboLive: true,
-      remainingSessions: 3,
-      comboName: 'Combo 5 lần New Flawless',
+      remainingSessions: 4,
+      normalRemaining: 4,
+      retainRemaining: 0,
+      comboName: 'Combo 7+3 Ivylight 4L 1220 (90 nhịp)',
+      serviceKey: 'ivylight-4L-1220',
+      packageKey: '7+3-ivylight-1220',
+      retainDaysLimit: 25,
       upsellOpportunity: false,
     },
-    lashHistory: [{ date: '12/10/2026', serviceName: 'New Flawless Mink', staffName: 'Tuyết Nhi ❤️' }],
+    lashHistory: [{ date: '20/10/2026', serviceName: 'Ivylight 4L 1220', staffName: 'Tuyết Nhi ❤️' }],
     attributes: {
-      style: 'New Flawless',
-      curl: 'C',
-      length: '9-11 mm',
+      style: 'Natural',
+      curl: 'LB',
+      length: '10-12 mm',
       thickness: '0.07 mm',
-      notes: 'Mi dưới tự nhiên',
+      notes: 'Cánh tiên nâng mí tự nhiên',
     },
   },
   {
@@ -391,9 +437,10 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       isComboLive: false,
       remainingSessions: 0,
       comboName: 'Chưa có gói Combo Live',
+      retainDaysLimit: 21,
       upsellOpportunity: true,
     },
-    lashHistory: [{ date: '08/10/2026', serviceName: 'New Hyperlight 660', staffName: 'Phương Nhi' }],
+    lashHistory: [{ date: '16/10/2026', serviceName: 'New Hyperlight 660', staffName: 'Phương Nhi' }],
     attributes: {
       style: 'Hyperlight',
       curl: 'CC',
@@ -459,3 +506,48 @@ export const SALON_INFO = {
   hotline: '0937.554.430',
   currentCc: { id: 37790, name: 'Diễm Hương', role: 'Tư Vấn Viên Quầy' },
 };
+
+/**
+ * Strict CV🪶 (CVL) Customer Visibility Filter:
+ * CV🪶 (1 lông) is strictly forbidden from viewing customers assigned to other Chuyên Viên.
+ * CV🪶 may ONLY view:
+ * 1. All customers specifically booked/assigned to this CV🪶 (`assignedStaffId === activeStaffId` or checked-in/checked-out by them).
+ * 2. The 1 next upcoming unassigned customer (`INCOMING` / `CHECKED_IN` with `isUnassignedQueue` or `!assignedStaffId`) at the salon lobby so CV🪶 at the head of rotation can receive them.
+ */
+export function filterBookingsForCvlScope(bookings: BookingItem[], activeStaffId: number): BookingItem[] {
+  let nextUnassignedIncluded = false;
+  const result: BookingItem[] = [];
+
+  for (const b of bookings) {
+    const isMyBookedCustomer =
+      !b.isUnassignedQueue &&
+      ((b.assignedStaffId && b.assignedStaffId === activeStaffId) ||
+        (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
+        (b.checkOutStaffId && b.checkOutStaffId === activeStaffId));
+
+    if (isMyBookedCustomer) {
+      result.push({
+        ...b,
+        isNextQueueCustomer: false,
+        bookingAccessTag: 'MY_BOOKED_CUSTOMER',
+      });
+      continue;
+    }
+
+    const isUnassignedIncoming =
+      (b.status === 'INCOMING' || b.status === 'CHECKED_IN') &&
+      (b.isUnassignedQueue === true || !b.assignedStaffId || b.assignedStaffId === 0);
+
+    if (isUnassignedIncoming && !nextUnassignedIncluded) {
+      nextUnassignedIncluded = true;
+      result.push({
+        ...b,
+        isUnassignedQueue: true,
+        isNextQueueCustomer: true,
+        bookingAccessTag: 'NEXT_CUSTOMER',
+      });
+    }
+  }
+
+  return result;
+}

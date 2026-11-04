@@ -135,6 +135,71 @@ export function isCvRole(role?: string | null): boolean {
 }
 
 /**
+ * Client Consultant (CC) roles at salon lobby.
+ */
+export function isCcRole(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return normalizedRole === 'cc' || normalizedRole === 'consultant';
+}
+
+/**
+ * Strict access guard for `/ios-app` (Tư vấn & Checkout KH):
+ * Invariant: Only Admin / Super Admin, CV🪶 (CVL), 🪶CV🪶 (CVLL), and CC are allowed.
+ * Standard CV ('cv', 'technician', 'lt', 'ktv') and all other roles (Manager, Telesales, CS, HR, QA/QC, etc.) are strictly blocked.
+ */
+export function canAccessIosConsultationApp(role?: string | null): boolean {
+  const raw = String(role || '').trim();
+  if (!raw) return false;
+  if (isAdminOrSuperAdminRole(raw)) return true;
+  const featherTier = normalizeCvFeatherRole(raw);
+  if (featherTier === 'CVL' || featherTier === 'CVLL') return true;
+  const lower = raw.toLowerCase();
+  if (['cvl', 'cvll', 'cv_plus', 'cv_plus_plus'].includes(lower)) return true;
+  if (isCcRole(raw)) return true;
+  return false;
+}
+
+export type LockedIosOperationalRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
+
+/**
+ * Resolves the effective operational role inside `/ios-app`:
+ * - Non-admin accounts are strictly locked to their actual account tier (`CVL`, `CVLL`, or `CC`) and cannot spoof `?role=` query params.
+ * - Only Admin / Super Admin may switch freely via `requestedRoleParam` for inspection/testing.
+ */
+export function resolveLockedIosRoleForUser(
+  userRole?: string | null,
+  requestedRoleParam?: string | null
+): LockedIosOperationalRole {
+  const raw = String(userRole || '').trim();
+  const validRequested = String(requestedRoleParam || '')
+    .trim()
+    .toUpperCase();
+  const allowedParamRoles: readonly LockedIosOperationalRole[] = ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'];
+
+  if (isAdminOrSuperAdminRole(raw)) {
+    if (allowedParamRoles.includes(validRequested as LockedIosOperationalRole)) {
+      return validRequested as LockedIosOperationalRole;
+    }
+    return 'CVL';
+  }
+
+  const featherTier = normalizeCvFeatherRole(raw);
+  const lower = raw.toLowerCase();
+  if (featherTier === 'CVLL' || lower === 'cvll' || lower === 'cv_plus_plus') {
+    return 'CVLL';
+  }
+  if (featherTier === 'CVL' || lower === 'cvl' || lower === 'cv_plus') {
+    return 'CVL';
+  }
+  if (isCcRole(raw)) {
+    return 'CC';
+  }
+  return 'CVL';
+}
+
+/**
  * Returns the default landing route based on staff role.
  * - CV roles land directly on the CV report (/dashboard/cv).
  * - Other roles land on the main operations dashboard (/dashboard).

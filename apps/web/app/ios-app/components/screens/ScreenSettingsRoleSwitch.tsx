@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosUserRole } from '../ui-kit/IosTabBar';
+import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { thermalPrinterService, PrinterConnectionType } from '../../services/thermalPrinterService';
 import {
   UserCheck,
@@ -18,27 +19,38 @@ import {
 
 interface ScreenSettingsRoleSwitchProps {
   currentRole: IosUserRole;
+  canSwitchRole?: boolean;
   onRoleChange: (role: IosUserRole) => void;
   onBack: () => void;
 }
 
-export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: ScreenSettingsRoleSwitchProps) {
+export function ScreenSettingsRoleSwitch({
+  currentRole,
+  canSwitchRole = false,
+  onRoleChange,
+  onBack,
+}: ScreenSettingsRoleSwitchProps) {
   const [printerType, setPrinterType] = useState<PrinterConnectionType>('BLUETOOTH');
   const [paperWidth, setPaperWidth] = useState<'80mm' | '58mm'>('80mm');
   const [ipAddress, setIpAddress] = useState('192.168.1.200');
   const [printStatus, setPrintStatus] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const roles: Array<{ id: IosUserRole; name: string; desc: string; icon: any }> = [
+  const roles: Array<{ id: IosUserRole; name: React.ReactNode; desc: string; icon: any }> = [
     {
       id: 'CVL',
-      name: 'CV🪶 · Chuyên Viên Tự Chủ (1 Lông · Thảo Ly)',
-      desc: 'Xem khách của mình, tự Check-in, Tư vấn gói Combo, bán Dưỡng mi & tự Checkout (Hưởng 90% Tip + Thưởng bậc thang CV🪶)',
+      name: 'CV🪶 · Chuyên Viên Tự Chủ (Thảo Ly)',
+      desc: 'Chỉ xem 1 khách kế tiếp (Đầu tua) & khách book của mình, tự Check-in, Tư vấn gói Combo, bán Dưỡng mi & tự Checkout (Hưởng 90% Tip + Thưởng bậc thang CV🪶)',
       icon: Sparkles,
     },
     {
       id: 'CVLL',
-      name: '🪶CV🪶 · Chuyên Viên Tự Chủ Cấp Cao (2 Lông · Tuyết Nhi)',
+      name: (
+        <span className="inline-flex items-center gap-1">
+          <CvFeather2Badge />
+          <span>· Chuyên Viên Tự Chủ Cấp Cao (Tuyết Nhi)</span>
+        </span>
+      ),
       desc: 'Xem khách của mình & toàn chi nhánh để hỗ trợ Check-in / Tư vấn / Checkout chéo giùm CV khác (Ai Checkout người đó hưởng)',
       icon: Award,
     },
@@ -49,24 +61,20 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
       icon: Sparkles,
     },
     {
-      id: 'CV',
-      name: 'Chuyên Viên Kỹ Thuật (CV · Phương Nhi)',
-      desc: 'Ca làm của tôi, Bấm giờ thi công mi, Chụp Before/After (70% Tip)',
-      icon: UserCheck,
-    },
-    {
       id: 'STORE',
-      name: 'Quản Lý Cửa Hàng (Store Manager)',
-      desc: 'Theo dõi sàn salon, Hiệu suất giường, Chốt ca',
+      name: 'Quản Lý Cửa Hàng (Admin / Super Admin)',
+      desc: 'Theo dõi sàn salon, Hiệu suất giường, Chốt ca (Chế độ kiểm thử Admin)',
       icon: Sliders,
     },
     {
       id: 'INVENTORY',
-      name: 'Quản Lý Kho (Inventory Manager)',
-      desc: 'Tồn kho khay mi, Keo nối, Cấp phát vật tư',
+      name: 'Quản Lý Kho (Admin / Super Admin)',
+      desc: 'Tồn kho khay mi, Keo nối, Cấp phát vật tư (Chế độ kiểm thử Admin)',
       icon: Database,
     },
   ];
+
+  const visibleRoles = canSwitchRole ? roles : roles.filter((r) => r.id === currentRole);
 
   const handleTestPrint = async () => {
     setIsPrinting(true);
@@ -109,18 +117,24 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
         {/* Role Switcher Section */}
         <div>
           <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider mb-2 px-1">
-            Chuyển Đổi Vai Trò Vận Hành (Role Switcher)
+            {canSwitchRole
+              ? 'Chuyển Đổi Vai Trò Vận Hành (Admin Role Switcher)'
+              : 'Vai Trò Vận Hành Của Bạn (Đã Khoá Theo Tài Khoản)'}
           </h3>
 
           <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs">
-            {roles.map((r) => {
+            {visibleRoles.map((r) => {
               const Icon = r.icon;
               const isSelected = currentRole === r.id;
               return (
                 <div
                   key={r.id}
-                  onClick={() => onRoleChange(r.id)}
-                  className="p-3.5 flex items-center justify-between hover:bg-[#F9F9FB] transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (canSwitchRole) onRoleChange(r.id);
+                  }}
+                  className={`p-3.5 flex items-center justify-between transition-colors ${
+                    canSwitchRole ? 'hover:bg-[#F9F9FB] cursor-pointer' : 'cursor-default'
+                  }`}
                 >
                   <div className="flex items-center space-x-3">
                     <div
@@ -141,6 +155,11 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
               );
             })}
           </div>
+          {!canSwitchRole && (
+            <p className="text-[11px] text-[#8E8E93] mt-1.5 px-1">
+              🔒 Chỉ tài khoản Admin / Super Admin mới được phép chuyển đổi giữa các vai trò kiểm thử.
+            </p>
+          )}
         </div>
 
         {/* Thermal Printer Settings Section */}

@@ -40,7 +40,14 @@ import { useTheme } from '../../context/ThemeContext';
 import { SeasonalAccentProvider } from '../../context/SeasonalAccentContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { ThemeSelector } from '../../components/theme/ThemeSelector';
-import { isAdminOrSuperAdminRole, isCvAllowedPath, isCvRole } from '@mos-lab/shared';
+import {
+  getDefaultRouteForRole,
+  isAdminOrSuperAdminRole,
+  isCvAllowedPath,
+  isCvRole,
+  isNonAdminAllowedDashboardPath,
+  MENU_ACCESS_DEFINITIONS,
+} from '@mos-lab/shared';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
@@ -658,14 +665,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [pathname, router]);
 
-  // Invariant: CV accounts must never access management dashboard (/dashboard)
-  // or CRM customer management (/dashboard/customers).
-  // Always redirect directly to the CV report (/dashboard/cv).
+  const [routeVisibility, setRouteVisibility] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
-    if (user && isCvRole(user.role) && isCvRestrictedPath(pathname)) {
+    if (!user?.id || isAdminOrSuperAdminRole(user.role)) return;
+    const syncVisibility = () => {
+      apiClient.menuAccess
+        .getSidebarVisibility()
+        .then((res) => {
+          setRouteVisibility(res?.data?.visibility || {});
+        })
+        .catch(() => {});
+    };
+    syncVisibility();
+    window.addEventListener('menu-access-updated', syncVisibility);
+    return () => window.removeEventListener('menu-access-updated', syncVisibility);
+  }, [user?.id, user?.role]);
+
+  // Zero-Trust Admin-Only Default Route Guard (Layer 2):
+  // - CV accounts must never access management dashboard (/dashboard) or CRM (/dashboard/customers) -> redirect to /dashboard/cv.
+  // - All other non-admin accounts attempting to visit a newly introduced or restricted route directly by URL are redirected to their allowed landing route.
+  useEffect(() => {
+    if (!user) return;
+    if (isCvRole(user.role) && !isCvAllowedPath(pathname, routeVisibility, user.role)) {
       router.replace('/dashboard/cv');
+      return;
     }
-  }, [user, pathname, router]);
+    if (
+      !isAdminOrSuperAdminRole(user.role) &&
+      Object.keys(routeVisibility).length > 0 &&
+      !isNonAdminAllowedDashboardPath(pathname, routeVisibility, user.role)
+    ) {
+      const firstAllowedPath =
+        MENU_ACCESS_DEFINITIONS.find((def) => routeVisibility[def.key] === true)?.path.split('?')[0] ||
+        getDefaultRouteForRole(user.role);
+      if (firstAllowedPath && firstAllowedPath !== pathname) {
+        router.replace(firstAllowedPath);
+      }
+    }
+  }, [user, pathname, routeVisibility, router]);
 
   const handleAvatarUpdated = useCallback((newAvatarUrl: string) => {
     setUser((prev: SafeAny) => (prev ? { ...prev, avatarUrl: newAvatarUrl, avatar: newAvatarUrl } : prev));
