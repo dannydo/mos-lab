@@ -66,6 +66,8 @@ async function convertAttachmentToDataUrl(attachment?: MosChatImageAttachment): 
   }
 }
 
+import { ErrorBoundary } from '../../../components/ErrorBoundary';
+
 const CustomerDetailDrawer = dynamic(() => import('../../CustomerDetailDrawer'), { ssr: false });
 
 export const MosChatContext = createContext<MosChatContextValue | null>(null);
@@ -2030,15 +2032,17 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     <MosChatContext.Provider value={value}>
       {children}
       {customerDrawerOpen && selectedCustomerId && (
-        <CustomerDetailDrawer
-          open={customerDrawerOpen}
-          customerId={selectedCustomerId}
-          zIndex={2000}
-          onClose={() => {
-            setCustomerDrawerOpen(false);
-            setSelectedCustomerId(null);
-          }}
-        />
+        <ErrorBoundary fallback={null}>
+          <CustomerDetailDrawer
+            open={customerDrawerOpen}
+            customerId={selectedCustomerId}
+            zIndex={2000}
+            onClose={() => {
+              setCustomerDrawerOpen(false);
+              setSelectedCustomerId(null);
+            }}
+          />
+        </ErrorBoundary>
       )}
     </MosChatContext.Provider>
   );

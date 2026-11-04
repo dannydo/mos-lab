@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { OmiCallProvider } from '../../context/OmiCallContext';
 
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 const MosChatMobileApp = dynamic(
@@ -14,6 +15,8 @@ const MosChatProvider = dynamic(
   () => import('../../components/mos-chat/context/MosChatContext').then((m) => m.MosChatProvider),
   { ssr: false }
 );
+const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
+const CallLogModal = dynamic(() => import('../../components/CallLogModal'), { ssr: false });
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -89,15 +92,19 @@ function ChatPageContent() {
 export default function ChatPage() {
   return (
     <ErrorBoundary fallback={<div className="p-8 text-center text-slate-400">Không thể tải mOS Chat</div>}>
-      <Suspense
-        fallback={
-          <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-slate-400">
-            Đang khởi tạo mOS Chat...
-          </div>
-        }
-      >
-        <ChatPageContent />
-      </Suspense>
+      <OmiCallProvider>
+        <Suspense
+          fallback={
+            <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-slate-400">
+              Đang khởi tạo mOS Chat...
+            </div>
+          }
+        >
+          <ChatPageContent />
+        </Suspense>
+        <OmiCallWidget />
+        <CallLogModal />
+      </OmiCallProvider>
     </ErrorBoundary>
   );
 }

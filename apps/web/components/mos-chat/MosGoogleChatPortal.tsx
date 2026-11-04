@@ -250,6 +250,7 @@ import { MosChatReminderAlert } from './components/MosChatReminderAlert';
 import { MosChatTaskInlineChecklist } from './components/MosChatTaskInlineChecklist';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
 import dynamic from 'next/dynamic';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 const CustomerDetailDrawer = dynamic(() => import('../CustomerDetailDrawer'), { ssr: false });
 
@@ -4353,9 +4354,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setCustomerPickerOpen(false);
   };
 
-  const openCustomerDetail = (customerId: number) => {
-    setSelectedCustomerId(customerId);
-    setCustomerDrawerOpen(true);
+  const openCustomerDetail = (customerId: number | string) => {
+    const num = typeof customerId === 'number' ? customerId : parseInt(String(customerId), 10);
+    if (!isNaN(num) && num > 0) {
+      setSelectedCustomerId(num);
+      setCustomerDrawerOpen(true);
+    }
   };
 
   const handleSendQuickCustomerCard = async () => {
@@ -11454,15 +11458,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= CUSTOMER DETAIL DRAWER ================= */}
       {customerDrawerOpen && selectedCustomerId && (
-        <CustomerDetailDrawer
-          open={customerDrawerOpen}
-          customerId={selectedCustomerId}
-          zIndex={2000}
-          onClose={() => {
-            setCustomerDrawerOpen(false);
-            setSelectedCustomerId(null);
-          }}
-        />
+        <ErrorBoundary fallback={null}>
+          <CustomerDetailDrawer
+            open={customerDrawerOpen}
+            customerId={selectedCustomerId}
+            zIndex={2000}
+            onClose={() => {
+              setCustomerDrawerOpen(false);
+              setSelectedCustomerId(null);
+            }}
+          />
+        </ErrorBoundary>
       )}
     </>
   );

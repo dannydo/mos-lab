@@ -6,6 +6,16 @@ import { apiClient } from '../../../lib/api-client';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { tabNotificationManager } from '../../../lib/tab-notification';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => '/chat',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock('../../voice-assistant/speech-utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../voice-assistant/speech-utils')>();
   return {

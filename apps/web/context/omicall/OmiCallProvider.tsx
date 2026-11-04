@@ -1289,10 +1289,57 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const defaultOmiCallFallback: OmiCallContextType = {
+  sdkLoaded: false,
+  isSdkReady: false,
+  sdkError: false,
+  isRegistered: false,
+  isTabMuted: false,
+  callState: 'idle',
+  callDuration: 0,
+  currentCall: null,
+  makeCall: async () => {},
+  executeCall: async () => {},
+  cancelConfirm: () => {},
+  answerCall: () => {},
+  rejectCall: () => {},
+  hangUp: () => {},
+  toggleMute: () => {},
+  toggleHold: () => {},
+  isMuted: false,
+  isHeld: false,
+  sipConfig: null,
+  setCallState: () => {},
+  setCurrentCall: () => {},
+  isSimulated: false,
+  setIsSimulated: () => {},
+  audioInputDevices: [],
+  audioOutputDevices: [],
+  selectedAudioInputId: '',
+  selectedAudioOutputId: '',
+  setSelectedAudioInputId: () => {},
+  setSelectedAudioOutputId: () => {},
+  refreshAudioDevices: async () => {},
+  omicallReady: false,
+  setOmicallReady: () => {},
+  floatingLauncherVisible: false,
+  setFloatingLauncherVisible: () => {},
+  isCallLogModalOpen: false,
+  callLogCustomerInfo: null,
+  openCallLogModal: () => {},
+  closeCallLogModal: () => {},
+  canAccessOmiCall: false,
+  isGrowthMember: false,
+  isAdmin: false,
+  adminOmiCallEnabled: false,
+  setAdminOmiCallEnabled: () => {},
+  resolvedLog: null,
+  setResolvedLog: () => {},
+  submittingWrapup: false,
+  setSubmittingWrapup: () => {},
+};
+
 export function useOmiCall() {
   const context = useContext(OmiCallContext);
-  if (!context) {
-    throw new Error('useOmiCall must be used within an OmiCallProvider');
-  }
-  return context;
+  return context ?? defaultOmiCallFallback;
 }
