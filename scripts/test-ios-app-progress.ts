@@ -72,6 +72,28 @@ async function main() {
   });
   console.log('Screen 09 camera/upload screenshot saved: ios-screen09-camera-upload.png');
 
+  // 5. Click "CHUYỂN MÁY CHO KHÁCH KHẢO SÁT CẢM XÚC" to reach Screen 10 (Survey)
+  console.log('Navigating to Screen 10 (Customer Survey)...');
+  const goToSurveyBtn = page.locator('button:has-text("CHUYỂN MÁY CHO KHÁCH KHẢO SÁT")').first();
+  await goToSurveyBtn.click();
+  await page.waitForTimeout(1000);
+
+  await page.screenshot({
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen10-survey-back.png',
+  });
+  console.log('Screen 10 survey screenshot saved: ios-screen10-survey-back.png');
+
+  // 6. Test clicking back from Screen 10 to Screen 09
+  console.log('Testing back navigation from Screen 10...');
+  const backBtn = page.locator('header button:has-text("Ảnh After")').first();
+  await backBtn.click();
+  await page.waitForTimeout(1000);
+
+  await page.screenshot({
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen09-after-back-verified.png',
+  });
+  console.log('Screen 09 verified after back navigation!');
+
   await browser.close();
 }
 

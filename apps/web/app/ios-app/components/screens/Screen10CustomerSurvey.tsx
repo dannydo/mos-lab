@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { Star } from 'lucide-react';
 
 interface Screen10CustomerSurveyProps {
@@ -32,10 +33,8 @@ export function Screen10CustomerSurvey({
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
-      {/* Top Navbar on Black */}
-      <header className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-3 px-4 flex items-center justify-center bg-black border-b border-neutral-900 select-none z-40 relative min-h-[50px] shrink-0">
-        <h1 className="text-[#FFB400] font-bold text-[17px] tracking-tight">Wings Beauty Survey</h1>
-      </header>
+      {/* Top Navbar on Black with Native Back Button */}
+      <IosNavigationBar title="Wings Beauty Survey" onBack={onBack} backTitle="Ảnh After" />
 
       <div className="flex-1 flex flex-col justify-between py-6 px-4 overflow-y-auto">
         <div>
@@ -142,12 +141,19 @@ export function Screen10CustomerSurvey({
         </div>
 
         {/* Action Button */}
-        <div className="pt-6 pb-2">
+        <div className="pt-6 pb-2 space-y-2">
           <button
             onClick={handleSubmit}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-bold text-[15px] shadow-md active:scale-98 transition-transform text-center"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-bold text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer"
           >
             GỬI ĐÁNH GIÁ & HOÀN TẤT
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full py-2 text-center text-neutral-500 hover:text-neutral-700 text-[13px] font-semibold active:opacity-60 transition-opacity cursor-pointer"
+          >
+            ‹ Quay lại bước trước
           </button>
         </div>
       </div>

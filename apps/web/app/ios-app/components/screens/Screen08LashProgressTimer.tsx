@@ -143,7 +143,7 @@ export function Screen08LashProgressTimer({
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
-      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ca Làm" />
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ảnh Before" />
 
       {/* 2. Steps Subheader (Black Bar) */}
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">
