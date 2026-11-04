@@ -38,7 +38,24 @@ if (navigator.mediaDevices === undefined) {
   });
 }
 
-// Mock localStorage for node/jsdom environments
+// Mock next/navigation
+vi.mock('next/navigation', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>().catch(() => ({}));
+  return {
+    ...actual,
+    useRouter: () => ({
+      push: vi.fn(),
+      replace: vi.fn(),
+      prefetch: vi.fn(),
+      back: vi.fn(),
+      forward: vi.fn(),
+      refresh: vi.fn(),
+    }),
+    usePathname: () => '/',
+    useSearchParams: () => new URLSearchParams(),
+  };
+});
+
 const storageMock = (() => {
   let store: Record<string, string> = {};
   return {

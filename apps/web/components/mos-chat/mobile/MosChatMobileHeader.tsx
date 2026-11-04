@@ -52,6 +52,8 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
     staffDirectory,
     activeThreadMsg,
     resetAiChat,
+    pinnedConvIds,
+    togglePinConversation,
   } = useMosChat();
 
   const linkedTask = React.useMemo(() => {
@@ -248,6 +250,9 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 <Hash className="w-4 h-4 text-amber-400 shrink-0" />
               )}
               <h2 className="text-sm font-bold text-white truncate">{roomTitle}</h2>
+              {activeConversation && pinnedConvIds?.has(activeConversation.id) && (
+                <Pin className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" aria-label="Đã ghim" />
+              )}
             </div>
             <p
               onClick={(e) => {
@@ -273,7 +278,12 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               isOnline={true}
             />
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-white truncate leading-snug">{roomTitle}</h2>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h2 className="text-sm font-bold text-white truncate leading-snug">{roomTitle}</h2>
+                {activeConversation && pinnedConvIds?.has(activeConversation.id) && (
+                  <Pin className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" aria-label="Đã ghim" />
+                )}
+              </div>
               <p className="text-[11px] text-slate-400 truncate leading-none mt-0.5">{subtitle}</p>
             </div>
           </div>
@@ -303,6 +313,39 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
           </button>
         ) : (
           <>
+            {/* Toggle Pin Space / DM */}
+            {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
+              <button
+                type="button"
+                onClick={() => togglePinConversation(activeConversation.id)}
+                className={`p-2 rounded-full transition-colors active:scale-95 cursor-pointer ${
+                  pinnedConvIds?.has(activeConversation.id)
+                    ? 'text-amber-400 bg-amber-500/20 border border-amber-500/40'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+                aria-label={
+                  pinnedConvIds?.has(activeConversation.id)
+                    ? isSpace
+                      ? 'Bỏ ghim Không gian này'
+                      : 'Bỏ ghim cuộc trò chuyện này'
+                    : isSpace
+                      ? 'Ghim Không gian này lên đầu'
+                      : 'Ghim cuộc trò chuyện này lên đầu'
+                }
+                title={
+                  pinnedConvIds?.has(activeConversation.id)
+                    ? 'Đang ghim ở đầu danh sách · Chạm để bỏ ghim'
+                    : 'Ghim lên đầu danh sách'
+                }
+              >
+                <Pin
+                  className={`w-4 h-4 ${
+                    pinnedConvIds?.has(activeConversation.id) ? 'fill-amber-400 text-amber-400' : ''
+                  }`}
+                />
+              </button>
+            )}
+
             {isSpace && (
               <button
                 type="button"
