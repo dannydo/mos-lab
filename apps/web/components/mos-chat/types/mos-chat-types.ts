@@ -19,7 +19,7 @@ import type {
 } from '@mos-lab/shared';
 
 export type MosChatMobileView = 'inbox' | 'room' | 'thread';
-export type MosChatSidebarFilter = 'all' | 'unread' | 'spaces' | 'dms';
+export type MosChatSidebarFilter = 'all' | 'unread' | 'spaces' | 'dms' | 'pinned';
 export type MosChatActiveSubtab = 'chat' | 'tasks' | 'pinned';
 
 export interface MosChatReactionUsersTarget {
@@ -46,6 +46,8 @@ export interface MosChatContextValue {
   setSidebarFilter: (f: MosChatSidebarFilter) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  pinnedConvIds: Set<string>;
+  isPinnedConversation: (convId: string) => boolean;
   togglePinConversation: (id: string) => Promise<void>;
   markConversationAsRead: (id: string) => Promise<void>;
   startDirectMessage: (staff: MosChatStaffMember) => Promise<string | null>;

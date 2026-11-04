@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
   Search,
   X,
@@ -11,6 +11,9 @@ import {
   CheckSquare,
   UserPlus,
   MessageSquareReply,
+  Pin,
+  PinOff,
+  MoreVertical,
 } from 'lucide-react';
 import { Modal } from 'antd';
 import dayjs from 'dayjs';
@@ -47,11 +50,16 @@ export const MosChatMobileInbox: React.FC = () => {
     staffDirectory,
     currentUser,
     startDirectMessage,
+    pinnedConvIds,
+    togglePinConversation,
+    markConversationAsRead,
   } = useMosChat();
 
   const [newDmModalOpen, setNewDmModalOpen] = useState<boolean>(false);
   const [modalSearchQuery, setModalSearchQuery] = useState<string>('');
   const [modalDeptFilter, setModalDeptFilter] = useState<'ALL' | 'CV' | 'CC' | 'TELESALES' | 'ADMIN'>('ALL');
+  const [convActionTarget, setConvActionTarget] = useState<MosChatConversation | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter conversations
   const filteredConversations = useMemo(() => {
@@ -70,6 +78,7 @@ export const MosChatMobileInbox: React.FC = () => {
       if (sidebarFilter === 'unread') return (c.unreadCount || 0) > 0;
       if (sidebarFilter === 'spaces') return c.type === 'space';
       if (sidebarFilter === 'dms') return c.type === 'dm';
+      if (sidebarFilter === 'pinned') return Boolean(pinnedConvIds?.has(c.id));
 
       return true;
     });
@@ -77,9 +86,15 @@ export const MosChatMobileInbox: React.FC = () => {
     return [...list].sort((a, b) => {
       if (a.id === AI_COPILOT_CONV_ID) return -1;
       if (b.id === AI_COPILOT_CONV_ID) return 1;
+
+      // Pinned conversations always bubble up to the top!
+      const aPinned = Boolean(pinnedConvIds?.has(a.id));
+      const bPinned = Boolean(pinnedConvIds?.has(b.id));
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
+
       return 0;
     });
-  }, [conversations, searchQuery, sidebarFilter]);
+  }, [conversations, searchQuery, sidebarFilter, pinnedConvIds]);
 
   // Colleagues matching main search query
   const matchedStaffFromSearch = useMemo(() => {
@@ -139,11 +154,12 @@ export const MosChatMobileInbox: React.FC = () => {
     await startDirectMessage(staff);
   };
 
-  const renderConversationItem = (c: MosChatConversation) => {
+  const renderConversationItem = (c: MosChatConversation, index: number) => {
     const isSelected = c.id === activeConvId;
     const isSpace = c.type === 'space';
     const isAiCopilot = c.id === 'dm-wings-ai-copilot';
     const unread = c.unreadCount || 0;
+    const isPinned = Boolean(pinnedConvIds?.has(c.id));
 
     // Time formatting from last message or updatedAt
     const lastMsg = c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1] : null;
@@ -157,88 +173,166 @@ export const MosChatMobileInbox: React.FC = () => {
     const previewRaw = lastMsg?.text || c.subtitle || 'Chưa có tin nhắn mới';
     const preview = formatChatPreviewWithStickers(previewRaw);
 
-    return (
-      <div
-        key={c.id}
-        onClick={() => handleSelectConv(c.id)}
-        role="button"
-        tabIndex={0}
-        className={`w-full px-4 py-3 flex items-center gap-3 active:bg-slate-800/80 transition-colors border-b border-slate-800/40 select-none ${
-          isSelected ? 'bg-slate-800/50' : 'bg-transparent'
-        }`}
-      >
-        {/* Avatar or Icon */}
-        <div className="relative shrink-0">
-          {isAiCopilot ? (
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-              <Sparkles className="w-6 h-6 animate-pulse" />
-            </div>
-          ) : isSpace ? (
-            <div
-              className="w-12 h-12 rounded-2xl border flex items-center justify-center font-bold text-2xl shadow-sm"
-              style={{
-                background: `${c.color || '#f59e0b'}22`,
-                borderColor: `${c.color || '#f59e0b'}44`,
-                color: c.color || '#f59e0b',
-              }}
-            >
-              {c.avatar && isSpaceEmoji(c.avatar) ? (
-                <span className="select-none leading-none">{c.avatar}</span>
-              ) : (
-                <Hash className="w-6 h-6" />
-              )}
-            </div>
-          ) : (
-            <MosChatAvatar
-              size={48}
-              shape="square"
-              src={c.avatar}
-              name={c.name}
-              staffId={c.participantStaffId}
-              staffDirectory={staffDirectory}
-              showOnline={true}
-              isOnline={true}
-            />
-          )}
-        </div>
+    const prevItem = index > 0 ? filteredConversations[index - 1] : null;
+    const isPrevPinned = prevItem ? Boolean(pinnedConvIds?.has(prevItem.id)) : false;
+    const showPinnedSubHeader =
+      sidebarFilter !== 'pinned' && isPinned && (!prevItem || prevItem.id === AI_COPILOT_CONV_ID);
+    const showUnpinnedSubHeader =
+      sidebarFilter !== 'pinned' &&
+      !isPinned &&
+      c.id !== AI_COPILOT_CONV_ID &&
+      isPrevPinned;
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1 mb-0.5">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <h3 className={`text-sm font-semibold truncate ${unread > 0 ? 'text-white' : 'text-slate-200'}`}>
-                {c.name}
-              </h3>
-            </div>
-            {timeStr && (
-              <span
-                className={`text-[11px] shrink-0 tabular-nums ${unread > 0 ? 'text-amber-400 font-semibold' : 'text-slate-500'}`}
+    return (
+      <React.Fragment key={c.id}>
+        {showPinnedSubHeader && (
+          <div className="px-4 py-1.5 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between text-[11px] font-bold text-amber-400 uppercase tracking-wider select-none">
+            <span className="flex items-center gap-1.5">
+              <Pin className="w-3 h-3 fill-amber-400" />
+              Đã ghim
+            </span>
+            <span className="text-[10px] text-slate-500 font-normal lowercase">Luôn hiển thị ở đầu</span>
+          </div>
+        )}
+
+        {showUnpinnedSubHeader && (
+          <div className="px-4 py-1.5 bg-slate-900/60 border-b border-slate-800/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">
+            {sidebarFilter === 'spaces'
+              ? 'Không gian khác'
+              : sidebarFilter === 'dms'
+                ? 'Tin nhắn trực tiếp khác'
+                : 'Tất cả cuộc trò chuyện'}
+          </div>
+        )}
+
+        <div
+          onClick={() => handleSelectConv(c.id)}
+          onTouchStart={() => {
+            longPressTimerRef.current = setTimeout(() => {
+              if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                navigator.vibrate?.(25);
+              }
+              setConvActionTarget(c);
+            }, 450);
+          }}
+          onTouchMove={() => {
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
+          }}
+          onTouchEnd={() => {
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setConvActionTarget(c);
+          }}
+          role="button"
+          tabIndex={0}
+          className={`w-full px-4 py-3 flex items-center gap-3 active:bg-slate-800/80 transition-colors border-b border-slate-800/40 select-none ${
+            isSelected
+              ? 'bg-slate-800/50'
+              : isPinned
+                ? 'bg-amber-500/[0.04]'
+                : 'bg-transparent'
+          }`}
+          style={{
+            borderLeft: isPinned ? '3px solid #f59e0b' : undefined,
+          }}
+        >
+          {/* Avatar or Icon */}
+          <div className="relative shrink-0">
+            {isAiCopilot ? (
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+            ) : isSpace ? (
+              <div
+                className="w-12 h-12 rounded-2xl border flex items-center justify-center font-bold text-2xl shadow-sm"
+                style={{
+                  background: `${c.color || '#f59e0b'}22`,
+                  borderColor: `${c.color || '#f59e0b'}44`,
+                  color: c.color || '#f59e0b',
+                }}
               >
-                {timeStr}
-              </span>
+                {c.avatar && isSpaceEmoji(c.avatar) ? (
+                  <span className="select-none leading-none">{c.avatar}</span>
+                ) : (
+                  <Hash className="w-6 h-6" />
+                )}
+              </div>
+            ) : (
+              <MosChatAvatar
+                size={48}
+                shape="square"
+                src={c.avatar}
+                name={c.name}
+                staffId={c.participantStaffId}
+                staffDirectory={staffDirectory}
+                showOnline={true}
+                isOnline={true}
+              />
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2">
-            <p className={`text-xs truncate ${unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
-              {preview}
-            </p>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {(c.unreadThreadCount || 0) > 0 && (
-                <span className="h-[18px] px-1.5 flex items-center gap-0.5 justify-center text-[10px] font-bold text-indigo-300 bg-indigo-500/25 border border-indigo-500/40 rounded-full tabular-nums">
-                  <MessageSquareReply className="w-2.5 h-2.5" />
-                  {c.unreadThreadCount}
-                </span>
-              )}
-              {unread > 0 && (
-                <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-rose-500 rounded-full tabular-nums shadow-sm shadow-rose-500/40">
-                  {unread > 99 ? '99+' : unread}
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 mb-0.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h3 className={`text-sm font-semibold truncate ${unread > 0 ? 'text-white' : 'text-slate-200'}`}>
+                  {c.name}
+                </h3>
+                {isPinned && (
+                  <Pin className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" aria-label="Đã ghim" />
+                )}
+              </div>
+              {timeStr && (
+                <span
+                  className={`text-[11px] shrink-0 tabular-nums ${unread > 0 ? 'text-amber-400 font-semibold' : 'text-slate-500'}`}
+                >
+                  {timeStr}
                 </span>
               )}
             </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <p className={`text-xs truncate ${unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
+                {preview}
+              </p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {(c.unreadThreadCount || 0) > 0 && (
+                  <span className="h-[18px] px-1.5 flex items-center gap-0.5 justify-center text-[10px] font-bold text-indigo-300 bg-indigo-500/25 border border-indigo-500/40 rounded-full tabular-nums">
+                    <MessageSquareReply className="w-2.5 h-2.5" />
+                    {c.unreadThreadCount}
+                  </span>
+                )}
+                {unread > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-rose-500 rounded-full tabular-nums shadow-sm shadow-rose-500/40">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
+                {!isAiCopilot && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConvActionTarget(c);
+                    }}
+                    className="p-1 rounded-md text-slate-400 hover:text-white active:bg-slate-700/60"
+                    aria-label="Tác vụ cuộc trò chuyện"
+                  >
+                    <MoreVertical className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </React.Fragment>
     );
   };
 
@@ -297,6 +391,13 @@ export const MosChatMobileInbox: React.FC = () => {
             { id: 'dms', label: 'Tin Trực Tiếp' },
             { id: 'spaces', label: 'Kênh Không Gian' },
             { id: 'unread', label: 'Chưa đọc' },
+            {
+              id: 'pinned',
+              label:
+                pinnedConvIds && pinnedConvIds.size > 0
+                  ? `Đã ghim (${pinnedConvIds.size})`
+                  : 'Đã ghim',
+            },
           ] as const
         ).map((chip) => {
           const active = sidebarFilter === chip.id;
@@ -555,6 +656,166 @@ export const MosChatMobileInbox: React.FC = () => {
             )}
           </div>
         </div>
+      </Modal>
+
+      {/* Conversation Action Bottom Sheet */}
+      <Modal
+        open={convActionTarget !== null}
+        onCancel={() => setConvActionTarget(null)}
+        footer={null}
+        closable={false}
+        centered={false}
+        className="mos-chat-conv-action-modal !p-0 !m-0 !max-w-full"
+        wrapClassName="flex items-end justify-center !p-0"
+        styles={{
+          content: {
+            background: '#0f172a',
+            borderTopLeftRadius: '24px',
+            borderTopRightRadius: '24px',
+            border: '1px solid rgba(51, 65, 85, 0.8)',
+            padding: '16px',
+            width: '100%',
+            maxWidth: '500px',
+            margin: '0 auto',
+          },
+        }}
+      >
+        {convActionTarget && (
+          <div className="flex flex-col gap-3 select-none">
+            <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-1" />
+
+            {/* Target Header */}
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+              <div className="relative shrink-0">
+                {convActionTarget.type === 'space' ? (
+                  <div
+                    className="w-11 h-11 rounded-2xl border flex items-center justify-center font-bold text-xl shadow-sm"
+                    style={{
+                      background: `${convActionTarget.color || '#f59e0b'}22`,
+                      borderColor: `${convActionTarget.color || '#f59e0b'}44`,
+                      color: convActionTarget.color || '#f59e0b',
+                    }}
+                  >
+                    {convActionTarget.avatar && isSpaceEmoji(convActionTarget.avatar) ? (
+                      <span>{convActionTarget.avatar}</span>
+                    ) : (
+                      <Hash className="w-5 h-5" />
+                    )}
+                  </div>
+                ) : (
+                  <MosChatAvatar
+                    size={44}
+                    shape="square"
+                    src={convActionTarget.avatar}
+                    name={convActionTarget.name}
+                    staffId={convActionTarget.participantStaffId}
+                    staffDirectory={staffDirectory}
+                  />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-base font-bold text-white truncate">{convActionTarget.name}</h3>
+                  {pinnedConvIds?.has(convActionTarget.id) && (
+                    <Pin className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 truncate">
+                  {convActionTarget.type === 'space' ? 'Kênh Không Gian' : 'Trò chuyện trực tiếp 1-1'}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions List */}
+            <div className="flex flex-col gap-1 py-1">
+              {/* Toggle Pin Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetId = convActionTarget.id;
+                  setConvActionTarget(null);
+                  togglePinConversation(targetId);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-3 text-sm text-slate-100 hover:bg-slate-800/80 active:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer"
+              >
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    pinnedConvIds?.has(convActionTarget.id)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  <Pin
+                    className={`w-4 h-4 ${pinnedConvIds?.has(convActionTarget.id) ? 'fill-current text-amber-400' : ''}`}
+                  />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-sm font-semibold text-white">
+                    {pinnedConvIds?.has(convActionTarget.id)
+                      ? convActionTarget.type === 'space'
+                        ? 'Bỏ ghim Không gian này'
+                        : 'Bỏ ghim cuộc trò chuyện này'
+                      : convActionTarget.type === 'space'
+                        ? '📌 Ghim Không gian lên đầu danh sách'
+                        : '📌 Ghim cuộc trò chuyện lên đầu danh sách'}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {pinnedConvIds?.has(convActionTarget.id)
+                      ? 'Không gian sẽ trở về thứ tự thời gian bình thường'
+                      : 'Không gian sẽ luôn hiển thị ở trên cùng danh sách'}
+                  </div>
+                </div>
+              </button>
+
+              {/* Mark Read Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetId = convActionTarget.id;
+                  setConvActionTarget(null);
+                  markConversationAsRead(targetId);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-3 text-sm text-slate-100 hover:bg-slate-800/80 active:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-sm font-semibold text-white">Đánh dấu đã đọc</div>
+                  <div className="text-[11px] text-slate-400">Xóa các thông báo chưa đọc của cuộc trò chuyện này</div>
+                </div>
+              </button>
+
+              {/* Open Conversation */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetId = convActionTarget.id;
+                  setConvActionTarget(null);
+                  handleSelectConv(targetId);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-3 text-sm text-emerald-300 hover:bg-slate-800/80 active:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                  <MessageSquareReply className="w-4 h-4" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-sm font-semibold text-emerald-300">Vào cuộc trò chuyện</div>
+                  <div className="text-[11px] text-slate-400">Xem tin nhắn và trao đổi</div>
+                </div>
+              </button>
+            </div>
+
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={() => setConvActionTarget(null)}
+              className="w-full py-2.5 mt-1 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs active:bg-slate-700 transition-colors"
+            >
+              Đóng
+            </button>
+          </div>
+        )}
       </Modal>
     </div>
   );

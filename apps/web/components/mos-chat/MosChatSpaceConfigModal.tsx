@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, message as antdMessage, theme, Tooltip } from 'antd';
-import { Settings, Hash, Users, Sparkles } from 'lucide-react';
+import { Settings, Hash, Users, Sparkles, Pin } from 'lucide-react';
 import type { MosChatConversation } from '@mos-lab/shared';
 import { MosChatSpaceEmojiColorPicker } from './MosChatSpaceEmojiColorPicker';
 import { chatApi } from '../../lib/api/chat.api';
+import { MosChatContext } from './context/MosChatContext';
 
 export interface MosChatSpaceConfigModalProps {
   open: boolean;
@@ -23,11 +24,16 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
   onOpenMembersModal,
 }) => {
   const { token } = theme.useToken();
+  const chatContext = React.useContext(MosChatContext);
+  const pinnedConvIds = chatContext?.pinnedConvIds;
+  const togglePinConversation = chatContext?.togglePinConversation || (async () => ({ success: false, pinned: false }));
   const [name, setName] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [emoji, setEmoji] = useState('');
   const [color, setColor] = useState('#1a73e8');
   const [saving, setSaving] = useState(false);
+
+  const isPinned = conversation ? Boolean(pinnedConvIds?.has(conversation.id)) : false;
 
   useEffect(() => {
     if (conversation && open) {
@@ -167,6 +173,38 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
             rows={2}
             maxLength={255}
           />
+        </div>
+
+        {/* Pin Space Toggle */}
+        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-700/60">
+          <div className="flex items-center gap-2.5">
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                isPinned ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700/50 text-slate-400'
+              }`}
+            >
+              <Pin size={16} className={isPinned ? 'fill-current' : ''} />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white">Ghim Không gian lên đầu danh sách</div>
+              <div className="text-[10.5px] text-slate-400">
+                Không gian sẽ luôn xuất hiện ở đầu danh sách chat của bạn
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (conversation) void togglePinConversation(conversation.id);
+            }}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+              isPinned
+                ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/30'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            {isPinned ? 'Đã ghim' : 'Ghim'}
+          </button>
         </div>
       </div>
     </Modal>
