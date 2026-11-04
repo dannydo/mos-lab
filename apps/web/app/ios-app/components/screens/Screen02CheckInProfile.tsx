@@ -388,26 +388,26 @@ export function Screen02CheckInProfile({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
+    <div className="flex-1 min-h-0 flex flex-col bg-black text-white overflow-hidden select-none relative">
       <IosNavigationBar
-        title="Hồ Sơ Khách & Check In"
+        title="Hồ Sơ Khách"
         onBack={onBack}
-        backTitle="Khách Hàng"
+        backTitle="Lịch hẹn"
         rightAction={
           <button
             onClick={isComboLive && onQuickCheckIn ? handleExecuteQuickCheckIn : onCheckIn}
-            className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
+            className="text-[#FFB400] font-bold text-sm py-1 px-1 active:opacity-60 cursor-pointer"
           >
             Check In
           </button>
         }
       />
 
-      <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
+      <div className="flex-1 min-h-0 px-3.5 py-3 space-y-3 overflow-y-auto pb-4">
         {/* Card 1: Customer Profile Header */}
-        <div className="bg-white rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm border border-neutral-100">
+        <div className="bg-[#1C1C1E] rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm border border-neutral-800 text-white">
           <div
-            className={`w-14 h-14 rounded-full overflow-hidden ${avatarRingClass} p-0.5 flex items-center justify-center bg-neutral-100 shrink-0 shadow-sm`}
+            className={`w-14 h-14 rounded-full overflow-hidden ${avatarRingClass} p-0.5 flex items-center justify-center bg-neutral-900 shrink-0 shadow-sm`}
           >
             {booking?.customerAvatar ? (
               <img
@@ -424,32 +424,32 @@ export function Screen02CheckInProfile({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-[17px] font-bold text-black tracking-tight truncate">{customerName}</h2>
+              <h2 className="text-[17px] font-bold text-white tracking-tight truncate">{customerName}</h2>
               {visits >= 5 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706] font-bold tracking-tight">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30 font-bold tracking-tight">
                   GOLD VIP
                 </span>
               )}
             </div>
-            <div className="text-[13px] text-gray-500 font-normal mt-0.5 tabular-nums">{customerPhone}</div>
-            <div className="text-[12px] text-gray-800 font-medium mt-0.5">
+            <div className="text-[13px] text-neutral-400 font-normal mt-0.5 tabular-nums">{customerPhone}</div>
+            <div className="text-[12px] text-neutral-300 font-medium mt-0.5">
               <span>
-                Lần ghé: <strong className="font-bold">{visits}</strong>
+                Lần ghé: <strong className="font-bold text-white">{visits}</strong>
               </span>
             </div>
           </div>
         </div>
 
-        {/* Card 2: QUICK CHECK-IN GÓI COMBO LIVE (Thiết kế Minimalism · Ít chữ · Thao tác 1 chạm) */}
+        {/* Card 2: QUICK CHECK-IN GÓI COMBO LIVE */}
         {isComboLive ? (
-          <div className="rounded-2xl p-3 shadow-sm border border-emerald-500/70 bg-gradient-to-b from-emerald-50/70 via-white to-white space-y-2">
+          <div className="rounded-2xl p-3 shadow-sm border border-emerald-500/40 bg-[#1C1C1E] space-y-2 text-white">
             {/* Header gọn: Icon Zap + Tên gói + Badge Ngày ghé cuối & Tổng lượt */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-5 h-5 rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
                   <Zap className="w-3 h-3 fill-current" />
                 </span>
-                <span className="text-[12px] font-extrabold text-neutral-900 truncate">
+                <span className="text-[12.5px] font-black text-white truncate">
                   {booking?.comboLiveStatus?.comboName || 'Gói Combo Live'}
                 </span>
               </div>
@@ -457,25 +457,26 @@ export function Screen02CheckInProfile({
                 {preset.daysSinceLastVisit !== null && (
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      preset.isWithinRetainWindow ? 'bg-emerald-100/90 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                      preset.isWithinRetainWindow
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     }`}
-                    title={preset.lastVisitDate ? `Ghé lần cuối: ${preset.lastVisitDate}` : undefined}
                   >
                     {preset.daysSinceLastVisit} ngày
                   </span>
                 )}
-                <span className="bg-[#FFB400] text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                <span className="bg-[#FFB400] text-black text-[10.5px] font-black px-2 py-0.5 rounded-full">
                   Còn {remainingSessions}
                 </span>
               </div>
             </div>
 
-            {/* Khối Thông số Mi Trên (Lần trước) + 1 dòng Mi Dưới tối giản */}
-            <div className="bg-neutral-50/80 rounded-xl p-2.5 border border-neutral-200/80 space-y-2">
+            {/* Khối Thông số Mi Trên + Mi Dưới tối giản */}
+            <div className="bg-[#2C2C2E] rounded-xl p-2.5 border border-neutral-700/80 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[12.5px] font-extrabold text-neutral-900 truncate">
+                    <span className="text-[12.5px] font-black text-white truncate">
                       {preset.materialShortLabel} · {preset.volume} · {preset.count}
                     </span>
                     {preset.lastVisitDate && (
@@ -484,20 +485,19 @@ export function Screen02CheckInProfile({
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] font-semibold text-neutral-600 truncate mt-0.5">
+                  <div className="text-[11px] font-semibold text-neutral-300 truncate mt-0.5">
                     {preset.style} · Cong {preset.curl} · {preset.thickness.replace(/\s+/g, '')} ·{' '}
                     {preset.length.replace(/\s+/g, '')}
                   </div>
                 </div>
 
-                {/* Nút bật/tắt Mi Dưới tối giản (bỏ chữ 50 sợi) */}
                 <button
                   type="button"
                   onClick={() => setQuickHasUnderMink((prev) => !prev)}
                   className={`px-2.5 py-1 rounded-full border text-[11px] font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 ${
                     quickHasUnderMink
-                      ? 'bg-purple-600 border-purple-600 text-white shadow-2xs'
-                      : 'bg-white border-neutral-200 text-neutral-600 hover:border-purple-300'
+                      ? 'bg-purple-600 border-purple-500 text-white shadow-xs'
+                      : 'bg-[#1C1C1E] border-neutral-700 text-neutral-300 hover:border-purple-400'
                   }`}
                 >
                   {quickHasUnderMink && <Check className="w-3 h-3 stroke-[3]" />}
@@ -505,21 +505,21 @@ export function Screen02CheckInProfile({
                 </button>
               </div>
 
-              {/* 1 Dòng Ngang Duy Nhất Cho Mi Dưới: [B|C] · [6|7|6-7] · [20|30|40] + Chọn độc lập [Mới | Dặm] */}
+              {/* 1 Dòng Ngang Mi Dưới */}
               {quickHasUnderMink && (
-                <div className="pt-2 border-t border-neutral-200/70 flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap">
+                <div className="pt-2 border-t border-neutral-700/70 flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap">
                   <div className="flex items-center gap-1">
-                    {/* Độ cong: B | C */}
-                    <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-neutral-200">
+                    {/* Độ cong */}
+                    <div className="inline-flex items-center bg-[#1C1C1E] p-0.5 rounded-lg border border-neutral-700">
                       {UNDER_MINK_PREP_SPEC.allowedCurls.map((c) => (
                         <button
                           key={c}
                           type="button"
                           onClick={() => setQuickUnderCurl(c)}
-                          className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
+                          className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all ${
                             quickUnderCurl === c
-                              ? 'bg-purple-600 text-white shadow-2xs'
-                              : 'text-neutral-600 hover:text-black'
+                              ? 'bg-purple-600 text-white shadow-xs'
+                              : 'text-neutral-400 hover:text-white'
                           }`}
                         >
                           {c}
@@ -527,69 +527,62 @@ export function Screen02CheckInProfile({
                       ))}
                     </div>
 
-                    {/* Độ dài: default 7 · nút cộng trừ tăng giảm 1 */}
-                    <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-neutral-200 tabular-nums">
+                    {/* Độ dài */}
+                    <div className="inline-flex items-center bg-[#1C1C1E] p-0.5 rounded-lg border border-neutral-700 tabular-nums">
                       <button
                         type="button"
                         onClick={() => setQuickUnderLength((prev) => stepUnderMinkLength(prev, -1))}
                         disabled={parseUnderMinkLengthMm(quickUnderLength) <= UNDER_MINK_PREP_SPEC.minLengthMm}
-                        className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                        className="w-5 h-5 rounded-md font-black text-neutral-400 hover:text-white disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
                       >
                         −
                       </button>
-                      <span className="px-1.5 py-0.5 rounded-md bg-purple-600 text-white font-extrabold min-w-[20px] text-center shadow-2xs">
+                      <span className="px-1.5 py-0.5 rounded-md bg-purple-600 text-white font-extrabold min-w-[20px] text-center shadow-xs">
                         {parseUnderMinkLengthMm(quickUnderLength)}
                       </span>
                       <button
                         type="button"
                         onClick={() => setQuickUnderLength((prev) => stepUnderMinkLength(prev, 1))}
                         disabled={parseUnderMinkLengthMm(quickUnderLength) >= UNDER_MINK_PREP_SPEC.maxLengthMm}
-                        className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                        className="w-5 h-5 rounded-md font-black text-neutral-400 hover:text-white disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
                       >
                         +
                       </button>
                     </div>
 
-                    {/* Số lượng: default 30 · nút cộng trừ tăng giảm 10 */}
-                    <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-neutral-200 tabular-nums">
+                    {/* Số lượng */}
+                    <div className="inline-flex items-center bg-[#1C1C1E] p-0.5 rounded-lg border border-neutral-700 tabular-nums">
                       <button
                         type="button"
                         onClick={() => setQuickUnderCount((prev) => stepUnderMinkCount(prev, -10))}
                         disabled={parseUnderMinkCountFibers(quickUnderCount) <= UNDER_MINK_PREP_SPEC.minCountFibers}
-                        className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                        className="w-5 h-5 rounded-md font-black text-neutral-400 hover:text-white disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
                       >
                         −
                       </button>
-                      <span className="px-1.5 py-0.5 rounded-md bg-purple-600 text-white font-extrabold min-w-[22px] text-center shadow-2xs">
+                      <span className="px-1.5 py-0.5 rounded-md bg-purple-600 text-white font-extrabold min-w-[22px] text-center shadow-xs">
                         {parseUnderMinkCountFibers(quickUnderCount)}
                       </span>
                       <button
                         type="button"
                         onClick={() => setQuickUnderCount((prev) => stepUnderMinkCount(prev, 10))}
                         disabled={parseUnderMinkCountFibers(quickUnderCount) >= UNDER_MINK_PREP_SPEC.maxCountFibers}
-                        className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                        className="w-5 h-5 rounded-md font-black text-neutral-400 hover:text-white disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
                       >
                         +
                       </button>
                     </div>
                   </div>
 
-                  {/* Chọn ĐỘC LẬP Mi Dưới: Mới (390K) hoặc Dặm (250K) — Tự động trừ gói Mi Dưới nếu có */}
-                  <div
-                    className="inline-flex items-center bg-white p-0.5 rounded-lg border border-purple-200 shrink-0"
-                    title={
-                      preset.hasUnderMinkCombo
-                        ? `Khách có ${preset.underComboName} (Còn ${preset.underComboRemaining} lượt) · Tự động trừ vào gói Mi Dưới (0đ)`
-                        : 'Chọn độc lập Mi Dưới: Nối Mới (390K) hoặc Dặm (250K)'
-                    }
-                  >
+                  {/* Chọn ĐỘC LẬP Mi Dưới */}
+                  <div className="inline-flex items-center bg-[#1C1C1E] p-0.5 rounded-lg border border-purple-500/50 shrink-0">
                     <button
                       type="button"
                       onClick={() => setQuickUnderServiceType('Normal')}
-                      className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
+                      className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all ${
                         quickUnderServiceType === 'Normal'
-                          ? 'bg-[#FFB400] text-black shadow-2xs'
-                          : 'text-neutral-500 hover:text-black'
+                          ? 'bg-[#FFB400] text-black shadow-xs'
+                          : 'text-neutral-400 hover:text-white'
                       }`}
                     >
                       {preset.hasUnderMinkCombo ? `Mới (${preset.underComboNormalRemaining})` : 'Mới'}
@@ -597,10 +590,10 @@ export function Screen02CheckInProfile({
                     <button
                       type="button"
                       onClick={() => setQuickUnderServiceType('Retain')}
-                      className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
+                      className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all ${
                         quickUnderServiceType === 'Retain'
-                          ? 'bg-[#34C759] text-white shadow-2xs'
-                          : 'text-neutral-500 hover:text-black'
+                          ? 'bg-[#34C759] text-white shadow-xs'
+                          : 'text-neutral-400 hover:text-white'
                       }`}
                     >
                       {preset.hasUnderMinkCombo ? `Dặm (${preset.underComboRetainRemaining})` : 'Dặm'}
@@ -610,9 +603,9 @@ export function Screen02CheckInProfile({
               )}
             </div>
 
-            {/* Banner Override nhỏ gọn nếu có */}
+            {/* Banner Override nếu có */}
             {isOverridden && (
-              <div className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-between gap-2 text-[10px] text-rose-900 font-semibold">
+              <div className="px-2.5 py-1 rounded-lg bg-rose-950/40 border border-rose-500/50 flex items-center justify-between gap-2 text-[10px] text-rose-300 font-semibold">
                 <span className="truncate">⚠️ {overrideReason}</span>
                 <button
                   type="button"
@@ -621,7 +614,7 @@ export function Screen02CheckInProfile({
                     setIsOverridden(false);
                     setOverrideReason('');
                   }}
-                  className="px-1.5 py-0.5 rounded bg-white text-rose-700 border border-rose-300 text-[9px] font-bold shrink-0 cursor-pointer"
+                  className="px-1.5 py-0.5 rounded bg-rose-900 text-rose-200 border border-rose-700 text-[9px] font-bold shrink-0 cursor-pointer"
                 >
                   Hoàn tác ↺
                 </button>
@@ -629,7 +622,7 @@ export function Screen02CheckInProfile({
             )}
 
             {/* 2 Nút chọn chế độ tối giản: ✨ Mới (X) | 🔄 Dặm (Y) */}
-            <div className="bg-neutral-900 p-1 rounded-xl grid grid-cols-2 gap-1">
+            <div className="bg-[#2C2C2E] p-1 rounded-xl grid grid-cols-2 gap-1 border border-neutral-700/60">
               <button
                 type="button"
                 onClick={() => handleRequestQuickServiceTypeChange('Normal')}
@@ -656,48 +649,17 @@ export function Screen02CheckInProfile({
                 <span>{preset.isAlwaysFullSet ? 'Mới · Giá dặm' : `Dặm (${preset.retainRemaining})`}</span>
               </button>
             </div>
-
-            {/* Hàng nút hành động đáy gộp chung 1 hàng: [⚡ Quick Check-in] + [🎛️ Đổi mẫu] */}
-            <div className="flex items-center gap-2 pt-0.5">
-              <button
-                type="button"
-                onClick={handleExecuteQuickCheckIn}
-                className={`flex-1 py-2.5 px-3 rounded-xl font-extrabold text-[12.5px] flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer ${
-                  quickServiceType === 'Normal' && !preset.isAlwaysFullSet
-                    ? 'bg-[#FFB400] hover:bg-amber-500 text-black'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span>Quick Check-in</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onCheckIn}
-                className="py-2.5 px-3 rounded-xl bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 font-bold text-[12px] flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-98"
-                title="Đổi Dáng / Độ cong / Dòng mi khác"
-              >
-                <Sliders className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Đổi mẫu</span>
-              </button>
-            </div>
           </div>
         ) : (
-          <div className="rounded-2xl p-3.5 shadow-sm border bg-gradient-to-r from-amber-50 to-orange-50 border-[#FFB400]">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-[#FF9500]" />
-                CHƯA CÓ GÓI COMBO (KHÁCH SINGLE · CHU KỲ 21N)
-              </span>
-              <span className="bg-[#FFB400] text-black text-[10px] font-black px-2 py-0.5 rounded-full">
-                ≤ 21N: Giá Dặm vô điều kiện
-              </span>
-            </div>
-            <div className="text-[12px] text-gray-800 font-semibold mt-1 leading-snug">
-              Khách lẻ (Single) đi trong 21 ngày luôn có Giá Dặm vô điều kiện. Tư vấn chốt thêm gói Combo mới nhận ngay
-              thưởng bậc thang tới +200.000đ.
-            </div>
+          /* Khách Single: Sleek dark card, no walls of red warning text */
+          <div className="rounded-2xl p-3 shadow-sm border border-amber-500/40 bg-[#1C1C1E] text-white flex items-center justify-between">
+            <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Khách Lẻ (Single)
+            </span>
+            <span className="bg-amber-400/20 text-amber-400 border border-amber-400/30 text-[10.5px] font-black px-2.5 py-0.5 rounded-full">
+              ≤ 21N: Giá Dặm
+            </span>
           </div>
         )}
 
@@ -820,7 +782,7 @@ export function Screen02CheckInProfile({
         </div>
 
         {/* Card 3.5: Thông Số Vòng Xoay (Mặc định thu gọn chỉ hiện tóm tắt · Nhấn vào mở đầy đủ chi tiết) */}
-        <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2.5 tabular-nums">
+        <div className="bg-[#1C1C1E] rounded-2xl p-3 shadow-sm border border-neutral-800 space-y-2.5 tabular-nums text-white">
           <div
             role="button"
             tabIndex={0}
@@ -833,13 +795,13 @@ export function Screen02CheckInProfile({
             }}
             className="w-full flex items-center justify-between gap-2 cursor-pointer select-none"
           >
-            <span className="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-              <RotateCw className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+              <RotateCw className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               VÒNG XOAY
             </span>
 
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10.5px] font-extrabold truncate leading-none">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10.5px] font-extrabold truncate leading-none">
                 <svg className="w-3.5 h-3.5 -rotate-90 shrink-0" viewBox="0 0 16 16" aria-hidden="true">
                   <circle
                     cx="8"
@@ -870,7 +832,7 @@ export function Screen02CheckInProfile({
                     : `+${activePointsBreakdown.totalPoints} pts`}
                 </span>
               </span>
-              <span className="w-5 h-5 rounded-full bg-neutral-100 text-neutral-600 flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-[#2C2C2E] text-neutral-400 flex items-center justify-center shrink-0">
                 {isRotationExpanded ? (
                   <ChevronUp className="w-3.5 h-3.5 stroke-[2.5]" />
                 ) : (
@@ -885,7 +847,7 @@ export function Screen02CheckInProfile({
                 }}
                 aria-label="Xem cách tính điểm vòng xoay"
                 title="Xem cách tính điểm vòng xoay (CV Xoay)"
-                className="w-6 h-6 rounded-full bg-blue-100/90 text-blue-700 hover:bg-blue-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                className="w-6 h-6 rounded-full bg-blue-900/50 text-blue-300 hover:bg-blue-800 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
               >
                 <Info className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
@@ -893,15 +855,15 @@ export function Screen02CheckInProfile({
           </div>
 
           {isRotationExpanded && (
-            <div className="space-y-2 pt-0.5 border-t border-neutral-100">
+            <div className="space-y-2 pt-0.5 border-t border-neutral-800">
               {/* Bộ 1: Mi Trên */}
-              <div className="bg-[#F8F9FA] rounded-xl p-2.5 border border-gray-100 space-y-1 tabular-nums">
+              <div className="bg-[#2C2C2E] rounded-xl p-2.5 border border-neutral-700/80 space-y-1 tabular-nums">
                 <div className="flex items-center justify-between text-[11.5px]">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9.5px] font-black shrink-0">
                       BỘ 1 · MI TRÊN
                     </span>
-                    <span className="font-extrabold text-gray-900 truncate">
+                    <span className="font-extrabold text-white truncate">
                       {isComboLive ? preset.materialShortLabel : serviceName.split(' ')[0] || 'Classic'} ·{' '}
                       {preset.isAlwaysFullSet
                         ? 'Mi Mới'
@@ -910,40 +872,40 @@ export function Screen02CheckInProfile({
                           : 'Mi Mới'}
                     </span>
                   </div>
-                  <span className="text-blue-600 font-black text-[12px] shrink-0">
+                  <span className="text-blue-400 font-black text-[12px] shrink-0">
                     +{activePointsBreakdown.upperSetPoints} pts
                   </span>
                 </div>
-                <div className="text-[10px] text-gray-600 font-semibold flex items-center justify-between">
+                <div className="text-[10px] text-neutral-400 font-semibold flex items-center justify-between">
                   <span>{activePointsBreakdown.upperSetBreakdownLabel}</span>
-                  <span className="text-gray-400">{isBookedDirectly ? 'Chỉ định KTV' : 'Xoay tua'}</span>
+                  <span className="text-neutral-500">{isBookedDirectly ? 'Chỉ định KTV' : 'Xoay tua'}</span>
                 </div>
               </div>
 
               {/* Bộ 2: Mi Dưới (Độc lập về vòng xoay khi khách nối cả Mi Trên và Mi Dưới) */}
               {activePointsBreakdown.serviceSetsCount === 2 && (
-                <div className="bg-purple-50/60 rounded-xl p-2.5 border border-purple-200/80 space-y-1 tabular-nums">
+                <div className="bg-[#2C2C2E] rounded-xl p-2.5 border border-purple-500/30 space-y-1 tabular-nums">
                   <div className="flex items-center justify-between text-[11.5px]">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="px-1.5 py-0.5 rounded bg-purple-600 text-white text-[9.5px] font-black shrink-0">
                         BỘ 2 · MI DƯỚI
                       </span>
-                      <span className="font-extrabold text-purple-950 truncate">
+                      <span className="font-extrabold text-white truncate">
                         Under Mink · {quickUnderServiceType === 'Retain' ? 'Dặm' : 'Mi Mới'}
                       </span>
                       {activePointsBreakdown.isUnderMinkComboDeducted && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] font-extrabold shrink-0">
+                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[9px] font-extrabold shrink-0">
                           Trừ gói (0đ)
                         </span>
                       )}
                     </div>
-                    <span className="text-purple-700 font-black text-[12px] shrink-0">
+                    <span className="text-purple-400 font-black text-[12px] shrink-0">
                       +{activePointsBreakdown.underSetPoints} pts
                     </span>
                   </div>
-                  <div className="text-[10px] text-purple-800 font-semibold flex items-center justify-between whitespace-nowrap">
+                  <div className="text-[10px] text-neutral-400 font-semibold flex items-center justify-between whitespace-nowrap">
                     <span>{activePointsBreakdown.underSetBreakdownLabel}</span>
-                    <span className="text-purple-600 font-bold">Độc lập</span>
+                    <span className="text-purple-400 font-bold">Độc lập</span>
                   </div>
                 </div>
               )}
@@ -952,51 +914,53 @@ export function Screen02CheckInProfile({
               <button
                 type="button"
                 onClick={() => setIsRotationInfoOpen(true)}
-                className="w-full text-left bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100/70 hover:to-indigo-100/70 border border-blue-200/80 rounded-xl p-2.5 flex items-center justify-between tabular-nums cursor-pointer transition-all"
+                className="w-full text-left bg-[#2C2C2E] hover:bg-neutral-800 border border-neutral-700/80 rounded-xl p-2.5 flex items-center justify-between tabular-nums cursor-pointer transition-all"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Award className="w-4 h-4 text-blue-600 shrink-0" />
+                  <Award className="w-4 h-4 text-blue-400 shrink-0" />
                   <div className="min-w-0">
-                    <div className="text-[12px] font-extrabold text-blue-950 truncate">
+                    <div className="text-[12px] font-extrabold text-blue-300 truncate">
                       {activePointsBreakdown.summaryLabel}
                     </div>
-                    <div className="text-[10px] text-blue-700 truncate">
+                    <div className="text-[10px] text-neutral-400 truncate">
                       {activePointsBreakdown.serviceSetsCount === 2
                         ? `Nhận đủ 2 Bộ Mi độc lập vào CV Xoay (Bộ 1: +${activePointsBreakdown.upperSetPoints}p · Bộ 2: +${activePointsBreakdown.underSetPoints}p)`
                         : `${activePointsBreakdown.upperSetBreakdownLabel} · ${isBookedDirectly ? 'Chỉ định KTV' : 'Xoay tua tiệm'}`}
                     </div>
                   </div>
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-blue-500 shrink-0" />
+                <ArrowUpRight className="w-4 h-4 text-blue-400 shrink-0" />
               </button>
             </div>
           )}
         </div>
 
         {/* Section 2: Technical Notes Banner */}
-        <div>
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">
-            DẶN DÒ & LƯU Ý KỸ THUẬT
+        {customerNote && (
+          <div>
+            <div className="text-[10.5px] font-bold text-neutral-400 uppercase tracking-wider px-1 mb-1">
+              DẶN DÒ &amp; LƯU Ý KỸ THUẬT
+            </div>
+            <div className="bg-[#2C1515] border border-red-500/40 rounded-2xl p-3 shadow-xs">
+              <p className="text-[12px] text-red-300 font-medium leading-relaxed whitespace-pre-line">
+                ⚠️ {customerNote}
+              </p>
+            </div>
           </div>
-          <div className="bg-[#FFF5F5] border border-red-200 rounded-2xl p-3 shadow-sm">
-            <p className="text-[12px] text-red-600 font-medium leading-relaxed whitespace-pre-line">
-              ⚠️ {customerNote}
-            </p>
-          </div>
-        </div>
+        )}
 
-        {/* Section 2.5: Hồ Sơ Mi Thật (Minimalist & Scannable) */}
+        {/* Section 2.5: Hồ Sơ Mi Thật */}
         {visits <= 1 ? (
-          <div className="bg-amber-50/90 border border-[#FFB400] rounded-2xl p-3 shadow-xs flex items-center justify-between gap-2.5">
+          <div className="bg-[#1C1C1E] border border-amber-500/40 rounded-2xl p-3 shadow-xs flex items-center justify-between gap-2.5 text-white">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-xl bg-[#FFB400]/20 text-amber-800 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-[#FF9500]" />
+              <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-amber-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-[11.5px] font-extrabold text-amber-950 uppercase tracking-tight">
+                <div className="text-[11.5px] font-extrabold text-amber-300 uppercase tracking-tight">
                   MI THẬT · KHÁCH MỚI
                 </div>
-                <div className="text-[11px] text-amber-800 font-medium truncate">
+                <div className="text-[11px] text-neutral-400 font-medium truncate">
                   Đo độ dài, độ dày sợi &amp; dáng mí ở bước tiếp theo
                 </div>
               </div>
@@ -1006,44 +970,44 @@ export function Screen02CheckInProfile({
             </span>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2 tabular-nums">
+          <div className="bg-[#1C1C1E] rounded-2xl p-3 shadow-sm border border-neutral-800 space-y-2 tabular-nums text-white">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="text-[11px] font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                 HỒ SƠ MI THẬT
               </span>
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 leading-none">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 leading-none">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
                 Đã lưu
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-[#F8FAFC] border border-neutral-100 rounded-xl px-2.5 py-2 flex flex-col justify-between">
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2.5 py-2 flex flex-col justify-between">
                 <span className="text-neutral-400 text-[10px] font-semibold">Độ dài</span>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="font-extrabold text-[12.5px] text-neutral-900">
+                  <span className="font-extrabold text-[12.5px] text-white">
                     {(booking?.attributes?.naturalLashLength || '8 mm (Chuẩn)').split('(')[0].trim()}
                   </span>
-                  <span className="text-[10px] font-semibold text-neutral-500">
+                  <span className="text-[10px] font-semibold text-neutral-400">
                     {(booking?.attributes?.naturalLashLength || '8 mm (Chuẩn)').match(/\(([^)]+)\)/)?.[1] || 'Chuẩn'}
                   </span>
                 </div>
               </div>
-              <div className="bg-[#F8FAFC] border border-neutral-100 rounded-xl px-2.5 py-2 flex flex-col justify-between">
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2.5 py-2 flex flex-col justify-between">
                 <span className="text-neutral-400 text-[10px] font-semibold">Độ dày</span>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="font-extrabold text-[12.5px] text-neutral-900">
+                  <span className="font-extrabold text-[12.5px] text-white">
                     {(booking?.attributes?.naturalLashThickness || '0.07 mm (Mảnh)').split('(')[0].trim()}
                   </span>
-                  <span className="text-[10px] font-semibold text-neutral-500">
+                  <span className="text-[10px] font-semibold text-neutral-400">
                     {(booking?.attributes?.naturalLashThickness || '0.07 mm (Mảnh)').match(/\(([^)]+)\)/)?.[1] ||
                       'Mảnh'}
                   </span>
                 </div>
               </div>
-              <div className="bg-[#F8FAFC] border border-neutral-100 rounded-xl px-2.5 py-2 flex flex-col justify-between">
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2.5 py-2 flex flex-col justify-between">
                 <span className="text-neutral-400 text-[10px] font-semibold">Mắt / Mí</span>
-                <div className="font-extrabold text-[12.5px] text-neutral-900 mt-0.5 truncate">
+                <div className="font-extrabold text-[12.5px] text-white mt-0.5 truncate">
                   {booking?.attributes?.eyeShape?.split('(')[0].trim() || 'Mí lót'}
                 </div>
               </div>
@@ -1052,29 +1016,29 @@ export function Screen02CheckInProfile({
         )}
 
         {/* Section 3: Dịch Vụ Hôm Nay (Minimalist & Scannable) */}
-        <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2 tabular-nums">
+        <div className="bg-[#1C1C1E] rounded-2xl p-3 shadow-sm border border-neutral-800 space-y-2 tabular-nums text-white">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#FF9500] shrink-0" />
+            <span className="text-[11px] font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               DỊCH VỤ HÔM NAY
             </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded-full border border-neutral-200/80 leading-none">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-300 bg-[#2C2C2E] px-2 py-0.5 rounded-full border border-neutral-700 leading-none">
               {bookingTime} · {booking?.assignedBed || 'Giường 01'}
             </span>
           </div>
 
-          <div className="bg-[#F8FAFC] border border-neutral-100 rounded-xl p-2.5 space-y-2">
+          <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl p-2.5 space-y-2">
             {/* Bộ 1: Mi Trên */}
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="text-[12.5px] font-extrabold text-neutral-900 truncate">
+                <div className="text-[12.5px] font-extrabold text-white truncate">
                   {isComboLive
                     ? `${preset.isAlwaysFullSet ? 'Nối Mới' : quickServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'} ${preset.materialShortLabel} (${preset.volume} · ${preset.count})`
                     : serviceName.toLowerCase().includes('any')
                       ? 'Chưa chọn mẫu mi'
                       : serviceName}
                 </div>
-                <div className="text-[10.5px] text-neutral-500 font-medium truncate mt-0.5">
+                <div className="text-[10.5px] text-neutral-400 font-medium truncate mt-0.5">
                   {isComboLive
                     ? `Dáng ${preset.style} · Cong ${preset.curl} · Dày ${preset.thickness.replace(/\s*mm/i, '')} · Dài ${preset.length.replace(/\s*mm/i, '')}`
                     : serviceName.toLowerCase().includes('any')
@@ -1086,7 +1050,7 @@ export function Screen02CheckInProfile({
               <div className="text-right shrink-0">
                 {isComboLive ? (
                   <>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold leading-none">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-extrabold leading-none">
                       Trừ gói Combo
                     </span>
                     <div className="text-[10px] text-neutral-400 font-semibold mt-0.5">
@@ -1094,30 +1058,30 @@ export function Screen02CheckInProfile({
                     </div>
                   </>
                 ) : (
-                  <span className="text-[12.5px] font-extrabold text-[#FF9500]">{servicePrice}</span>
+                  <span className="text-[12.5px] font-extrabold text-amber-400">{servicePrice}</span>
                 )}
               </div>
             </div>
 
             {/* Bộ 2: Mi Dưới (Hiển thị khi khách có chọn kèm Mi Dưới) */}
             {isComboLive && quickHasUnderMink && (
-              <div className="pt-2 border-t border-neutral-200/70 flex items-center justify-between gap-2">
+              <div className="pt-2 border-t border-neutral-700/70 flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-[12px] font-extrabold text-purple-950 truncate">
+                  <div className="text-[12px] font-extrabold text-white truncate">
                     + Mi Dưới · Under Mink ({quickUnderServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'})
                   </div>
-                  <div className="text-[10px] text-purple-700/80 font-medium truncate mt-0.5">
+                  <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
                     Cong {quickUnderCurl} · Dày 0.10 · Dài {parseUnderMinkLengthMm(quickUnderLength)}mm ·{' '}
                     {parseUnderMinkCountFibers(quickUnderCount)} sợi
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   {activePointsBreakdown.isUnderMinkComboDeducted ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold leading-none">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-extrabold leading-none">
                       Trừ gói Mi Dưới
                     </span>
                   ) : (
-                    <span className="text-[12px] font-extrabold text-purple-700">
+                    <span className="text-[12px] font-extrabold text-purple-400">
                       +{quickUnderServiceType === 'Retain' ? '250.000' : '390.000'} đ
                     </span>
                   )}
@@ -1130,12 +1094,12 @@ export function Screen02CheckInProfile({
         {/* Section 4: History list */}
         <div>
           <div className="flex items-center justify-between px-1 mb-1.5">
-            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
               LỊCH SỬ LÀM MI GẦN NHẤT
             </span>
-            <span className="text-[10px] text-blue-600 font-bold">Chạm để xem chi tiết & 3 ảnh ↗</span>
+            <span className="text-[10px] text-amber-400 font-bold">Chạm để xem chi tiết &amp; 3 ảnh ↗</span>
           </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden divide-y divide-gray-100">
+          <div className="bg-[#1C1C1E] rounded-2xl shadow-sm border border-neutral-800 overflow-hidden divide-y divide-neutral-800 text-white">
             {(booking?.lashHistory && booking.lashHistory.length > 0
               ? booking.lashHistory
               : ([
@@ -1274,62 +1238,63 @@ export function Screen02CheckInProfile({
                     handleOpenLashHistory(h);
                   }
                 }}
-                className="p-3 flex items-center justify-between cursor-pointer hover:bg-blue-50/40 active:bg-blue-100/50 transition-colors group select-none"
+                className="p-3 flex items-center justify-between cursor-pointer hover:bg-[#2C2C2E] active:bg-neutral-800 transition-colors group select-none"
               >
                 <div className="min-w-0 pr-2">
-                  <div className="text-[13px] font-bold text-black group-hover:text-blue-600 transition-colors truncate">
+                  <div className="text-[13px] font-bold text-white group-hover:text-amber-400 transition-colors truncate">
                     {h.date} · {h.serviceName}
                   </div>
-                  <div className="text-[11px] text-gray-500 mt-0.5 truncate">
+                  <div className="text-[11px] text-neutral-400 mt-0.5 truncate">
                     Chuyên viên: {h.staffName} · Đánh giá: {'rating' in h && h.rating ? h.rating : 5.0} ★
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#007AFF] text-[11.5px] font-bold shadow-2xs group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#2C2C2E] border border-neutral-700 text-amber-400 text-[11px] font-bold shadow-xs group-hover:bg-amber-400 group-hover:text-black transition-all">
                     <span>Đã lưu form</span>
-                    <span className="text-[12px] leading-none">›</span>
+                    <span className="text-[11px] leading-none">›</span>
                   </span>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Big Action Button */}
-        <div className="pt-1 space-y-2">
-          {isComboLive && onQuickCheckIn ? (
-            <>
-              <button
-                type="button"
-                onClick={handleExecuteQuickCheckIn}
-                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 text-white font-extrabold text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
-              >
-                <Zap className="w-5 h-5 fill-current" />
-                <span>QUICK CHECK-IN · GIỮ FORM CŨ ({quickServiceType === 'Retain' ? 'DẶM COMBO' : 'NỐI MỚI'})</span>
-              </button>
-              <button
-                type="button"
-                onClick={onCheckIn}
-                className="w-full py-3 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[13px] flex items-center justify-center gap-2 shadow-xs active:scale-98 transition-transform cursor-pointer"
-              >
-                <Sliders className="w-4 h-4 stroke-[2.5]" />
-                <span>ĐỔI THÔNG SỐ / TƯ VẤN LẠI CHI TIẾT (BƯỚC 3)</span>
-              </button>
-            </>
-          ) : (
+      {/* Sticky Bottom Action Bar (Native iOS Floating Dock) */}
+      <div className="bg-black/95 backdrop-blur-xl border-t border-neutral-800 px-3.5 py-2.5 flex items-center gap-2 z-30 shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
+        {isComboLive && onQuickCheckIn ? (
+          <>
             <button
-              onClick={onCheckIn}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
+              type="button"
+              onClick={handleExecuteQuickCheckIn}
+              className="flex-1 py-3 px-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[13px] flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-transform cursor-pointer"
             >
-              <Check className="w-5 h-5 stroke-[2.5]" />
-              <span>
-                {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING'
-                  ? `✏️ SỬA TƯ VẤN & ĐỔI DỊCH VỤ MI (BƯỚC 3)`
-                  : `CHECK-IN & BẮT ĐẦU TƯ VẤN`}
-              </span>
+              <Zap className="w-4 h-4 fill-current" />
+              <span>Nhận ca &amp; Giữ form cũ</span>
             </button>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={onCheckIn}
+              className="py-3 px-3.5 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-amber-400 border border-amber-500/40 font-bold text-[12.5px] flex items-center justify-center gap-1.5 shrink-0 active:scale-98 transition-transform cursor-pointer"
+              title="Đổi dáng / Độ cong / Tư vấn lại"
+            >
+              <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Tư vấn lại</span>
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onCheckIn}
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-500 text-black font-black text-[13.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
+          >
+            <Check className="w-4.5 h-4.5 stroke-[3]" />
+            <span>
+              {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING'
+                ? `✏️ Sửa Tư Vấn &amp; Đổi Dịch Vụ`
+                : `Check-in &amp; Bắt Đầu Tư Vấn`}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Modal Cảnh Báo Xác Nhận khi CV🪶 Override trái chu kỳ 25 ngày ngay trên màn Quick Check-in */}

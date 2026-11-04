@@ -47,41 +47,41 @@ export function IosTabBar({
   };
 
   return (
-    <div className="w-full bg-white border-t border-[#E5E5EA] pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none z-40 relative shadow-[0_-2px_10px_rgba(0,0,0,0.04)] flex-shrink-0">
+    <div className="w-full bg-[#1C1C1E]/95 backdrop-blur-xl border-t border-neutral-800 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none z-40 relative shadow-2xl flex-shrink-0 text-neutral-400">
       <div className="h-12 px-2 flex items-center justify-around relative">
         {/* VAI TRÒ CV🪶 (CVL) & 🪶CV🪶 (CVLL): TỰ TƯ VẤN & CHECKOUT */}
         {(role === 'CVL' || role === 'CVLL') && (
           <>
             <button
               onClick={() => onTabChange('booking')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
-                activeTab === 'booking' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer ${
+                activeTab === 'booking' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
               }`}
             >
               <div className="relative">
                 <CalendarCheck className="w-5 h-5 mb-0.5 stroke-[2.2]" />
                 {renderBadge(badgeCounts.booking)}
               </div>
-              <span className="text-[10px] font-semibold leading-none">Khách Hàng</span>
+              <span className="text-[10px] font-bold leading-none">Khách Hàng</span>
             </button>
 
             <button
               onClick={() => onTabChange('task')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
-                activeTab === 'task' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer ${
+                activeTab === 'task' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
               }`}
             >
               <div className="relative">
                 <FileText className="w-5 h-5 mb-0.5 stroke-[2.2]" />
                 {renderBadge(badgeCounts.task || 1)}
               </div>
-              <span className="text-[10px] font-semibold leading-none">Ca Làm Mi</span>
+              <span className="text-[10px] font-bold leading-none">Ca Làm Mi</span>
             </button>
 
             <div className="w-14 flex items-center justify-center -mt-6">
               <button
                 onClick={onCenterPlusClick}
-                className="w-13 h-13 rounded-full bg-black text-[#FFB400] shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center active:scale-95 transition-transform border-[3px] border-white"
+                className="w-13 h-13 rounded-full bg-black text-[#FFB400] shadow-[0_0_15px_rgba(255,180,0,0.35)] flex flex-col items-center justify-center active:scale-95 transition-transform border-[2.5px] border-amber-400/80 cursor-pointer"
                 title="Tư vấn & Checkout nhanh"
               >
                 <Sparkles className="w-5 h-5 stroke-[2.5]" />
@@ -93,8 +93,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('paystub')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'paystub' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
+                activeTab === 'paystub' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
               }`}
             >
               <Wallet className="w-5 h-5 mb-0.5 stroke-[2]" />
@@ -103,8 +103,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('more')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
+                activeTab === 'more' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
               }`}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />

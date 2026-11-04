@@ -62,8 +62,8 @@ export function IosNavigationBar({
       </div>
 
       {/* Center Title - Perfectly centered */}
-      <div className="absolute inset-x-0 bottom-2.5 top-[calc(env(safe-area-inset-top,0px)+10px)] flex flex-col items-center justify-center pointer-events-none px-24">
-        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight truncate leading-tight pointer-events-auto">
+      <div className="absolute inset-x-0 bottom-2.5 top-[calc(env(safe-area-inset-top,0px)+10px)] flex flex-col items-center justify-center pointer-events-none px-28">
+        <h1 className="text-white font-bold text-[15.5px] tracking-tight truncate leading-tight pointer-events-auto">
           {title}
         </h1>
         {subtitle && (

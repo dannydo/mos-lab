@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { isAdminOrSuperAdminRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
-import { BookingItem, INITIAL_BOOKINGS, SERUM_TIERS_CVL, filterBookingsForCvlScope } from './mockData';
+import {
+  BookingItem,
+  INITIAL_BOOKINGS,
+  SERUM_TIERS_CVL,
+  filterBookingsForCvlScope,
+  resolveStaffAvatarUrl,
+} from './mockData';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -30,6 +36,7 @@ export interface ActiveActorProfile {
   name: string;
   tier: 'CVL' | 'CVLL' | 'CV' | 'CC' | 'ADMIN';
   badgeLabel: string;
+  avatar?: string;
 }
 
 export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): ActiveActorProfile {
@@ -43,34 +50,46 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
     userRole === 'technician';
 
   if (role === 'CVLL') {
+    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 25337 : 25337;
+    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️';
     return {
-      staffId: isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 25337 : 25337,
-      name: isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️',
+      staffId,
+      name,
       tier: 'CVLL',
       badgeLabel: '🪶CV🪶 · Chuyên Viên Tự Chủ Cấp Cao',
+      avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
     };
   }
   if (role === 'CVL') {
+    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 46272 : 46272;
+    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Thảo Ly';
     return {
-      staffId: isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 46272 : 46272,
-      name: isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Thảo Ly',
+      staffId,
+      name,
       tier: 'CVL',
       badgeLabel: 'CV🪶 · Chuyên Viên Tự Chủ',
+      avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
     };
   }
   if (role === 'CV') {
+    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 49076 : 49076;
+    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Phương Nhi';
     return {
-      staffId: isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 49076 : 49076,
-      name: isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Phương Nhi',
+      staffId,
+      name,
       tier: 'CV',
       badgeLabel: 'CV · Chuyên Viên Kỹ Thuật',
+      avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
     };
   }
+  const staffId = 37790;
+  const name = 'Diễm Hương';
   return {
-    staffId: 37790,
-    name: 'Diễm Hương',
+    staffId,
+    name,
     tier: 'CC',
     badgeLabel: 'CC · Tư Vấn Viên',
+    avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
   };
 }
 

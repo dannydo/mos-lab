@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
-import { Calendar, ShoppingCart, Camera, Lock, Users, UserCheck } from 'lucide-react';
+import { Camera, RefreshCw } from 'lucide-react';
 
 interface SegmentCounts {
   incoming: number;
@@ -16,7 +16,7 @@ interface SegmentCounts {
 interface Screen01IncomingBookingsProps {
   bookings: BookingItem[];
   bookingSegment: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
-  setBookingSegment: (seg: any) => void;
+  setBookingSegment: (seg: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL') => void;
   onSelectBooking: (bookingId: number) => void;
   counts?: SegmentCounts;
   isRefreshing?: boolean;
@@ -29,6 +29,7 @@ interface Screen01IncomingBookingsProps {
   actor?: ActiveActorProfile;
   scopeMode?: BookingScopeMode;
   onScopeModeChange?: (scope: BookingScopeMode) => void;
+  onOpenProfileMenu?: () => void;
 }
 
 export function Screen01IncomingBookings({
@@ -40,301 +41,160 @@ export function Screen01IncomingBookings({
   isRefreshing,
   onRefreshDb,
   role = 'CVL',
-  canSwitchRole = false,
-  onRoleChange,
   actor,
-  scopeMode = 'MY_CUSTOMERS',
-  onScopeModeChange,
+  onOpenProfileMenu,
 }: Screen01IncomingBookingsProps) {
-  const [activeCategory, setActiveCategory] = useState<'LASHES' | 'LASH_LIFT' | 'NAILS' | 'ALL'>('LASHES');
-
   const filteredBookings = bookings.filter((b) => {
-    // 1. Status segment filter
-    const statusMatch =
-      bookingSegment === 'INCOMING'
-        ? b.status === 'INCOMING' || b.status === 'CHECKED_IN'
-        : bookingSegment === 'SERVICING'
-          ? b.status === 'SERVICING'
-          : bookingSegment === 'DONE'
-            ? b.status === 'DONE'
-            : b.status === 'CANCELLED';
-
-    if (!statusMatch) return false;
-
-    // 2. Category filter
-    if (activeCategory === 'ALL') return true;
-    const nameLower = (b.serviceName || '').toLowerCase();
-    if (activeCategory === 'LASH_LIFT') {
-      return nameLower.includes('lift') || nameLower.includes('uốn');
-    }
-    if (activeCategory === 'NAILS') {
-      return nameLower.includes('nail') || nameLower.includes('móng');
-    }
-    if (activeCategory === 'LASHES') {
-      return (
-        !nameLower.includes('nail') &&
-        !nameLower.includes('móng') &&
-        !nameLower.includes('lift') &&
-        !nameLower.includes('uốn')
-      );
-    }
-    return true;
+    if (bookingSegment === 'INCOMING') return b.status === 'INCOMING' || b.status === 'CHECKED_IN';
+    if (bookingSegment === 'SERVICING') return b.status === 'SERVICING';
+    if (bookingSegment === 'DONE') return b.status === 'DONE';
+    return b.status === 'CANCELLED';
   });
 
   const actorName = actor?.name || 'Thảo Ly';
-  const actorTierBadge = role === 'CVLL' ? <CvFeather2Badge /> : role === 'CVL' ? 'CV🪶' : role;
+  const isCvll = role === 'CVLL';
 
   return (
-    <div className="flex-1 flex flex-col bg-white overflow-hidden select-none">
-      {/* 1. Header Navigation Bar (Black background, Gold icons & title) */}
-      <div className="bg-black h-11 px-3.5 flex items-center justify-between z-10 flex-shrink-0">
+    <div className="flex-1 flex flex-col bg-black text-white overflow-hidden select-none">
+      {/* 1. Single Native iOS Navigation Bar (Clean 1-row layout) */}
+      <div className="h-12 px-3.5 bg-black border-b border-neutral-900 flex items-center justify-between z-10 flex-shrink-0">
+        {/* Left: Branch & Live Refresh Pill */}
         <button
           onClick={onRefreshDb}
-          className="text-[#FFB400] active:opacity-70 transition-opacity flex items-center gap-1.5"
-          title="Làm mới dữ liệu từ MySQL"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 text-neutral-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+          title="Làm mới dữ liệu từ máy chủ"
         >
-          <Calendar className="w-4.5 h-4.5" />
-          <span className="text-[11px] font-bold text-amber-400/90">Đề Thám · Hôm nay</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[11.5px] font-bold text-neutral-200">Đề Thám</span>
+          <RefreshCw className={`w-3 h-3 text-neutral-400 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
         </button>
 
-        <div className="flex items-center gap-1.5">
-          <span className="bg-[#FFB400] text-black text-[11px] font-black px-2 py-0.5 rounded-full inline-flex items-center">
-            {actorTierBadge}
-          </span>
-          <span className="text-white font-bold text-[13px] truncate max-w-[130px]">{actorName}</span>
+        {/* Center: Clean Title */}
+        <div className="flex flex-col items-center">
+          <span className="text-[13px] font-black tracking-tight text-white">Lịch Hẹn Hôm Nay</span>
+          <span className="text-[10px] text-neutral-400 tabular-nums">Hôm nay · Đang nhận khách</span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* Right: Quick Profile Trigger (Tapping opens iOS Action Sheet) */}
+        <button
+          onClick={onOpenProfileMenu}
+          className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 hover:border-amber-400/50 active:scale-95 transition-all cursor-pointer shadow-xs"
+          title="Mở hồ sơ & chuyển vai trò"
+        >
+          <span className="text-[10.5px] font-black text-amber-400">{isCvll ? <CvFeather2Badge /> : 'CV🪶'}</span>
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-amber-400/80 bg-neutral-800 shrink-0">
+            <img
+              src={actor?.avatar || 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png'}
+              alt={actorName}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
+        </button>
+      </div>
+
+      {/* 2. Native iOS Dark Segmented Control (Minimalist, zero clutter) */}
+      <div className="px-3 pt-2.5 pb-2 flex-shrink-0 bg-black">
+        <div className="bg-[#1C1C1E] p-1 rounded-2xl border border-neutral-800/90 grid grid-cols-3 gap-1 shadow-inner">
           <button
-            onClick={onRefreshDb}
-            className="text-[#FFB400] active:opacity-70 transition-opacity"
-            title="Làm mới dữ liệu từ MySQL"
+            onClick={() => setBookingSegment('INCOMING')}
+            className={`py-1.5 px-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              bookingSegment === 'INCOMING'
+                ? 'bg-[#2C2C2E] text-amber-400 shadow-sm font-black'
+                : 'text-neutral-400 hover:text-white'
+            }`}
           >
-            <ShoppingCart className="w-4.5 h-4.5" />
+            <span>Chờ đón</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none ${
+                bookingSegment === 'INCOMING' ? 'bg-amber-400 text-black' : 'bg-neutral-800 text-neutral-300'
+              }`}
+            >
+              {counts?.incoming ?? filteredBookings.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setBookingSegment('SERVICING')}
+            className={`py-1.5 px-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              bookingSegment === 'SERVICING'
+                ? 'bg-[#2C2C2E] text-amber-400 shadow-sm font-black'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span>Đang làm</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none ${
+                bookingSegment === 'SERVICING' ? 'bg-amber-400 text-black' : 'bg-neutral-800 text-neutral-300'
+              }`}
+            >
+              {counts?.servicing ?? 0}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setBookingSegment('DONE')}
+            className={`py-1.5 px-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              bookingSegment === 'DONE'
+                ? 'bg-[#2C2C2E] text-amber-400 shadow-sm font-black'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span>Đã xong</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none ${
+                bookingSegment === 'DONE' ? 'bg-amber-400 text-black' : 'bg-neutral-800 text-neutral-300'
+              }`}
+            >
+              {counts?.done ?? 0}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* 1.5 Quick Role & Scope Bar for CV🪶 & 🪶CV🪶 */}
-      <div className="bg-[#121214] px-3 py-2 border-b border-neutral-800 space-y-1.5 flex-shrink-0">
-        {canSwitchRole ? (
-          <div className="flex items-center justify-between gap-1.5">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Kiểm thử Admin (Chuyển vai trò):
-            </span>
-            <div className="flex items-center gap-1">
-              {(['CVL', 'CVLL', 'CC'] as const).map((r) => {
-                const active = role === r;
-                return (
-                  <button
-                    key={r}
-                    onClick={() => onRoleChange?.(r)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all ${
-                      active
-                        ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                        : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
-                    }`}
-                  >
-                    {r === 'CVL' ? 'CV🪶' : r === 'CVLL' ? <CvFeather2Badge /> : 'CC Sảnh'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-1.5">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
-              <Lock className="w-3 h-3 text-amber-400" />
-              <span>Vai trò vận hành cố định:</span>
-            </span>
-            <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-[#FFB400] text-black inline-flex items-center gap-1">
-              {role === 'CVL' ? (
-                'CV🪶 · Chuyên Viên Tự Chủ'
-              ) : role === 'CVLL' ? (
-                <CvFeather2Badge />
-              ) : (
-                'CC · Tư Vấn Viên'
-              )}
-            </span>
-          </div>
-        )}
-
-        {role === 'CVL' && (
-          <div className="bg-amber-500/15 border border-amber-500/40 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 text-amber-300 font-semibold truncate">
-              <Lock className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
-              <span className="truncate">Chỉ hiển thị Khách Kế Tiếp &amp; Khách Book Của {actorName} (CV🪶)</span>
-            </div>
-            <span className="text-[#34C759] font-extrabold text-[10px] shrink-0 ml-1">Đã khoá khách CV khác</span>
-          </div>
-        )}
-
-        {role === 'CVLL' && (
-          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-            <button
-              onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}
-              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
-                scopeMode === 'MY_CUSTOMERS'
-                  ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                  : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
-              }`}
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>
-                Khách Của Em (<CvFeather2Badge />)
-              </span>
-            </button>
-            <button
-              onClick={() => onScopeModeChange?.('STORE_ALL')}
-              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
-                scopeMode === 'STORE_ALL'
-                  ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                  : 'bg-[#2C2C2E] text-neutral-300 hover:text-white'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Toàn Bộ Sảnh</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 2. Sub-navbar Row 1 (LASHES | LASH LIFT | NAILS | ALL) */}
-      <div className="bg-[#1C1C1E] h-8.5 px-2.5 flex items-center justify-between text-[11.5px] font-bold tracking-wider flex-shrink-0">
-        <button
-          onClick={() => setActiveCategory('LASHES')}
-          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
-            activeCategory === 'LASHES'
-              ? 'text-[#FFB400] border-b-2 border-[#FFB400]'
-              : 'text-[#8E8E93] hover:text-white'
-          }`}
-        >
-          LASHES
-        </button>
-        <button
-          onClick={() => setActiveCategory('LASH_LIFT')}
-          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
-            activeCategory === 'LASH_LIFT'
-              ? 'text-[#FFB400] border-b-2 border-[#FFB400]'
-              : 'text-[#8E8E93] hover:text-white'
-          }`}
-        >
-          LASH LIFT
-        </button>
-        <button
-          onClick={() => setActiveCategory('NAILS')}
-          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
-            activeCategory === 'NAILS'
-              ? 'text-[#FFB400] border-b-2 border-[#FFB400]'
-              : 'text-[#8E8E93] hover:text-white'
-          }`}
-        >
-          NAILS
-        </button>
-        <button
-          onClick={() => setActiveCategory('ALL')}
-          className={`h-full flex items-center justify-center px-2.5 transition-colors ${
-            activeCategory === 'ALL' ? 'text-[#FFB400] border-b-2 border-[#FFB400]' : 'text-[#8E8E93] hover:text-white'
-          }`}
-        >
-          ALL
-        </button>
-      </div>
-
-      {/* 3. Sub-navbar Row 2 (INCOMING | SERVICING | DONE) */}
-      <div className="bg-[#FFA000] h-9 grid grid-cols-3 items-center text-center font-bold text-[12px] tracking-wider flex-shrink-0 shadow-sm">
-        <button
-          onClick={() => setBookingSegment('INCOMING')}
-          className={`h-full flex items-center justify-center uppercase transition-all px-1 ${
-            bookingSegment === 'INCOMING' ? 'bg-[#FF9500] text-white font-black' : 'text-[#7C2D12] hover:text-white/80'
-          }`}
-        >
-          INCOMING ({counts?.incoming ?? filteredBookings.length})
-        </button>
-        <button
-          onClick={() => setBookingSegment('SERVICING')}
-          className={`h-full flex items-center justify-center uppercase transition-all px-1 ${
-            bookingSegment === 'SERVICING' ? 'bg-[#FF9500] text-white font-black' : 'text-[#7C2D12] hover:text-white/80'
-          }`}
-        >
-          SERVICING ({counts?.servicing ?? 0})
-        </button>
-        <button
-          onClick={() => setBookingSegment('DONE')}
-          className={`h-full flex items-center justify-center uppercase transition-all px-1 ${
-            bookingSegment === 'DONE' ? 'bg-[#FF9500] text-white font-black' : 'text-[#7C2D12] hover:text-white/80'
-          }`}
-        >
-          DONE ({counts?.done ?? 0})
-        </button>
-      </div>
-
-      {/* 3.1 Mini Avatar Ring Status Legend */}
-      <div className="bg-[#F2F2F7] px-3 py-1 border-b border-[#E5E5EA] flex items-center justify-between text-[10px] text-[#636366]">
-        <div className="flex items-center gap-2.5">
-          <span className="flex items-center gap-1 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#34C759] bg-white inline-block" />
-            <span>Not Combo</span>
-          </span>
-          <span className="flex items-center gap-1 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#8E8E93] bg-white inline-block" />
-            <span>Combo Live</span>
-          </span>
-          <span className="flex items-center gap-1 font-bold text-amber-700">
-            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#FF9500] bg-white inline-block" />
-            <span>Còn 1-2 lần</span>
-          </span>
-        </div>
-        <span className="text-[9.5px] text-[#8E8E93] font-medium">Viền avatar</span>
-      </div>
-
-      {/* 4. Booking List */}
-      <div className="flex-1 bg-white overflow-y-auto divide-y divide-[#E5E5EA]">
+      {/* 3. Customer Booking Cards (Inset Grouped iOS Dark style) */}
+      <div className="flex-1 bg-black overflow-y-auto px-3 py-1 space-y-2.5 pb-20">
         {filteredBookings.length === 0 ? (
-          <div className="text-center py-16 text-[#8E8E93] text-sm px-4">
-            {isRefreshing
-              ? 'Đang tải dữ liệu khách hàng từ cơ sở dữ liệu MySQL...'
-              : 'Chưa có khách trong tab này. Hãy chọn tab INCOMING hoặc SERVICING.'}
+          <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-2">
+            <div className="w-10 h-10 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-neutral-400">
+              ✓
+            </div>
+            <p>{isRefreshing ? 'Đang đồng bộ dữ liệu từ hệ thống...' : 'Hiện tại chưa có khách trong mục này.'}</p>
           </div>
         ) : (
           filteredBookings.map((b, idx) => {
             const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
             const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
 
-            // Quy tắc màu viền avatar (Avatar Ring Color Invariant theo chỉ đạo Danny):
-            // -> vòng xanh quanh ngoài avatar -> not combo live
-            // -> vòng xám -> combo live
-            // -> còn 1-2 lần -> vòng vàng
-            let avatarRingClass = 'border-[2.5px] border-[#34C759]'; // Vòng xanh (Not combo live)
+            // Avatar Ring Indicator
+            let avatarRingClass = 'border-2 border-emerald-500'; // Not Combo Live
             if (isComboLive && remainingSessions > 0) {
-              if (remainingSessions <= 2) {
-                avatarRingClass = 'border-[2.5px] border-[#FF9500] ring-1 ring-[#FF9500]/40'; // Vòng vàng (Còn 1-2 lần)
-              } else {
-                avatarRingClass = 'border-[2.5px] border-[#8E8E93]'; // Vòng xám (Combo live)
-              }
+              avatarRingClass =
+                remainingSessions <= 2
+                  ? 'border-2 border-amber-400 ring-2 ring-amber-400/30' // Còn 1-2 lần
+                  : 'border-2 border-neutral-500'; // Combo Live bình thường
             }
+
+            const isNextQueue =
+              b.isNextQueueCustomer || b.isUnassignedQueue || b.bookingAccessTag === 'NEXT_QUEUE_CUSTOMER';
 
             return (
               <div
                 key={b.id}
                 onClick={() => onSelectBooking(b.id)}
-                className="flex items-start px-3 py-3 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer border-b border-[#E5E5EA]"
+                className="bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 rounded-2xl p-3 flex items-start gap-2.5 transition-all cursor-pointer shadow-xs select-none hover:border-neutral-700"
               >
-                {/* 4.1 Index Number */}
-                <span className="text-[#C7C7CC] text-[17px] font-light w-4 pt-3 text-center flex-shrink-0 tabular-nums">
+                {/* 3.1 Numeric Index */}
+                <span className="text-neutral-600 text-[13px] font-black w-3.5 pt-2 text-center flex-shrink-0 tabular-nums">
                   {idx + 1}
                 </span>
 
-                {/* 4.2 Avatar */}
-                <div className="relative w-13 h-13 flex-shrink-0 mx-2">
-                  {b.hasDiscountTag && (
-                    <div className="absolute -top-1.5 -left-1.5 z-10 select-none text-[14px] leading-none drop-shadow-xs">
-                      🏷️
-                    </div>
-                  )}
-
+                {/* 3.2 Avatar with Ring & Camera Icon */}
+                <div className="relative w-12 h-12 flex-shrink-0">
                   <div
-                    className={`w-13 h-13 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-xs ${avatarRingClass}`}
+                    className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 shadow-sm ${avatarRingClass}`}
                   >
                     {b.customerAvatar ? (
                       <img
@@ -350,79 +210,87 @@ export function Screen01IncomingBookings({
                     )}
                   </div>
 
-                  <div className="absolute -bottom-1 -left-1 w-4.5 h-4.5 rounded-full border border-[#D1D1D6] bg-white flex items-center justify-center shadow-xs">
-                    <Camera className="w-2.5 h-2.5 text-[#3A3A3C]" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border border-neutral-800 bg-[#2C2C2E] flex items-center justify-center shadow-xs">
+                    <Camera className="w-2.5 h-2.5 text-neutral-300" />
                   </div>
                 </div>
 
-                {/* 4.3 Center Info */}
-                <div className="flex-1 min-w-0 pr-2 flex flex-col justify-start">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-[13px] flex-shrink-0 select-none">{b.customerTypeIcon || '🔄'}</span>
-                    <span className="text-[15px] font-bold text-black truncate tracking-tight">{b.customerName}</span>
+                {/* 3.3 Middle: Customer Identity & Compact Icon Badges */}
+                <div className="flex-1 min-w-0 pr-1 flex flex-col justify-start">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[12px] flex-shrink-0 select-none">{b.customerTypeIcon || '🌟'}</span>
+                    <span className="text-[14px] font-extrabold text-white truncate tracking-tight">
+                      {b.customerName}
+                    </span>
                   </div>
-                  <div className="text-[12px] text-[#636366] font-normal leading-tight mt-0.5 tabular-nums">
+
+                  <div className="text-[11px] text-neutral-400 font-medium leading-tight mt-0.5 tabular-nums">
                     {b.customerPhone} · Lần {b.customerVisits || 1}
                   </div>
 
-                  {/* Nhãn phân biệt Khách hàng kế tiếp (Đầu tua) vs Khách book của mình dành cho CV🪶 */}
-                  {(role === 'CVL' || b.isNextQueueCustomer || b.isUnassignedQueue) && (
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
-                      {b.isNextQueueCustomer || b.isUnassignedQueue || b.bookingAccessTag === 'NEXT_QUEUE_CUSTOMER' ? (
-                        <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
-                          ⏭️ Khách kế tiếp (Đầu tua)
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
-                          📌 Khách book của {actorName || 'tôi'}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Badges Row: Icons instead of verbose words */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                    {isNextQueue ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-400 text-[10px] font-extrabold leading-none">
+                        ⚡ Đầu tua
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold leading-none">
+                        📌 Book riêng
+                      </span>
+                    )}
 
-                  {/* Đã bỏ box Not Combo Live theo chỉ đạo anh Danny. Chỉ hiển thị nhẹ nhàng số lượt còn nếu đang có Combo Live */}
-                  {isComboLive && remainingSessions > 0 && (
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                    {isComboLive && remainingSessions > 0 && (
                       <span
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
                           remainingSessions <= 2
-                            ? 'bg-amber-50 text-amber-800 border border-amber-300'
-                            : 'bg-gray-100 text-gray-700 border border-gray-200'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                            : 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
                         }`}
                       >
-                        💎 Còn {remainingSessions} lượt
+                        💎 {remainingSessions} lượt
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
+                  {/* Compact Note Quote */}
                   {b.customerNote && (
-                    <div className="text-[11px] text-[#8E8E93] leading-[14px] mt-1 line-clamp-2 whitespace-pre-line font-normal">
-                      {b.customerNote}
+                    <div className="text-[10.5px] text-neutral-400 leading-tight mt-1 line-clamp-1 italic font-normal">
+                      &ldquo;{b.customerNote}&rdquo;
                     </div>
                   )}
                 </div>
 
-                {/* 4.4 Right Column */}
-                <div className="w-[122px] flex-shrink-0 border-l border-[#FF3B30]/35 pl-2 flex flex-col justify-start text-left">
-                  <span className="text-[#FF3B30] text-[13px] font-bold tabular-nums leading-tight">
+                {/* 3.4 Right Column: Appointment Time & Status Pill */}
+                <div className="w-[105px] flex-shrink-0 border-l border-neutral-800/80 pl-2 flex flex-col justify-start text-left">
+                  <span className="text-amber-400 text-[13.5px] font-black tabular-nums leading-tight">
                     {b.time12h || b.timeSlot}
                   </span>
                   <span
-                    className="text-[#FF3B30] text-[11px] font-medium truncate leading-tight mt-0.5"
+                    className="text-neutral-300 text-[11px] font-semibold truncate leading-tight mt-0.5"
                     title={b.serviceName}
                   >
                     {b.serviceName?.toLowerCase().includes('any') ? 'Chưa chọn mẫu mi' : b.serviceName}
                   </span>
-                  <span className="text-[#1C1C1E] text-[10px] font-bold leading-tight mt-1 truncate">
+                  <span className="text-neutral-400 text-[10px] font-medium leading-tight mt-1 truncate">
                     Mi: {b.assignedStaffName || 'Thảo Ly'}
                   </span>
-                  <span className="text-emerald-700 text-[10px] font-semibold truncate leading-tight mt-0.5">
-                    {b.checkOutStaffName
-                      ? `Out: ${b.checkOutStaffName}`
-                      : b.checkInStaffName
-                        ? `In: ${b.checkInStaffName}`
-                        : 'Chờ Check-in'}
-                  </span>
+
+                  <div className="mt-1">
+                    {b.status === 'DONE' ? (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400 text-[9.5px] font-bold">
+                        Đã xong
+                      </span>
+                    ) : b.status === 'SERVICING' ? (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9.5px] font-bold">
+                        Đang làm
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/30 text-[9.5px] font-bold">
+                        Chờ Check-in
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

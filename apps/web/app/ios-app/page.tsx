@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { canAccessIosConsultationApp, isCvRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
+import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
@@ -29,6 +30,7 @@ import { ScreenSettingsRoleSwitch } from './components/screens/ScreenSettingsRol
 
 function IosAppInner() {
   const [authorized, setAuthorized] = useState<boolean>(false);
+  const [isProfileSheetOpen, setIsProfileSheetOpen] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const stepStr = searchParams.get('step');
   const roleParam = searchParams.get('role')?.toUpperCase() as IosUserRole | undefined;
@@ -143,6 +145,7 @@ function IosAppInner() {
               state.setActiveBookingId(id);
               state.setCurrentStep(2);
             }}
+            onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
           />
         );
       case 2:
@@ -256,17 +259,19 @@ function IosAppInner() {
               state.setActiveBookingId(id);
               state.setCurrentStep(2);
             }}
+            onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
           />
         );
     }
   };
 
-  const showTabBar = !state.isSettingsOpen && ![10, 13, 14].includes(state.currentStep);
+  const showTabBar =
+    !state.isSettingsOpen && (state.activeTab === 'paystub' || state.currentStep === 1 || state.currentStep === 6);
 
   const handleTabChange = (tab: string) => {
     state.setActiveTab(tab);
     if (tab === 'more') {
-      state.setIsSettingsOpen(true);
+      setIsProfileSheetOpen(true);
       return;
     }
 
@@ -280,11 +285,8 @@ function IosAppInner() {
   };
 
   return (
-    <div className="w-full min-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-x-hidden">
-      <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col bg-black relative">
-        {/* Global Quick-Switch Header Bar for CV🪶, 🪶CV🪶 & CC */}
-        <HeaderRoleQuickSwitch variant="standalone-bar" userRole={state.role} />
-
+    <div className="w-full h-[100dvh] max-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-hidden">
+      <div className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col bg-black relative overflow-hidden">
         {/* Screen Body */}
         <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-black">{renderActiveScreen()}</div>
 
@@ -306,6 +308,29 @@ function IosAppInner() {
             }}
           />
         )}
+
+        {/* iOS Native Profile & Admin Switch Action Sheet */}
+        <IosProfileMenuSheet
+          isOpen={isProfileSheetOpen}
+          onClose={() => setIsProfileSheetOpen(false)}
+          actor={state.actor}
+          role={state.role}
+          canSwitchRole={state.canSwitchRole}
+          onRoleChange={(r) => {
+            state.setRole(r);
+            setIsProfileSheetOpen(false);
+          }}
+          onOpenPaystub={() => {
+            state.setActiveTab('paystub');
+            setIsProfileSheetOpen(false);
+          }}
+          onOpenChat={() => {
+            setIsProfileSheetOpen(false);
+          }}
+          onOpenCareer={() => {
+            setIsProfileSheetOpen(false);
+          }}
+        />
       </div>
     </div>
   );
