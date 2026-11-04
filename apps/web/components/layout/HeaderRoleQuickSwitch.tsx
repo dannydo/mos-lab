@@ -77,8 +77,27 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
   onOpenChat,
   variant = 'header-icon',
 }) => {
-  const pathname = usePathname() || '';
-  const router = useRouter();
+  let pathname = '';
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    pathname = usePathname() || '';
+  } catch {
+    pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  }
+  let router: ReturnType<typeof useRouter> | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    router = useRouter();
+  } catch {
+    router = null;
+  }
+  const navigateTo = (href: string) => {
+    if (router) {
+      router.push(href);
+    } else if (typeof window !== 'undefined') {
+      window.location.assign(href);
+    }
+  };
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const responsiveTier = useResponsiveTier();
@@ -251,7 +270,7 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
       onOpenChat();
       return;
     }
-    router.push(item.href);
+    navigateTo(item.href);
   };
 
   // 1. 'header-icon': Dedicated Consultation Icon on the top Header bar for CV🪶, 🪶CV🪶, CC, and Admin/Manager
@@ -270,7 +289,7 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
             icon={Sparkles}
             tone="accent"
             showTooltip={!isMobileTier}
-            onClick={() => router.push(`/ios-app?role=${consultRoleParam}`)}
+            onClick={() => navigateTo(`/ios-app?role=${consultRoleParam}`)}
           />
         )}
 
