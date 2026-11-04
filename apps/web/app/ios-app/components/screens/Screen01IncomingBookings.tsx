@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
-import { Camera, RefreshCw } from 'lucide-react';
+import { Camera, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SegmentCounts {
   incoming: number;
@@ -44,12 +44,42 @@ export function Screen01IncomingBookings({
   actor,
   onOpenProfileMenu,
 }: Screen01IncomingBookingsProps) {
-  const filteredBookings = bookings.filter((b) => {
-    if (bookingSegment === 'INCOMING') return b.status === 'INCOMING' || b.status === 'CHECKED_IN';
-    if (bookingSegment === 'SERVICING') return b.status === 'SERVICING';
-    if (bookingSegment === 'DONE') return b.status === 'DONE';
-    return b.status === 'CANCELLED';
-  });
+  // 1. Quản lý ngày xem lịch hẹn (Hôm qua < Hôm nay > Ngày mai)
+  const [dateOffset, setDateOffset] = useState<number>(0);
+
+  const targetDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + dateOffset);
+    return d;
+  }, [dateOffset]);
+
+  const dateLabel = useMemo(() => {
+    if (dateOffset === 0) return 'Hôm nay';
+    if (dateOffset === -1) return 'Hôm qua';
+    if (dateOffset === 1) return 'Ngày mai';
+    const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    return dayNames[targetDate.getDay()];
+  }, [dateOffset, targetDate]);
+
+  const subDateLabel = useMemo(() => {
+    const dd = String(targetDate.getDate()).padStart(2, '0');
+    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}`;
+  }, [targetDate]);
+
+  const filteredBookings = useMemo(() => {
+    // Nếu chuyển sang ngày khác mà chưa có dữ liệu lịch hẹn mock cho ngày đó
+    if (dateOffset !== 0) {
+      return [];
+    }
+
+    return bookings.filter((b) => {
+      if (bookingSegment === 'INCOMING') return b.status === 'INCOMING' || b.status === 'CHECKED_IN';
+      if (bookingSegment === 'SERVICING') return b.status === 'SERVICING';
+      if (bookingSegment === 'DONE') return b.status === 'DONE';
+      return b.status === 'CANCELLED';
+    });
+  }, [bookings, bookingSegment, dateOffset]);
 
   const actorName = actor?.name || 'Thảo Ly';
   const isCvll = role === 'CVLL';
@@ -57,22 +87,50 @@ export function Screen01IncomingBookings({
   return (
     <div className="flex-1 flex flex-col bg-black text-white overflow-hidden select-none">
       {/* 1. Single Native iOS Navigation Bar (Clean 1-row layout) */}
-      <div className="h-12 px-3.5 bg-black border-b border-neutral-900 flex items-center justify-between z-10 flex-shrink-0">
-        {/* Left: Branch & Live Refresh Pill */}
+      <div className="h-12 px-3 bg-black border-b border-neutral-900 flex items-center justify-between z-10 flex-shrink-0">
+        {/* Left: Tên chi nhánh viết tắt siêu gọn "ĐT" + Live Refresh Indicator */}
         <button
           onClick={onRefreshDb}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 text-neutral-300 hover:text-white active:scale-95 transition-all cursor-pointer"
-          title="Làm mới dữ liệu từ máy chủ"
+          className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 text-neutral-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+          title="Làm mới dữ liệu từ máy chủ (Chi nhánh Đề Thám · ĐT)"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11.5px] font-bold text-neutral-200">Đề Thám</span>
+          <span className="text-[11.5px] font-black text-neutral-200 tracking-wider">ĐT</span>
           <RefreshCw className={`w-3 h-3 text-neutral-400 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
         </button>
 
-        {/* Center: Clean Title */}
-        <div className="flex flex-col items-center">
-          <span className="text-[13px] font-black tracking-tight text-white">Lịch Hẹn Hôm Nay</span>
-          <span className="text-[10px] text-neutral-400 tabular-nums">Hôm nay · Đang nhận khách</span>
+        {/* Center: Chuyển ngày < Hôm nay > mượt mà */}
+        <div className="flex items-center gap-0.5 bg-[#1C1C1E] px-1 py-0.5 rounded-full border border-neutral-800 shadow-inner">
+          <button
+            onClick={() => setDateOffset((prev) => prev - 1)}
+            className="w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
+            title="Xem ngày trước"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+          </button>
+
+          <button
+            onClick={() => setDateOffset(0)}
+            className="px-2 py-0.5 flex items-center gap-1.5 cursor-pointer active:opacity-75"
+            title={dateOffset !== 0 ? 'Bấm để về lại Hôm nay' : undefined}
+          >
+            <span
+              className={`text-[12px] font-black leading-tight ${
+                dateOffset === 0 ? 'text-amber-400' : 'text-neutral-200'
+              }`}
+            >
+              {dateLabel}
+            </span>
+            <span className="text-[10px] text-neutral-400 font-semibold tabular-nums leading-none">{subDateLabel}</span>
+          </button>
+
+          <button
+            onClick={() => setDateOffset((prev) => prev + 1)}
+            className="w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
+            title="Xem ngày kế tiếp"
+          >
+            <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
+          </button>
         </div>
 
         {/* Right: Quick Profile Trigger (Tapping opens iOS Action Sheet) */}
@@ -95,7 +153,7 @@ export function Screen01IncomingBookings({
         </button>
       </div>
 
-      {/* 2. Native iOS Dark Segmented Control (Minimalist, zero clutter) */}
+      {/* 2. Native iOS Dark Segmented Control */}
       <div className="px-3 pt-2.5 pb-2 flex-shrink-0 bg-black">
         <div className="bg-[#1C1C1E] p-1 rounded-2xl border border-neutral-800/90 grid grid-cols-3 gap-1 shadow-inner">
           <button
@@ -154,14 +212,28 @@ export function Screen01IncomingBookings({
         </div>
       </div>
 
-      {/* 3. Customer Booking Cards (Inset Grouped iOS Dark style) */}
+      {/* 3. Customer Booking Cards (Số thứ tự đặt góc Avatar, không tốn diện tích card!) */}
       <div className="flex-1 bg-black overflow-y-auto px-3 py-1 space-y-2.5 pb-20">
         {filteredBookings.length === 0 ? (
-          <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-2">
-            <div className="w-10 h-10 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-neutral-400">
-              ✓
+          <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-3">
+            <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-amber-400 text-base font-bold">
+              🗓️
             </div>
-            <p>{isRefreshing ? 'Đang đồng bộ dữ liệu từ hệ thống...' : 'Hiện tại chưa có khách trong mục này.'}</p>
+            <p className="text-neutral-400 font-medium">
+              {dateOffset !== 0
+                ? `Chưa có lịch hẹn nào cho ngày ${subDateLabel} (${dateLabel}).`
+                : isRefreshing
+                  ? 'Đang đồng bộ dữ liệu từ hệ thống...'
+                  : 'Hiện tại chưa có khách trong mục này.'}
+            </p>
+            {dateOffset !== 0 && (
+              <button
+                onClick={() => setDateOffset(0)}
+                className="px-3.5 py-1.5 rounded-full bg-amber-400 text-black font-extrabold text-[11px] shadow-sm active:scale-95 transition-transform cursor-pointer"
+              >
+                Về lại Hôm nay
+              </button>
+            )}
           </div>
         ) : (
           filteredBookings.map((b, idx) => {
@@ -184,15 +256,15 @@ export function Screen01IncomingBookings({
               <div
                 key={b.id}
                 onClick={() => onSelectBooking(b.id)}
-                className="bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 rounded-2xl p-3 flex items-start gap-2.5 transition-all cursor-pointer shadow-xs select-none hover:border-neutral-700"
+                className="bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 rounded-2xl p-3 flex items-start gap-3 transition-all cursor-pointer shadow-xs select-none hover:border-neutral-700"
               >
-                {/* 3.1 Numeric Index */}
-                <span className="text-neutral-600 text-[13px] font-black w-3.5 pt-2 text-center flex-shrink-0 tabular-nums">
-                  {idx + 1}
-                </span>
-
-                {/* 3.2 Avatar with Ring & Camera Icon */}
+                {/* 3.1 Avatar with Number Badge directly attached to top-left (Zero card horizontal space lost!) */}
                 <div className="relative w-12 h-12 flex-shrink-0">
+                  {/* Badge số thứ tự 1, 2, 3... gắn ở góc trên bên trái của Avatar */}
+                  <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#2C2C2E] border border-neutral-700 text-[9.5px] font-black text-amber-400 flex items-center justify-center tabular-nums shadow-sm leading-none z-10">
+                    {idx + 1}
+                  </span>
+
                   <div
                     className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 shadow-sm ${avatarRingClass}`}
                   >
@@ -210,12 +282,13 @@ export function Screen01IncomingBookings({
                     )}
                   </div>
 
+                  {/* Icon Camera chụp ảnh gắn góc dưới bên phải */}
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border border-neutral-800 bg-[#2C2C2E] flex items-center justify-center shadow-xs">
                     <Camera className="w-2.5 h-2.5 text-neutral-300" />
                   </div>
                 </div>
 
-                {/* 3.3 Middle: Customer Identity & Compact Icon Badges */}
+                {/* 3.2 Middle: Customer Identity & Compact Icon Badges (Full Width!) */}
                 <div className="flex-1 min-w-0 pr-1 flex flex-col justify-start">
                   <div className="flex items-center gap-1">
                     <span className="text-[12px] flex-shrink-0 select-none">{b.customerTypeIcon || '🌟'}</span>
@@ -261,7 +334,7 @@ export function Screen01IncomingBookings({
                   )}
                 </div>
 
-                {/* 3.4 Right Column: Appointment Time & Status Pill */}
+                {/* 3.3 Right Column: Appointment Time & Status Pill */}
                 <div className="w-[105px] flex-shrink-0 border-l border-neutral-800/80 pl-2 flex flex-col justify-start text-left">
                   <span className="text-amber-400 text-[13.5px] font-black tabular-nums leading-tight">
                     {b.time12h || b.timeSlot}
