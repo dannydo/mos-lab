@@ -143,8 +143,8 @@ export function Screen10CustomerSurvey({
             </div>
           </div>
 
-          {/* GƯƠNG SOI FORM MI CHO KHÁCH (Before & After Mirror Showcase) */}
-          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-2.5">
+          {/* GƯƠNG SOI FORM MI CHO KHÁCH (Before & After Mirror Showcase: 2 Hàng Dọc Trên/Dưới) */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-[#FFB400]" />
@@ -157,70 +157,97 @@ export function Screen10CustomerSurvey({
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Cột 1: Trước (Mắt mộc) */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isDisplayablePhoto(beforePhotoUrl)) {
-                    setZoomPhoto({ url: beforePhotoUrl!, title: 'Ảnh 1: Mắt Mộc Ban Đầu (Before)' });
-                  }
-                }}
-                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#1C1C1E] border border-neutral-700 shadow-inner group cursor-pointer text-left p-0"
-              >
-                {isDisplayablePhoto(beforePhotoUrl) ? (
-                  <>
-                    <img
-                      src={beforePhotoUrl!}
-                      alt="Before"
-                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-xs pointer-events-none">
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-2 text-center text-[11px]">
-                    Chưa có ảnh Before
+            {/* 2 HÀNG DỌC: TRÊN (BEFORE) - DƯỚI (AFTER) THEO YÊU CẦU */}
+            <div className="space-y-3">
+              {/* HÀNG 1: TRƯỚC KHI NỐI (MẮT MỘC) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-[10px] font-black">
+                      1
+                    </span>
+                    <span className="text-[12px] font-black text-black">1. ẢNH TRƯỚC KHI NỐI · MẮT MỘC</span>
                   </div>
-                )}
-                <span className="absolute bottom-2 left-2 bg-black/85 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded shadow-sm border border-amber-500/30 pointer-events-none">
-                  1. Trước khi nối
-                </span>
-              </button>
+                  <span className="text-[9.5px] font-bold text-gray-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                    Mắt mộc ban đầu
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isDisplayablePhoto(beforePhotoUrl)) {
+                      setZoomPhoto({ url: beforePhotoUrl!, title: 'Ảnh 1: Mắt Mộc Ban Đầu (Before)' });
+                    }
+                  }}
+                  className="w-full relative aspect-[4/3] rounded-xl overflow-hidden bg-[#1C1C1E] border border-neutral-700 shadow-inner group cursor-pointer text-left p-0 block"
+                >
+                  {isDisplayablePhoto(beforePhotoUrl) ? (
+                    <>
+                      <img
+                        src={beforePhotoUrl!}
+                        alt="Before"
+                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-102"
+                      />
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
+                      <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-xs pointer-events-none shadow-sm">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-4 text-center text-[12px]">
+                      Chưa có ảnh Before
+                    </div>
+                  )}
+                  <span className="absolute bottom-2.5 left-2.5 bg-black/85 text-amber-400 text-[10px] font-black px-2.5 py-0.8 rounded shadow-sm border border-amber-500/30 pointer-events-none">
+                    Mắt Mộc Trước Nối
+                  </span>
+                </button>
+              </div>
 
-              {/* Cột 2: Sau (Hoàn thiện) */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isDisplayablePhoto(afterPhotoUrl)) {
-                    setZoomPhoto({ url: afterPhotoUrl!, title: 'Ảnh 2: Mi Hoàn Thiện Sau Nối (After)' });
-                  }
-                }}
-                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#1C1C1E] border-2 border-[#22C55E] shadow-md group cursor-pointer text-left p-0"
-              >
-                {isDisplayablePhoto(afterPhotoUrl) ? (
-                  <>
-                    <img
-                      src={afterPhotoUrl!}
-                      alt="After"
-                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-600/90 flex items-center justify-center text-white shadow-xs pointer-events-none">
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-2 text-center text-[11px]">
-                    Chờ chụp ảnh After
+              {/* HÀNG 2: SAU HOÀN THIỆN ✨ */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                      2
+                    </span>
+                    <span className="text-[12px] font-black text-emerald-800">2. ẢNH SAU HOÀN THIỆN · ĐẠT CHUẨN</span>
                   </div>
-                )}
-                <span className="absolute bottom-2 left-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm pointer-events-none">
-                  2. Sau hoàn thiện ✨
-                </span>
-              </button>
+                  <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                    Form mi mới của Chị ✨
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isDisplayablePhoto(afterPhotoUrl)) {
+                      setZoomPhoto({ url: afterPhotoUrl!, title: 'Ảnh 2: Mi Hoàn Thiện Sau Nối (After)' });
+                    }
+                  }}
+                  className="w-full relative aspect-[4/3] rounded-xl overflow-hidden bg-[#1C1C1E] border-2 border-[#22C55E] shadow-md group cursor-pointer text-left p-0 block"
+                >
+                  {isDisplayablePhoto(afterPhotoUrl) ? (
+                    <>
+                      <img
+                        src={afterPhotoUrl!}
+                        alt="After"
+                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-102"
+                      />
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
+                      <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm pointer-events-none">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-4 text-center text-[12px]">
+                      Chờ chụp ảnh After
+                    </div>
+                  )}
+                  <span className="absolute bottom-2.5 left-2.5 bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.8 rounded shadow-sm pointer-events-none">
+                    Sau Hoàn Thiện ✨
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div className="text-center text-[11px] text-gray-500 font-medium flex items-center justify-center gap-1.5 pt-0.5">
