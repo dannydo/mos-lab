@@ -511,7 +511,7 @@ export async function GET(request: NextRequest) {
               }
             } else if (t === 'OrderServiceAttributeDesign' && k) {
               if (k === 'doll') current.style = 'Doll';
-              else if (k === 'wing') current.style = 'Cat Eye';
+              else if (k === 'wing') current.style = 'Wing';
               else if (k === 'kim-k') current.style = 'Katun';
               else if (k === 'natural') current.style = 'Natural';
             } else if (t === 'OrderServiceAttributeColor' && k) {

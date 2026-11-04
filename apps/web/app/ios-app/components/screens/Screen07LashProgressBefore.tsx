@@ -93,8 +93,9 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
           <span>1. Ảnh Before Mắt Mộc ✓</span>
           <span className="text-[11px] font-mono">Bắt buộc</span>
         </div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Bấm Giờ Phục Vụ</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">3. Ảnh After Hoàn Thiện</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh Nhắm</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Bấm Giờ Phục Vụ</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">4. Ảnh After Hoàn Thiện</div>
       </div>
 
       <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
@@ -178,7 +179,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
             onClick={handleSave}
             className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight flex items-center justify-center gap-2"
           >
-            <span>LƯU ẢNH BEFORE & BẮT ĐẦU BẤM GIỜ</span>
+            <span>LƯU ẢNH BEFORE & TIẾP TỤC</span>
           </button>
         </div>
       </div>

@@ -35,64 +35,93 @@ async function main() {
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen06-nobed.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen06-task.png',
   });
-  console.log('Screen 06 nobed screenshot saved: ios-screen06-nobed.png');
+  console.log('Screen 06 screenshot saved: ios-screen06-task.png');
 
-  // 2. Click "MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM" to reach Screen 07
-  console.log('Navigating to Screen 07 (Before Photo)...');
+  // 2. Click "MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM" to reach Screen 07 (Photo 1: Before)
+  console.log('Navigating to Screen 07 (Photo 1: Before Photo)...');
   const startQuestBtn = page.locator('button:has-text("MỞ TIẾN TRÌNH")').first();
   await startQuestBtn.click();
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen07-camera-upload.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen07-photo1-before.png',
   });
-  console.log('Screen 07 camera/upload screenshot saved: ios-screen07-camera-upload.png');
+  console.log('Screen 07 Photo 1 screenshot saved: ios-screen07-photo1-before.png');
 
-  // 3. Click "LƯU ẢNH BEFORE & BẮT ĐẦU BẤM GIỜ" to reach Screen 08 (Timer Countdown)
-  console.log('Navigating to Screen 08 (Timer Countdown)...');
-  const saveBeforeBtn = page.locator('button:has-text("BẮT ĐẦU BẤM GIỜ")').first();
+  // 3. Click "LƯU ẢNH BEFORE & TIẾP TỤC" to reach Screen 08 (Photo 2: Cleaned)
+  console.log('Navigating to Screen 08 (Photo 2: Cleaned Photo)...');
+  const saveBeforeBtn = page.locator('button:has-text("LƯU ẢNH BEFORE")').first();
   await saveBeforeBtn.click();
+  await page.waitForTimeout(1000);
+
+  await page.screenshot({
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen08-photo2-cleaned.png',
+  });
+  console.log('Screen 08 Photo 2 Cleaned screenshot saved: ios-screen08-photo2-cleaned.png');
+
+  // 4. Click "LƯU ẢNH VỆ SINH & VÀO TIẾN ĐỘ" to reach Screen 09 (Timer Progress)
+  console.log('Navigating to Screen 09 (Timer Progress)...');
+  const saveCleanedBtn = page.locator('button:has-text("LƯU ẢNH VỆ SINH")').first();
+  await saveCleanedBtn.click();
   await page.waitForTimeout(1500);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen08-nobed.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen09-timer.png',
   });
-  console.log('Screen 08 nobed screenshot saved: ios-screen08-nobed.png');
+  console.log('Screen 09 Timer screenshot saved: ios-screen09-timer.png');
 
-  // 4. Click "HOÀN TẤT NỐI MI & CHỤP AFTER" to reach Screen 09
-  console.log('Navigating to Screen 09 (After Photo & Speed Audit)...');
+  // 5. Click "HOÀN TẤT NỐI MI & CHỤP AFTER" to reach Screen 10 (Photo 3: After)
+  console.log('Navigating to Screen 10 (Photo 3: After & 3-Photo Comparison)...');
   const finishTimerBtn = page.locator('button:has-text("HOÀN TẤT NỐI MI")').first();
   await finishTimerBtn.click();
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen09-camera-upload.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen10-photo3-after.png',
   });
-  console.log('Screen 09 camera/upload screenshot saved: ios-screen09-camera-upload.png');
+  console.log('Screen 10 Photo 3 After screenshot saved: ios-screen10-photo3-after.png');
 
-  // 5. Click "CHUYỂN MÁY CHO KHÁCH KHẢO SÁT CẢM XÚC" to reach Screen 10 (Survey)
-  console.log('Navigating to Screen 10 (Customer Survey)...');
+  // 6. Click "CHUYỂN MÁY CHO KHÁCH KHẢO SÁT CẢM XÚC" to reach Screen 11 (Survey)
+  console.log('Navigating to Screen 11 (Customer Survey)...');
   const goToSurveyBtn = page.locator('button:has-text("CHUYỂN MÁY CHO KHÁCH KHẢO SÁT")').first();
   await goToSurveyBtn.click();
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen10-survey-back.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen11-survey.png',
   });
-  console.log('Screen 10 survey screenshot saved: ios-screen10-survey-back.png');
+  console.log('Screen 11 survey screenshot saved: ios-screen11-survey.png');
 
-  // 6. Test clicking back from Screen 10 to Screen 09
-  console.log('Testing back navigation from Screen 10...');
-  const backBtn = page.locator('header button:has-text("Ảnh After")').first();
-  await backBtn.click();
-  await page.waitForTimeout(1000);
+  // 7. Test clicking back from Screen 11 to Screen 10
+  console.log('Testing back navigation from Screen 11 to Screen 10...');
+  const backToAfterBtn = page.locator('header button:has-text("Ảnh After")').first();
+  await backToAfterBtn.click();
+  await page.waitForTimeout(800);
+
+  // 8. Test clicking back from Screen 10 to Screen 09
+  console.log('Testing back navigation from Screen 10 to Screen 09 (Timer)...');
+  const backToTimerBtn = page.locator('header button:has-text("Bấm Giờ")').first();
+  await backToTimerBtn.click();
+  await page.waitForTimeout(800);
+
+  // 9. Test clicking back from Screen 09 to Screen 08 (Cleaned)
+  console.log('Testing back navigation from Screen 09 to Screen 08 (Cleaned)...');
+  const backToCleanedBtn = page.locator('header button:has-text("Ảnh Vệ Sinh")').first();
+  await backToCleanedBtn.click();
+  await page.waitForTimeout(800);
+
+  // 10. Test clicking back from Screen 08 to Screen 07 (Before)
+  console.log('Testing back navigation from Screen 08 to Screen 07 (Before)...');
+  const backToBeforeBtn = page.locator('header button:has-text("Ảnh Before")').first();
+  await backToBeforeBtn.click();
+  await page.waitForTimeout(800);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen09-after-back-verified.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-back-to-screen07-verified.png',
   });
-  console.log('Screen 09 verified after back navigation!');
+  console.log('Full bidirectional back navigation verified!');
 
   await browser.close();
 }

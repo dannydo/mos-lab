@@ -1531,13 +1531,13 @@ export function resolveDisplayServiceName(booking?: {
  * 5. Điểm Thiết kế Dáng mi (OrderServiceAttributeDesign) chuẩn Báo cáo CV Xoay (staff_bonus_rule):
  * - Natural (id=49): 0 pts
  * - Kim-K / Katun / Thiết kế (id=101): +5 pts
- * - Wing / Cat Eye (id=50): +6 pts
+ * - Wing (id=50): +6 pts
  * - Doll (id=102): +7 pts
  */
 export function getLashDesignPoints(designId?: string): number {
   const d = String(designId || '').toLowerCase();
   if (d.includes('doll') || d.includes('búp bê')) return 7; // Doll (id=102): +7 pts
-  if (d.includes('wing') || d.includes('cat') || d.includes('mèo') || d.includes('sexy')) return 6; // Wing (id=50): +6 pts
+  if (d.includes('wing')) return 6; // Wing (id=50): +6 pts
   if (
     d.includes('kim') ||
     d.includes('katun') ||

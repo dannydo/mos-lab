@@ -264,6 +264,7 @@ export interface BookingItem {
   };
   progress?: {
     beforePhotoUrl?: string;
+    cleanedPhotoUrl?: string;
     afterPhotoUrl?: string;
     elapsedSeconds: number;
     timerRunning: boolean;

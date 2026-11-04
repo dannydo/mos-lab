@@ -15,6 +15,7 @@ import { Screen04StaffQueueAssign } from './components/screens/Screen04StaffQueu
 import { Screen05ServicingTransfer } from './components/screens/Screen05ServicingTransfer';
 import { Screen06CvDashboardReceive } from './components/screens/Screen06CvDashboardReceive';
 import { Screen07LashProgressBefore } from './components/screens/Screen07LashProgressBefore';
+import { Screen07bLashProgressCleaned } from './components/screens/Screen07bLashProgressCleaned';
 import { Screen08LashProgressTimer } from './components/screens/Screen08LashProgressTimer';
 import { Screen09LashProgressAfter } from './components/screens/Screen09LashProgressAfter';
 import { Screen10CustomerSurvey } from './components/screens/Screen10CustomerSurvey';
@@ -194,59 +195,67 @@ function IosAppInner() {
         );
       case 8:
         return (
-          <Screen08LashProgressTimer
+          <Screen07bLashProgressCleaned
             booking={state.activeBooking}
             onBack={() => state.setCurrentStep(7)}
-            onFinishTimer={state.handleFinishTimer}
-            onEditService={() => state.handleOpenConsultation(8)}
+            onSavePhoto={state.handleSaveCleanedPhoto}
           />
         );
       case 9:
         return (
-          <Screen09LashProgressAfter
+          <Screen08LashProgressTimer
             booking={state.activeBooking}
             onBack={() => state.setCurrentStep(8)}
-            onSavePhoto={state.handleSaveAfterPhoto}
+            onFinishTimer={state.handleFinishTimer}
+            onEditService={() => state.handleOpenConsultation(9)}
           />
         );
       case 10:
         return (
-          <Screen10CustomerSurvey
-            customerName={state.activeBooking.customerName}
-            staffName={state.activeBooking.assignedStaffName}
+          <Screen09LashProgressAfter
+            booking={state.activeBooking}
             onBack={() => state.setCurrentStep(9)}
-            onComplete={state.handleCompleteSurvey}
+            onSavePhoto={state.handleSaveAfterPhoto}
           />
         );
       case 11:
         return (
-          <Screen11ProductUpsell
-            booking={state.activeBooking}
-            actor={state.actor}
+          <Screen10CustomerSurvey
+            customerName={state.activeBooking.customerName}
+            staffName={state.activeBooking.assignedStaffName}
             onBack={() => state.setCurrentStep(10)}
-            onGoToBilling={state.handleGoToBilling}
+            onComplete={state.handleCompleteSurvey}
           />
         );
       case 12:
         return (
-          <Screen12CheckoutBilling
+          <Screen11ProductUpsell
             booking={state.activeBooking}
             actor={state.actor}
             onBack={() => state.setCurrentStep(11)}
-            onChoosePayment={state.handleChoosePaymentMethod}
-            onEditService={() => state.handleOpenConsultation(12)}
+            onGoToBilling={state.handleGoToBilling}
           />
         );
       case 13:
         return (
-          <Screen13CheckoutTip
+          <Screen12CheckoutBilling
             booking={state.activeBooking}
             actor={state.actor}
             onBack={() => state.setCurrentStep(12)}
-            onRecordTip={state.handleRecordTip}
+            onChoosePayment={state.handleChoosePaymentMethod}
+            onEditService={() => state.handleOpenConsultation(13)}
           />
         );
       case 14:
+        return (
+          <Screen13CheckoutTip
+            booking={state.activeBooking}
+            actor={state.actor}
+            onBack={() => state.setCurrentStep(13)}
+            onRecordTip={state.handleRecordTip}
+          />
+        );
+      case 15:
         return <Screen14ThermalReceiptDone booking={state.activeBooking} onFinishOrder={state.handleFinishOrder} />;
       default:
         return (

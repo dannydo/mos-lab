@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
@@ -27,6 +28,8 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
 
   const beforePhotoUrl =
     cachedSnapshot?.beforePhotoUrl || booking.progress?.beforePhotoUrl || '/assets/lash_before.jpg';
+  const cleanedPhotoUrl =
+    cachedSnapshot?.cleanedPhotoUrl || booking.progress?.cleanedPhotoUrl || '/assets/lash_cleaned.jpg';
 
   const [afterPhotoPreview, setAfterPhotoPreview] = useState<string | null>(() => {
     return cachedSnapshot?.afterPhotoUrl || booking.progress?.afterPhotoUrl || null;
@@ -64,7 +67,11 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
       return {
         rating: 'XUẤT SẮC (FAST)',
         title: `Nhanh hơn cam kết ${Math.abs(diffMinutes)} phút`,
-        impact: '+5 Điểm Thăng Cấp (Đạt chuẩn CV🪶)',
+        impact: (
+          <span>
+            +5 Điểm Thăng Cấp (Đạt chuẩn <CvFeather2Badge />)
+          </span>
+        ),
         color: 'text-emerald-700',
         badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
       };
@@ -73,7 +80,7 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
       return {
         rating: 'CHUẨN TIẾN ĐỘ (NORMAL)',
         title: 'Đúng khung giờ tư vấn',
-        impact: 'Duy trì chuẩn kỹ năng tay nghề',
+        impact: <span>Duy trì chuẩn kỹ năng tay nghề</span>,
         color: 'text-blue-700',
         badgeBg: 'bg-blue-100 text-blue-800 border-blue-300',
       };
@@ -81,7 +88,11 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     return {
       rating: 'CHẬM TIẾN ĐỘ (SLOW)',
       title: `Trễ hơn cam kết +${diffMinutes} phút`,
-      impact: 'Cần nâng cao tốc độ để xét thăng cấp 🪶CV🪶',
+      impact: (
+        <span>
+          Cần nâng cao tốc độ để xét thăng cấp <CvFeather2Badge />
+        </span>
+      ),
       color: 'text-amber-700',
       badgeBg: 'bg-amber-100 text-amber-800 border-amber-300',
     };
@@ -140,53 +151,76 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
       {/* Steps subheader on black */}
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Bấm Giờ ({actualMinutes}p)</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Bấm Giờ ({actualMinutes}p)</div>
         <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 pb-1.5 flex items-center justify-between">
-          <span>3. Ảnh After Hoàn Thiện ✓</span>
+          <span>4. Ảnh After Hoàn Thiện ✓</span>
           <span className="text-[11px] font-mono">Đạt tiêu chuẩn</span>
         </div>
       </div>
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
-        {/* Section 1: Comparison with Real Photo Previews */}
+        {/* Section 1: Comparison with Real 3-Photo Previews (Chuẩn 3 tấm theo iOS gốc) */}
         <div>
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 mb-2">
-            SO SÁNH ĐỐI CHIẾU BEFORE / AFTER
+            ĐỐI CHIẾU TIẾN TRÌNH 3 BƯỚC (BEFORE / VỆ SINH / AFTER)
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Before Box */}
-            <div className="bg-white rounded-2xl p-2.5 shadow-sm border border-neutral-100 flex flex-col items-center">
-              <div className="w-full aspect-[4/5] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800">
-                {beforePhotoUrl ? (
+          <div className="grid grid-cols-3 gap-2">
+            {/* 1. Before Box */}
+            <div className="bg-white rounded-2xl p-2 shadow-sm border border-neutral-100 flex flex-col items-center">
+              <div className="w-full aspect-[3/4] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800">
+                {beforePhotoUrl && (beforePhotoUrl.startsWith('data:') || beforePhotoUrl.startsWith('http')) ? (
                   <img src={beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="p-3 text-center">
-                    <div className="w-8 h-8 rounded-full bg-[#FFB400] mb-1.5 flex items-center justify-center text-black font-black text-xs shadow-xs mx-auto">
-                      ●
+                  <div className="p-2 text-center flex flex-col items-center justify-center">
+                    <div className="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 mb-1 flex items-center justify-center text-xs font-black">
+                      1
                     </div>
-                    <span className="text-white font-medium text-[11px] leading-tight">Mắt Mộc</span>
+                    <span className="text-white font-medium text-[10px] leading-tight">Mắt Mộc</span>
                   </div>
                 )}
               </div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider mt-2">BEFORE</span>
+              <span className="text-[9.5px] font-black text-gray-400 uppercase tracking-wider mt-1.5 text-center">
+                1. BEFORE
+              </span>
             </div>
 
-            {/* After Box */}
-            <div className="bg-white rounded-2xl p-2.5 shadow-sm border-2 border-[#22C55E] flex flex-col items-center">
-              <div className="w-full aspect-[4/5] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30">
-                {afterPhotoPreview ? (
-                  <img src={afterPhotoPreview} alt="After" className="w-full h-full object-cover" />
+            {/* 2. Cleaned Box */}
+            <div className="bg-white rounded-2xl p-2 shadow-sm border border-neutral-100 flex flex-col items-center">
+              <div className="w-full aspect-[3/4] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800">
+                {cleanedPhotoUrl && (cleanedPhotoUrl.startsWith('data:') || cleanedPhotoUrl.startsWith('http')) ? (
+                  <img src={cleanedPhotoUrl} alt="Cleaned" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="p-3 text-center">
-                    <div className="w-8 h-8 rounded-full bg-[#22C55E] mb-1.5 flex items-center justify-center text-white font-black text-xs shadow-xs mx-auto">
-                      ✓
+                  <div className="p-2 text-center flex flex-col items-center justify-center">
+                    <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 mb-1 flex items-center justify-center text-xs font-black">
+                      2
                     </div>
-                    <span className="text-[#22C55E] font-bold text-[11.5px] leading-tight">{displayServiceName}</span>
+                    <span className="text-white font-medium text-[10px] leading-tight">Vệ Sinh</span>
                   </div>
                 )}
               </div>
-              <span className="text-[11px] font-black text-[#22C55E] uppercase tracking-wider mt-2">
-                AFTER (ĐẠT CHUẨN)
+              <span className="text-[9.5px] font-black text-gray-400 uppercase tracking-wider mt-1.5 text-center">
+                2. VỆ SINH
+              </span>
+            </div>
+
+            {/* 3. After Box */}
+            <div className="bg-white rounded-2xl p-2 shadow-sm border-2 border-[#22C55E] flex flex-col items-center">
+              <div className="w-full aspect-[3/4] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30">
+                {afterPhotoPreview &&
+                (afterPhotoPreview.startsWith('data:') || afterPhotoPreview.startsWith('http')) ? (
+                  <img src={afterPhotoPreview} alt="After" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="p-2 text-center flex flex-col items-center justify-center">
+                    <div className="w-7 h-7 rounded-full bg-[#22C55E] mb-1 flex items-center justify-center text-white font-black text-xs shadow-xs mx-auto">
+                      ✓
+                    </div>
+                    <span className="text-[#22C55E] font-bold text-[10px] leading-tight">Hoàn thiện</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-[9.5px] font-black text-[#22C55E] uppercase tracking-wider mt-1.5 text-center">
+                3. AFTER
               </span>
             </div>
           </div>

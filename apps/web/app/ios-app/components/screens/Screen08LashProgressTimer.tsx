@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
@@ -36,15 +37,21 @@ export function Screen08LashProgressTimer({
   // 2. Khôi phục tiến độ từ Local Storage nếu có (Chống rớt mạng / vô tình thoát trang)
   const bookingId = booking.id;
   const progressElapsed = booking.progress?.elapsedSeconds;
-  const initialSeconds = useMemo(() => {
+  const startedAt = booking.progress?.startedAt;
+
+  const [seconds, setSeconds] = useState<number>(() => {
+    if (startedAt) {
+      return Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
+    }
     const cached = getLocalProgressSnapshot(bookingId);
+    if (cached?.startedAt) {
+      return Math.max(0, Math.floor((Date.now() - new Date(cached.startedAt).getTime()) / 1000));
+    }
     if (cached && typeof cached.elapsedSeconds === 'number' && cached.elapsedSeconds > 0) {
       return cached.elapsedSeconds;
     }
     return progressElapsed || 0;
-  }, [bookingId, progressElapsed]);
-
-  const [seconds, setSeconds] = useState<number>(initialSeconds);
+  });
   const [isRunning, setIsRunning] = useState<boolean>(true);
   const [timerMode, setTimerMode] = useState<'COUNTDOWN' | 'ELAPSED'>('COUNTDOWN');
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -64,18 +71,23 @@ export function Screen08LashProgressTimer({
     };
   }, []);
 
-  // Timer loop & tự động lưu local snapshot
+  // Timer loop & tự động lưu local snapshot (chạy ngầm tự động liên tục từ lúc bấm nhận ca / prepare)
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
       interval = setInterval(() => {
         setSeconds((prev) => {
-          const next = prev + 1;
+          let next = prev + 1;
+          if (booking.progress?.startedAt) {
+            const realElapsed = Math.floor((Date.now() - new Date(booking.progress.startedAt).getTime()) / 1000);
+            if (realElapsed > next) next = realElapsed;
+          }
           if (next % 5 === 0) {
             saveLocalProgressSnapshot(booking.id, {
               elapsedSeconds: next,
               targetSeconds,
               isRunning: true,
+              startedAt: booking.progress?.startedAt,
               bookingId: booking.id,
               serviceName: booking.serviceName,
             });
@@ -85,7 +97,7 @@ export function Screen08LashProgressTimer({
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, booking.id, targetSeconds, booking.serviceName]);
+  }, [isRunning, booking.id, booking.progress?.startedAt, targetSeconds, booking.serviceName]);
 
   const formatTime = (totalSec: number) => {
     const absSec = Math.abs(totalSec);
@@ -110,7 +122,11 @@ export function Screen08LashProgressTimer({
         level: 'SLOW',
         badge: '⚠️ Chậm tiến độ',
         title: 'Đã quá giờ cam kết',
-        sub: 'Ảnh hưởng thăng hạng 🪶CV🪶',
+        sub: (
+          <span>
+            Ảnh hưởng thăng hạng <CvFeather2Badge />
+          </span>
+        ),
         color: 'text-rose-600',
         bg: 'bg-rose-50 border-rose-200',
         ringColor: 'border-rose-500 shadow-rose-500/20',
@@ -131,7 +147,11 @@ export function Screen08LashProgressTimer({
       level: 'FAST',
       badge: '🚀 Tốc độ xuất sắc',
       title: 'Đúng tiến độ cam kết',
-      sub: 'Tích lũy điều kiện thăng cấp 🪶CV🪶',
+      sub: (
+        <span>
+          Tích lũy điều kiện thăng cấp <CvFeather2Badge />
+        </span>
+      ),
       color: 'text-emerald-700',
       bg: 'bg-emerald-50 border-emerald-200',
       ringColor: 'border-emerald-500 shadow-emerald-500/20',
@@ -143,16 +163,17 @@ export function Screen08LashProgressTimer({
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
-      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ảnh Before" />
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ảnh Vệ Sinh" />
 
-      {/* 2. Steps Subheader (Black Bar) */}
+      {/* 2. Steps Subheader (Black Bar) - Chuẩn 4 bước */}
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh</div>
         <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 flex items-center justify-between">
-          <span>2. Bấm Giờ Phục Vụ ✓</span>
+          <span>3. Bấm Giờ Phục Vụ ✓</span>
           <span className="text-[11px] font-mono tabular-nums">Định mức: {targetMinutes}p</span>
         </div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">3. Ảnh After</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">4. Ảnh After</div>
       </div>
 
       {/* 3. Main Body */}
@@ -254,10 +275,11 @@ export function Screen08LashProgressTimer({
                 <button
                   type="button"
                   onClick={onEditService}
-                  className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1 active:scale-95 cursor-pointer"
+                  aria-label="Sửa thông số mi"
+                  title="Sửa thông số mi"
+                  className="p-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center justify-center active:scale-95 cursor-pointer"
                 >
-                  <Edit3 className="w-3 h-3" />
-                  <span>Sửa mi</span>
+                  <Edit3 className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>

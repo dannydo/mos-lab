@@ -1481,8 +1481,8 @@ export function Screen02CheckInProfile({
                 <div className="flex items-start justify-between gap-2 pt-1 border-t border-neutral-200/60">
                   <span className="font-bold text-neutral-800 shrink-0">5. Dáng mi (Design):</span>
                   <span className="text-right text-neutral-600 font-medium">
-                    Natural <strong>+0</strong> · Kim-K / Katun <strong>+5</strong> · Wing / Cat Eye <strong>+6</strong>{' '}
-                    · Doll <strong>+7</strong>
+                    Natural <strong>+0</strong> · Kim-K / Katun <strong>+5</strong> · Wing <strong>+6</strong> · Doll{' '}
+                    <strong>+7</strong>
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-2 pt-1 border-t border-neutral-200/60">

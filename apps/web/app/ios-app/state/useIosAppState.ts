@@ -522,28 +522,70 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(6);
   };
 
-  // Step 6 -> Step 7: CV starts task
+  // Step 6 -> Step 7: CV starts task (Preparation - chiếu theo iOS gốc, đồng hồ tự động chạy ngay)
   const handleCvStartTask = () => {
-    setCurrentStep(7);
-  };
-
-  // Step 7 -> Step 8: Save Before Photo & Start Timer
-  const handleSaveBeforePhoto = (photoUrl: string) => {
+    const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
     const progressPatch = {
-      ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
-      beforePhotoUrl: photoUrl,
+      ...(activeBooking.progress || { elapsedSeconds: 0 }),
+      startedAt,
       timerRunning: true,
-      startedAt: new Date().toISOString(),
     };
     updateActiveBooking((prev) => ({
       ...prev,
       progress: progressPatch,
     }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+      startedAt,
+    });
+    void postAction('UPDATE_PROGRESS', { orderState: 'Preparation', progress: progressPatch });
+    setCurrentStep(7);
+  };
+
+  // Step 7 -> Step 8: Save Before Photo (Mắt mộc) & Chuyển sang Ảnh Vệ Sinh
+  const handleSaveBeforePhoto = (photoUrl: string) => {
+    const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
+    const progressPatch = {
+      ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
+      beforePhotoUrl: photoUrl,
+      timerRunning: true,
+      startedAt,
+    };
+    updateActiveBooking((prev) => ({
+      ...prev,
+      progress: progressPatch,
+    }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+    });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service Start', progress: progressPatch });
     setCurrentStep(8);
   };
 
-  // Step 8: Timer controls
+  // Step 8 -> Step 9: Save Cleaned Photo (Vệ sinh nhắm) & Chuyển sang Bấm Giờ Phục Vụ
+  const handleSaveCleanedPhoto = (photoUrl: string) => {
+    const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
+    const progressPatch = {
+      ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
+      cleanedPhotoUrl: photoUrl,
+      timerRunning: true,
+      startedAt,
+    };
+    updateActiveBooking((prev) => ({
+      ...prev,
+      progress: progressPatch,
+    }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+    });
+    void postAction('UPDATE_PROGRESS', { orderState: 'Service Cleaned', progress: progressPatch });
+    setCurrentStep(9);
+  };
+
+  // Step 9: Timer controls
   const handleToggleTimer = () => {
     updateActiveBooking((prev) => ({
       ...prev,
@@ -555,20 +597,32 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   };
 
   const handleFinishTimer = () => {
+    const completedAt = new Date().toISOString();
+    const startedAt = activeBooking.progress?.startedAt || new Date(Date.now() - 68 * 60000).toISOString();
+    const elapsedSeconds = Math.max(
+      1,
+      Math.floor((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000)
+    );
     const progressPatch = {
-      ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
+      ...(activeBooking.progress || { elapsedSeconds }),
+      elapsedSeconds,
       timerRunning: false,
-      completedAt: new Date().toISOString(),
+      completedAt,
     };
     updateActiveBooking((prev) => ({
       ...prev,
       progress: progressPatch,
     }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+      completedAt,
+    });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service End', progress: progressPatch });
-    setCurrentStep(9);
+    setCurrentStep(10);
   };
 
-  // Step 9 -> Step 10: Save After Photo & Go to Survey (Mở khóa cho CV🪶 tự bấm Done mà không cần CC!)
+  // Step 10 -> Step 11: Save After Photo & Go to Survey (Mở khóa cho CV🪶 tự bấm Done mà không cần CC!)
   const handleSaveAfterPhoto = (photoUrl: string) => {
     const progressPatch = {
       ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
@@ -578,11 +632,15 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       ...prev,
       progress: progressPatch,
     }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+    });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service Completed', progress: progressPatch });
-    setCurrentStep(10);
+    setCurrentStep(11);
   };
 
-  // Step 10: Complete Survey -> Giữ nguyên quyền điều khiển của CV🪶 / 🪶CV🪶 để tự bán Dưỡng mi / Combo & Tự Checkout!
+  // Step 11: Complete Survey -> Giữ nguyên quyền điều khiển của CV🪶 / 🪶CV🪶 để tự bán Dưỡng mi / Combo & Tự Checkout!
   const handleCompleteSurvey = (survey: {
     rating: number;
     emotion: 'happy' | 'satisfied' | 'neutral' | 'unhappy';
@@ -593,10 +651,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       survey,
     }));
     void postAction('COMPLETE_SURVEY', { survey });
-    setCurrentStep(11); // Go directly to Product Upsell & Combo Checkout as CV🪶 / 🪶CV🪶!
+    setCurrentStep(12); // Go directly to Product Upsell & Combo Checkout as CV🪶 / 🪶CV🪶!
   };
 
-  // Step 11 -> Step 12: Save Product Upsell (Yeppeum) & Optional Combo + Lock in check_out_staff_id = actor!
+  // Step 12 -> Step 13: Save Product Upsell (Yeppeum) & Optional Combo + Lock in check_out_staff_id = actor!
   const handleGoToBilling = (upsellPayload?: {
     cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
     selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null;
@@ -667,10 +725,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         },
       };
     });
-    setCurrentStep(12);
+    setCurrentStep(13);
   };
 
-  // Step 12: Choose Payment Method
+  // Step 13: Choose Payment Method
   const handleChoosePaymentMethod = (method: 'CASH' | 'POS' | 'VIETQR') => {
     updateActiveBooking((prev) => ({
       ...prev,
@@ -692,10 +750,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         paymentMethod: method,
       },
     }));
-    setCurrentStep(13);
+    setCurrentStep(14);
   };
 
-  // Step 13: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
+  // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
   const handleRecordTip = (tipAmount: number) => {
     updateActiveBooking((prev) => {
       const cvShare = Math.round(tipAmount * 0.7);
@@ -738,10 +796,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         billing: nextBilling,
       };
     });
-    setCurrentStep(14);
+    setCurrentStep(15);
   };
 
-  // Step 14: Finish Order
+  // Step 15: Finish Order
   const handleFinishOrder = () => {
     updateActiveBooking((prev) => ({
       ...prev,
@@ -786,6 +844,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     handleTransferToCv,
     handleCvStartTask,
     handleSaveBeforePhoto,
+    handleSaveCleanedPhoto,
     handleToggleTimer,
     handleFinishTimer,
     handleSaveAfterPhoto,
