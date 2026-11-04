@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import type { MosChatConversation, MosChatStaffMember, MosChatTaskItem, MosChatUserSidebarPrefs } from '@mos-lab/shared';
+import type {
+  MosChatConversation,
+  MosChatStaffMember,
+  MosChatTaskItem,
+  MosChatUserSidebarPrefs,
+} from '@mos-lab/shared';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 import { isStaffMentionedInChatText } from '../chat/routes.js';
 import { computeNotificationsFeed, invalidateNotificationsCache } from './routes.js';
@@ -329,9 +334,7 @@ describe('mOS Notification Center Privacy & Personal Message Detection (MOS-BUG-
     assert.equal(mentionNotif?.action.payload.messageId, 'msg-core-mention-k');
 
     // MUST contain the unread thread reply in dm-pair-1-6
-    const threadNotif = feed.items.find(
-      (i) => i.id === 'chat-thread-dm-pair-1-6-msg-dm-1-6-root-reply-dm-1-6-thread'
-    );
+    const threadNotif = feed.items.find((i) => i.id === 'chat-thread-dm-pair-1-6-msg-dm-1-6-root-reply-dm-1-6-thread');
     assert.ok(threadNotif, 'Should generate notification when Danny replies to Khải in a thread');
     assert.equal(threadNotif?.action.payload.conversationId, 'dm-pair-1-6');
     assert.equal(threadNotif?.action.payload.messageId, 'reply-dm-1-6-thread');
@@ -367,7 +370,7 @@ describe('mOS Notification Center Privacy & Personal Message Detection (MOS-BUG-
           },
           crmBugReport: {
             findMany: async ({ where }: { where: Record<string, unknown> }) => {
-              const statusIn = (where?.status as { in?: string[] })?.in;
+              const statusIn = (where?.status as { in?: string[] } | undefined)?.in;
               if (statusIn?.includes('AWAITING_DANNY_COMMIT_REVIEW')) {
                 return [
                   {
@@ -379,7 +382,7 @@ describe('mOS Notification Center Privacy & Personal Message Detection (MOS-BUG-
                   },
                 ];
               }
-              if (where?.status?.in?.includes('FIXED')) {
+              if (statusIn?.includes('FIXED')) {
                 return [
                   {
                     id: 192,
