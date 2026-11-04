@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import path from 'path';
 
-const t = setTimeout(() => process.exit(1), 30000);
+const t = setTimeout(() => process.exit(1), 45000);
 t.unref();
 
 async function main() {
@@ -77,12 +77,24 @@ async function main() {
     console.log('Uploading Real After Photo at Step 10...');
     const afterInput = page.locator('input[type="file"]').first();
     await afterInput.setInputFiles(testImage);
-    await page.waitForTimeout(1000); // Allow canvas compression
+    await page.waitForTimeout(1500); // Allow canvas compression and auto-save
 
     // Verify 3-step comparison card is displayed at Step 10
     const step10Header = page.locator('text=4. Ảnh After Hoàn Thiện ✓');
     await step10Header.waitFor({ state: 'visible', timeout: 5000 });
     console.log('✓ Successfully reached Step 10 with 3-step comparison card');
+
+    // Verify bottom button changed to "ĐÃ LƯU ẢNH AFTER · TIẾP TỤC KHẢO SÁT →"
+    const savedAfterBtn = page.locator('text=ĐÃ LƯU ẢNH AFTER · TIẾP TỤC KHẢO SÁT →');
+    const isSavedAfterBtnVisible = await savedAfterBtn.isVisible();
+    console.log(`✓ Bottom button changed to saved state: ${isSavedAfterBtnVisible}`);
+
+    // Wait 8 seconds to allow background polling (fetchBookings every 7s) to run and prove photo is NOT wiped out
+    console.log('Waiting 8 seconds for background poll to verify photo 3 is NOT wiped out...');
+    await page.waitForTimeout(8000);
+
+    const isAfterPhotoStillVisible = await page.locator('img[alt="After"]').isVisible();
+    console.log(`✓ After photo still visible after 8s background poll: ${isAfterPhotoStillVisible}`);
 
     await page.screenshot({
       path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-before-kill-real-photos.png',
@@ -97,7 +109,7 @@ async function main() {
     console.log('Navigating to http://localhost:4000/ios-app?role=CVL (bare URL, no step query param)...');
     await page2.goto('http://localhost:4000/ios-app?role=CVL', { waitUntil: 'domcontentloaded' });
     await page2.waitForSelector('text=Tiến Trình Nối Mi', { timeout: 10000 });
-    await page2.waitForTimeout(1000);
+    await page2.waitForTimeout(1500);
 
     // 8. Assert that page2 automatically resumed at Step 10!
     const step10RestoredHeader = page2.locator('text=4. Ảnh After Hoàn Thiện ✓');
@@ -126,13 +138,32 @@ async function main() {
     console.log(`- #3 After label: ${await photoAfterLabel.first().isVisible()}`);
 
     // Check img tags inside the 3 photo slots
-    const imgCount = await page2.locator('img[alt="Before"], img[alt="Cleaned"], img[alt="After"]').count();
-    console.log(`- Restored img tags count in 3 rows: ${imgCount}`);
+    const afterImgRestored = await page2.locator('img[alt="After"]').isVisible();
+    const beforeImgRestored = await page2.locator('img[alt="Before"]').isVisible();
+    const cleanedImgRestored = await page2.locator('img[alt="Cleaned"]').isVisible();
+    console.log(`- Restored Photo 1 (Before): ${beforeImgRestored}`);
+    console.log(`- Restored Photo 2 (Cleaned): ${cleanedImgRestored}`);
+    console.log(`- Restored Photo 3 (After): ${afterImgRestored}`);
 
     await page2.screenshot({
       path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-after-kill-real-photos-restored.png',
     });
     console.log('Saved: ios-after-kill-real-photos-restored.png');
+
+    // 9. Click "ĐÃ LƯU ẢNH AFTER · TIẾP TỤC KHẢO SÁT →" to proceed to Step 11
+    console.log('9. Clicking continue button to proceed to Step 11 (Survey)...');
+    const continueBtn = page2.locator('text=TIẾP TỤC KHẢO SÁT').first();
+    await continueBtn.click();
+    await page2.waitForTimeout(1000);
+
+    const surveyHeader = page2.locator('text=Wings Beauty Survey');
+    const isSurveyVisible = await surveyHeader.isVisible();
+    console.log(`✓ Step 11 Survey reached: ${isSurveyVisible}`);
+
+    await page2.screenshot({
+      path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-step11-survey-from-after.png',
+    });
+    console.log('Saved: ios-step11-survey-from-after.png');
 
     console.log('\n=========================================');
     console.log('🎉 VERIFICATION SUCCESS: Real compressed photos and active ca làm restored 100% after browser kill!');

@@ -292,8 +292,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
   const postAction = useCallback(
     async (action: string, payload: Record<string, any> = {}) => {
-      // 1. Lưu snapshot offline ngay lập tức
-      saveLocalProgressSnapshot(activeBookingId, { action, payload, updatedAt: new Date().toISOString() });
+      // 1. Chỉ lưu progress thực tế vào snapshot offline nếu có (tránh lưu payload lồng nhau làm phình storage)
+      if (payload.progress) {
+        saveLocalProgressSnapshot(activeBookingId, payload.progress);
+      }
 
       // 2. Nếu rớt mạng, lưu vào queue chờ sync
       if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -380,8 +382,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
                       : existing.status || incoming.status,
                   progress: {
                     ...(incoming.progress || {}),
-                    ...(existing.progress || {}),
                     ...(getLocalProgressSnapshot(incoming.id) || {}),
+                    ...(existing.progress || {}),
                   },
                   selectedCombo: existing.selectedCombo || incoming.selectedCombo,
                   cartProducts: existing.cartProducts || incoming.cartProducts,
@@ -677,12 +679,15 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     if (type === 'before') {
       progressPatch.beforePhotoUrl = photoUrl;
       progressPatch.beforePhotoSavedAt = new Date().toISOString();
+      progressPatch.currentStep = 7;
     } else if (type === 'cleaned') {
       progressPatch.cleanedPhotoUrl = photoUrl;
       progressPatch.cleanedPhotoSavedAt = new Date().toISOString();
+      progressPatch.currentStep = 8;
     } else if (type === 'after') {
       progressPatch.afterPhotoUrl = photoUrl;
       progressPatch.afterPhotoSavedAt = new Date().toISOString();
+      progressPatch.currentStep = 10;
     }
 
     updateActiveBooking((prev) => ({

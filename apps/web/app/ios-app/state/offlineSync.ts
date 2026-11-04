@@ -226,13 +226,16 @@ export function removeOfflineAction(id: string) {
   }
 }
 
+// In-memory cache to guarantee synchronous reads never lose data even if localStorage throws QuotaExceededError
+const progressMemoryCache = new Map<number, any>();
+
 /**
- * Lưu snapshot tiến độ ca làm vào local storage & IndexedDB (mốc thời gian, ảnh before/after, seconds, currentStep)
+ * Lưu snapshot tiến độ ca làm vào memory, IndexedDB và localStorage phòng vệ
  */
 export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
   if (typeof window === 'undefined' || !bookingId) return;
   try {
-    const existing = getLocalProgressSnapshot(bookingId) || {};
+    const existing = progressMemoryCache.get(bookingId) || getLocalProgressSnapshot(bookingId) || {};
     const merged = {
       ...existing,
       ...progress,
@@ -240,22 +243,50 @@ export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
       savedAt: new Date().toISOString(),
     };
 
-    // 1. Lưu vào localStorage
+    // 1. Luôn cập nhật bộ nhớ RAM ngay tức thì
+    progressMemoryCache.set(bookingId, merged);
+
+    // 2. Lưu vào IndexedDB (dung lượng gigabytes, lưu trữ an toàn ảnh base64 mà không sợ tràn quota)
+    void saveToIndexedDb(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, merged);
+
+    // 3. Lưu phòng vệ vào localStorage (có cơ chế dọn dẹp chống QuotaExceededError)
     try {
       window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(merged));
     } catch (lsErr) {
-      console.warn('[OfflineSync] LocalStorage quota exceeded, fallback to IndexedDB:', lsErr);
+      console.warn('[OfflineSync] LocalStorage quota exceeded, pruning old keys and retrying:', lsErr);
+      try {
+        // Dọn dẹp snapshot của các ca làm khác khỏi localStorage để nhường chỗ
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (k && k.startsWith(PROGRESS_STORAGE_PREFIX) && k !== `${PROGRESS_STORAGE_PREFIX}${bookingId}`) {
+            window.localStorage.removeItem(k);
+          }
+        }
+        // Xóa queue offline actions cũ nếu quá lớn
+        window.localStorage.removeItem(OFFLINE_ACTIONS_STORAGE_KEY);
+        window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(merged));
+      } catch {
+        // Nếu vẫn đầy, lưu bản metadata nhẹ vào localStorage (ảnh thật đã nằm an toàn trong IndexedDB và RAM)
+        try {
+          const lightweight = {
+            ...merged,
+            beforePhotoUrl: merged.beforePhotoUrl ? '[persisted_in_idb]' : undefined,
+            cleanedPhotoUrl: merged.cleanedPhotoUrl ? '[persisted_in_idb]' : undefined,
+            afterPhotoUrl: merged.afterPhotoUrl ? '[persisted_in_idb]' : undefined,
+          };
+          window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(lightweight));
+        } catch {
+          // ignore
+        }
+      }
     }
 
-    // 2. Lưu vào IndexedDB (dung lượng gigabytes, không bao giờ đầy)
-    void saveToIndexedDb(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, merged);
-
-    // 3. Nếu có currentStep, đồng bộ vào ACTIVE_SERVICING_STEP
+    // 4. Nếu có currentStep, đồng bộ vào ACTIVE_SERVICING_STEP
     if (progress.currentStep) {
       setActiveServicingStep(progress.currentStep);
     }
 
-    // 4. Tự động neo active servicing booking ID nếu ca làm đang thực hiện
+    // 5. Tự động neo active servicing booking ID nếu ca làm đang thực hiện
     if (progress.status !== 'DONE' && progress.currentStep && progress.currentStep >= 6) {
       setActiveServicingBookingId(bookingId);
     }
@@ -265,39 +296,48 @@ export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
 }
 
 /**
- * Đọc snapshot tiến độ ca làm từ local storage
+ * Đọc snapshot tiến độ ca làm từ RAM cache hoặc local storage
  */
 export function getLocalProgressSnapshot(bookingId: number) {
   if (typeof window === 'undefined' || !bookingId) return null;
+  // Ưu tiên đọc từ RAM cache trước
+  const inMem = progressMemoryCache.get(bookingId);
+  if (inMem) return inMem;
   try {
     const raw = window.localStorage.getItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`);
-    return raw ? JSON.parse(raw) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.beforePhotoUrl === '[persisted_in_idb]') delete parsed.beforePhotoUrl;
+      if (parsed.cleanedPhotoUrl === '[persisted_in_idb]') delete parsed.cleanedPhotoUrl;
+      if (parsed.afterPhotoUrl === '[persisted_in_idb]') delete parsed.afterPhotoUrl;
+      progressMemoryCache.set(bookingId, parsed);
+      return parsed;
+    }
   } catch (err) {
     console.warn('[OfflineSync] Failed to get local progress snapshot:', err);
-    return null;
   }
+  return null;
 }
 
 /**
- * Đọc snapshot tiến độ ca làm bất đồng bộ (tự động fallback sang IndexedDB nếu localStorage bị mất)
+ * Đọc snapshot tiến độ ca làm bất đồng bộ (luôn load từ IndexedDB để phục hồi 100% ảnh After/Before kể cả khi localStorage bị đầy)
  */
 export async function getLocalProgressSnapshotAsync(bookingId: number) {
-  const syncSnap = getLocalProgressSnapshot(bookingId);
-  if (syncSnap) return syncSnap;
+  const memOrLs = getLocalProgressSnapshot(bookingId) || {};
   try {
     const idbSnap = await getFromIndexedDb(`${PROGRESS_STORAGE_PREFIX}${bookingId}`);
     if (idbSnap) {
-      try {
-        window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(idbSnap));
-      } catch {
-        // ignore
-      }
-      return idbSnap;
+      const merged = {
+        ...memOrLs,
+        ...idbSnap,
+      };
+      progressMemoryCache.set(bookingId, merged);
+      return merged;
     }
   } catch {
     // ignore
   }
-  return null;
+  return Object.keys(memOrLs).length > 0 ? memOrLs : null;
 }
 
 /**

@@ -127,7 +127,7 @@ const LIVE_OVERRIDES_CONFIG_KEY = 'IOS_APP_LIVE_BOOKING_OVERRIDES';
 async function loadLiveOverrides(): Promise<Record<string, any>> {
   try {
     const pool = getCrmPool();
-    const [rows] = await pool.query<mysql.RowDataPacket[]>('SELECT value FROM crm_configs WHERE `key` = ? LIMIT 1', [
+    const [rows] = await pool.query<mysql.RowDataPacket[]>('SELECT value FROM crm_config WHERE `key` = ? LIMIT 1', [
       LIVE_OVERRIDES_CONFIG_KEY,
     ]);
     if (rows?.[0]?.value) {
@@ -144,7 +144,7 @@ async function saveLiveOverrides(overrides: Record<string, any>): Promise<void> 
     const pool = getCrmPool();
     const jsonVal = JSON.stringify(overrides);
     await pool.query(
-      `INSERT INTO crm_configs (\`key\`, \`value\`, \`updated_at\`)
+      `INSERT INTO crm_config (\`key\`, \`value\`, \`updated_at\`)
        VALUES (?, ?, NOW())
        ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`), \`updated_at\` = NOW()`,
       [LIVE_OVERRIDES_CONFIG_KEY, jsonVal]

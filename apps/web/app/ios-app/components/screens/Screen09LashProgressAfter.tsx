@@ -67,6 +67,12 @@ export function Screen09LashProgressAfter({
     }
   }, [afterPhotoPreview, asyncSnapshot]);
 
+  useEffect(() => {
+    if (booking.progress?.afterPhotoUrl && booking.progress.afterPhotoUrl !== afterPhotoPreview) {
+      setAfterPhotoPreview(booking.progress.afterPhotoUrl);
+    }
+  }, [booking.progress?.afterPhotoUrl, afterPhotoPreview]);
+
   // Tính toán thời gian thực hiện thực tế từ timer
   const actualMinutes = useMemo(() => {
     if (cachedSnapshot && typeof cachedSnapshot.elapsedSeconds === 'number' && cachedSnapshot.elapsedSeconds > 0) {
@@ -133,8 +139,6 @@ export function Screen09LashProgressAfter({
   // Khởi tạo và đồng bộ step 10 vào local snapshot
   useEffect(() => {
     saveLocalProgressSnapshot(bookingId, {
-      ...cachedSnapshot,
-      ...asyncSnapshot,
       currentStep: 10,
     });
   }, [bookingId]);
@@ -147,8 +151,6 @@ export function Screen09LashProgressAfter({
         const compressed = await compressLashImage(file, 1024, 0.72);
         setAfterPhotoPreview(compressed);
         saveLocalProgressSnapshot(bookingId, {
-          ...cachedSnapshot,
-          ...asyncSnapshot,
           afterPhotoUrl: compressed,
           actualMinutes,
           targetMinutes,
@@ -169,8 +171,6 @@ export function Screen09LashProgressAfter({
   const handleProceed = () => {
     const photoUrl = afterPhotoPreview || '/assets/lash_after.jpg';
     saveLocalProgressSnapshot(bookingId, {
-      ...cachedSnapshot,
-      ...asyncSnapshot,
       afterPhotoUrl: photoUrl,
       actualMinutes,
       targetMinutes,
@@ -378,9 +378,16 @@ export function Screen09LashProgressAfter({
         <div className="pt-1">
           <button
             onClick={handleProceed}
-            className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[14.5px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight"
+            className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[14.5px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight flex items-center justify-center gap-2"
           >
-            CHUYỂN MÁY CHO KHÁCH KHẢO SÁT CẢM XÚC
+            {afterPhotoPreview ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-black" />
+                <span>ĐÃ LƯU ẢNH AFTER · TIẾP TỤC KHẢO SÁT →</span>
+              </>
+            ) : (
+              <span>CHUYỂN MÁY CHO KHÁCH KHẢO SÁT CẢM XÚC</span>
+            )}
           </button>
         </div>
       </div>
