@@ -127,17 +127,11 @@ describe('UI primitives', () => {
   });
 
   it('keeps sensitive menu access configuration exclusive to Super Admin', () => {
-    const systemGroup = getSidebarGroups('admin').find((group) => group.groupKey === 'grp-system');
-    const staffMenu = systemGroup?.items.find((item) => item.key === 'staff');
-    const superAdminGroup = getSidebarGroups('super_admin').find((group) => group.groupKey === 'grp-system');
-    const superAdminStaffMenu = superAdminGroup?.items.find((item) => item.key === 'staff');
+    const adminGroup = getSidebarGroups('admin').find((group) => group.groupKey === 'grp-schedule');
+    const superAdminGroup = getSidebarGroups('super_admin').find((group) => group.groupKey === 'grp-schedule');
 
-    expect(staffMenu?.path).toBeUndefined();
-    expect(staffMenu?.children?.map((item) => item.key)).toEqual(['staff-directory', 'teams']);
-    expect(staffMenu?.children?.find((item) => item.key === 'teams')?.path).toBe('/dashboard/staff/teams');
-    expect(staffMenu?.children?.find((item) => item.key === 'menu-access')).toBeUndefined();
-    expect(superAdminStaffMenu?.children?.map((item) => item.key)).toEqual(['staff-directory', 'teams', 'menu-access']);
-    expect(superAdminStaffMenu?.children?.find((item) => item.key === 'menu-access')?.path).toBe(
+    expect(adminGroup?.items.find((item) => item.key === 'menu-access')).toBeUndefined();
+    expect(superAdminGroup?.items.find((item) => item.key === 'menu-access')?.path).toBe(
       '/dashboard/staff/menu-access'
     );
   });

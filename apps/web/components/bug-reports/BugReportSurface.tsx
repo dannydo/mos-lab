@@ -650,6 +650,7 @@ export function BugReportSurface() {
         intent={activeView === 'history' ? 'data' : 'form'}
         width={activeView === 'history' ? 'min(1200px, calc(100vw - 48px))' : undefined}
         title="Phản hồi mOS"
+        className="mos-bug-report-modal"
         open={open}
         onCancel={closeReporter}
         maskClosable={!submitting}
@@ -700,7 +701,8 @@ export function BugReportSurface() {
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={Lightbulb} size="sm" />
-                  Thêm chức năng mới
+                  <span className="hidden sm:inline">Thêm chức năng mới</span>
+                  <span className="inline sm:hidden">Tính năng mới</span>
                 </span>
               ),
             },

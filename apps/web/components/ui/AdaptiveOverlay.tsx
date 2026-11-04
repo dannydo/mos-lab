@@ -60,25 +60,97 @@ export interface AdaptiveModalProps extends ModalProps {
   intent?: OverlayIntent;
 }
 
+export function resolveAdaptiveModalConfig({
+  tier,
+  intent = 'form',
+  style,
+  styles,
+  width,
+  className = '',
+}: {
+  tier: ReturnType<typeof useResponsiveTier>;
+  intent?: OverlayIntent;
+  style?: React.CSSProperties;
+  styles?: ModalProps['styles'];
+  width?: ModalProps['width'];
+  className?: string;
+}) {
+  const isMobile = tier === 'mobile';
+  const isFullscreenMobile = isMobile && intent !== 'confirm';
+  const mobileModalWidth = 'calc(100vw - 16px)';
+
+  const resolvedStyle: React.CSSProperties | undefined = isFullscreenMobile
+    ? {
+        ...style,
+        height: '100dvh',
+        maxHeight: '100dvh',
+        margin: '0 auto',
+        top: 0,
+        paddingBottom: 0,
+      }
+    : style;
+
+  const resolvedStyles: ModalProps['styles'] = isFullscreenMobile
+    ? {
+        ...styles,
+        content: {
+          paddingTop: 'max(16px, calc(env(safe-area-inset-top, 0px) + 8px))',
+          paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px))',
+          paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+          paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+          height: styles?.content?.height ?? '100%',
+          maxHeight: '100dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: 16,
+          ...styles?.content,
+        },
+        header: {
+          paddingRight: 48,
+          marginBottom: 12,
+          flexShrink: 0,
+          ...styles?.header,
+        },
+        body: {
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          minHeight: 0,
+          WebkitOverflowScrolling: 'touch',
+          ...styles?.body,
+        },
+        footer: {
+          flexShrink: 0,
+          marginTop: 12,
+          ...styles?.footer,
+        },
+      }
+    : styles;
+
+  const resolvedWidth = isMobile ? mobileModalWidth : (width ?? getOverlayWidth(tier, intent));
+  const resolvedClassName = `adaptive-overlay ${isFullscreenMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`.trim();
+
+  return {
+    isMobile,
+    isFullscreenMobile,
+    width: resolvedWidth,
+    style: resolvedStyle,
+    styles: resolvedStyles,
+    className: resolvedClassName,
+  };
+}
+
 export function AdaptiveModal({ intent = 'form', className = '', width, style, styles, ...props }: AdaptiveModalProps) {
   const tier = useResponsiveTier();
-  const isMobile = tier === 'mobile';
-  // Ant Design's mobile modal wrapper retains an 8px inset on both sides.
-  // Reserving that space avoids a 100vw content surface extending past the
-  // viewport while preserving the full-height workflow composition.
-  const mobileModalWidth = 'calc(100vw - 16px)';
-  const mobileModalStyle = isMobile ? { ...style, height: 'calc(100dvh - 16px)', margin: '8px auto', top: 0 } : style;
-  const mobileModalStyles = isMobile
-    ? { ...styles, content: { ...styles?.content, height: styles?.content?.height ?? '100%' } }
-    : styles;
+  const config = resolveAdaptiveModalConfig({ tier, intent, style, styles, width, className });
 
   return (
     <Modal
       {...props}
-      width={isMobile ? mobileModalWidth : (width ?? getOverlayWidth(tier, intent))}
-      style={mobileModalStyle}
-      styles={mobileModalStyles}
-      className={`adaptive-overlay ${isMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`}
+      width={config.width}
+      style={config.style}
+      styles={config.styles}
+      className={config.className}
     />
   );
 }

@@ -7047,20 +7047,71 @@ body {
   }
 
   .adaptive-overlay-mobile-fullscreen.ant-modal,
-  .adaptive-overlay-mobile-fullscreen .ant-modal,
-  .adaptive-overlay-mobile-fullscreen .ant-modal-content {
-    height: 100dvh;
-    margin: 0;
-    /* Ant Design keeps an 8px modal-wrap inset on narrow screens. Size the
-       adaptive surface inside that inset so a 100vw modal cannot extend 8px
-       past the right edge. */
+  .adaptive-overlay-mobile-fullscreen .ant-modal {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 auto !important;
     max-width: calc(100vw - 16px);
-    top: 0;
+    top: 0 !important;
     width: calc(100vw - 16px) !important;
   }
 
+  .adaptive-overlay-mobile-fullscreen.ant-modal .ant-modal-content,
   .adaptive-overlay-mobile-fullscreen .ant-modal-content {
-    border-radius: 0;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 8px)) !important;
+    padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px)) !important;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .adaptive-overlay-mobile-fullscreen.ant-modal .ant-modal-header,
+  .adaptive-overlay-mobile-fullscreen .ant-modal-header {
+    flex-shrink: 0 !important;
+    margin-bottom: 12px !important;
+    padding-right: 48px !important;
+  }
+
+  .adaptive-overlay-mobile-fullscreen.ant-modal .ant-modal-body,
+  .adaptive-overlay-mobile-fullscreen .ant-modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .adaptive-overlay-mobile-fullscreen.ant-modal .ant-modal-footer,
+  .adaptive-overlay-mobile-fullscreen .ant-modal-footer {
+    flex-shrink: 0 !important;
+    margin-top: 12px !important;
+  }
+
+  .adaptive-overlay-mobile-fullscreen.ant-modal .ant-modal-close,
+  .adaptive-overlay-mobile-fullscreen .ant-modal-close {
+    border-radius: 8px !important;
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    top: max(12px, calc(env(safe-area-inset-top, 0px) + 6px)) !important;
+    inset-inline-end: max(12px, env(safe-area-inset-right, 0px)) !important;
+    z-index: 1020 !important;
+  }
+
+  .light-theme .adaptive-overlay-mobile-fullscreen.ant-modal .ant-modal-close,
+  .light-theme .adaptive-overlay-mobile-fullscreen .ant-modal-close {
+    color: #334155 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
   }
 
   .adaptive-overlay-mobile-fullscreen.ant-drawer .ant-drawer-header {
