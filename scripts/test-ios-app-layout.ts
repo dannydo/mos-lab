@@ -29,21 +29,29 @@ async function main() {
   await page.goto('http://localhost:4000/ios-app?role=CVL', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2000);
 
-  await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen01-avatar-badge.png',
-  });
-  console.log('Screen 01 screenshot saved: ios-screen01-avatar-badge.png');
+  // Click on "Ca Làm Mi" bottom tab to open Screen 06
+  console.log('Navigating to Screen 06: clicking "Ca Làm Mi" bottom tab...');
+  const taskTabBtn = page.locator('button:has-text("Ca Làm Mi")').first();
+  if (await taskTabBtn.isVisible()) {
+    await taskTabBtn.click();
+    await page.waitForTimeout(1500);
 
-  // Test clicking `<` on date switcher
-  console.log('Testing date switcher: clicking previous day...');
-  const prevDateBtn = page.locator('button[title*="ngày trước"], button[title*="Ngày trước"]').first();
-  if (await prevDateBtn.isVisible()) {
-    await prevDateBtn.click();
-    await page.waitForTimeout(1000);
     await page.screenshot({
-      path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen01-prev-day.png',
+      path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen06-header-refactored.png',
     });
-    console.log('Previous day screenshot saved: ios-screen01-prev-day.png');
+    console.log('Screen 06 refactored header screenshot saved: ios-screen06-header-refactored.png');
+
+    // Test clicking `‹ Sảnh` back button
+    console.log('Testing back button: clicking "‹ Sảnh"...');
+    const backBtn = page.locator('button:has-text("Sảnh")').first();
+    if (await backBtn.isVisible()) {
+      await backBtn.click();
+      await page.waitForTimeout(1000);
+      await page.screenshot({
+        path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen06-back-to-lobby.png',
+      });
+      console.log('Back to lobby screenshot saved: ios-screen06-back-to-lobby.png');
+    }
   }
 
   await browser.close();

@@ -1,9 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
-import { Sparkles, Eye, Zap, Shield, Play, Edit3, MessageSquare, Award, RotateCw } from 'lucide-react';
+import {
+  Sparkles,
+  Eye,
+  Zap,
+  Shield,
+  Play,
+  Edit3,
+  MessageSquare,
+  Award,
+  RotateCw,
+  Clock,
+  ChevronLeft,
+} from 'lucide-react';
 
 function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
   return (
@@ -22,6 +34,7 @@ interface Screen06CvDashboardReceiveProps {
   booking: BookingItem;
   onStartTask: () => void;
   onEditService?: () => void;
+  onBack?: () => void;
   staffStats?: StaffMonthlyStats | null;
 }
 
@@ -29,6 +42,7 @@ export function Screen06CvDashboardReceive({
   booking,
   onStartTask,
   onEditService,
+  onBack,
   staffStats,
 }: Screen06CvDashboardReceiveProps) {
   const staffAvatar = resolveStaffAvatarUrl(booking.assignedStaffAvatar, booking.assignedStaffId || 46272, 'Thảo Ly');
@@ -38,6 +52,39 @@ export function Screen06CvDashboardReceive({
 
   // Điểm thưởng nhiệm vụ (Quest EXP / Points)
   const rotationPoints = booking.cvRotationPoints || (booking.attributes?.hasUnderMink ? 56 : 34);
+
+  // Thời lượng ước tính cam kết lúc tư vấn (phút)
+  const estimatedDurationMin = useMemo(() => {
+    if (booking.serviceDuration) return booking.serviceDuration;
+    let baseMin = 65; // Mặc định 65 phút
+    const sName = (booking.serviceName || '').toLowerCase();
+    if (sName.includes('dặm') || sName.includes('refill')) {
+      baseMin = 50;
+    }
+    if (booking.attributes?.hasUnderMink || sName.includes('mi dưới')) {
+      baseMin += 25; // Mi dưới dặm thêm 25 phút
+    }
+    return baseMin;
+  }, [booking]);
+
+  // Giờ dự kiến hoàn thành ca làm (tính từ giờ bắt đầu hẹn + thời lượng ước tính)
+  const estimatedFinishTime = useMemo(() => {
+    let startHours = 10;
+    let startMinutes = 30;
+    const timeStr = booking.time12h || booking.timeSlot || '';
+    const match = timeStr.match(/(\d{1,2})[:h](\d{2})/);
+    if (match) {
+      startHours = parseInt(match[1], 10);
+      startMinutes = parseInt(match[2], 10);
+      if (timeStr.toLowerCase().includes('pm') && startHours < 12) {
+        startHours += 12;
+      }
+    }
+    const totalMinutes = startHours * 60 + startMinutes + estimatedDurationMin;
+    const finishH = Math.floor(totalMinutes / 60) % 24;
+    const finishM = totalMinutes % 60;
+    return `${String(finishH).padStart(2, '0')}:${String(finishM).padStart(2, '0')}`;
+  }, [booking, estimatedDurationMin]);
 
   // Dynamic live KPI stats for active technician (100% real numbers from database)
   const currentMonth = staffStats?.month || new Date().getMonth() + 1;
@@ -49,42 +96,45 @@ export function Screen06CvDashboardReceive({
 
   return (
     <div className="flex-1 flex flex-col bg-black overflow-y-auto select-none font-sans">
-      {/* 1. Header Profile & Status */}
-      <div className="pt-3 pb-3 px-4 flex items-center justify-between border-b border-neutral-900 bg-black/80 backdrop-blur-xs sticky top-0 z-20">
-        {/* Left badges */}
-        <div className="flex items-center space-x-1.5">
-          <div className="border border-amber-400/80 bg-amber-400/10 rounded-full px-2.5 py-0.5 text-[11px] font-black text-amber-400 flex items-center space-x-1">
-            <span>★ {displayRating}</span>
-          </div>
-          <div className="border border-emerald-500/80 bg-emerald-500/10 rounded-full px-2.5 py-0.5 text-[11px] font-black text-emerald-400 flex items-center space-x-1">
-            <span>✓ {displayShifts}</span>
-          </div>
+      {/* 1. Sleek Native iOS Navigation Bar (Replaces bulky avatar & NOW header) */}
+      <div className="h-12 px-3.5 bg-black border-b border-neutral-900 flex items-center justify-between z-20 sticky top-0 flex-shrink-0">
+        {/* Left: Back to Lobby Button */}
+        <div className="flex items-center min-w-[70px]">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center text-[#FFB400] active:opacity-60 transition-opacity text-[14.5px] font-semibold -ml-1 py-1 cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5 -mr-0.5 shrink-0" />
+              <span>Sảnh</span>
+            </button>
+          ) : (
+            <span className="text-[11px] font-bold text-neutral-400">Ca Hiện Tại</span>
+          )}
         </div>
 
-        {/* Center Staff Avatar & Name */}
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#FFB400] bg-[#FFB400] text-black font-black text-lg flex items-center justify-center shadow-md">
-            {staffAvatar ? (
-              <img
-                src={staffAvatar}
-                alt="Thảo Ly"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <span>TL</span>
-            )}
-          </div>
-          <span className="text-white font-extrabold text-[13px] mt-1 border-b-2 border-amber-400 pb-0.2">
-            Thảo Ly <span className="text-[10px] text-amber-300 font-bold ml-0.5">CV🪶</span>
+        {/* Center: Title & Bed Badge */}
+        <div className="flex flex-col items-center justify-center">
+          <span className="text-[14.5px] font-black text-white tracking-tight leading-tight">Nhiệm Vụ Ca Làm</span>
+          <span className="text-[10.5px] font-bold text-emerald-400 flex items-center gap-1 leading-tight mt-0.5 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{booking.assignedBed || 'Giường 05'}</span>
           </span>
         </div>
 
-        {/* Right Status */}
-        <div className="w-9 h-9 rounded-full border border-amber-400/80 bg-amber-400/10 flex items-center justify-center text-amber-400 font-black text-[11px] uppercase tracking-wider shadow-xs">
-          Now
+        {/* Right: Estimated Duration & Completion Target */}
+        <div className="flex items-center justify-end min-w-[70px]">
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border border-amber-500/50 text-amber-400 shadow-xs cursor-default select-none"
+            title={`Thời lượng cam kết lúc tư vấn: ~${estimatedDurationMin} phút · Dự kiến hoàn thành lúc ${estimatedFinishTime}`}
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-[12px] font-black tabular-nums tracking-tight">~{estimatedDurationMin}p</span>
+            <span className="text-[9.5px] text-neutral-400 font-semibold border-l border-neutral-700/80 pl-1.5 tabular-nums">
+              Xong {estimatedFinishTime}
+            </span>
+          </div>
         </div>
       </div>
 
