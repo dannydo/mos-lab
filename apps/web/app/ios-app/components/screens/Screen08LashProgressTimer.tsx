@@ -13,6 +13,7 @@ interface Screen08LashProgressTimerProps {
   onBack: () => void;
   onFinishTimer: () => void;
   onEditService?: () => void;
+  isAdmin?: boolean;
 }
 
 export function Screen08LashProgressTimer({
@@ -20,6 +21,7 @@ export function Screen08LashProgressTimer({
   onBack,
   onFinishTimer,
   onEditService,
+  isAdmin = false,
 }: Screen08LashProgressTimerProps) {
   // 1. Tính toán thời gian định mức (Target Duration) chuẩn xác theo dịch vụ
   const displayServiceName = resolveDisplayServiceName(booking);
@@ -306,20 +308,22 @@ export function Screen08LashProgressTimer({
           </div>
         </div>
 
-        {/* Action Buttons: Pause/Resume & Finish */}
+        {/* Action Buttons: Pause/Resume (Admin Only) & Finish */}
         <div className="flex gap-2.5 pt-1 mx-1">
-          <button
-            onClick={() => setIsRunning(!isRunning)}
-            className={`py-3.5 px-4 rounded-2xl font-bold text-[13.5px] active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              isRunning ? 'bg-[#E5E7EB] text-gray-800' : 'bg-emerald-600 text-white shadow-md'
-            }`}
-          >
-            {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
-            <span>{isRunning ? 'Tạm Dừng' : 'Tiếp Tục'}</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setIsRunning(!isRunning)}
+              className={`py-3.5 px-4 rounded-2xl font-bold text-[13.5px] active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                isRunning ? 'bg-[#E5E7EB] text-gray-800' : 'bg-emerald-600 text-white shadow-md'
+              }`}
+            >
+              {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+              <span>{isRunning ? 'Tạm Dừng' : 'Tiếp Tục'}</span>
+            </button>
+          )}
           <button
             onClick={onFinishTimer}
-            className="flex-1 py-3.5 px-3 rounded-2xl bg-[#FFB400] text-black font-black text-[14px] shadow-md active:scale-98 transition-transform text-center flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[14.5px] shadow-md active:scale-98 transition-transform text-center flex items-center justify-center gap-2 cursor-pointer uppercase tracking-tight"
           >
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>HOÀN TẤT NỐI MI & CHỤP AFTER</span>

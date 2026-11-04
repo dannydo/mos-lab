@@ -208,6 +208,7 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(8)}
             onFinishTimer={state.handleFinishTimer}
             onEditService={() => state.handleOpenConsultation(9)}
+            isAdmin={state.isAdmin}
           />
         );
       case 10:
