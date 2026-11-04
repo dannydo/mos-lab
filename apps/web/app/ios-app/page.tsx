@@ -232,9 +232,10 @@ function IosAppInner() {
       case 11:
         return (
           <Screen10CustomerSurvey
+            booking={state.activeBooking}
             customerName={state.activeBooking.customerName}
             staffName={state.activeBooking.assignedStaffName}
-            onBack={() => state.setCurrentStep(10)}
+            onBack={state.handleBackToAfterPhoto}
             onComplete={state.handleCompleteSurvey}
           />
         );

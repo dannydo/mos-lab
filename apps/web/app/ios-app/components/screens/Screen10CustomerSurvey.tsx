@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
-import { Star } from 'lucide-react';
+import { BookingItem } from '../../state/mockData';
+import { getLocalProgressSnapshot, getLocalProgressSnapshotAsync } from '../../state/offlineSync';
+import { Star, Sparkles, Maximize2, Check } from 'lucide-react';
 
 interface Screen10CustomerSurveyProps {
+  booking?: BookingItem;
   customerName?: string;
   staffName?: string;
   onBack: () => void;
@@ -16,57 +19,251 @@ interface Screen10CustomerSurveyProps {
 }
 
 export function Screen10CustomerSurvey({
+  booking,
   customerName = 'Chị Quyên',
   staffName = 'Thảo Ly',
   onBack,
   onComplete,
 }: Screen10CustomerSurveyProps) {
   const [selectedEmotion, setSelectedEmotion] = useState<'happy' | 'normal' | 'dislike' | 'disappointed'>('happy');
+  const [rating, setRating] = useState<number>(5);
+  const [zoomPhoto, setZoomPhoto] = useState<{ url: string; title: string } | null>(null);
+
+  const defaultFeedbackPoints = useMemo(
+    () => ['Nối rất êm, không cay', 'Mi nhẹ như không nối', `CV ${staffName} rất chu đáo`],
+    [staffName]
+  );
+  const [selectedPoints, setSelectedPoints] = useState<string[]>(defaultFeedbackPoints);
+
+  const togglePoint = (p: string) => {
+    setSelectedPoints((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+  };
+
+  // Khôi phục ảnh Before và After từ booking snapshot / cache
+  const bookingId = booking?.id;
+  const cachedSnapshot = useMemo(() => {
+    return bookingId ? getLocalProgressSnapshot(bookingId) : null;
+  }, [bookingId]);
+
+  const [asyncSnapshot, setAsyncSnapshot] = useState<any>(null);
+  useEffect(() => {
+    if (bookingId) {
+      void getLocalProgressSnapshotAsync(bookingId).then((data) => {
+        if (data) setAsyncSnapshot(data);
+      });
+    }
+  }, [bookingId]);
+
+  const beforePhotoUrl =
+    booking?.progress?.beforePhotoUrl || cachedSnapshot?.beforePhotoUrl || asyncSnapshot?.beforePhotoUrl || null;
+
+  const afterPhotoUrl =
+    booking?.progress?.afterPhotoUrl || cachedSnapshot?.afterPhotoUrl || asyncSnapshot?.afterPhotoUrl || null;
+
+  const isDisplayablePhoto = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    if (url === '/assets/lash_before.jpg' || url === '/assets/lash_cleaned.jpg' || url === '/assets/lash_after.jpg')
+      return false;
+    return (
+      url.startsWith('data:') ||
+      url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('/uploads') ||
+      url.startsWith('/api/') ||
+      url.length > 50
+    );
+  };
 
   const handleSubmit = () => {
+    const emotionMap: Record<string, 'happy' | 'satisfied' | 'neutral' | 'unhappy'> = {
+      happy: 'happy',
+      normal: 'satisfied',
+      dislike: 'neutral',
+      disappointed: 'unhappy',
+    };
     onComplete({
-      rating: 5,
-      emotion: 'happy',
-      feedbackNote: 'Nối rất êm, không cay; Mi nhẹ như không nối; CV Thảo Ly rất chu đáo',
+      rating,
+      emotion: emotionMap[selectedEmotion] || 'happy',
+      feedbackNote: selectedPoints.join('; '),
     });
   };
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
-      {/* Top Navbar on Black with Native Back Button */}
+      {/* Top Navbar on Black with Working Native Back Button */}
       <IosNavigationBar title="Wings Beauty Survey" onBack={onBack} backTitle="Ảnh After" />
 
-      <div className="flex-1 flex flex-col justify-between py-6 px-4 overflow-y-auto">
-        <div>
-          {/* Main Question */}
-          <div className="text-center pt-2">
+      {/* Lightbox Zoom Modal for Mirror Inspection */}
+      {zoomPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-between p-4 animate-in fade-in duration-200"
+          onClick={() => setZoomPhoto(null)}
+        >
+          <div
+            className="w-full flex items-center justify-between text-white pt-2 px-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[14px] font-black">{zoomPhoto.title}</span>
+            <button
+              type="button"
+              onClick={() => setZoomPhoto(null)}
+              className="w-8 h-8 rounded-full bg-neutral-800 text-white flex items-center justify-center font-bold text-sm cursor-pointer hover:bg-neutral-700"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex-1 w-full flex items-center justify-center py-4" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={zoomPhoto.url}
+              alt="Zoomed lash"
+              className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-neutral-800"
+            />
+          </div>
+          <div className="w-full pb-4 px-4 text-center">
+            <button
+              type="button"
+              onClick={() => setZoomPhoto(null)}
+              className="py-3 px-6 rounded-full bg-white text-black font-black text-[13px] shadow-lg cursor-pointer"
+            >
+              ✕ Đóng Gương Soi
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col justify-between py-4 px-4 overflow-y-auto">
+        <div className="space-y-4">
+          {/* Main Greeting */}
+          <div className="text-center pt-1">
             <h2 className="text-[20px] font-black text-black leading-tight px-2">
               {customerName} ơi, Chị cảm nhận ca làm hôm nay thế nào ạ?
             </h2>
-            <div className="text-[12px] text-gray-500 font-medium mt-2">
+            <div className="text-[12px] text-gray-500 font-medium mt-1.5">
               Chuyên viên phục vụ: <span className="text-gray-800 font-bold">{staffName} (CV🪶)</span> · Salon Đề Thám
             </div>
           </div>
 
-          {/* 5 Yellow Stars */}
-          <div className="flex justify-center items-center gap-1.5 mt-5">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <Star key={s} className="w-7 h-7 text-[#FFB400] fill-[#FFB400]" />
-            ))}
+          {/* GƯƠNG SOI FORM MI CHO KHÁCH (Before & After Mirror Showcase) */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#FFB400]" />
+                <span className="text-[12px] font-black text-black uppercase tracking-wider">
+                  GƯƠNG SOI FORM MI · ĐỐI CHIẾU TRƯỚC & SAU
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                Chạm để phóng to
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Cột 1: Trước (Mắt mộc) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isDisplayablePhoto(beforePhotoUrl)) {
+                    setZoomPhoto({ url: beforePhotoUrl!, title: 'Ảnh 1: Mắt Mộc Ban Đầu (Before)' });
+                  }
+                }}
+                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#1C1C1E] border border-neutral-700 shadow-inner group cursor-pointer text-left p-0"
+              >
+                {isDisplayablePhoto(beforePhotoUrl) ? (
+                  <>
+                    <img
+                      src={beforePhotoUrl!}
+                      alt="Before"
+                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-xs pointer-events-none">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-2 text-center text-[11px]">
+                    Chưa có ảnh Before
+                  </div>
+                )}
+                <span className="absolute bottom-2 left-2 bg-black/85 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded shadow-sm border border-amber-500/30 pointer-events-none">
+                  1. Trước khi nối
+                </span>
+              </button>
+
+              {/* Cột 2: Sau (Hoàn thiện) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isDisplayablePhoto(afterPhotoUrl)) {
+                    setZoomPhoto({ url: afterPhotoUrl!, title: 'Ảnh 2: Mi Hoàn Thiện Sau Nối (After)' });
+                  }
+                }}
+                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#1C1C1E] border-2 border-[#22C55E] shadow-md group cursor-pointer text-left p-0"
+              >
+                {isDisplayablePhoto(afterPhotoUrl) ? (
+                  <>
+                    <img
+                      src={afterPhotoUrl!}
+                      alt="After"
+                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-600/90 flex items-center justify-center text-white shadow-xs pointer-events-none">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-2 text-center text-[11px]">
+                    Chờ chụp ảnh After
+                  </div>
+                )}
+                <span className="absolute bottom-2 left-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm pointer-events-none">
+                  2. Sau hoàn thiện ✨
+                </span>
+              </button>
+            </div>
+
+            <div className="text-center text-[11px] text-gray-500 font-medium flex items-center justify-center gap-1.5 pt-0.5">
+              <span>🔍 Chị chạm vào ảnh để phóng to soi gương cận cảnh từng sợi mi nhé!</span>
+            </div>
           </div>
-          <div className="text-center text-[12px] font-extrabold text-[#FFB400] tracking-wider mt-1.5">
-            5.0 / 5.0 · TUYỆT VỜI
+
+          {/* 5 Yellow Stars (Interactive) */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 text-center">
+            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+              ĐÁNH GIÁ SỰ HÀI LÒNG CỦA CHỊ
+            </div>
+            <div className="flex justify-center items-center gap-2">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setRating(s)}
+                  className="p-1 active:scale-125 transition-transform cursor-pointer"
+                >
+                  <Star
+                    className={`w-8 h-8 ${
+                      s <= rating ? 'text-[#FFB400] fill-[#FFB400]' : 'text-neutral-300'
+                    } transition-colors`}
+                  />
+                </button>
+              ))}
+            </div>
+            <div className="text-center text-[13px] font-extrabold text-[#FFB400] tracking-wider mt-1.5">
+              {rating}.0 / 5.0 · {rating === 5 ? 'TUYỆT VỜI' : rating >= 4 ? 'HÀI LÒNG' : 'CẦN CẢI THIỆN'}
+            </div>
           </div>
 
           {/* 4 Emotion Faces in a row */}
-          <div className="grid grid-cols-4 gap-2.5 mt-7">
+          <div className="grid grid-cols-4 gap-2">
             {/* 1. Rất Hài Lòng */}
             <button
+              type="button"
               onClick={() => setSelectedEmotion('happy')}
-              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all ${
+              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'happy'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/50 shadow-sm'
-                  : 'bg-white shadow-sm'
+                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">😄</span>
@@ -75,11 +272,12 @@ export function Screen10CustomerSurvey({
 
             {/* 2. Bình Thường */}
             <button
+              type="button"
               onClick={() => setSelectedEmotion('normal')}
-              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all ${
+              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'normal'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/50 shadow-sm'
-                  : 'bg-white shadow-sm'
+                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">🙂</span>
@@ -90,11 +288,12 @@ export function Screen10CustomerSurvey({
 
             {/* 3. Chưa Thích */}
             <button
+              type="button"
               onClick={() => setSelectedEmotion('dislike')}
-              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all ${
+              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'dislike'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/50 shadow-sm'
-                  : 'bg-white shadow-sm'
+                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">🙁</span>
@@ -103,11 +302,12 @@ export function Screen10CustomerSurvey({
 
             {/* 4. Thất Vọng */}
             <button
+              type="button"
               onClick={() => setSelectedEmotion('disappointed')}
-              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all ${
+              className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'disappointed'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/50 shadow-sm'
-                  : 'bg-white shadow-sm'
+                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">😡</span>
@@ -115,45 +315,48 @@ export function Screen10CustomerSurvey({
             </button>
           </div>
 
-          {/* Points customer liked most */}
-          <div className="mt-7">
-            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-2.5">
-              ĐIỂM CHỊ ƯNG Ý NHẤT
+          {/* Điểm chị ưng ý nhất (Interactive Toggle Chips) */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80">
+            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 mb-2">
+              ĐIỂM CHỊ ƯNG Ý NHẤT (CHẠM ĐỂ CHỌN)
             </div>
             <div className="space-y-2">
-              <div>
-                <span className="inline-block bg-[#FFB400] text-black font-bold text-[13px] px-4 py-2 rounded-full shadow-xs">
-                  ✓ Nối rất êm, không cay
-                </span>
-              </div>
-              <div>
-                <span className="inline-block bg-[#FFB400] text-black font-bold text-[13px] px-4 py-2 rounded-full shadow-xs">
-                  ✓ Mi nhẹ như không nối
-                </span>
-              </div>
-              <div>
-                <span className="inline-block bg-[#FFB400] text-black font-bold text-[13px] px-4 py-2 rounded-full shadow-xs">
-                  ✓ CV Thảo Ly rất chu đáo
-                </span>
-              </div>
+              {defaultFeedbackPoints.map((point) => {
+                const isSelected = selectedPoints.includes(point);
+                return (
+                  <button
+                    key={point}
+                    type="button"
+                    onClick={() => togglePoint(point)}
+                    className={`w-full py-2.5 px-3.5 rounded-xl font-bold text-[13px] flex items-center justify-between transition-all cursor-pointer text-left ${
+                      isSelected
+                        ? 'bg-[#FFB400] text-black shadow-xs'
+                        : 'bg-neutral-100 text-gray-600 hover:bg-neutral-200'
+                    }`}
+                  >
+                    <span>{point}</span>
+                    {isSelected && <Check className="w-4 h-4 text-black shrink-0 ml-2" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="pt-6 pb-2 space-y-2">
+        {/* Action Buttons */}
+        <div className="pt-5 pb-2 space-y-2">
           <button
             onClick={handleSubmit}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-bold text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight flex items-center justify-center gap-2"
           >
-            GỬI ĐÁNH GIÁ & HOÀN TẤT
+            <span>GỬI ĐÁNH GIÁ & HOÀN TẤT</span>
           </button>
           <button
             type="button"
             onClick={onBack}
-            className="w-full py-2 text-center text-neutral-500 hover:text-neutral-700 text-[13px] font-semibold active:opacity-60 transition-opacity cursor-pointer"
+            className="w-full py-2.5 text-center text-neutral-600 hover:text-black text-[13px] font-bold active:opacity-60 transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
           >
-            ‹ Quay lại bước trước
+            <span>‹ Quay lại xem ảnh After & thời gian</span>
           </button>
         </div>
       </div>

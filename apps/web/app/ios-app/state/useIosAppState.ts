@@ -912,6 +912,26 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(11);
   };
 
+  // Step 11 -> Step 10: Quay lại màn hình Ảnh After để Chuyên viên hoặc Khách soi lại hình Before/After
+  const handleBackToAfterPhoto = useCallback(() => {
+    const progressPatch = {
+      ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
+      currentStep: 10,
+    };
+    updateActiveBooking((prev) => ({
+      ...prev,
+      progress: progressPatch,
+    }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+      status: 'SERVICING',
+    });
+    setActiveServicingStep(10);
+    setCurrentStep(10);
+    void postAction('UPDATE_PROGRESS', { orderState: 'Photo after auto-saved', progress: progressPatch });
+  }, [activeBooking.id, activeBooking.progress, postAction, updateActiveBooking]);
+
   // Step 11: Complete Survey -> Giữ nguyên quyền điều khiển của CV🪶 / 🪶CV🪶 để tự bán Dưỡng mi / Combo & Tự Checkout!
   const handleCompleteSurvey = (survey: {
     rating: number;
@@ -1145,6 +1165,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     handleToggleTimer,
     handleFinishTimer,
     handleSaveAfterPhoto,
+    handleBackToAfterPhoto,
     handleCompleteSurvey,
     handleGoToBilling,
     handleChoosePaymentMethod,
