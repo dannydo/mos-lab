@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
-import { Wifi, WifiOff, Zap, CheckCircle2, Award, Clock } from 'lucide-react';
+import { Camera, Image as ImageIcon, Zap, CheckCircle2, Award, Clock } from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
   booking: BookingItem;
@@ -13,35 +13,34 @@ interface Screen09LashProgressAfterProps {
 }
 
 export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Screen09LashProgressAfterProps) {
-  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Tính toán thời gian thực hiện thực tế từ timer
   const bookingId = booking.id;
   const progressSeconds = booking.progress?.elapsedSeconds;
+
+  // Lấy snapshot đã lưu (ảnh Before, thời gian timer)
+  const cachedSnapshot = useMemo(() => {
+    return getLocalProgressSnapshot(bookingId);
+  }, [bookingId]);
+
+  const beforePhotoUrl =
+    cachedSnapshot?.beforePhotoUrl || booking.progress?.beforePhotoUrl || '/assets/lash_before.jpg';
+
+  const [afterPhotoPreview, setAfterPhotoPreview] = useState<string | null>(() => {
+    return cachedSnapshot?.afterPhotoUrl || booking.progress?.afterPhotoUrl || null;
+  });
+
+  // Tính toán thời gian thực hiện thực tế từ timer
   const actualMinutes = useMemo(() => {
-    const cached = getLocalProgressSnapshot(bookingId);
-    if (cached && typeof cached.elapsedSeconds === 'number' && cached.elapsedSeconds > 0) {
-      return Math.max(1, Math.round(cached.elapsedSeconds / 60));
+    if (cachedSnapshot && typeof cachedSnapshot.elapsedSeconds === 'number' && cachedSnapshot.elapsedSeconds > 0) {
+      return Math.max(1, Math.round(cachedSnapshot.elapsedSeconds / 60));
     }
     if (progressSeconds) {
       return Math.max(1, Math.round(progressSeconds / 60));
     }
-    return 68; // Mocked realistic default (68 phút)
-  }, [bookingId, progressSeconds]);
+    return 68; // Realistic default
+  }, [cachedSnapshot, progressSeconds]);
 
   // Thời gian cam kết / định mức
   const targetMinutes = useMemo(() => {
@@ -54,7 +53,6 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
   }, [booking]);
 
   const diffMinutes = actualMinutes - targetMinutes;
-  const isFast = diffMinutes <= 0;
 
   // Đánh giá thăng cấp
   const promotionAudit = useMemo(() => {
@@ -85,44 +83,55 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     };
   }, [diffMinutes]);
 
-  const handleProceed = () => {
-    const photoUrl = '/assets/lash_after.jpg';
-    if (booking?.id) {
-      saveLocalProgressSnapshot(booking.id, {
-        afterPhotoUrl: photoUrl,
-        actualMinutes,
-        targetMinutes,
-        afterPhotoSavedAt: new Date().toISOString(),
-      });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        if (result) {
+          setAfterPhotoPreview(result);
+          saveLocalProgressSnapshot(bookingId, {
+            ...cachedSnapshot,
+            afterPhotoUrl: result,
+            actualMinutes,
+            targetMinutes,
+            afterPhotoSavedAt: new Date().toISOString(),
+          });
+        }
+      };
+      reader.readAsDataURL(file);
     }
+    e.target.value = '';
+  };
+
+  const handleProceed = () => {
+    const photoUrl = afterPhotoPreview || '/assets/lash_after.jpg';
+    saveLocalProgressSnapshot(bookingId, {
+      ...cachedSnapshot,
+      afterPhotoUrl: photoUrl,
+      actualMinutes,
+      targetMinutes,
+      afterPhotoSavedAt: new Date().toISOString(),
+    });
     onSavePhoto(photoUrl);
   };
 
-  const bedLabel = booking.assignedBed || 'G03';
-
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
-      <IosNavigationBar
-        title="Tiến Trình Nối Mi"
-        onBack={onBack}
-        backTitle="Bấm Giờ"
-        rightAction={
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
-                isOnline
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
-              }`}
-              title={isOnline ? 'Đã kết nối máy chủ' : 'Đang lưu tạm Offline'}
-            >
-              {isOnline ? <Wifi className="w-2.5 h-2.5" /> : <WifiOff className="w-2.5 h-2.5" />}
-              <span>{isOnline ? 'Online' : 'Offline'}</span>
-            </span>
-            <span className="text-[#FFB400] font-black text-sm px-1 tabular-nums">{bedLabel}</span>
-          </div>
-        }
+      {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Bấm Giờ" />
+
+      {/* Hidden file inputs for iPhone Camera and Photo Library */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileChange}
       />
+      <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {/* Steps subheader on black */}
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">
@@ -134,8 +143,8 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
-        {/* Section 1: Comparison */}
+      <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
+        {/* Section 1: Comparison with Real Photo Previews */}
         <div>
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 mb-2">
             SO SÁNH ĐỐI CHIẾU BEFORE / AFTER
@@ -143,29 +152,61 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
           <div className="grid grid-cols-2 gap-3">
             {/* Before Box */}
             <div className="bg-white rounded-2xl p-2.5 shadow-sm border border-neutral-100 flex flex-col items-center">
-              <div className="w-full aspect-[4/5] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center p-3 text-center border border-neutral-800">
-                <div className="w-10 h-10 rounded-full bg-[#FFB400] mb-2 flex items-center justify-center text-black font-black text-xs shadow-xs">
-                  ●
-                </div>
-                <span className="text-white font-medium text-[12px] leading-tight">Mắt Mộc Trước Nối</span>
+              <div className="w-full aspect-[4/5] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800">
+                {beforePhotoUrl ? (
+                  <img src={beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="p-3 text-center">
+                    <div className="w-8 h-8 rounded-full bg-[#FFB400] mb-1.5 flex items-center justify-center text-black font-black text-xs shadow-xs mx-auto">
+                      ●
+                    </div>
+                    <span className="text-white font-medium text-[11px] leading-tight">Mắt Mộc</span>
+                  </div>
+                )}
               </div>
               <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider mt-2">BEFORE</span>
             </div>
 
             {/* After Box */}
             <div className="bg-white rounded-2xl p-2.5 shadow-sm border-2 border-[#22C55E] flex flex-col items-center">
-              <div className="w-full aspect-[4/5] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center p-3 text-center border border-emerald-500/30">
-                <div className="w-10 h-10 rounded-full bg-[#22C55E] mb-2 flex items-center justify-center text-white font-black text-xs shadow-xs">
-                  ✓
-                </div>
-                <span className="text-[#22C55E] font-bold text-[12px] leading-tight">
-                  {booking.serviceName || 'Hoàn Thiện'}
-                </span>
+              <div className="w-full aspect-[4/5] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30">
+                {afterPhotoPreview ? (
+                  <img src={afterPhotoPreview} alt="After" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="p-3 text-center">
+                    <div className="w-8 h-8 rounded-full bg-[#22C55E] mb-1.5 flex items-center justify-center text-white font-black text-xs shadow-xs mx-auto">
+                      ✓
+                    </div>
+                    <span className="text-[#22C55E] font-bold text-[11.5px] leading-tight">
+                      {booking.serviceName || 'Hoàn Thiện'}
+                    </span>
+                  </div>
+                )}
               </div>
               <span className="text-[11px] font-black text-[#22C55E] uppercase tracking-wider mt-2">
                 AFTER (ĐẠT CHUẨN)
               </span>
             </div>
+          </div>
+
+          {/* Buttons to snap/upload real After photo */}
+          <div className="grid grid-cols-2 gap-2 mt-2.5">
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              className="py-2.5 px-2 bg-neutral-900 text-white font-bold text-[12px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5 text-amber-400" />
+              <span>{afterPhotoPreview ? 'Chụp lại After' : 'Chụp After Camera'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => libraryInputRef.current?.click()}
+              className="py-2.5 px-2 bg-[#E5E7EB] text-gray-800 font-bold text-[12px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+              <span>Chọn Từ Thư Viện</span>
+            </button>
           </div>
         </div>
 

@@ -114,13 +114,9 @@ export function Screen06CvDashboardReceive({
           )}
         </div>
 
-        {/* Center: Title & Bed Badge */}
+        {/* Center: Title */}
         <div className="flex flex-col items-center justify-center">
-          <span className="text-[14.5px] font-black text-white tracking-tight leading-tight">Nhiệm Vụ Ca Làm</span>
-          <span className="text-[10.5px] font-bold text-emerald-400 flex items-center gap-1 leading-tight mt-0.5 tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{booking.assignedBed || 'Giường 05'}</span>
-          </span>
+          <span className="text-[15px] font-black text-white tracking-tight leading-tight">Nhiệm Vụ Ca Làm</span>
         </div>
 
         {/* Right: Estimated Duration & Completion Target */}
@@ -145,15 +141,11 @@ export function Screen06CvDashboardReceive({
           {/* Laser Glow top bar */}
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
 
-          {/* Top Quest Bar: Title & Bed */}
+          {/* Top Quest Bar: Title */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[11px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm">
               <span>⚔️</span>
               <span>NHIỆM VỤ TIẾP NHẬN</span>
-            </span>
-            <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/40 text-[#34C759] text-[11.5px] font-black px-2.5 py-0.8 rounded-full shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-[#34C759] animate-pulse" />
-              <span>{booking.assignedBed || 'Giường 04'}</span>
             </span>
           </div>
 

@@ -140,29 +140,8 @@ export function Screen08LashProgressTimer({
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
-      {/* 1. Header Navigation */}
-      <IosNavigationBar
-        title="Tiến Trình Nối Mi"
-        onBack={onBack}
-        backTitle="Ca Làm"
-        rightAction={
-          <div className="flex items-center gap-1.5">
-            {/* Offline/Online badge */}
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
-                isOnline
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
-              }`}
-              title={isOnline ? 'Đã kết nối máy chủ' : 'Đang lưu tạm Offline'}
-            >
-              {isOnline ? <Wifi className="w-2.5 h-2.5" /> : <WifiOff className="w-2.5 h-2.5" />}
-              <span>{isOnline ? 'Online' : 'Offline'}</span>
-            </span>
-            <span className="text-[#FFB400] font-black text-sm px-1 tabular-nums">{bedLabel}</span>
-          </div>
-        }
-      />
+      {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ca Làm" />
 
       {/* 2. Steps Subheader (Black Bar) */}
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">

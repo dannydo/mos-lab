@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
-import { saveLocalProgressSnapshot } from '../../state/offlineSync';
-import { Eye, Check, Wifi, WifiOff, Camera, Sparkles } from 'lucide-react';
+import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import { Eye, Camera, Image as ImageIcon, RotateCw, CheckCircle2 } from 'lucide-react';
 
 interface Screen07LashProgressBeforeProps {
   booking?: BookingItem;
@@ -13,63 +13,71 @@ interface Screen07LashProgressBeforeProps {
 }
 
 export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Screen07LashProgressBeforeProps) {
-  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+  // Khôi phục ảnh đã chụp/lưu trước đó nếu có
+  const bookingId = booking?.id;
+  const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
+    if (!bookingId) return null;
+    const cached = getLocalProgressSnapshot(bookingId);
+    return cached?.beforePhotoUrl || null;
+  });
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        if (result) {
+          setPhotoPreview(result);
+          if (bookingId) {
+            saveLocalProgressSnapshot(bookingId, {
+              beforePhotoUrl: result,
+              beforePhotoSavedAt: new Date().toISOString(),
+              bookingId,
+            });
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
 
   const handleSave = () => {
-    const photoUrl = '/assets/lash_before.jpg';
-    if (booking?.id) {
-      saveLocalProgressSnapshot(booking.id, {
-        beforePhotoUrl: photoUrl,
+    const finalPhoto = photoPreview || '/assets/lash_before.jpg';
+    if (bookingId) {
+      saveLocalProgressSnapshot(bookingId, {
+        beforePhotoUrl: finalPhoto,
         beforePhotoSavedAt: new Date().toISOString(),
-        bookingId: booking.id,
+        bookingId,
       });
     }
-    onSavePhoto(photoUrl);
+    onSavePhoto(finalPhoto);
   };
 
   const customerName = booking?.customerName || 'Chị Quyên';
-  const bedLabel = booking?.assignedBed || 'Giường 03';
   const serviceName = booking?.serviceName || 'Dáng Flawless · Cong C · Dài 10-12mm';
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
-      <IosNavigationBar
-        title="Tiến Trình Nối Mi"
-        onBack={onBack}
-        backTitle="Ca Làm"
-        rightAction={
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
-                isOnline
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
-              }`}
-              title={isOnline ? 'Đã kết nối máy chủ' : 'Đang lưu tạm Offline'}
-            >
-              {isOnline ? <Wifi className="w-2.5 h-2.5" /> : <WifiOff className="w-2.5 h-2.5" />}
-              <span>{isOnline ? 'Online' : 'Offline'}</span>
-            </span>
-            <span className="text-[#FFB400] font-black text-sm px-1 tabular-nums">{bedLabel}</span>
-          </div>
-        }
-      />
+      {/* 1. Header Navigation: Bỏ hoàn toàn thông tin Giường và Online theo yêu cầu */}
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ca Làm" />
 
-      {/* Steps subheader on black */}
+      {/* Hidden file inputs for iPhone Camera and Photo Library */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+
+      {/* 2. Steps Subheader (Black Bar) */}
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">
         <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 flex items-center justify-between">
           <span>1. Ảnh Before Mắt Mộc ✓</span>
@@ -79,13 +87,11 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">3. Ảnh After Hoàn Thiện</div>
       </div>
 
-      <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
-        {/* Header Card */}
-        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 flex items-center justify-between">
+      <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
+        {/* 3. Header Card: Bỏ thông tin Giường */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 flex items-center justify-between">
           <div>
-            <div className="text-[15px] font-extrabold text-black">
-              {customerName} · {bedLabel}
-            </div>
+            <div className="text-[16px] font-extrabold text-black">{customerName}</div>
             <div className="text-[12px] text-gray-500 mt-0.5 font-medium">{serviceName}</div>
           </div>
           <span className="bg-[#22C55E] text-white font-extrabold text-[11px] px-3 py-1 rounded-full shadow-xs">
@@ -94,45 +100,72 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
         </div>
 
         {/* Section title */}
-        <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 pt-1 flex items-center justify-between">
-          <span>CHỤP ẢNH BEFORE MẮT MỘC (BẮT BUỘC)</span>
-          {!isOnline && (
-            <span className="text-amber-600 text-[10px] font-bold flex items-center gap-1">💾 Tự động lưu offline</span>
-          )}
+        <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 pt-0.5">
+          CHỤP ẢNH BEFORE MẮT MỘC (BẮT BUỘC)
         </div>
 
-        {/* Camera Viewfinder Card */}
-        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-3">
-          <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center p-4 overflow-hidden border border-neutral-800">
-            <div className="w-16 h-16 rounded-full bg-[#FFB400]/20 flex items-center justify-center mb-3">
-              <Eye className="w-10 h-10 text-[#FFB400]" />
-            </div>
-            <div className="text-white font-black text-[15px] text-center">Ảnh Before Mắt Mộc {customerName}</div>
-            <div className="text-[#34C759] text-[12px] font-semibold mt-1">✓ Độ nét cao · Đủ ánh sáng</div>
+        {/* 4. Camera Viewfinder Card with Real Capture & Photo Upload */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 space-y-3.5">
+          <div className="relative w-full aspect-[4/3] rounded-2xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800 shadow-inner group">
+            {photoPreview ? (
+              <img
+                src={photoPreview}
+                alt="Before photo preview"
+                className="w-full h-full object-cover animate-in fade-in duration-200"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-[#FFB400]/20 flex items-center justify-center mb-3 shadow-xs">
+                  <Eye className="w-9 h-9 text-[#FFB400]" />
+                </div>
+                <div className="text-white font-black text-[15px]">Ảnh Before Mắt Mộc {customerName}</div>
+                <div className="text-neutral-400 text-[12px] mt-1">Chụp góc thẳng hoặc 45° từ trên mí xuống</div>
+              </div>
+            )}
 
-            <div className="absolute bottom-3 left-3 bg-black/80 text-white text-[10.5px] font-mono px-2 py-0.5 rounded border border-neutral-700">
-              10:38:15 AM · Salon Đề Thám · {bedLabel}
+            {/* Watermark overlay */}
+            <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+              <span className="bg-black/80 text-white text-[10px] font-mono px-2 py-0.8 rounded border border-neutral-700/80">
+                10:38:15 AM · Salon Đề Thám
+              </span>
+              {photoPreview && (
+                <span className="bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1 shadow-sm">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Đã chụp ảnh thật</span>
+                </span>
+              )}
             </div>
           </div>
 
-          <div className="flex gap-2.5">
-            <button className="flex-1 py-3 bg-[#E5E7EB] text-gray-800 font-bold text-[13px] rounded-xl text-center active:scale-98 transition-transform cursor-pointer">
-              Chụp lại
+          {/* Action Buttons to Trigger iPhone Camera or Photo Library */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              className="py-3 px-3 bg-neutral-900 text-white hover:bg-black font-extrabold text-[13px] rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
+            >
+              <Camera className="w-4 h-4 text-amber-400" />
+              <span>{photoPreview ? 'Chụp lại Camera' : 'Chụp Bằng Camera'}</span>
             </button>
-            <button className="flex-1 py-3 bg-[#DCFCE7] text-[#16A34A] font-black text-[13px] rounded-xl text-center flex items-center justify-center gap-1 active:scale-98 transition-transform cursor-pointer">
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Đạt tiêu chuẩn</span>
+
+            <button
+              type="button"
+              onClick={() => libraryInputRef.current?.click()}
+              className="py-3 px-3 bg-[#E5E7EB] hover:bg-neutral-300 text-gray-800 font-extrabold text-[13px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
+            >
+              <ImageIcon className="w-4 h-4 text-blue-600" />
+              <span>Chọn Từ Thư Viện</span>
             </button>
           </div>
         </div>
 
-        {/* Bottom Big Button */}
-        <div className="pt-2">
+        {/* 5. Big CTA Button */}
+        <div className="pt-1">
           <button
             onClick={handleSave}
-            className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight"
+            className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight flex items-center justify-center gap-2"
           >
-            LƯU ẢNH BEFORE & BẮT ĐẦU BẤM GIỜ
+            <span>LƯU ẢNH BEFORE & BẮT ĐẦU BẤM GIỜ</span>
           </button>
         </div>
       </div>

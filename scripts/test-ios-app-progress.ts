@@ -34,6 +34,11 @@ async function main() {
   await taskTabBtn.click();
   await page.waitForTimeout(1000);
 
+  await page.screenshot({
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen06-nobed.png',
+  });
+  console.log('Screen 06 nobed screenshot saved: ios-screen06-nobed.png');
+
   // 2. Click "MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM" to reach Screen 07
   console.log('Navigating to Screen 07 (Before Photo)...');
   const startQuestBtn = page.locator('button:has-text("MỞ TIẾN TRÌNH")').first();
@@ -41,9 +46,9 @@ async function main() {
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen07-before-photo.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen07-camera-upload.png',
   });
-  console.log('Screen 07 screenshot saved: ios-screen07-before-photo.png');
+  console.log('Screen 07 camera/upload screenshot saved: ios-screen07-camera-upload.png');
 
   // 3. Click "LƯU ẢNH BEFORE & BẮT ĐẦU BẤM GIỜ" to reach Screen 08 (Timer Countdown)
   console.log('Navigating to Screen 08 (Timer Countdown)...');
@@ -52,32 +57,20 @@ async function main() {
   await page.waitForTimeout(1500);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen08-timer-countdown.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen08-nobed.png',
   });
-  console.log('Screen 08 countdown screenshot saved: ios-screen08-timer-countdown.png');
+  console.log('Screen 08 nobed screenshot saved: ios-screen08-nobed.png');
 
-  // 4. Toggle to Elapsed mode
-  console.log('Toggling timer to Elapsed mode...');
-  const elapsedBtn = page.locator('button:has-text("Đếm Xuôi")').first();
-  if (await elapsedBtn.isVisible()) {
-    await elapsedBtn.click();
-    await page.waitForTimeout(1000);
-    await page.screenshot({
-      path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen08-timer-elapsed.png',
-    });
-    console.log('Screen 08 elapsed screenshot saved: ios-screen08-timer-elapsed.png');
-  }
-
-  // 5. Click "HOÀN TẤT NỐI MI & CHỤP AFTER" to reach Screen 09
+  // 4. Click "HOÀN TẤT NỐI MI & CHỤP AFTER" to reach Screen 09
   console.log('Navigating to Screen 09 (After Photo & Speed Audit)...');
   const finishTimerBtn = page.locator('button:has-text("HOÀN TẤT NỐI MI")').first();
   await finishTimerBtn.click();
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen09-after-speed-audit.png',
+    path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-screen09-camera-upload.png',
   });
-  console.log('Screen 09 speed audit screenshot saved: ios-screen09-after-speed-audit.png');
+  console.log('Screen 09 camera/upload screenshot saved: ios-screen09-camera-upload.png');
 
   await browser.close();
 }
