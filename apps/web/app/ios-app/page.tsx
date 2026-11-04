@@ -174,6 +174,7 @@ function IosAppInner() {
             booking={state.activeBooking}
             onStartTask={state.handleCvStartTask}
             onEditService={() => state.handleOpenConsultation(6)}
+            staffStats={state.staffStats}
           />
         );
       case 7:

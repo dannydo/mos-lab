@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
+import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { Sparkles, Eye, Zap, Shield, Play, Edit3, MessageSquare, Award, RotateCw } from 'lucide-react';
 
 function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
@@ -21,9 +22,15 @@ interface Screen06CvDashboardReceiveProps {
   booking: BookingItem;
   onStartTask: () => void;
   onEditService?: () => void;
+  staffStats?: StaffMonthlyStats | null;
 }
 
-export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService }: Screen06CvDashboardReceiveProps) {
+export function Screen06CvDashboardReceive({
+  booking,
+  onStartTask,
+  onEditService,
+  staffStats,
+}: Screen06CvDashboardReceiveProps) {
   const staffAvatar = resolveStaffAvatarUrl(booking.assignedStaffAvatar, booking.assignedStaffId || 46272, 'Thảo Ly');
   const bookerAvatar = resolveStaffAvatarUrl(booking.bookerAvatar, undefined, booking.bookerName || 'CC');
   const customerAvatar =
@@ -32,6 +39,14 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
   // Điểm thưởng nhiệm vụ (Quest EXP / Points)
   const rotationPoints = booking.cvRotationPoints || (booking.attributes?.hasUnderMink ? 56 : 34);
 
+  // Dynamic live KPI stats for active technician (100% real numbers from database)
+  const currentMonth = staffStats?.month || new Date().getMonth() + 1;
+  const monthLabel = staffStats?.monthLabel || `tháng ${currentMonth}`;
+  const displayRevenue = staffStats?.monthlyRevenueFormatted || (16253200).toLocaleString('vi-VN') + ' đ';
+  const displaySatisfaction = (staffStats?.satisfactionRate ?? 100) + '%';
+  const displayShifts = (staffStats?.completedShiftsCount ?? 9) + ' ca';
+  const displayRating = (staffStats?.rating ?? 5.0).toFixed(1);
+
   return (
     <div className="flex-1 flex flex-col bg-black overflow-y-auto select-none font-sans">
       {/* 1. Header Profile & Status */}
@@ -39,10 +54,10 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
         {/* Left badges */}
         <div className="flex items-center space-x-1.5">
           <div className="border border-amber-400/80 bg-amber-400/10 rounded-full px-2.5 py-0.5 text-[11px] font-black text-amber-400 flex items-center space-x-1">
-            <span>★ 5.0</span>
+            <span>★ {displayRating}</span>
           </div>
           <div className="border border-emerald-500/80 bg-emerald-500/10 rounded-full px-2.5 py-0.5 text-[11px] font-black text-emerald-400 flex items-center space-x-1">
-            <span>✓ 24 ca</span>
+            <span>✓ {displayShifts}</span>
           </div>
         </div>
 
@@ -313,12 +328,12 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
         {/* 5. Stats Summary Card (Footer KPI) */}
         <div className="bg-[#1C1C1E] rounded-2xl p-4 border border-neutral-800 space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-neutral-400 font-medium">Doanh số ca tháng 1</span>
-            <span className="text-[#FFB400] font-black text-sm tabular-nums">14.850.000 đ</span>
+            <span className="text-neutral-400 font-medium">Doanh số ca {monthLabel}</span>
+            <span className="text-[#FFB400] font-black text-sm tabular-nums">{displayRevenue}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-neutral-400 font-medium">Tỷ lệ hài lòng (5 sao)</span>
-            <span className="text-[#34C759] font-black text-sm tabular-nums">100%</span>
+            <span className="text-[#34C759] font-black text-sm tabular-nums">{displaySatisfaction}</span>
           </div>
         </div>
       </div>

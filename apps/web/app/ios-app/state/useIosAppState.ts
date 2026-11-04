@@ -14,6 +14,17 @@ export interface SegmentCounts {
   cancel: number;
 }
 
+export interface StaffMonthlyStats {
+  staffId: number;
+  month: number;
+  monthLabel: string;
+  monthlyRevenue: number;
+  monthlyRevenueFormatted: string;
+  completedShiftsCount: number;
+  satisfactionRate: number;
+  rating: number;
+}
+
 export interface ActiveActorProfile {
   staffId: number;
   name: string;
@@ -89,6 +100,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     done: 0,
     cancel: 0,
   });
+  const [staffStats, setStaffStats] = useState<StaffMonthlyStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [isLiveDb, setIsLiveDb] = useState<boolean>(false);
@@ -243,6 +255,9 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           });
           if (data.counts) {
             setCounts(data.counts);
+          }
+          if (data.staffStats) {
+            setStaffStats(data.staffStats);
           }
           setIsLiveDb(true);
           setLastRefreshedAt(
@@ -688,6 +703,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     isSettingsOpen,
     setIsSettingsOpen,
     counts,
+    staffStats,
     isRefreshing,
     lastRefreshedAt,
     isLiveDb,
