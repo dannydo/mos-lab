@@ -73,6 +73,15 @@ export function Screen08LashProgressTimer({
     };
   }, []);
 
+  // Đồng bộ bước 9 vào local snapshot ngay khi mở màn hình Bấm giờ
+  useEffect(() => {
+    saveLocalProgressSnapshot(booking.id, {
+      currentStep: 9,
+      bookingId: booking.id,
+      startedAt: booking.progress?.startedAt || new Date().toISOString(),
+    });
+  }, [booking.id, booking.progress?.startedAt]);
+
   // Timer loop & tự động lưu local snapshot (chạy ngầm tự động liên tục từ lúc bấm nhận ca / prepare)
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -92,6 +101,7 @@ export function Screen08LashProgressTimer({
               startedAt: booking.progress?.startedAt,
               bookingId: booking.id,
               serviceName: booking.serviceName,
+              currentStep: 9,
             });
           }
           return next;

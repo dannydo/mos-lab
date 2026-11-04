@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
-import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import {
+  saveLocalProgressSnapshot,
+  getLocalProgressSnapshot,
+  getLocalProgressSnapshotAsync,
+} from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { compressLashImage } from '../../utils/imageCompressor';
 import { EyeOff, Camera, Image as ImageIcon, Sparkles } from 'lucide-react';
 
 interface Screen07bLashProgressCleanedProps {
@@ -25,26 +30,36 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
     return booking?.progress?.cleanedPhotoUrl || cached?.cleanedPhotoUrl || null;
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Tự động khôi phục ảnh từ IndexedDB và đồng bộ currentStep = 8
+  useEffect(() => {
+    if (!bookingId) return;
+    saveLocalProgressSnapshot(bookingId, { currentStep: 8 });
+    if (!photoPreview) {
+      void getLocalProgressSnapshotAsync(bookingId).then((cached) => {
+        if (cached?.cleanedPhotoUrl) {
+          setPhotoPreview(cached.cleanedPhotoUrl);
+        }
+      });
+    }
+  }, [bookingId, photoPreview]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) {
-          setPhotoPreview(result);
-          if (bookingId) {
-            const cached = getLocalProgressSnapshot(bookingId) || {};
-            saveLocalProgressSnapshot(bookingId, {
-              ...cached,
-              cleanedPhotoUrl: result,
-              cleanedPhotoSavedAt: new Date().toISOString(),
-              bookingId,
-            });
-          }
+      try {
+        const compressed = await compressLashImage(file, 1024, 0.72);
+        setPhotoPreview(compressed);
+        if (bookingId) {
+          saveLocalProgressSnapshot(bookingId, {
+            cleanedPhotoUrl: compressed,
+            cleanedPhotoSavedAt: new Date().toISOString(),
+            bookingId,
+            currentStep: 8,
+          });
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('[Screen07b] Failed to compress image:', err);
+      }
     }
     e.target.value = '';
   };
@@ -52,12 +67,11 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
   const handleSave = () => {
     const finalPhoto = photoPreview || '/assets/lash_cleaned.jpg';
     if (bookingId) {
-      const cached = getLocalProgressSnapshot(bookingId) || {};
       saveLocalProgressSnapshot(bookingId, {
-        ...cached,
         cleanedPhotoUrl: finalPhoto,
         cleanedPhotoSavedAt: new Date().toISOString(),
         bookingId,
+        currentStep: 9,
       });
     }
     onSavePhoto(finalPhoto);

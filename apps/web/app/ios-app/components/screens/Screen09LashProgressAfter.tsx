@@ -4,8 +4,13 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
-import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import {
+  saveLocalProgressSnapshot,
+  getLocalProgressSnapshot,
+  getLocalProgressSnapshotAsync,
+} from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { compressLashImage } from '../../utils/imageCompressor';
 import { Camera, Image as ImageIcon, Zap, CheckCircle2, Award, Clock } from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
@@ -26,14 +31,34 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     return getLocalProgressSnapshot(bookingId);
   }, [bookingId]);
 
+  const [asyncSnapshot, setAsyncSnapshot] = useState<any>(null);
+
+  useEffect(() => {
+    void getLocalProgressSnapshotAsync(bookingId).then((data) => {
+      if (data) setAsyncSnapshot(data);
+    });
+  }, [bookingId]);
+
   const beforePhotoUrl =
-    cachedSnapshot?.beforePhotoUrl || booking.progress?.beforePhotoUrl || '/assets/lash_before.jpg';
+    cachedSnapshot?.beforePhotoUrl ||
+    asyncSnapshot?.beforePhotoUrl ||
+    booking.progress?.beforePhotoUrl ||
+    '/assets/lash_before.jpg';
   const cleanedPhotoUrl =
-    cachedSnapshot?.cleanedPhotoUrl || booking.progress?.cleanedPhotoUrl || '/assets/lash_cleaned.jpg';
+    cachedSnapshot?.cleanedPhotoUrl ||
+    asyncSnapshot?.cleanedPhotoUrl ||
+    booking.progress?.cleanedPhotoUrl ||
+    '/assets/lash_cleaned.jpg';
 
   const [afterPhotoPreview, setAfterPhotoPreview] = useState<string | null>(() => {
     return cachedSnapshot?.afterPhotoUrl || booking.progress?.afterPhotoUrl || null;
   });
+
+  useEffect(() => {
+    if (!afterPhotoPreview && asyncSnapshot?.afterPhotoUrl) {
+      setAfterPhotoPreview(asyncSnapshot.afterPhotoUrl);
+    }
+  }, [afterPhotoPreview, asyncSnapshot]);
 
   // Tính toán thời gian thực hiện thực tế từ timer
   const actualMinutes = useMemo(() => {
@@ -98,24 +123,33 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     };
   }, [diffMinutes]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Khởi tạo và đồng bộ step 10 vào local snapshot
+  useEffect(() => {
+    saveLocalProgressSnapshot(bookingId, {
+      ...cachedSnapshot,
+      ...asyncSnapshot,
+      currentStep: 10,
+    });
+  }, [bookingId]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) {
-          setAfterPhotoPreview(result);
-          saveLocalProgressSnapshot(bookingId, {
-            ...cachedSnapshot,
-            afterPhotoUrl: result,
-            actualMinutes,
-            targetMinutes,
-            afterPhotoSavedAt: new Date().toISOString(),
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressLashImage(file, 1024, 0.72);
+        setAfterPhotoPreview(compressed);
+        saveLocalProgressSnapshot(bookingId, {
+          ...cachedSnapshot,
+          ...asyncSnapshot,
+          afterPhotoUrl: compressed,
+          actualMinutes,
+          targetMinutes,
+          currentStep: 10,
+          afterPhotoSavedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn('[Screen09] Failed to compress image:', err);
+      }
     }
     e.target.value = '';
   };
@@ -124,9 +158,11 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     const photoUrl = afterPhotoPreview || '/assets/lash_after.jpg';
     saveLocalProgressSnapshot(bookingId, {
       ...cachedSnapshot,
+      ...asyncSnapshot,
       afterPhotoUrl: photoUrl,
       actualMinutes,
       targetMinutes,
+      currentStep: 11,
       afterPhotoSavedAt: new Date().toISOString(),
     });
     onSavePhoto(photoUrl);

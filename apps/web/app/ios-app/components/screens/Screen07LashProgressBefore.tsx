@@ -3,8 +3,13 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
-import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import {
+  saveLocalProgressSnapshot,
+  getLocalProgressSnapshot,
+  getLocalProgressSnapshotAsync,
+} from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { compressLashImage } from '../../utils/imageCompressor';
 import { Eye, Camera, Image as ImageIcon, RotateCw, CheckCircle2 } from 'lucide-react';
 
 interface Screen07LashProgressBeforeProps {
@@ -25,24 +30,37 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
     return booking?.progress?.beforePhotoUrl || cached?.beforePhotoUrl || null;
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Tự động khôi phục ảnh từ IndexedDB và đồng bộ currentStep = 7
+  useEffect(() => {
+    if (!bookingId) return;
+    saveLocalProgressSnapshot(bookingId, { currentStep: 7 });
+    if (!photoPreview) {
+      void getLocalProgressSnapshotAsync(bookingId).then((cached) => {
+        if (cached?.beforePhotoUrl) {
+          setPhotoPreview(cached.beforePhotoUrl);
+        }
+      });
+    }
+  }, [bookingId, photoPreview]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) {
-          setPhotoPreview(result);
-          if (bookingId) {
-            saveLocalProgressSnapshot(bookingId, {
-              beforePhotoUrl: result,
-              beforePhotoSavedAt: new Date().toISOString(),
-              bookingId,
-            });
-          }
+      try {
+        // Nén ảnh canvas theo chuẩn iOS native toJpegData (tối đa 1024px, giảm từ 5MB -> ~60KB)
+        const compressed = await compressLashImage(file, 1024, 0.72);
+        setPhotoPreview(compressed);
+        if (bookingId) {
+          saveLocalProgressSnapshot(bookingId, {
+            beforePhotoUrl: compressed,
+            beforePhotoSavedAt: new Date().toISOString(),
+            bookingId,
+            currentStep: 7,
+          });
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('[Screen07] Failed to compress image:', err);
+      }
     }
     e.target.value = '';
   };
@@ -54,6 +72,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
         beforePhotoUrl: finalPhoto,
         beforePhotoSavedAt: new Date().toISOString(),
         bookingId,
+        currentStep: 8,
       });
     }
     onSavePhoto(finalPhoto);

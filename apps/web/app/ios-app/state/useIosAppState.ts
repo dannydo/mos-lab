@@ -14,8 +14,13 @@ import {
   saveLocalProgressSnapshot,
   syncPendingActions,
   getLocalProgressSnapshot,
+  getLocalProgressSnapshotAsync,
   getActiveServicingBookingId,
+  getActiveServicingBookingIdAsync,
   setActiveServicingBookingId,
+  getActiveServicingStep,
+  getActiveServicingStepAsync,
+  setActiveServicingStep,
 } from './offlineSync';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
@@ -148,37 +153,47 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     }
   }, [initialRole]);
 
-  // Khôi phục ca làm đang phục vụ dở dang từ localStorage
+  // Khôi phục ca làm đang phục vụ dở dang từ localStorage / IndexedDB (chuẩn native iOS)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const savedActiveId = getActiveServicingBookingId();
-      if (savedActiveId) {
-        const idNum = Number(savedActiveId);
-        setBookings((prev) => {
-          const match = prev.find((b) => b.id === idNum);
-          if (match && match.status !== 'DONE') {
-            setActiveBookingId(idNum);
-            const cached = getLocalProgressSnapshot(idNum);
-            return prev.map((b) =>
-              b.id === idNum
-                ? {
-                    ...b,
-                    status: 'SERVICING',
-                    progress: {
-                      ...(b.progress || {}),
-                      ...cached,
-                    },
-                  }
-                : b
-            );
+    const restoreActiveSession = async () => {
+      try {
+        const savedActiveId = (await getActiveServicingBookingIdAsync()) || getActiveServicingBookingId();
+        if (savedActiveId) {
+          const idNum = Number(savedActiveId);
+          setActiveBookingId(idNum);
+
+          const cached = await getLocalProgressSnapshotAsync(idNum);
+          if (cached) {
+            setBookings((prev) => {
+              return prev.map((b) =>
+                b.id === idNum
+                  ? {
+                      ...b,
+                      status: 'SERVICING',
+                      progress: {
+                        ...(b.progress || {}),
+                        ...cached,
+                      },
+                    }
+                  : b
+              );
+            });
+
+            // Khôi phục chuẩn xác màn hình đang phục vụ (Bước 7..15) như iOS App cũ khi mở lại app!
+            const savedStep = cached.currentStep || (await getActiveServicingStepAsync()) || getActiveServicingStep();
+            if (savedStep && savedStep >= 6) {
+              setCurrentStep(savedStep);
+              setActiveTab('task');
+            }
           }
-          return prev;
-        });
+        }
+      } catch (err) {
+        console.warn('[useIosAppState] Failed to restore active session:', err);
       }
-    } catch {
-      // ignore
-    }
+    };
+
+    void restoreActiveSession();
   }, []);
 
   const canSwitchRole = Boolean(loggedInUser && isAdminOrSuperAdminRole(loggedInUser?.role));
@@ -256,13 +271,19 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   }, [bookings]);
 
   const handleResumeServicing = useCallback(
-    (bookingId?: number) => {
+    async (bookingId?: number) => {
       const targetId = bookingId || activeServicingBooking?.id || activeBookingId;
       const targetBooking = bookings.find((b) => b.id === targetId);
       if (!targetBooking) return;
       setActiveBookingId(targetBooking.id);
-      const cached = getLocalProgressSnapshot(targetBooking.id);
-      const targetStep = targetBooking.progress?.currentStep || cached?.currentStep || 7;
+      const cached =
+        (await getLocalProgressSnapshotAsync(targetBooking.id)) || getLocalProgressSnapshot(targetBooking.id);
+      const targetStep =
+        targetBooking.progress?.currentStep ||
+        cached?.currentStep ||
+        (await getActiveServicingStepAsync()) ||
+        getActiveServicingStep() ||
+        7;
       setActiveTab('task');
       setCurrentStep(targetStep);
     },
@@ -353,8 +374,15 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
                   attributes: existing.attributes || incoming.attributes,
                   cvRotationPoints: existing.cvRotationPoints ?? incoming.cvRotationPoints,
                   cvRotationBreakdown: existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown,
-                  status: existing.status || incoming.status,
-                  progress: existing.progress || incoming.progress,
+                  status:
+                    existing.status === 'SERVICING' || getLocalProgressSnapshot(incoming.id)?.status === 'SERVICING'
+                      ? 'SERVICING'
+                      : existing.status || incoming.status,
+                  progress: {
+                    ...(incoming.progress || {}),
+                    ...(existing.progress || {}),
+                    ...(getLocalProgressSnapshot(incoming.id) || {}),
+                  },
                   selectedCombo: existing.selectedCombo || incoming.selectedCombo,
                   cartProducts: existing.cartProducts || incoming.cartProducts,
                   billing: existing.billing || incoming.billing,
