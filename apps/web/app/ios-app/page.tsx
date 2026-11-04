@@ -187,6 +187,7 @@ function IosAppInner() {
       case 7:
         return (
           <Screen07LashProgressBefore
+            booking={state.activeBooking}
             onBack={() => state.setCurrentStep(6)}
             onSavePhoto={state.handleSaveBeforePhoto}
           />

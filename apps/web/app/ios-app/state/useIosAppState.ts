@@ -9,6 +9,12 @@ import {
   filterBookingsForCvlScope,
   resolveStaffAvatarUrl,
 } from './mockData';
+import {
+  enqueueOfflineAction,
+  saveLocalProgressSnapshot,
+  syncPendingActions,
+  getLocalProgressSnapshot,
+} from './offlineSync';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -201,9 +207,18 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
   const postAction = useCallback(
     async (action: string, payload: Record<string, any> = {}) => {
+      // 1. Lưu snapshot offline ngay lập tức
+      saveLocalProgressSnapshot(activeBookingId, { action, payload, updatedAt: new Date().toISOString() });
+
+      // 2. Nếu rớt mạng, lưu vào queue chờ sync
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        enqueueOfflineAction(action, activeBookingId, payload);
+        return;
+      }
+
       try {
         const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
-        await fetch('/api/ios/bookings', {
+        const res = await fetch('/api/ios/bookings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -218,8 +233,13 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
             ...payload,
           }),
         });
+
+        if (!res.ok) {
+          enqueueOfflineAction(action, activeBookingId, payload);
+        }
       } catch (err) {
-        console.warn('[useIosAppState] Failed to persist action:', action, err);
+        console.warn('[useIosAppState] Failed to persist action, queued offline:', action, err);
+        enqueueOfflineAction(action, activeBookingId, payload);
       }
     },
     [activeBookingId, actor.staffId, actor.name, actor.tier]
@@ -305,6 +325,29 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     if (!enabled) return;
     refreshDb();
   }, [bookingSegment, scopeMode, role, enabled, refreshDb]);
+
+  // Tự động đồng bộ các action offline khi có mạng hoặc định kỳ mỗi 20 giây
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const runSync = () => {
+      if (navigator.onLine) {
+        void syncPendingActions({
+          staffId: actor.staffId,
+          name: actor.name,
+          tier: actor.tier,
+        });
+      }
+    };
+
+    window.addEventListener('online', runSync);
+    const timer = setInterval(runSync, 20000);
+
+    return () => {
+      window.removeEventListener('online', runSync);
+      clearInterval(timer);
+    };
+  }, [actor.staffId, actor.name, actor.tier]);
 
   const updateActiveBooking = (updater: (prev: BookingItem) => BookingItem) => {
     setBookings((prev) => prev.map((b) => (b.id === activeBookingId ? updater(b) : b)));
