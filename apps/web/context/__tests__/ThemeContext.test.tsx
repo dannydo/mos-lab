@@ -97,8 +97,8 @@ describe('ThemeProvider display density', () => {
 
     expect(screen.getByTestId('desktop-density')).toHaveTextContent('comfortable');
     expect(screen.getByTestId('effective-density')).toHaveTextContent('mobileCompact');
-    expect(screen.getByTestId('ant-control-height')).toHaveTextContent('44');
-    expect(screen.getByTestId('ant-font-size')).toHaveTextContent('14');
+    expect(screen.getByTestId('ant-control-height')).toHaveTextContent('38');
+    expect(screen.getByTestId('ant-font-size')).toHaveTextContent('12');
     await waitFor(() => expect(document.documentElement.dataset.uiDensity).toBe('mobileCompact'));
     expect(window.localStorage.getItem(DESKTOP_DENSITY_STORAGE_KEY)).toBe('comfortable');
 
