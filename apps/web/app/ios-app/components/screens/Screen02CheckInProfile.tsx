@@ -835,7 +835,7 @@ export function Screen02CheckInProfile({
           >
             <span className="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
               <RotateCw className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              THÔNG SỐ VÒNG XOAY
+              VÒNG XOAY
             </span>
 
             <div className="flex items-center gap-1.5 min-w-0">
@@ -866,7 +866,7 @@ export function Screen02CheckInProfile({
                 </svg>
                 <span>
                   {activePointsBreakdown.serviceSetsCount === 2
-                    ? `2 Bộ · +${activePointsBreakdown.totalPoints} pts (${activePointsBreakdown.upperSetPoints}p+${activePointsBreakdown.underSetPoints}p)`
+                    ? `2 Bộ · +${activePointsBreakdown.totalPoints} pts`
                     : `+${activePointsBreakdown.totalPoints} pts`}
                 </span>
               </span>

@@ -2,7 +2,20 @@
 
 import React from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
-import { Sparkles, Eye, Zap, Shield, Play, Edit3, MessageSquare, Award } from 'lucide-react';
+import { Sparkles, Eye, Zap, Shield, Play, Edit3, MessageSquare, Award, RotateCw } from 'lucide-react';
+
+function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" className={className} aria-hidden="true">
+      {/* Lash Tile / Tray base */}
+      <rect x="2" y="2" width="12" height="12" rx="2" strokeWidth="1.5" />
+      {/* Lash strips arranged horizontally */}
+      <line x1="4.5" y1="5.5" x2="11.5" y2="5.5" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="4.5" y1="8.5" x2="11.5" y2="8.5" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="4.5" y1="11.5" x2="9.5" y2="11.5" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 interface Screen06CvDashboardReceiveProps {
   booking: BookingItem;
@@ -18,7 +31,6 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
 
   // Điểm thưởng nhiệm vụ (Quest EXP / Points)
   const rotationPoints = booking.cvRotationPoints || (booking.attributes?.hasUnderMink ? 56 : 34);
-  const rotationBreakdown = booking.cvRotationBreakdown || (booking.attributes?.hasUnderMink ? '34p + 22p' : '34 pts');
 
   return (
     <div className="flex-1 flex flex-col bg-black overflow-y-auto select-none font-sans">
@@ -112,32 +124,27 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
                 <span className="text-[12px] font-extrabold text-white">
                   {booking.servicePrice ? booking.servicePrice.toLocaleString('vi-VN') : '640.000'} đ
                 </span>
-                <span className="inline-flex items-center gap-1 bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-[10.5px] font-black px-2 py-0.5 rounded-md shadow-xs">
-                  <span>💎</span>
-                  <span>
-                    +{rotationPoints} pts ({rotationBreakdown})
-                  </span>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-800/80 border border-neutral-700/70 text-neutral-300 text-[11px] font-semibold tabular-nums">
+                  <RotateCw className="w-3 h-3 text-blue-400 shrink-0" />
+                  <span>+{rotationPoints} pts</span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 3. KHAY NGUYÊN VẬT LIỆU (RPG Equipment Loadout Slots) */}
+          {/* 3. NGUYÊN VẬT LIỆU */}
           <div className="bg-[#242426] rounded-2xl p-3 space-y-2.5 border border-neutral-700/80">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                <span>🎒</span> TRANG BỊ & KHAY NGUYÊN VẬT LIỆU
-              </span>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                {booking.attributes?.hasUnderMink ? '2 Khay (Mi Trên + Mi Dưới)' : '1 Khay (Mi Trên)'}
+              <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> NGUYÊN VẬT LIỆU
               </span>
             </div>
 
             {/* Slot 1: Khay 1 · Mi Trên */}
             <div className="bg-gradient-to-b from-[#2A2315] to-[#1A1A1C] rounded-xl p-2.5 border border-amber-500/40 space-y-2 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-black text-amber-400 uppercase tracking-tight flex items-center gap-1">
-                  <span>📦</span> KHAY 1 · MI TRÊN
+                <span className="text-[10.5px] font-black text-amber-400 uppercase tracking-tight flex items-center gap-1.5">
+                  <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> KHAY 1 · MI TRÊN
                 </span>
                 <span className="text-[9.5px] font-black text-amber-200 bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 rounded-md">
                   {booking.attributes?.material || 'HyperLight'} · {booking.attributes?.volume || '3X'} ·{' '}
@@ -178,8 +185,8 @@ export function Screen06CvDashboardReceive({ booking, onStartTask, onEditService
             {booking.attributes?.hasUnderMink && (
               <div className="bg-gradient-to-b from-[#261633] to-[#1A1A1C] rounded-xl p-2.5 border border-purple-500/50 space-y-2 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10.5px] font-black text-purple-300 uppercase tracking-tight flex items-center gap-1">
-                    <span>📦</span> KHAY 2 · MI DƯỚI (
+                  <span className="text-[10.5px] font-black text-purple-300 uppercase tracking-tight flex items-center gap-1.5">
+                    <LashTrayIcon className="w-3.5 h-3.5 text-purple-300 shrink-0" /> KHAY 2 · MI DƯỚI (
                     {booking.attributes?.underMinkServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'})
                   </span>
                   <span className="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 border border-purple-400/40">
