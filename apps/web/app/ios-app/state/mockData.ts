@@ -1,3 +1,87 @@
+export const KNOWN_STAFF_AVATARS: Record<string, string> = {
+  '46272': 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png', // Thảo Ly (CV🪶)
+  '25337': 'https://cdn.wingslashes.com/uploads/user/avatar/955/thumbnail/26955.jpg', // Tuyết Nhi ❤️ (🪶CV🪶)
+  '49076': 'https://cdn.wingslashes.com/uploads/user/avatar/693/thumbnail/50693.png', // Phương Nhi (CV)
+  '37790': 'https://cdn.wingslashes.com/uploads/user/avatar/407/thumbnail/39407.png', // Diễm Hương (CC)
+  '51540': 'https://cdn.wingslashes.com/uploads/user/avatar/157/thumbnail/53157.png', // Bảo Hân CC
+  '45103': 'https://cdn.wingslashes.com/uploads/user/avatar/720/thumbnail/46720.png', // Nguyễn Quang Khải
+  '45656': 'https://cdn.wingslashes.com/uploads/user/avatar/781/thumbnail/47281.png', // Tâm Nguyễn Booker
+  '46401': 'https://cdn.wingslashes.com/uploads/user/avatar/742/thumbnail/48001.png', // Thanh Vũ CC
+};
+
+export function resolveStaffAvatarUrl(
+  dbAvatar?: string | null,
+  staffId?: number | null,
+  staffName?: string | null
+): string | undefined {
+  if (dbAvatar && typeof dbAvatar === 'string' && dbAvatar.trim().startsWith('http')) {
+    if (!dbAvatar.includes('3744.jpg') && !dbAvatar.includes('719.jpg')) {
+      return dbAvatar.trim();
+    }
+  }
+  if (staffId && KNOWN_STAFF_AVATARS[String(staffId)]) {
+    return KNOWN_STAFF_AVATARS[String(staffId)];
+  }
+  if (staffName) {
+    const s = staffName.toLowerCase();
+    if (s.includes('thảo ly')) return KNOWN_STAFF_AVATARS['46272'];
+    if (s.includes('tuyết nhi')) return KNOWN_STAFF_AVATARS['25337'];
+    if (s.includes('phương nhi')) return KNOWN_STAFF_AVATARS['49076'];
+    if (s.includes('diễm hương')) return KNOWN_STAFF_AVATARS['37790'];
+    if (s.includes('bảo hân')) return KNOWN_STAFF_AVATARS['51540'];
+    if (s.includes('khải')) return KNOWN_STAFF_AVATARS['45103'];
+    if (s.includes('tâm')) return KNOWN_STAFF_AVATARS['45656'];
+    if (s.includes('thanh vũ')) return KNOWN_STAFF_AVATARS['46401'];
+  }
+  return undefined;
+}
+
+export interface LashHistoryPhoto {
+  type: 'before' | 'cleaned' | 'after';
+  label: string;
+  url: string;
+}
+
+export interface LashHistoryStaffMember {
+  role: string;
+  name: string;
+  avatar?: string;
+  tier?: string;
+}
+
+export interface LashHistoryItem {
+  id?: number;
+  orderId?: number;
+  date: string;
+  serviceName: string;
+  staffName: string;
+  rating?: number;
+  review?: string;
+  bookingNote?: string;
+  totalPrice?: number;
+  photos?: LashHistoryPhoto[];
+  staffMembers?: {
+    bookedBy?: LashHistoryStaffMember;
+    checkInBy?: LashHistoryStaffMember;
+    lashedBy?: LashHistoryStaffMember;
+    checkOutBy?: LashHistoryStaffMember;
+  };
+  attributes?: {
+    style?: string;
+    curl?: string;
+    length?: string;
+    thickness?: string;
+    fanCount?: string;
+    volume?: string;
+    material?: string;
+    color?: string;
+    eyeShape?: string;
+    naturalLashLength?: string;
+    naturalLashThickness?: string;
+    notes?: string;
+  };
+}
+
 export interface ComboPackageOption {
   id: string;
   name: string;
@@ -140,11 +224,7 @@ export interface BookingItem {
     comboName: string;
     packageKey?: string;
   };
-  lashHistory?: Array<{
-    date: string;
-    serviceName: string;
-    staffName: string;
-  }>;
+  lashHistory?: LashHistoryItem[];
   selectedCombo?: {
     id: string;
     name: string;

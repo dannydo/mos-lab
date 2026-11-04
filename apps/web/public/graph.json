@@ -11678,7 +11678,7 @@
         "path": "/api/notifications",
         "module": "notifications",
         "handler": "inlineHandler",
-        "line": 541
+        "line": 627
       }
     },
     {
@@ -11692,7 +11692,7 @@
         "path": "/api/notifications/read",
         "module": "notifications",
         "handler": "inlineHandler",
-        "line": 590
+        "line": 676
       }
     },
     {
@@ -34187,6 +34187,18 @@
       }
     },
     {
+      "id": "uicomp:HeaderNotificationCenter.test",
+      "type": "UIComponent",
+      "label": "<HeaderNotificationCenter.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/__tests__/HeaderNotificationCenter.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "HeaderNotificationCenter.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:OmiCallHeaderControl",
       "type": "UIComponent",
       "label": "<OmiCallHeaderControl />",
@@ -35263,6 +35275,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "ToolbarToggle",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:adaptive-modal-safe-area.test",
+      "type": "UIComponent",
+      "label": "<adaptive-modal-safe-area.test />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/__tests__/adaptive-modal-safe-area.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "adaptive-modal-safe-area.test",
         "isPrimitive": true
       }
     },
@@ -38872,8 +38896,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14816,
-        "lineCount": 353,
+        "sizeBytes": 14804,
+        "lineCount": 350,
         "ext": ".ts"
       }
     },
@@ -38911,8 +38935,8 @@
       "filePath": "apps/api/src/modules/notifications/notifications.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11927,
-        "lineCount": 340,
+        "sizeBytes": 15817,
+        "lineCount": 442,
         "ext": ".ts"
       }
     },
@@ -38924,8 +38948,8 @@
       "filePath": "apps/api/src/modules/notifications/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23236,
-        "lineCount": 639,
+        "sizeBytes": 26999,
+        "lineCount": 747,
         "ext": ".ts"
       }
     },
@@ -41446,8 +41470,8 @@
       "filePath": "apps/web/app/api/ios/bookings/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 44657,
-        "lineCount": 1076,
+        "sizeBytes": 44593,
+        "lineCount": 1072,
         "ext": ".ts"
       }
     },
@@ -47023,8 +47047,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashConsultationInfoModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16201,
-        "lineCount": 282,
+        "sizeBytes": 16975,
+        "lineCount": 316,
         "ext": ".tsx"
       }
     },
@@ -47114,8 +47138,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashMaterialConstraintMatrix.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70294,
-        "lineCount": 1732,
+        "sizeBytes": 74512,
+        "lineCount": 2223,
         "ext": ".ts"
       }
     },
@@ -47140,8 +47164,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19336,
-        "lineCount": 424,
+        "sizeBytes": 19480,
+        "lineCount": 435,
         "ext": ".tsx"
       }
     },
@@ -47153,8 +47177,21 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 72545,
-        "lineCount": 1385,
+        "sizeBytes": 79440,
+        "lineCount": 1495,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen02LashHistorySheet.tsx",
+      "type": "File",
+      "label": "Screen02LashHistorySheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen02LashHistorySheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19284,
+        "lineCount": 391,
         "ext": ".tsx"
       }
     },
@@ -47166,8 +47203,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 132916,
-        "lineCount": 2573,
+        "sizeBytes": 132692,
+        "lineCount": 2554,
         "ext": ".tsx"
       }
     },
@@ -47205,8 +47242,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8118,
-        "lineCount": 155,
+        "sizeBytes": 18376,
+        "lineCount": 322,
         "ext": ".tsx"
       }
     },
@@ -47491,8 +47528,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/IosTabBar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13646,
-        "lineCount": 323,
+        "sizeBytes": 13682,
+        "lineCount": 325,
         "ext": ".tsx"
       }
     },
@@ -47504,8 +47541,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11734,
-        "lineCount": 330,
+        "sizeBytes": 11727,
+        "lineCount": 326,
         "ext": ".tsx"
       }
     },
@@ -47530,8 +47567,8 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15725,
-        "lineCount": 554,
+        "sizeBytes": 18666,
+        "lineCount": 634,
         "ext": ".ts"
       }
     },
@@ -47985,8 +48022,8 @@
       "filePath": "apps/web/lib/api/notifications.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1119,
-        "lineCount": 31,
+        "sizeBytes": 1507,
+        "lineCount": 42,
         "ext": ".ts"
       }
     },
@@ -48427,8 +48464,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 143388,
-        "lineCount": 1902,
+        "sizeBytes": 143382,
+        "lineCount": 1901,
         "ext": ".ts"
       }
     },
@@ -48479,8 +48516,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2977,
-        "lineCount": 75,
+        "sizeBytes": 3129,
+        "lineCount": 84,
         "ext": ".ts"
       }
     },
@@ -48622,8 +48659,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5680,
-        "lineCount": 124,
+        "sizeBytes": 5673,
+        "lineCount": 120,
         "ext": ".ts"
       }
     },
@@ -48635,8 +48672,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9250,
-        "lineCount": 322,
+        "sizeBytes": 9320,
+        "lineCount": 323,
         "ext": ".ts"
       }
     },
@@ -49012,8 +49049,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 27188,
-        "lineCount": 899,
+        "sizeBytes": 27172,
+        "lineCount": 897,
         "ext": ".ts"
       }
     },
@@ -49051,8 +49088,8 @@
       "filePath": "packages/shared/src/types/mos-notifications.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1228,
-        "lineCount": 52,
+        "sizeBytes": 1248,
+        "lineCount": 53,
         "ext": ".ts"
       }
     },
@@ -69358,6 +69395,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:HeaderNotificationCenter.test:ws:apps/web",
+      "source": "uicomp:HeaderNotificationCenter.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:HeaderNotificationCenter.test:token:color:primary",
+      "source": "uicomp:HeaderNotificationCenter.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:OmiCallHeaderControl:ws:apps/web",
       "source": "uicomp:OmiCallHeaderControl",
       "target": "ws:apps/web",
@@ -70627,6 +70678,20 @@
     {
       "id": "edge:uicomp:ToolbarToggle:token:color:primary",
       "source": "uicomp:ToolbarToggle",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:adaptive-modal-safe-area.test:ws:apps/web",
+      "source": "uicomp:adaptive-modal-safe-area.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:adaptive-modal-safe-area.test:token:color:primary",
+      "source": "uicomp:adaptive-modal-safe-area.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -104940,8 +105005,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3802,
-    "totalEdges": 7929,
+    "totalNodes": 3805,
+    "totalEdges": 7933,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -104949,14 +105014,14 @@
       "Component": 65,
       "SharedType": 1383,
       "DesignToken": 12,
-      "UIComponent": 334,
-      "File": 1075
+      "UIComponent": 336,
+      "File": 1076
     },
     "edgeTypeCounts": {
       "EXPORTS": 1577,
       "HANDLES_ROUTE": 748,
-      "RENDERS": 399,
-      "USES_TOKEN": 336,
+      "RENDERS": 401,
+      "USES_TOKEN": 338,
       "IMPORTS": 600,
       "QUERIES_MODEL": 426,
       "API_CALL": 3843

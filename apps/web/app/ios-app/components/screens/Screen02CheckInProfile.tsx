@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
-import { BookingItem } from '../../state/mockData';
+import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl } from '../../state/mockData';
+import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import {
@@ -109,6 +110,25 @@ export function Screen02CheckInProfile({
   const actorName = actor?.name || 'Thảo Ly';
   const actorTierLabel = actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? 'CV🪶' : 'CC';
 
+  // Thảo Ly (CVL): Checkin by và Lashed by là 1 người tự chủ đón tiếp & làm mi cho khách
+  const isCvlStaff =
+    assignedStaff.toLowerCase().includes('thảo ly') ||
+    booking?.assignedStaffId === 46272 ||
+    actor?.tier === 'CVL' ||
+    actorName.toLowerCase().includes('thảo ly');
+
+  const checkInStaffName = isCvlStaff ? assignedStaff : booking?.checkInStaffName || actorName;
+  const checkInStaffAvatar =
+    resolveStaffAvatarUrl(
+      isCvlStaff ? booking?.checkInStaffAvatar || booking?.assignedStaffAvatar : booking?.checkInStaffAvatar,
+      isCvlStaff ? booking?.assignedStaffId || 46272 : booking?.checkInStaffId,
+      checkInStaffName
+    ) || (isCvlStaff ? 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png' : undefined);
+
+  const assignedStaffAvatar =
+    resolveStaffAvatarUrl(booking?.assignedStaffAvatar, booking?.assignedStaffId || 46272, assignedStaff) ||
+    (isCvlStaff ? 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png' : undefined);
+
   // Quy tắc màu viền avatar (Avatar Ring Color Invariant theo chỉ đạo Danny):
   // -> vòng xanh quanh ngoài avatar -> not combo live
   // -> vòng xám -> combo live
@@ -144,6 +164,13 @@ export function Screen02CheckInProfile({
   const [selectedOverrideReasonDraft, setSelectedOverrideReasonDraft] = useState<string>('');
   const [isRotationExpanded, setIsRotationExpanded] = useState<boolean>(false);
   const [isRotationInfoOpen, setIsRotationInfoOpen] = useState<boolean>(false);
+  const [selectedLashHistory, setSelectedLashHistory] = useState<LashHistoryItem | null>(null);
+  const [isLashHistoryOpen, setIsLashHistoryOpen] = useState<boolean>(false);
+
+  const handleOpenLashHistory = (item: LashHistoryItem) => {
+    setSelectedLashHistory(item);
+    setIsLashHistoryOpen(true);
+  };
 
   useEffect(() => {
     setQuickServiceType(preset.expectedServiceType);
@@ -708,25 +735,25 @@ export function Screen02CheckInProfile({
               </span>
               <div className="relative mt-1.5">
                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#FFB400] bg-gradient-to-br from-[#FFB400] to-[#FF9500] flex items-center justify-center text-black font-extrabold text-[12px] shadow-xs">
-                  {booking?.checkInStaffAvatar ? (
+                  {checkInStaffAvatar ? (
                     <img
-                      src={booking.checkInStaffAvatar}
-                      alt={booking?.checkInStaffName || actorName}
+                      src={checkInStaffAvatar}
+                      alt={checkInStaffName}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLElement).style.display = 'none';
                       }}
                     />
                   ) : (
-                    <span>{getStaffInitials(booking?.checkInStaffName || actorName)}</span>
+                    <span>{getStaffInitials(checkInStaffName)}</span>
                   )}
                 </div>
                 <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-[#FFB400] text-[#FFB400] text-[8px] font-black px-1 py-0.2 rounded-full leading-tight">
-                  {actorTierLabel}
+                  {isCvlStaff ? 'CV🪶' : actorTierLabel}
                 </span>
               </div>
               <span className="text-[11px] font-bold text-[#FFB400] truncate w-full mt-1">
-                {(booking?.checkInStaffName || actorName).replace(/\s*\(.*?\)/g, '')}
+                {checkInStaffName.replace(/\s*\(.*?\)/g, '')}
               </span>
             </div>
 
@@ -737,9 +764,9 @@ export function Screen02CheckInProfile({
               </span>
               <div className="relative mt-1.5">
                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-400 bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center text-white font-extrabold text-[12px] shadow-xs">
-                  {booking?.assignedStaffAvatar ? (
+                  {assignedStaffAvatar ? (
                     <img
-                      src={booking.assignedStaffAvatar}
+                      src={assignedStaffAvatar}
                       alt={assignedStaff}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -1102,25 +1129,167 @@ export function Screen02CheckInProfile({
 
         {/* Section 4: History list */}
         <div>
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">
-            LỊCH SỬ LÀM MI GẦN NHẤT
+          <div className="flex items-center justify-between px-1 mb-1.5">
+            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              LỊCH SỬ LÀM MI GẦN NHẤT
+            </span>
+            <span className="text-[10px] text-blue-600 font-bold">Chạm để xem chi tiết & 3 ảnh ↗</span>
           </div>
           <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden divide-y divide-gray-100">
             {(booking?.lashHistory && booking.lashHistory.length > 0
               ? booking.lashHistory
-              : [
-                  { date: '19/10/2026', serviceName: 'New Flawless Mink', staffName: assignedStaff },
-                  { date: '05/10/2026', serviceName: 'Dặm New Flawless', staffName: assignedStaff },
-                ]
+              : ([
+                  {
+                    orderId: 338846,
+                    date: '19/10/2026',
+                    serviceName: 'New Flawless Mink 880',
+                    staffName: assignedStaff,
+                    rating: 5.0,
+                    review: 'Khách khen nối rất êm, mi giữ form bền đẹp.',
+                    bookingNote: '19/10 c book Thảo Ly',
+                    photos: [
+                      {
+                        type: 'before' as const,
+                        label: '1. Before · Mắt mộc',
+                        url: 'https://cdn.wingslashes.com/uploads/order/service-progress/645/original/1401645.jpg',
+                      },
+                      {
+                        type: 'cleaned' as const,
+                        label: '2. Vệ sinh · Nhắm mắt',
+                        url: 'https://cdn.wingslashes.com/uploads/order/service-progress/646/original/1401646.jpg',
+                      },
+                      {
+                        type: 'after' as const,
+                        label: '3. After · Hoàn thiện',
+                        url: 'https://cdn.wingslashes.com/uploads/order/service-progress/685/original/1401685.jpg',
+                      },
+                    ],
+                    staffMembers: {
+                      bookedBy: {
+                        name: 'Tâm Nguyễn',
+                        role: 'Booker',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/781/original/781.jpg',
+                      },
+                      checkInBy: {
+                        name: assignedStaff,
+                        role: 'CV🪶',
+                        tier: 'CVL',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
+                      },
+                      lashedBy: {
+                        name: assignedStaff,
+                        role: 'CV🪶',
+                        tier: 'CVL',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
+                      },
+                      checkOutBy: {
+                        name: 'Thanh Vũ',
+                        role: 'CC',
+                        tier: 'CC',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/742/original/742.jpg',
+                      },
+                    },
+                    attributes: {
+                      style: 'Natural',
+                      curl: 'C',
+                      length: '10-12 mm',
+                      thickness: '0.10 mm',
+                      fanCount: '70 sợi',
+                      material: 'Mink Silk',
+                      eyeShape: 'Mí lót / Sụp mí',
+                      notes: 'Mi khách cong nhẹ tự nhiên, chân mi cách bờ 1mm chuẩn kỹ thuật.',
+                    },
+                  },
+                  {
+                    orderId: 338845,
+                    date: '02/10/2026',
+                    serviceName: 'Dặm New Flawless',
+                    staffName: assignedStaff,
+                    rating: 5.0,
+                    review: 'Dáng tự nhiên hài hòa khuôn mặt.',
+                    bookingNote: 'Khách quen Thảo Ly',
+                    photos: [
+                      {
+                        type: 'before' as const,
+                        label: '1. Before · Mắt mộc',
+                        url: 'https://cdn.wingslashes.com/uploads/order/service-progress/683/original/1401683.jpg',
+                      },
+                      {
+                        type: 'cleaned' as const,
+                        label: '2. Vệ sinh · Nhắm mắt',
+                        url: 'https://cdn.wingslashes.com/uploads/order/service-progress/695/original/1401695.jpg',
+                      },
+                      {
+                        type: 'after' as const,
+                        label: '3. After · Hoàn thiện',
+                        url: 'https://cdn.wingslashes.com/uploads/order/service-progress/732/original/1401732.jpg',
+                      },
+                    ],
+                    staffMembers: {
+                      bookedBy: {
+                        name: 'Tâm Nguyễn',
+                        role: 'Booker',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/781/original/781.jpg',
+                      },
+                      checkInBy: {
+                        name: assignedStaff,
+                        role: 'CV🪶',
+                        tier: 'CVL',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
+                      },
+                      lashedBy: {
+                        name: assignedStaff,
+                        role: 'CV🪶',
+                        tier: 'CVL',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
+                      },
+                      checkOutBy: {
+                        name: 'Thanh Vũ',
+                        role: 'CC',
+                        tier: 'CC',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/742/original/742.jpg',
+                      },
+                    },
+                    attributes: {
+                      style: 'Natural',
+                      curl: 'C',
+                      length: '10-12 mm',
+                      thickness: '0.10 mm',
+                      fanCount: '70 sợi',
+                      material: 'Mink Silk',
+                      eyeShape: 'Mí lót / Sụp mí',
+                      notes: 'Dặm lại những sợi rụng, giữ nguyên form cũ.',
+                    },
+                  },
+                ] as LashHistoryItem[])
             ).map((h, i) => (
-              <div key={i} className="p-3 flex items-center justify-between">
-                <div>
-                  <div className="text-[13px] font-bold text-black">
+              <div
+                key={i}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleOpenLashHistory(h)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenLashHistory(h);
+                  }
+                }}
+                className="p-3 flex items-center justify-between cursor-pointer hover:bg-blue-50/40 active:bg-blue-100/50 transition-colors group select-none"
+              >
+                <div className="min-w-0 pr-2">
+                  <div className="text-[13px] font-bold text-black group-hover:text-blue-600 transition-colors truncate">
                     {h.date} · {h.serviceName}
                   </div>
-                  <div className="text-[11px] text-gray-500 mt-0.5">Chuyên viên: {h.staffName} · Đánh giá: 5.0 ★</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5 truncate">
+                    Chuyên viên: {h.staffName} · Đánh giá: {'rating' in h && h.rating ? h.rating : 5.0} ★
+                  </div>
                 </div>
-                <span className="text-[#007AFF] text-[12px] font-semibold">Đã lưu form</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#007AFF] text-[11.5px] font-bold shadow-2xs group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all">
+                    <span>Đã lưu form</span>
+                    <span className="text-[12px] leading-none">›</span>
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -1369,6 +1538,14 @@ export function Screen02CheckInProfile({
           </div>
         </div>
       )}
+
+      {/* Lash History Modal / Bottom Sheet */}
+      <Screen02LashHistorySheet
+        item={selectedLashHistory}
+        isOpen={isLashHistoryOpen}
+        onClose={() => setIsLashHistoryOpen(false)}
+        onApplySpecs={() => setIsLashHistoryOpen(false)}
+      />
     </div>
   );
 }

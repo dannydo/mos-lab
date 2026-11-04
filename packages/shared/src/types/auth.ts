@@ -118,6 +118,7 @@ export function isCanonicalSuperAdminIdentity(
   return SUPER_ADMIN_IDENTITIES.some((value) => value === username || value === email);
 }
 
+export { normalizeCvFeatherRole } from '../utils/cv-role-aliases.js';
 import { normalizeCvFeatherRole } from '../utils/cv-role-aliases.js';
 
 /**
