@@ -40,6 +40,7 @@ export interface LashHistoryPhoto {
   type: 'before' | 'cleaned' | 'after';
   label: string;
   url: string;
+  sublabel?: string;
 }
 
 export interface LashHistoryStaffMember {

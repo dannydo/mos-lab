@@ -1183,10 +1183,10 @@ export function Screen02CheckInProfile({
                         avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
                       },
                       checkOutBy: {
-                        name: 'Thanh Vũ',
-                        role: 'CC',
-                        tier: 'CC',
-                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/742/original/742.jpg',
+                        name: assignedStaff,
+                        role: 'CV🪶',
+                        tier: 'CVL',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
                       },
                     },
                     attributes: {
@@ -1244,10 +1244,10 @@ export function Screen02CheckInProfile({
                         avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
                       },
                       checkOutBy: {
-                        name: 'Thanh Vũ',
+                        name: 'Diễm Hương',
                         role: 'CC',
                         tier: 'CC',
-                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/742/original/742.jpg',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/407/thumbnail/39407.png',
                       },
                     },
                     attributes: {

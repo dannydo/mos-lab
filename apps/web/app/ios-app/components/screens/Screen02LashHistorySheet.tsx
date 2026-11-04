@@ -24,16 +24,19 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
           {
             type: 'before',
             label: '1. Before · Mắt mộc',
+            sublabel: 'Góc nhìn cận cảnh mi thật trước khi làm',
             url: 'https://cdn.wingslashes.com/uploads/order/service-progress/645/original/1401645.jpg',
           },
           {
             type: 'cleaned',
             label: '2. Vệ sinh · Nhắm',
+            sublabel: 'Vệ sinh mi, dán gel pad chuẩn bị nối',
             url: 'https://cdn.wingslashes.com/uploads/order/service-progress/646/original/1401646.jpg',
           },
           {
             type: 'after',
             label: '3. After · Hoàn thiện',
+            sublabel: 'Thành phẩm sau khi nối hoàn tất',
             url: 'https://cdn.wingslashes.com/uploads/order/service-progress/685/original/1401685.jpg',
           },
         ];
@@ -57,10 +60,10 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
       avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
     },
     checkOutBy: {
-      name: 'Thanh Vũ',
-      role: 'CC',
-      tier: 'CC',
-      avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/742/original/742.jpg',
+      name: item.staffName || 'Thảo Ly',
+      role: 'CV🪶',
+      tier: 'CVL',
+      avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
     },
   };
 
@@ -126,31 +129,37 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col space-y-3">
               {photos.map((p, idx) => {
                 const thumbUrl = p.url.includes('/original/') ? p.url.replace('/original/', '/thumbnail/') : p.url;
                 return (
                   <div
                     key={idx}
                     onClick={() => setZoomPhoto(p)}
-                    className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-neutral-900 border border-neutral-200/90 shadow-2xs cursor-pointer hover:border-blue-400 transition-all flex items-center justify-center"
+                    className="group relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200/90 shadow-xs cursor-pointer hover:border-blue-400 hover:shadow-md transition-all flex items-center justify-center"
                   >
                     <img
                       src={thumbUrl}
                       alt={p.label}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                       loading="eager"
                       decoding="async"
                     />
-                    {/* Overlay gradient */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-1.5 pt-4 flex flex-col justify-end">
-                      <span className="text-[9.5px] font-extrabold text-white leading-tight drop-shadow-xs line-clamp-1">
+                    {/* Top gradient & Label badge */}
+                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-white text-[11.5px] font-black border border-white/20 shadow-md">
                         {p.label}
                       </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[10.5px] font-bold border border-white/20 shadow-md group-hover:bg-blue-600 transition-colors">
+                        <ZoomIn className="w-3.5 h-3.5" /> Phóng to
+                      </span>
                     </div>
-                    {/* Zoom badge */}
-                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/60 backdrop-blur-xs flex items-center justify-center text-white opacity-80 group-hover:opacity-100 transition-opacity">
-                      <ZoomIn className="w-3 h-3" />
+
+                    {/* Bottom overlay with Sublabel */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 pt-6 flex items-end justify-between pointer-events-none">
+                      <span className="text-[11px] font-medium text-white/95 drop-shadow-xs line-clamp-1">
+                        {p.sublabel}
+                      </span>
                     </div>
                   </div>
                 );
@@ -177,12 +186,14 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                         src={staff.bookedBy.avatar}
                         alt="Booker"
                         className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white">
-                        {staff.bookedBy?.name?.slice(0, 2) || 'BK'}
-                      </div>
-                    )}
+                    ) : null}
+                    <div className="w-full h-full rounded-full bg-blue-700 flex items-center justify-center font-bold text-xs text-white">
+                      {staff.bookedBy?.name ? staff.bookedBy.name.slice(0, 2).toUpperCase() : 'TN'}
+                    </div>
                   </div>
                   <span className="text-[11px] font-extrabold truncate w-full px-0.5">
                     {staff.bookedBy?.name || 'Tâm Nguyễn'}
@@ -201,12 +212,14 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                         src={staff.checkInBy.avatar}
                         alt="Checkin"
                         className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-amber-600 flex items-center justify-center font-bold text-xs text-white">
-                        TL
-                      </div>
-                    )}
+                    ) : null}
+                    <div className="w-full h-full rounded-full bg-amber-600 flex items-center justify-center font-bold text-xs text-white">
+                      TL
+                    </div>
                     <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-amber-400 text-amber-300 text-[7.5px] font-black leading-none">
                       CV🪶
                     </span>
@@ -226,12 +239,14 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                         src={staff.lashedBy.avatar}
                         alt="Lashed by"
                         className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs text-white">
-                        TL
-                      </div>
-                    )}
+                    ) : null}
+                    <div className="w-full h-full rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs text-white">
+                      TL
+                    </div>
                     <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-purple-400 text-purple-300 text-[7.5px] font-black leading-none">
                       CV🪶
                     </span>
@@ -253,17 +268,36 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                         src={staff.checkOutBy.avatar}
                         alt="Checkout"
                         className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white">
-                        TV
-                      </div>
+                    ) : null}
+                    <div className="w-full h-full rounded-full bg-emerald-700 flex items-center justify-center font-bold text-xs text-white">
+                      {staff.checkOutBy?.name ? staff.checkOutBy.name.slice(0, 2).toUpperCase() : 'CV'}
+                    </div>
+                    {/* Badge if CVL */}
+                    {(staff.checkOutBy?.tier === 'CVL' || staff.checkOutBy?.role?.includes('CV')) && (
+                      <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-emerald-400 text-emerald-300 text-[7.5px] font-black px-1 py-0.2 rounded-full leading-tight">
+                        CV🪶
+                      </span>
+                    )}
+                    {(staff.checkOutBy?.tier === 'CC' || staff.checkOutBy?.role === 'CC') && (
+                      <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-emerald-400 text-emerald-300 text-[7.5px] font-black px-1 py-0.2 rounded-full leading-tight">
+                        CC
+                      </span>
                     )}
                   </div>
                   <span className="text-[11px] font-extrabold truncate w-full px-0.5 text-emerald-400">
-                    {staff.checkOutBy?.name || 'Thanh Vũ'}
+                    {staff.checkOutBy?.name || 'Thảo Ly'}
                   </span>
-                  <span className="text-[9px] text-emerald-400 font-bold">Thu ngân</span>
+                  <span className="text-[9px] text-emerald-400 font-bold">
+                    {staff.checkOutBy?.tier === 'CVL' || staff.checkOutBy?.role?.includes('CV')
+                      ? 'CV🪶 Tự chốt'
+                      : staff.checkOutBy?.role === 'CC'
+                        ? 'CC Sảnh'
+                        : 'Checkout'}
+                  </span>
                 </div>
               </div>
             </div>
