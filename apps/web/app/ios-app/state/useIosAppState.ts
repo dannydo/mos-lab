@@ -891,12 +891,12 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(10);
   };
 
-  // Step 10 -> Step 11: Save After Photo & Go to Survey (Mở khóa cho CV🪶 tự bấm Done mà không cần CC!)
+  // Step 10 -> Step 12: Save After Photo & Go to Product Upsell (Bỏ bước khảo sát trực tiếp trước mặt CVL/CC)
   const handleSaveAfterPhoto = (photoUrl: string) => {
     const progressPatch = {
       ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
       afterPhotoUrl: photoUrl,
-      currentStep: 11,
+      currentStep: 12,
     };
     updateActiveBooking((prev) => ({
       ...prev,
@@ -909,7 +909,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       status: 'SERVICING',
     });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service Completed', progress: progressPatch });
-    setCurrentStep(11);
+    setCurrentStep(12);
   };
 
   // Step 11 -> Step 10: Quay lại màn hình Ảnh After để Chuyên viên hoặc Khách soi lại hình Before/After

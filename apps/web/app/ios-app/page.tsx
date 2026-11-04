@@ -244,7 +244,7 @@ function IosAppInner() {
           <Screen11ProductUpsell
             booking={state.activeBooking}
             actor={state.actor}
-            onBack={() => state.setCurrentStep(11)}
+            onBack={state.handleBackToAfterPhoto}
             onGoToBilling={state.handleGoToBilling}
           />
         );

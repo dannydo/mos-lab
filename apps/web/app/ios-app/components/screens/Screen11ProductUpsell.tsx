@@ -69,7 +69,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       <IosNavigationBar
         title="Bán Dưỡng Mi & Chốt Check-out"
         onBack={onBack}
-        backTitle="Survey"
+        backTitle="Ảnh After"
         rightAction={
           <button
             onClick={handleConfirmCheckout}
