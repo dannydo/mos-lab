@@ -45,7 +45,7 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
     bookedBy: {
       name: 'Tâm Nguyễn',
       role: 'Booker',
-      avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/781/original/781.jpg',
+      avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/408/thumbnail/50408.png',
     },
     checkInBy: {
       name: item.staffName || 'Thảo Ly',
@@ -181,18 +181,18 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-tight mb-1">Booked by</span>
                   <div className="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-blue-500 to-cyan-400 mb-1">
-                    {staff.bookedBy?.avatar ? (
-                      <img
-                        src={staff.bookedBy.avatar}
-                        alt="Booker"
-                        className="w-full h-full rounded-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : null}
-                    <div className="w-full h-full rounded-full bg-blue-700 flex items-center justify-center font-bold text-xs text-white">
-                      {staff.bookedBy?.name ? staff.bookedBy.name.slice(0, 2).toUpperCase() : 'TN'}
+                    <div className="w-full h-full rounded-full overflow-hidden relative flex items-center justify-center bg-blue-700 text-white font-bold text-xs">
+                      <span>{staff.bookedBy?.name ? staff.bookedBy.name.slice(0, 2).toUpperCase() : 'TN'}</span>
+                      {staff.bookedBy?.avatar && (
+                        <img
+                          src={staff.bookedBy.avatar}
+                          alt="Booker"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                   <span className="text-[11px] font-extrabold truncate w-full px-0.5">
@@ -207,18 +207,18 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                     Checkin by
                   </span>
                   <div className="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 to-yellow-300 mb-1">
-                    {staff.checkInBy?.avatar ? (
-                      <img
-                        src={staff.checkInBy.avatar}
-                        alt="Checkin"
-                        className="w-full h-full rounded-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : null}
-                    <div className="w-full h-full rounded-full bg-amber-600 flex items-center justify-center font-bold text-xs text-white">
-                      TL
+                    <div className="w-full h-full rounded-full overflow-hidden relative flex items-center justify-center bg-amber-600 text-black font-bold text-xs">
+                      <span>TL</span>
+                      {staff.checkInBy?.avatar && (
+                        <img
+                          src={staff.checkInBy.avatar}
+                          alt="Checkin"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      )}
                     </div>
                     <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-amber-400 text-amber-300 text-[7.5px] font-black leading-none">
                       CV🪶
@@ -234,18 +234,18 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-tight mb-1">Lashed by</span>
                   <div className="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-purple-500 to-pink-500 mb-1">
-                    {staff.lashedBy?.avatar ? (
-                      <img
-                        src={staff.lashedBy.avatar}
-                        alt="Lashed by"
-                        className="w-full h-full rounded-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : null}
-                    <div className="w-full h-full rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs text-white">
-                      TL
+                    <div className="w-full h-full rounded-full overflow-hidden relative flex items-center justify-center bg-purple-600 text-white font-bold text-xs">
+                      <span>TL</span>
+                      {staff.lashedBy?.avatar && (
+                        <img
+                          src={staff.lashedBy.avatar}
+                          alt="Lashed by"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      )}
                     </div>
                     <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-purple-400 text-purple-300 text-[7.5px] font-black leading-none">
                       CV🪶
@@ -263,18 +263,18 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                     Checkout by
                   </span>
                   <div className="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-emerald-500 to-teal-400 mb-1">
-                    {staff.checkOutBy?.avatar ? (
-                      <img
-                        src={staff.checkOutBy.avatar}
-                        alt="Checkout"
-                        className="w-full h-full rounded-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : null}
-                    <div className="w-full h-full rounded-full bg-emerald-700 flex items-center justify-center font-bold text-xs text-white">
-                      {staff.checkOutBy?.name ? staff.checkOutBy.name.slice(0, 2).toUpperCase() : 'CV'}
+                    <div className="w-full h-full rounded-full overflow-hidden relative flex items-center justify-center bg-emerald-700 text-white font-bold text-xs">
+                      <span>{staff.checkOutBy?.name ? staff.checkOutBy.name.slice(0, 2).toUpperCase() : 'CV'}</span>
+                      {staff.checkOutBy?.avatar && (
+                        <img
+                          src={staff.checkOutBy.avatar}
+                          alt="Checkout"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      )}
                     </div>
                     {/* Badge if CVL */}
                     {(staff.checkOutBy?.tier === 'CVL' || staff.checkOutBy?.role?.includes('CV')) && (

@@ -1168,7 +1168,7 @@ export function Screen02CheckInProfile({
                       bookedBy: {
                         name: 'Tâm Nguyễn',
                         role: 'Booker',
-                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/781/original/781.jpg',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/408/thumbnail/50408.png',
                       },
                       checkInBy: {
                         name: assignedStaff,
@@ -1229,7 +1229,7 @@ export function Screen02CheckInProfile({
                       bookedBy: {
                         name: 'Tâm Nguyễn',
                         role: 'Booker',
-                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/781/original/781.jpg',
+                        avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/408/thumbnail/50408.png',
                       },
                       checkInBy: {
                         name: assignedStaff,

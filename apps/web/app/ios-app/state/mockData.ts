@@ -5,8 +5,9 @@ export const KNOWN_STAFF_AVATARS: Record<string, string> = {
   '37790': 'https://cdn.wingslashes.com/uploads/user/avatar/407/thumbnail/39407.png', // Diễm Hương (CC)
   '51540': 'https://cdn.wingslashes.com/uploads/user/avatar/157/thumbnail/53157.png', // Bảo Hân CC
   '45103': 'https://cdn.wingslashes.com/uploads/user/avatar/720/thumbnail/46720.png', // Nguyễn Quang Khải
-  '45656': 'https://cdn.wingslashes.com/uploads/user/avatar/781/thumbnail/47281.png', // Tâm Nguyễn Booker
-  '46401': 'https://cdn.wingslashes.com/uploads/user/avatar/742/thumbnail/48001.png', // Thanh Vũ CC
+  '48791': 'https://cdn.wingslashes.com/uploads/user/avatar/408/thumbnail/50408.png', // Tâm Nguyễn Booker
+  '45656': 'https://cdn.wingslashes.com/uploads/user/avatar/408/thumbnail/50408.png', // Tâm Nguyễn Booker
+  '46401': 'https://cdn.wingslashes.com/uploads/user/avatar/742/thumbnail/48001.png', // Thanh Vũ Telesales
 };
 
 export function resolveStaffAvatarUrl(
