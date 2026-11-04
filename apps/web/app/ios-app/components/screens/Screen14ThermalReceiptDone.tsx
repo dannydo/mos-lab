@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { BookingItem } from '../../state/mockData';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 
 interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
@@ -14,7 +15,7 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
   const checkInStaff = booking?.checkInStaffName || assignedStaff;
   const checkOutStaff = booking?.checkOutStaffName || assignedStaff;
-  const serviceName = booking?.serviceName || 'New Flawless Mink';
+  const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = booking?.servicePrice || 770000;
   const selectedCombo = booking?.selectedCombo || null;
   const cartProducts = booking?.cartProducts || [];

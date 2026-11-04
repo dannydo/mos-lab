@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { Hourglass, Clock, Wifi, WifiOff, AlertTriangle, Zap, Play, Pause, Edit3, CheckCircle2 } from 'lucide-react';
 
 interface Screen08LashProgressTimerProps {
@@ -20,14 +21,15 @@ export function Screen08LashProgressTimer({
   onEditService,
 }: Screen08LashProgressTimerProps) {
   // 1. Tính toán thời gian định mức (Target Duration) chuẩn xác theo dịch vụ
+  const displayServiceName = resolveDisplayServiceName(booking);
   const targetMinutes = useMemo(() => {
     if (booking.serviceDuration && booking.serviceDuration > 0) return booking.serviceDuration;
     let base = 65;
-    const sName = (booking.serviceName || '').toLowerCase();
+    const sName = (displayServiceName || '').toLowerCase();
     if (sName.includes('dặm') || sName.includes('refill')) base = 50;
     if (booking.attributes?.hasUnderMink || sName.includes('mi dưới')) base += 25;
     return base;
-  }, [booking]);
+  }, [booking, displayServiceName]);
 
   const targetSeconds = targetMinutes * 60;
 
@@ -247,7 +249,7 @@ export function Screen08LashProgressTimer({
           <div className="flex items-center justify-between text-[13.5px]">
             <span className="text-gray-500 font-medium">Dịch vụ đang làm</span>
             <div className="flex items-center gap-2">
-              <span className="text-black font-extrabold">{booking?.serviceName || 'New Flawless Mink'}</span>
+              <span className="text-black font-extrabold">{displayServiceName}</span>
               {onEditService && (
                 <button
                   type="button"

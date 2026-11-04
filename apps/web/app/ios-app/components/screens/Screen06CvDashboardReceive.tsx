@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import {
   Sparkles,
   Eye,
@@ -53,11 +54,14 @@ export function Screen06CvDashboardReceive({
   // Điểm thưởng nhiệm vụ (Quest EXP / Points)
   const rotationPoints = booking.cvRotationPoints || (booking.attributes?.hasUnderMink ? 56 : 34);
 
+  // Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn Any - Lashes
+  const displayServiceName = resolveDisplayServiceName(booking);
+
   // Thời lượng ước tính cam kết lúc tư vấn (phút)
   const estimatedDurationMin = useMemo(() => {
     if (booking.serviceDuration) return booking.serviceDuration;
     let baseMin = 65; // Mặc định 65 phút
-    const sName = (booking.serviceName || '').toLowerCase();
+    const sName = (displayServiceName || '').toLowerCase();
     if (sName.includes('dặm') || sName.includes('refill')) {
       baseMin = 50;
     }
@@ -65,7 +69,7 @@ export function Screen06CvDashboardReceive({
       baseMin += 25; // Mi dưới dặm thêm 25 phút
     }
     return baseMin;
-  }, [booking]);
+  }, [booking, displayServiceName]);
 
   // Giờ dự kiến hoàn thành ca làm (tính từ giờ bắt đầu hẹn + thời lượng ước tính)
   const estimatedFinishTime = useMemo(() => {
@@ -174,7 +178,7 @@ export function Screen06CvDashboardReceive({
               <div className="text-[11.5px] text-neutral-400 font-mono mt-0.2">{booking.customerPhone}</div>
 
               {/* Service Target & Price */}
-              <div className="mt-1 text-[13px] font-black text-amber-300 leading-tight">{booking.serviceName}</div>
+              <div className="mt-1 text-[13px] font-black text-amber-300 leading-tight">{displayServiceName}</div>
 
               {/* Rewards / Pricing Bar */}
               <div className="mt-2 flex items-center justify-between gap-1.5 flex-wrap">

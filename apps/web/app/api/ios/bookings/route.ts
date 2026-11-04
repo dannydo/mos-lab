@@ -342,6 +342,8 @@ export async function GET(request: NextRequest) {
         COALESCE(booker_up.full_name, 'Tư vấn') AS booker_name,
         booker_up.avatar AS booker_avatar,
         COALESCE(sl.service_name, s.service_key, 'New Flawless Mink 770') AS service_name,
+        s.service_key,
+        s.is_temporary,
         COALESCE(os.service_type, 'Normal') AS service_type,
         COALESCE(sp.full_name, 'Chưa phân công') AS staff_name,
         sp.avatar AS staff_avatar,
@@ -409,6 +411,7 @@ export async function GET(request: NextRequest) {
       number,
       {
         serviceKey?: string;
+        material?: string;
         volume?: string;
         count?: string;
         style?: string;
@@ -458,7 +461,14 @@ export async function GET(request: NextRequest) {
             svcName.toLowerCase().includes('mi dưới');
           if (!isUnder && !lastVisitSpecsMap.has(uid) && hr.os_id) {
             const osId = Number(hr.os_id);
-            lastVisitSpecsMap.set(uid, { serviceKey: svcKey });
+            const svcLower = svcKey.toLowerCase();
+            let mat = 'Flawless Mink';
+            if (svcLower.includes('hyperlight')) mat = 'HyperLight';
+            else if (svcLower.includes('ivylight')) mat = 'Ivylight';
+            else if (svcLower.includes('classic')) mat = 'New Classic';
+            else if (svcLower.includes('volume')) mat = 'Volume';
+            else if (svcLower.includes('ultralight')) mat = 'UltraLight';
+            lastVisitSpecsMap.set(uid, { serviceKey: svcKey, material: mat });
             latestUpperOsIds.push(osId);
             osToUserMap.set(osId, { userId: uid, serviceKey: svcKey });
           }
@@ -754,6 +764,42 @@ export async function GET(request: NextRequest) {
       const isSelfCheckOut = effectiveCheckOutId === assignedStaffId;
       const cvTipPercent = 70 + (isSelfCheckIn ? 10 : 0) + (isSelfCheckOut ? 10 : 0);
 
+      // Triệt tiêu hoàn toàn placeholder tạm "Any - Lashes 2" từ hệ thống legacy
+      const isAnyPlaceholder = (name?: string | null) =>
+        !name ||
+        name.toLowerCase().includes('any') ||
+        String(r.service_key || '')
+          .toLowerCase()
+          .includes('any') ||
+        Number(r.is_temporary) === 1;
+
+      let effectiveServiceName =
+        override.serviceName && !isAnyPlaceholder(override.serviceName) ? override.serviceName : '';
+
+      if (!effectiveServiceName) {
+        if (!isAnyPlaceholder(r.service_name)) {
+          effectiveServiceName = r.service_name;
+        } else if (comboInfo.isComboLive && comboInfo.comboName) {
+          effectiveServiceName = comboInfo.comboName;
+        } else if (lashHistoryMap.get(customerId)?.length) {
+          const validHistory = lashHistoryMap.get(customerId)!.find((h) => !isAnyPlaceholder(h.serviceName));
+          if (validHistory?.serviceName) {
+            effectiveServiceName = validHistory.serviceName;
+          }
+        }
+      }
+
+      if (!effectiveServiceName) {
+        const mat = lastVisitSpecsMap.get(customerId)?.material || 'HyperLight';
+        if (mat === 'HyperLight') {
+          effectiveServiceName = 'New Hyperlight 550';
+        } else if (mat === 'Ivylight') {
+          effectiveServiceName = 'Ivylight 4L 1220';
+        } else {
+          effectiveServiceName = visits > 1 ? 'New Flawless Mink 770' : 'Chưa chọn mẫu mi (Tư vấn)';
+        }
+      }
+
       return {
         id: Number(r.id),
         orderNumber: orderNum,
@@ -766,7 +812,7 @@ export async function GET(request: NextRequest) {
         customerNote: note,
         timeSlot: formatTimeSlot(r.booking_date_start, duration),
         time12h: formatTime12h(r.booking_date_start),
-        serviceName: override.serviceName || r.service_name,
+        serviceName: effectiveServiceName,
         serviceType: override.serviceType || r.service_type || 'Normal',
         servicePrice,
         serviceDuration: duration,
@@ -808,15 +854,22 @@ export async function GET(request: NextRequest) {
         lashHistory: lashHistoryMap.get(customerId) || [
           {
             date: index % 4 === 2 ? '01/10/2026' : '19/10/2026',
-            serviceName: comboInfo.isComboLive ? comboInfo.comboName : r.service_name || 'New Flawless',
+            serviceName: comboInfo.isComboLive
+              ? comboInfo.comboName
+              : isAnyPlaceholder(r.service_name)
+                ? 'New Hyperlight 550'
+                : r.service_name,
             staffName: assignedStaffName,
           },
         ],
         selectedCombo,
         attributes: override.attributes || {
+          material:
+            lastVisitSpecsMap.get(customerId)?.material ||
+            (effectiveServiceName.toLowerCase().includes('hyperlight') ? 'HyperLight' : 'Flawless Mink'),
           style: lastVisitSpecsMap.get(customerId)?.style || 'Doll',
-          volume: lastVisitSpecsMap.get(customerId)?.volume,
-          count: lastVisitSpecsMap.get(customerId)?.count,
+          volume: lastVisitSpecsMap.get(customerId)?.volume || '2X',
+          count: lastVisitSpecsMap.get(customerId)?.count || '70 fan',
           color: lastVisitSpecsMap.get(customerId)?.color,
           curl: 'CC',
           length: '10-12 mm',

@@ -1495,6 +1495,39 @@ export function resolveLashSkuPricing(
 }
 
 /**
+ * Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn placeholder tạm "Any - Lashes"
+ */
+export function resolveDisplayServiceName(booking?: {
+  serviceName?: string;
+  comboLiveStatus?: { isComboLive?: boolean; comboName?: string };
+  lashHistory?: Array<{ serviceName?: string }>;
+  attributes?: { material?: string; count?: string; volume?: string; style?: string };
+  customerVisits?: number;
+}): string {
+  const s = String(booking?.serviceName || '').trim();
+  if (s && !s.toLowerCase().includes('any')) {
+    return s;
+  }
+  if (booking?.comboLiveStatus?.isComboLive && booking.comboLiveStatus.comboName) {
+    return booking.comboLiveStatus.comboName;
+  }
+  if (booking?.lashHistory && booking.lashHistory.length > 0) {
+    const validHistory = booking.lashHistory.find((h) => h.serviceName && !h.serviceName.toLowerCase().includes('any'));
+    if (validHistory?.serviceName) {
+      return validHistory.serviceName;
+    }
+  }
+  const mat = booking?.attributes?.material || 'HyperLight';
+  const vol = booking?.attributes?.volume || '2X';
+  const count = booking?.attributes?.count || '70 fan';
+  const sku = resolveLashSkuPricing(mat, count, vol);
+  if (sku?.skuName && !sku.skuName.toLowerCase().includes('any')) {
+    return sku.skuName;
+  }
+  return booking?.customerVisits && booking.customerVisits > 1 ? 'New Hyperlight 550' : 'Chưa chọn mẫu mi';
+}
+
+/**
  * 5. Điểm Thiết kế Dáng mi (OrderServiceAttributeDesign) chuẩn Báo cáo CV Xoay (staff_bonus_rule):
  * - Natural (id=49): 0 pts
  * - Kim-K / Katun / Thiết kế (id=101): +5 pts

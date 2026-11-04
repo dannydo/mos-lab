@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { Camera, Image as ImageIcon, Zap, CheckCircle2, Award, Clock } from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
@@ -42,15 +43,18 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     return 68; // Realistic default
   }, [cachedSnapshot, progressSeconds]);
 
+  // Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn Any - Lashes
+  const displayServiceName = resolveDisplayServiceName(booking);
+
   // Thời gian cam kết / định mức
   const targetMinutes = useMemo(() => {
     if (booking.serviceDuration && booking.serviceDuration > 0) return booking.serviceDuration;
     let base = 65;
-    const sName = (booking.serviceName || '').toLowerCase();
+    const sName = (displayServiceName || '').toLowerCase();
     if (sName.includes('dặm') || sName.includes('refill')) base = 50;
     if (booking.attributes?.hasUnderMink || sName.includes('mi dưới')) base += 25;
     return base;
-  }, [booking]);
+  }, [booking, displayServiceName]);
 
   const diffMinutes = actualMinutes - targetMinutes;
 
@@ -177,9 +181,7 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
                     <div className="w-8 h-8 rounded-full bg-[#22C55E] mb-1.5 flex items-center justify-center text-white font-black text-xs shadow-xs mx-auto">
                       ✓
                     </div>
-                    <span className="text-[#22C55E] font-bold text-[11.5px] leading-tight">
-                      {booking.serviceName || 'Hoàn Thiện'}
-                    </span>
+                    <span className="text-[#22C55E] font-bold text-[11.5px] leading-tight">{displayServiceName}</span>
                   </div>
                 )}
               </div>

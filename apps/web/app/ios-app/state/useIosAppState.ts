@@ -280,7 +280,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
               if (existing && existing.cvRotationPoints !== undefined) {
                 return {
                   ...incoming,
-                  serviceName: existing.serviceName,
+                  serviceName:
+                    existing.serviceName && !existing.serviceName.toLowerCase().includes('any')
+                      ? existing.serviceName
+                      : incoming.serviceName,
                   servicePrice: existing.servicePrice,
                   serviceType: existing.serviceType,
                   attributes: existing.attributes,
@@ -417,10 +420,15 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
     updateActiveBooking((prev) => {
       const nextCombo = selectedCombo !== undefined ? selectedCombo : prev.selectedCombo || null;
-      const nextServiceName = skuPricing?.skuName || prev.serviceName;
+      const nextServiceName =
+        skuPricing?.skuName ||
+        (prev.serviceName && !prev.serviceName.toLowerCase().includes('any') ? prev.serviceName : 'New Hyperlight 550');
       const nextServicePrice = skuPricing?.skuPrice || prev.servicePrice;
       const nextUpgradePrice = skuPricing?.upgradePrice ?? prev.upgradePrice ?? 0;
-      const originalBookedServiceName = prev.originalBookedServiceName || prev.serviceName;
+      const originalBookedServiceName =
+        prev.originalBookedServiceName && !prev.originalBookedServiceName.toLowerCase().includes('any')
+          ? prev.originalBookedServiceName
+          : nextServiceName;
       const originalBookedServicePrice = prev.originalBookedServicePrice || prev.servicePrice;
 
       const comboPrice = nextCombo ? nextCombo.price : 0;

@@ -28,6 +28,7 @@ import {
   parseUnderMinkCountFibers,
   parseUnderMinkLengthMm,
   resolveQuickCheckInComboPreset,
+  resolveDisplayServiceName,
   stepUnderMinkCount,
   stepUnderMinkLength,
   UNDER_MINK_PREP_SPEC,
@@ -98,7 +99,7 @@ export function Screen02CheckInProfile({
 }: Screen02CheckInProfileProps) {
   const customerName = booking?.customerName || 'Khách Hàng';
   const customerPhone = booking?.customerPhone || '0901.xxx.xxx';
-  const serviceName = booking?.serviceName || 'Dịch vụ';
+  const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = booking?.servicePrice ? `${booking.servicePrice.toLocaleString('vi-VN')} đ` : '550.000 đ';
   const bookingTime = booking?.time12h || booking?.timeSlot || '09:00 am';
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';

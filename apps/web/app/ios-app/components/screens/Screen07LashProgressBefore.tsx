@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { Eye, Camera, Image as ImageIcon, RotateCw, CheckCircle2 } from 'lucide-react';
 
 interface Screen07LashProgressBeforeProps {
@@ -59,7 +60,16 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
   };
 
   const customerName = booking?.customerName || 'Chị Quyên';
-  const serviceName = booking?.serviceName || 'Dáng Flawless · Cong C · Dài 10-12mm';
+  // Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn Any - Lashes
+  const displayServiceName = resolveDisplayServiceName(booking);
+  const lashSpecDetail = useMemo(() => {
+    const parts: string[] = [];
+    if (booking?.attributes?.style) parts.push(`Dáng ${booking.attributes.style}`);
+    if (booking?.attributes?.curl) parts.push(`Cong ${booking.attributes.curl}`);
+    if (booking?.attributes?.length) parts.push(`Dài ${booking.attributes.length}`);
+    if (booking?.attributes?.thickness) parts.push(`${booking.attributes.thickness}`);
+    return parts.length > 0 ? parts.join(' · ') : '';
+  }, [booking]);
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
@@ -92,7 +102,10 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 flex items-center justify-between">
           <div>
             <div className="text-[16px] font-extrabold text-black">{customerName}</div>
-            <div className="text-[12px] text-gray-500 mt-0.5 font-medium">{serviceName}</div>
+            <div className="text-[12px] text-gray-500 mt-0.5 font-medium">
+              {displayServiceName}
+              {lashSpecDetail ? ` (${lashSpecDetail})` : ''}
+            </div>
           </div>
           <span className="bg-[#22C55E] text-white font-extrabold text-[11px] px-3 py-1 rounded-full shadow-xs">
             Đang phục vụ

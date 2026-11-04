@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { Camera, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SegmentCounts {
@@ -341,9 +342,9 @@ export function Screen01IncomingBookings({
                   </span>
                   <span
                     className="text-neutral-300 text-[11px] font-semibold truncate leading-tight mt-0.5"
-                    title={b.serviceName}
+                    title={resolveDisplayServiceName(b)}
                   >
-                    {b.serviceName?.toLowerCase().includes('any') ? 'Chưa chọn mẫu mi' : b.serviceName}
+                    {resolveDisplayServiceName(b)}
                   </span>
                   <span className="text-neutral-400 text-[10px] font-medium leading-tight mt-1 truncate">
                     Mi: {b.assignedStaffName || 'Thảo Ly'}

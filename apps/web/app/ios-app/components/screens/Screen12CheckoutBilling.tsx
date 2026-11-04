@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
@@ -33,7 +34,7 @@ export function Screen12CheckoutBilling({
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
   const checkInStaff = booking?.checkInStaffName || actor?.name || 'Thảo Ly';
   const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
-  const serviceName = booking?.serviceName || 'New Flawless Mink';
+  const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = booking?.servicePrice || 770000;
   const upgradePrice = booking?.upgradePrice || 0;
   const originalBookedPrice = booking?.originalBookedServicePrice || servicePrice;
