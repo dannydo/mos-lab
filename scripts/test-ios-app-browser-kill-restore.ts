@@ -18,7 +18,7 @@ async function main() {
     const testImage = path.resolve(process.cwd(), 'apps/web/public/apple-touch-icon.png');
 
     // Set mock token/user
-    await page.addInitScript(() => {
+    await context.addInitScript(() => {
       window.localStorage.setItem('mos_token', 'mock-token-for-dev');
       window.localStorage.setItem(
         'mos_user',
@@ -94,7 +94,8 @@ async function main() {
     const page2 = await context.newPage();
     console.log('Navigating to http://localhost:4000/ios-app?role=CVL (bare URL, no step query param)...');
     await page2.goto('http://localhost:4000/ios-app?role=CVL', { waitUntil: 'domcontentloaded' });
-    await page2.waitForTimeout(2000); // Allow async restoration from IndexedDB / LocalStorage
+    await page2.waitForSelector('text=Tiến Trình Nối Mi', { timeout: 10000 });
+    await page2.waitForTimeout(1000);
 
     // 8. Assert that page2 automatically resumed at Step 10!
     const step10RestoredHeader = page2.locator('text=4. Ảnh After Hoàn Thiện ✓');
@@ -112,19 +113,19 @@ async function main() {
       process.exit(1);
     }
 
-    // Verify all 3 real photos exist in comparison
-    const photoBeforeLabel = page2.locator('text=1. BEFORE');
-    const photoCleanedLabel = page2.locator('text=2. VỆ SINH');
-    const photoAfterLabel = page2.locator('text=3. AFTER');
+    // Verify all 3 real photos exist in 3 vertical rows
+    const photoBeforeLabel = page2.locator('text=1. ẢNH BEFORE');
+    const photoCleanedLabel = page2.locator('text=2. ẢNH VỆ SINH');
+    const photoAfterLabel = page2.locator('text=3. ẢNH AFTER');
 
-    console.log('Checking 3 photos in restored comparison view:');
-    console.log(`- #1 Before label: ${await photoBeforeLabel.isVisible()}`);
-    console.log(`- #2 Vệ sinh label: ${await photoCleanedLabel.isVisible()}`);
-    console.log(`- #3 After label: ${await photoAfterLabel.isVisible()}`);
+    console.log('Checking 3 photos in restored 3-row comparison view:');
+    console.log(`- #1 Before label: ${await photoBeforeLabel.first().isVisible()}`);
+    console.log(`- #2 Vệ sinh label: ${await photoCleanedLabel.first().isVisible()}`);
+    console.log(`- #3 After label: ${await photoAfterLabel.first().isVisible()}`);
 
     // Check img tags inside the 3 photo slots
-    const imgCount = await page2.locator('.grid img').count();
-    console.log(`- Restored img tags count in comparison card: ${imgCount}`);
+    const imgCount = await page2.locator('img[alt="Before"], img[alt="Cleaned"], img[alt="After"]').count();
+    console.log(`- Restored img tags count in 3 rows: ${imgCount}`);
 
     await page2.screenshot({
       path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-after-kill-real-photos-restored.png',

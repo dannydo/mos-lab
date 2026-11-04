@@ -196,89 +196,105 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
       </div>
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
-        {/* Section 1: Comparison with Real 3-Photo Previews (Chuẩn 3 tấm theo iOS gốc) */}
-        <div>
-          <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 mb-2">
+        {/* Section 1: Đối chiếu tiến trình 3 bước (3 hàng dọc riêng biệt theo yêu cầu) */}
+        <div className="space-y-3.5">
+          <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1">
             ĐỐI CHIẾU TIẾN TRÌNH 3 BƯỚC (BEFORE / VỆ SINH / AFTER)
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {/* 1. Before Box */}
-            <div className="bg-white rounded-2xl p-2 shadow-sm border border-neutral-100 flex flex-col items-center">
-              <div className="w-full aspect-[3/4] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800">
-                {beforePhotoUrl && (beforePhotoUrl.startsWith('data:') || beforePhotoUrl.startsWith('http')) ? (
-                  <img src={beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="p-2 text-center flex flex-col items-center justify-center">
-                    <div className="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 mb-1 flex items-center justify-center text-xs font-black">
-                      1
-                    </div>
-                    <span className="text-white font-medium text-[10px] leading-tight">Mắt Mộc</span>
-                  </div>
-                )}
+
+          {/* HÀNG 1: ẢNH BEFORE */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-[11px] font-black">
+                  1
+                </span>
+                <span className="text-[13px] font-black text-black">1. ẢNH BEFORE · MẮT MỘC</span>
               </div>
-              <span className="text-[9.5px] font-black text-gray-400 uppercase tracking-wider mt-1.5 text-center">
-                1. BEFORE
+              <span className="text-[10px] font-bold text-gray-500 bg-neutral-100 px-2.5 py-0.5 rounded-full">
+                Mắt mộc ban đầu
               </span>
             </div>
-
-            {/* 2. Cleaned Box */}
-            <div className="bg-white rounded-2xl p-2 shadow-sm border border-neutral-100 flex flex-col items-center">
-              <div className="w-full aspect-[3/4] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800">
-                {cleanedPhotoUrl && (cleanedPhotoUrl.startsWith('data:') || cleanedPhotoUrl.startsWith('http')) ? (
-                  <img src={cleanedPhotoUrl} alt="Cleaned" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="p-2 text-center flex flex-col items-center justify-center">
-                    <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 mb-1 flex items-center justify-center text-xs font-black">
-                      2
-                    </div>
-                    <span className="text-white font-medium text-[10px] leading-tight">Vệ Sinh</span>
-                  </div>
-                )}
-              </div>
-              <span className="text-[9.5px] font-black text-gray-400 uppercase tracking-wider mt-1.5 text-center">
-                2. VỆ SINH
-              </span>
-            </div>
-
-            {/* 3. After Box */}
-            <div className="bg-white rounded-2xl p-2 shadow-sm border-2 border-[#22C55E] flex flex-col items-center">
-              <div className="w-full aspect-[3/4] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30">
-                {afterPhotoPreview &&
-                (afterPhotoPreview.startsWith('data:') || afterPhotoPreview.startsWith('http')) ? (
-                  <img src={afterPhotoPreview} alt="After" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="p-2 text-center flex flex-col items-center justify-center">
-                    <div className="w-7 h-7 rounded-full bg-[#22C55E] mb-1 flex items-center justify-center text-white font-black text-xs shadow-xs mx-auto">
-                      ✓
-                    </div>
-                    <span className="text-[#22C55E] font-bold text-[10px] leading-tight">Hoàn thiện</span>
-                  </div>
-                )}
-              </div>
-              <span className="text-[9.5px] font-black text-[#22C55E] uppercase tracking-wider mt-1.5 text-center">
-                3. AFTER
-              </span>
+            <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800 shadow-inner">
+              {beforePhotoUrl && (beforePhotoUrl.startsWith('data:') || beforePhotoUrl.startsWith('http')) ? (
+                <img src={beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
+              ) : (
+                <div className="p-4 text-center flex flex-col items-center justify-center">
+                  <span className="text-white font-medium text-[12px]">Chưa có ảnh Before</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Buttons to snap/upload real After photo */}
-          <div className="grid grid-cols-2 gap-2 mt-2.5">
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              className="py-2.5 px-2 bg-neutral-900 text-white font-bold text-[12px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
-            >
-              <Camera className="w-3.5 h-3.5 text-amber-400" />
-              <span>{afterPhotoPreview ? 'Chụp lại After' : 'Chụp After Camera'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => libraryInputRef.current?.click()}
-              className="py-2.5 px-2 bg-[#E5E7EB] text-gray-800 font-bold text-[12px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
-            >
-              <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
-              <span>Chọn Từ Thư Viện</span>
-            </button>
+          {/* HÀNG 2: ẢNH VỆ SINH */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-600 flex items-center justify-center text-[11px] font-black">
+                  2
+                </span>
+                <span className="text-[13px] font-black text-black">2. ẢNH VỆ SINH · NHẮM MẮT</span>
+              </div>
+              <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                Đã vệ sinh nhắm
+              </span>
+            </div>
+            <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800 shadow-inner">
+              {cleanedPhotoUrl && (cleanedPhotoUrl.startsWith('data:') || cleanedPhotoUrl.startsWith('http')) ? (
+                <img src={cleanedPhotoUrl} alt="Cleaned" className="w-full h-full object-cover" />
+              ) : (
+                <div className="p-4 text-center flex flex-col items-center justify-center">
+                  <span className="text-white font-medium text-[12px]">Chưa có ảnh Vệ Sinh</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* HÀNG 3: ẢNH AFTER (HOÀN THIỆN) */}
+          <div className="bg-white rounded-2xl p-3.5 shadow-sm border-2 border-[#22C55E] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-black shadow-xs">
+                  3
+                </span>
+                <span className="text-[13px] font-black text-emerald-800">3. ẢNH AFTER · HOÀN THIỆN</span>
+              </div>
+              <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                ✓ Đạt tiêu chuẩn
+              </span>
+            </div>
+            <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30 shadow-inner">
+              {afterPhotoPreview && (afterPhotoPreview.startsWith('data:') || afterPhotoPreview.startsWith('http')) ? (
+                <img src={afterPhotoPreview} alt="After" className="w-full h-full object-cover" />
+              ) : (
+                <div className="p-4 text-center flex flex-col items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[#22C55E] mb-1.5 flex items-center justify-center text-white font-black text-sm shadow-xs">
+                    ✓
+                  </div>
+                  <span className="text-[#22C55E] font-bold text-[12px]">Chờ chụp ảnh After</span>
+                </div>
+              )}
+            </div>
+
+            {/* Buttons to snap/upload real After photo */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="py-2.5 px-2 bg-neutral-900 text-white font-bold text-[12px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5 text-amber-400" />
+                <span>{afterPhotoPreview ? 'Chụp lại After' : 'Chụp After Camera'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => libraryInputRef.current?.click()}
+                className="py-2.5 px-2 bg-[#E5E7EB] text-gray-800 font-bold text-[12px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                <span>Chọn Từ Thư Viện</span>
+              </button>
+            </div>
           </div>
         </div>
 
