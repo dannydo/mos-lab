@@ -10,17 +10,24 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
-import { EyeOff, Camera, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { EyeOff, Camera, Image as ImageIcon, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface Screen07bLashProgressCleanedProps {
   booking?: BookingItem;
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
+  onAutoSavePhoto?: (photoUrl: string) => void;
 }
 
-export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: Screen07bLashProgressCleanedProps) {
+export function Screen07bLashProgressCleaned({
+  booking,
+  onBack,
+  onSavePhoto,
+  onAutoSavePhoto,
+}: Screen07bLashProgressCleanedProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
+  const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
 
   // Khôi phục ảnh đã chụp/lưu trước đó nếu có
   const bookingId = booking?.id;
@@ -47,6 +54,7 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
     const file = e.target.files?.[0];
     if (file) {
       try {
+        const isRetake = Boolean(photoPreview);
         const compressed = await compressLashImage(file, 1024, 0.72);
         setPhotoPreview(compressed);
         if (bookingId) {
@@ -57,6 +65,10 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
             currentStep: 8,
           });
         }
+        // Tự động lưu tức thì lên state/server ngay khi chụp, ghi đè nếu chụp lại
+        onAutoSavePhoto?.(compressed);
+        setAutoSavedToast(isRetake ? 'Đã ghi đè ảnh Vệ Sinh mới!' : 'Đã tự động lưu ảnh Vệ Sinh!');
+        setTimeout(() => setAutoSavedToast(null), 3500);
       } catch (err) {
         console.warn('[Screen07b] Failed to compress image:', err);
       }
@@ -161,11 +173,12 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
             {/* Bottom Tag overlay */}
             <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
               <span className="bg-black/75 backdrop-blur-md text-[10.5px] font-mono text-neutral-300 px-2.5 py-1 rounded-md border border-white/10">
-                Mốc 2: Vệ sinh nhắm mắt (Cleaned)
+                10:38:15 AM · Salon Đề Thám
               </span>
               {photoPreview && (
-                <span className="bg-emerald-600/90 backdrop-blur-md text-[10px] font-bold text-white px-2 py-0.5 rounded-md">
-                  ✓ Đã chụp
+                <span className="bg-emerald-600/90 backdrop-blur-md text-[10px] font-bold text-white px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>{autoSavedToast || 'Đã tự động lưu · Chụp lại để ghi đè'}</span>
                 </span>
               )}
             </div>
@@ -199,7 +212,7 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
             onClick={handleSave}
             className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight flex items-center justify-center gap-2"
           >
-            <span>LƯU ẢNH VỆ SINH & VÀO TIẾN ĐỘ</span>
+            <span>{photoPreview ? 'BẮT ĐẦU NỐI MI & BẤM GIỜ →' : 'TIẾP TỤC →'}</span>
           </button>
         </div>
       </div>

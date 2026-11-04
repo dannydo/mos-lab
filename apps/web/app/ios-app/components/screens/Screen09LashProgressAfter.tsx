@@ -17,11 +17,18 @@ interface Screen09LashProgressAfterProps {
   booking: BookingItem;
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
+  onAutoSavePhoto?: (photoUrl: string) => void;
 }
 
-export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Screen09LashProgressAfterProps) {
+export function Screen09LashProgressAfter({
+  booking,
+  onBack,
+  onSavePhoto,
+  onAutoSavePhoto,
+}: Screen09LashProgressAfterProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
+  const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
 
   const bookingId = booking.id;
   const progressSeconds = booking.progress?.elapsedSeconds;
@@ -136,6 +143,7 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
     const file = e.target.files?.[0];
     if (file) {
       try {
+        const isRetake = Boolean(afterPhotoPreview);
         const compressed = await compressLashImage(file, 1024, 0.72);
         setAfterPhotoPreview(compressed);
         saveLocalProgressSnapshot(bookingId, {
@@ -147,6 +155,10 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
           currentStep: 10,
           afterPhotoSavedAt: new Date().toISOString(),
         });
+        // Tự động lưu tức thì lên state/server ngay khi chụp, ghi đè nếu chụp lại
+        onAutoSavePhoto?.(compressed);
+        setAutoSavedToast(isRetake ? 'Đã ghi đè ảnh After mới!' : 'Đã tự động lưu ảnh After!');
+        setTimeout(() => setAutoSavedToast(null), 3500);
       } catch (err) {
         console.warn('[Screen09] Failed to compress image:', err);
       }
@@ -259,8 +271,8 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
                 </span>
                 <span className="text-[13px] font-black text-emerald-800">3. ẢNH AFTER · HOÀN THIỆN</span>
               </div>
-              <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                ✓ Đạt tiêu chuẩn
+              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                {autoSavedToast || (afterPhotoPreview ? '✓ Đã tự động lưu' : 'Chờ chụp ảnh')}
               </span>
             </div>
             <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30 shadow-inner">
@@ -272,6 +284,14 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
                     ✓
                   </div>
                   <span className="text-[#22C55E] font-bold text-[12px]">Chờ chụp ảnh After</span>
+                </div>
+              )}
+              {afterPhotoPreview && (
+                <div className="absolute bottom-2.5 right-2.5 pointer-events-none">
+                  <span className="bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>{autoSavedToast || 'Đã tự động lưu · Chụp lại để ghi đè'}</span>
+                  </span>
                 </div>
               )}
             </div>

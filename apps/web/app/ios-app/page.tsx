@@ -198,6 +198,7 @@ function IosAppInner() {
             booking={state.activeBooking}
             onBack={() => state.setCurrentStep(6)}
             onSavePhoto={state.handleSaveBeforePhoto}
+            onAutoSavePhoto={(url) => state.handleAutoSavePhoto('before', url)}
           />
         );
       case 8:
@@ -206,6 +207,7 @@ function IosAppInner() {
             booking={state.activeBooking}
             onBack={() => state.setCurrentStep(7)}
             onSavePhoto={state.handleSaveCleanedPhoto}
+            onAutoSavePhoto={(url) => state.handleAutoSavePhoto('cleaned', url)}
           />
         );
       case 9:
@@ -224,6 +226,7 @@ function IosAppInner() {
             booking={state.activeBooking}
             onBack={() => state.setCurrentStep(9)}
             onSavePhoto={state.handleSaveAfterPhoto}
+            onAutoSavePhoto={(url) => state.handleAutoSavePhoto('after', url)}
           />
         );
       case 11:

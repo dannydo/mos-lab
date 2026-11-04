@@ -16,11 +16,18 @@ interface Screen07LashProgressBeforeProps {
   booking?: BookingItem;
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
+  onAutoSavePhoto?: (photoUrl: string) => void;
 }
 
-export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Screen07LashProgressBeforeProps) {
+export function Screen07LashProgressBefore({
+  booking,
+  onBack,
+  onSavePhoto,
+  onAutoSavePhoto,
+}: Screen07LashProgressBeforeProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
+  const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
 
   // Khôi phục ảnh đã chụp/lưu trước đó nếu có
   const bookingId = booking?.id;
@@ -47,6 +54,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
     const file = e.target.files?.[0];
     if (file) {
       try {
+        const isRetake = Boolean(photoPreview);
         // Nén ảnh canvas theo chuẩn iOS native toJpegData (tối đa 1024px, giảm từ 5MB -> ~60KB)
         const compressed = await compressLashImage(file, 1024, 0.72);
         setPhotoPreview(compressed);
@@ -58,6 +66,10 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
             currentStep: 7,
           });
         }
+        // Tự động lưu tức thì lên state/server ngay khi chụp, ghi đè nếu chụp lại
+        onAutoSavePhoto?.(compressed);
+        setAutoSavedToast(isRetake ? 'Đã ghi đè ảnh Before mới!' : 'Đã tự động lưu ảnh Before!');
+        setTimeout(() => setAutoSavedToast(null), 3500);
       } catch (err) {
         console.warn('[Screen07] Failed to compress image:', err);
       }
@@ -156,7 +168,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
               </div>
             )}
 
-            {/* Watermark overlay */}
+            {/* Watermark overlay & Auto-save status */}
             <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
               <span className="bg-black/80 text-white text-[10px] font-mono px-2 py-0.8 rounded border border-neutral-700/80">
                 10:38:15 AM · Salon Đề Thám
@@ -164,7 +176,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
               {photoPreview && (
                 <span className="bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1 shadow-sm">
                   <CheckCircle2 className="w-3 h-3" />
-                  <span>Đã chụp ảnh thật</span>
+                  <span>{autoSavedToast || 'Đã tự động lưu · Chụp lại để ghi đè'}</span>
                 </span>
               )}
             </div>
@@ -198,7 +210,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
             onClick={handleSave}
             className="w-full py-4 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer uppercase tracking-tight flex items-center justify-center gap-2"
           >
-            <span>LƯU ẢNH BEFORE & TIẾP TỤC</span>
+            <span>{photoPreview ? 'TIẾP TỤC SANG ẢNH VỆ SINH →' : 'TIẾP TỤC →'}</span>
           </button>
         </div>
       </div>

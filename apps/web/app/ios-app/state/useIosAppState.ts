@@ -667,6 +667,38 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(7);
   };
 
+  // Tự động lưu ảnh ngay khi chụp (ghi đè nếu chụp lại) mà không bắt buộc phải bấm nút chuyển bước
+  const handleAutoSavePhoto = (type: 'before' | 'cleaned' | 'after', photoUrl: string) => {
+    const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
+    const progressPatch: any = {
+      ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
+      startedAt,
+    };
+    if (type === 'before') {
+      progressPatch.beforePhotoUrl = photoUrl;
+      progressPatch.beforePhotoSavedAt = new Date().toISOString();
+    } else if (type === 'cleaned') {
+      progressPatch.cleanedPhotoUrl = photoUrl;
+      progressPatch.cleanedPhotoSavedAt = new Date().toISOString();
+    } else if (type === 'after') {
+      progressPatch.afterPhotoUrl = photoUrl;
+      progressPatch.afterPhotoSavedAt = new Date().toISOString();
+    }
+
+    updateActiveBooking((prev) => ({
+      ...prev,
+      status: 'SERVICING',
+      progress: progressPatch,
+    }));
+    setActiveServicingBookingId(activeBooking.id);
+    saveLocalProgressSnapshot(activeBooking.id, {
+      ...progressPatch,
+      bookingId: activeBooking.id,
+      status: 'SERVICING',
+    });
+    void postAction('UPDATE_PROGRESS', { orderState: `Photo ${type} auto-saved`, progress: progressPatch });
+  };
+
   // Step 7 -> Step 8: Save Before Photo (Mắt mộc) & Chuyển sang Ảnh Vệ Sinh
   const handleSaveBeforePhoto = (photoUrl: string) => {
     const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
@@ -1005,6 +1037,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     handleAssignStaff,
     handleTransferToCv,
     handleCvStartTask,
+    handleAutoSavePhoto,
     handleSaveBeforePhoto,
     handleSaveCleanedPhoto,
     handleToggleTimer,

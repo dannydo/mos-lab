@@ -52,7 +52,7 @@ async function main() {
     const beforeInput = page.locator('input[type="file"]').first();
     await beforeInput.setInputFiles(testImage);
     await page.waitForTimeout(1000); // Allow canvas compression
-    const saveBeforeBtn = page.locator('button:has-text("LƯU ẢNH BEFORE")').first();
+    const saveBeforeBtn = page.locator('button:has-text("TIẾP TỤC"), button:has-text("LƯU ẢNH BEFORE")').first();
     await saveBeforeBtn.click();
     await page.waitForTimeout(800);
 
@@ -61,7 +61,9 @@ async function main() {
     const cleanedInput = page.locator('input[type="file"]').first();
     await cleanedInput.setInputFiles(testImage);
     await page.waitForTimeout(1000); // Allow canvas compression
-    const saveCleanedBtn = page.locator('button:has-text("LƯU ẢNH VỆ SINH")').first();
+    const saveCleanedBtn = page
+      .locator('button:has-text("BẮT ĐẦU NỐI MI"), button:has-text("TIẾP TỤC"), button:has-text("LƯU ẢNH VỆ SINH")')
+      .first();
     await saveCleanedBtn.click();
     await page.waitForTimeout(800);
 
