@@ -22,13 +22,14 @@ const STEP_TITLES = [
   '5. Bàn Giao Servicing (CC)',
   '6. CV Nhận Ca Trên App (CV)',
   '7. Chụp Ảnh Before (CV)',
-  '8. Bấm Giờ Phục Vụ (CV)',
-  '9. Chụp Ảnh After (CV)',
-  '10. Khảo Sát 4 Khuôn Mặt (Khách)',
-  '11. Bán Lẻ Yeppeum 6ml (CC)',
-  '12. Bảng Kê & Thanh Toán QR (CC)',
-  '13. Ghi Nhận Tip 50K (CC)',
-  '14. In Bill Nhiệt & Hoàn Tất (CC)',
+  '8. Ảnh Vệ Sinh Nhắm (CV)',
+  '9. Giờ Phục Vụ Tự Động (CV)',
+  '10. Chụp Ảnh After (CV)',
+  '11. Khảo Sát 4 Khuôn Mặt (Khách)',
+  '12. Bán Lẻ Yeppeum 6ml (CC)',
+  '13. Bảng Kê & Thanh Toán QR (CC)',
+  '14. Ghi Nhận Tip 50K (CC)',
+  '15. In Bill Nhiệt & Hoàn Tất (CC)',
 ];
 
 export function IosDeviceFrame({

@@ -135,7 +135,7 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
-      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Bấm Giờ" />
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Giờ Phục Vụ" />
 
       {/* Hidden file inputs for iPhone Camera and Photo Library */}
       <input
@@ -152,7 +152,7 @@ export function Screen09LashProgressAfter({ booking, onBack, onSavePhoto }: Scre
       <div className="bg-black select-none shrink-0 border-b border-neutral-900">
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before</div>
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Bấm Giờ ({actualMinutes}p)</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Giờ Phục Vụ ({actualMinutes}p)</div>
         <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 pb-1.5 flex items-center justify-between">
           <span>4. Ảnh After Hoàn Thiện ✓</span>
           <span className="text-[11px] font-mono">Đạt tiêu chuẩn</span>

@@ -172,7 +172,7 @@ export function Screen08LashProgressTimer({
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before</div>
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh</div>
         <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 flex items-center justify-between">
-          <span>3. Bấm Giờ Phục Vụ ✓</span>
+          <span>3. Giờ Phục Vụ (Tự động) ✓</span>
           <span className="text-[11px] font-mono tabular-nums">Định mức: {targetMinutes}p</span>
         </div>
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">4. Ảnh After</div>
@@ -250,7 +250,7 @@ export function Screen08LashProgressTimer({
               <span
                 className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-400'}`}
               />
-              <span>{isRunning ? 'Đang thực hiện' : 'Đang tạm dừng'}</span>
+              <span>{isRunning ? 'Đang chạy tự động' : 'Đang tạm dừng'}</span>
             </div>
           </div>
         </div>

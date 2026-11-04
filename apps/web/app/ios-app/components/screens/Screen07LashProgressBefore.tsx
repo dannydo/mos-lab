@@ -94,7 +94,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
           <span className="text-[11px] font-mono">Bắt buộc</span>
         </div>
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh Nhắm</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Bấm Giờ Phục Vụ</div>
+        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Giờ Phục Vụ (Tự động)</div>
         <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">4. Ảnh After Hoàn Thiện</div>
       </div>
 

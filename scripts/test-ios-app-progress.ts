@@ -102,7 +102,7 @@ async function main() {
 
   // 8. Test clicking back from Screen 10 to Screen 09
   console.log('Testing back navigation from Screen 10 to Screen 09 (Timer)...');
-  const backToTimerBtn = page.locator('header button:has-text("Bấm Giờ")').first();
+  const backToTimerBtn = page.locator('header button:has-text("Giờ Phục Vụ")').first();
   await backToTimerBtn.click();
   await page.waitForTimeout(800);
 
