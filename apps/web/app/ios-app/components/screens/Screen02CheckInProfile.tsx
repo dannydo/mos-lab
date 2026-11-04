@@ -37,6 +37,9 @@ import {
 interface Screen02CheckInProfileProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
+  isCheckInLocked?: boolean;
+  activeServicingCustomerName?: string;
+  onResumeServicing?: () => void;
   onBack: () => void;
   onCheckIn: () => void;
   onQuickCheckIn?: (
@@ -93,6 +96,9 @@ function getStaffInitials(name?: string): string {
 export function Screen02CheckInProfile({
   booking,
   actor,
+  isCheckInLocked = false,
+  activeServicingCustomerName,
+  onResumeServicing,
   onBack,
   onCheckIn,
   onQuickCheckIn,
@@ -1262,9 +1268,33 @@ export function Screen02CheckInProfile({
       </div>
 
       {/* Sticky Bottom Action Bar (Native iOS Floating Dock) */}
-      <div className="bg-black/95 backdrop-blur-xl border-t border-neutral-800 px-3.5 py-2.5 flex items-center gap-2 z-30 shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
-        {isComboLive && onQuickCheckIn ? (
-          <>
+      <div className="bg-black/95 backdrop-blur-xl border-t border-neutral-800 px-3.5 py-2.5 flex flex-col gap-2 z-30 shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
+        {isCheckInLocked ? (
+          <div className="w-full space-y-2">
+            <div className="bg-amber-500/15 border border-amber-400/40 rounded-xl px-3 py-2 text-center text-[11.5px] text-amber-300 font-medium">
+              🔒 Đang phục vụ <strong>{activeServicingCustomerName || 'khách khác'}</strong>. Vui lòng hoàn thành
+              checkout trước khi check-in khách này.
+            </div>
+            {onResumeServicing ? (
+              <button
+                type="button"
+                onClick={onResumeServicing}
+                className="w-full py-3 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[13px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
+              >
+                <span>Quay lại ca làm {activeServicingCustomerName} →</span>
+              </button>
+            ) : (
+              <button
+                disabled
+                className="w-full py-3.5 px-4 rounded-2xl bg-neutral-800 text-neutral-500 font-bold text-[13px] flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Chưa thể check-in khách này</span>
+              </button>
+            )}
+          </div>
+        ) : isComboLive && onQuickCheckIn ? (
+          <div className="flex items-center gap-2 w-full">
             <button
               type="button"
               onClick={handleExecuteQuickCheckIn}
@@ -1282,7 +1312,7 @@ export function Screen02CheckInProfile({
               <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Tư vấn lại</span>
             </button>
-          </>
+          </div>
         ) : (
           <button
             onClick={onCheckIn}

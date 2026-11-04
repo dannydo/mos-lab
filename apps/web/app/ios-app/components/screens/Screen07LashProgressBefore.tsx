@@ -22,7 +22,7 @@ export function Screen07LashProgressBefore({ booking, onBack, onSavePhoto }: Scr
   const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
     if (!bookingId) return null;
     const cached = getLocalProgressSnapshot(bookingId);
-    return cached?.beforePhotoUrl || null;
+    return booking?.progress?.beforePhotoUrl || cached?.beforePhotoUrl || null;
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

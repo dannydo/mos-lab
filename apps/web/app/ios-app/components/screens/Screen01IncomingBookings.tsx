@@ -19,6 +19,8 @@ interface Screen01IncomingBookingsProps {
   bookingSegment: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
   setBookingSegment: (seg: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL') => void;
   onSelectBooking: (bookingId: number) => void;
+  activeServicingBooking?: BookingItem | null;
+  onResumeServicing?: (bookingId: number) => void;
   counts?: SegmentCounts;
   isRefreshing?: boolean;
   lastRefreshedAt?: string | null;
@@ -33,11 +35,40 @@ interface Screen01IncomingBookingsProps {
   onOpenProfileMenu?: () => void;
 }
 
+function getStepShortTitle(step?: number): string {
+  switch (step) {
+    case 6:
+      return 'Nhận ca';
+    case 7:
+      return 'Ảnh Before';
+    case 8:
+      return 'Ảnh Vệ Sinh';
+    case 9:
+      return 'Giờ Phục Vụ';
+    case 10:
+      return 'Ảnh After';
+    case 11:
+      return 'Khảo sát';
+    case 12:
+      return 'Tư vấn Dưỡng mi / Combo';
+    case 13:
+      return 'Thanh toán';
+    case 14:
+      return 'Ghi nhận Tip';
+    case 15:
+      return 'VietQR & Hoàn tất';
+    default:
+      return 'Tiến trình nối mi';
+  }
+}
+
 export function Screen01IncomingBookings({
   bookings,
   bookingSegment,
   setBookingSegment,
   onSelectBooking,
+  activeServicingBooking,
+  onResumeServicing,
   counts,
   isRefreshing,
   onRefreshDb,
@@ -45,6 +76,12 @@ export function Screen01IncomingBookings({
   actor,
   onOpenProfileMenu,
 }: Screen01IncomingBookingsProps) {
+  // Modal cảnh báo khi cố tình bấm check-in khách khác lúc đang có ca làm dở dang
+  const [lockedCustomerModal, setLockedCustomerModal] = useState<{
+    isOpen: boolean;
+    attemptedCustomerName: string;
+  } | null>(null);
+
   // 1. Quản lý ngày xem lịch hẹn (Hôm qua < Hôm nay > Ngày mai)
   const [dateOffset, setDateOffset] = useState<number>(0);
 
@@ -215,6 +252,57 @@ export function Screen01IncomingBookings({
 
       {/* 3. Customer Booking Cards (Số thứ tự đặt góc Avatar, không tốn diện tích card!) */}
       <div className="flex-1 bg-black overflow-y-auto px-3 py-1 space-y-2.5 pb-20">
+        {/* Banner Ca Làm Đang Diễn Ra (Khóa không cho checkin người khác) */}
+        {activeServicingBooking && (
+          <div
+            onClick={() => {
+              if (onResumeServicing) onResumeServicing(activeServicingBooking.id);
+              else onSelectBooking(activeServicingBooking.id);
+            }}
+            className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/25 via-[#252015] to-emerald-500/20 border-2 border-amber-400 shadow-xl cursor-pointer active:scale-98 transition-all flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-amber-400 bg-neutral-900 shadow-md">
+                  {activeServicingBooking.customerAvatar ? (
+                    <img
+                      src={activeServicingBooking.customerAvatar}
+                      alt={activeServicingBooking.customerName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <img src="/ios-assets/no-image.png" alt="No image" className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-black animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-black leading-none">
+                    ⚡ ĐANG PHỤC VỤ
+                  </span>
+                  <span className="text-[10.5px] font-bold text-amber-300">
+                    {getStepShortTitle(activeServicingBooking.progress?.currentStep)}
+                  </span>
+                </div>
+                <div className="text-[14px] font-black text-white truncate mt-0.5">
+                  {activeServicingBooking.customerName} · {resolveDisplayServiceName(activeServicingBooking)}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-xl bg-amber-400 text-black font-black text-[11.5px] shrink-0 active:scale-95 shadow-xs flex items-center gap-1 cursor-pointer"
+            >
+              <span>Vào ca</span>
+              <span>→</span>
+            </button>
+          </div>
+        )}
+
         {filteredBookings.length === 0 ? (
           <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-3">
             <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-amber-400 text-base font-bold">
@@ -241,6 +329,9 @@ export function Screen01IncomingBookings({
             const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
             const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
 
+            const isCurrentActiveServicing = Boolean(activeServicingBooking && b.id === activeServicingBooking.id);
+            const isOtherCustomerLocked = Boolean(activeServicingBooking && b.id !== activeServicingBooking.id);
+
             // Avatar Ring Indicator
             let avatarRingClass = 'border-2 border-emerald-500'; // Not Combo Live
             if (isComboLive && remainingSessions > 0) {
@@ -253,11 +344,31 @@ export function Screen01IncomingBookings({
             const isNextQueue =
               b.isNextQueueCustomer || b.isUnassignedQueue || b.bookingAccessTag === 'NEXT_QUEUE_CUSTOMER';
 
+            const cardBgStyle = isCurrentActiveServicing
+              ? 'bg-[#221C0E] border-2 border-amber-400 ring-2 ring-amber-400/30'
+              : isOtherCustomerLocked
+                ? 'bg-[#18181A] opacity-60 border-neutral-800/80 cursor-not-allowed'
+                : 'bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 hover:border-neutral-700';
+
             return (
               <div
                 key={b.id}
-                onClick={() => onSelectBooking(b.id)}
-                className="bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 rounded-2xl p-3 flex items-start gap-3 transition-all cursor-pointer shadow-xs select-none hover:border-neutral-700"
+                onClick={() => {
+                  if (isCurrentActiveServicing) {
+                    if (onResumeServicing) onResumeServicing(b.id);
+                    else onSelectBooking(b.id);
+                    return;
+                  }
+                  if (isOtherCustomerLocked) {
+                    setLockedCustomerModal({
+                      isOpen: true,
+                      attemptedCustomerName: b.customerName,
+                    });
+                    return;
+                  }
+                  onSelectBooking(b.id);
+                }}
+                className={`rounded-2xl p-3 flex items-start gap-3 transition-all cursor-pointer shadow-xs select-none ${cardBgStyle}`}
               >
                 {/* 3.1 Avatar with Number Badge directly attached to top-left (Zero card horizontal space lost!) */}
                 <div className="relative w-12 h-12 flex-shrink-0">
@@ -304,11 +415,25 @@ export function Screen01IncomingBookings({
 
                   {/* Badges Row: Icons instead of verbose words */}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                    {isNextQueue ? (
+                    {isCurrentActiveServicing && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-black leading-none animate-pulse">
+                        ⚡ Đang phục vụ
+                      </span>
+                    )}
+
+                    {isOtherCustomerLocked && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700 text-[10px] font-bold leading-none">
+                        🔒 Chưa thể check-in
+                      </span>
+                    )}
+
+                    {!isCurrentActiveServicing && !isOtherCustomerLocked && isNextQueue && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-400 text-[10px] font-extrabold leading-none">
                         ⚡ Đầu tua
                       </span>
-                    ) : (
+                    )}
+
+                    {!isCurrentActiveServicing && !isOtherCustomerLocked && !isNextQueue && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold leading-none">
                         📌 Book riêng
                       </span>
@@ -371,6 +496,53 @@ export function Screen01IncomingBookings({
           })
         )}
       </div>
+
+      {/* Modal Cảnh Báo Khóa Check-in khi đang có ca làm dở dang */}
+      {lockedCustomerModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-[340px] bg-[#1C1C1E] border border-neutral-700 rounded-3xl p-5 shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-amber-400/20 border-2 border-amber-400/70 flex items-center justify-center mx-auto text-amber-400 text-2xl shadow-inner">
+              🔒
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-white font-extrabold text-[16px] tracking-tight">Đang Trong Ca Phục Vụ!</h3>
+              <p className="text-neutral-300 text-[12.5px] leading-relaxed font-medium">
+                Chuyên Viên đang phục vụ{' '}
+                <strong className="text-amber-400">{activeServicingBooking?.customerName}</strong>.
+              </p>
+              <p className="text-neutral-400 text-[11.5px] leading-relaxed">
+                Theo quy trình của Wings, bạn không thể check-in cho{' '}
+                <strong className="text-white">{lockedCustomerModal.attemptedCustomerName}</strong> cho đến khi hoàn
+                thành checkout cho ca làm hiện tại.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setLockedCustomerModal(null);
+                  if (activeServicingBooking && onResumeServicing) {
+                    onResumeServicing(activeServicingBooking.id);
+                  } else if (activeServicingBooking) {
+                    onSelectBooking(activeServicingBooking.id);
+                  }
+                }}
+                className="w-full py-3 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[13px] shadow-md active:scale-98 transition-all cursor-pointer"
+              >
+                Quay lại ca làm {activeServicingBooking?.customerName}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLockedCustomerModal(null)}
+                className="w-full py-2.5 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-neutral-300 font-bold text-[12px] active:scale-98 transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

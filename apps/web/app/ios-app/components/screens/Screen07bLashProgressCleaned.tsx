@@ -22,7 +22,7 @@ export function Screen07bLashProgressCleaned({ booking, onBack, onSavePhoto }: S
   const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
     if (!bookingId) return null;
     const cached = getLocalProgressSnapshot(bookingId);
-    return cached?.cleanedPhotoUrl || null;
+    return booking?.progress?.cleanedPhotoUrl || cached?.cleanedPhotoUrl || null;
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -142,6 +142,8 @@ function IosAppInner() {
             actor={state.actor}
             scopeMode={state.scopeMode}
             onScopeModeChange={state.setScopeMode}
+            activeServicingBooking={state.activeServicingBooking}
+            onResumeServicing={state.handleResumeServicing}
             onSelectBooking={(id) => {
               state.setActiveBookingId(id);
               state.setCurrentStep(2);
@@ -154,6 +156,11 @@ function IosAppInner() {
           <Screen02CheckInProfile
             booking={state.activeBooking}
             actor={state.actor}
+            isCheckInLocked={Boolean(
+              state.activeServicingBooking && state.activeBooking.id !== state.activeServicingBooking.id
+            )}
+            activeServicingCustomerName={state.activeServicingBooking?.customerName}
+            onResumeServicing={() => state.handleResumeServicing()}
             onBack={() => state.setCurrentStep(1)}
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
@@ -293,7 +300,11 @@ function IosAppInner() {
     if (tab === 'booking') {
       state.setCurrentStep(1);
     } else if (tab === 'task') {
-      state.setCurrentStep(6);
+      if (state.activeServicingBooking) {
+        state.handleResumeServicing(state.activeServicingBooking.id);
+      } else {
+        state.setCurrentStep(6);
+      }
     } else if (tab === 'paystub') {
       state.setActiveTab('paystub');
     }
@@ -312,8 +323,12 @@ function IosAppInner() {
             activeTab={state.activeTab}
             onTabChange={handleTabChange}
             onCenterPlusClick={() => {
-              state.setActiveTab('booking');
-              state.setCurrentStep(3);
+              if (state.activeServicingBooking) {
+                state.handleResumeServicing(state.activeServicingBooking.id);
+              } else {
+                state.setActiveTab('booking');
+                state.setCurrentStep(3);
+              }
             }}
             badgeCounts={{
               booking: state.counts.incoming,

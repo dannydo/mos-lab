@@ -270,6 +270,7 @@ export interface BookingItem {
     timerRunning: boolean;
     startedAt?: string;
     completedAt?: string;
+    currentStep?: number;
   };
   survey?: {
     rating: number;

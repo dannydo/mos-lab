@@ -14,6 +14,8 @@ import {
   saveLocalProgressSnapshot,
   syncPendingActions,
   getLocalProgressSnapshot,
+  getActiveServicingBookingId,
+  setActiveServicingBookingId,
 } from './offlineSync';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
@@ -146,6 +148,39 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     }
   }, [initialRole]);
 
+  // Khôi phục ca làm đang phục vụ dở dang từ localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const savedActiveId = getActiveServicingBookingId();
+      if (savedActiveId) {
+        const idNum = Number(savedActiveId);
+        setBookings((prev) => {
+          const match = prev.find((b) => b.id === idNum);
+          if (match && match.status !== 'DONE') {
+            setActiveBookingId(idNum);
+            const cached = getLocalProgressSnapshot(idNum);
+            return prev.map((b) =>
+              b.id === idNum
+                ? {
+                    ...b,
+                    status: 'SERVICING',
+                    progress: {
+                      ...(b.progress || {}),
+                      ...cached,
+                    },
+                  }
+                : b
+            );
+          }
+          return prev;
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const canSwitchRole = Boolean(loggedInUser && isAdminOrSuperAdminRole(loggedInUser?.role));
   const actor = resolveActorProfile(role, loggedInUser);
 
@@ -204,6 +239,35 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     bookings.find((b) => b.id === activeBookingId) ||
     bookings[0] ||
     INITIAL_BOOKINGS[0];
+
+  // Khóa phục vụ độc quyền 1 khách (Single Active Service Session Invariant):
+  // Một CVL / CVLL tại một thời điểm chỉ phục vụ 1 khách hàng duy nhất.
+  // Khi đang có ca làm dở dang (status === 'SERVICING' hoặc có progress đang chạy và chưa hoàn tất checkout):
+  // CVL KHÔNG ĐƯỢC PHÉP check-in bất kỳ khách hàng nào khác cho đến khi hoàn thành checkout (Step 15 -> DONE).
+  const activeServicingBooking = useMemo(() => {
+    return (
+      bookings.find(
+        (b) =>
+          b.status === 'SERVICING' ||
+          (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt)) ||
+          (Boolean(b.progress) && !b.progress?.completedAt && b.status !== 'DONE')
+      ) || null
+    );
+  }, [bookings]);
+
+  const handleResumeServicing = useCallback(
+    (bookingId?: number) => {
+      const targetId = bookingId || activeServicingBooking?.id || activeBookingId;
+      const targetBooking = bookings.find((b) => b.id === targetId);
+      if (!targetBooking) return;
+      setActiveBookingId(targetBooking.id);
+      const cached = getLocalProgressSnapshot(targetBooking.id);
+      const targetStep = targetBooking.progress?.currentStep || cached?.currentStep || 7;
+      setActiveTab('task');
+      setCurrentStep(targetStep);
+    },
+    [bookings, activeServicingBooking, activeBookingId]
+  );
 
   const postAction = useCallback(
     async (action: string, payload: Record<string, any> = {}) => {
@@ -275,25 +339,43 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         if (data.success && Array.isArray(data.bookings)) {
           setBookings((prev) => {
             const prevMap = new Map(prev.map((p) => [p.id, p]));
-            return data.bookings.map((incoming: BookingItem) => {
+            const mergedIncoming = data.bookings.map((incoming: BookingItem) => {
               const existing = prevMap.get(incoming.id);
-              if (existing && existing.cvRotationPoints !== undefined) {
+              if (existing) {
                 return {
                   ...incoming,
                   serviceName:
                     existing.serviceName && !existing.serviceName.toLowerCase().includes('any')
                       ? existing.serviceName
                       : incoming.serviceName,
-                  servicePrice: existing.servicePrice,
-                  serviceType: existing.serviceType,
-                  attributes: existing.attributes,
-                  cvRotationPoints: existing.cvRotationPoints,
-                  cvRotationBreakdown: existing.cvRotationBreakdown,
-                  status: existing.status,
+                  servicePrice: existing.servicePrice || incoming.servicePrice,
+                  serviceType: existing.serviceType || incoming.serviceType,
+                  attributes: existing.attributes || incoming.attributes,
+                  cvRotationPoints: existing.cvRotationPoints ?? incoming.cvRotationPoints,
+                  cvRotationBreakdown: existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown,
+                  status: existing.status || incoming.status,
+                  progress: existing.progress || incoming.progress,
+                  selectedCombo: existing.selectedCombo || incoming.selectedCombo,
+                  cartProducts: existing.cartProducts || incoming.cartProducts,
+                  billing: existing.billing || incoming.billing,
+                  survey: existing.survey || incoming.survey,
+                  checkInStaffId: existing.checkInStaffId || incoming.checkInStaffId,
+                  checkInStaffName: existing.checkInStaffName || incoming.checkInStaffName,
+                  checkInStaffTier: existing.checkInStaffTier || incoming.checkInStaffTier,
+                  assignedStaffId: existing.assignedStaffId || incoming.assignedStaffId,
+                  assignedStaffName: existing.assignedStaffName || incoming.assignedStaffName,
                 };
               }
               return incoming;
             });
+
+            // Bảo toàn ca làm SERVICING hoặc đang có tiến trình dở dang, không để bị xóa khi server chỉ trả segment INCOMING
+            const incomingIds = new Set(mergedIncoming.map((b: BookingItem) => b.id));
+            const preservedServicing = prev.filter(
+              (b: BookingItem) => !incomingIds.has(b.id) && (b.status === 'SERVICING' || b.progress)
+            );
+
+            return [...mergedIncoming, ...preservedServicing];
           });
           if (data.counts) {
             setCounts(data.counts);
@@ -310,10 +392,20 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
             })
           );
 
-          const exists = data.bookings.some((b: BookingItem) => b.id === activeBookingId);
-          if (!exists && data.bookings.length > 0) {
-            setActiveBookingId(data.bookings[0].id);
-          }
+          // Không đổi activeBookingId nếu ca làm hiện tại đang trong tiến trình phục vụ (SERVICING)
+          setBookings((current) => {
+            const currentActive = current.find((b) => b.id === activeBookingId);
+            const isCurrentlyServicing =
+              currentActive?.status === 'SERVICING' ||
+              (Boolean(currentActive?.progress) && !currentActive?.progress?.completedAt);
+            if (!isCurrentlyServicing) {
+              const exists = data.bookings.some((b: BookingItem) => b.id === activeBookingId);
+              if (!exists && data.bookings.length > 0) {
+                setActiveBookingId(data.bookings[0].id);
+              }
+            }
+            return current;
+          });
         }
       } catch (err) {
         console.warn('Could not refresh from live DB, keeping current state:', err);
@@ -529,15 +621,19 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       ...(activeBooking.progress || { elapsedSeconds: 0 }),
       startedAt,
       timerRunning: true,
+      currentStep: 7,
     };
     updateActiveBooking((prev) => ({
       ...prev,
+      status: 'SERVICING',
       progress: progressPatch,
     }));
+    setActiveServicingBookingId(activeBooking.id);
     saveLocalProgressSnapshot(activeBooking.id, {
       ...progressPatch,
       bookingId: activeBooking.id,
       startedAt,
+      status: 'SERVICING',
     });
     void postAction('UPDATE_PROGRESS', { orderState: 'Preparation', progress: progressPatch });
     setCurrentStep(7);
@@ -551,14 +647,18 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       beforePhotoUrl: photoUrl,
       timerRunning: true,
       startedAt,
+      currentStep: 8,
     };
     updateActiveBooking((prev) => ({
       ...prev,
+      status: 'SERVICING',
       progress: progressPatch,
     }));
+    setActiveServicingBookingId(activeBooking.id);
     saveLocalProgressSnapshot(activeBooking.id, {
       ...progressPatch,
       bookingId: activeBooking.id,
+      status: 'SERVICING',
     });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service Start', progress: progressPatch });
     setCurrentStep(8);
@@ -572,14 +672,18 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       cleanedPhotoUrl: photoUrl,
       timerRunning: true,
       startedAt,
+      currentStep: 9,
     };
     updateActiveBooking((prev) => ({
       ...prev,
+      status: 'SERVICING',
       progress: progressPatch,
     }));
+    setActiveServicingBookingId(activeBooking.id);
     saveLocalProgressSnapshot(activeBooking.id, {
       ...progressPatch,
       bookingId: activeBooking.id,
+      status: 'SERVICING',
     });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service Cleaned', progress: progressPatch });
     setCurrentStep(9);
@@ -608,15 +712,18 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       elapsedSeconds,
       timerRunning: false,
       completedAt,
+      currentStep: 10,
     };
     updateActiveBooking((prev) => ({
       ...prev,
+      status: 'SERVICING',
       progress: progressPatch,
     }));
     saveLocalProgressSnapshot(activeBooking.id, {
       ...progressPatch,
       bookingId: activeBooking.id,
       completedAt,
+      status: 'SERVICING',
     });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service End', progress: progressPatch });
     setCurrentStep(10);
@@ -627,14 +734,17 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     const progressPatch = {
       ...(activeBooking.progress || { elapsedSeconds: 4468, timerRunning: false }),
       afterPhotoUrl: photoUrl,
+      currentStep: 11,
     };
     updateActiveBooking((prev) => ({
       ...prev,
+      status: 'SERVICING',
       progress: progressPatch,
     }));
     saveLocalProgressSnapshot(activeBooking.id, {
       ...progressPatch,
       bookingId: activeBooking.id,
+      status: 'SERVICING',
     });
     void postAction('UPDATE_PROGRESS', { orderState: 'Service Completed', progress: progressPatch });
     setCurrentStep(11);
@@ -649,7 +759,17 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     updateActiveBooking((prev) => ({
       ...prev,
       survey,
+      progress: {
+        ...(prev.progress || { elapsedSeconds: 4468, timerRunning: false }),
+        currentStep: 12,
+      },
     }));
+    saveLocalProgressSnapshot(activeBooking.id, {
+      survey,
+      currentStep: 12,
+      bookingId: activeBooking.id,
+      status: 'SERVICING',
+    });
     void postAction('COMPLETE_SURVEY', { survey });
     setCurrentStep(12); // Go directly to Product Upsell & Combo Checkout as CV🪶 / 🪶CV🪶!
   };
@@ -804,7 +924,18 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     updateActiveBooking((prev) => ({
       ...prev,
       status: 'DONE',
+      progress: {
+        ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
+        completedAt: new Date().toISOString(),
+        currentStep: 1,
+      },
     }));
+    setActiveServicingBookingId(null);
+    saveLocalProgressSnapshot(activeBookingId, {
+      status: 'DONE',
+      completedAt: new Date().toISOString(),
+      currentStep: 1,
+    });
     setBookingSegment('DONE');
     setCurrentStep(1);
   };
@@ -814,6 +945,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     activeBooking,
     activeBookingId,
     setActiveBookingId,
+    activeServicingBooking,
+    handleResumeServicing,
     currentStep,
     setCurrentStep,
     role,

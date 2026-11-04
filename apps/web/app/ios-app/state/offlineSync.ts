@@ -11,6 +11,36 @@ export interface OfflineAction {
 
 const OFFLINE_ACTIONS_STORAGE_KEY = 'mos_ios_offline_actions';
 const PROGRESS_STORAGE_PREFIX = 'mos_ios_progress_booking_';
+export const ACTIVE_SERVICING_BOOKING_KEY = 'mos_ios_active_servicing_id';
+
+/**
+ * Lấy ID ca làm đang phục vụ dở dang của CVL
+ */
+export function getActiveServicingBookingId(): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(ACTIVE_SERVICING_BOOKING_KEY);
+    return raw ? Number(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Lưu hoặc xóa ID ca làm đang phục vụ dở dang của CVL
+ */
+export function setActiveServicingBookingId(bookingId: number | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (bookingId) {
+      window.localStorage.setItem(ACTIVE_SERVICING_BOOKING_KEY, String(bookingId));
+    } else {
+      window.localStorage.removeItem(ACTIVE_SERVICING_BOOKING_KEY);
+    }
+  } catch (err) {
+    console.warn('[OfflineSync] Failed to set active servicing booking ID:', err);
+  }
+}
 
 /**
  * Lấy danh sách các action đang chờ đồng bộ từ localStorage
@@ -73,9 +103,11 @@ export function removeOfflineAction(id: string) {
 export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
   if (typeof window === 'undefined' || !bookingId) return;
   try {
+    const existing = getLocalProgressSnapshot(bookingId) || {};
     window.localStorage.setItem(
       `${PROGRESS_STORAGE_PREFIX}${bookingId}`,
       JSON.stringify({
+        ...existing,
         ...progress,
         savedAt: new Date().toISOString(),
       })
