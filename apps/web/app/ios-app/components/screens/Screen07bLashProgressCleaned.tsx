@@ -60,6 +60,13 @@ export function Screen07bLashProgressCleaned({
     }
   }, [bookingId, photoPreview]);
 
+  // Đồng bộ đa thiết bị tức thì khi server cập nhật ảnh Vệ sinh mới
+  useEffect(() => {
+    if (booking?.progress?.cleanedPhotoUrl && booking.progress.cleanedPhotoUrl !== photoPreview) {
+      setPhotoPreview(booking.progress.cleanedPhotoUrl);
+    }
+  }, [booking?.progress?.cleanedPhotoUrl, photoPreview]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {

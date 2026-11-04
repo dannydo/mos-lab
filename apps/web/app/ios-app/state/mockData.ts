@@ -271,6 +271,10 @@ export interface BookingItem {
     startedAt?: string;
     completedAt?: string;
     currentStep?: number;
+    savedAt?: string;
+    updatedAt?: string;
+    cloudSynced?: boolean;
+    cloudSyncedAt?: string;
   };
   survey?: {
     rating: number;

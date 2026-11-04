@@ -58,9 +58,9 @@ export function Screen09LashProgressAfter({
   }, [bookingId]);
 
   const beforePhotoUrl =
-    cachedSnapshot?.beforePhotoUrl || asyncSnapshot?.beforePhotoUrl || booking.progress?.beforePhotoUrl || null;
+    booking.progress?.beforePhotoUrl || cachedSnapshot?.beforePhotoUrl || asyncSnapshot?.beforePhotoUrl || null;
   const cleanedPhotoUrl =
-    cachedSnapshot?.cleanedPhotoUrl || asyncSnapshot?.cleanedPhotoUrl || booking.progress?.cleanedPhotoUrl || null;
+    booking.progress?.cleanedPhotoUrl || cachedSnapshot?.cleanedPhotoUrl || asyncSnapshot?.cleanedPhotoUrl || null;
 
   const [afterPhotoPreview, setAfterPhotoPreview] = useState<string | null>(() => {
     return cachedSnapshot?.afterPhotoUrl || booking.progress?.afterPhotoUrl || null;

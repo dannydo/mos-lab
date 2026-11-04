@@ -444,20 +444,62 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
             })
           );
 
-          // Không đổi activeBookingId nếu ca làm hiện tại đang trong tiến trình phục vụ (SERVICING)
-          setBookings((current) => {
-            const currentActive = current.find((b) => b.id === activeBookingId);
-            const isCurrentlyServicing =
-              currentActive?.status === 'SERVICING' ||
-              (Boolean(currentActive?.progress) && !currentActive?.progress?.completedAt);
-            if (!isCurrentlyServicing) {
-              const exists = data.bookings.some((b: BookingItem) => b.id === activeBookingId);
-              if (!exists && data.bookings.length > 0) {
-                setActiveBookingId(data.bookings[0].id);
-              }
+          // Đồng bộ đa thiết bị tức thì (Real-time Cross-Device Session Sync):
+          // Nhận diện ca làm đang SERVICING trên server (từ bất kỳ thiết bị nào: Điện thoại, iPad, Desktop)
+          const serverActiveServicing = data.bookings
+            ?.filter(
+              (b: BookingItem) =>
+                b.status === 'SERVICING' || (Boolean(b.progress) && !b.progress?.completedAt && b.status !== 'DONE')
+            )
+            .sort((a: BookingItem, b: BookingItem) => {
+              const timeA = new Date(a.progress?.savedAt || a.progress?.updatedAt || 0).getTime();
+              const timeB = new Date(b.progress?.savedAt || b.progress?.updatedAt || 0).getTime();
+              return timeB - timeA;
+            })[0];
+
+          if (serverActiveServicing) {
+            const servicingId = serverActiveServicing.id;
+            const serverStep = serverActiveServicing.progress?.currentStep;
+
+            // Luôn lưu snapshot từ server vào RAM cache & IndexedDB
+            if (serverActiveServicing.progress) {
+              saveLocalProgressSnapshot(servicingId, {
+                ...serverActiveServicing.progress,
+                status: 'SERVICING',
+              });
             }
-            return current;
-          });
+
+            // Tự động neo activeBookingId và setActiveServicingBookingId vào ca làm này
+            setActiveServicingBookingId(servicingId);
+            setActiveBookingId(servicingId);
+
+            // Tự động nhảy vào đúng bước phục vụ trên màn hình nếu chưa tới hoặc đang ở tab khác
+            if (serverStep && serverStep >= 6) {
+              setActiveServicingStep(serverStep);
+              setCurrentStep((prevStep) => {
+                if (prevStep <= 6 || prevStep < serverStep) {
+                  setActiveTab('task');
+                  return serverStep;
+                }
+                return prevStep;
+              });
+            }
+          } else {
+            // Không có ca làm servicing trên server, duy trì active booking an toàn
+            setBookings((current) => {
+              const currentActive = current.find((b) => b.id === activeBookingId);
+              const isCurrentlyServicing =
+                currentActive?.status === 'SERVICING' ||
+                (Boolean(currentActive?.progress) && !currentActive?.progress?.completedAt);
+              if (!isCurrentlyServicing) {
+                const exists = data.bookings.some((b: BookingItem) => b.id === activeBookingId);
+                if (!exists && data.bookings.length > 0) {
+                  setActiveBookingId(data.bookings[0].id);
+                }
+              }
+              return current;
+            });
+          }
         }
       } catch (err) {
         console.warn('Could not refresh from live DB, keeping current state:', err);
@@ -472,6 +514,30 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     if (!enabled) return;
     refreshDb();
   }, [bookingSegment, scopeMode, role, enabled, refreshDb]);
+
+  // Tự động đồng bộ tức thì xuyên thiết bị (Cross-device Real-time Sync)
+  useEffect(() => {
+    if (!enabled || typeof window === 'undefined') return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void refreshDb();
+      }
+    }, 5000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshDb();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [enabled, refreshDb]);
 
   // Tự động đồng bộ các action offline khi có mạng hoặc định kỳ mỗi 20 giây
   useEffect(() => {

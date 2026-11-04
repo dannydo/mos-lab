@@ -60,6 +60,13 @@ export function Screen07LashProgressBefore({
     }
   }, [bookingId, photoPreview]);
 
+  // Đồng bộ đa thiết bị tức thì khi server cập nhật ảnh Before mới
+  useEffect(() => {
+    if (booking?.progress?.beforePhotoUrl && booking.progress.beforePhotoUrl !== photoPreview) {
+      setPhotoPreview(booking.progress.beforePhotoUrl);
+    }
+  }, [booking?.progress?.beforePhotoUrl, photoPreview]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
