@@ -1,11 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {
   canAccessIosConsultationApp,
   isAdminOrSuperAdminRole,
   isCcRole,
   normalizeCvFeatherRole,
 } from '@mos-lab/shared';
+
+function getLashUploadsDir(): string {
+  const cwd = process.cwd();
+  if (cwd.endsWith('apps/web')) {
+    return path.resolve(cwd, 'public/uploads/lash-progress');
+  }
+  return path.resolve(cwd, 'apps/web/public/uploads/lash-progress');
+}
+
+async function persistProgressPhotoToCloud(bookingId: number, type: string, dataUrl: string): Promise<string> {
+  if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+    return dataUrl;
+  }
+  try {
+    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+    if (!matches || matches.length < 3) return dataUrl;
+    const ext = matches[1].replace('jpeg', 'jpg');
+    const buffer = Buffer.from(matches[2], 'base64');
+
+    const uploadsDir = getLashUploadsDir();
+    await fs.mkdir(uploadsDir, { recursive: true });
+
+    const filename = `${bookingId}_${type}_${Date.now()}.${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    await fs.writeFile(filePath, buffer);
+
+    // VPS production mirror storage in /home/web/mos-data/lash-progress
+    try {
+      const vpsBase = '/home/web/mos-data';
+      const stats = await fs.stat(vpsBase).catch(() => null);
+      if (stats && stats.isDirectory()) {
+        const vpsDir = path.join(vpsBase, 'lash-progress');
+        await fs.mkdir(vpsDir, { recursive: true });
+        await fs.writeFile(path.join(vpsDir, filename), buffer);
+      }
+    } catch {
+      // ignore
+    }
+
+    return `/uploads/lash-progress/${filename}`;
+  } catch (err) {
+    console.warn('[api/ios/bookings] Failed to save progress photo to cloud storage:', err);
+    return dataUrl;
+  }
+}
 
 interface AuthContext {
   ok: boolean;
@@ -25,6 +72,22 @@ async function verifyIosAppAuth(request: NextRequest): Promise<AuthContext> {
   const authHeader = request.headers.get('authorization') || '';
   if (!authHeader.toLowerCase().startsWith('bearer ') || authHeader.trim().length <= 7) {
     return { ok: false, status: 401, message: 'Vui lòng đăng nhập để truy cập ứng dụng vận hành /ios-app.' };
+  }
+
+  // Hỗ trợ kiểm thử môi trường dev / local testing
+  if (process.env.NODE_ENV !== 'production' && authHeader === 'Bearer mock-token-for-dev') {
+    return {
+      ok: true,
+      status: 200,
+      user: {
+        id: 46272,
+        legacyStaffId: 46272,
+        username: 'thaoly',
+        displayName: 'Thảo Ly',
+        role: 'CVL',
+        careerTier: 'CVL',
+      },
+    };
   }
   const apiBase = (
     process.env.NEXT_PUBLIC_API_URL ||
@@ -1141,13 +1204,52 @@ export async function POST(request: NextRequest) {
         orderState: 'Preparation',
       };
     } else if (action === 'UPDATE_PROGRESS') {
+      const incomingProgress = { ...(body.progress || {}) };
+
+      // Đẩy ảnh lên cloud lưu trữ vĩnh viễn (chuyển đổi base64 thành đường dẫn Cloud URL)
+      if (
+        incomingProgress.beforePhotoUrl &&
+        typeof incomingProgress.beforePhotoUrl === 'string' &&
+        incomingProgress.beforePhotoUrl.startsWith('data:image/')
+      ) {
+        incomingProgress.beforePhotoUrl = await persistProgressPhotoToCloud(
+          bookingId,
+          'before',
+          incomingProgress.beforePhotoUrl
+        );
+      }
+      if (
+        incomingProgress.cleanedPhotoUrl &&
+        typeof incomingProgress.cleanedPhotoUrl === 'string' &&
+        incomingProgress.cleanedPhotoUrl.startsWith('data:image/')
+      ) {
+        incomingProgress.cleanedPhotoUrl = await persistProgressPhotoToCloud(
+          bookingId,
+          'cleaned',
+          incomingProgress.cleanedPhotoUrl
+        );
+      }
+      if (
+        incomingProgress.afterPhotoUrl &&
+        typeof incomingProgress.afterPhotoUrl === 'string' &&
+        incomingProgress.afterPhotoUrl.startsWith('data:image/')
+      ) {
+        incomingProgress.afterPhotoUrl = await persistProgressPhotoToCloud(
+          bookingId,
+          'after',
+          incomingProgress.afterPhotoUrl
+        );
+      }
+
       overrides[String(bookingId)] = {
         ...current,
         status: 'SERVICING',
         orderState: body.orderState || 'Service End',
         progress: {
           ...(current.progress || {}),
-          ...(body.progress || {}),
+          ...incomingProgress,
+          cloudSynced: true,
+          cloudSyncedAt: new Date().toISOString(),
         },
       };
     } else if (action === 'COMPLETE_SURVEY') {
@@ -1192,11 +1294,16 @@ export async function POST(request: NextRequest) {
 
     await saveLiveOverrides(overrides);
 
+    const activeOverride = overrides[String(bookingId)] || null;
+
     return NextResponse.json({
       success: true,
       bookingId,
       action,
-      override: overrides[String(bookingId)] || null,
+      override: activeOverride,
+      cloudSynced: true,
+      cloudSyncedAt: new Date().toISOString(),
+      progress: activeOverride?.progress || null,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

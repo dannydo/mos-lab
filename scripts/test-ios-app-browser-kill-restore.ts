@@ -35,17 +35,25 @@ async function main() {
     await page.goto('http://localhost:4000/ios-app?role=CVL', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1500);
 
-    // 2. Click Ca Làm Mi tab
-    console.log('2. Opening task screen...');
-    const taskTabBtn = page.locator('button:has-text("Ca Làm Mi")').first();
-    await taskTabBtn.click();
-    await page.waitForTimeout(800);
+    // If an active servicing banner exists, click it, or click Ca Làm Mi tab
+    const resumeBtn = page.locator('text=TIẾP TỤC PHỤC VỤ, text=TIẾP TỤC CA LÀM').first();
+    if (await resumeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      console.log('Active servicing ca làm banner detected, clicking resume...');
+      await resumeBtn.click();
+      await page.waitForTimeout(1000);
+    } else {
+      console.log('2. Opening task screen...');
+      const taskTabBtn = page.locator('button:has-text("Ca Làm Mi")').first();
+      await taskTabBtn.click();
+      await page.waitForTimeout(800);
 
-    // 3. Start task -> Step 7 (Before Photo)
-    console.log('3. Starting lash progress (Step 7)...');
-    const startQuestBtn = page.locator('button:has-text("MỞ TIẾN TRÌNH")').first();
-    await startQuestBtn.click();
-    await page.waitForTimeout(800);
+      console.log('3. Starting lash progress (Step 7)...');
+      const startQuestBtn = page.locator('button:has-text("MỞ TIẾN TRÌNH"), button:has-text("BẮT ĐẦU CA LÀM")').first();
+      if (await startQuestBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await startQuestBtn.click();
+        await page.waitForTimeout(800);
+      }
+    }
 
     // 4. Upload Real Before Photo & Save -> Step 8
     console.log('4. Uploading Real Before Photo and Saving (Step 7 -> Step 8)...');
@@ -144,6 +152,13 @@ async function main() {
     console.log(`- Restored Photo 1 (Before): ${beforeImgRestored}`);
     console.log(`- Restored Photo 2 (Cleaned): ${cleanedImgRestored}`);
     console.log(`- Restored Photo 3 (After): ${afterImgRestored}`);
+
+    // Verify files on Cloud / Server disk
+    const fs = await import('node:fs');
+    const lashUploadsDir = path.resolve(process.cwd(), 'apps/web/public/uploads/lash-progress');
+    const filesOnDisk = fs.existsSync(lashUploadsDir) ? fs.readdirSync(lashUploadsDir) : [];
+    console.log(`✓ Cloud storage check: ${filesOnDisk.length} files saved on cloud disk in ${lashUploadsDir}`);
+    console.log('  Files:', filesOnDisk);
 
     await page2.screenshot({
       path: '/Users/dannydo/.gemini/antigravity/brain/ec80c3ab-dd49-45b4-9c0f-982c3957019e/ios-after-kill-real-photos-restored.png',

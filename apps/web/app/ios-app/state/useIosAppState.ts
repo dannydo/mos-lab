@@ -300,7 +300,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       // 2. Nếu rớt mạng, lưu vào queue chờ sync
       if (typeof window !== 'undefined' && !navigator.onLine) {
         enqueueOfflineAction(action, activeBookingId, payload);
-        return;
+        return { success: false, offlineQueued: true };
       }
 
       try {
@@ -321,12 +321,34 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           }),
         });
 
-        if (!res.ok) {
+        if (res.ok) {
+          const data = await res.json();
+          // Cập nhật progress với đường dẫn Cloud URL vĩnh viễn trả về từ server
+          if (data.progress) {
+            updateActiveBooking((prev) => ({
+              ...prev,
+              progress: {
+                ...(prev.progress || {}),
+                ...data.progress,
+                cloudSynced: true,
+                cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
+              },
+            }));
+            saveLocalProgressSnapshot(activeBookingId, {
+              ...data.progress,
+              cloudSynced: true,
+              cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
+            });
+          }
+          return { success: true, data };
+        } else {
           enqueueOfflineAction(action, activeBookingId, payload);
+          return { success: false };
         }
       } catch (err) {
         console.warn('[useIosAppState] Failed to persist action, queued offline:', action, err);
         enqueueOfflineAction(action, activeBookingId, payload);
+        return { success: false, error: err };
       }
     },
     [activeBookingId, actor.staffId, actor.name, actor.tier]
@@ -669,12 +691,14 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(7);
   };
 
-  // Tự động lưu ảnh ngay khi chụp (ghi đè nếu chụp lại) mà không bắt buộc phải bấm nút chuyển bước
-  const handleAutoSavePhoto = (type: 'before' | 'cleaned' | 'after', photoUrl: string) => {
+  // Tự động lưu ảnh ngay khi chụp (ghi đè nếu chụp lại) mà không bắt buộc phải bấm nút chuyển bước:
+  // Lưu local tức thời vào RAM & IndexedDB, sau đó tự động đẩy lên Cloud
+  const handleAutoSavePhoto = async (type: 'before' | 'cleaned' | 'after', photoUrl: string) => {
     const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
     const progressPatch: any = {
       ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
       startedAt,
+      cloudSyncStatus: 'UPLOADING',
     };
     if (type === 'before') {
       progressPatch.beforePhotoUrl = photoUrl;
@@ -690,6 +714,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       progressPatch.currentStep = 10;
     }
 
+    // 1. Lưu local tức thời vào RAM & IndexedDB
     updateActiveBooking((prev) => ({
       ...prev,
       status: 'SERVICING',
@@ -701,7 +726,13 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       bookingId: activeBooking.id,
       status: 'SERVICING',
     });
-    void postAction('UPDATE_PROGRESS', { orderState: `Photo ${type} auto-saved`, progress: progressPatch });
+
+    // 2. Tự động đẩy lên Cloud ngay lập tức
+    const postResult = await postAction('UPDATE_PROGRESS', {
+      orderState: `Photo ${type} auto-saved`,
+      progress: progressPatch,
+    });
+    return postResult;
   };
 
   // Step 7 -> Step 8: Save Before Photo (Mắt mộc) & Chuyển sang Ảnh Vệ Sinh

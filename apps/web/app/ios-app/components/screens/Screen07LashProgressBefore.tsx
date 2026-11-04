@@ -10,13 +10,22 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
-import { Eye, Camera, Image as ImageIcon, RotateCw, CheckCircle2 } from 'lucide-react';
+import {
+  Eye,
+  Camera,
+  Image as ImageIcon,
+  RotateCw,
+  CheckCircle2,
+  CloudUpload,
+  CloudCheck,
+  CloudOff,
+} from 'lucide-react';
 
 interface Screen07LashProgressBeforeProps {
   booking?: BookingItem;
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
-  onAutoSavePhoto?: (photoUrl: string) => void;
+  onAutoSavePhoto?: (photoUrl: string) => Promise<any> | void;
 }
 
 export function Screen07LashProgressBefore({
@@ -28,6 +37,7 @@ export function Screen07LashProgressBefore({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
   const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'uploading' | 'synced' | 'offline'>('idle');
 
   // Khôi phục ảnh đã chụp/lưu trước đó nếu có
   const bookingId = booking?.id;
@@ -66,10 +76,24 @@ export function Screen07LashProgressBefore({
             currentStep: 7,
           });
         }
-        // Tự động lưu tức thì lên state/server ngay khi chụp, ghi đè nếu chụp lại
-        onAutoSavePhoto?.(compressed);
-        setAutoSavedToast(isRetake ? 'Đã ghi đè ảnh Before mới!' : 'Đã tự động lưu ảnh Before!');
-        setTimeout(() => setAutoSavedToast(null), 3500);
+        // Hiển thị lưu local tức thì và bắt đầu đẩy lên Cloud
+        setCloudSyncStatus('uploading');
+        setAutoSavedToast('📱 Đã lưu máy · Đang đẩy lên Cloud...');
+
+        // Tự động đẩy lên Cloud ngay sau khi lưu local xong
+        if (onAutoSavePhoto) {
+          const res = await onAutoSavePhoto(compressed);
+          if (res && res.success) {
+            setCloudSyncStatus('synced');
+            setAutoSavedToast(isRetake ? '✓ Đã ghi đè & lưu lên Cloud!' : '✓ Đã tự động lưu lên Cloud!');
+          } else {
+            setCloudSyncStatus(navigator.onLine ? 'synced' : 'offline');
+            setAutoSavedToast(
+              navigator.onLine ? '✓ Đã tự động lưu ảnh!' : '📱 Đã lưu máy · Sẽ đẩy lên Cloud khi có mạng'
+            );
+          }
+        }
+        setTimeout(() => setAutoSavedToast(null), 4000);
       } catch (err) {
         console.warn('[Screen07] Failed to compress image:', err);
       }
@@ -168,15 +192,37 @@ export function Screen07LashProgressBefore({
               </div>
             )}
 
-            {/* Watermark overlay & Auto-save status */}
+            {/* Watermark overlay & Auto-save / Cloud Sync status */}
             <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
               <span className="bg-black/80 text-white text-[10px] font-mono px-2 py-0.8 rounded border border-neutral-700/80">
                 10:38:15 AM · Salon Đề Thám
               </span>
               {photoPreview && (
-                <span className="bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1 shadow-sm">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>{autoSavedToast || 'Đã tự động lưu · Chụp lại để ghi đè'}</span>
+                <span
+                  className={`${
+                    cloudSyncStatus === 'uploading'
+                      ? 'bg-sky-600/95 text-white'
+                      : cloudSyncStatus === 'offline'
+                        ? 'bg-amber-600/95 text-white'
+                        : 'bg-emerald-600/95 text-white'
+                  } text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1.5 shadow-sm`}
+                >
+                  {cloudSyncStatus === 'uploading' ? (
+                    <>
+                      <CloudUpload className="w-3 h-3 animate-pulse" />
+                      <span>{autoSavedToast || 'Đang đẩy lên Cloud...'}</span>
+                    </>
+                  ) : cloudSyncStatus === 'offline' ? (
+                    <>
+                      <CloudOff className="w-3 h-3" />
+                      <span>{autoSavedToast || 'Đã lưu máy · Chờ mạng'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloudCheck className="w-3 h-3" />
+                      <span>{autoSavedToast || '☁️ Đã lưu lên Cloud'}</span>
+                    </>
+                  )}
                 </span>
               )}
             </div>

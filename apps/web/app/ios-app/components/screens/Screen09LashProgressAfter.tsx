@@ -11,13 +11,23 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
-import { Camera, Image as ImageIcon, Zap, CheckCircle2, Award, Clock } from 'lucide-react';
+import {
+  Camera,
+  Image as ImageIcon,
+  Zap,
+  CheckCircle2,
+  Award,
+  Clock,
+  CloudUpload,
+  CloudCheck,
+  CloudOff,
+} from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
   booking: BookingItem;
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
-  onAutoSavePhoto?: (photoUrl: string) => void;
+  onAutoSavePhoto?: (photoUrl: string) => Promise<any> | void;
 }
 
 export function Screen09LashProgressAfter({
@@ -29,6 +39,7 @@ export function Screen09LashProgressAfter({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
   const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'uploading' | 'synced' | 'offline'>('idle');
 
   const bookingId = booking.id;
   const progressSeconds = booking.progress?.elapsedSeconds;
@@ -47,19 +58,27 @@ export function Screen09LashProgressAfter({
   }, [bookingId]);
 
   const beforePhotoUrl =
-    cachedSnapshot?.beforePhotoUrl ||
-    asyncSnapshot?.beforePhotoUrl ||
-    booking.progress?.beforePhotoUrl ||
-    '/assets/lash_before.jpg';
+    cachedSnapshot?.beforePhotoUrl || asyncSnapshot?.beforePhotoUrl || booking.progress?.beforePhotoUrl || null;
   const cleanedPhotoUrl =
-    cachedSnapshot?.cleanedPhotoUrl ||
-    asyncSnapshot?.cleanedPhotoUrl ||
-    booking.progress?.cleanedPhotoUrl ||
-    '/assets/lash_cleaned.jpg';
+    cachedSnapshot?.cleanedPhotoUrl || asyncSnapshot?.cleanedPhotoUrl || booking.progress?.cleanedPhotoUrl || null;
 
   const [afterPhotoPreview, setAfterPhotoPreview] = useState<string | null>(() => {
     return cachedSnapshot?.afterPhotoUrl || booking.progress?.afterPhotoUrl || null;
   });
+
+  const isDisplayablePhoto = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    if (url === '/assets/lash_before.jpg' || url === '/assets/lash_cleaned.jpg' || url === '/assets/lash_after.jpg')
+      return false;
+    return (
+      url.startsWith('data:') ||
+      url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('/uploads') ||
+      url.startsWith('/api/') ||
+      url.length > 50
+    );
+  };
 
   useEffect(() => {
     if (!afterPhotoPreview && asyncSnapshot?.afterPhotoUrl) {
@@ -150,6 +169,8 @@ export function Screen09LashProgressAfter({
         const isRetake = Boolean(afterPhotoPreview);
         const compressed = await compressLashImage(file, 1024, 0.72);
         setAfterPhotoPreview(compressed);
+
+        // 1. Lưu local tức thời vào RAM & IndexedDB
         saveLocalProgressSnapshot(bookingId, {
           afterPhotoUrl: compressed,
           actualMinutes,
@@ -157,10 +178,25 @@ export function Screen09LashProgressAfter({
           currentStep: 10,
           afterPhotoSavedAt: new Date().toISOString(),
         });
-        // Tự động lưu tức thì lên state/server ngay khi chụp, ghi đè nếu chụp lại
-        onAutoSavePhoto?.(compressed);
-        setAutoSavedToast(isRetake ? 'Đã ghi đè ảnh After mới!' : 'Đã tự động lưu ảnh After!');
-        setTimeout(() => setAutoSavedToast(null), 3500);
+
+        // Hiển thị trạng thái đang đẩy lên Cloud
+        setCloudSyncStatus('uploading');
+        setAutoSavedToast('📱 Đã lưu máy · Đang đẩy lên Cloud...');
+
+        // 2. Tự động đẩy lên Cloud ngay sau khi lưu local xong
+        if (onAutoSavePhoto) {
+          const res = await onAutoSavePhoto(compressed);
+          if (res && res.success) {
+            setCloudSyncStatus('synced');
+            setAutoSavedToast(isRetake ? '✓ Đã ghi đè & lưu lên Cloud!' : '✓ Đã tự động lưu lên Cloud!');
+          } else {
+            setCloudSyncStatus(navigator.onLine ? 'synced' : 'offline');
+            setAutoSavedToast(
+              navigator.onLine ? '✓ Đã tự động lưu ảnh!' : '📱 Đã lưu máy · Sẽ đẩy lên Cloud khi có mạng'
+            );
+          }
+        }
+        setTimeout(() => setAutoSavedToast(null), 4000);
       } catch (err) {
         console.warn('[Screen09] Failed to compress image:', err);
       }
@@ -228,8 +264,8 @@ export function Screen09LashProgressAfter({
               </span>
             </div>
             <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800 shadow-inner">
-              {beforePhotoUrl && (beforePhotoUrl.startsWith('data:') || beforePhotoUrl.startsWith('http')) ? (
-                <img src={beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
+              {isDisplayablePhoto(beforePhotoUrl) ? (
+                <img src={beforePhotoUrl!} alt="Before" className="w-full h-full object-cover" />
               ) : (
                 <div className="p-4 text-center flex flex-col items-center justify-center">
                   <span className="text-white font-medium text-[12px]">Chưa có ảnh Before</span>
@@ -252,8 +288,8 @@ export function Screen09LashProgressAfter({
               </span>
             </div>
             <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800 shadow-inner">
-              {cleanedPhotoUrl && (cleanedPhotoUrl.startsWith('data:') || cleanedPhotoUrl.startsWith('http')) ? (
-                <img src={cleanedPhotoUrl} alt="Cleaned" className="w-full h-full object-cover" />
+              {isDisplayablePhoto(cleanedPhotoUrl) ? (
+                <img src={cleanedPhotoUrl!} alt="Cleaned" className="w-full h-full object-cover" />
               ) : (
                 <div className="p-4 text-center flex flex-col items-center justify-center">
                   <span className="text-white font-medium text-[12px]">Chưa có ảnh Vệ Sinh</span>
@@ -271,13 +307,25 @@ export function Screen09LashProgressAfter({
                 </span>
                 <span className="text-[13px] font-black text-emerald-800">3. ẢNH AFTER · HOÀN THIỆN</span>
               </div>
-              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                {autoSavedToast || (afterPhotoPreview ? '✓ Đã tự động lưu' : 'Chờ chụp ảnh')}
+              <span
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                  cloudSyncStatus === 'uploading'
+                    ? 'text-sky-700 bg-sky-50 border-sky-200'
+                    : afterPhotoPreview
+                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      : 'text-amber-700 bg-amber-50 border-amber-200'
+                }`}
+              >
+                {cloudSyncStatus === 'uploading'
+                  ? '☁️ Đang đẩy lên Cloud...'
+                  : afterPhotoPreview
+                    ? '☁️ Đã lưu lên Cloud'
+                    : 'Chờ chụp ảnh'}
               </span>
             </div>
             <div className="relative w-full aspect-[4/3] rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-emerald-500/30 shadow-inner">
-              {afterPhotoPreview && (afterPhotoPreview.startsWith('data:') || afterPhotoPreview.startsWith('http')) ? (
-                <img src={afterPhotoPreview} alt="After" className="w-full h-full object-cover" />
+              {isDisplayablePhoto(afterPhotoPreview) ? (
+                <img src={afterPhotoPreview!} alt="After" className="w-full h-full object-cover" />
               ) : (
                 <div className="p-4 text-center flex flex-col items-center justify-center">
                   <div className="w-8 h-8 rounded-full bg-[#22C55E] mb-1.5 flex items-center justify-center text-white font-black text-sm shadow-xs">
@@ -288,9 +336,31 @@ export function Screen09LashProgressAfter({
               )}
               {afterPhotoPreview && (
                 <div className="absolute bottom-2.5 right-2.5 pointer-events-none">
-                  <span className="bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1 shadow-sm">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>{autoSavedToast || 'Đã tự động lưu · Chụp lại để ghi đè'}</span>
+                  <span
+                    className={`${
+                      cloudSyncStatus === 'uploading'
+                        ? 'bg-sky-600/95 text-white'
+                        : cloudSyncStatus === 'offline'
+                          ? 'bg-amber-600/95 text-white'
+                          : 'bg-emerald-600/95 text-white'
+                    } text-[10px] font-bold px-2 py-0.8 rounded flex items-center gap-1.5 shadow-sm`}
+                  >
+                    {cloudSyncStatus === 'uploading' ? (
+                      <>
+                        <CloudUpload className="w-3 h-3 animate-pulse" />
+                        <span>{autoSavedToast || 'Đang đẩy lên Cloud...'}</span>
+                      </>
+                    ) : cloudSyncStatus === 'offline' ? (
+                      <>
+                        <CloudOff className="w-3 h-3" />
+                        <span>{autoSavedToast || 'Đã lưu máy · Chờ mạng'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <CloudCheck className="w-3 h-3" />
+                        <span>{autoSavedToast || '☁️ Đã lưu lên Cloud'}</span>
+                      </>
+                    )}
                   </span>
                 </div>
               )}
