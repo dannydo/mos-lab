@@ -367,7 +367,7 @@ describe('mOS Notification Center Privacy & Personal Message Detection (MOS-BUG-
           },
           crmBugReport: {
             findMany: async ({ where }: { where: Record<string, unknown> }) => {
-              const statusIn = (where?.status as { in?: string[] })?.in;
+              const statusIn = (where?.status as { in?: string[] } | undefined)?.in;
               if (statusIn?.includes('AWAITING_DANNY_COMMIT_REVIEW')) {
                 return [
                   {
@@ -379,7 +379,7 @@ describe('mOS Notification Center Privacy & Personal Message Detection (MOS-BUG-
                   },
                 ];
               }
-              if (where?.status?.in?.includes('FIXED')) {
+              if (statusIn?.includes('FIXED')) {
                 return [
                   {
                     id: 192,
