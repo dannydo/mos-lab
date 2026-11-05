@@ -1051,29 +1051,47 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(13);
   };
 
-  // Step 13: Choose Payment Method
-  const handleChoosePaymentMethod = (method: 'CASH' | 'POS' | 'VIETQR') => {
-    updateActiveBooking((prev) => ({
-      ...prev,
-      billing: {
-        ...(prev.billing || {
-          subtotal: prev.servicePrice,
-          vatRate: 0.08,
-          vatAmount: Math.round(prev.servicePrice * 0.08),
-          serviceTotal: prev.servicePrice,
-          comboTotal: 0,
-          productTotal: 0,
-          tipAmount: 50000,
-          tipCvShare: 35000,
-          tipCheckInShare: 5000,
-          tipCheckOutShare: 5000,
-          tipCcShare: 10000,
-          grandTotal: prev.servicePrice + Math.round(prev.servicePrice * 0.08) + 50000,
-        }),
+  // Step 13: Choose Payment Method & Confirm Tip Directly (One-Stop Checkout)
+  const handleChoosePaymentMethod = (method: 'CASH' | 'POS' | 'VIETQR', chosenTip?: number) => {
+    updateActiveBooking((prev) => {
+      const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 50000);
+      const cvShare = Math.round(tipAmount * 0.7);
+      const checkInShare = Math.round(tipAmount * 0.1);
+      const checkOutShare = Math.round(tipAmount * 0.1);
+      const ccShare = checkInShare + checkOutShare;
+
+      const currentBilling = prev.billing || {
+        subtotal: prev.servicePrice,
+        vatRate: 0.08,
+        vatAmount: Math.round(prev.servicePrice * 0.08),
+        serviceTotal: prev.servicePrice,
+        comboTotal: 0,
+        productTotal: 0,
         paymentMethod: method,
-      },
-    }));
-    setCurrentStep(14);
+      };
+      const subtotal = currentBilling.subtotal;
+      const vatRate = currentBilling.vatRate ?? 0.08;
+      const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
+      const grandTotal = subtotal + vatAmount + tipAmount;
+
+      return {
+        ...prev,
+        billing: {
+          ...currentBilling,
+          paymentMethod: method,
+          vatRate,
+          vatAmount,
+          tipAmount,
+          tipCvShare: cvShare,
+          tipCheckInShare: checkInShare,
+          tipCheckOutShare: checkOutShare,
+          tipCcShare: ccShare,
+          grandTotal,
+        },
+      };
+    });
+    // Đi thẳng đến Screen 14 (Hóa đơn nhiệt) vì khách hàng đã chốt số tiền cuối bao gồm tip tại Screen 12!
+    setCurrentStep(15);
   };
 
   // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
