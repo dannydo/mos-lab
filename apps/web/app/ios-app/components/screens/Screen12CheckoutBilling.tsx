@@ -1003,9 +1003,10 @@ export function Screen12CheckoutBilling({
               <button
                 type="button"
                 onClick={handleConfirmQrPaid}
-                className="w-full py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-black text-[14px] shadow-md active:scale-98 transition-transform text-center tracking-wide cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-black shadow-md active:scale-98 transition-transform text-center tracking-wide cursor-pointer flex flex-col items-center justify-center leading-snug gap-0.5"
               >
-                ✓ ĐÃ NHẬN TIỀN THÀNH CÔNG · XUẤT HÓA ĐƠN
+                <span className="text-[13.5px]">✓ ĐÃ NHẬN TIỀN THÀNH CÔNG</span>
+                <span className="text-[12px] opacity-95 font-extrabold uppercase tracking-wide">XUẤT HÓA ĐƠN</span>
               </button>
               <button
                 type="button"
