@@ -15,6 +15,8 @@ import {
   Wallet,
   Gift,
   ArrowUpRight,
+  Info,
+  X,
 } from 'lucide-react';
 import {
   WingsComboCategoryId,
@@ -50,6 +52,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(SERUM_TIERS_CVL[0].id);
   const [yeppeumCount, setYeppeumCount] = useState<number>(1);
   const [isConsultModalOpen, setIsConsultModalOpen] = useState<boolean>(false);
+  const [isSerumInfoModalOpen, setIsSerumInfoModalOpen] = useState<boolean>(false);
 
   // 1. Tự động nhận diện đúng Dòng Mi (Category) & Số Sợi (Volume SKU) từ dịch vụ khách vừa làm
   const autoMatched = useMemo(
@@ -349,37 +352,18 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
-        {/* Rule Banner: Ai Checkout người đó được nhận */}
-        <div className="bg-[#1C1C1E] text-white rounded-2xl p-3.5 shadow-sm space-y-1.5 border border-[#FFB400]/60">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold text-[#FFB400] uppercase tracking-wider flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              QUY TẮC: AI CHECKOUT NGƯỜI ĐÓ ĐƯỢC NHẬN
-            </span>
-            <span className="bg-[#FFB400] text-black text-[10px] font-black px-2 py-0.5 rounded-full">
-              {actorTierBadge} {actorName}
-            </span>
-          </div>
-          <div className="text-[11px] text-neutral-300 leading-snug">
-            Khi bấm chốt Check-out bên dưới, hệ thống ghi nhận{' '}
-            <strong className="text-white">check_out_staff_id = {actorName}</strong>: nhận{' '}
-            <strong className="text-[#FFB400]">
-              +{(comboBonus + underComboBonus + serumBonus).toLocaleString('vi-VN')}đ Thưởng Tiền Tươi
-            </strong>{' '}
-            (Combo bậc thang + Dưỡng mi)!
-          </div>
-        </div>
-
-        {/* Section 1: CÂY DƯỠNG MI YEPPEUM 6ML (4 BẬC THƯỞNG CV🪶 THEO ĐIỀU RĂN CV-002) */}
+        {/* Section 1: CÂY DƯỠNG MI YEPPEUM 6ML (THANG THƯỞNG CV🪶) */}
         <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-            <span>1. DƯỠNG MI YEPPEUM 6ML (THANG THƯỞNG CV🪶)</span>
-            <span className="text-emerald-700 font-bold">+{serumBonus.toLocaleString('vi-VN')}đ thưởng</span>
+            <span>1. DƯỠNG MI YEPPEUM 6ML</span>
+            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
+              🪶 +{serumBonus.toLocaleString('vi-VN')}đ
+            </span>
           </div>
 
           <div className="bg-white border-2 border-[#FFB400] rounded-2xl p-3 shadow-sm space-y-2.5">
             <div className="flex gap-3">
-              <div className="w-16 h-20 rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center p-2 shrink-0">
+              <div className="w-16 h-18 rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center p-2 shrink-0">
                 <span className="text-[#FFB400] font-black text-[10px] tracking-wider text-center">YEPPEUM</span>
                 <span className="text-white text-[10px] font-semibold mt-0.5">6ml</span>
               </div>
@@ -409,28 +393,40 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               </div>
             </div>
 
-            {/* 4 Tier Buttons */}
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
-              {SERUM_TIERS_CVL.map((t) => {
-                const active = selectedSerumTierId === t.id && yeppeumCount > 0;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setSelectedSerumTierId(t.id);
-                      if (yeppeumCount === 0) setYeppeumCount(1);
-                    }}
-                    className={`p-2 rounded-xl border text-left transition-all ${
-                      active ? 'bg-amber-50 border-[#FF9500] shadow-xs' : 'bg-[#F9F9FB] border-gray-200'
-                    }`}
-                  >
-                    <div className="text-[11px] font-bold text-black truncate">{t.label}</div>
-                    <div className="text-[10px] font-extrabold text-emerald-700 mt-0.5 tabular-nums">
-                      Thưởng +{t.cvBonus.toLocaleString('vi-VN')}đ/cây
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Compact Tier Selector Bar & (i) Info Button (Full Width) */}
+            <div className="pt-2 border-t border-gray-100 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsSerumInfoModalOpen(true)}
+                className="flex-1 flex items-center justify-between px-3 py-2 rounded-xl bg-amber-50/80 border border-amber-200/90 hover:bg-amber-100/80 transition-all text-left cursor-pointer active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[13px] font-black text-amber-950 truncate">
+                    {yeppeumCount > 0
+                      ? selectedSerumTier.price > 0
+                        ? `${selectedSerumTier.price.toLocaleString('vi-VN')}đ`
+                        : 'Tặng kèm (0đ)'
+                      : 'Chưa thêm cây nào'}
+                  </span>
+                  <span className="text-[10.5px] font-bold text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-200 truncate">
+                    {selectedSerumTier.label.split('(')[0].trim()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 ml-1">
+                  <span className="text-[11px] font-black text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200 tabular-nums">
+                    🪶 +{selectedSerumTier.cvBonus.toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSerumInfoModalOpen(true)}
+                className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 hover:bg-amber-200 flex items-center justify-center font-bold shrink-0 shadow-xs active:scale-90 transition-transform cursor-pointer border border-amber-300"
+                title="Xem chi tiết thang thưởng"
+              >
+                <Info className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -439,7 +435,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
             <span>2. GÓI COMBO ĐÚNG DÒNG MI & HẠCH TOÁN VÍ</span>
-            <span className="text-emerald-700 font-bold">+{comboBonus.toLocaleString('vi-VN')}đ thưởng</span>
+            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
+              🪶 +{comboBonus.toLocaleString('vi-VN')}đ
+            </span>
           </div>
 
           <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
@@ -450,10 +448,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   {isUpTierPackage ? (
                     <>
                       <Sparkles className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400">Đang chọn mua gói nâng cấp</span>
+                      <span className="text-emerald-400">Nâng cấp gói</span>
                     </>
                   ) : (
-                    <span>🎯 Đã khớp tự động theo dịch vụ hôm nay</span>
+                    <span>🎯 Dịch vụ hôm nay</span>
                   )}
                 </div>
                 <div className="text-[13px] font-black text-white truncate">
@@ -472,7 +470,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                 className="shrink-0 px-2.5 py-1.5 rounded-xl bg-[#FFB400] text-black text-[11px] font-extrabold flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Bảng 13 Dòng Mi</span>
+                <span>Combo Menu</span>
               </button>
             </div>
 
@@ -901,6 +899,97 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           setSelectedComboId(pkg.id);
         }}
       />
+
+      {/* Yeppeum Serum Commission & Tier Info Modal */}
+      {isSerumInfoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 select-none animate-in fade-in duration-150">
+          <div className="fixed inset-0 bg-black/65 backdrop-blur-xs" onClick={() => setIsSerumInfoModalOpen(false)} />
+          <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto z-10 border border-neutral-200">
+            {/* Header: Title on Left, Close [✕] on Right */}
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
+              <div>
+                <div className="flex items-center gap-1.5 text-amber-900 font-extrabold text-[15px]">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h3>Thang Thưởng Cây Dưỡng Mi Yeppeum</h3>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Quy tắc Điều răn CV-002 · Bán đúng giá niêm yết hoặc chọn mức ưu đãi áp dụng
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSerumInfoModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                aria-label="Đóng"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* List of 4 Tiers */}
+            <div className="space-y-2.5">
+              {SERUM_TIERS_CVL.map((t) => {
+                const isSelected = selectedSerumTierId === t.id && yeppeumCount > 0;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSerumTierId(t.id);
+                      if (yeppeumCount === 0) setYeppeumCount(1);
+                      setIsSerumInfoModalOpen(false);
+                    }}
+                    className={`w-full p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-amber-50/90 border-2 border-[#FF9500] shadow-xs'
+                        : 'bg-[#F9F9FB] border-gray-200 hover:bg-gray-100/80'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-black text-gray-900">{t.label}</span>
+                        {isSelected && (
+                          <span className="bg-[#FF9500] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md">
+                            Đang chọn
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-gray-600 mt-1 leading-snug">
+                        {t.id === 'serum-orig' && 'Bán đúng giá niêm yết khi khách mua lẻ tại giường.'}
+                        {t.id === 'serum-disc-light' && 'Áp dụng giảm dưới 50% theo chương trình ưu đãi nhẹ.'}
+                        {t.id === 'serum-disc-deep' && 'Áp dụng Flash sale, xả hàng hoặc ưu đãi sâu ≥ 50%.'}
+                        {t.id === 'serum-free' && 'Tặng kèm miễn phí 0đ khi khách chốt gói Combo lớn.'}
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      <span className="inline-flex items-center gap-0.5 text-[12px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg tabular-nums">
+                        🪶 +{t.cvBonus.toLocaleString('vi-VN')}đ/cây
+                      </span>
+                      {isSelected ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      ) : (
+                        <span className="text-[10.5px] font-semibold text-gray-400">Chọn</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Footer summary */}
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSerumInfoModalOpen(false)}
+                className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-800 text-[13px] font-bold hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
