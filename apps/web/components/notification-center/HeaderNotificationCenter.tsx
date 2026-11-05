@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Popover, Button, Tag, Spin, Tooltip, notification, theme } from 'antd';
+import { Popover, Drawer, Button, Tag, Spin, Tooltip, notification, theme } from 'antd';
 import {
   Bell,
   CheckCheck,
@@ -21,6 +21,7 @@ import { apiClient } from '../../lib/api-client';
 import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../ui/HeaderIconButton';
 import { tabNotificationManager } from '../../lib/tab-notification';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 export interface HeaderNotificationCenterProps {
   onOpenChat?: (conversationId?: string, messageId?: string, payload?: Record<string, unknown>) => void;
@@ -81,6 +82,8 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
 }) => {
   const router = useRouter();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isMobileTier = responsiveTier === 'mobile';
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CategoryTab>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -536,17 +539,163 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
 
   const isDark = themeMode === 'dark';
 
-  const popoverContent = (
+  const renderCategoryChips = () => (
     <div
-      className={`w-[460px] max-w-[95vw] flex flex-col ${
+      className={`px-3 py-2 shrink-0 border-b flex items-center gap-1.5 overflow-x-auto mos-thin-scrollbar ${
+        isDark ? 'border-neutral-800/80 bg-neutral-900/30' : 'border-neutral-200/60 bg-white'
+      }`}
+    >
+      {[
+        { key: 'all', label: `Tất cả (${feed?.items.length || 0})` },
+        {
+          key: 'inbox',
+          label: `Cần duyệt ⚡ (${feed?.items.filter((i) => i.category === 'inbox_approval').length || 0})`,
+        },
+        {
+          key: 'mention',
+          label: `Tin nhắn & @ (${feed?.items.filter((i) => i.category === 'chat_mention').length || 0})`,
+        },
+        {
+          key: 'task',
+          label: `Nhắc việc ⏰ (${feed?.items.filter((i) => i.category === 'task_reminder').length || 0})`,
+        },
+      ].map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          onClick={() => setActiveTab(tab.key as CategoryTab)}
+          className={`text-xs px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-all ${
+            activeTab === tab.key
+              ? isDark
+                ? 'bg-neutral-800 text-neutral-100 shadow-sm border border-neutral-700'
+                : 'bg-neutral-900 text-white shadow-sm'
+              : isDark
+                ? 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
+                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderNotificationList = (isMobileView = false) => (
+    <div
+      className={`overflow-y-auto px-2 py-2 flex-1 mos-thin-scrollbar ${
+        isMobileView ? '' : 'max-h-[420px]'
+      }`}
+      style={{ minHeight: isMobileView ? '280px' : '260px' }}
+    >
+      {loading && !feed ? (
+        <div className="py-16 flex flex-col items-center justify-center gap-2">
+          <Spin size="small" />
+          <span className="text-xs text-neutral-400">Đang tải thông báo...</span>
+        </div>
+      ) : categoryFiltered.length === 0 ? (
+        <div className="py-16 flex flex-col items-center justify-center text-center">
+          <CheckCircle2 size={36} className="text-emerald-500/70 mb-2" />
+          <div className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-neutral-800'}`}>
+            Không có thông báo nào
+          </div>
+          <div className="text-xs text-neutral-400 mt-1 max-w-[240px]">
+            Tất cả thông báo và công việc đã được xử lý hoàn tất.
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* SECTION 1: MỚI / CHƯA ĐỌC (New / Unread) */}
+          {(statusFilter === 'all' || statusFilter === 'unread') && (
+            <div className="mb-3">
+              {statusFilter === 'all' && unreadItems.length > 0 && (
+                <div className="flex items-center justify-between px-2 pt-1 pb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-500">
+                      Mới
+                    </span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500">
+                      {unreadItems.length}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    disabled={markingAll}
+                    className="text-[11px] font-semibold text-neutral-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center gap-1"
+                  >
+                    <CheckCheck size={13} />
+                    <span>Đã xem tất cả</span>
+                  </button>
+                </div>
+              )}
+
+              {unreadItems.length > 0 ? (
+                unreadItems.map((item) => renderNotificationRow(item))
+              ) : statusFilter === 'unread' ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <CheckCircle2 size={32} className="text-emerald-500/70 mb-2" />
+                  <div className="text-xs font-medium text-neutral-400">
+                    Bạn đã đọc tất cả thông báo mới 🎉
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* SECTION 2: TRƯỚC ĐÓ / ĐÃ ĐỌC (Earlier / Read) */}
+          {(statusFilter === 'all' || statusFilter === 'read') && (
+            <div>
+              {statusFilter === 'all' && readItems.length > 0 && (
+                <div
+                  className={`flex items-center justify-between px-2 pt-2.5 pb-1.5 ${
+                    unreadItems.length > 0
+                      ? isDark
+                        ? 'border-t border-neutral-800/80 mt-1'
+                        : 'border-t border-neutral-200 mt-1'
+                      : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                      Trước đó
+                    </span>
+                    <span className="text-[10px] text-neutral-400">
+                      ({readItems.length})
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {readItems.length > 0 ? (
+                readItems.map((item) => renderNotificationRow(item))
+              ) : statusFilter === 'read' ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <div className="text-xs text-neutral-400">
+                    Chưa có thông báo đã đọc
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const desktopPopoverContent = (
+    <div
+      className={`w-[420px] max-w-[calc(100vw-24px)] flex flex-col ${
         isDark ? 'text-neutral-100' : 'text-neutral-900'
       }`}
       style={{ maxHeight: '600px' }}
     >
       {/* Top Header: Instagram-style Title & Scope Switcher */}
-      <div className={`px-4 py-3.5 border-b flex items-center justify-between shrink-0 ${
-        isDark ? 'border-neutral-800 bg-neutral-900/60' : 'border-neutral-200/80 bg-neutral-50/60'
-      }`}>
+      <div
+        className={`px-4 py-3.5 border-b flex items-center justify-between shrink-0 ${
+          isDark ? 'border-neutral-800 bg-neutral-900/60' : 'border-neutral-200/80 bg-neutral-50/60'
+        }`}
+      >
         <div className="flex items-center gap-2">
           <span className="font-bold text-base tracking-tight">
             Thông báo
@@ -562,9 +711,11 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
         </div>
 
         {/* Instagram-style segmented filter pill: Tất cả | Chưa đọc | Đã đọc */}
-        <div className={`inline-flex items-center p-0.5 rounded-xl border text-xs ${
-          isDark ? 'bg-neutral-800/80 border-neutral-700/60' : 'bg-neutral-200/60 border-neutral-300/60'
-        }`}>
+        <div
+          className={`inline-flex items-center p-0.5 rounded-xl border text-xs ${
+            isDark ? 'bg-neutral-800/80 border-neutral-700/60' : 'bg-neutral-200/60 border-neutral-300/60'
+          }`}
+        >
           <button
             type="button"
             onClick={() => setStatusFilter('all')}
@@ -619,143 +770,26 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
         </div>
       </div>
 
-      {/* Category Filter Chips (Instagram Story / Chip Bar) */}
-      <div className={`px-3 py-2 shrink-0 border-b flex items-center gap-1 overflow-x-auto mos-thin-scrollbar ${
-        isDark ? 'border-neutral-800/80 bg-neutral-900/30' : 'border-neutral-200/60 bg-white'
-      }`}>
-        {[
-          { key: 'all', label: `Tất cả (${feed?.items.length || 0})` },
-          {
-            key: 'inbox',
-            label: `Cần duyệt ⚡ (${feed?.items.filter((i) => i.category === 'inbox_approval').length || 0})`,
-          },
-          {
-            key: 'mention',
-            label: `Tin nhắn & @ (${feed?.items.filter((i) => i.category === 'chat_mention').length || 0})`,
-          },
-          {
-            key: 'task',
-            label: `Nhắc việc ⏰ (${feed?.items.filter((i) => i.category === 'task_reminder').length || 0})`,
-          },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key as CategoryTab)}
-            className={`text-xs px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.key
-                ? isDark
-                  ? 'bg-neutral-800 text-neutral-100 shadow-sm border border-neutral-700'
-                  : 'bg-neutral-900 text-white shadow-sm'
-                : isDark
-                  ? 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
-                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Category Filter Chips */}
+      {renderCategoryChips()}
 
       {/* Main Notifications Scrollable List */}
-      <div className="overflow-y-auto px-2 py-2 flex-1 mos-thin-scrollbar" style={{ minHeight: '260px' }}>
-        {loading && !feed ? (
-          <div className="py-16 flex flex-col items-center justify-center gap-2">
-            <Spin size="small" />
-            <span className="text-xs text-neutral-400">Đang tải thông báo...</span>
-          </div>
-        ) : categoryFiltered.length === 0 ? (
-          <div className="py-16 flex flex-col items-center justify-center text-center">
-            <CheckCircle2 size={36} className="text-emerald-500/70 mb-2" />
-            <div className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-neutral-800'}`}>
-              Không có thông báo nào
-            </div>
-            <div className="text-xs text-neutral-400 mt-1 max-w-[240px]">
-              Tất cả thông báo và công việc đã được xử lý hoàn tất.
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* SECTION 1: MỚI / CHƯA ĐỌC (New / Unread) */}
-            {(statusFilter === 'all' || statusFilter === 'unread') && (
-              <div className="mb-3">
-                {statusFilter === 'all' && unreadItems.length > 0 && (
-                  <div className="flex items-center justify-between px-2 pt-1 pb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-amber-500">
-                        Mới
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500">
-                        {unreadItems.length}
-                      </span>
-                    </div>
+      {renderNotificationList(false)}
 
-                    <button
-                      type="button"
-                      onClick={handleMarkAllRead}
-                      disabled={markingAll}
-                      className="text-[11px] font-semibold text-neutral-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center gap-1"
-                    >
-                      <CheckCheck size={13} />
-                      <span>Đã xem tất cả</span>
-                    </button>
-                  </div>
-                )}
-
-                {unreadItems.length > 0 ? (
-                  unreadItems.map((item) => renderNotificationRow(item))
-                ) : statusFilter === 'unread' ? (
-                  <div className="py-12 flex flex-col items-center justify-center text-center">
-                    <CheckCircle2 size={32} className="text-emerald-500/70 mb-2" />
-                    <div className="text-xs font-medium text-neutral-400">
-                      Bạn đã đọc tất cả thông báo mới 🎉
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            )}
-
-            {/* SECTION 2: TRƯỚC ĐÓ / ĐÃ ĐỌC (Earlier / Read) */}
-            {(statusFilter === 'all' || statusFilter === 'read') && (
-              <div>
-                {statusFilter === 'all' && readItems.length > 0 && (
-                  <div className={`flex items-center justify-between px-2 pt-2.5 pb-1.5 ${
-                    unreadItems.length > 0 ? (isDark ? 'border-t border-neutral-800/80 mt-1' : 'border-t border-neutral-200 mt-1') : ''
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                        Trước đó
-                      </span>
-                      <span className="text-[10px] text-neutral-400">
-                        ({readItems.length})
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {readItems.length > 0 ? (
-                  readItems.map((item) => renderNotificationRow(item))
-                ) : statusFilter === 'read' ? (
-                  <div className="py-12 flex flex-col items-center justify-center text-center">
-                    <div className="text-xs text-neutral-400">
-                      Chưa có thông báo đã đọc
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className={`px-4 py-2.5 border-t text-[11px] text-neutral-400 flex items-center justify-between shrink-0 ${
-        isDark ? 'border-neutral-800 bg-neutral-900/40' : 'border-neutral-200 bg-neutral-50/80'
-      }`}>
+      {/* Desktop Footer */}
+      <div
+        className={`px-4 py-2.5 border-t text-[11px] text-neutral-400 flex items-center justify-between shrink-0 ${
+          isDark ? 'border-neutral-800 bg-neutral-900/40' : 'border-neutral-200 bg-neutral-50/80'
+        }`}
+      >
         <span className="flex items-center gap-1.5">
-          <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
-            isDark ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-neutral-200 border-neutral-300 text-neutral-700'
-          }`}>
+          <kbd
+            className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+              isDark
+                ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
+                : 'bg-neutral-200 border-neutral-300 text-neutral-700'
+            }`}
+          >
             ⌘I
           </kbd>
           <span>đóng / mở nhanh</span>
@@ -776,9 +810,199 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
     </div>
   );
 
+  const mobileDrawer = (
+    <Drawer
+      open={isOpen}
+      onClose={() => setIsOpen(false)}
+      placement="bottom"
+      height="88dvh"
+      title={
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-base tracking-tight">Thông báo</span>
+          {totalUnreadCount > 0 && (
+            <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums bg-amber-500/15 text-amber-500 border border-amber-500/30"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {totalUnreadCount} mới
+            </span>
+          )}
+        </div>
+      }
+      extra={
+        unreadItems.length > 0 ? (
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            disabled={markingAll}
+            className="text-xs font-semibold text-neutral-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center gap-1 mr-2"
+          >
+            <CheckCheck size={14} />
+            <span>Đã xem tất cả</span>
+          </button>
+        ) : null
+      }
+      closable={{ placement: 'end' }}
+      styles={{
+        header: {
+          padding: '12px 16px',
+          backgroundColor: isDark ? '#171717' : '#ffffff',
+          borderBottom: isDark ? '1px solid #262626' : '1px solid #f0f0f0',
+        },
+        body: {
+          padding: 0,
+          backgroundColor: isDark ? '#141414' : '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+        content: {
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          overflow: 'hidden',
+          backgroundColor: isDark ? '#141414' : '#ffffff',
+        },
+        mask: {
+          backdropFilter: 'blur(4px)',
+        },
+      }}
+      className={`mos-notification-mobile-drawer ${isDark ? 'dark-theme' : 'light-theme'}`}
+    >
+      <div className={`flex flex-col h-full overflow-hidden ${isDark ? 'text-neutral-100' : 'text-neutral-900'}`}>
+        {/* Mobile Full-width Instagram segmented filter pill */}
+        <div className="px-3 pt-3 pb-2 shrink-0">
+          <div
+            className={`flex items-center p-1 rounded-xl border text-xs w-full ${
+              isDark ? 'bg-neutral-800/80 border-neutral-700/60' : 'bg-neutral-200/60 border-neutral-300/60'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`flex-1 py-1.5 rounded-lg font-medium transition-all text-center ${
+                statusFilter === 'all'
+                  ? isDark
+                    ? 'bg-neutral-700 text-white shadow-sm'
+                    : 'bg-white text-neutral-900 shadow-sm'
+                  : isDark
+                    ? 'text-neutral-400 hover:text-neutral-200'
+                    : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <span>Tất cả</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('unread')}
+              className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 ${
+                statusFilter === 'unread'
+                  ? isDark
+                    ? 'bg-neutral-700 text-amber-400 shadow-sm'
+                    : 'bg-white text-amber-600 shadow-sm'
+                  : isDark
+                    ? 'text-neutral-400 hover:text-neutral-200'
+                    : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <span>Chưa đọc</span>
+              {totalUnreadCount > 0 && (
+                <span className="text-[10px] tabular-nums font-bold">({totalUnreadCount})</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('read')}
+              className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 ${
+                statusFilter === 'read'
+                  ? isDark
+                    ? 'bg-neutral-700 text-white shadow-sm'
+                    : 'bg-white text-neutral-900 shadow-sm'
+                  : isDark
+                    ? 'text-neutral-400 hover:text-neutral-200'
+                    : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <span>Đã đọc</span>
+              {totalReadCount > 0 && (
+                <span className="text-[10px] tabular-nums">({totalReadCount})</span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Category Filter Chips */}
+        {renderCategoryChips()}
+
+        {/* Notification feed items */}
+        {renderNotificationList(true)}
+
+        {/* Mobile Footer */}
+        <div
+          className={`px-4 py-3 border-t text-xs flex items-center justify-between shrink-0 ${
+            isDark ? 'border-neutral-800 bg-neutral-900/60' : 'border-neutral-200 bg-neutral-50/90'
+          }`}
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}
+        >
+          <span className="text-[11px] text-neutral-400">
+            {feed?.items.length || 0} thông báo
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              router.push('/dashboard/bug-reports');
+            }}
+            className="hover:text-amber-500 dark:hover:text-amber-400 text-amber-600 dark:text-amber-400 font-semibold transition-colors flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
+          >
+            <span>Mở mOS Inbox</span>
+            <ArrowUpRight size={14} />
+          </button>
+        </div>
+      </div>
+    </Drawer>
+  );
+
+  const triggerButton = (
+    <HeaderActionIndicator variant="count" count={totalUnreadCount} color={urgentCount > 0 ? '#ef4444' : '#f59e0b'}>
+      <HeaderIconButton
+        action="notifications"
+        label={
+          totalUnreadCount > 0
+            ? `Thông báo & Việc cần làm (⌘I) · ${totalUnreadCount} việc cần xử lý`
+            : 'Thông báo & Việc cần làm (⌘I)'
+        }
+        icon={Bell}
+        tone={isOpen ? 'accent' : 'quiet'}
+        aria-pressed={isOpen}
+        showTooltip={!isOpen}
+        onClick={
+          isMobileTier
+            ? () => {
+                const nextState = !isOpen;
+                setIsOpen(nextState);
+                if (nextState) {
+                  void fetchFeed(true);
+                }
+              }
+            : undefined
+        }
+      />
+    </HeaderActionIndicator>
+  );
+
+  if (isMobileTier) {
+    return (
+      <>
+        {triggerButton}
+        {mobileDrawer}
+      </>
+    );
+  }
+
   return (
     <Popover
-      content={popoverContent}
+      content={desktopPopoverContent}
       trigger="click"
       open={isOpen}
       onOpenChange={(v) => {
@@ -796,22 +1020,10 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
         border: isDark ? '1px solid #2e2e2e' : '1px solid #e5e7eb',
         borderRadius: 20,
         boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.45)',
+        maxWidth: 'calc(100vw - 24px)',
       }}
     >
-      <HeaderActionIndicator variant="count" count={totalUnreadCount} color={urgentCount > 0 ? '#ef4444' : '#f59e0b'}>
-        <HeaderIconButton
-          action="notifications"
-          label={
-            totalUnreadCount > 0
-              ? `Thông báo & Việc cần làm (⌘I) · ${totalUnreadCount} việc cần xử lý`
-              : 'Thông báo & Việc cần làm (⌘I)'
-          }
-          icon={Bell}
-          tone={isOpen ? 'accent' : 'quiet'}
-          aria-pressed={isOpen}
-          showTooltip={!isOpen}
-        />
-      </HeaderActionIndicator>
+      {triggerButton}
     </Popover>
   );
 };
