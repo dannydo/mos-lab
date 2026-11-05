@@ -180,9 +180,11 @@ export function Screen12CheckoutBilling({
                     <button
                       type="button"
                       onClick={onEditService}
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1 active:scale-95 cursor-pointer"
+                      title="Đổi dịch vụ / Nâng cấp"
+                      aria-label="Đổi dịch vụ"
+                      className="w-5 h-5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors inline-flex items-center justify-center text-[10px] active:scale-90 cursor-pointer shadow-2xs"
                     >
-                      ✏️ Đổi dịch vụ / Nâng cấp
+                      ✏️
                     </button>
                   )}
                 </div>
@@ -513,18 +515,21 @@ export function Screen12CheckoutBilling({
                 </div>
                 <div className="flex items-center gap-2">
                   <input
-                    type="number"
-                    step="10000"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={customTipInput}
-                    onChange={(e) => setCustomTipInput(e.target.value)}
-                    placeholder="Ví dụ: 700000"
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '');
+                      setCustomTipInput(digits ? Number(digits).toLocaleString('vi-VN') : '');
+                    }}
+                    placeholder="Ví dụ: 700.000"
                     className="flex-1 bg-white border border-purple-300 rounded-xl px-3 py-2 text-[13px] font-black text-black tabular-nums focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
                   <button
                     type="button"
                     onClick={() => {
-                      const val = parseInt(customTipInput, 10);
+                      const digits = customTipInput.replace(/\D/g, '');
+                      const val = parseInt(digits, 10);
                       if (!isNaN(val) && val >= 0) {
                         setTipAmount(val);
                         setActiveRoundTarget(null);
@@ -545,7 +550,7 @@ export function Screen12CheckoutBilling({
                       type="button"
                       onClick={() => {
                         setTipAmount(amt);
-                        setCustomTipInput(String(amt));
+                        setCustomTipInput(amt.toLocaleString('vi-VN'));
                         setActiveRoundTarget(null);
                         setIsCustomTipOpen(false);
                       }}
@@ -568,10 +573,6 @@ export function Screen12CheckoutBilling({
                       {activeRoundTarget
                         ? `Làm tròn tổng đơn ${activeRoundTarget.toLocaleString('vi-VN')}đ (Tip: +${tipAmount.toLocaleString('vi-VN')}đ)`
                         : `Đã ghi nhận tip ${tipAmount.toLocaleString('vi-VN')}đ`}
-                    </div>
-                    <div className="text-[10px] text-emerald-700 font-medium">
-                      {assignedStaff} nhận {Math.round(tipAmount * 0.7).toLocaleString('vi-VN')}đ (70%) · Sảnh đón tiếp
-                      nhận {Math.round(tipAmount * 0.3).toLocaleString('vi-VN')}đ (30%)
                     </div>
                   </div>
                 </div>
