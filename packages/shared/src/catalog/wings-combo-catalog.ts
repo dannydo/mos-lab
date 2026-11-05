@@ -6242,3 +6242,14 @@ export function resolveValidVolumeForCategory(
 
   return 550;
 }
+
+export function getUnderLashComboPackages(
+  welcomeEligibility?: WelcomeComboEligibilityResult
+): MatchedComboPackageOption[] {
+  return getComboPackagesForCategoryAndVolume({
+    categoryId: 'Classic_Volume',
+    volume: 'under',
+    welcomeEligibility,
+    includeVvipPass: false,
+  });
+}

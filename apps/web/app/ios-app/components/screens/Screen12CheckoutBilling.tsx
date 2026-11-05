@@ -39,6 +39,7 @@ export function Screen12CheckoutBilling({
   const upgradePrice = booking?.upgradePrice || 0;
   const originalBookedPrice = booking?.originalBookedServicePrice || servicePrice;
   const selectedCombo = booking?.selectedCombo || null;
+  const selectedUnderCombo = booking?.selectedUnderCombo || null;
   const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
   const effectiveServiceCharge = selectedCombo
@@ -50,6 +51,7 @@ export function Screen12CheckoutBilling({
     booking?.billing?.subtotal ??
     effectiveServiceCharge +
       (selectedCombo ? selectedCombo.price : 0) +
+      (selectedUnderCombo ? selectedUnderCombo.price : 0) +
       cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const vatRate = booking?.billing?.vatRate ?? 0.08;
   const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
@@ -218,23 +220,57 @@ export function Screen12CheckoutBilling({
               </div>
             )}
 
-            {/* Item 3: Products */}
-            {cartProducts.map((p, idx) => (
-              <div key={idx} className="p-3.5 flex items-center justify-between">
+            {/* Item 2B: Under Lash Combo if selected */}
+            {selectedUnderCombo && (
+              <div className="p-3.5 flex items-center justify-between bg-emerald-50/40">
                 <div>
-                  <div className="text-[13px] font-bold text-black">
-                    {selectedCombo ? idx + 3 : idx + 2}. {p.productName}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[13px] font-bold text-black">
+                      {selectedCombo ? '3. ' : '2. '}
+                      {selectedUnderCombo.name}
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                      ✦ Combo Mi Dưới
+                    </span>
                   </div>
                   <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    SL: {p.quantity} · Chốt Checkout: {checkOutStaff} (+
-                    {((p.cvBonus || 100000) * p.quantity).toLocaleString('vi-VN')}đ thưởng CV🪶)
+                    Người chốt Checkout: {checkOutStaff} (+{selectedUnderCombo.bonus.toLocaleString('vi-VN')}đ thưởng
+                    CV🪶)
                   </div>
+                  {selectedUnderCombo.remainingAfterToday && (
+                    <div className="text-[10px] text-emerald-900 font-semibold mt-0.5 tabular-nums">
+                      Ví mi dưới còn sau hôm nay: {selectedUnderCombo.remainingAfterToday.totalRemaining}/
+                      {selectedUnderCombo.sessions} lần · Doanh thu giữ ví:{' '}
+                      {(selectedUnderCombo.deferredRevenueBalance || 0).toLocaleString('vi-VN')}đ
+                    </div>
+                  )}
                 </div>
-                <span className="text-[13px] text-gray-800 font-bold tabular-nums">
-                  {(p.price * p.quantity).toLocaleString('vi-VN')} đ
+                <span className="text-[13px] text-gray-800 font-bold tabular-nums shrink-0">
+                  {selectedUnderCombo.price.toLocaleString('vi-VN')} đ
                 </span>
               </div>
-            ))}
+            )}
+
+            {/* Item 3: Products */}
+            {cartProducts.map((p, idx) => {
+              const baseIndex = 1 + (selectedCombo ? 1 : 0) + (selectedUnderCombo ? 1 : 0);
+              return (
+                <div key={idx} className="p-3.5 flex items-center justify-between">
+                  <div>
+                    <div className="text-[13px] font-bold text-black">
+                      {baseIndex + idx + 1}. {p.productName}
+                    </div>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                      SL: {p.quantity} · Chốt Checkout: {checkOutStaff} (+
+                      {((p.cvBonus || 100000) * p.quantity).toLocaleString('vi-VN')}đ thưởng CV🪶)
+                    </div>
+                  </div>
+                  <span className="text-[13px] text-gray-800 font-bold tabular-nums">
+                    {(p.price * p.quantity).toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+              );
+            })}
 
             {/* Subtotal Row */}
             <div className="p-3 bg-white flex items-center justify-between border-t border-gray-100 text-[12px]">

@@ -260,6 +260,30 @@ export interface BookingItem {
       totalRemaining: number;
     };
   } | null;
+  selectedUnderCombo?: {
+    id: string;
+    name: string;
+    price: number;
+    bonus: number;
+    sessions: number;
+    ruleName?: string;
+    validityMonths?: number;
+    retailTotal?: number;
+    savingsAmount?: number;
+    avgPerSessionPrice?: number;
+    todaySingleServiceWaived?: boolean;
+    recognizedRevenueToday?: number;
+    deferredRevenueBalance?: number;
+    remainingAfterToday?: {
+      paidNew: number;
+      paidRefill: number;
+      bonusNew: number;
+      bonusRefill: number;
+      totalPaidRemaining: number;
+      totalBonusRemaining: number;
+      totalRemaining: number;
+    };
+  } | null;
   comboRedemption?: {
     comboName: string;
     deductedBucket: string;

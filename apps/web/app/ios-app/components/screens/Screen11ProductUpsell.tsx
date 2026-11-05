@@ -28,6 +28,7 @@ import {
   calculateComboRedemptionAccounting,
   getLashFamilyInfo,
   resolveValidVolumeForCategory,
+  getUnderLashComboPackages,
 } from '@mos-lab/shared';
 import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
 import { WingsComboCard } from '../ui-kit/WingsComboCard';
@@ -40,6 +41,7 @@ interface Screen11ProductUpsellProps {
   onGoToBilling: (payload?: {
     cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
     selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
+    selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
     comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
   }) => void;
 }
@@ -159,6 +161,20 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
     [selectedComboPkg, servicePrice]
   );
 
+  // 4B. Danh sách gói Combo Mi Dưới (Tùy chọn mua kèm cùng lúc với Combo Mi Trên)
+  const underLashPackages = useMemo(() => getUnderLashComboPackages(welcomeEligibility), [welcomeEligibility]);
+  const [selectedUnderComboId, setSelectedUnderComboId] = useState<string>(booking?.selectedUnderCombo?.id || 'NONE');
+  const selectedUnderComboPkg: MatchedComboPackageOption | null = useMemo(
+    () => underLashPackages.find((p) => p.id === selectedUnderComboId && !p.isLocked) || null,
+    [underLashPackages, selectedUnderComboId]
+  );
+  const underPurchaseAccounting = useMemo(
+    () => (selectedUnderComboPkg ? calculateComboPurchaseAccounting(selectedUnderComboPkg, 390000) : null),
+    [selectedUnderComboPkg]
+  );
+  const underComboTotal = selectedUnderComboPkg ? selectedUnderComboPkg.comboPrice : 0;
+  const underComboBonus = selectedUnderComboPkg ? selectedUnderComboPkg.cvBonus : 0;
+
   // 5. Tính hạch toán khi TRỪ GÓI COMBO ĐANG CÓ (FIFO Lượt Mua -> Lượt Tặng 0đ + Phụ thu Refill->New hoặc Up-size Volume)
   const [simulateOnlyRefillLeft, setSimulateOnlyRefillLeft] = useState<boolean>(false);
   const existingComboMatch = useMemo(
@@ -234,7 +250,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       ? redemptionAccounting.totalCustomerPayToday
       : servicePrice;
 
-  const subtotal = effectiveServiceChargeToday + comboTotal + serumTotal;
+  const subtotal = effectiveServiceChargeToday + comboTotal + underComboTotal + serumTotal;
 
   const handleConfirmCheckout = () => {
     const cartProducts =
@@ -293,7 +309,27 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           }
         : null;
 
-    onGoToBilling({ cartProducts, selectedCombo, comboRedemption });
+    const selectedUnderCombo: NonNullable<BookingItem['selectedUnderCombo']> | null =
+      selectedUnderComboPkg && underPurchaseAccounting
+        ? {
+            id: selectedUnderComboPkg.id,
+            name: selectedUnderComboPkg.displayName,
+            price: selectedUnderComboPkg.comboPrice,
+            bonus: selectedUnderComboPkg.cvBonus,
+            sessions: selectedUnderComboPkg.totalSessions,
+            ruleName: selectedUnderComboPkg.ruleName,
+            validityMonths: selectedUnderComboPkg.validityMonths,
+            retailTotal: selectedUnderComboPkg.retailTotal,
+            savingsAmount: selectedUnderComboPkg.savingsAmount,
+            avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
+            todaySingleServiceWaived: true,
+            recognizedRevenueToday: underPurchaseAccounting.recognizedRevenueToday,
+            deferredRevenueBalance: underPurchaseAccounting.deferredRevenueBalance,
+            remainingAfterToday: underPurchaseAccounting.remainingWalletAfterToday,
+          }
+        : null;
+
+    onGoToBilling({ cartProducts, selectedCombo, selectedUnderCombo, comboRedemption });
   };
 
   return (
@@ -328,7 +364,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             Khi bấm chốt Check-out bên dưới, hệ thống ghi nhận{' '}
             <strong className="text-white">check_out_staff_id = {actorName}</strong>: nhận{' '}
             <strong className="text-[#FFB400]">
-              +{(comboBonus + serumBonus).toLocaleString('vi-VN')}đ Thưởng Tiền Tươi
+              +{(comboBonus + underComboBonus + serumBonus).toLocaleString('vi-VN')}đ Thưởng Tiền Tươi
             </strong>{' '}
             (Combo bậc thang + Dưỡng mi)!
           </div>
@@ -678,6 +714,109 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
         </div>
 
+        {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI (MUA CÙNG LÚC VỚI MI TRÊN) */}
+        <div>
+          <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#FFB400]" />
+              <span>2B. MUA THÊM COMBO MI DƯỚI (MUA CÙNG LÚC)</span>
+            </span>
+            {underComboBonus > 0 && (
+              <span className="text-emerald-700 font-bold">+{underComboBonus.toLocaleString('vi-VN')}đ thưởng</span>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[13px] font-black text-black">Gói Combo Mi Dưới 390 (Tùy chọn mua kèm)</div>
+                <div className="text-[10px] text-neutral-500 mt-0.5">
+                  Khách có thể mua đồng thời 1 Combo Mi Trên + 1 Combo Mi Dưới trong cùng 1 hóa đơn!
+                </div>
+              </div>
+              {selectedUnderComboPkg && (
+                <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shrink-0">
+                  Đã chọn gói mi dưới
+                </span>
+              )}
+            </div>
+
+            {/* Quick Pills for 4 Under Lash Rules */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedUnderComboId('NONE')}
+                className={`py-2 px-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedUnderComboId === 'NONE'
+                    ? 'bg-neutral-800 text-white border-neutral-800 font-bold shadow-xs'
+                    : 'bg-[#F9F9FB] border-gray-200 text-gray-700'
+                }`}
+              >
+                <div className="text-[11px] font-bold">Không lấy Combo Mi Dưới</div>
+                <div className="text-[9px] opacity-80 mt-0.5">Chỉ lấy Mi Trên hoặc thanh toán lẻ</div>
+              </button>
+
+              {underLashPackages.map((pkg) => {
+                const active = selectedUnderComboId === pkg.id;
+                return (
+                  <button
+                    key={pkg.id}
+                    type="button"
+                    disabled={pkg.isLocked}
+                    onClick={() => setSelectedUnderComboId(pkg.id)}
+                    className={`py-2 px-2.5 rounded-xl border text-left transition-all cursor-pointer relative ${
+                      pkg.isLocked
+                        ? 'opacity-40 bg-gray-100 border-gray-200 cursor-not-allowed'
+                        : active
+                          ? 'bg-linear-to-r from-amber-50 to-emerald-50 border-amber-500 shadow-xs'
+                          : 'bg-[#F9F9FB] border-gray-200 hover:border-amber-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black text-black">{pkg.ruleName} · Mi Dưới</span>
+                      <span className="text-[10px] font-extrabold text-amber-700 tabular-nums">
+                        {pkg.comboPrice.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1 text-[9px]">
+                      <span className="text-gray-500">
+                        {pkg.totalSessions} lần (TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ)
+                      </span>
+                      <span className="font-extrabold text-emerald-700">
+                        +{pkg.cvBonus.toLocaleString('vi-VN')}đ CV🪶
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Under Lash Combo Details Card */}
+            {selectedUnderComboPkg && underPurchaseAccounting && (
+              <div className="rounded-xl p-2.5 bg-[#1C1C1E] text-white border border-[#FFB400]/60 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[11px] font-black text-[#FFB400]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#FFB400]" />
+                    <span>{selectedUnderComboPkg.displayName}</span>
+                  </div>
+                  <span className="text-emerald-400 font-extrabold text-[11px] tabular-nums">
+                    +{selectedUnderComboPkg.cvBonus.toLocaleString('vi-VN')}đ thưởng CV🪶
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-300 leading-snug">
+                  • <strong>Giá combo:</strong> {selectedUnderComboPkg.comboPrice.toLocaleString('vi-VN')}đ (Giá lẻ{' '}
+                  {selectedUnderComboPkg.retailTotal.toLocaleString('vi-VN')}đ · Tiết kiệm{' '}
+                  {selectedUnderComboPkg.savingsAmount.toLocaleString('vi-VN')}đ)
+                  <br />• <strong>Quyền lợi ví:</strong> {selectedUnderComboPkg.totalSessions} lần làm mi dưới trong{' '}
+                  {selectedUnderComboPkg.validityMonths} tháng
+                  <br />• <strong>Hạch toán:</strong> Buổi mi dưới hôm nay (nếu có làm) được trừ luôn vào gói (0đ thu
+                  lẻ). Số dư còn lại trong ví: {underPurchaseAccounting.remainingWalletAfterToday.totalRemaining} lần.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Section 3: Summary card */}
         <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-1.5">
           <div className="flex items-center justify-between text-[12px]">
@@ -707,6 +846,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               <span className="text-gray-900 font-bold tabular-nums">{comboTotal.toLocaleString('vi-VN')} đ</span>
             </div>
           )}
+          {selectedUnderComboPkg && (
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="text-gray-700 font-semibold">{selectedUnderComboPkg.displayName}:</span>
+              <span className="text-gray-900 font-bold tabular-nums">{underComboTotal.toLocaleString('vi-VN')} đ</span>
+            </div>
+          )}
           {yeppeumCount > 0 && (
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-gray-500">Dưỡng mi Yeppeum (x{yeppeumCount}):</span>
@@ -725,7 +870,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               Thưởng chốt đơn của {actorName} ({actorTierBadge}):
             </span>
             <span className="text-emerald-700 font-black tabular-nums">
-              +{(comboBonus + serumBonus).toLocaleString('vi-VN')} đ
+              +{(comboBonus + underComboBonus + serumBonus).toLocaleString('vi-VN')} đ
             </span>
           </div>
         </div>

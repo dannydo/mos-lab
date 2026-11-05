@@ -961,6 +961,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   const handleGoToBilling = (upsellPayload?: {
     cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
     selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
+    selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
     comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
   }) => {
     updateActiveBooking((prev) => {
@@ -980,10 +981,14 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
               ];
       const nextCombo =
         upsellPayload?.selectedCombo !== undefined ? upsellPayload.selectedCombo : prev.selectedCombo || null;
+      const nextUnderCombo =
+        upsellPayload?.selectedUnderCombo !== undefined
+          ? upsellPayload.selectedUnderCombo
+          : prev.selectedUnderCombo || null;
       const nextRedemption =
         upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
       const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
-      const comboTotal = nextCombo ? nextCombo.price : 0;
+      const comboTotal = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
 
       // Khi mua gói mới: trừ luôn buổi đầu vào gói -> phí lẻ buổi hôm nay = 0đ
       // Khi trừ gói đang có: phí lẻ = phụ thu quy đổi/nâng cấp (nếu có) hoặc 0đ
@@ -995,12 +1000,13 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       const subtotal = effectiveServiceTotal + comboTotal + productTotal;
       const tipAmount = prev.billing?.tipAmount ?? 50000;
 
-      const comboBonusAmount = nextCombo ? nextCombo.bonus : 0;
+      const comboBonusAmount = (nextCombo ? nextCombo.bonus : 0) + (nextUnderCombo ? nextUnderCombo.bonus : 0);
       const serumBonusAmount = nextProducts.reduce((sum, p) => sum + (p.cvBonus || 0) * p.quantity, 0);
 
       void postAction('SAVE_UPSELL_AND_CHECKOUT', {
         cartProducts: nextProducts,
         selectedCombo: nextCombo,
+        selectedUnderCombo: nextUnderCombo,
         comboRedemption: nextRedemption,
       });
 
@@ -1011,6 +1017,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         checkOutStaffTier: actor.tier,
         cartProducts: nextProducts,
         selectedCombo: nextCombo,
+        selectedUnderCombo: nextUnderCombo,
         comboRedemption: nextRedemption,
         cvRewardBreakdown: {
           techTipPercent: 70,
