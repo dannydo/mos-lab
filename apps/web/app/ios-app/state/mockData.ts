@@ -227,6 +227,7 @@ export interface BookingItem {
     packageKey?: string;
   };
   diamondBalance?: number; // Số dư ví Kim Cương của khách (1 💎 = 1.000 VNĐ)
+  branchCode?: string; // Mã chi nhánh (ví dụ: 'DT' - Đề Thám)
   lashHistory?: LashHistoryItem[];
   selectedCombo?: {
     id: string;

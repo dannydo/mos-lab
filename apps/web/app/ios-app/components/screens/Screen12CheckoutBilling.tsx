@@ -29,6 +29,8 @@ export function Screen12CheckoutBilling({
   const [isCustomTipOpen, setIsCustomTipOpen] = useState<boolean>(false);
   const [customTipInput, setCustomTipInput] = useState<string>('');
   const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = booking?.customerPhone || '0933.779.207';
@@ -116,8 +118,34 @@ export function Screen12CheckoutBilling({
     return list.slice(0, 3);
   }, [baseForRounding]);
 
+  // 🏦 THÔNG TIN VIETQR CHUẨN GOOGLE SHEET WINGS (VCB 1024731897)
+  const branchCode = booking?.branchCode || 'DT';
+  const orderNumericCode = booking?.orderNumber?.replace(/\D/g, '') || String(booking?.id || '609609');
+  const tipCode = tipAmount > 0 ? (tipAmount >= 1000 ? `${Math.round(tipAmount / 1000)}K` : String(tipAmount)) : '0';
+  const qrTransferContent = `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
+  const vietQrUrl = `https://img.vietqr.io/image/VCB-1024731897-compact2.png?amount=${finalGrandTotal}&addInfo=${encodeURIComponent(
+    qrTransferContent
+  )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
+
+  const copyToClipboard = (text: string, label: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopySuccess(label);
+      setTimeout(() => setCopySuccess(null), 2000);
+    }
+  };
+
   const handleProceed = () => {
+    if (selectedMethod === 'VIETQR' && finalGrandTotal > 0) {
+      setIsQrModalOpen(true);
+      return;
+    }
     onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed);
+  };
+
+  const handleConfirmQrPaid = () => {
+    setIsQrModalOpen(false);
+    onChoosePayment('VIETQR', tipAmount, effectiveDiamondUsed);
   };
 
   return (
@@ -755,15 +783,138 @@ export function Screen12CheckoutBilling({
             className={`w-full py-3.5 px-4 rounded-2xl font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide ${
               finalGrandTotal === 0
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-                : 'bg-[#FFB400] text-black'
+                : selectedMethod === 'VIETQR'
+                  ? 'bg-gradient-to-r from-[#FF9500] to-[#FFB400] text-black'
+                  : 'bg-[#FFB400] text-black'
             }`}
           >
             {finalGrandTotal === 0
               ? `XÁC NHẬN CHỐT ĐƠN (TRỪ ${effectiveDiamondUsed} 💎 · 0 Đ)`
-              : `CHỐT THANH TOÁN · ${finalGrandTotal.toLocaleString('vi-VN')} đ`}
+              : selectedMethod === 'VIETQR'
+                ? `MỞ MÃ QR THANH TOÁN · ${finalGrandTotal.toLocaleString('vi-VN')} đ`
+                : selectedMethod === 'POS'
+                  ? `XÁC NHẬN QUẸT THẺ (POS) · ${finalGrandTotal.toLocaleString('vi-VN')} đ`
+                  : `XÁC NHẬN THU TIỀN MẶT · ${finalGrandTotal.toLocaleString('vi-VN')} đ`}
           </button>
         </div>
       </div>
+
+      {/* 📲 MODAL QR-CODE THANH TOÁN CHUẨN GOOGLE SHEET WINGS */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 select-none">
+          <div className="bg-white rounded-3xl max-w-[380px] w-full overflow-hidden shadow-2xl flex flex-col border border-neutral-200">
+            {/* Header đen + logo Wings + badge DT */}
+            <div className="bg-black text-white p-3.5 flex items-center justify-between border-b border-neutral-800">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🪶</span>
+                <div>
+                  <div className="text-[13px] font-black tracking-wider text-[#FFB400]">WINGS LASHES & BEAUTY</div>
+                  <div className="text-[10px] text-gray-400">Hệ thống nối mi nghệ nhân cao cấp</div>
+                </div>
+              </div>
+              <div className="bg-[#16A34A] text-white text-[11px] font-black px-2.5 py-1 rounded-lg tracking-wider">
+                {branchCode}
+              </div>
+            </div>
+
+            {/* Dải cam tiêu đề chuẩn Sheet */}
+            <div className="bg-[#FF9500] text-black font-black text-center py-2 text-[13px] tracking-wider uppercase shadow-xs">
+              QR THANH TOÁN DỊCH VỤ
+            </div>
+
+            {/* Body: Mã QR & Thông tin thanh toán */}
+            <div className="p-4 space-y-3.5 overflow-y-auto max-h-[75vh]">
+              {/* Image QR Code */}
+              <div className="flex justify-center">
+                <div className="bg-white p-2 rounded-2xl border-2 border-neutral-200 shadow-sm max-w-[280px] w-full aspect-square flex items-center justify-center">
+                  <img
+                    src={vietQrUrl}
+                    alt="VietQR Chuyển Khoản Wings"
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Thông tin chuyển khoản chi tiết */}
+              <div className="bg-gray-50 rounded-2xl p-3 border border-gray-200 space-y-2 text-[12px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-bold text-[11px]">Nội Dung (Mã GD):</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[#E11D48] font-black text-[13px] tracking-wide tabular-nums">
+                      {qrTransferContent}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(qrTransferContent, 'content')}
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer"
+                    >
+                      {copySuccess === 'content' ? '✓ Đã chép' : 'Sao chép'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-bold text-[11px]">Số Tiền:</span>
+                  <span className="text-[#E11D48] font-black text-[15px] tabular-nums">
+                    {finalGrandTotal.toLocaleString('vi-VN')} VNĐ
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-gray-700">
+                  <span className="text-gray-500 font-medium text-[11px]">Ngân Hàng:</span>
+                  <span className="font-bold text-gray-900">Vietcombank (VCB)</span>
+                </div>
+
+                <div className="flex items-center justify-between text-gray-700">
+                  <span className="text-gray-500 font-medium text-[11px]">Tên Tài Khoản:</span>
+                  <span className="font-black text-gray-900 text-[11px] uppercase">CÔNG TY TNHH WINGS&apos; LIFE</span>
+                </div>
+
+                <div className="flex items-center justify-between text-gray-700">
+                  <span className="text-gray-500 font-medium text-[11px]">Số Tài Khoản:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black text-gray-900 tabular-nums text-[13px]">1024731897</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('1024731897', 'acc')}
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer"
+                    >
+                      {copySuccess === 'acc' ? '✓ Đã chép' : 'Sao chép'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hướng dẫn thao tác */}
+              <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-1.5">
+                <span className="text-sm leading-none shrink-0">💡</span>
+                <span>
+                  Khách hàng mở app ngân hàng quét mã. Mã giao dịch <strong>{qrTransferContent}</strong> tự động điền để
+                  hệ thống đối soát tự động.
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleConfirmQrPaid}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide cursor-pointer"
+                >
+                  ✓ ĐÃ NHẬN TIỀN THÀNH CÔNG · XUẤT HÓA ĐƠN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsQrModalOpen(false)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[12px] text-center cursor-pointer"
+                >
+                  ‹ Đóng / Đổi hình thức thanh toán khác
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
