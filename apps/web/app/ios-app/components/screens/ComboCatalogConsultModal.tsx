@@ -387,7 +387,7 @@ export function ComboCatalogConsultModal({
                   </div>
                   <div className="grid grid-cols-2 gap-1.5 text-[10px] text-gray-600 pt-0.5 tabular-nums">
                     <div>
-                      • Buổi làm hôm nay: <strong className="text-emerald-700">0đ (Trừ luôn buổi 1 vào gói)</strong>
+                      • Buổi làm hôm nay: <strong className="text-emerald-700">Trừ luôn buổi 1 vào gói</strong>
                     </div>
                     <div>
                       • Ví còn sau hôm nay:{' '}
@@ -395,7 +395,7 @@ export function ComboCatalogConsultModal({
                         {accounting.remainingWalletAfterToday.totalRemaining}/{pkg.totalSessions} buổi
                       </strong>{' '}
                       ({accounting.remainingWalletAfterToday.totalPaidRemaining} Mua +{' '}
-                      {accounting.remainingWalletAfterToday.totalBonusRemaining} Tặng 0đ)
+                      {accounting.remainingWalletAfterToday.totalBonusRemaining} Tặng)
                     </div>
                     <div>
                       • Doanh thu thực hiện hôm nay:{' '}

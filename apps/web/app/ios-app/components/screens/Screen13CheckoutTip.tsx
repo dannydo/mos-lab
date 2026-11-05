@@ -139,7 +139,7 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
             {(comboBonus > 0 || serumBonus > 0) && (
               <div className="flex justify-between items-center text-[#D97706] font-extrabold">
                 <span>Thưởng Combo + Dưỡng mi ({checkOutStaffName} Checkout):</span>
-                <span className="tabular-nums">+{(comboBonus + serumBonus).toLocaleString('vi-VN')} đ</span>
+                <span className="tabular-nums">+{Math.round((comboBonus + serumBonus) / 1000)}🪶</span>
               </div>
             )}
           </div>

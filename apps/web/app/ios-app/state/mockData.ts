@@ -108,7 +108,7 @@ export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
     sessions: 5,
     price: 4500000,
     cvBonus: 200000,
-    badge: 'Thưởng CV🪶 +200.000đ',
+    badge: '+200🪶',
   },
   {
     id: 'combo-hyperlight-5',
@@ -116,7 +116,7 @@ export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
     sessions: 5,
     price: 3500000,
     cvBonus: 150000,
-    badge: 'Thưởng CV🪶 +150.000đ',
+    badge: '+150🪶',
   },
   {
     id: 'combo-classic-3',
@@ -124,7 +124,7 @@ export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
     sessions: 3,
     price: 2500000,
     cvBonus: 100000,
-    badge: 'Thưởng CV🪶 +100.000đ',
+    badge: '+100🪶',
   },
   {
     id: 'combo-under-5',
@@ -132,7 +132,7 @@ export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
     sessions: 5,
     price: 1500000,
     cvBonus: 50000,
-    badge: 'Thưởng CV🪶 +50.000đ',
+    badge: '+50🪶',
   },
 ];
 
@@ -142,28 +142,28 @@ export const SERUM_TIERS_CVL: SerumTierOption[] = [
     label: 'Giá gốc 1.100.000đ',
     price: 1100000,
     cvBonus: 100000,
-    desc: 'Thưởng tiền tươi CV🪶: +100.000đ/cây',
+    desc: 'Thưởng CV🪶: +100🪶/cây',
   },
   {
     id: 'serum-disc-light',
     label: 'Ưu đãi < 50% (770.000đ)',
     price: 770000,
     cvBonus: 50000,
-    desc: 'Thưởng tiền tươi CV🪶: +50.000đ/cây',
+    desc: 'Thưởng CV🪶: +50🪶/cây',
   },
   {
     id: 'serum-disc-deep',
     label: 'Giảm sâu ≥ 50% (550.000đ)',
     price: 550000,
     cvBonus: 10000,
-    desc: 'Thưởng tiền tươi CV🪶: +10.000đ/cây',
+    desc: 'Thưởng CV🪶: +10🪶/cây',
   },
   {
     id: 'serum-free',
     label: 'Tặng kèm Combo (0đ)',
     price: 0,
     cvBonus: 1000,
-    desc: 'Thưởng tiền tươi CV🪶: +1.000đ/cây',
+    desc: 'Thưởng CV🪶: +1🪶/cây',
   },
 ];
 
@@ -502,7 +502,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       remainingSessions: 2,
       normalRemaining: 1,
       retainRemaining: 1,
-      comboName: 'Combo 5 lần New HyperLight 770 (4X · 70 fan)',
+      comboName: 'Combo 5 lần New HyperLight 770 (4𝑿 · 70 fan)',
       serviceKey: 'new-hyperlight-770',
       packageKey: '4+1-hyperlight-770',
       retainDaysLimit: 25,
@@ -544,7 +544,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       remainingSessions: 4,
       normalRemaining: 4,
       retainRemaining: 0,
-      comboName: 'Combo 7+3 Ivylight 4L 1220 (90 nhịp)',
+      comboName: 'Combo 7+3 Ivylight 4𝓵 1220 (90 nhịp)',
       serviceKey: 'ivylight-4L-1220',
       packageKey: '7+3-ivylight-1220',
       retainDaysLimit: 25,

@@ -33563,6 +33563,18 @@
       }
     },
     {
+      "id": "uicomp:quoteUtils.test",
+      "type": "UIComponent",
+      "label": "<quoteUtils.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/quoteUtils.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "quoteUtils.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatComposer",
       "type": "UIComponent",
       "label": "<MosChatComposer />",
@@ -47072,7 +47084,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ComboCatalogConsultModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22575,
+        "sizeBytes": 22565,
         "lineCount": 517,
         "ext": ".tsx"
       }
@@ -47189,8 +47201,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashMaterialConstraintMatrix.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75831,
-        "lineCount": 2256,
+        "sizeBytes": 76018,
+        "lineCount": 2263,
         "ext": ".ts"
       }
     },
@@ -47371,8 +47383,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45590,
-        "lineCount": 910,
+        "sizeBytes": 53447,
+        "lineCount": 1042,
         "ext": ".tsx"
       }
     },
@@ -47384,7 +47396,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17915,
+        "sizeBytes": 17851,
         "lineCount": 365,
         "ext": ".tsx"
       }
@@ -47397,7 +47409,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7992,
+        "sizeBytes": 7988,
         "lineCount": 169,
         "ext": ".tsx"
       }
@@ -47410,8 +47422,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8627,
-        "lineCount": 181,
+        "sizeBytes": 8662,
+        "lineCount": 183,
         "ext": ".tsx"
       }
     },
@@ -47631,8 +47643,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29911,
-        "lineCount": 871,
+        "sizeBytes": 36968,
+        "lineCount": 1035,
         "ext": ".tsx"
       }
     },
@@ -47670,7 +47682,7 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20594,
+        "sizeBytes": 20460,
         "lineCount": 702,
         "ext": ".ts"
       }
@@ -48606,8 +48618,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 221689,
-        "lineCount": 6256,
+        "sizeBytes": 223267,
+        "lineCount": 6289,
         "ext": ".ts"
       }
     },
@@ -68804,6 +68816,20 @@
     {
       "id": "edge:uicomp:MosGoogleChatPortal.test:token:color:primary",
       "source": "uicomp:MosGoogleChatPortal.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:quoteUtils.test:ws:apps/web",
+      "source": "uicomp:quoteUtils.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:quoteUtils.test:token:color:primary",
+      "source": "uicomp:quoteUtils.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -105189,8 +105215,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3816,
-    "totalEdges": 7939,
+    "totalNodes": 3817,
+    "totalEdges": 7941,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -105198,14 +105224,14 @@
       "Component": 65,
       "SharedType": 1383,
       "DesignToken": 12,
-      "UIComponent": 337,
+      "UIComponent": 338,
       "File": 1086
     },
     "edgeTypeCounts": {
       "EXPORTS": 1577,
       "HANDLES_ROUTE": 748,
-      "RENDERS": 402,
-      "USES_TOKEN": 339,
+      "RENDERS": 403,
+      "USES_TOKEN": 340,
       "IMPORTS": 604,
       "QUERIES_MODEL": 426,
       "API_CALL": 3843

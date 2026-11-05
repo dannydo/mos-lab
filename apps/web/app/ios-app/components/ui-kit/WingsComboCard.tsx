@@ -14,6 +14,7 @@ export interface WingsComboCardProps {
   compact?: boolean;
   showActionFooter?: boolean;
   onSelect?: () => void;
+  onSelectLocked?: () => void;
   onZoomOriginalCard?: (e: React.MouseEvent) => void;
   onCopyQuote?: (e: React.MouseEvent) => void;
   copiedQuote?: boolean;
@@ -67,19 +68,19 @@ function getCardBackgroundStyle(categoryId: string, theme?: string): React.CSSPr
 function formatCardBrandSubtitle(categoryId: string, categoryName: string): string {
   switch (categoryId) {
     case 'IvyLight_3L':
-      return 'IVYLIGHT 3ℓ';
+      return 'IVYLIGHT 3𝓵';
     case 'IvyLight_4L':
-      return 'IVYLIGHT 4ℓ';
+      return 'IVYLIGHT 4𝓵';
     case 'IvyLight_5L':
-      return 'IVYLIGHT 5ℓ';
+      return 'IVYLIGHT 5𝓵';
     case 'HyperLight_2X':
-      return 'HYPERLIGHT 2X';
+      return 'HYPERLIGHT 2𝑿';
     case 'HyperLight_3X':
-      return 'HYPERLIGHT 3X';
+      return 'HYPERLIGHT 3𝑿';
     case 'HyperLight_4X':
-      return 'HYPERLIGHT 4X';
+      return 'HYPERLIGHT 4𝑿';
     case 'HyperLight_5X':
-      return 'HYPERLIGHT 5X';
+      return 'HYPERLIGHT 5𝑿';
     case 'UltraLight_3D':
       return 'ULTRALIGHT 3D';
     case 'UltraLight_4D':
@@ -357,6 +358,7 @@ export function WingsComboCard({
   compact = false,
   showActionFooter = true,
   onSelect,
+  onSelectLocked,
   onZoomOriginalCard,
   onCopyQuote,
   copiedQuote = false,
@@ -404,13 +406,17 @@ export function WingsComboCard({
   return (
     <div
       onClick={() => {
-        if (!pkg.isLocked && onSelect) onSelect();
+        if (pkg.isLocked) {
+          if (onSelectLocked) onSelectLocked();
+          return;
+        }
+        if (onSelect) onSelect();
       }}
       style={{
         position: 'relative',
         borderRadius: 16,
         overflow: 'hidden',
-        cursor: pkg.isLocked ? 'not-allowed' : onSelect ? 'pointer' : 'default',
+        cursor: pkg.isLocked ? (onSelectLocked ? 'pointer' : 'not-allowed') : onSelect ? 'pointer' : 'default',
         opacity: pkg.isLocked ? 0.68 : 1,
         border: selected ? '2.5px solid #F5C451' : '1.5px solid rgba(212, 175, 55, 0.42)',
         boxShadow: selected
@@ -430,6 +436,64 @@ export function WingsComboCard({
           border: '1px solid rgba(243, 206, 104, 0.18)',
           pointerEvents: 'none',
           zIndex: 1,
+        }}
+      />
+
+      {/* RPG Gaming Corner Brackets */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 5,
+          left: 5,
+          width: 8,
+          height: 8,
+          borderTop: '2px solid rgba(243, 206, 104, 0.65)',
+          borderLeft: '2px solid rgba(243, 206, 104, 0.65)',
+          borderTopLeftRadius: 3,
+          pointerEvents: 'none',
+          zIndex: 3,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: 5,
+          right: 5,
+          width: 8,
+          height: 8,
+          borderTop: '2px solid rgba(243, 206, 104, 0.65)',
+          borderRight: '2px solid rgba(243, 206, 104, 0.65)',
+          borderTopRightRadius: 3,
+          pointerEvents: 'none',
+          zIndex: 3,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 5,
+          left: 5,
+          width: 8,
+          height: 8,
+          borderBottom: '2px solid rgba(243, 206, 104, 0.65)',
+          borderLeft: '2px solid rgba(243, 206, 104, 0.65)',
+          borderBottomLeftRadius: 3,
+          pointerEvents: 'none',
+          zIndex: 3,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 5,
+          right: 5,
+          width: 8,
+          height: 8,
+          borderBottom: '2px solid rgba(243, 206, 104, 0.65)',
+          borderRight: '2px solid rgba(243, 206, 104, 0.65)',
+          borderBottomRightRadius: 3,
+          pointerEvents: 'none',
+          zIndex: 3,
         }}
       />
 
@@ -532,13 +596,13 @@ export function WingsComboCard({
               </div>
             </div>
 
-            {/* Customer Name, Phone & Lash Density Dotted Lines */}
+            {/* Customer Identity Plate (Player Profile HUD) */}
             <div
               style={{
                 marginTop: compact ? 7 : 9,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: compact ? 5 : 6,
+                gap: compact ? 4.5 : 5.5,
                 maxWidth: 250,
               }}
             >
@@ -549,44 +613,44 @@ export function WingsComboCard({
                     src={customerAvatar}
                     alt={customerName || 'Avatar'}
                     style={{
-                      width: 20,
-                      height: 20,
+                      width: 21,
+                      height: 21,
                       borderRadius: '50%',
                       objectFit: 'cover',
                       border: '1.5px solid #F3CE68',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.55)',
+                      boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
                       flexShrink: 0,
                     }}
                   />
                 ) : (
                   <span
                     style={{
-                      width: 20,
-                      height: 20,
+                      width: 21,
+                      height: 21,
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       border: '1px solid #FFE27A',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                      boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
                       flexShrink: 0,
                     }}
                   >
-                    <User style={{ width: 11, height: 11, color: '#1A1102', strokeWidth: 2.5 }} />
+                    <User style={{ width: 11.5, height: 11.5, color: '#1A1102', strokeWidth: 2.5 }} />
                   </span>
                 )}
                 <div
                   style={{
                     flex: 1,
-                    borderBottom: '1.5px dotted rgba(243, 206, 104, 0.55)',
-                    paddingBottom: 1.5,
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    color: '#FFF6D6',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: '#FFE27A',
+                    letterSpacing: '0.01em',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.65)',
                   }}
                 >
                   {customerName || 'Khách hàng VIP Wings'}
@@ -597,8 +661,8 @@ export function WingsComboCard({
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span
                   style={{
-                    width: 18,
-                    height: 18,
+                    width: 17,
+                    height: 17,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
                     display: 'inline-flex',
@@ -609,16 +673,14 @@ export function WingsComboCard({
                     flexShrink: 0,
                   }}
                 >
-                  <Phone style={{ width: 9.5, height: 9.5, color: '#1A1102', strokeWidth: 2.5 }} />
+                  <Phone style={{ width: 9, height: 9, color: '#1A1102', strokeWidth: 2.5 }} />
                 </span>
                 <div
                   style={{
                     flex: 1,
-                    borderBottom: '1.5px dotted rgba(243, 206, 104, 0.55)',
-                    paddingBottom: 1.5,
                     fontSize: 10.5,
                     fontWeight: 600,
-                    color: 'rgba(255, 246, 214, 0.9)',
+                    color: 'rgba(255, 246, 214, 0.92)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -633,8 +695,8 @@ export function WingsComboCard({
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span
                   style={{
-                    width: 18,
-                    height: 18,
+                    width: 17,
+                    height: 17,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
                     display: 'inline-flex',
@@ -645,16 +707,14 @@ export function WingsComboCard({
                     flexShrink: 0,
                   }}
                 >
-                  <Eye style={{ width: 10.5, height: 10.5, color: '#1A1102', strokeWidth: 2.5 }} />
+                  <Eye style={{ width: 10, height: 10, color: '#1A1102', strokeWidth: 2.5 }} />
                 </span>
                 <div
                   style={{
                     flex: 1,
-                    borderBottom: '1.5px dotted rgba(243, 206, 104, 0.55)',
-                    paddingBottom: 1.5,
                     fontSize: 10.5,
                     fontWeight: 700,
-                    color: '#FFE27A',
+                    color: '#F8E7B0',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -662,7 +722,9 @@ export function WingsComboCard({
                 >
                   {pkg.volume === 'under'
                     ? 'Mi Dưới 390'
-                    : `${pkg.volumeMeta.countPerEye} ${pkg.volumeMeta.unitWord || 'trụ'}/mắt`}
+                    : pkg.volumeMeta.levelCode
+                      ? `${pkg.volumeMeta.levelCode} · ${pkg.volumeMeta.countPerEye} ${pkg.volumeMeta.unitWord || 'trụ'}/mắt`
+                      : `${pkg.volumeMeta.countPerEye} ${pkg.volumeMeta.unitWord || 'trụ'}/mắt`}
                 </div>
               </div>
             </div>
@@ -753,7 +815,7 @@ export function WingsComboCard({
                 letterSpacing: '0.03em',
               }}
             >
-              ✦ {bonusSessionLabel} (0Đ)
+              ✦ {bonusSessionLabel}
             </div>
           )}
         </div>
@@ -891,9 +953,9 @@ export function WingsComboCard({
               gap: 6,
             }}
           >
-            {/* Left: Exact Matched Price & Per-Session Breakdown */}
+            {/* Left: Exact Matched Price & Gaming Stat / Loot Breakdown */}
             <div style={{ fontVariantNumeric: 'tabular-nums', flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.75)' }}>Giá gói:</span>
                 <span
                   style={{
@@ -914,9 +976,53 @@ export function WingsComboCard({
                 >
                   {pkg.retailTotal.toLocaleString('vi-VN')}đ
                 </span>
+                {/* Average Stat Chip */}
+                <span
+                  style={{
+                    background: 'rgba(245, 196, 81, 0.18)',
+                    border: '1px solid rgba(245, 196, 81, 0.38)',
+                    color: '#FFE27A',
+                    borderRadius: 6,
+                    padding: '1px 6px',
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  ⚡ TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ/lần
+                </span>
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255, 246, 214, 0.82)', marginTop: 1 }}>
-                TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ/lần · {pkg.readableContent}
+              {/* Loot Breakdown: Paid parts & Bonus loot without (0đ) */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexWrap: 'wrap',
+                  fontSize: 10,
+                  marginTop: 3,
+                }}
+              >
+                {pkg.readableContent.includes(' · ') ? (
+                  <>
+                    <span style={{ color: 'rgba(255, 246, 214, 0.9)' }}>🛒 {pkg.readableContent.split(' · ')[0]}</span>
+                    <span style={{ color: 'rgba(243, 206, 104, 0.4)' }}>•</span>
+                    <span
+                      style={{
+                        color: '#6EE7B7',
+                        fontWeight: 700,
+                        background: 'rgba(16, 185, 129, 0.16)',
+                        border: '1px solid rgba(16, 185, 129, 0.32)',
+                        borderRadius: 5,
+                        padding: '0.5px 5px',
+                      }}
+                    >
+                      🎁 {pkg.readableContent.split(' · ')[1]}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: 'rgba(255, 246, 214, 0.88)' }}>✨ {pkg.readableContent}</span>
+                )}
               </div>
             </div>
 

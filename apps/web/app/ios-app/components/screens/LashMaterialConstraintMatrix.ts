@@ -151,12 +151,19 @@ export const ALL_VOLUME_OPTIONS: string[] = [
   '3X',
   '4X',
   '5X',
+  '2𝑿',
+  '3𝑿',
+  '4𝑿',
+  '5𝑿',
   '3D',
   '4D',
   '5D',
   '3ℓ',
   '4ℓ',
   '5ℓ',
+  '3𝓵',
+  '4𝓵',
+  '5𝓵',
   'Mi Dưới',
 ];
 
@@ -502,10 +509,10 @@ export function getWingsMenuDetail(
     };
   }
 
-  // 6. IvyLight (3ℓ, 4ℓ, 5ℓ)
+  // 6. IvyLight (3ℓ/3𝓵, 4ℓ/4𝓵, 5ℓ/5𝓵)
   if (mid.includes('ivylight')) {
-    const is3L = v.includes('3l') || v.includes('3ℓ');
-    const is5L = v.includes('5l') || v.includes('5ℓ');
+    const is3L = v.includes('3l') || v.includes('3ℓ') || v.includes('3𝓵') || v.includes('3𝓛');
+    const is5L = v.includes('5l') || v.includes('5ℓ') || v.includes('5𝓵') || v.includes('5𝓛');
     if (cNum === 70) {
       if (is3L)
         return {

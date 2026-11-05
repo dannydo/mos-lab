@@ -202,13 +202,13 @@ export function Screen12CheckoutBilling({
                     )}
                   </div>
                   <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    Người chốt Checkout: {checkOutStaff} (+{selectedCombo.bonus.toLocaleString('vi-VN')}đ thưởng CV🪶)
+                    Người chốt Checkout: {checkOutStaff} (+{Math.round(selectedCombo.bonus / 1000)}🪶)
                   </div>
                   {selectedCombo.remainingAfterToday && (
                     <div className="text-[10px] text-indigo-800 font-semibold mt-0.5 tabular-nums">
                       Ví gói còn sau hôm nay: {selectedCombo.remainingAfterToday.totalRemaining}/
                       {selectedCombo.sessions} lần ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
-                      {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng 0đ) · Chuẩn{' '}
+                      {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng) · Chuẩn{' '}
                       {selectedCombo.categoryName || 'gói mới'} · Doanh thu giữ ví:{' '}
                       {(selectedCombo.deferredRevenueBalance || 0).toLocaleString('vi-VN')}đ
                     </div>
@@ -234,8 +234,7 @@ export function Screen12CheckoutBilling({
                     </span>
                   </div>
                   <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    Người chốt Checkout: {checkOutStaff} (+{selectedUnderCombo.bonus.toLocaleString('vi-VN')}đ thưởng
-                    CV🪶)
+                    Người chốt Checkout: {checkOutStaff} (+{Math.round(selectedUnderCombo.bonus / 1000)}🪶)
                   </div>
                   {selectedUnderCombo.remainingAfterToday && (
                     <div className="text-[10px] text-emerald-900 font-semibold mt-0.5 tabular-nums">
@@ -262,7 +261,7 @@ export function Screen12CheckoutBilling({
                     </div>
                     <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
                       SL: {p.quantity} · Chốt Checkout: {checkOutStaff} (+
-                      {((p.cvBonus || 100000) * p.quantity).toLocaleString('vi-VN')}đ thưởng CV🪶)
+                      {Math.round(((p.cvBonus || 100000) * p.quantity) / 1000)}🪶)
                     </div>
                   </div>
                   <span className="text-[13px] text-gray-800 font-bold tabular-nums">

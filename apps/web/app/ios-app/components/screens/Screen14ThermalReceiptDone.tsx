@@ -101,7 +101,7 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
                     {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} lần
                   </strong>{' '}
                   ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
-                  {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng 0đ)
+                  {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng)
                 </div>
               )}
             </div>
@@ -147,18 +147,20 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
           {comboBonus > 0 && (
             <div className="flex justify-between text-emerald-800">
               <span>• Thưởng chốt Gói Combo bậc thang CV🪶:</span>
-              <span className="font-bold tabular-nums">+{comboBonus.toLocaleString('vi-VN')} đ</span>
+              <span className="font-bold tabular-nums">+{Math.round(comboBonus / 1000)}🪶</span>
             </div>
           )}
           {serumBonus > 0 && (
             <div className="flex justify-between text-emerald-800">
               <span>• Thưởng bán Dưỡng mi Yeppeum 6ml:</span>
-              <span className="font-bold tabular-nums">+{serumBonus.toLocaleString('vi-VN')} đ</span>
+              <span className="font-bold tabular-nums">+{Math.round(serumBonus / 1000)}🪶</span>
             </div>
           )}
           <div className="pt-1 border-t border-emerald-200 flex justify-between font-black text-emerald-950 text-[12px]">
-            <span>TỔNG THU NHẬP THƯỞNG CA NÀY:</span>
-            <span className="tabular-nums">+{(tipEarned90 + comboBonus + serumBonus).toLocaleString('vi-VN')} đ</span>
+            <span>TỔNG THƯỞNG BÁN HÀNG:</span>
+            <span className="tabular-nums">
+              {comboBonus + serumBonus > 0 ? `+${Math.round((comboBonus + serumBonus) / 1000)}🪶` : '0🪶'}
+            </span>
           </div>
         </div>
       </div>

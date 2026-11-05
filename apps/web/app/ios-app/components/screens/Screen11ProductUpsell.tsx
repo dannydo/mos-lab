@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
   Info,
   X,
+  Eye,
 } from 'lucide-react';
 import {
   WingsComboCategoryId,
@@ -50,9 +51,10 @@ interface Screen11ProductUpsellProps {
 
 export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }: Screen11ProductUpsellProps) {
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(SERUM_TIERS_CVL[0].id);
-  const [yeppeumCount, setYeppeumCount] = useState<number>(1);
+  const [yeppeumCount, setYeppeumCount] = useState<number>(0);
   const [isConsultModalOpen, setIsConsultModalOpen] = useState<boolean>(false);
   const [isSerumInfoModalOpen, setIsSerumInfoModalOpen] = useState<boolean>(false);
+  const [isLockedWelcomeModalOpen, setIsLockedWelcomeModalOpen] = useState<boolean>(false);
 
   // 1. Tự động nhận diện đúng Dòng Mi (Category) & Số Sợi (Volume SKU) từ dịch vụ khách vừa làm
   const autoMatched = useMemo(
@@ -261,7 +263,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         ? [
             {
               productId: 36,
-              productName: `Cây dưỡng mi Yeppeum 6ml (${selectedSerumTier.label})`,
+              productName: `Cây dưỡng mi Yeppeum Korea (${selectedSerumTier.label})`,
               price: selectedSerumTier.price,
               quantity: yeppeumCount,
               cvBonus: selectedSerumTier.cvBonus,
@@ -338,7 +340,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
       <IosNavigationBar
-        title="Bán Dưỡng Mi & Chốt Check-out"
+        title="Dưỡng Mi & Combo"
         onBack={onBack}
         backTitle="Ảnh After"
         rightAction={
@@ -352,25 +354,29 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
-        {/* Section 1: CÂY DƯỠNG MI YEPPEUM 6ML (THANG THƯỞNG CV🪶) */}
+        {/* Section 1: CÂY DƯỠNG MI YEPPEUM KOREA (THANG THƯỞNG CV🪶) */}
         <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-            <span>1. DƯỠNG MI YEPPEUM 6ML</span>
+            <span>1. DƯỠNG MI YEPPEUM KOREA</span>
             <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
-              🪶 +{serumBonus.toLocaleString('vi-VN')}đ
+              {yeppeumCount > 0
+                ? `+${Math.round(serumBonus / 1000)}🪶`
+                : `+${Math.round(selectedSerumTier.cvBonus / 1000)}🪶/cây`}
             </span>
           </div>
 
           <div className="bg-white border-2 border-[#FFB400] rounded-2xl p-3 shadow-sm space-y-2.5">
             <div className="flex gap-3">
               <div className="w-16 h-18 rounded-xl bg-[#1C1C1E] flex flex-col items-center justify-center p-2 shrink-0">
-                <span className="text-[#FFB400] font-black text-[10px] tracking-wider text-center">YEPPEUM</span>
-                <span className="text-white text-[10px] font-semibold mt-0.5">6ml</span>
+                <span className="text-[#FFB400] font-black text-[10px] tracking-wider text-center leading-tight">
+                  YEPPEUM
+                </span>
+                <span className="text-white text-[9.5px] font-bold mt-0.5 tracking-wider">KOREA</span>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-1">
-                  <span className="text-[14px] font-bold text-black leading-snug">Cây dưỡng mi Yeppeum 6ml</span>
+                  <span className="text-[14px] font-bold text-black leading-snug">Cây dưỡng mi Yeppeum Korea</span>
                   <div className="bg-[#F2F2F7] rounded-lg px-2 py-0.5 flex items-center gap-2 text-[12px] font-bold text-gray-800 shrink-0">
                     <button
                       onClick={() => setYeppeumCount((c) => Math.max(0, c - 1))}
@@ -402,11 +408,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[13px] font-black text-amber-950 truncate">
-                    {yeppeumCount > 0
-                      ? selectedSerumTier.price > 0
-                        ? `${selectedSerumTier.price.toLocaleString('vi-VN')}đ`
-                        : 'Tặng kèm (0đ)'
-                      : 'Chưa thêm cây nào'}
+                    {selectedSerumTier.price > 0
+                      ? `${selectedSerumTier.price.toLocaleString('vi-VN')}đ`
+                      : 'Tặng kèm (0đ)'}
                   </span>
                   <span className="text-[10.5px] font-bold text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-200 truncate">
                     {selectedSerumTier.label.split('(')[0].trim()}
@@ -414,7 +418,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                 </div>
                 <div className="flex items-center gap-1 shrink-0 ml-1">
                   <span className="text-[11px] font-black text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200 tabular-nums">
-                    🪶 +{selectedSerumTier.cvBonus.toLocaleString('vi-VN')}đ
+                    +{Math.round(selectedSerumTier.cvBonus / 1000)}🪶
                   </span>
                 </div>
               </button>
@@ -436,7 +440,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
             <span>2. GÓI COMBO ĐÚNG DÒNG MI & HẠCH TOÁN VÍ</span>
             <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
-              🪶 +{comboBonus.toLocaleString('vi-VN')}đ
+              +{Math.round(comboBonus / 1000)}🪶
             </span>
           </div>
 
@@ -500,7 +504,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                             : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200/80'
                         }`}
                       >
-                        <span className="text-[12px] font-black tracking-tight">{sib.shortLabel}</span>
+                        <span className="text-[13.5px] font-black tracking-tight">{sib.shortLabel}</span>
                         <span className="text-[9px] font-semibold opacity-90 truncate max-w-full">
                           {sib.fiberDensityLabel}
                         </span>
@@ -526,68 +530,66 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               </div>
             )}
 
-            {/* Up-Tier Upsell Privilege Banner */}
+            {/* Up-Tier Upsell Privilege Banner — Minimalist Bedside Pitch */}
             {isUpTierPackage && (
-              <div className="rounded-xl p-2.5 bg-linear-to-r from-amber-500/10 via-purple-500/10 to-emerald-500/10 border-2 border-amber-400 space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-950">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>ĐẶC QUYỀN NÂNG CẤP GÓI COMBO</span>
+              <div className="rounded-xl px-2.5 py-2 bg-amber-50/90 border border-amber-300 flex items-center justify-between gap-2 shadow-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#FFB400] text-black flex items-center justify-center shrink-0 shadow-xs">
+                    <Sparkles className="w-4 h-4 text-black" />
                   </div>
-                  <span className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                    Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-black text-amber-950 flex items-center gap-1.5 flex-wrap leading-tight">
+                      <span>Nâng cấp gói: {currentCategory.name}</span>
+                    </div>
+                    <div className="text-[10.5px] text-neutral-600 leading-tight mt-0.5">
+                      Trừ thẳng vào Buổi Nối Mới #1 · 0đ thu lẻ hôm nay
+                    </div>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="inline-flex items-center bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full tabular-nums shadow-xs whitespace-nowrap">
+                    Tiết kiệm {servicePrice.toLocaleString('vi-VN')}đ
                   </span>
                 </div>
-                <div className="text-[10.5px] text-neutral-800 leading-snug">
-                  Hôm nay khách làm <strong>{getWingsComboCategory(autoMatched.categoryId).name}</strong> nhưng chốt mua
-                  gói <strong>{currentCategory.name}</strong>. Buổi làm hôm nay được{' '}
-                  <strong>trừ thẳng làm Buổi Nối Mới #1</strong> của gói mới (0đ thu lẻ ca này). Toàn bộ các buổi còn
-                  lại trong ví đều theo chuẩn cao cấp của <strong>{currentCategory.name}</strong>!
+              </div>
+            )}
+
+            {/* Quick Volume Pills for Current Category — Density Only & No Scrollbar */}
+            {currentCategory.unitPrices.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-7 h-7 rounded-lg bg-[#F2F2F7] text-neutral-600 flex items-center justify-center shrink-0"
+                  title="Số trụ/sợi mi trên mắt"
+                >
+                  <Eye className="w-4 h-4 text-neutral-700" />
+                </div>
+                <div
+                  className="flex-1 flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {currentCategory.unitPrices.map((u) => {
+                    const volKey: number | 'under' = u.isUnderLash ? 'under' : Number(u.volume);
+                    const active = activeVolume === volKey;
+                    const meta = getVolumeFiberMeta(currentCategory.id, volKey);
+                    const label = u.isUnderLash ? 'Mi Dưới' : `${meta.countPerEye} ${meta.unitWord}`;
+                    return (
+                      <button
+                        key={String(u.volume)}
+                        type="button"
+                        onClick={() => setActiveVolume(volKey)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black shrink-0 border transition-all cursor-pointer ${
+                          active
+                            ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
+                            : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
-
-            {/* Quick Volume Pills for Current Category */}
-            {currentCategory.unitPrices.length > 0 && (
-              <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
-                {currentCategory.unitPrices.map((u) => {
-                  const volKey: number | 'under' = u.isUnderLash ? 'under' : Number(u.volume);
-                  const active = activeVolume === volKey;
-                  return (
-                    <button
-                      key={String(u.volume)}
-                      type="button"
-                      onClick={() => setActiveVolume(volKey)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 border transition-all cursor-pointer ${
-                        active
-                          ? 'bg-amber-100 text-amber-950 border-[#FF9500]'
-                          : 'bg-[#F2F2F7] text-gray-600 border-transparent'
-                      }`}
-                    >
-                      {u.isUnderLash
-                        ? 'Mi Dưới 390'
-                        : `Mã ${u.volume} (${getVolumeFiberMeta(currentCategory.id, volKey).countPerEye} ${getVolumeFiberMeta(currentCategory.id, volKey).unitWord}/mắt)`}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Welcome Package First-Day Eligibility Notice */}
-            <div
-              className={`rounded-xl px-2.5 py-1.5 border text-[10px] font-semibold flex items-center gap-1.5 ${
-                welcomeEligibility.eligible
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  : 'bg-amber-50 border-amber-200 text-amber-900'
-              }`}
-            >
-              {welcomeEligibility.eligible ? (
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              ) : (
-                <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              )}
-              <span>{welcomeEligibility.reason}</span>
-            </div>
 
             {/* Existing Combo Redemption Option (if customer has an active combo) */}
             {isExistingComboLive && redemptionAccounting && (
@@ -660,7 +662,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     selected={active}
                     compact
                     onSelect={() => {
-                      if (!pkg.isLocked) setSelectedComboId(pkg.id);
+                      setSelectedComboId(pkg.id);
+                    }}
+                    onSelectLocked={() => {
+                      setIsLockedWelcomeModalOpen(true);
                     }}
                   />
                 );
@@ -721,7 +726,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               <span>2B. MUA THÊM COMBO MI DƯỚI (MUA CÙNG LÚC)</span>
             </span>
             {underComboBonus > 0 && (
-              <span className="text-emerald-700 font-bold">+{underComboBonus.toLocaleString('vi-VN')}đ thưởng</span>
+              <span className="text-emerald-700 font-bold">+{Math.round(underComboBonus / 1000)}🪶</span>
             )}
           </div>
 
@@ -781,9 +786,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                       <span className="text-gray-500">
                         {pkg.totalSessions} lần (TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ)
                       </span>
-                      <span className="font-extrabold text-emerald-700">
-                        +{pkg.cvBonus.toLocaleString('vi-VN')}đ CV🪶
-                      </span>
+                      <span className="font-extrabold text-emerald-700">+{Math.round(pkg.cvBonus / 1000)}🪶</span>
                     </div>
                   </button>
                 );
@@ -799,7 +802,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     <span>{selectedUnderComboPkg.displayName}</span>
                   </div>
                   <span className="text-emerald-400 font-extrabold text-[11px] tabular-nums">
-                    +{selectedUnderComboPkg.cvBonus.toLocaleString('vi-VN')}đ thưởng CV🪶
+                    +{Math.round(selectedUnderComboPkg.cvBonus / 1000)}🪶
                   </span>
                 </div>
                 <div className="text-[10px] text-gray-300 leading-snug">
@@ -869,7 +872,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               Thưởng chốt đơn của {actorName} ({actorTierBadge}):
             </span>
             <span className="text-emerald-700 font-black tabular-nums">
-              +{(comboBonus + underComboBonus + serumBonus).toLocaleString('vi-VN')} đ
+              +{Math.round((comboBonus + underComboBonus + serumBonus) / 1000)}🪶
             </span>
           </div>
         </div>
@@ -911,7 +914,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               <div>
                 <div className="flex items-center gap-1.5 text-amber-900 font-extrabold text-[15px]">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  <h3>Thang Thưởng Cây Dưỡng Mi Yeppeum</h3>
+                  <h3>Thang Thưởng Dưỡng Mi Yeppeum Korea</h3>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-0.5">
                   Quy tắc Điều răn CV-002 · Bán đúng giá niêm yết hoặc chọn mức ưu đãi áp dụng
@@ -965,7 +968,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
 
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className="inline-flex items-center gap-0.5 text-[12px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg tabular-nums">
-                        🪶 +{t.cvBonus.toLocaleString('vi-VN')}đ/cây
+                        +{Math.round(t.cvBonus / 1000)}🪶/cây
                       </span>
                       {isSelected ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -988,6 +991,55 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Locked Welcome Package Explanation Modal */}
+      {isLockedWelcomeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150">
+          <div
+            className="fixed inset-0 bg-black/65 backdrop-blur-xs"
+            onClick={() => setIsLockedWelcomeModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl border border-amber-200 space-y-4 z-10 animate-in zoom-in-95 duration-150">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto shadow-xs">
+                <Lock className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-[16px] font-black text-neutral-900">Đặc Quyền Gói Welcome (2 Tặng 1)</h3>
+                <p className="text-[11.5px] font-bold text-amber-700 mt-0.5">
+                  🔒 Chỉ áp dụng trong ngày đầu tiên ghé salon
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/80 rounded-2xl p-3.5 border border-amber-200/80 space-y-2 text-[12px] text-neutral-700 leading-relaxed">
+              <p>
+                Gói <strong>Welcome (2 tặng 1)</strong> là chính sách chào mừng đặc biệt chỉ dành riêng cho khách hàng
+                trải nghiệm dịch vụ trong <strong>ngày đầu tiên</strong> tại Wings.
+              </p>
+              <p className="text-neutral-600">
+                Chị <strong>{customerName}</strong> hiện tại đã qua ngày đầu tiên (Lần ghé thứ{' '}
+                <strong>{booking?.customerVisits ?? 2}</strong>), nên gói này đã tự động đóng để đảm bảo đúng quy chế
+                salon.
+              </p>
+            </div>
+
+            <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-200 text-[11.5px] text-emerald-900 leading-snug">
+              <span className="font-extrabold text-emerald-800 block mb-0.5">💡 Gợi ý tư vấn cho CV🪶:</span>
+              Hướng dẫn chị chốt gói <strong>4 tặng 1</strong> (+22%) hoặc <strong>7 tặng 3</strong> (tiết kiệm đến 41%)
+              để nhận trọn vẹn đặc quyền và số buổi tối đa nhé!
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsLockedWelcomeModalOpen(false)}
+              className="w-full py-3 rounded-2xl bg-[#1C1C1E] text-[#FFB400] text-[13.5px] font-extrabold active:scale-98 transition-transform cursor-pointer shadow-md"
+            >
+              Đã hiểu
+            </button>
           </div>
         </div>
       )}
