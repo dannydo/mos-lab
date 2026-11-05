@@ -250,6 +250,41 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
             </div>
           )}
 
+          {/* Trạng thái gửi hóa đơn & bảo hành qua Zalo */}
+          {booking?.billing?.zaloConsent?.agreed ? (
+            <div className="bg-[#EBF5FF] border border-[#B9E6FE] rounded-xl p-2.5 space-y-1 text-[#004EEB]">
+              <div className="flex items-center justify-between font-bold text-[11.5px]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-base leading-none">💬</span>
+                  <span className="text-[#026AA2] font-black shrink-0">Đã gửi qua Zalo:</span>
+                  <span className="font-extrabold text-[#004EEB] tabular-nums truncate">
+                    {booking.billing.zaloConsent.phone}
+                  </span>
+                </div>
+                <span className="bg-[#D1E9FF] text-[#004EEB] px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">
+                  {booking.billing.zaloConsent.sentAt ? `✓ ${booking.billing.zaloConsent.sentAt}` : '✓ Đã nhận'}
+                </span>
+              </div>
+              <div className="text-[10px] text-[#026AA2] pl-5 flex items-center gap-1.5 flex-wrap">
+                <span>✓ Hóa đơn điện tử</span>
+                <span>•</span>
+                <span>✓ Bảo hành 3 ngày</span>
+                <span>•</span>
+                <span>✓ Voucher 50K</span>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 flex items-center justify-between text-[10.5px] text-gray-500 font-medium">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">💬</span>
+                <span>Chưa gửi Zalo (Khách không dùng / Bỏ qua)</span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">
+                Chưa kết nối
+              </span>
+            </div>
+          )}
+
           {/* Thông tin Ví Kim Cương minh bạch */}
           {diamondUsed > 0 ? (
             <div className="text-[10.5px] text-cyan-900 font-semibold bg-cyan-50 px-2.5 py-1.5 rounded-xl border border-cyan-200 flex items-center justify-between">

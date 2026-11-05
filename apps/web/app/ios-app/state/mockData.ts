@@ -375,6 +375,12 @@ export interface BookingItem {
     diamondUsed?: number; // Số Kim Cương (💎) đã dùng để cấn trừ
     diamondDiscountAmount?: number; // Số tiền giảm trừ tương ứng (VND)
     transferProofPhoto?: string; // Ảnh chụp màn hình chuyển khoản đối soát của khách
+    zaloConsent?: {
+      agreed: boolean;
+      phone: string;
+      sentAt?: string;
+      voucherCode?: string;
+    };
     grandTotal: number;
   };
 }

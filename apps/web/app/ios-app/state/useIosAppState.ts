@@ -1060,7 +1060,13 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     method: 'CASH' | 'POS' | 'VIETQR',
     chosenTip?: number,
     chosenDiamond?: number,
-    proofPhoto?: string
+    proofPhoto?: string,
+    zaloConsent?: {
+      agreed: boolean;
+      phone: string;
+      sentAt?: string;
+      voucherCode?: string;
+    }
   ) => {
     updateActiveBooking((prev) => {
       const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 50000);
@@ -1078,6 +1084,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         productTotal: 0,
         paymentMethod: method,
         transferProofPhoto: undefined as string | undefined,
+        zaloConsent: undefined as NonNullable<BookingItem['billing']>['zaloConsent'],
       };
       const subtotal = currentBilling.subtotal;
       const vatRate = currentBilling.vatRate ?? 0.08;
@@ -1112,6 +1119,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           diamondUsed,
           diamondDiscountAmount,
           transferProofPhoto: proofPhoto || currentBilling.transferProofPhoto,
+          zaloConsent: zaloConsent || currentBilling.zaloConsent,
           grandTotal,
         },
       };
