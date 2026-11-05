@@ -727,30 +727,26 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                       <button
                         type="button"
                         onClick={() => setDeductTodayIntoCombo(true)}
-                        className={`py-1.5 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1 ${
+                        className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
                           deductTodayIntoCombo
                             ? 'bg-white text-emerald-800 shadow-xs font-black'
                             : 'text-slate-600 hover:text-slate-900 font-semibold'
                         }`}
                       >
-                        <span>✓ Trừ vào gói hôm nay</span>
-                        <span className="text-[9.5px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
-                          0đ lẻ
-                        </span>
+                        {deductTodayIntoCombo && <span>✓</span>}
+                        <span>Trừ vào gói</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeductTodayIntoCombo(false)}
-                        className={`py-1.5 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1 ${
+                        className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
                           !deductTodayIntoCombo
                             ? 'bg-white text-indigo-900 shadow-xs font-black'
                             : 'text-slate-600 hover:text-slate-900 font-semibold'
                         }`}
                       >
+                        {!deductTodayIntoCombo && <span>✓</span>}
                         <span>Trả lẻ ca này</span>
-                        <span className="text-[9.5px] font-extrabold text-indigo-700 bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200">
-                          Giữ trọn gói
-                        </span>
                       </button>
                     </div>
 
@@ -1021,9 +1017,16 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           <div className="flex items-center justify-between text-[12.5px]">
             <span className="text-gray-500 font-medium">Dịch vụ hôm nay:</span>
             {selectedComboPkg ? (
-              <span className="text-emerald-700 font-bold tabular-nums">
-                0đ <span className="text-[11px] font-semibold text-emerald-600">(Trừ vào gói)</span>
-              </span>
+              deductTodayIntoCombo ? (
+                <span className="text-emerald-700 font-bold tabular-nums">
+                  0đ <span className="text-[11px] font-semibold text-emerald-600">(Trừ vào gói)</span>
+                </span>
+              ) : (
+                <span className="text-gray-900 font-bold tabular-nums">
+                  {servicePrice.toLocaleString('vi-VN')}đ{' '}
+                  <span className="text-[11px] font-semibold text-indigo-700">(Trả lẻ)</span>
+                </span>
+              )
             ) : selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting ? (
               <span className="text-sky-700 font-bold tabular-nums">
                 {redemptionAccounting.totalCustomerPayToday > 0
