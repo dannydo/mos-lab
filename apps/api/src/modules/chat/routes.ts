@@ -1136,6 +1136,7 @@ async function saveConversations(
     .catch((err) => {
       fastify.log.error(err, 'saveConversations error:');
     });
+  return writeChain;
 }
 
 async function saveTasks(
@@ -1180,6 +1181,7 @@ async function saveTasks(
     .catch((err) => {
       fastify.log.error(err, 'saveTasks error:');
     });
+  return writeChain;
 }
 
 export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosChatStaffMember[]> {
@@ -2380,6 +2382,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         targetMsg.reactions[emoji] = 1;
       }
 
+      conv.updatedAt = new Date().toISOString();
       await saveConversations(fastify, conversations);
       return { success: true, reactions: targetMsg.reactions, reactionUsers: targetMsg.reactionUsers };
     }
@@ -2411,8 +2414,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         });
       }
       msg.pinned = !msg.pinned;
-      await saveConversations(fastify, conversations);
-      return { success: true, pinned: msg.pinned };
+      conv.updatedAt = new Date().toISOString();
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: msg,
+      });
+
+      chatRealtimeHub.publish({
+        type: 'MESSAGE_UPDATED',
+        conversationId: conv.id,
+        actorStaffId: user?.id,
+        payload: {
+          conversationId: conv.id,
+          messageId: msg.id,
+          pinned: msg.pinned,
+          message: msg,
+        },
+      });
+
+      return { success: true, pinned: msg.pinned, message: msg };
     }
   );
 
@@ -2493,7 +2513,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       targetItem.editedBy = user.id;
 
       conv.updatedAt = now.toISOString();
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: msg,
+      });
       return { success: true, message: msg, target: targetItem };
     }
   );
@@ -2568,7 +2591,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       }
 
       conv.updatedAt = now.toISOString();
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: msg,
+      });
       return { success: true, message: msg, target: targetItem };
     }
   );
@@ -2650,7 +2676,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       });
 
       conv.updatedAt = now.toISOString();
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: msg,
+      });
       return { success: true, message: msg, target: targetItem };
     }
   );

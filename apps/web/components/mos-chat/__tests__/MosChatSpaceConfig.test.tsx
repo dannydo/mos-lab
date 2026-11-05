@@ -169,5 +169,40 @@ describe('Space Configuration & Emoji Selection (MOS-BUG-140)', () => {
         expect(handleClose).toHaveBeenCalled();
       });
     });
+    it('renders and toggles pinned state via props in desktop modal (MOS-BUG-198)', async () => {
+      const handleTogglePin = vi.fn();
+
+      const { rerender } = render(
+        <MosChatSpaceConfigModal
+          open={true}
+          conversation={mockSpace}
+          onClose={vi.fn()}
+          onUpdated={vi.fn()}
+          isPinned={false}
+          togglePinConversation={handleTogglePin}
+        />
+      );
+
+      // Should show 'Ghim' when isPinned is false
+      const pinBtn = screen.getByRole('button', { name: 'Ghim' });
+      expect(pinBtn).toBeInTheDocument();
+
+      fireEvent.click(pinBtn);
+      expect(handleTogglePin).toHaveBeenCalledWith('space-test-1');
+
+      // Rerender with isPinned={true}
+      rerender(
+        <MosChatSpaceConfigModal
+          open={true}
+          conversation={mockSpace}
+          onClose={vi.fn()}
+          onUpdated={vi.fn()}
+          isPinned={true}
+          togglePinConversation={handleTogglePin}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: 'Đã ghim' })).toBeInTheDocument();
+    });
   });
 });

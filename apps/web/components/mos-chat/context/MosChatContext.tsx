@@ -426,6 +426,9 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           // ignore
         }
       }
+      if (res && res.userPrefs?.pinnedIds) {
+        setPinnedConvIds(new Set(res.userPrefs.pinnedIds));
+      }
       if (res?.unchanged) {
         return;
       }
