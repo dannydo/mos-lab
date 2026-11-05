@@ -43,6 +43,7 @@ import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { syncTextareaHeightSmart } from '../components/MosChatComposer';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
+import { cleanQuotedText, formatQuotePayload } from '../utils/quoteUtils';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
 import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
@@ -408,7 +409,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
     let payloadText = sendBaseText;
     if (replyingToReply) {
-      payloadText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${sendBaseText}`;
+      payloadText = formatQuotePayload(replyingToReply.senderName, replyingToReply.text, sendBaseText);
     }
 
     setIsSending(true);
@@ -574,7 +575,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         id: activeThreadMsg.id,
         senderId: activeThreadMsg.senderId,
         senderName: activeThreadMsg.senderName,
-        text: activeThreadMsg.text,
+        text: cleanQuotedText(activeThreadMsg.text),
         createdAt: activeThreadMsg.createdAt,
       } as MosChatThreadReply);
     }
@@ -681,7 +682,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate?.(15);
       }
-      setReplyingToReply(reply);
+      setReplyingToReply({
+        ...reply,
+        text: cleanQuotedText(reply.text),
+      });
     }
 
     replySwipeOffsetRef.current[reply.id] = 0;
@@ -1952,7 +1956,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               <button
                 type="button"
                 onClick={() => {
-                  setReplyingToReply(actionSheetReply);
+                  setReplyingToReply({
+                    ...actionSheetReply,
+                    text: cleanQuotedText(actionSheetReply.text),
+                  });
                   setActionSheetReply(null);
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"

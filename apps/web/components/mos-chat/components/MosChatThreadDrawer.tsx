@@ -54,7 +54,12 @@ import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey 
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
-import { findSourceMessage, scrollToMessageAndFlash } from '../utils/quoteUtils';
+import {
+  findSourceMessage,
+  scrollToMessageAndFlash,
+  cleanQuotedText,
+  formatQuotePayload,
+} from '../utils/quoteUtils';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
 const ThreadReplyInlineEditor: React.FC<{
@@ -504,7 +509,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
       if (!trimmed && threadAttachments.length === 0 && !stagedCustomerCard) return;
       let finalText = trimmed;
       if (replyingToReply) {
-        finalText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${trimmed}`;
+        finalText = formatQuotePayload(replyingToReply.senderName, replyingToReply.text, trimmed);
         setReplyingToReply(null);
       }
       handleSendThreadReply(finalText, stagedCustomerCard, activeThreadMessage?.id);
@@ -1021,7 +1026,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       setReplyingToReply({
                         id: activeThreadMessage.id,
                         senderName: activeThreadMessage.senderName,
-                        text: activeThreadMessage.text || '',
+                        text: cleanQuotedText(activeThreadMessage.text || ''),
                       });
                       setTimeout(() => {
                         threadInputRef.current?.focus();
@@ -1212,7 +1217,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         setReplyingToReply({
                           id: r.id,
                           senderName: r.senderName,
-                          text: r.text || '',
+                          text: cleanQuotedText(r.text || ''),
                         });
                         setTimeout(() => {
                           threadInputRef.current?.focus();
@@ -1494,7 +1499,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                                 setReplyingToReply({
                                   id: r.id,
                                   senderName: r.senderName,
-                                  text: r.text || '',
+                                  text: cleanQuotedText(r.text || ''),
                                 });
                                 setTimeout(() => {
                                   threadInputRef.current?.focus();

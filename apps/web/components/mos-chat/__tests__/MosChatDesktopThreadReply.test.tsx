@@ -371,4 +371,55 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
       replyId: 'reply-1',
     });
   });
+
+  it('submits clean quote when replying to a message that already contains a previous quote without nesting or copying (MOS-BUG-197)', () => {
+    const handleSendThreadReply = vi.fn();
+    const threadWithPriorQuote = {
+      ...mockActiveMessage,
+      thread: [
+        {
+          id: 'reply-nested',
+          senderId: 'user-tech-1',
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'Chuyên Viên Mi',
+          text: `> Trích dẫn @Danny Do: 5M đang được ưu ái nhất 1.7M/ticket?\n\nDạ ví dụ gói 10-6 sẽ là\nMua 4 New + 6 Refill\nTháng 11 sẽ đổi thành: 3 Gift cards`,
+          timeLabel: '15:09',
+          createdAt: '2026-11-04T15:09:00.000Z',
+        },
+      ],
+    };
+
+    render(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        activeThreadMessage={threadWithPriorQuote}
+        threadInput="Option này chỉ áp dụng cho khách đang còn gói và mua gói mới"
+        handleSendThreadReply={handleSendThreadReply}
+      />
+    );
+
+    const replyButtons = screen.getAllByRole('button', { name: 'Trả lời phản hồi này trong luồng' });
+    fireEvent.click(replyButtons[0]);
+
+    // Banner should show the clean content of Khải's message, not Danny Do's old quote
+    const quoteBanner = screen.getByText('Trả lời Nguyễn Quang Khải:').closest('div');
+    expect(quoteBanner).toBeInTheDocument();
+    expect(quoteBanner).toHaveTextContent('Dạ ví dụ gói 10-6 sẽ là');
+    expect(quoteBanner).not.toHaveTextContent('Trích dẫn @Danny Do');
+
+    const sendBtn = screen.getByRole('button', { name: 'Gửi vào luồng' });
+    fireEvent.click(sendBtn);
+
+    expect(handleSendThreadReply).toHaveBeenCalledTimes(1);
+    const sentText = handleSendThreadReply.mock.calls[0][0];
+
+    // Verify it quotes Khải's clean content on line 1, no Danny Do quote, no newline inside quote line
+    const lines = sentText.split('\n');
+    expect(lines[0]).toBe(
+      '> Trích dẫn @Nguyễn Quang Khải: Dạ ví dụ gói 10-6 sẽ là Mua 4 New + 6 Refill Tháng 11 sẽ đổi thành: 3 Gift cards'
+    );
+    expect(lines[1]).toBe('');
+    expect(lines[2]).toBe('Option này chỉ áp dụng cho khách đang còn gói và mua gói mới');
+    expect(lines).toHaveLength(3);
+  });
 });

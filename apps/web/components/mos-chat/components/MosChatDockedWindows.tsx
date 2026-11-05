@@ -39,7 +39,13 @@ import type {
   MosChatImageAttachment,
   SafeAny,
 } from '@mos-lab/shared';
-import { parseQuoteMeta, isStandardQuote, findSourceMessage, scrollToMessageAndFlash } from '../utils/quoteUtils';
+import {
+  parseQuoteMeta,
+  isStandardQuote,
+  findSourceMessage,
+  scrollToMessageAndFlash,
+  formatQuotePayload,
+} from '../utils/quoteUtils';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
 dayjs.extend(relativeTime);
@@ -730,7 +736,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                     onClick={() => {
                                       setThreadReplyInputs((p) => ({
                                         ...p,
-                                        [cid]: `> Trích dẫn @${reply.senderName}: ${reply.text}\n\n${p[cid] || ''}`,
+                                        [cid]: formatQuotePayload(reply.senderName, reply.text, p[cid] || ''),
                                       }));
                                     }}
                                     className="opacity-60 hover:opacity-100 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded cursor-pointer transition-opacity text-amber-500"
