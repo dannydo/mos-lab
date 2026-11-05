@@ -127,7 +127,17 @@ export function Screen12CheckoutBilling({
                 </div>
                 {selectedCombo ? (
                   <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    ✓ Đã trừ luôn vào buổi 1 của gói mới mua (Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
+                    {selectedCombo.isUpTierUpgrade ? (
+                      <>
+                        <span className="text-amber-800 font-bold">🎉 Nâng cấp gói: </span>
+                        Đã trừ buổi hôm nay vào Buổi 1 của Gói {selectedCombo.categoryName || selectedCombo.name} (Miễn
+                        thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
+                      </>
+                    ) : (
+                      <>
+                        ✓ Đã trừ luôn vào buổi 1 của gói mới mua (Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
+                      </>
+                    )}
                   </div>
                 ) : comboRedemption ? (
                   <div className="text-[11px] text-sky-700 font-semibold mt-0.5">
@@ -181,7 +191,14 @@ export function Screen12CheckoutBilling({
             {selectedCombo && (
               <div className="p-3.5 flex items-center justify-between bg-amber-50/40">
                 <div>
-                  <div className="text-[13px] font-bold text-black">2. {selectedCombo.name}</div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[13px] font-bold text-black">2. {selectedCombo.name}</span>
+                    {selectedCombo.isUpTierUpgrade && (
+                      <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                        ⭐ Nâng Cấp Gói
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
                     Người chốt Checkout: {checkOutStaff} (+{selectedCombo.bonus.toLocaleString('vi-VN')}đ thưởng CV🪶)
                   </div>
@@ -189,7 +206,8 @@ export function Screen12CheckoutBilling({
                     <div className="text-[10px] text-indigo-800 font-semibold mt-0.5 tabular-nums">
                       Ví gói còn sau hôm nay: {selectedCombo.remainingAfterToday.totalRemaining}/
                       {selectedCombo.sessions} lần ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
-                      {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng 0đ) · Doanh thu giữ ví:{' '}
+                      {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng 0đ) · Chuẩn{' '}
+                      {selectedCombo.categoryName || 'gói mới'} · Doanh thu giữ ví:{' '}
                       {(selectedCombo.deferredRevenueBalance || 0).toLocaleString('vi-VN')}đ
                     </div>
                   )}

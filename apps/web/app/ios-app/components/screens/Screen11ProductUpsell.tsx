@@ -26,6 +26,8 @@ import {
   getComboPackagesForCategoryAndVolume,
   calculateComboPurchaseAccounting,
   calculateComboRedemptionAccounting,
+  getLashFamilyInfo,
+  resolveValidVolumeForCategory,
 } from '@mos-lab/shared';
 import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
 import { WingsComboCard } from '../ui-kit/WingsComboCard';
@@ -72,6 +74,15 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
 
   const [activeCategoryId, setActiveCategoryId] = useState<WingsComboCategoryId>(autoMatched.categoryId);
   const [activeVolume, setActiveVolume] = useState<number | 'under'>(autoMatched.volume);
+
+  const familyInfo = useMemo(() => getLashFamilyInfo(activeCategoryId), [activeCategoryId]);
+  const isUpTierPackage = activeCategoryId !== autoMatched.categoryId;
+
+  const handleSelectFamilyCategory = (targetCatId: WingsComboCategoryId) => {
+    setActiveCategoryId(targetCatId);
+    const validVol = resolveValidVolumeForCategory(targetCatId, activeVolume);
+    setActiveVolume(validVol);
+  };
 
   // Sync khi đổi booking
   React.useEffect(() => {
@@ -260,6 +271,8 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             savingsAmount: selectedComboPkg.savingsAmount,
             avgPerSessionPrice: selectedComboPkg.avgPerSessionPrice,
             todaySingleServiceWaived: true,
+            isUpTierUpgrade: isUpTierPackage,
+            originalServiceCategory: autoMatched.categoryId,
             recognizedRevenueToday: purchaseAccounting.recognizedRevenueToday,
             deferredRevenueBalance: purchaseAccounting.deferredRevenueBalance,
             remainingAfterToday: purchaseAccounting.remainingWalletAfterToday,
@@ -397,13 +410,25 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
             <div className="bg-[#1C1C1E] text-white rounded-xl p-2.5 flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider">
-                  🎯 Đã khớp tự động theo dịch vụ hôm nay
+                <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider flex items-center gap-1">
+                  {isUpTierPackage ? (
+                    <>
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      <span className="text-emerald-400">Đang chọn mua gói nâng cấp</span>
+                    </>
+                  ) : (
+                    <span>🎯 Đã khớp tự động theo dịch vụ hôm nay</span>
+                  )}
                 </div>
                 <div className="text-[13px] font-black text-white truncate">
                   {currentCategory.name} · {activeVolume === 'under' ? 'Mi Dưới 390' : `Mã ${activeVolume}`} (
                   {getVolumeFiberMeta(activeCategoryId, activeVolume).fanLabel})
                 </div>
+                {isUpTierPackage && (
+                  <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
+                    Gốc làm hôm nay: {getWingsComboCategory(autoMatched.categoryId).name} · Mã {autoMatched.volume}
+                  </div>
+                )}
               </div>
               <button
                 type="button"
@@ -414,6 +439,79 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                 <span>Bảng 13 Dòng Mi</span>
               </button>
             </div>
+
+            {/* Family Level Quick Switcher (2X, 3X, 4X, 5X | 3ℓ, 4ℓ, 5ℓ | 3D, 4D, 5D) */}
+            {familyInfo.siblings.length > 1 && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px] font-extrabold text-neutral-600 uppercase px-0.5">
+                  <span>Cấp độ {familyInfo.familyName}:</span>
+                  {isUpTierPackage && (
+                    <span className="text-amber-700 font-extrabold flex items-center gap-0.5">
+                      <Sparkles className="w-3 h-3 text-amber-500" /> Nâng cấp gói
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {familyInfo.siblings.map((sib) => {
+                    const active = activeCategoryId === sib.categoryId;
+                    const isTodayDone = autoMatched.categoryId === sib.categoryId;
+                    return (
+                      <button
+                        key={sib.categoryId}
+                        type="button"
+                        onClick={() => handleSelectFamilyCategory(sib.categoryId)}
+                        className={`py-1.5 px-2 rounded-xl text-center border transition-all cursor-pointer relative flex flex-col items-center justify-center ${
+                          active
+                            ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
+                            : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200/80'
+                        }`}
+                      >
+                        <span className="text-[12px] font-black tracking-tight">{sib.shortLabel}</span>
+                        <span className="text-[9px] font-semibold opacity-90 truncate max-w-full">
+                          {sib.fibersPerUnit} {sib.unitWord}/trụ
+                        </span>
+                        {isTodayDone ? (
+                          <span
+                            className={`text-[8px] font-black px-1 rounded-sm mt-0.5 ${
+                              active ? 'bg-[#FFB400] text-black' : 'bg-neutral-300 text-neutral-800'
+                            }`}
+                          >
+                            Đang làm
+                          </span>
+                        ) : (
+                          active && (
+                            <span className="text-[8px] font-black px-1 rounded-sm mt-0.5 bg-emerald-500 text-white">
+                              Nâng cấp
+                            </span>
+                          )
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Up-Tier Upsell Privilege Banner */}
+            {isUpTierPackage && (
+              <div className="rounded-xl p-2.5 bg-linear-to-r from-amber-500/10 via-purple-500/10 to-emerald-500/10 border-2 border-amber-400 space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-950">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>ĐẶC QUYỀN NÂNG CẤP GÓI COMBO</span>
+                  </div>
+                  <span className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
+                    Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+                <div className="text-[10.5px] text-neutral-800 leading-snug">
+                  Hôm nay khách làm <strong>{getWingsComboCategory(autoMatched.categoryId).name}</strong> nhưng chốt mua
+                  gói <strong>{currentCategory.name}</strong>. Buổi làm hôm nay được{' '}
+                  <strong>trừ thẳng làm Buổi Nối Mới #1</strong> của gói mới (0đ thu lẻ ca này). Toàn bộ các buổi còn
+                  lại trong ví đều theo chuẩn cao cấp của <strong>{currentCategory.name}</strong>!
+                </div>
+              </div>
+            )}
 
             {/* Quick Volume Pills for Current Category */}
             {currentCategory.unitPrices.length > 0 && (
@@ -586,7 +684,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             <span className="text-gray-500">Dịch vụ hôm nay ({serviceName}):</span>
             {selectedComboPkg ? (
               <span className="text-emerald-700 font-bold tabular-nums">
-                0 đ <span className="text-[10px] font-semibold">(Trừ vào buổi 1 của gói mới)</span>
+                0 đ{' '}
+                <span className="text-[10px] font-semibold">
+                  {isUpTierPackage
+                    ? `(Nâng cấp: Trừ vào buổi 1 của Gói ${selectedComboPkg.categoryName})`
+                    : '(Trừ vào buổi 1 của gói mới)'}
+                </span>
               </span>
             ) : selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting ? (
               <span className="text-sky-700 font-bold tabular-nums">

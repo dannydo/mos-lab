@@ -246,6 +246,8 @@ export interface BookingItem {
     savingsAmount?: number;
     avgPerSessionPrice?: number;
     todaySingleServiceWaived?: boolean;
+    isUpTierUpgrade?: boolean;
+    originalServiceCategory?: string;
     recognizedRevenueToday?: number;
     deferredRevenueBalance?: number;
     remainingAfterToday?: {

@@ -6033,3 +6033,198 @@ export function formatComboConsultationQuote(pkg: MatchedComboPackageOption, inc
   );
   return lines.join('\n');
 }
+
+export interface LashFamilySibling {
+  categoryId: WingsComboCategoryId;
+  levelKey: string;
+  levelLabel: string;
+  shortLabel: string;
+  unitWord: 'trụ' | 'fan' | 'sợi';
+  fibersPerUnit: number;
+}
+
+export interface LashFamilyInfo {
+  familyKey: 'HyperLight' | 'IvyLight' | 'UltraLight' | 'Classic_Flawless' | 'VVIP';
+  familyName: string;
+  siblings: LashFamilySibling[];
+}
+
+export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): LashFamilyInfo {
+  if (categoryId.startsWith('HyperLight')) {
+    return {
+      familyKey: 'HyperLight',
+      familyName: 'Dòng HyperLight (Trụ siêu nhẹ)',
+      siblings: [
+        {
+          categoryId: 'HyperLight_2X',
+          levelKey: '2X',
+          levelLabel: '2X · Trụ 2 sợi',
+          shortLabel: '2X',
+          unitWord: 'trụ',
+          fibersPerUnit: 2,
+        },
+        {
+          categoryId: 'HyperLight_3X',
+          levelKey: '3X',
+          levelLabel: '3X · Trụ 3 sợi',
+          shortLabel: '3X',
+          unitWord: 'trụ',
+          fibersPerUnit: 3,
+        },
+        {
+          categoryId: 'HyperLight_4X',
+          levelKey: '4X',
+          levelLabel: '4X · Trụ 4 sợi',
+          shortLabel: '4X',
+          unitWord: 'trụ',
+          fibersPerUnit: 4,
+        },
+        {
+          categoryId: 'HyperLight_5X',
+          levelKey: '5X',
+          levelLabel: '5X · Trụ 5 sợi',
+          shortLabel: '5X',
+          unitWord: 'trụ',
+          fibersPerUnit: 5,
+        },
+      ],
+    };
+  }
+
+  if (categoryId.startsWith('IvyLight')) {
+    return {
+      familyKey: 'IvyLight',
+      familyName: 'Dòng IvyLight (Sợi dẹp cao cấp)',
+      siblings: [
+        {
+          categoryId: 'IvyLight_3L',
+          levelKey: '3L',
+          levelLabel: '3ℓ · Trụ 3 sợi dẹp',
+          shortLabel: '3ℓ',
+          unitWord: 'trụ',
+          fibersPerUnit: 3,
+        },
+        {
+          categoryId: 'IvyLight_4L',
+          levelKey: '4L',
+          levelLabel: '4ℓ · Trụ 4 sợi dẹp',
+          shortLabel: '4ℓ',
+          unitWord: 'trụ',
+          fibersPerUnit: 4,
+        },
+        {
+          categoryId: 'IvyLight_5L',
+          levelKey: '5L',
+          levelLabel: '5ℓ · Trụ 5 sợi dẹp',
+          shortLabel: '5ℓ',
+          unitWord: 'trụ',
+          fibersPerUnit: 5,
+        },
+      ],
+    };
+  }
+
+  if (categoryId.startsWith('UltraLight')) {
+    return {
+      familyKey: 'UltraLight',
+      familyName: 'Dòng UltraLight (Fan xòe bồng bềnh)',
+      siblings: [
+        {
+          categoryId: 'UltraLight_3D',
+          levelKey: '3D',
+          levelLabel: '3D · Fan 3 sợi',
+          shortLabel: '3D',
+          unitWord: 'fan',
+          fibersPerUnit: 3,
+        },
+        {
+          categoryId: 'UltraLight_4D',
+          levelKey: '4D',
+          levelLabel: '4D · Fan 4 sợi',
+          shortLabel: '4D',
+          unitWord: 'fan',
+          fibersPerUnit: 4,
+        },
+        {
+          categoryId: 'UltraLight_5D',
+          levelKey: '5D',
+          levelLabel: '5D · Fan 5 sợi',
+          shortLabel: '5D',
+          unitWord: 'fan',
+          fibersPerUnit: 5,
+        },
+      ],
+    };
+  }
+
+  if (categoryId === 'Classic_Volume' || categoryId === 'FlawlessMink') {
+    return {
+      familyKey: 'Classic_Flawless',
+      familyName: 'Dòng Classic & Flawless Mink',
+      siblings: [
+        {
+          categoryId: 'FlawlessMink',
+          levelKey: 'FlawlessMink',
+          levelLabel: 'Flawless Mink 1:1',
+          shortLabel: 'Flawless Mink',
+          unitWord: 'sợi',
+          fibersPerUnit: 1,
+        },
+        {
+          categoryId: 'Classic_Volume',
+          levelKey: 'Classic_Volume',
+          levelLabel: 'Classic & Volume 2D',
+          shortLabel: 'Classic 2D',
+          unitWord: 'sợi',
+          fibersPerUnit: 2,
+        },
+      ],
+    };
+  }
+
+  return {
+    familyKey: 'VVIP',
+    familyName: 'Gói Thẻ VVIP Pass Toàn Năng',
+    siblings: [
+      {
+        categoryId: 'VVIP',
+        levelKey: 'VVIP',
+        levelLabel: 'VVIP Pass · 20 Lần',
+        shortLabel: 'VVIP Pass',
+        unitWord: 'sợi',
+        fibersPerUnit: 1,
+      },
+    ],
+  };
+}
+
+export function resolveValidVolumeForCategory(
+  targetCategoryId: WingsComboCategoryId | string,
+  preferredVolume: number | 'under'
+): number | 'under' {
+  const cat = getWingsComboCategory(targetCategoryId);
+  if (cat.id === 'VVIP') return preferredVolume;
+
+  // If preferred is under
+  if (preferredVolume === 'under') {
+    const hasUnder = cat.unitPrices.some((u) => u.isUnderLash || u.volume === 'under');
+    if (hasUnder) return 'under';
+    const firstNum = cat.unitPrices.find((u) => !u.isUnderLash && typeof u.volume === 'number');
+    return firstNum ? Number(firstNum.volume) : 550;
+  }
+
+  // Exact match
+  const exact = cat.unitPrices.find((u) => !u.isUnderLash && Number(u.volume) === Number(preferredVolume));
+  if (exact) return Number(exact.volume);
+
+  // Closest numeric volume
+  const numPrices = cat.unitPrices
+    .filter((u) => !u.isUnderLash && typeof u.volume === 'number')
+    .map((u) => Number(u.volume));
+  if (numPrices.length > 0) {
+    numPrices.sort((a, b) => Math.abs(a - Number(preferredVolume)) - Math.abs(b - Number(preferredVolume)));
+    return numPrices[0];
+  }
+
+  return 550;
+}
