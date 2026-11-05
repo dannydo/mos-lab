@@ -11,6 +11,11 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+let mockTier = 'desktop';
+vi.mock('../../../hooks/useResponsiveTier', () => ({
+  useResponsiveTier: () => mockTier,
+}));
+
 const mockFeed: MosNotificationFeedResponse = {
   items: [
     {
@@ -106,6 +111,7 @@ import { apiClient } from '../../../lib/api-client';
 describe('HeaderNotificationCenter Instagram-Style UI (MOS-FEAT-194)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTier = 'desktop';
     (apiClient.notifications.getFeed as ReturnType<typeof vi.fn>).mockResolvedValue(mockFeed);
     (apiClient.notifications.markAsRead as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true });
     (apiClient.notifications.markAsUnread as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true });
@@ -204,5 +210,34 @@ describe('HeaderNotificationCenter Instagram-Style UI (MOS-FEAT-194)', () => {
     fireEvent.click(markReadBtn);
 
     expect(apiClient.notifications.markAsRead).toHaveBeenCalledWith('inbox-194-awaiting_danny_commit_review');
+  });
+
+  it('renders bottom sheet drawer on mobile tier without left overflow (MOS-FEAT-194 Mobile Fix)', async () => {
+    mockTier = 'mobile';
+    render(<HeaderNotificationCenter themeMode="dark" />);
+
+    const bellBtn = screen.getByRole('button', { name: /Thông báo & Việc cần làm/i });
+    expect(bellBtn).toBeDefined();
+    fireEvent.click(bellBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Thông báo')).toBeDefined();
+      expect(screen.getByText('2 mới')).toBeDefined();
+      expect(screen.getByText('Mở mOS Inbox')).toBeDefined();
+    });
+
+    // Check mobile drawer presence
+    const drawer = document.querySelector('.mos-notification-mobile-drawer');
+    expect(drawer).toBeDefined();
+
+    // Verify unread items in mobile view
+    expect(screen.getByText(/Ticket #194/i)).toBeDefined();
+
+    // Close button should close drawer
+    const closeBtn = document.querySelector('.ant-drawer-close');
+    expect(closeBtn).toBeDefined();
+    if (closeBtn) {
+      fireEvent.click(closeBtn);
+    }
   });
 });

@@ -8446,3 +8446,27 @@ button:not(:disabled):not(.ant-btn-loading):active,
   max-height: 94vh !important;
   object-fit: contain !important;
 }
+
+/* ==========================================================================
+   MOS-FEAT-194: Instagram Notification Center Popover & Mobile Drawer
+   ========================================================================== */
+.mos-notification-popover {
+  max-width: calc(100vw - 16px) !important;
+}
+
+.mos-notification-popover .ant-popover-inner {
+  max-width: calc(100vw - 16px) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+.mos-notification-mobile-drawer .ant-drawer-content {
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+.mos-notification-mobile-drawer .ant-drawer-header {
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+}
