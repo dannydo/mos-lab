@@ -269,4 +269,65 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
     expect(otherBubble).toBeInTheDocument();
     expect(otherBubble.style.background).toMatch(/(?:rgb\(42,\s*42,\s*42\)|#2a2a2a)/);
   });
+
+  it('renders correct space avatar (emoji, custom image, or fallback hash) in mini chat header (MOS-BUG-202)', () => {
+    const spaceWithEmoji: MosChatConversation = {
+      ...sampleConversations[0],
+      id: 'space-emoji',
+      name: 'Chiến Binh Sale',
+      avatar: '🚀',
+      color: '#10b981',
+    };
+
+    const { rerender } = render(
+      <MosChatDockedWindows
+        {...baseProps}
+        dockedConvIds={['space-emoji']}
+        conversations={[spaceWithEmoji]}
+      />
+    );
+
+    // Emoji avatar should be rendered in header
+    expect(screen.getByText('🚀')).toBeInTheDocument();
+    expect(screen.getByText('Chiến Binh Sale')).toBeInTheDocument();
+
+    // Space with image URL avatar
+    const spaceWithImg: MosChatConversation = {
+      ...sampleConversations[0],
+      id: 'space-img',
+      name: 'Kho Vận',
+      avatar: 'https://example.com/warehouse.png',
+      color: '#3b82f6',
+    };
+
+    rerender(
+      <MosChatDockedWindows
+        {...baseProps}
+        dockedConvIds={['space-img']}
+        conversations={[spaceWithImg]}
+      />
+    );
+
+    const img = screen.getByAltText('Kho Vận');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://example.com/warehouse.png');
+
+    // Space without avatar should fall back to channel name
+    const spaceWithoutAvatar: MosChatConversation = {
+      ...sampleConversations[0],
+      id: 'space-plain',
+      name: 'Chung',
+      avatar: undefined,
+    };
+
+    rerender(
+      <MosChatDockedWindows
+        {...baseProps}
+        dockedConvIds={['space-plain']}
+        conversations={[spaceWithoutAvatar]}
+      />
+    );
+
+    expect(screen.getByText('Chung')).toBeInTheDocument();
+  });
 });

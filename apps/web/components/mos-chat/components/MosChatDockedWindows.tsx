@@ -47,6 +47,7 @@ import {
   formatQuotePayload,
 } from '../utils/quoteUtils';
 import { syncTextareaHeightSmart } from './MosChatComposer';
+import { isSpaceEmoji } from '../constants/chat-constants';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -481,6 +482,9 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                       className="inline-flex items-center gap-1 text-[12px] font-bold text-amber-500 hover:text-amber-400 transition-colors cursor-pointer group/back py-1 -ml-1 pr-1.5"
                     >
                       <ChevronLeft size={16} className="transition-transform group-hover/back:-translate-x-0.5" />
+                      {conv.type === 'space' && conv.avatar && isSpaceEmoji(conv.avatar) && (
+                        <span className="select-none leading-none text-xs mr-0.5">{conv.avatar}</span>
+                      )}
                       <span className="truncate max-w-[140px]">{conv.name}</span>
                     </button>
                   ) : (
@@ -497,10 +501,27 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                         })
                       ) : (
                         <div
-                          className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-                          style={{ background: conv.color ? `${conv.color}25` : 'rgba(212, 168, 75, 0.2)' }}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm overflow-hidden"
+                          style={{
+                            background: conv.color ? `${conv.color}25` : 'rgba(212, 168, 75, 0.2)',
+                            color: conv.color || '#d4a84b',
+                          }}
                         >
-                          <Hash size={13} style={{ color: conv.color || '#d4a84b' }} />
+                          {conv.avatar && isSpaceEmoji(conv.avatar) ? (
+                            <span className="select-none leading-none text-xs">{conv.avatar}</span>
+                          ) : conv.avatar &&
+                            (conv.avatar.startsWith('http://') ||
+                              conv.avatar.startsWith('https://') ||
+                              conv.avatar.startsWith('/') ||
+                              conv.avatar.startsWith('data:')) ? (
+                            <img
+                              src={conv.avatar}
+                              alt={conv.name}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            <Hash size={13} style={{ color: conv.color || '#d4a84b' }} />
+                          )}
                         </div>
                       )}
                       <span className="text-[13px] font-bold tracking-tight truncate max-w-[150px]">{conv.name}</span>
