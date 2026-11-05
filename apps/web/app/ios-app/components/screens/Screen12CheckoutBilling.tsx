@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
@@ -10,7 +10,12 @@ interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
   onBack: () => void;
-  onChoosePayment: (method: 'CASH' | 'POS' | 'VIETQR', tipAmount?: number, diamondUsed?: number) => void;
+  onChoosePayment: (
+    method: 'CASH' | 'POS' | 'VIETQR',
+    tipAmount?: number,
+    diamondUsed?: number,
+    proofPhoto?: string
+  ) => void;
   onEditService?: () => void;
 }
 
@@ -31,6 +36,23 @@ export function Screen12CheckoutBilling({
   const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [transferProofPhoto, setTransferProofPhoto] = useState<string | null>(
+    booking?.billing?.transferProofPhoto || null
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCaptureProof = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setTransferProofPhoto(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = booking?.customerPhone || '0933.779.207';
@@ -123,7 +145,7 @@ export function Screen12CheckoutBilling({
   const orderNumericCode = booking?.orderNumber?.replace(/\D/g, '') || String(booking?.id || '609609');
   const tipCode = tipAmount > 0 ? (tipAmount >= 1000 ? `${Math.round(tipAmount / 1000)}K` : String(tipAmount)) : '0';
   const qrTransferContent = `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
-  const vietQrUrl = `https://img.vietqr.io/image/VCB-1024731897-compact2.png?amount=${finalGrandTotal}&addInfo=${encodeURIComponent(
+  const vietQrUrl = `https://img.vietqr.io/image/VCB-1024731897-qr_only.png?amount=${finalGrandTotal}&addInfo=${encodeURIComponent(
     qrTransferContent
   )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
 
@@ -140,12 +162,12 @@ export function Screen12CheckoutBilling({
       setIsQrModalOpen(true);
       return;
     }
-    onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed);
+    onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed, transferProofPhoto || undefined);
   };
 
   const handleConfirmQrPaid = () => {
     setIsQrModalOpen(false);
-    onChoosePayment('VIETQR', tipAmount, effectiveDiamondUsed);
+    onChoosePayment('VIETQR', tipAmount, effectiveDiamondUsed, transferProofPhoto || undefined);
   };
 
   return (
@@ -802,14 +824,18 @@ export function Screen12CheckoutBilling({
       {/* 📲 MODAL QR-CODE THANH TOÁN CHUẨN GOOGLE SHEET WINGS */}
       {isQrModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 select-none">
-          <div className="bg-white rounded-3xl max-w-[380px] w-full overflow-hidden shadow-2xl flex flex-col border border-neutral-200">
+          <div className="bg-white rounded-3xl max-w-[390px] w-full overflow-hidden shadow-2xl flex flex-col border border-neutral-200">
             {/* Header đen + logo Wings + badge DT */}
             <div className="bg-black text-white p-3.5 flex items-center justify-between border-b border-neutral-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🪶</span>
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/images/combo-cards/wings-logo-gold.png"
+                  alt="Wings Lashes Logo"
+                  className="h-7 w-auto object-contain shrink-0"
+                />
                 <div>
-                  <div className="text-[13px] font-black tracking-wider text-[#FFB400]">WINGS LASHES & BEAUTY</div>
-                  <div className="text-[10px] text-gray-400">Hệ thống nối mi nghệ nhân cao cấp</div>
+                  <div className="text-[14px] font-black tracking-wider text-[#FFB400] leading-tight">WINGS LASHES</div>
+                  <div className="text-[10px] text-gray-300 font-medium">Hệ Thống Nối Mi Bóng Tối</div>
                 </div>
               </div>
               <div className="bg-[#16A34A] text-white text-[11px] font-black px-2.5 py-1 rounded-lg tracking-wider">
@@ -818,15 +844,15 @@ export function Screen12CheckoutBilling({
             </div>
 
             {/* Dải cam tiêu đề chuẩn Sheet */}
-            <div className="bg-[#FF9500] text-black font-black text-center py-2 text-[13px] tracking-wider uppercase shadow-xs">
+            <div className="bg-[#FF9500] text-black font-black text-center py-1.5 text-[12px] tracking-wider uppercase shadow-xs">
               QR THANH TOÁN DỊCH VỤ
             </div>
 
-            {/* Body: Mã QR & Thông tin thanh toán */}
-            <div className="p-4 space-y-3.5 overflow-y-auto max-h-[75vh]">
-              {/* Image QR Code */}
+            {/* Body: Mã QR & Thông tin thanh toán (Scrollable) */}
+            <div className="p-3.5 space-y-2.5 overflow-y-auto max-h-[calc(85vh-150px)]">
+              {/* Image QR Code to rõ tối đa */}
               <div className="flex justify-center">
-                <div className="bg-white p-2 rounded-2xl border-2 border-neutral-200 shadow-sm max-w-[280px] w-full aspect-square flex items-center justify-center">
+                <div className="bg-white p-2 rounded-2xl border-2 border-neutral-200 shadow-sm max-w-[270px] w-full aspect-square flex items-center justify-center">
                   <img
                     src={vietQrUrl}
                     alt="VietQR Chuyển Khoản Wings"
@@ -836,9 +862,9 @@ export function Screen12CheckoutBilling({
               </div>
 
               {/* Thông tin chuyển khoản chi tiết */}
-              <div className="bg-gray-50 rounded-2xl p-3 border border-gray-200 space-y-2 text-[12px]">
+              <div className="bg-gray-50 rounded-2xl p-2.5 border border-gray-200 space-y-1.5 text-[12px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 font-bold text-[11px]">Nội Dung (Mã GD):</span>
+                  <span className="text-gray-500 font-bold text-[11px]">Nội Dung:</span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[#E11D48] font-black text-[13px] tracking-wide tabular-nums">
                       {qrTransferContent}
@@ -846,9 +872,24 @@ export function Screen12CheckoutBilling({
                     <button
                       type="button"
                       onClick={() => copyToClipboard(qrTransferContent, 'content')}
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer"
+                      title="Sao chép nội dung"
+                      aria-label="Sao chép nội dung"
+                      className="w-6 h-6 rounded-md bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-[11px] active:scale-90 transition-transform cursor-pointer shadow-2xs"
                     >
-                      {copySuccess === 'content' ? '✓ Đã chép' : 'Sao chép'}
+                      {copySuccess === 'content' ? (
+                        <span className="text-emerald-600 font-bold text-[11px]">✓</span>
+                      ) : (
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -877,40 +918,102 @@ export function Screen12CheckoutBilling({
                     <button
                       type="button"
                       onClick={() => copyToClipboard('1024731897', 'acc')}
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer"
+                      title="Sao chép số tài khoản"
+                      aria-label="Sao chép số tài khoản"
+                      className="w-6 h-6 rounded-md bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-[11px] active:scale-90 transition-transform cursor-pointer shadow-2xs"
                     >
-                      {copySuccess === 'acc' ? '✓ Đã chép' : 'Sao chép'}
+                      {copySuccess === 'acc' ? (
+                        <span className="text-emerald-600 font-bold text-[11px]">✓</span>
+                      ) : (
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Hướng dẫn thao tác */}
-              <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-1.5">
-                <span className="text-sm leading-none shrink-0">💡</span>
-                <span>
-                  Khách hàng mở app ngân hàng quét mã. Mã giao dịch <strong>{qrTransferContent}</strong> tự động điền để
-                  hệ thống đối soát tự động.
-                </span>
-              </div>
+              {/* Chức năng xin chụp lại màn hình chuyển khoản của khách hàng */}
+              <div className="bg-sky-50/80 rounded-2xl p-2.5 border border-sky-200/90 space-y-1.5">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleCaptureProof}
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base leading-none">📸</span>
+                    <span className="text-[11.5px] font-bold text-sky-950">Ảnh bill chuyển khoản đối soát</span>
+                  </div>
+                  {transferProofPhoto && (
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
+                      <span>✓</span> Đã chụp
+                    </span>
+                  )}
+                </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleConfirmQrPaid}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide cursor-pointer"
-                >
-                  ✓ ĐÃ NHẬN TIỀN THÀNH CÔNG · XUẤT HÓA ĐƠN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsQrModalOpen(false)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[12px] text-center cursor-pointer"
-                >
-                  ‹ Đóng / Đổi hình thức thanh toán khác
-                </button>
+                {transferProofPhoto ? (
+                  <div className="flex items-center gap-2.5 bg-white p-2 rounded-xl border border-sky-200 shadow-2xs">
+                    <img
+                      src={transferProofPhoto}
+                      alt="Ảnh bill đối soát"
+                      className="w-11 h-11 object-cover rounded-lg border border-gray-200 shadow-2xs shrink-0 cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-bold text-emerald-800 truncate">
+                        ✓ Đã lưu ảnh bill chuyển khoản
+                      </div>
+                      <div className="text-[9.5px] text-gray-500">Chạm vào ảnh để chụp lại</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2 py-1 text-[10.5px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-300 cursor-pointer shrink-0 active:scale-95"
+                    >
+                      Chụp lại
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2 px-3 bg-white hover:bg-sky-50 active:scale-98 transition-all rounded-xl border-2 border-dashed border-sky-300 text-sky-800 font-bold text-[11.5px] flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <span className="text-sm">📷</span>
+                    <span>Xin chụp lại màn hình chuyển khoản của khách</span>
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* Sticky Action Footer */}
+            <div className="p-3 bg-white border-t border-gray-100 space-y-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleConfirmQrPaid}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-black text-[14px] shadow-md active:scale-98 transition-transform text-center tracking-wide cursor-pointer"
+              >
+                ✓ ĐÃ NHẬN TIỀN THÀNH CÔNG · XUẤT HÓA ĐƠN
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(false)}
+                className="w-full py-2 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[12px] text-center cursor-pointer"
+              >
+                ‹ Đóng / Đổi hình thức thanh toán khác
+              </button>
             </div>
           </div>
         </div>

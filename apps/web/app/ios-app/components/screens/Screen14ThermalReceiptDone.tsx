@@ -160,6 +160,18 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
                     : 'Tiền mặt (Cash)'}
             </span>
           </div>
+          {booking?.billing?.transferProofPhoto && (
+            <div className="flex items-center justify-between text-[11px] bg-sky-50 px-2.5 py-1.5 rounded-lg border border-sky-200">
+              <span className="text-sky-900 font-bold flex items-center gap-1">
+                <span>📸</span> Bill chuyển khoản đối soát:
+              </span>
+              <img
+                src={booking.billing.transferProofPhoto}
+                alt="Bill đối soát"
+                className="w-9 h-9 object-cover rounded border border-sky-300 shadow-2xs"
+              />
+            </div>
+          )}
           {diamondUsed > 0 && (
             <div className="text-[10px] text-cyan-800 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 text-center">
               Ví Kim Cương sau ca: còn <strong>{booking?.diamondBalance ?? 0} 💎</strong>

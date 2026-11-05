@@ -1056,7 +1056,12 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   };
 
   // Step 13: Choose Payment Method & Confirm Tip Directly & Diamond Wallet (One-Stop Checkout)
-  const handleChoosePaymentMethod = (method: 'CASH' | 'POS' | 'VIETQR', chosenTip?: number, chosenDiamond?: number) => {
+  const handleChoosePaymentMethod = (
+    method: 'CASH' | 'POS' | 'VIETQR',
+    chosenTip?: number,
+    chosenDiamond?: number,
+    proofPhoto?: string
+  ) => {
     updateActiveBooking((prev) => {
       const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 50000);
       const cvShare = Math.round(tipAmount * 0.7);
@@ -1072,6 +1077,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         comboTotal: 0,
         productTotal: 0,
         paymentMethod: method,
+        transferProofPhoto: undefined as string | undefined,
       };
       const subtotal = currentBilling.subtotal;
       const vatRate = currentBilling.vatRate ?? 0.08;
@@ -1105,6 +1111,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           tipCcShare: ccShare,
           diamondUsed,
           diamondDiscountAmount,
+          transferProofPhoto: proofPhoto || currentBilling.transferProofPhoto,
           grandTotal,
         },
       };

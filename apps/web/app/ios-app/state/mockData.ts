@@ -374,6 +374,7 @@ export interface BookingItem {
     tipCcShare: number;
     diamondUsed?: number; // Số Kim Cương (💎) đã dùng để cấn trừ
     diamondDiscountAmount?: number; // Số tiền giảm trừ tương ứng (VND)
+    transferProofPhoto?: string; // Ảnh chụp màn hình chuyển khoản đối soát của khách
     grandTotal: number;
   };
 }
