@@ -434,7 +434,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     >
                       {u.isUnderLash
                         ? 'Mi Dưới 390'
-                        : `Mã ${u.volume} (${getVolumeFiberMeta(currentCategory.id, volKey).countPerEye} trụ/sợi)`}
+                        : `Mã ${u.volume} (${getVolumeFiberMeta(currentCategory.id, volKey).countPerEye} ${getVolumeFiberMeta(currentCategory.id, volKey).unitWord}/mắt)`}
                     </button>
                   );
                 })}

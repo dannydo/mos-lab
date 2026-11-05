@@ -43614,8 +43614,8 @@
       "filePath": "apps/web/app/dashboard/catalog/components/CatalogComboConsultTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32923,
-        "lineCount": 712,
+        "sizeBytes": 32906,
+        "lineCount": 703,
         "ext": ".tsx"
       }
     },
@@ -47371,7 +47371,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31650,
+        "sizeBytes": 31703,
         "lineCount": 659,
         "ext": ".tsx"
       }
@@ -47631,8 +47631,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30017,
-        "lineCount": 888,
+        "sizeBytes": 29911,
+        "lineCount": 871,
         "ext": ".tsx"
       }
     },
@@ -48606,8 +48606,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 212850,
-        "lineCount": 5937,
+        "sizeBytes": 214615,
+        "lineCount": 5977,
         "ext": ".ts"
       }
     },

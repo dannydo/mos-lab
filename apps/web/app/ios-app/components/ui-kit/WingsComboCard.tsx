@@ -583,7 +583,9 @@ export function WingsComboCard({
                   }}
                 >
                   {customerPhone ? `${customerPhone} · ` : ''}
-                  {pkg.volume === 'under' ? 'Mi dưới 390' : `Mã ${pkg.volume} (${pkg.volumeMeta.countPerEye} sợi/mắt)`}
+                  {pkg.volume === 'under'
+                    ? 'Mi dưới 390'
+                    : `Mã ${pkg.volume} (${pkg.volumeMeta.countPerEye} ${pkg.volumeMeta.unitWord || 'sợi'}/mắt · ${pkg.volumeMeta.specLabel})`}
                 </div>
               </div>
             </div>
