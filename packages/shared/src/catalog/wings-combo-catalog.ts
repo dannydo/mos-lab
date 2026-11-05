@@ -82,7 +82,7 @@ export interface VolumeFiberMetadata {
   skuCode: number | 'under';
   countPerEye: number;
   totalFibers: number;
-  unitWord: 'trụ' | 'fan' | 'sợi' | 'trụ lá';
+  unitWord: 'trụ' | 'fan' | 'sợi';
   specLabel: string;
   fanLabel: string;
   shortLabel: string;
@@ -5228,45 +5228,80 @@ const VOLUME_FIBER_MAP: Record<
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   IvyLight_3L: {
-    '770': { countPerEye: 70, totalFibers: 420, fanLabel: '3ℓ · 70 trụ/mắt (420 sợi)' },
-    '880': { countPerEye: 90, totalFibers: 540, fanLabel: '3ℓ · 90 trụ/mắt (540 sợi)', badge: 'BEST SELLER' },
-    '990': { countPerEye: 110, totalFibers: 660, fanLabel: '3ℓ · 110 trụ/mắt (660 sợi)' },
-    '1330': { countPerEye: 130, totalFibers: 780, fanLabel: '3ℓ · 130 trụ/mắt (780 sợi)' },
+    '770': { countPerEye: 70, totalFibers: 420, fanLabel: '3ℓ · 70 trụ/mắt (Trụ 3 sợi dẹp · 420 sợi)' },
+    '880': {
+      countPerEye: 90,
+      totalFibers: 540,
+      fanLabel: '3ℓ · 90 trụ/mắt (Trụ 3 sợi dẹp · 540 sợi)',
+      badge: 'BEST SELLER',
+    },
+    '990': { countPerEye: 110, totalFibers: 660, fanLabel: '3ℓ · 110 trụ/mắt (Trụ 3 sợi dẹp · 660 sợi)' },
+    '1330': { countPerEye: 130, totalFibers: 780, fanLabel: '3ℓ · 130 trụ/mắt (Trụ 3 sợi dẹp · 780 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   IvyLight_4L: {
-    '990': { countPerEye: 70, totalFibers: 560, fanLabel: '4ℓ · 70 trụ/mắt (560 sợi)' },
-    '1220': { countPerEye: 90, totalFibers: 720, fanLabel: '4ℓ · 90 trụ/mắt (720 sợi)', badge: 'BEST SELLER' },
-    '1440': { countPerEye: 110, totalFibers: 880, fanLabel: '4ℓ · 110 trụ/mắt (880 sợi)' },
-    '1770': { countPerEye: 130, totalFibers: 1040, fanLabel: '4ℓ · 130 trụ/mắt (1040 sợi)' },
+    '990': { countPerEye: 70, totalFibers: 560, fanLabel: '4ℓ · 70 trụ/mắt (Trụ 4 sợi dẹp · 560 sợi)' },
+    '1220': {
+      countPerEye: 90,
+      totalFibers: 720,
+      fanLabel: '4ℓ · 90 trụ/mắt (Trụ 4 sợi dẹp · 720 sợi)',
+      badge: 'BEST SELLER',
+    },
+    '1440': { countPerEye: 110, totalFibers: 880, fanLabel: '4ℓ · 110 trụ/mắt (Trụ 4 sợi dẹp · 880 sợi)' },
+    '1770': { countPerEye: 130, totalFibers: 1040, fanLabel: '4ℓ · 130 trụ/mắt (Trụ 4 sợi dẹp · 1040 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   IvyLight_5L: {
-    '1110': { countPerEye: 70, totalFibers: 700, fanLabel: '5ℓ · 70 trụ/mắt (700 sợi)', badge: 'MOST POPULAR' },
-    '1440': { countPerEye: 90, totalFibers: 900, fanLabel: '5ℓ · 90 trụ/mắt (900 sợi)' },
-    '1770': { countPerEye: 110, totalFibers: 1100, fanLabel: '5ℓ · 110 trụ/mắt (1100 sợi)' },
-    '2110': { countPerEye: 130, totalFibers: 1300, fanLabel: '5ℓ · 130 trụ/mắt (1300 sợi)' },
+    '1110': {
+      countPerEye: 70,
+      totalFibers: 700,
+      fanLabel: '5ℓ · 70 trụ/mắt (Trụ 5 sợi dẹp · 700 sợi)',
+      badge: 'MOST POPULAR',
+    },
+    '1440': { countPerEye: 90, totalFibers: 900, fanLabel: '5ℓ · 90 trụ/mắt (Trụ 5 sợi dẹp · 900 sợi)' },
+    '1770': { countPerEye: 110, totalFibers: 1100, fanLabel: '5ℓ · 110 trụ/mắt (Trụ 5 sợi dẹp · 1100 sợi)' },
+    '2110': { countPerEye: 130, totalFibers: 1300, fanLabel: '5ℓ · 130 trụ/mắt (Trụ 5 sợi dẹp · 1300 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   UltraLight_3D: {
-    '550': { countPerEye: 60, totalFibers: 360, fanLabel: '3D · 60 fan/mắt (360 sợi)' },
-    '660': { countPerEye: 80, totalFibers: 480, fanLabel: '3D · 80 fan/mắt (480 sợi)', badge: 'BEST SELLER' },
-    '770': { countPerEye: 100, totalFibers: 600, fanLabel: '3D · 100 fan/mắt (600 sợi)' },
-    '990': { countPerEye: 120, totalFibers: 720, fanLabel: '3D · 120 fan/mắt (720 sợi)' },
+    '550': { countPerEye: 60, totalFibers: 360, fanLabel: '3D · 60 fan/mắt (Fan 3 sợi · 360 sợi)' },
+    '660': {
+      countPerEye: 80,
+      totalFibers: 480,
+      fanLabel: '3D · 80 fan/mắt (Fan 3 sợi · 480 sợi)',
+      badge: 'BEST SELLER',
+    },
+    '770': { countPerEye: 100, totalFibers: 600, fanLabel: '3D · 100 fan/mắt (Fan 3 sợi · 600 sợi)' },
+    '990': { countPerEye: 120, totalFibers: 720, fanLabel: '3D · 120 fan/mắt (Fan 3 sợi · 720 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   UltraLight_4D: {
-    '660': { countPerEye: 60, totalFibers: 480, fanLabel: '4D · 60 fan/mắt (480 sợi)' },
-    '770': { countPerEye: 80, totalFibers: 640, fanLabel: '4D · 80 fan/mắt (640 sợi)', badge: 'BEST SELLER' },
-    '880': { countPerEye: 100, totalFibers: 800, fanLabel: '4D · 100 fan/mắt (800 sợi)', badge: 'BEST SELLER' },
-    '1110': { countPerEye: 120, totalFibers: 960, fanLabel: '4D · 120 fan/mắt (960 sợi)' },
+    '660': { countPerEye: 60, totalFibers: 480, fanLabel: '4D · 60 fan/mắt (Fan 4 sợi · 480 sợi)' },
+    '770': {
+      countPerEye: 80,
+      totalFibers: 640,
+      fanLabel: '4D · 80 fan/mắt (Fan 4 sợi · 640 sợi)',
+      badge: 'BEST SELLER',
+    },
+    '880': {
+      countPerEye: 100,
+      totalFibers: 800,
+      fanLabel: '4D · 100 fan/mắt (Fan 4 sợi · 800 sợi)',
+      badge: 'BEST SELLER',
+    },
+    '1110': { countPerEye: 120, totalFibers: 960, fanLabel: '4D · 120 fan/mắt (Fan 4 sợi · 960 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   UltraLight_5D: {
-    '770': { countPerEye: 60, totalFibers: 600, fanLabel: '5D · 60 fan/mắt (600 sợi)', badge: 'MOST POPULAR' },
-    '990': { countPerEye: 80, totalFibers: 800, fanLabel: '5D · 80 fan/mắt (800 sợi)' },
-    '1220': { countPerEye: 100, totalFibers: 1000, fanLabel: '5D · 100 fan/mắt (1000 sợi)' },
-    '1550': { countPerEye: 120, totalFibers: 1200, fanLabel: '5D · 120 fan/mắt (1200 sợi)' },
+    '770': {
+      countPerEye: 60,
+      totalFibers: 600,
+      fanLabel: '5D · 60 fan/mắt (Fan 5 sợi · 600 sợi)',
+      badge: 'MOST POPULAR',
+    },
+    '990': { countPerEye: 80, totalFibers: 800, fanLabel: '5D · 80 fan/mắt (Fan 5 sợi · 800 sợi)' },
+    '1220': { countPerEye: 100, totalFibers: 1000, fanLabel: '5D · 100 fan/mắt (Fan 5 sợi · 1000 sợi)' },
+    '1550': { countPerEye: 120, totalFibers: 1200, fanLabel: '5D · 120 fan/mắt (Fan 5 sợi · 1200 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
 };
@@ -5300,12 +5335,11 @@ export function getVolumeFiberMeta(
   const meta = catMap[volKey];
   const skuNum = Number(volume) || 770;
 
-  const unitWord: VolumeFiberMetadata['unitWord'] = categoryId.startsWith('HyperLight')
-    ? 'trụ'
-    : categoryId.startsWith('UltraLight')
-      ? 'fan'
-      : categoryId.startsWith('IvyLight')
-        ? 'trụ lá'
+  const unitWord: VolumeFiberMetadata['unitWord'] =
+    categoryId.startsWith('HyperLight') || categoryId.startsWith('IvyLight')
+      ? 'trụ'
+      : categoryId.startsWith('UltraLight')
+        ? 'fan'
         : 'sợi';
 
   const specLabel =
@@ -5318,17 +5352,17 @@ export function getVolumeFiberMeta(
           : categoryId === 'HyperLight_5X'
             ? 'Trụ 5 sợi'
             : categoryId === 'UltraLight_3D'
-              ? 'Fan 3 sợi'
+              ? 'Fan 3 sợi (3D)'
               : categoryId === 'UltraLight_4D'
-                ? 'Fan 4 sợi'
+                ? 'Fan 4 sợi (4D)'
                 : categoryId === 'UltraLight_5D'
-                  ? 'Fan 5 sợi'
+                  ? 'Fan 5 sợi (5D)'
                   : categoryId === 'IvyLight_3L'
-                    ? 'Trụ dẹp 3ℓ'
+                    ? 'Trụ 3 sợi dẹp (3ℓ)'
                     : categoryId === 'IvyLight_4L'
-                      ? 'Trụ dẹp 4ℓ'
+                      ? 'Trụ 4 sợi dẹp (4ℓ)'
                       : categoryId === 'IvyLight_5L'
-                        ? 'Trụ dẹp 5ℓ'
+                        ? 'Trụ 5 sợi dẹp (5ℓ)'
                         : 'Sợi đơn 1:1';
 
   if (meta) {

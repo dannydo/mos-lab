@@ -48606,8 +48606,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 214615,
-        "lineCount": 5977,
+        "sizeBytes": 215230,
+        "lineCount": 6001,
         "ext": ".ts"
       }
     },
