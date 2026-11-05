@@ -10,7 +10,7 @@ interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
   onBack: () => void;
-  onChoosePayment: (method: 'CASH' | 'POS' | 'VIETQR', tipAmount?: number) => void;
+  onChoosePayment: (method: 'CASH' | 'POS' | 'VIETQR', tipAmount?: number, diamondUsed?: number) => void;
   onEditService?: () => void;
 }
 
@@ -25,10 +25,7 @@ export function Screen12CheckoutBilling({
     booking?.billing?.paymentMethod || 'VIETQR'
   );
   const [tipAmount, setTipAmount] = useState<number>(booking?.billing?.tipAmount ?? 50000);
-
-  const handleProceed = () => {
-    onChoosePayment(selectedMethod, tipAmount);
-  };
+  const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
 
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = booking?.customerPhone || '0933.779.207';
@@ -59,7 +56,19 @@ export function Screen12CheckoutBilling({
   const vatRate = booking?.billing?.vatRate ?? 0.08;
   const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
   const totalWithVat = subtotal + vatAmount;
-  const finalGrandTotal = totalWithVat + tipAmount;
+
+  // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ (Khớp 100% legacy database & iOS App cũ)
+  const DIAMOND_RATE = 1000;
+  const customerDiamondBalance = booking?.diamondBalance ?? 350;
+  const totalBeforeDiamond = totalWithVat + tipAmount;
+  const maxDiamondCanUse = Math.min(customerDiamondBalance, Math.floor(totalBeforeDiamond / DIAMOND_RATE));
+  const effectiveDiamondUsed = Math.min(diamondUsed, maxDiamondCanUse);
+  const diamondDiscountAmount = effectiveDiamondUsed * DIAMOND_RATE;
+  const finalGrandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
+
+  const handleProceed = () => {
+    onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed);
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
@@ -303,6 +312,17 @@ export function Screen12CheckoutBilling({
                   <span className="font-extrabold tabular-nums">+{tipAmount.toLocaleString('vi-VN')} đ</span>
                 </div>
               )}
+              {effectiveDiamondUsed > 0 && (
+                <div className="flex items-center justify-between text-cyan-800 font-bold bg-cyan-50/80 px-2 py-1.5 rounded-xl border border-cyan-200">
+                  <div className="flex items-center gap-1.5">
+                    <span>💎 Thanh toán Kim Cương:</span>
+                    <span className="text-[10px] font-black text-cyan-800 bg-white px-1.5 py-0.5 rounded border border-cyan-300 tabular-nums">
+                      {effectiveDiamondUsed} 💎
+                    </span>
+                  </div>
+                  <span className="font-black tabular-nums">-{diamondDiscountAmount.toLocaleString('vi-VN')} đ</span>
+                </div>
+              )}
             </div>
 
             {/* Total Row */}
@@ -310,7 +330,11 @@ export function Screen12CheckoutBilling({
               <div>
                 <span className="text-[13px] font-extrabold text-black block">TỔNG TIỀN THANH TOÁN</span>
                 <span className="text-[10px] text-gray-500 font-medium">
-                  {tipAmount > 0 ? 'Đã gồm Dịch vụ + 8% VAT + Tiền tip' : 'Đã bao gồm 8% thuế VAT'}
+                  {effectiveDiamondUsed > 0
+                    ? `Đã cấn trừ ${effectiveDiamondUsed} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ)`
+                    : tipAmount > 0
+                      ? 'Đã gồm Dịch vụ + 8% VAT + Tiền tip'
+                      : 'Đã bao gồm 8% thuế VAT'}
                 </span>
               </div>
               <span className="text-[19px] font-black text-[#FF9500] tabular-nums">
@@ -392,48 +416,169 @@ export function Screen12CheckoutBilling({
           </div>
         </div>
 
+        {/* Section 1C: Ví Kim Cương Của Khách (1 💎 = 1.000 VNĐ) */}
+        <div>
+          <div className="flex items-center justify-between text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
+            <span className="flex items-center gap-1">
+              <span>💎</span> VÍ KIM CƯƠNG CỦA KHÁCH
+            </span>
+            <span className="text-[10px] text-cyan-800 font-bold bg-cyan-50 border border-cyan-200 px-2 py-0.5 rounded-full tabular-nums">
+              Số dư: {customerDiamondBalance} 💎 ({(customerDiamondBalance * DIAMOND_RATE).toLocaleString('vi-VN')}đ)
+            </span>
+          </div>
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2.5">
+            {customerDiamondBalance > 0 ? (
+              <>
+                <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium">
+                  <span>Chọn số Kim Cương dùng để cấn trừ (1 💎 = 1.000đ):</span>
+                  {maxDiamondCanUse > 0 && (
+                    <span className="text-cyan-700 font-bold tabular-nums">Tối đa dùng: {maxDiamondCanUse} 💎</span>
+                  )}
+                </div>
+
+                {/* Quick Presets */}
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[0, 50, 100, 200].map((preset) => {
+                    const disabled = preset > maxDiamondCanUse;
+                    const isSelected = effectiveDiamondUsed === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setDiamondUsed(preset)}
+                        className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
+                          disabled
+                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-cyan-600 text-white shadow-xs font-black'
+                              : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-100'
+                        }`}
+                      >
+                        {isSelected && preset > 0 ? `✓ ${preset} 💎` : `${preset} 💎`}
+                      </button>
+                    );
+                  })}
+                  {/* Max Button */}
+                  <button
+                    type="button"
+                    disabled={maxDiamondCanUse <= 0}
+                    onClick={() => setDiamondUsed(maxDiamondCanUse)}
+                    className={`py-2 rounded-xl text-[11px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
+                      maxDiamondCanUse <= 0
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : effectiveDiamondUsed === maxDiamondCanUse && maxDiamondCanUse > 0
+                          ? 'bg-cyan-600 text-white shadow-xs font-black'
+                          : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-xs font-black'
+                    }`}
+                  >
+                    {effectiveDiamondUsed === maxDiamondCanUse && maxDiamondCanUse > 0
+                      ? `✓ Hết ${maxDiamondCanUse} 💎`
+                      : `Dùng hết (${maxDiamondCanUse} 💎)`}
+                  </button>
+                </div>
+
+                {/* Status banner */}
+                {effectiveDiamondUsed > 0 ? (
+                  <div className="bg-cyan-50/90 border border-cyan-200 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-base leading-none">💎</span>
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-cyan-950 truncate">
+                          Đã trừ {effectiveDiamondUsed} 💎 (-{diamondDiscountAmount.toLocaleString('vi-VN')}đ)
+                        </div>
+                        <div className="text-[10px] text-cyan-800 font-medium">
+                          Số dư ví còn lại sau ca:{' '}
+                          <strong className="text-cyan-950">{customerDiamondBalance - effectiveDiamondUsed} 💎</strong>{' '}
+                          (quy đổi{' '}
+                          {((customerDiamondBalance - effectiveDiamondUsed) * DIAMOND_RATE).toLocaleString('vi-VN')}đ)
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDiamondUsed(0)}
+                      className="text-[10px] font-bold text-gray-500 hover:text-red-600 bg-white px-2 py-1 rounded-lg border border-gray-200 shrink-0 ml-1 cursor-pointer"
+                    >
+                      Bỏ dùng
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-center text-[11px] text-gray-500 font-medium">
+                    Chưa dùng Kim Cương · Giữ nguyên {customerDiamondBalance} 💎 trong ví cho các ca sau
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl py-2.5 px-3 text-center text-[11px] text-gray-400 font-medium">
+                Khách chưa có số dư Kim Cương trong ví (0 💎)
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Section 2: Hình Thức Thanh Toán */}
         <div>
           <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
             HÌNH THỨC THANH TOÁN
           </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden divide-y divide-gray-100">
-            {(
-              [
-                { id: 'VIETQR', label: 'Chuyển khoản QR (Bank)' },
-                { id: 'POS', label: 'Thẻ ngân hàng (POS)' },
-                { id: 'CASH', label: 'Tiền mặt (Cash)' },
-              ] as const
-            ).map((m) => {
-              const active = selectedMethod === m.id;
-              return (
-                <div
-                  key={m.id}
-                  onClick={() => setSelectedMethod(m.id)}
-                  className={`p-3.5 flex items-center justify-between cursor-pointer transition-colors ${
-                    active ? 'bg-[#F0FDF4]' : ''
-                  }`}
-                >
-                  <span className={`text-[14px] font-medium ${active ? 'text-[#15803D] font-bold' : 'text-black'}`}>
-                    {active && '✓ '}
-                    {m.label}
-                  </span>
-                  <span className={`text-[14px] tabular-nums ${active ? 'text-[#15803D] font-bold' : 'text-gray-400'}`}>
-                    {active ? `${finalGrandTotal.toLocaleString('vi-VN')} đ` : '0 đ'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {finalGrandTotal === 0 ? (
+            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-center space-y-1 shadow-sm">
+              <div className="text-emerald-800 font-black text-[14px] flex items-center justify-center gap-1.5">
+                <span>✓</span> ĐÃ THANH TOÁN 100% BẰNG VÍ KIM CƯƠNG
+              </div>
+              <div className="text-[11px] text-emerald-700 font-medium">
+                Đã cấn trừ đủ {effectiveDiamondUsed} 💎 (-{diamondDiscountAmount.toLocaleString('vi-VN')}đ). Không cần
+                thu thêm tiền mặt hay chuyển khoản.
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden divide-y divide-gray-100">
+              {(
+                [
+                  { id: 'VIETQR', label: 'Chuyển khoản QR (Bank)' },
+                  { id: 'POS', label: 'Thẻ ngân hàng (POS)' },
+                  { id: 'CASH', label: 'Tiền mặt (Cash)' },
+                ] as const
+              ).map((m) => {
+                const active = selectedMethod === m.id;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => setSelectedMethod(m.id)}
+                    className={`p-3.5 flex items-center justify-between cursor-pointer transition-colors ${
+                      active ? 'bg-[#F0FDF4]' : ''
+                    }`}
+                  >
+                    <span className={`text-[14px] font-medium ${active ? 'text-[#15803D] font-bold' : 'text-black'}`}>
+                      {active && '✓ '}
+                      {m.label}
+                    </span>
+                    <span
+                      className={`text-[14px] tabular-nums ${active ? 'text-[#15803D] font-bold' : 'text-gray-400'}`}
+                    >
+                      {active ? `${finalGrandTotal.toLocaleString('vi-VN')} đ` : '0 đ'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Action Button */}
         <div className="pt-1">
           <button
             onClick={handleProceed}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide"
+            className={`w-full py-3.5 px-4 rounded-2xl font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide ${
+              finalGrandTotal === 0
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                : 'bg-[#FFB400] text-black'
+            }`}
           >
-            CHỐT THANH TOÁN · {finalGrandTotal.toLocaleString('vi-VN')} đ
+            {finalGrandTotal === 0
+              ? `XÁC NHẬN CHỐT ĐƠN (TRỪ ${effectiveDiamondUsed} 💎 · 0 Đ)`
+              : `CHỐT THANH TOÁN · ${finalGrandTotal.toLocaleString('vi-VN')} đ`}
           </button>
         </div>
       </div>

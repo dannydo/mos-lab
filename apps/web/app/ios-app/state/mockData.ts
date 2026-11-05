@@ -226,6 +226,7 @@ export interface BookingItem {
     comboName: string;
     packageKey?: string;
   };
+  diamondBalance?: number; // Số dư ví Kim Cương của khách (1 💎 = 1.000 VNĐ)
   lashHistory?: LashHistoryItem[];
   selectedCombo?: {
     id: string;
@@ -370,6 +371,8 @@ export interface BookingItem {
     tipCheckInShare?: number;
     tipCheckOutShare?: number;
     tipCcShare: number;
+    diamondUsed?: number; // Số Kim Cương (💎) đã dùng để cấn trừ
+    diamondDiscountAmount?: number; // Số tiền giảm trừ tương ứng (VND)
     grandTotal: number;
   };
 }

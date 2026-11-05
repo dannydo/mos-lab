@@ -21,17 +21,24 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
   const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
   const tipAmount = booking?.billing?.tipAmount ?? 50000;
+  const diamondUsed = booking?.billing?.diamondUsed || 0;
+  const diamondDiscountAmount = booking?.billing?.diamondDiscountAmount || diamondUsed * 1000;
   const effectiveServiceCharge = selectedCombo
     ? 0
     : comboRedemption
       ? comboRedemption.totalCustomerPayToday
       : servicePrice;
   const grandTotal =
-    booking?.billing?.grandTotal ||
-    effectiveServiceCharge +
-      (selectedCombo ? selectedCombo.price : 0) +
-      cartProducts.reduce((s, p) => s + p.price * p.quantity, 0) +
-      tipAmount;
+    booking?.billing?.grandTotal !== undefined
+      ? booking.billing.grandTotal
+      : Math.max(
+          0,
+          effectiveServiceCharge +
+            (selectedCombo ? selectedCombo.price : 0) +
+            cartProducts.reduce((s, p) => s + p.price * p.quantity, 0) +
+            tipAmount -
+            diamondDiscountAmount
+        );
 
   const comboBonus = selectedCombo?.bonus || 0;
   const serumBonus = cartProducts.reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
@@ -119,10 +126,18 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
               <span className="tabular-nums font-medium">{(p.price * p.quantity).toLocaleString('vi-VN')}</span>
             </div>
           ))}
-          <div className="flex justify-between text-gray-800">
-            <span>Tiền Tip khách thưởng</span>
-            <span className="tabular-nums font-medium">{tipAmount.toLocaleString('vi-VN')}</span>
-          </div>
+          {tipAmount > 0 && (
+            <div className="flex justify-between text-gray-800">
+              <span>Tiền Tip khách thưởng</span>
+              <span className="tabular-nums font-medium">+{tipAmount.toLocaleString('vi-VN')}</span>
+            </div>
+          )}
+          {diamondUsed > 0 && (
+            <div className="flex justify-between text-cyan-800 font-bold bg-cyan-50 px-2 py-1 rounded-lg border border-cyan-200">
+              <span>💎 Cấn trừ Ví Kim Cương ({diamondUsed} 💎)</span>
+              <span className="tabular-nums font-black">-{diamondDiscountAmount.toLocaleString('vi-VN')}</span>
+            </div>
+          )}
         </div>
 
         <div className="border-b border-dashed border-gray-400" />
@@ -131,8 +146,25 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
         <div className="space-y-1">
           <div className="flex justify-between items-center text-[15px] font-black text-black">
             <span>TỔNG THANH TOÁN:</span>
-            <span className="tabular-nums text-[16px]">{grandTotal.toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums text-[16px] text-[#FF9500]">{grandTotal.toLocaleString('vi-VN')} đ</span>
           </div>
+          <div className="flex justify-between text-[11px] text-gray-500 font-medium">
+            <span>Hình thức thanh toán:</span>
+            <span className="font-bold text-gray-900">
+              {grandTotal === 0 && diamondUsed > 0
+                ? '💎 100% Ví Kim Cương'
+                : booking?.billing?.paymentMethod === 'VIETQR'
+                  ? 'Chuyển khoản QR (Bank)'
+                  : booking?.billing?.paymentMethod === 'POS'
+                    ? 'Thẻ ngân hàng (POS)'
+                    : 'Tiền mặt (Cash)'}
+            </span>
+          </div>
+          {diamondUsed > 0 && (
+            <div className="text-[10px] text-cyan-800 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 text-center">
+              Ví Kim Cương sau ca: còn <strong>{booking?.diamondBalance ?? 0} 💎</strong>
+            </div>
+          )}
         </div>
 
         {/* CV🪶 Reward Summary Box */}

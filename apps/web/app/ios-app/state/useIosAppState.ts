@@ -1055,8 +1055,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setCurrentStep(13);
   };
 
-  // Step 13: Choose Payment Method & Confirm Tip Directly (One-Stop Checkout)
-  const handleChoosePaymentMethod = (method: 'CASH' | 'POS' | 'VIETQR', chosenTip?: number) => {
+  // Step 13: Choose Payment Method & Confirm Tip Directly & Diamond Wallet (One-Stop Checkout)
+  const handleChoosePaymentMethod = (method: 'CASH' | 'POS' | 'VIETQR', chosenTip?: number, chosenDiamond?: number) => {
     updateActiveBooking((prev) => {
       const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 50000);
       const cvShare = Math.round(tipAmount * 0.7);
@@ -1076,10 +1076,23 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       const subtotal = currentBilling.subtotal;
       const vatRate = currentBilling.vatRate ?? 0.08;
       const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
-      const grandTotal = subtotal + vatAmount + tipAmount;
+      const totalBeforeDiamond = subtotal + vatAmount + tipAmount;
+
+      // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ
+      const DIAMOND_RATE = 1000;
+      const currentDiamondBalance = prev.diamondBalance ?? 350;
+      const diamondUsed = Math.min(
+        chosenDiamond ?? 0,
+        currentDiamondBalance,
+        Math.floor(totalBeforeDiamond / DIAMOND_RATE)
+      );
+      const diamondDiscountAmount = diamondUsed * DIAMOND_RATE;
+      const grandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
+      const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
 
       return {
         ...prev,
+        diamondBalance: remainingDiamondBalance,
         billing: {
           ...currentBilling,
           paymentMethod: method,
@@ -1090,11 +1103,13 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           tipCheckInShare: checkInShare,
           tipCheckOutShare: checkOutShare,
           tipCcShare: ccShare,
+          diamondUsed,
+          diamondDiscountAmount,
           grandTotal,
         },
       };
     });
-    // Đi thẳng đến Screen 14 (Hóa đơn nhiệt) vì khách hàng đã chốt số tiền cuối bao gồm tip tại Screen 12!
+    // Đi thẳng đến Screen 14 (Hóa đơn nhiệt) vì khách hàng đã chốt số tiền cuối bao gồm tip và kim cương tại Screen 12!
     setCurrentStep(15);
   };
 
