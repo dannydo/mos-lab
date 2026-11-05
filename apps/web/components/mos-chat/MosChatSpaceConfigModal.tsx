@@ -14,6 +14,8 @@ export interface MosChatSpaceConfigModalProps {
   onClose: () => void;
   onUpdated: (updatedConv: MosChatConversation) => void;
   onOpenMembersModal?: () => void;
+  isPinned?: boolean;
+  togglePinConversation?: (convId: string) => void | Promise<any>;
 }
 
 export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = ({
@@ -22,18 +24,24 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
   onClose,
   onUpdated,
   onOpenMembersModal,
+  isPinned: propIsPinned,
+  togglePinConversation: propTogglePinConversation,
 }) => {
   const { token } = theme.useToken();
   const chatContext = React.useContext(MosChatContext);
   const pinnedConvIds = chatContext?.pinnedConvIds;
-  const togglePinConversation = chatContext?.togglePinConversation || (async () => ({ success: false, pinned: false }));
+  const togglePin = propTogglePinConversation || chatContext?.togglePinConversation || (async () => ({ success: false, pinned: false }));
   const [name, setName] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [emoji, setEmoji] = useState('');
   const [color, setColor] = useState('#1a73e8');
   const [saving, setSaving] = useState(false);
 
-  const isPinned = conversation ? Boolean(pinnedConvIds?.has(conversation.id)) : false;
+  const isPinned = propIsPinned !== undefined
+    ? propIsPinned
+    : conversation
+      ? Boolean(pinnedConvIds?.has(conversation.id))
+      : false;
 
   useEffect(() => {
     if (conversation && open) {
@@ -195,7 +203,7 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
           <button
             type="button"
             onClick={() => {
-              if (conversation) void togglePinConversation(conversation.id);
+              if (conversation) void togglePin(conversation.id);
             }}
             className={`px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
               isPinned

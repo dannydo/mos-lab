@@ -1995,6 +1995,8 @@ export const MosChatModals: React.FC<MosChatModalsProps> = ({
           notifyLivePeers();
         }}
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
+        isPinned={activeConversation ? Boolean((userPrefs?.pinnedIds || []).includes(activeConversation.id)) : false}
+        togglePinConversation={togglePinConversation}
       />
 
       {/* ================= MODAL: EDIT MEMBER NICKNAME IN GROUP (PER-SPACE NICKNAMES) ================= */}

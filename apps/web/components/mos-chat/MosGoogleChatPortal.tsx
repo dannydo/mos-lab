@@ -1725,9 +1725,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             const isFirstHydration = !hasHydratedPrefsFromServerRef.current;
             hasHydratedPrefsFromServerRef.current = true;
             if (
+              (isFirstHydration && (hasServerCustomizations || !prev.updatedAt)) ||
               (!prev.updatedAt && (hasServerCustomizations || isFirstHydration)) ||
-              (isFirstHydration && hasServerCustomizations && serverTs >= localTs) ||
-              serverTs > localTs
+              serverTs >= localTs ||
+              (serverTs > 0 && Math.abs(serverTs - localTs) < 5000 && hasServerCustomizations)
             ) {
               try {
                 if (JSON.stringify(prev) === JSON.stringify(res.userPrefs)) {
@@ -4535,6 +4536,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
     try {
       await apiClient.chat.togglePinMessage(msgId, activeConversation.id);
+      notifyLivePeers();
     } catch (_) {}
   };
 
