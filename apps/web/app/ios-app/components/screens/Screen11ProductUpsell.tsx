@@ -142,6 +142,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   }, [existingSelectedComboId, isExistingComboLive, matchedPackages]);
 
   const [selectedComboId, setSelectedComboId] = useState<string>(defaultComboSelection);
+  const [deductTodayIntoCombo, setDeductTodayIntoCombo] = useState<boolean>(true);
 
   React.useEffect(() => {
     setSelectedComboId(defaultComboSelection);
@@ -246,11 +247,15 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const comboTotal = selectedComboPkg ? selectedComboPkg.comboPrice : 0;
   const comboBonus = selectedComboPkg ? selectedComboPkg.cvBonus : 0;
 
-  // Khi MUA GÓI MỚI: buổi hôm nay được trừ luôn vào buổi 1 của gói mới -> todayServiceCharge = 0
+  // Khi MUA GÓI MỚI:
+  // - Nếu deductTodayIntoCombo = true: buổi hôm nay được trừ luôn vào buổi 1 của gói mới -> todayServiceCharge = 0
+  // - Nếu deductTodayIntoCombo = false: khách thanh toán lẻ ca này riêng & giữ nguyên trọn vẹn số buổi gói mới mua -> todayServiceCharge = servicePrice
   // Khi TRỪ GÓI ĐANG CÓ: buổi hôm nay trừ vào ví gói -> todayServiceCharge = redemptionAccounting.totalCustomerPayToday (0đ hoặc phụ thu chênh lệch)
   // Khi THANH TOÁN LẺ ('NONE'): khách trả servicePrice
   const effectiveServiceChargeToday = selectedComboPkg
-    ? 0
+    ? deductTodayIntoCombo
+      ? 0
+      : servicePrice
     : selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting
       ? redemptionAccounting.totalCustomerPayToday
       : servicePrice;
@@ -270,6 +275,21 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             },
           ]
         : [];
+
+    const remainingWallet =
+      deductTodayIntoCombo && purchaseAccounting
+        ? purchaseAccounting.remainingWalletAfterToday
+        : selectedComboPkg
+          ? {
+              paidNew: selectedComboPkg.comboNewCount,
+              paidRefill: selectedComboPkg.comboRefillCount,
+              bonusNew: selectedComboPkg.bonusNewCount,
+              bonusRefill: selectedComboPkg.bonusRefillCount,
+              totalPaidRemaining: selectedComboPkg.comboNewCount + selectedComboPkg.comboRefillCount,
+              totalBonusRemaining: selectedComboPkg.bonusNewCount + selectedComboPkg.bonusRefillCount,
+              totalRemaining: selectedComboPkg.totalSessions,
+            }
+          : undefined;
 
     const selectedCombo: NonNullable<BookingItem['selectedCombo']> | null =
       selectedComboPkg && purchaseAccounting
@@ -291,12 +311,14 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             retailTotal: selectedComboPkg.retailTotal,
             savingsAmount: selectedComboPkg.savingsAmount,
             avgPerSessionPrice: selectedComboPkg.avgPerSessionPrice,
-            todaySingleServiceWaived: true,
+            todaySingleServiceWaived: deductTodayIntoCombo,
             isUpTierUpgrade: isUpTierPackage,
             originalServiceCategory: autoMatched.categoryId,
-            recognizedRevenueToday: purchaseAccounting.recognizedRevenueToday,
-            deferredRevenueBalance: purchaseAccounting.deferredRevenueBalance,
-            remainingAfterToday: purchaseAccounting.remainingWalletAfterToday,
+            recognizedRevenueToday: deductTodayIntoCombo ? purchaseAccounting.recognizedRevenueToday : servicePrice,
+            deferredRevenueBalance: deductTodayIntoCombo
+              ? purchaseAccounting.deferredRevenueBalance
+              : selectedComboPkg.comboPrice,
+            remainingAfterToday: remainingWallet,
           }
         : null;
 
@@ -676,30 +698,95 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             {selectedComboPkg &&
               purchaseAccounting &&
               (() => {
-                const bonusRemainingRetailValue =
-                  purchaseAccounting.remainingWalletAfterToday.bonusNew * (selectedComboPkg.newUnitPrice || 0) +
-                  purchaseAccounting.remainingWalletAfterToday.bonusRefill * (selectedComboPkg.refillUnitPrice || 0);
+                const bonusRemainingRetailValue = deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.bonusNew * (selectedComboPkg.newUnitPrice || 0) +
+                    purchaseAccounting.remainingWalletAfterToday.bonusRefill * (selectedComboPkg.refillUnitPrice || 0)
+                  : selectedComboPkg.bonusNewCount * (selectedComboPkg.newUnitPrice || 0) +
+                    selectedComboPkg.bonusRefillCount * (selectedComboPkg.refillUnitPrice || 0);
+
+                const walletRemainingDisplay = deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.totalRemaining
+                  : selectedComboPkg.totalSessions;
+                const paidRemainingDisplay = deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.totalPaidRemaining
+                  : selectedComboPkg.comboNewCount + selectedComboPkg.comboRefillCount;
+                const paidNewDisplay = deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.paidNew
+                  : selectedComboPkg.comboNewCount;
+                const paidRefillDisplay = deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.paidRefill
+                  : selectedComboPkg.comboRefillCount;
+                const bonusRemainingDisplay = deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining
+                  : selectedComboPkg.bonusNewCount + selectedComboPkg.bonusRefillCount;
 
                 return (
                   <div className="rounded-2xl p-3 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1] shadow-sm space-y-2.5">
+                    {/* Segmented Switch: Trừ vào gói vs Trả lẻ ca này */}
+                    <div className="bg-slate-200/90 p-1 rounded-xl grid grid-cols-2 gap-1 text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setDeductTodayIntoCombo(true)}
+                        className={`py-1.5 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1 ${
+                          deductTodayIntoCombo
+                            ? 'bg-white text-emerald-800 shadow-xs font-black'
+                            : 'text-slate-600 hover:text-slate-900 font-semibold'
+                        }`}
+                      >
+                        <span>✓ Trừ vào gói hôm nay</span>
+                        <span className="text-[9.5px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                          0đ lẻ
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeductTodayIntoCombo(false)}
+                        className={`py-1.5 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1 ${
+                          !deductTodayIntoCombo
+                            ? 'bg-white text-indigo-900 shadow-xs font-black'
+                            : 'text-slate-600 hover:text-slate-900 font-semibold'
+                        }`}
+                      >
+                        <span>Trả lẻ ca này</span>
+                        <span className="text-[9.5px] font-extrabold text-indigo-700 bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200">
+                          Giữ trọn gói
+                        </span>
+                      </button>
+                    </div>
+
                     {/* Card Header */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 flex-shrink-0">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            deductTodayIntoCombo
+                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600'
+                              : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-600'
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <div className="min-w-0">
                           <div className="text-[11px] font-black text-slate-800 uppercase tracking-wide leading-tight">
-                            Đặc quyền trừ buổi hôm nay vào gói
+                            {deductTodayIntoCombo
+                              ? 'Đặc quyền trừ buổi hôm nay vào gói'
+                              : 'Thanh toán lẻ riêng & Giữ nguyên gói'}
                           </div>
                           <div className="text-[9.5px] text-slate-500 font-medium leading-tight">
-                            Gói {selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName} · Buổi hôm nay tính làm
-                            Lượt 1
+                            {deductTodayIntoCombo
+                              ? `Gói ${selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName} · Buổi hôm nay tính làm Lượt 1`
+                              : `Gói ${selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName} · Giữ nguyên ${selectedComboPkg.totalSessions} buổi cho lần sau`}
                           </div>
                         </div>
                       </div>
-                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-[10.5px] font-black tabular-nums shadow-xs flex-shrink-0">
-                        <span>Miễn thu lẻ</span>
+                      <div
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black tabular-nums shadow-xs flex-shrink-0 ${
+                          deductTodayIntoCombo
+                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700'
+                            : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-700'
+                        }`}
+                      >
+                        <span>{deductTodayIntoCombo ? 'Miễn thu lẻ' : 'Thu lẻ riêng'}</span>
                         <span className="font-extrabold">{servicePrice.toLocaleString('vi-VN')}đ</span>
                       </div>
                     </div>
@@ -711,18 +798,26 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                         <div>
                           <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>Buổi hôm nay (Lượt 1)</span>
+                            <span>{deductTodayIntoCombo ? 'Buổi hôm nay (Lượt 1)' : 'Buổi hôm nay (Ca lẻ)'}</span>
                           </div>
                           <div className="mt-1 text-[12.5px] font-black text-slate-900 leading-tight">
-                            Trừ vào 1 Buổi Nối Mới
+                            {deductTodayIntoCombo ? 'Trừ vào 1 Buổi Nối Mới' : 'Thanh toán lẻ riêng ca này'}
                           </div>
                           <div className="text-[9.5px] text-slate-500 mt-0.5 leading-snug">
-                            Không tính tiền lẻ ca này, trừ thẳng vào lượt đầu của gói mới mua.
+                            {deductTodayIntoCombo
+                              ? 'Không tính tiền lẻ ca này, trừ thẳng vào lượt đầu của gói mới mua.'
+                              : 'Khách trả riêng tiền dịch vụ hôm nay, không trừ vào bất kỳ buổi nào của gói.'}
                           </div>
                         </div>
                         <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
                           <span className="text-slate-500 font-medium">Thu lẻ ca này:</span>
-                          <span className="font-black text-emerald-600 text-[11px] tabular-nums">0đ</span>
+                          <span
+                            className={`font-black text-[11px] tabular-nums ${
+                              deductTodayIntoCombo ? 'text-emerald-600' : 'text-slate-900'
+                            }`}
+                          >
+                            {deductTodayIntoCombo ? '0đ' : `${servicePrice.toLocaleString('vi-VN')}đ`}
+                          </span>
                         </div>
                       </div>
 
@@ -731,11 +826,11 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                         <div>
                           <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
                             <Wallet className="w-3 h-3 text-indigo-600" />
-                            <span>Ví còn lại sau ca này</span>
+                            <span>{deductTodayIntoCombo ? 'Ví còn lại sau ca này' : 'Ví nguyên vẹn cho lần sau'}</span>
                           </div>
                           <div className="mt-1 flex items-baseline gap-1 text-slate-900 leading-tight">
                             <span className="text-[15px] font-black tabular-nums text-indigo-700">
-                              {purchaseAccounting.remainingWalletAfterToday.totalRemaining}
+                              {walletRemainingDisplay}
                             </span>
                             <span className="text-[11px] font-bold text-slate-500">
                               /{selectedComboPkg.totalSessions} buổi
@@ -743,17 +838,13 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                           </div>
                           <div className="text-[9.5px] text-slate-600 mt-0.5 leading-snug space-y-0.5">
                             <div>
-                              • <strong>{purchaseAccounting.remainingWalletAfterToday.totalPaidRemaining}</strong> buổi
-                              mua (
-                              {purchaseAccounting.remainingWalletAfterToday.paidNew > 0
-                                ? `${purchaseAccounting.remainingWalletAfterToday.paidNew} New + `
-                                : ''}
-                              {purchaseAccounting.remainingWalletAfterToday.paidRefill} Refill)
+                              • <strong>{paidRemainingDisplay}</strong> buổi mua (
+                              {paidNewDisplay > 0 ? `${paidNewDisplay} New + ` : ''}
+                              {paidRefillDisplay} Refill)
                             </div>
-                            {purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining > 0 && (
+                            {bonusRemainingDisplay > 0 && (
                               <div className="text-emerald-700 font-bold">
-                                • <strong>{purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining}</strong>{' '}
-                                buổi tặng{' '}
+                                • <strong>{bonusRemainingDisplay}</strong> buổi tặng{' '}
                                 <span className="text-[9px] font-extrabold text-emerald-800">
                                   (Trị giá {bonusRemainingRetailValue.toLocaleString('vi-VN')}đ)
                                 </span>
@@ -773,22 +864,38 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     {/* Value / Savings Footer Strip */}
                     <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-emerald-500/10 rounded-xl px-2.5 py-1.5 border border-amber-500/20 flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                        <span>
-                          Giá lẻ:{' '}
-                          <strong className="line-through text-slate-400 tabular-nums">
-                            {selectedComboPkg.retailTotal.toLocaleString('vi-VN')}đ
-                          </strong>
-                        </span>
-                        <span>•</span>
-                        <span>
-                          Giá gói:{' '}
-                          <strong className="text-slate-900 tabular-nums">
-                            {selectedComboPkg.comboPrice.toLocaleString('vi-VN')}đ
-                          </strong>
-                        </span>
+                        {deductTodayIntoCombo ? (
+                          <>
+                            <span>
+                              Giá lẻ:{' '}
+                              <strong className="line-through text-slate-400 tabular-nums">
+                                {selectedComboPkg.retailTotal.toLocaleString('vi-VN')}đ
+                              </strong>
+                            </span>
+                            <span>•</span>
+                            <span>
+                              Giá gói:{' '}
+                              <strong className="text-slate-900 tabular-nums">
+                                {selectedComboPkg.comboPrice.toLocaleString('vi-VN')}đ
+                              </strong>
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span>
+                              Lẻ ca này: <strong>{servicePrice.toLocaleString('vi-VN')}đ</strong>
+                            </span>
+                            <span>+</span>
+                            <span>
+                              Gói: <strong>{selectedComboPkg.comboPrice.toLocaleString('vi-VN')}đ</strong>
+                            </span>
+                          </>
+                        )}
                       </div>
                       <div className="font-black text-emerald-700 tabular-nums">
-                        Tiết kiệm {selectedComboPkg.savingsAmount.toLocaleString('vi-VN')}đ
+                        {deductTodayIntoCombo
+                          ? `Tiết kiệm ${selectedComboPkg.savingsAmount.toLocaleString('vi-VN')}đ`
+                          : `Tổng ${(servicePrice + selectedComboPkg.comboPrice).toLocaleString('vi-VN')}đ`}
                       </div>
                     </div>
                   </div>

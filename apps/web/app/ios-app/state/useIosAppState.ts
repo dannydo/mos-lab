@@ -990,10 +990,14 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
       const comboTotal = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
 
-      // Khi mua gói mới: trừ luôn buổi đầu vào gói -> phí lẻ buổi hôm nay = 0đ
+      // Khi mua gói mới:
+      // - Nếu trừ vào gói (todaySingleServiceWaived = true) -> phí lẻ buổi hôm nay = 0đ
+      // - Nếu trả lẻ riêng (todaySingleServiceWaived = false) -> phí lẻ = prev.servicePrice
       // Khi trừ gói đang có: phí lẻ = phụ thu quy đổi/nâng cấp (nếu có) hoặc 0đ
       const effectiveServiceTotal = nextCombo
-        ? 0
+        ? nextCombo.todaySingleServiceWaived
+          ? 0
+          : prev.servicePrice
         : nextRedemption
           ? nextRedemption.totalCustomerPayToday
           : prev.servicePrice;

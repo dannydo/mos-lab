@@ -44,7 +44,9 @@ export function Screen12CheckoutBilling({
   const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
   const effectiveServiceCharge = selectedCombo
-    ? 0
+    ? selectedCombo.todaySingleServiceWaived
+      ? 0
+      : servicePrice
     : comboRedemption
       ? comboRedemption.totalCustomerPayToday
       : servicePrice;
@@ -130,9 +132,15 @@ export function Screen12CheckoutBilling({
                   {booking?.attributes?.style && ` · Dáng ${booking.attributes.style}`}
                 </div>
                 {selectedCombo ? (
-                  <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    ✓ Trừ vào Buổi 1 của gói mới mua (Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
-                  </div>
+                  selectedCombo.todaySingleServiceWaived ? (
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                      ✓ Trừ vào Buổi 1 của gói mới mua (Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-indigo-700 font-semibold mt-0.5">
+                      ✓ Khách trả lẻ ca này · Giữ trọn vẹn số buổi gói mới mua
+                    </div>
+                  )
                 ) : comboRedemption ? (
                   <div className="text-[11px] text-sky-700 font-semibold mt-0.5">
                     ✓ {comboRedemption.explanation} (Ví còn {comboRedemption.remainingAfterToday} lần)
@@ -148,12 +156,18 @@ export function Screen12CheckoutBilling({
               </div>
               <div className="text-right">
                 {selectedCombo ? (
-                  <>
-                    <span className="text-[13px] text-emerald-700 font-extrabold tabular-nums block">0 đ</span>
-                    <span className="text-[10px] text-gray-400 line-through tabular-nums block">
+                  selectedCombo.todaySingleServiceWaived ? (
+                    <>
+                      <span className="text-[13px] text-emerald-700 font-extrabold tabular-nums block">0 đ</span>
+                      <span className="text-[10px] text-gray-400 line-through tabular-nums block">
+                        {servicePrice.toLocaleString('vi-VN')} đ
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[13px] text-gray-900 font-black tabular-nums block">
                       {servicePrice.toLocaleString('vi-VN')} đ
                     </span>
-                  </>
+                  )
                 ) : comboRedemption ? (
                   <>
                     <span className="text-[13px] text-sky-800 font-extrabold tabular-nums block">
