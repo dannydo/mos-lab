@@ -229,4 +229,44 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
       );
     }
   });
+
+  it('styles own message bubbles and other message bubbles with readable theme colors without harsh gradients', () => {
+    const convWithMine: MosChatConversation[] = [
+      {
+        ...sampleConversations[0],
+        messages: [
+          ...sampleMessages,
+          {
+            id: 'm-mine',
+            conversationId: 'core-team',
+            senderId: 'user-2',
+            senderName: 'Danny Do',
+            senderRole: 'Admin',
+            text: 'Tin nhắn của tôi trong mini chat',
+            timeLabel: '11:00',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+    ];
+
+    const { container } = render(
+      <MosChatDockedWindows
+        {...baseProps}
+        conversations={convWithMine}
+        accentSoftBg="rgba(212, 168, 75, 0.16)"
+        accentBorder="rgba(212, 168, 75, 0.38)"
+      />
+    );
+
+    const mineBubble = container.querySelector('[data-message-id="m-mine"] .group\\/bubble') as HTMLElement;
+    expect(mineBubble).toBeInTheDocument();
+    expect(mineBubble.className).not.toContain('bg-gradient-to-br');
+    expect(mineBubble.className).not.toContain('text-neutral-950');
+    expect(mineBubble.style.background).toBe('rgba(212, 168, 75, 0.16)');
+
+    const otherBubble = container.querySelector('[data-message-id="m-1"] .group\\/bubble') as HTMLElement;
+    expect(otherBubble).toBeInTheDocument();
+    expect(otherBubble.style.background).toMatch(/(?:rgb\(42,\s*42,\s*42\)|#2a2a2a)/);
+  });
 });

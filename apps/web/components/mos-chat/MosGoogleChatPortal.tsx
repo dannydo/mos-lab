@@ -11261,6 +11261,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         accentSoftBg={accentSoftBg}
         accentBorder={accentBorder}
         accentContrast={accentContrast}
+        isDark={isDark}
         token={token}
         renderUserAvatarNode={renderUserAvatarNode}
         isConversationParticipantOnline={isConversationParticipantOnline}
