@@ -6041,6 +6041,7 @@ export interface LashFamilySibling {
   shortLabel: string;
   unitWord: 'trụ' | 'fan' | 'sợi';
   fibersPerUnit: number;
+  fiberDensityLabel: string;
 }
 
 export interface LashFamilyInfo {
@@ -6062,6 +6063,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '2X',
           unitWord: 'trụ',
           fibersPerUnit: 2,
+          fiberDensityLabel: '2 sợi/trụ',
         },
         {
           categoryId: 'HyperLight_3X',
@@ -6070,6 +6072,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '3X',
           unitWord: 'trụ',
           fibersPerUnit: 3,
+          fiberDensityLabel: '3 sợi/trụ',
         },
         {
           categoryId: 'HyperLight_4X',
@@ -6078,6 +6081,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '4X',
           unitWord: 'trụ',
           fibersPerUnit: 4,
+          fiberDensityLabel: '4 sợi/trụ',
         },
         {
           categoryId: 'HyperLight_5X',
@@ -6086,6 +6090,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '5X',
           unitWord: 'trụ',
           fibersPerUnit: 5,
+          fiberDensityLabel: '5 sợi/trụ',
         },
       ],
     };
@@ -6103,6 +6108,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '3ℓ',
           unitWord: 'trụ',
           fibersPerUnit: 3,
+          fiberDensityLabel: '3 sợi/trụ',
         },
         {
           categoryId: 'IvyLight_4L',
@@ -6111,6 +6117,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '4ℓ',
           unitWord: 'trụ',
           fibersPerUnit: 4,
+          fiberDensityLabel: '4 sợi/trụ',
         },
         {
           categoryId: 'IvyLight_5L',
@@ -6119,6 +6126,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '5ℓ',
           unitWord: 'trụ',
           fibersPerUnit: 5,
+          fiberDensityLabel: '5 sợi/trụ',
         },
       ],
     };
@@ -6136,6 +6144,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '3D',
           unitWord: 'fan',
           fibersPerUnit: 3,
+          fiberDensityLabel: '3 sợi/fan',
         },
         {
           categoryId: 'UltraLight_4D',
@@ -6144,6 +6153,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '4D',
           unitWord: 'fan',
           fibersPerUnit: 4,
+          fiberDensityLabel: '4 sợi/fan',
         },
         {
           categoryId: 'UltraLight_5D',
@@ -6152,6 +6162,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: '5D',
           unitWord: 'fan',
           fibersPerUnit: 5,
+          fiberDensityLabel: '5 sợi/fan',
         },
       ],
     };
@@ -6169,6 +6180,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: 'Flawless Mink',
           unitWord: 'sợi',
           fibersPerUnit: 1,
+          fiberDensityLabel: 'Sợi đơn 1:1',
         },
         {
           categoryId: 'Classic_Volume',
@@ -6177,6 +6189,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
           shortLabel: 'Classic 2D',
           unitWord: 'sợi',
           fibersPerUnit: 2,
+          fiberDensityLabel: '2 sợi/fan 2D',
         },
       ],
     };
@@ -6193,6 +6206,7 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
         shortLabel: 'VVIP Pass',
         unitWord: 'sợi',
         fibersPerUnit: 1,
+        fiberDensityLabel: 'Tự chọn dòng mi',
       },
     ],
   };

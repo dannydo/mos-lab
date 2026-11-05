@@ -468,7 +468,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                       >
                         <span className="text-[12px] font-black tracking-tight">{sib.shortLabel}</span>
                         <span className="text-[9px] font-semibold opacity-90 truncate max-w-full">
-                          {sib.fibersPerUnit} {sib.unitWord}/trụ
+                          {sib.fiberDensityLabel}
                         </span>
                         {isTodayDone ? (
                           <span
