@@ -175,6 +175,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { resolveMediaUrl } from '../../lib/api-base-url';
+import { copyImageToClipboard, copyImageUrlToClipboard, downloadImage } from './utils/chat-image-copy';
 import { playNeuralSpeech, stopSpeaking, setNeuralSpeechSpeed } from '../voice-assistant/speech-utils';
 import {
   MosChatStickerAndEmojiPicker,
@@ -7962,23 +7963,53 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           <div className={`flex flex-wrap gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
             {images.map((att, idx) => {
               const fullUrl = resolveMediaUrl(att.url);
+              const imageContextMenuItems = [
+                {
+                  key: 'copy-img',
+                  icon: <Copy size={14} style={{ color: '#fbbf24' }} />,
+                  label: 'Sao chép hình ảnh',
+                  onClick: () => copyImageToClipboard(fullUrl),
+                },
+                {
+                  key: 'copy-link',
+                  icon: <LinkIcon size={14} style={{ color: '#38bdf8' }} />,
+                  label: 'Sao chép liên kết hình ảnh',
+                  onClick: () => copyImageUrlToClipboard(fullUrl),
+                },
+                {
+                  type: 'divider' as const,
+                },
+                {
+                  key: 'download',
+                  icon: <Download size={14} style={{ color: '#34d399' }} />,
+                  label: 'Tải hình ảnh về máy',
+                  onClick: () => downloadImage(fullUrl, att.name),
+                },
+                {
+                  key: 'zoom',
+                  icon: <ZoomIn size={14} />,
+                  label: 'Xem phóng to chi tiết',
+                  onClick: () => openLightbox(images, idx),
+                },
+              ];
+
               return (
-                <Tooltip
-                  key={att.id}
-                  title={
-                    totalImages > 1
-                      ? `Nhấn để phóng to (${idx + 1}/${totalImages} · Dùng phím ← → để chuyển hình)`
-                      : 'Nhấn để phóng to xem chi tiết'
-                  }
-                >
-                  <button
-                    type="button"
+                <Dropdown key={att.id} menu={{ items: imageContextMenuItems }} trigger={['contextMenu']}>
+                  <div
+                    role="button"
+                    tabIndex={0}
                     data-no-chat-autofocus="true"
                     onClick={(e) => {
                       e.stopPropagation();
                       openLightbox(images, idx);
                     }}
-                    className="relative rounded-xl overflow-hidden group/img cursor-zoom-in text-left block p-0"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation();
+                        openLightbox(images, idx);
+                      }
+                    }}
+                    className="relative rounded-xl overflow-hidden group/img cursor-zoom-in text-left block p-0 select-none"
                     style={{
                       border: `1px solid ${borderStrong}`,
                       background: surfaceRaised,
@@ -7995,9 +8026,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         display: 'block',
                       }}
                     />
-                    <span className="opacity-0 group-hover/img:opacity-100 transition-opacity absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
+
+                    {/* Hover Overlay with Center Zoom & Quick Action Pills */}
+                    <div className="opacity-0 group-hover/img:opacity-100 transition-opacity absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
                       <span
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center shadow-lg"
+                        className="w-8 h-8 rounded-full inline-flex items-center justify-center shadow-lg pointer-events-none"
                         style={{
                           background: 'rgba(15, 23, 42, 0.88)',
                           color: '#fbbf24',
@@ -8006,10 +8039,41 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       >
                         <ZoomIn size={15} />
                       </span>
-                    </span>
+                    </div>
+
+                    {/* Quick Floating Actions (Top-Right on Hover) */}
+                    <div className="opacity-0 group-hover/img:opacity-100 transition-opacity absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                      <Tooltip title="Sao chép hình ảnh">
+                        <button
+                          type="button"
+                          aria-label="Sao chép hình ảnh"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyImageToClipboard(fullUrl);
+                          }}
+                          className="w-6 h-6 rounded-md bg-slate-900/85 hover:bg-amber-500 hover:text-slate-950 text-white flex items-center justify-center shadow-md cursor-pointer transition-colors border border-white/20"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip title="Tải hình về máy">
+                        <button
+                          type="button"
+                          aria-label="Tải hình về máy"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadImage(fullUrl, att.name);
+                          }}
+                          className="w-6 h-6 rounded-md bg-slate-900/85 hover:bg-emerald-500 hover:text-white text-white flex items-center justify-center shadow-md cursor-pointer transition-colors border border-white/20"
+                        >
+                          <Download size={12} />
+                        </button>
+                      </Tooltip>
+                    </div>
+
                     {totalImages > 1 && (
                       <span
-                        className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold tabular-nums pointer-events-none"
+                        className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold tabular-nums pointer-events-none group-hover/img:opacity-0 transition-opacity"
                         style={{
                           background: 'rgba(15, 23, 42, 0.82)',
                           color: '#f8fafc',
@@ -8028,8 +8092,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         <span>Drive</span>
                       </span>
                     )}
-                  </button>
-                </Tooltip>
+                  </div>
+                </Dropdown>
               );
             })}
           </div>

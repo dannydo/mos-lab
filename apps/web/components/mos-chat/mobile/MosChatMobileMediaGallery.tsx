@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Copy } from 'lucide-react';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
+import { copyImageToClipboard } from '../utils/chat-image-copy';
 
 export interface MosChatGalleryImage {
   id: string;
@@ -427,6 +428,21 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
 
           {/* Divider */}
           <div className="w-[1px] h-3.5 bg-white/15 mx-0.5" />
+
+          {/* Copy Image Button */}
+          <button
+            type="button"
+            onClick={async () => {
+              if (currentImage?.url) {
+                await copyImageToClipboard(currentImage.url);
+              }
+            }}
+            className="w-7 h-7 rounded-full text-white/80 hover:text-white active:scale-90 flex items-center justify-center transition-all"
+            aria-label="Sao chép hình ảnh"
+            title="Sao chép hình ảnh"
+          >
+            <Copy className="w-3.5 h-3.5" />
+          </button>
 
           {/* Download Original Link */}
           <a

@@ -24,7 +24,8 @@ import {
   WINGS_SIGNATURE_EMOJIS,
   GOOGLE_CHAT_REACTION_EMOJIS,
 } from '../constants/chat-constants';
-import { isUserMessageOwner } from '../utils/chat-helpers';
+import { isUserMessageOwner, isImageAttachment } from '../utils/chat-helpers';
+import { copyImageToClipboard } from '../utils/chat-image-copy';
 import { MosChatStickerAndEmojiPicker, formatStickerToken } from '../mos-chat-stickers';
 
 export interface MosChatMobileReactionSheetProps {
@@ -268,6 +269,23 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                 <Copy className="w-4 h-4 text-slate-400" />
                 <span className="font-medium">Sao chép văn bản</span>
               </button>
+
+              {message.attachments?.some(isImageAttachment) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    onClose();
+                    const img = message.attachments?.find(isImageAttachment);
+                    if (img?.url) {
+                      await copyImageToClipboard(img.url);
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                >
+                  <Copy className="w-4 h-4 text-emerald-400" />
+                  <span className="font-medium text-emerald-300">Sao chép hình ảnh</span>
+                </button>
+              )}
 
               <button
                 type="button"
