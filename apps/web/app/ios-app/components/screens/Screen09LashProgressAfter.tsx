@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import {
@@ -272,16 +273,8 @@ export function Screen09LashProgressAfter({
         </div>
       )}
 
-      {/* Steps subheader on black */}
-      <div className="bg-black select-none shrink-0 border-b border-neutral-900">
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Giờ Phục Vụ ({actualMinutes}p)</div>
-        <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 pb-1.5 flex items-center justify-between">
-          <span>4. Ảnh After Hoàn Thiện ✓</span>
-          <span className="text-[11px] font-mono">Hoàn tất ca làm</span>
-        </div>
-      </div>
+      {/* 2. Steps Subheader (Gom thành 1 thanh ngang Segmented Stepper chuẩn iOS) */}
+      <LashServicingStepper activeStep={4} elapsedMinutes={actualMinutes} />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
         {/* KHỐI 1: CHỤP ẢNH AFTER (ƯU TIÊN LÊN TRÊN CÙNG TO RÕ THEO YÊU CẦU) */}

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { BookingItem } from '../../state/mockData';
 import {
   saveLocalProgressSnapshot,
@@ -147,16 +148,8 @@ export function Screen07bLashProgressCleaned({
       />
       <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-      {/* 2. Steps Subheader (Black Bar) - Chuẩn 3 tấm ảnh theo iOS gốc */}
-      <div className="bg-black select-none shrink-0 border-b border-neutral-900">
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before Mắt Mộc</div>
-        <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 flex items-center justify-between">
-          <span>2. Ảnh Vệ Sinh Nhắm ✓</span>
-          <span className="text-[11px] font-mono">Bắt buộc</span>
-        </div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">3. Giờ Phục Vụ (Tự động)</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">4. Ảnh After Hoàn Thiện</div>
-      </div>
+      {/* 2. Steps Subheader (Gom thành 1 thanh ngang Segmented Stepper chuẩn iOS) */}
+      <LashServicingStepper activeStep={2} />
 
       <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
         {/* 3. Customer Info Header Card */}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
@@ -177,16 +178,8 @@ export function Screen08LashProgressTimer({
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
       <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ảnh Vệ Sinh" />
 
-      {/* 2. Steps Subheader (Black Bar) - Chuẩn 4 bước */}
-      <div className="bg-black select-none shrink-0 border-b border-neutral-900">
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">1. Ảnh Before</div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1">2. Ảnh Vệ Sinh</div>
-        <div className="bg-[#FFB400] text-black font-bold text-[13px] px-4 py-1.5 flex items-center justify-between">
-          <span>3. Giờ Phục Vụ (Tự động) ✓</span>
-          <span className="text-[11px] font-mono tabular-nums">Định mức: {targetMinutes}p</span>
-        </div>
-        <div className="text-neutral-400 text-[13px] font-medium px-4 py-1 pb-1.5">4. Ảnh After</div>
-      </div>
+      {/* 2. Steps Subheader (Gom thành 1 thanh ngang Segmented Stepper chuẩn iOS) */}
+      <LashServicingStepper activeStep={3} />
 
       {/* 3. Main Body */}
       <div className="flex-1 flex flex-col justify-around px-4 py-4 overflow-y-auto space-y-3">
