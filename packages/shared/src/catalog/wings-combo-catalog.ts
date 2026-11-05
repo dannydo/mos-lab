@@ -130,6 +130,8 @@ export interface MatchedComboPackageOption {
   cardPreviewUrl: string;
   readableContent: string;
   specialNote?: string;
+  theme?: string;
+  allVolumePrices?: WingsComboRulePrice[];
 }
 
 export interface ComboPurchaseAccountingBreakdown {
@@ -5572,6 +5574,8 @@ export function getComboPackagesForCategoryAndVolume(params: {
         cardPreviewUrl: rule.cardPreviewUrl,
         readableContent: rule.special || '20 lần nối mi cao cấp · Dùng chung cho bạn bè & người thân',
         specialNote: rule.special,
+        theme: category.theme,
+        allVolumePrices: rule.prices,
       });
       continue;
     }
@@ -5628,6 +5632,8 @@ export function getComboPackagesForCategoryAndVolume(params: {
       cardImageUrl: rule.cardImageUrl,
       cardPreviewUrl: rule.cardPreviewUrl,
       readableContent: formatReadableComboContent(rule),
+      theme: category.theme,
+      allVolumePrices: rule.prices,
     });
   }
 
@@ -5669,6 +5675,8 @@ export function getComboPackagesForCategoryAndVolume(params: {
         cardPreviewUrl: vvipRule.cardPreviewUrl,
         readableContent: '20 lần nối mi cao cấp · Hạn dùng 36 tháng · Chia sẻ cùng bạn bè & người thân',
         specialNote: vvipRule.special,
+        theme: vvipCat.theme,
+        allVolumePrices: vvipRule.prices,
       });
     }
   }

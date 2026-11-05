@@ -28,6 +28,7 @@ import {
   calculateComboRedemptionAccounting,
 } from '@mos-lab/shared';
 import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
+import { WingsComboCard } from '../ui-kit/WingsComboCard';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
 
 interface Screen11ProductUpsellProps {
@@ -513,66 +514,22 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               </div>
             )}
 
-            {/* Dynamic Matched Combo Packages List */}
-            <div className="space-y-1.5">
+            {/* Dynamic Matched Combo Packages List — Luxury Wings Membership Cards */}
+            <div className="space-y-2.5">
               {matchedPackages.map((pkg) => {
                 const active = selectedComboId === pkg.id;
                 return (
-                  <div
+                  <WingsComboCard
                     key={pkg.id}
-                    onClick={() => {
+                    pkg={pkg}
+                    customerName={customerName}
+                    customerPhone={booking?.customerPhone}
+                    selected={active}
+                    compact
+                    onSelect={() => {
                       if (!pkg.isLocked) setSelectedComboId(pkg.id);
                     }}
-                    className={`p-2.5 rounded-xl border transition-all ${
-                      pkg.isLocked
-                        ? 'bg-gray-100 border-gray-200 opacity-65 cursor-not-allowed'
-                        : active
-                          ? 'bg-amber-50/90 border-[#FF9500] shadow-xs cursor-pointer'
-                          : 'bg-[#F9F9FB] border-transparent hover:border-gray-200 cursor-pointer'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[12px] font-extrabold text-black">{pkg.displayName}</span>
-                          {pkg.isWelcomePackage && (
-                            <span
-                              className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
-                                pkg.isLocked ? 'bg-red-100 text-red-700' : 'bg-amber-200 text-amber-950'
-                              }`}
-                            >
-                              {pkg.isLocked ? '🔒 Chỉ ngày đầu' : '🌟 Welcome'}
-                            </span>
-                          )}
-                          <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                            +{pkg.discountPct}%
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-gray-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          <span className="font-semibold text-gray-700">{pkg.readableContent}</span>
-                          <span>· HSD {pkg.validityMonths} tháng</span>
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-0.5 tabular-nums">
-                          Giá gói: <strong className="text-black">{pkg.comboPrice.toLocaleString('vi-VN')} đ</strong>{' '}
-                          <span className="line-through text-gray-400">
-                            ({pkg.retailTotal.toLocaleString('vi-VN')}đ)
-                          </span>{' '}
-                          · TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ/lần
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full tabular-nums">
-                          +{pkg.cvBonus.toLocaleString('vi-VN')}đ CV🪶
-                        </span>
-                        {pkg.isLocked ? (
-                          <Lock className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          active && <CheckCircle2 className="w-4 h-4 text-[#FF9500]" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  />
                 );
               })}
             </div>

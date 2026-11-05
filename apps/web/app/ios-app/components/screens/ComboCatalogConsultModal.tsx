@@ -26,6 +26,7 @@ import {
   Gift,
   ShieldCheck,
 } from 'lucide-react';
+import { WingsComboCard } from '../ui-kit/WingsComboCard';
 
 interface ComboCatalogConsultModalProps {
   open: boolean;
@@ -350,76 +351,28 @@ export function ComboCatalogConsultModal({
                       : 'border-neutral-200'
                 }`}
               >
-                <div className="flex gap-3">
-                  {/* Card Artwork Preview */}
-                  {pkg.cardPreviewUrl && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setZoomedCard({
-                          title: pkg.displayName,
-                          imageUrl: pkg.cardImageUrl || pkg.cardPreviewUrl,
-                        })
-                      }
-                      className="relative w-20 h-24 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-neutral-200 group cursor-pointer"
-                    >
-                      <img src={pkg.cardPreviewUrl} alt={pkg.displayName} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 right-1 bg-black/70 text-white p-1 rounded-md">
-                        <ZoomIn className="w-3 h-3" />
-                      </span>
-                    </button>
-                  )}
-
-                  {/* Main Details */}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-start justify-between gap-1.5">
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[14px] font-black text-black leading-snug">{pkg.ruleName}</span>
-                          {pkg.isWelcomePackage && (
-                            <span
-                              className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${
-                                pkg.isLocked ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {pkg.isLocked ? '🔒 Welcome · Chỉ ngày đầu' : '🌟 Welcome · Ngày đầu'}
-                            </span>
-                          )}
-                          <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full tabular-nums">
-                            Ưu đãi +{pkg.discountPct}%
-                          </span>
-                        </div>
-                        <div className="text-[11px] font-semibold text-gray-600 mt-0.5">
-                          {pkg.categoryName} · {pkg.volumeMeta.detailLabel}
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <div className="text-[15px] font-black text-[#FF9500] tabular-nums">
-                          {displayPrice.toLocaleString('vi-VN')} đ
-                        </div>
-                        <div className="text-[10px] text-gray-400 line-through tabular-nums">
-                          Lẻ: {pkg.retailTotal.toLocaleString('vi-VN')} đ
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Session & Bonus Pills */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px]">
-                      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-800 font-bold px-2 py-0.5 rounded-md border border-blue-200">
-                        <Gift className="w-3 h-3" />
-                        {pkg.readableContent}
-                      </span>
-                      <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 font-semibold px-2 py-0.5 rounded-md">
-                        <Calendar className="w-3 h-3" />
-                        HSD: {pkg.validityMonths} tháng
-                      </span>
-                      <span className="inline-flex items-center gap-1 bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-md tabular-nums">
-                        Thưởng CV🪶: +{pkg.cvBonus.toLocaleString('vi-VN')}đ
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                {/* Luxury Membership Card Design */}
+                <WingsComboCard
+                  pkg={pkg}
+                  selected={isSelected}
+                  includeVat={includeVat}
+                  compact
+                  onSelect={() => {
+                    if (!pkg.isLocked) {
+                      onSelectPackage(pkg);
+                      onClose();
+                    }
+                  }}
+                  onZoomOriginalCard={
+                    pkg.cardImageUrl || pkg.cardPreviewUrl
+                      ? () =>
+                          setZoomedCard({
+                            title: pkg.displayName,
+                            imageUrl: pkg.cardImageUrl || pkg.cardPreviewUrl,
+                          })
+                      : undefined
+                  }
+                />
 
                 {/* Accounting & Immediate Deduction Preview Box */}
                 <div className="bg-[#F9F9FB] rounded-xl p-2.5 border border-gray-200 text-[11px] space-y-1">

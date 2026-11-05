@@ -43614,8 +43614,8 @@
       "filePath": "apps/web/app/dashboard/catalog/components/CatalogComboConsultTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37154,
-        "lineCount": 823,
+        "sizeBytes": 32923,
+        "lineCount": 712,
         "ext": ".tsx"
       }
     },
@@ -47072,8 +47072,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ComboCatalogConsultModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25688,
-        "lineCount": 565,
+        "sizeBytes": 22575,
+        "lineCount": 517,
         "ext": ".tsx"
       }
     },
@@ -47371,8 +47371,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34336,
-        "lineCount": 702,
+        "sizeBytes": 31650,
+        "lineCount": 659,
         "ext": ".tsx"
       }
     },
@@ -47384,7 +47384,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14913,
+        "sizeBytes": 14909,
         "lineCount": 312,
         "ext": ".tsx"
       }
@@ -47620,6 +47620,19 @@
       "metadata": {
         "sizeBytes": 2308,
         "lineCount": 67,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
+      "type": "File",
+      "label": "WingsComboCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 30017,
+        "lineCount": 888,
         "ext": ".tsx"
       }
     },
@@ -48593,8 +48606,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 218658,
-        "lineCount": 5849,
+        "sizeBytes": 212850,
+        "lineCount": 5937,
         "ext": ".ts"
       }
     },
@@ -48645,8 +48658,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3180,
-        "lineCount": 86,
+        "sizeBytes": 3179,
+        "lineCount": 85,
         "ext": ".ts"
       }
     },
@@ -75021,6 +75034,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -105169,8 +105189,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3815,
-    "totalEdges": 7938,
+    "totalNodes": 3816,
+    "totalEdges": 7939,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -105179,14 +105199,14 @@
       "SharedType": 1383,
       "DesignToken": 12,
       "UIComponent": 337,
-      "File": 1085
+      "File": 1086
     },
     "edgeTypeCounts": {
       "EXPORTS": 1577,
       "HANDLES_ROUTE": 748,
       "RENDERS": 402,
       "USES_TOKEN": 339,
-      "IMPORTS": 603,
+      "IMPORTS": 604,
       "QUERIES_MODEL": 426,
       "API_CALL": 3843
     },

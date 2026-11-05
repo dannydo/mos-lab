@@ -1,36 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  Card,
-  Tag,
-  Switch,
-  Button,
-  Select,
-  Row,
-  Col,
-  Space,
-  Typography,
-  Modal,
-  Divider,
-  Alert,
-  message,
-  theme as antdTheme,
-} from 'antd';
-import {
-  Sparkles,
-  Scale,
-  Copy,
-  Check,
-  Calculator,
-  Lock,
-  ShieldCheck,
-  Calendar,
-  Gift,
-  Wallet,
-  ZoomIn,
-  ArrowRight,
-} from 'lucide-react';
+import { Card, Switch, Button, Select, Row, Col, Space, Typography, Divider, Alert, message } from 'antd';
+import { Sparkles, Scale, Copy, Check, Calculator, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
 import {
   WINGS_COMBO_CATEGORIES,
   WingsComboCategoryId,
@@ -44,12 +16,12 @@ import {
   formatComboConsultationQuote,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { WingsComboCard } from '../../../ios-app/components/ui-kit/WingsComboCard';
 
 const { Text, Title } = Typography;
 
 export default function CatalogComboConsultTab() {
   const { themeMode } = useTheme();
-  const { token } = antdTheme.useToken();
   const isDark = themeMode === 'dark';
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<WingsComboCategoryId>('FlawlessMink');
@@ -187,23 +159,16 @@ export default function CatalogComboConsultTab() {
   return (
     <div className="space-y-4">
       {/* Top Control & Filter Bar */}
-      <Card
-        size="small"
-        style={{
-          background: isDark ? token.colorBgContainer : '#ffffff',
-          borderColor: token.colorBorderSecondary,
-          borderRadius: 16,
-        }}
-      >
+      <Card size="small" className="rounded-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500" />
-              <Title level={5} style={{ margin: 0 }}>
+              <Title level={5} className="!m-0">
                 Bàn Tư Vấn & Bảng Giá Combo 13 Dòng Mi Chuẩn Wings (Single Source of Truth)
               </Title>
             </div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" className="text-xs">
               Thay thế hoàn toàn trang tra cứu rời rạc bên ngoài · Tự động kiểm tra điều kiện Gói Welcome ngày đầu & mô
               phỏng kế toán trừ gói
             </Text>
@@ -211,17 +176,15 @@ export default function CatalogComboConsultTab() {
 
           <Space wrap size="middle">
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border"
-              style={{
-                background: isFirstDayCustomer
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+                isFirstDayCustomer
                   ? isDark
-                    ? 'rgba(16, 185, 129, 0.12)'
-                    : '#ecfdf5'
+                    ? 'bg-emerald-950/30 border-emerald-500'
+                    : 'bg-emerald-50 border-emerald-500'
                   : isDark
-                    ? 'rgba(245, 158, 11, 0.12)'
-                    : '#fffbeb',
-                borderColor: isFirstDayCustomer ? '#10b981' : '#f59e0b',
-              }}
+                    ? 'bg-amber-950/30 border-amber-500'
+                    : 'bg-amber-50 border-amber-500'
+              }`}
             >
               {isFirstDayCustomer ? (
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -235,11 +198,9 @@ export default function CatalogComboConsultTab() {
             </div>
 
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border"
-              style={{
-                background: isDark ? token.colorFillQuaternary : '#f8fafc',
-                borderColor: token.colorBorderSecondary,
-              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+                isDark ? 'bg-neutral-800/60 border-neutral-700' : 'bg-slate-50 border-slate-200'
+              }`}
             >
               <span className="text-xs font-semibold">Hiển thị giá gồm 8% VAT:</span>
               <Switch size="small" checked={includeVat} onChange={setIncludeVat} />
@@ -249,10 +210,7 @@ export default function CatalogComboConsultTab() {
 
         {/* 13 Lash Line Filter Pills */}
         <div className="mb-3">
-          <div
-            className="text-xs font-bold uppercase tracking-wider mb-1.5"
-            style={{ color: token.colorTextSecondary }}
-          >
+          <div className="text-xs font-bold uppercase tracking-wider mb-1.5 text-neutral-500">
             1. Chọn Dòng Mi (13 Dòng Chuẩn):
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -264,10 +222,7 @@ export default function CatalogComboConsultTab() {
                   type={active ? 'primary' : 'default'}
                   size="small"
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  style={{
-                    borderRadius: 10,
-                    fontWeight: active ? 700 : 500,
-                  }}
+                  className={active ? 'rounded-xl font-bold' : 'rounded-xl font-medium'}
                 >
                   {cat.name}
                 </Button>
@@ -279,10 +234,7 @@ export default function CatalogComboConsultTab() {
         {/* Volume / Fiber SKU Selector */}
         {currentCategory.unitPrices.length > 0 && (
           <div>
-            <div
-              className="text-xs font-bold uppercase tracking-wider mb-1.5"
-              style={{ color: token.colorTextSecondary }}
-            >
+            <div className="text-xs font-bold uppercase tracking-wider mb-1.5 text-neutral-500">
               2. Chọn Mã Số Sợi / Trụ ({currentCategory.name} · {currentCategory.segment}):
             </div>
             <Row gutter={[8, 8]}>
@@ -298,32 +250,27 @@ export default function CatalogComboConsultTab() {
                         setSimTargetCategoryId(currentCategory.id);
                         setSimTargetVolume(volKey);
                       }}
-                      className="p-2.5 rounded-xl border cursor-pointer transition-all"
-                      style={{
-                        background: active
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all ${
+                        active
                           ? isDark
-                            ? 'rgba(245, 158, 11, 0.16)'
-                            : '#fffbeb'
+                            ? 'bg-amber-950/30 border-2 border-amber-500'
+                            : 'bg-amber-50 border-2 border-amber-500'
                           : isDark
-                            ? token.colorFillQuaternary
-                            : '#f8fafc',
-                        borderColor: active ? '#f59e0b' : token.colorBorderSecondary,
-                        borderWidth: active ? 2 : 1,
-                      }}
+                            ? 'bg-neutral-800/50 border border-neutral-700'
+                            : 'bg-slate-50 border border-slate-200'
+                      }`}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span className="font-extrabold text-sm">
                           {u.isUnderLash ? 'Mi Dưới 390' : `Mã ${u.volume}`}
                         </span>
                         {meta.badge && (
-                          <Tag color="gold" style={{ margin: 0, fontSize: 10, fontWeight: 700 }}>
+                          <span className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold bg-amber-400 text-neutral-950">
                             {meta.badge}
-                          </Tag>
+                          </span>
                         )}
                       </div>
-                      <div className="text-xs mt-0.5 truncate" style={{ color: token.colorTextSecondary }}>
-                        {meta.fanLabel}
-                      </div>
+                      <div className="text-xs mt-0.5 truncate text-neutral-500">{meta.fanLabel}</div>
                       <div className="text-xs font-bold text-emerald-600 mt-1 tabular-nums">
                         New: {u.newPrice.toLocaleString('vi-VN')}đ
                         {u.refillPrice ? ` · Dặm: ${u.refillPrice.toLocaleString('vi-VN')}đ` : ''}
@@ -341,6 +288,7 @@ export default function CatalogComboConsultTab() {
       {comparedPackages.length > 0 && (
         <Card
           size="small"
+          className="rounded-2xl border-amber-500"
           title={
             <Space>
               <Scale className="w-4 h-4 text-amber-500" />
@@ -352,10 +300,6 @@ export default function CatalogComboConsultTab() {
               Xóa tất cả so sánh
             </Button>
           }
-          style={{
-            borderRadius: 16,
-            borderColor: '#f59e0b',
-          }}
         >
           <Row gutter={[12, 12]}>
             {comparedPackages.map((cp) => {
@@ -364,11 +308,9 @@ export default function CatalogComboConsultTab() {
               return (
                 <Col xs={24} md={8} key={cp.id}>
                   <div
-                    className="p-3 rounded-xl border h-full flex flex-col justify-between space-y-2"
-                    style={{
-                      background: isDark ? token.colorFillQuaternary : '#fffbeb',
-                      borderColor: token.colorBorderSecondary,
-                    }}
+                    className={`p-3 rounded-xl border h-full flex flex-col justify-between space-y-2 ${
+                      isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-amber-50/70 border-amber-200'
+                    }`}
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
@@ -377,14 +319,11 @@ export default function CatalogComboConsultTab() {
                           ✕
                         </Button>
                       </div>
-                      <div className="text-xs mt-0.5" style={{ color: token.colorTextSecondary }}>
+                      <div className="text-xs mt-0.5 text-neutral-500">
                         {cp.readableContent} · HSD {cp.validityMonths} tháng
                       </div>
                     </div>
-                    <div
-                      className="space-y-1 text-xs pt-2 border-t tabular-nums"
-                      style={{ borderColor: token.colorBorderSecondary }}
-                    >
+                    <div className="space-y-1 text-xs pt-2 border-t border-neutral-200 dark:border-neutral-700 tabular-nums">
                       <div className="flex justify-between">
                         <span>Giá gói ({includeVat ? 'Gồm VAT' : 'Chưa VAT'}):</span>
                         <strong className="text-amber-600 text-sm">{displayPrice.toLocaleString('vi-VN')} đ</strong>
@@ -425,7 +364,6 @@ export default function CatalogComboConsultTab() {
         {packages.map((pkg) => {
           const isCompared = compareIds.includes(pkg.id);
           const isSimSelected = activeSimPkg?.id === pkg.id;
-          const displayPrice = includeVat ? pkg.comboPriceWithVat : pkg.comboPrice;
           const acc = calculateComboPurchaseAccounting(pkg);
 
           return (
@@ -433,100 +371,43 @@ export default function CatalogComboConsultTab() {
               <Card
                 size="small"
                 hoverable={!pkg.isLocked}
-                style={{
-                  borderRadius: 16,
-                  height: '100%',
-                  opacity: pkg.isLocked ? 0.72 : 1,
-                  borderColor: isSimSelected ? '#f59e0b' : token.colorBorderSecondary,
-                  borderWidth: isSimSelected ? 2 : 1,
-                }}
+                className={`rounded-2xl h-full ${pkg.isLocked ? 'opacity-75' : ''} ${
+                  isSimSelected ? 'border-2 border-amber-500' : ''
+                }`}
               >
                 <div className="flex flex-col justify-between h-full space-y-3">
                   <div className="space-y-2.5">
-                    {/* Top Row with Artwork & Price */}
-                    <div className="flex gap-3">
-                      {pkg.cardPreviewUrl && (
-                        <div
-                          onClick={() =>
-                            setZoomedCard({
-                              title: pkg.displayName,
-                              imageUrl: pkg.cardImageUrl || pkg.cardPreviewUrl,
-                            })
-                          }
-                          className="relative w-20 h-24 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border cursor-pointer"
-                          style={{ borderColor: token.colorBorderSecondary }}
-                        >
-                          <img src={pkg.cardPreviewUrl} alt={pkg.displayName} className="w-full h-full object-cover" />
-                          <span className="absolute bottom-1 right-1 bg-black/70 text-white p-1 rounded-md">
-                            <ZoomIn className="w-3 h-3" />
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-1">
-                          <div>
-                            <Space size={4} wrap>
-                              <span className="font-black text-base">{pkg.ruleName}</span>
-                              {pkg.isWelcomePackage && (
-                                <Tag color={pkg.isLocked ? 'error' : 'gold'} style={{ margin: 0, fontWeight: 700 }}>
-                                  {pkg.isLocked ? '🔒 Welcome · Chỉ ngày đầu' : '🌟 Welcome · Ngày đầu'}
-                                </Tag>
-                              )}
-                              <Tag color="success" style={{ margin: 0, fontWeight: 700 }}>
-                                +{pkg.discountPct}%
-                              </Tag>
-                            </Space>
-                            <div className="text-xs mt-0.5 font-medium" style={{ color: token.colorTextSecondary }}>
-                              {pkg.categoryName} · {pkg.volumeMeta.detailLabel}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-1.5 flex items-baseline justify-between tabular-nums">
-                          <div>
-                            <span className="text-lg font-black text-amber-500">
-                              {displayPrice.toLocaleString('vi-VN')} đ
-                            </span>
-                            <span className="text-xs line-through ml-1.5" style={{ color: token.colorTextTertiary }}>
-                              {pkg.retailTotal.toLocaleString('vi-VN')} đ
-                            </span>
-                          </div>
-                          <Tag color="green" style={{ margin: 0, fontWeight: 700 }}>
-                            CV🪶 +{pkg.cvBonus.toLocaleString('vi-VN')}đ
-                          </Tag>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Readable Content & Validity */}
-                    <div className="flex flex-wrap gap-1.5 text-xs">
-                      <Tag color="blue" style={{ margin: 0 }}>
-                        <Gift className="w-3 h-3 inline mr-1" />
-                        {pkg.readableContent}
-                      </Tag>
-                      <Tag style={{ margin: 0 }}>
-                        <Calendar className="w-3 h-3 inline mr-1" />
-                        HSD: {pkg.validityMonths} tháng
-                      </Tag>
-                      <Tag color="purple" style={{ margin: 0 }} className="tabular-nums">
-                        TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ/buổi
-                      </Tag>
-                    </div>
+                    {/* Luxury Membership Card Design */}
+                    <WingsComboCard
+                      pkg={pkg}
+                      selected={isSimSelected}
+                      includeVat={includeVat}
+                      compact
+                      onSelect={() => {
+                        if (!pkg.isLocked) setSimSelectedPkgId(pkg.id);
+                      }}
+                      onZoomOriginalCard={
+                        pkg.cardImageUrl || pkg.cardPreviewUrl
+                          ? () =>
+                              setZoomedCard({
+                                title: pkg.displayName,
+                                imageUrl: pkg.cardImageUrl || pkg.cardPreviewUrl,
+                              })
+                          : undefined
+                      }
+                    />
 
                     {/* Accounting Summary Box */}
                     <div
-                      className="p-2.5 rounded-xl border text-xs space-y-1 tabular-nums"
-                      style={{
-                        background: isDark ? token.colorFillQuaternary : '#f8fafc',
-                        borderColor: token.colorBorderSecondary,
-                      }}
+                      className={`p-2.5 rounded-xl border text-xs space-y-1 tabular-nums ${
+                        isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'
+                      }`}
                     >
                       <div className="font-bold flex items-center justify-between">
                         <span>Hạch toán khi mua tại Checkout:</span>
                         <span className="text-emerald-600">Trừ luôn buổi 1 hôm nay (0đ lẻ)</span>
                       </div>
-                      <div className="flex justify-between" style={{ color: token.colorTextSecondary }}>
+                      <div className="flex justify-between text-neutral-500">
                         <span>• Số dư ví còn sau hôm nay:</span>
                         <strong>
                           {acc.remainingWalletAfterToday.totalRemaining}/{pkg.totalSessions} lần (
@@ -534,7 +415,7 @@ export default function CatalogComboConsultTab() {
                           {acc.remainingWalletAfterToday.totalBonusRemaining} Tặng 0đ)
                         </strong>
                       </div>
-                      <div className="flex justify-between" style={{ color: token.colorTextSecondary }}>
+                      <div className="flex justify-between text-neutral-500">
                         <span>• Doanh thu thực hiện hôm nay / Giữ ví:</span>
                         <strong>
                           {acc.recognizedRevenueToday.toLocaleString('vi-VN')}đ /{' '}
@@ -543,14 +424,7 @@ export default function CatalogComboConsultTab() {
                       </div>
                     </div>
 
-                    {pkg.isLocked && pkg.lockReason && (
-                      <Alert
-                        type="warning"
-                        showIcon
-                        message={pkg.lockReason}
-                        style={{ fontSize: 11, padding: '6px 10px' }}
-                      />
-                    )}
+                    {pkg.isLocked && pkg.lockReason && <Alert type="warning" showIcon message={pkg.lockReason} />}
                   </div>
 
                   {/* Card Actions */}
@@ -591,10 +465,7 @@ export default function CatalogComboConsultTab() {
       {activeSimPkg && (
         <Card
           size="small"
-          style={{
-            borderRadius: 16,
-            borderColor: token.colorBorderSecondary,
-          }}
+          className="rounded-2xl"
           title={
             <Space>
               <Calculator className="w-4 h-4 text-indigo-500" />
@@ -624,11 +495,9 @@ export default function CatalogComboConsultTab() {
             <Row gutter={[16, 16]}>
               <Col xs={24} md={12}>
                 <div
-                  className="p-3.5 rounded-xl border space-y-2 tabular-nums"
-                  style={{
-                    background: isDark ? token.colorFillQuaternary : '#f8fafc',
-                    borderColor: token.colorBorderSecondary,
-                  }}
+                  className={`p-3.5 rounded-xl border space-y-2 tabular-nums ${
+                    isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'
+                  }`}
                 >
                   <div className="font-extrabold text-sm text-indigo-600">
                     A. Hạch Toán Tiền Thu & Doanh Thu Ca Làm Hôm Nay
@@ -649,7 +518,7 @@ export default function CatalogComboConsultTab() {
                       {purchaseAccounting.comboPriceWithVat.toLocaleString('vi-VN')} đ
                     </strong>
                   </div>
-                  <Divider style={{ margin: '8px 0' }} />
+                  <Divider className="!my-2" />
                   <div className="flex justify-between text-xs">
                     <span>Doanh thu thực hiện ghi nhận hôm nay (Buổi 1):</span>
                     <strong className="text-emerald-600">
@@ -673,11 +542,9 @@ export default function CatalogComboConsultTab() {
 
               <Col xs={24} md={12}>
                 <div
-                  className="p-3.5 rounded-xl border space-y-2 tabular-nums"
-                  style={{
-                    background: isDark ? token.colorFillQuaternary : '#f8fafc',
-                    borderColor: token.colorBorderSecondary,
-                  }}
+                  className={`p-3.5 rounded-xl border space-y-2 tabular-nums ${
+                    isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'
+                  }`}
                 >
                   <div className="font-extrabold text-sm text-emerald-600">
                     B. Sổ Cái Ví Gói Khách Hàng (Tách Lượt Mua vs Lượt Tặng 0đ)
@@ -695,7 +562,7 @@ export default function CatalogComboConsultTab() {
                     <span>Đã trừ ngay tại Checkout hôm nay:</span>
                     <strong className="text-rose-500">-1 Lượt Nối Mới Mua (Paid New #1)</strong>
                   </div>
-                  <Divider style={{ margin: '8px 0' }} />
+                  <Divider className="!my-2" />
                   <div className="flex justify-between text-xs">
                     <span>• Lượt Nối Mới Mua (Paid New) còn lại:</span>
                     <strong>{purchaseAccounting.remainingWalletAfterToday.paidNew} lần</strong>
@@ -721,7 +588,7 @@ export default function CatalogComboConsultTab() {
                   <Col xs={24} md={6}>
                     <div className="text-xs font-bold mb-1">Trạng thái ví gói của khách:</div>
                     <Select
-                      style={{ width: '100%' }}
+                      className="w-full"
                       value={simWalletState}
                       onChange={setSimWalletState}
                       options={[
@@ -734,7 +601,7 @@ export default function CatalogComboConsultTab() {
                   <Col xs={24} md={6}>
                     <div className="text-xs font-bold mb-1">Dịch vụ khách yêu cầu hôm nay:</div>
                     <Select
-                      style={{ width: '100%' }}
+                      className="w-full"
                       value={simRedeemServiceType}
                       onChange={setSimRedeemServiceType}
                       options={[
@@ -746,7 +613,7 @@ export default function CatalogComboConsultTab() {
                   <Col xs={24} md={6}>
                     <div className="text-xs font-bold mb-1">Dòng mi khách làm hôm nay:</div>
                     <Select
-                      style={{ width: '100%' }}
+                      className="w-full"
                       value={simTargetCategoryId}
                       onChange={(val) => {
                         setSimTargetCategoryId(val);
@@ -763,7 +630,7 @@ export default function CatalogComboConsultTab() {
                   <Col xs={24} md={6}>
                     <div className="text-xs font-bold mb-1">Mã số sợi khách làm hôm nay:</div>
                     <Select
-                      style={{ width: '100%' }}
+                      className="w-full"
                       value={String(simTargetVolume)}
                       onChange={(v) => setSimTargetVolume(v === 'under' ? 'under' : Number(v))}
                       options={targetCategoryObj.unitPrices.map((u) => ({
@@ -777,11 +644,9 @@ export default function CatalogComboConsultTab() {
                 </Row>
 
                 <div
-                  className="p-3.5 rounded-xl border space-y-1.5 tabular-nums"
-                  style={{
-                    background: isDark ? token.colorFillQuaternary : '#f0f9ff',
-                    borderColor: '#38bdf8',
-                  }}
+                  className={`p-3.5 rounded-xl border space-y-1.5 tabular-nums ${
+                    isDark ? 'bg-sky-950/30 border-sky-500' : 'bg-sky-50 border-sky-400'
+                  }`}
                 >
                   <div className="font-extrabold text-sm flex items-center justify-between">
                     <span>Kết quả tự động trừ gói & tính phụ thu:</span>
@@ -813,23 +678,25 @@ export default function CatalogComboConsultTab() {
         </Card>
       )}
 
-      {/* Artwork Zoom Modal */}
-      <Modal
-        open={Boolean(zoomedCard)}
-        title={zoomedCard?.title}
-        footer={null}
-        onCancel={() => setZoomedCard(null)}
-        width={560}
-        centered
-      >
-        {zoomedCard && (
+      {/* Artwork Zoom Overlay */}
+      {zoomedCard && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex flex-col items-center justify-center p-4"
+          onClick={() => setZoomedCard(null)}
+        >
+          <div className="w-full max-w-xl flex items-center justify-between text-white mb-3">
+            <span className="text-sm font-bold">{zoomedCard.title}</span>
+            <Button size="small" onClick={() => setZoomedCard(null)}>
+              Đóng ✕
+            </Button>
+          </div>
           <img
             src={zoomedCard.imageUrl}
             alt={zoomedCard.title}
-            className="w-full rounded-xl object-contain max-h-[75vh]"
+            className="w-full max-w-xl rounded-xl object-contain max-h-[75vh]"
           />
-        )}
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }
