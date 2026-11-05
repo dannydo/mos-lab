@@ -161,6 +161,27 @@ export function isNonAdminAllowedDashboardPath(
       return menuVisibility.dashboard === true;
     }
 
+    // Dynamic campaign detail operational workspaces:
+    // Individual campaign pages (/dashboard/nyc/campaigns/:slug) are operational queues where staff
+    // (such as Telesales/Bookers) manage customers and make calls. They are distinct from the
+    // campaign management configuration screen (/dashboard/nyc/campaigns).
+    if (cleanPath.startsWith('/dashboard/nyc/campaigns/')) {
+      const allowedCampaignKeys = ['nyc-main', 'nyc-campaigns-mgmt', 'loca', 'my-customers', 'customers-all'];
+      return allowedCampaignKeys.some((k) => menuVisibility[k] === true);
+    }
+
+    // Dynamic Academy campaign detail operational workspaces:
+    if (cleanPath.startsWith('/dashboard/academy-leads/campaigns/')) {
+      const allowedAcademyCampaignKeys = [
+        'academy-campaigns',
+        'academy-customers',
+        'academy-lead-manager',
+        'post-hub',
+        'academy-workshops',
+      ];
+      return allowedAcademyCampaignKeys.some((k) => menuVisibility[k] === true);
+    }
+
     // Match the most specific menu definition(s) for this path
     const matchingDefs = MENU_ACCESS_DEFINITIONS.filter((def) => {
       const defBasePath = def.path.split('?')[0].replace(/\/+$/, '');

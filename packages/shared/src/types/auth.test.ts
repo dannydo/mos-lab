@@ -115,5 +115,30 @@ describe('Auth Role Invariants & Routing Tests', () => {
       false
     );
     assert.equal(isNonAdminAllowedDashboardPath('/dashboard/cc', { cc: true }, 'cc'), true);
+
+    // Dynamic campaign detail operational workspaces vs admin campaign management:
+    // Telesales with 'nyc-main' or 'my-customers' is allowed into individual campaign workspaces
+    assert.equal(
+      isNonAdminAllowedDashboardPath(
+        '/dashboard/nyc/campaigns/hoi-sinh-mi',
+        { 'nyc-main': true, 'nyc-campaigns-mgmt': false },
+        'telesales'
+      ),
+      true
+    );
+    // Telesales without 'nyc-campaigns-mgmt' is strictly blocked from the campaign management config page
+    assert.equal(
+      isNonAdminAllowedDashboardPath(
+        '/dashboard/nyc/campaigns',
+        { 'nyc-main': true, 'nyc-campaigns-mgmt': false },
+        'telesales'
+      ),
+      false
+    );
+    // Standard CV is blocked from all campaigns
+    assert.equal(
+      isNonAdminAllowedDashboardPath('/dashboard/nyc/campaigns/hoi-sinh-mi', { cv: true, 'career-path': true }, 'cv'),
+      false
+    );
   });
 });
