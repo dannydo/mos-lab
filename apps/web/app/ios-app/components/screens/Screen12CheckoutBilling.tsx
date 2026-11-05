@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
@@ -25,6 +25,9 @@ export function Screen12CheckoutBilling({
     booking?.billing?.paymentMethod || 'VIETQR'
   );
   const [tipAmount, setTipAmount] = useState<number>(booking?.billing?.tipAmount ?? 50000);
+  const [activeRoundTarget, setActiveRoundTarget] = useState<number | null>(null);
+  const [isCustomTipOpen, setIsCustomTipOpen] = useState<boolean>(false);
+  const [customTipInput, setCustomTipInput] = useState<string>('');
   const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
 
   const customerName = booking?.customerName || 'Chị Trúc';
@@ -65,6 +68,53 @@ export function Screen12CheckoutBilling({
   const effectiveDiamondUsed = Math.min(diamondUsed, maxDiamondCanUse);
   const diamondDiscountAmount = effectiveDiamondUsed * DIAMOND_RATE;
   const finalGrandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
+
+  // 🎯 GỢI Ý LÀM TRÒN TỔNG TIỀN (ROUND-UP EVEN TOTAL)
+  // Tính dựa trên tổng tiền trước khi cộng tip (sau khi trừ kim cương nếu có)
+  const baseForRounding = Math.max(0, totalWithVat - diamondDiscountAmount);
+
+  const roundUpSuggestions = useMemo(() => {
+    if (baseForRounding <= 0) return [];
+    const list: { targetTotal: number; tipAmount: number; label: string }[] = [];
+
+    // Mốc 1: Làm tròn lên hàng 100K gần nhất (đảm bảo số tiền tip >= 15.000đ để có ý nghĩa)
+    const ceil100k = Math.ceil(baseForRounding / 100000) * 100000;
+    const target1 = ceil100k - baseForRounding >= 15000 ? ceil100k : ceil100k + 100000;
+    list.push({
+      targetTotal: target1,
+      tipAmount: target1 - baseForRounding,
+      label: `Tròn ${Math.round(target1 / 1000).toLocaleString('vi-VN')}K`,
+    });
+
+    if (baseForRounding < 1000000) {
+      if (target1 < 1000000) {
+        list.push({
+          targetTotal: 1000000,
+          tipAmount: 1000000 - baseForRounding,
+          label: 'Tròn 1.000K',
+        });
+      }
+      list.push({
+        targetTotal: 1200000,
+        tipAmount: 1200000 - baseForRounding,
+        label: 'Tròn 1.200K',
+      });
+    } else {
+      const next500k = Math.ceil((baseForRounding + 50000) / 500000) * 500000;
+      const target2 = next500k > target1 ? next500k : target1 + 200000;
+      list.push({
+        targetTotal: target2,
+        tipAmount: target2 - baseForRounding,
+        label: `Tròn ${Math.round(target2 / 1000).toLocaleString('vi-VN')}K`,
+      });
+      list.push({
+        targetTotal: target2 + 300000,
+        tipAmount: target2 + 300000 - baseForRounding,
+        label: `Tròn ${Math.round((target2 + 300000) / 1000).toLocaleString('vi-VN')}K`,
+      });
+    }
+    return list.slice(0, 3);
+  }, [baseForRounding]);
 
   const handleProceed = () => {
     onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed);
@@ -357,46 +407,167 @@ export function Screen12CheckoutBilling({
           </div>
         </div>
 
-        {/* Section 1B: Tiền Tip Cho Chuyên Viên (Khách hàng xác nhận trực tiếp tại đây) */}
+        {/* Section 1B: Tiền Tip Cho Chuyên Viên (Hỗ trợ Tip theo mốc + Làm chẵn tổng thanh toán) */}
         <div>
           <div className="flex items-center justify-between text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
             <span>TIỀN TIP CHO CHUYÊN VIÊN</span>
             <span className="text-[10px] text-emerald-700 lowercase font-medium">tùy chọn theo độ hài lòng</span>
           </div>
           <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2.5">
-            <div className="grid grid-cols-5 gap-1.5">
-              {[
-                { value: 0, label: '0đ' },
-                { value: 20000, label: '20K' },
-                { value: 50000, label: '50K' },
-                { value: 100000, label: '100K' },
-                { value: 200000, label: '200K' },
-              ].map((p) => {
-                const isSelected = tipAmount === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setTipAmount(p.value)}
-                    className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
-                      isSelected
-                        ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                        : 'bg-[#F2F2F7] hover:bg-gray-200 text-gray-700'
-                    }`}
-                  >
-                    {isSelected ? `✓ ${p.label}` : p.label}
-                  </button>
-                );
-              })}
+            {/* Hàng 1: Tip theo mốc cố định + nút Khác */}
+            <div>
+              <div className="text-[10.5px] text-gray-400 font-semibold mb-1 uppercase tracking-wide">
+                Mốc tip thông dụng:
+              </div>
+              <div className="grid grid-cols-6 gap-1">
+                {[
+                  { value: 0, label: '0đ' },
+                  { value: 50000, label: '50K' },
+                  { value: 100000, label: '100K' },
+                  { value: 200000, label: '200K' },
+                  { value: 500000, label: '500K' },
+                ].map((p) => {
+                  const isSelected = tipAmount === p.value && !activeRoundTarget && !isCustomTipOpen;
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => {
+                        setTipAmount(p.value);
+                        setActiveRoundTarget(null);
+                        setIsCustomTipOpen(false);
+                      }}
+                      className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
+                        isSelected
+                          ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                          : 'bg-[#F2F2F7] hover:bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {isSelected ? `✓ ${p.label}` : p.label}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTipOpen(!isCustomTipOpen)}
+                  className={`py-2 rounded-xl text-[11px] font-extrabold text-center transition-all cursor-pointer active:scale-95 ${
+                    isCustomTipOpen ||
+                    (tipAmount > 0 && ![0, 50000, 100000, 200000, 500000].includes(tipAmount) && !activeRoundTarget)
+                      ? 'bg-purple-600 text-white shadow-xs font-black'
+                      : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                  }`}
+                >
+                  {isCustomTipOpen ? '✕ Đóng' : 'Khác ⌨️'}
+                </button>
+              </div>
             </div>
 
+            {/* Hàng 2: Gợi ý làm tròn chẵn tổng thanh toán */}
+            {roundUpSuggestions.length > 0 && (
+              <div className="pt-1 border-t border-gray-100">
+                <div className="text-[10.5px] text-amber-700 font-bold mb-1 flex items-center gap-1">
+                  <span>✨</span> HOẶC LÀM TRÒN CHẴN TỔNG ĐƠN (QUẸT THẺ / CHUYỂN KHOẢN):
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {roundUpSuggestions.map((opt) => {
+                    const isSelected = activeRoundTarget === opt.targetTotal;
+                    return (
+                      <button
+                        key={opt.targetTotal}
+                        type="button"
+                        onClick={() => {
+                          setTipAmount(opt.tipAmount);
+                          setActiveRoundTarget(opt.targetTotal);
+                          setIsCustomTipOpen(false);
+                        }}
+                        className={`p-2 rounded-xl text-center transition-all cursor-pointer active:scale-95 border ${
+                          isSelected
+                            ? 'bg-amber-500 text-black border-amber-600 shadow-xs font-black'
+                            : 'bg-amber-50/70 hover:bg-amber-100/70 text-amber-950 border-amber-200/80'
+                        }`}
+                      >
+                        <div className="text-[12px] font-black tabular-nums">
+                          {isSelected && '✓ '}
+                          {opt.label}
+                        </div>
+                        <div
+                          className={`text-[10px] tabular-nums font-semibold ${
+                            isSelected ? 'text-black' : 'text-amber-700'
+                          }`}
+                        >
+                          (+{Math.round(opt.tipAmount / 1000).toLocaleString('vi-VN')}K tip)
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Khối Nhập Tùy Chỉnh (Custom Tip Amount) khi bấm Khác ⌨️ */}
+            {isCustomTipOpen && (
+              <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-2.5 space-y-2 text-[11px] animate-fadeIn">
+                <div className="flex items-center justify-between text-purple-950 font-bold">
+                  <span>Nhập số tiền tip tùy ý (300K, 700K...):</span>
+                  <span className="text-[10px] text-purple-700 font-normal">Đơn vị: VNĐ</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="10000"
+                    min="0"
+                    value={customTipInput}
+                    onChange={(e) => setCustomTipInput(e.target.value)}
+                    placeholder="Ví dụ: 700000"
+                    className="flex-1 bg-white border border-purple-300 rounded-xl px-3 py-2 text-[13px] font-black text-black tabular-nums focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = parseInt(customTipInput, 10);
+                      if (!isNaN(val) && val >= 0) {
+                        setTipAmount(val);
+                        setActiveRoundTarget(null);
+                        setIsCustomTipOpen(false);
+                      }
+                    }}
+                    className="bg-purple-600 text-white font-extrabold px-3 py-2 rounded-xl text-[12px] hover:bg-purple-700 active:scale-95 cursor-pointer shrink-0"
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+                {/* Phím tắt nhanh cho tip lớn */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span className="text-[10px] text-purple-800 font-semibold">Chọn nhanh:</span>
+                  {[300000, 500000, 700000, 1000000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => {
+                        setTipAmount(amt);
+                        setCustomTipInput(String(amt));
+                        setActiveRoundTarget(null);
+                        setIsCustomTipOpen(false);
+                      }}
+                      className="bg-white hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-lg px-2 py-0.5 text-[10.5px] font-bold tabular-nums cursor-pointer"
+                    >
+                      +{Math.round(amt / 1000)}K
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Thẻ Kết Quả Phân Bổ Tip */}
             {tipAmount > 0 ? (
               <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-base leading-none">💖</span>
                   <div className="min-w-0">
                     <div className="font-extrabold text-emerald-950 truncate">
-                      Đã ghi nhận tip {tipAmount.toLocaleString('vi-VN')}đ
+                      {activeRoundTarget
+                        ? `Làm tròn tổng đơn ${activeRoundTarget.toLocaleString('vi-VN')}đ (Tip: +${tipAmount.toLocaleString('vi-VN')}đ)`
+                        : `Đã ghi nhận tip ${tipAmount.toLocaleString('vi-VN')}đ`}
                     </div>
                     <div className="text-[10px] text-emerald-700 font-medium">
                       {assignedStaff} nhận {Math.round(tipAmount * 0.7).toLocaleString('vi-VN')}đ (70%) · Sảnh đón tiếp
@@ -404,9 +575,22 @@ export function Screen12CheckoutBilling({
                     </div>
                   </div>
                 </div>
-                <span className="text-[11px] font-black text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-300 tabular-nums shrink-0 ml-1">
-                  +{Math.round(tipAmount / 1000)}K
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                  <span className="text-[11px] font-black text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-300 tabular-nums">
+                    +{Math.round(tipAmount / 1000)}K
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipAmount(0);
+                      setActiveRoundTarget(null);
+                      setIsCustomTipOpen(false);
+                    }}
+                    className="text-[10px] text-gray-400 hover:text-red-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200 cursor-pointer"
+                  >
+                    Bỏ tip
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-center text-[11px] text-gray-500 font-medium">
@@ -429,11 +613,8 @@ export function Screen12CheckoutBilling({
           <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2.5">
             {customerDiamondBalance > 0 ? (
               <>
-                <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium">
-                  <span>Chọn số Kim Cương dùng để cấn trừ (1 💎 = 1.000đ):</span>
-                  {maxDiamondCanUse > 0 && (
-                    <span className="text-cyan-700 font-bold tabular-nums">Tối đa dùng: {maxDiamondCanUse} 💎</span>
-                  )}
+                <div className="text-[11px] text-gray-500 font-medium">
+                  Chọn số Kim Cương dùng để cấn trừ (1 💎 = 1.000đ):
                 </div>
 
                 {/* Quick Presets */}
