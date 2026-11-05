@@ -18,6 +18,7 @@ import {
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { cleanQuotedText } from '../utils/quoteUtils';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -137,7 +138,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           senderId: replyingToMessage.senderId,
           senderName: replyingToMessage.senderName,
           senderAvatar: replyingToMessage.senderAvatar,
-          text: replyingToMessage.text,
+          text: cleanQuotedText(replyingToMessage.text),
         }
       : undefined;
 
@@ -235,7 +236,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             />
             <div className="truncate min-w-0">
               <span className="font-semibold text-amber-300">Trả lời {replyingToMessage.senderName}:</span>{' '}
-              <span className="text-slate-300 truncate">{replyingToMessage.text}</span>
+              <span className="text-slate-300 truncate">{cleanQuotedText(replyingToMessage.text)}</span>
             </div>
           </div>
           <button
