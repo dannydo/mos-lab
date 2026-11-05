@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
+import { User, Phone, Eye, Sparkles } from 'lucide-react';
 import type { MatchedComboPackageOption, WingsComboRulePrice } from '@mos-lab/shared';
 
 export interface WingsComboCardProps {
   pkg: MatchedComboPackageOption;
   customerName?: string;
   customerPhone?: string;
+  customerAvatar?: string;
   selected?: boolean;
   includeVat?: boolean;
   compact?: boolean;
@@ -349,6 +351,7 @@ export function WingsComboCard({
   pkg,
   customerName,
   customerPhone,
+  customerAvatar,
   selected = false,
   includeVat = false,
   compact = false,
@@ -532,38 +535,53 @@ export function WingsComboCard({
             {/* Customer Name, Phone & Lash Density Dotted Lines */}
             <div
               style={{
-                marginTop: compact ? 6 : 8,
+                marginTop: compact ? 7 : 9,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: compact ? 4 : 5,
+                gap: compact ? 5 : 6,
                 maxWidth: 250,
               }}
             >
-              {/* Line 1: Customer Name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
-                    color: '#1A1102',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 9.5,
-                    fontWeight: 900,
-                    flexShrink: 0,
-                  }}
-                >
-                  👤
-                </span>
+              {/* Line 1: Customer Avatar & Name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                {customerAvatar ? (
+                  <img
+                    src={customerAvatar}
+                    alt={customerName || 'Avatar'}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '1.5px solid #F3CE68',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.55)',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid #FFE27A',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <User style={{ width: 11, height: 11, color: '#1A1102', strokeWidth: 2.5 }} />
+                  </span>
+                )}
                 <div
                   style={{
                     flex: 1,
                     borderBottom: '1.5px dotted rgba(243, 206, 104, 0.55)',
-                    paddingBottom: 1,
-                    fontSize: 11,
+                    paddingBottom: 1.5,
+                    fontSize: 11.5,
                     fontWeight: 700,
                     color: '#FFF6D6',
                     whiteSpace: 'nowrap',
@@ -575,33 +593,32 @@ export function WingsComboCard({
                 </div>
               </div>
 
-              {/* Line 2: Customer Phone (Bỏ mã 550) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Line 2: Customer Phone with Vector Phone Icon */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span
                   style={{
-                    width: 16,
-                    height: 16,
+                    width: 18,
+                    height: 18,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
-                    color: '#1A1102',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 9,
-                    fontWeight: 900,
+                    border: '1px solid rgba(243, 206, 104, 0.5)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
                     flexShrink: 0,
                   }}
                 >
-                  📞
+                  <Phone style={{ width: 9.5, height: 9.5, color: '#1A1102', strokeWidth: 2.5 }} />
                 </span>
                 <div
                   style={{
                     flex: 1,
                     borderBottom: '1.5px dotted rgba(243, 206, 104, 0.55)',
-                    paddingBottom: 1,
+                    paddingBottom: 1.5,
                     fontSize: 10.5,
                     fontWeight: 600,
-                    color: 'rgba(255, 246, 214, 0.88)',
+                    color: 'rgba(255, 246, 214, 0.9)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -612,30 +629,29 @@ export function WingsComboCard({
                 </div>
               </div>
 
-              {/* Line 3: Lash Density Specification (Xuống hàng theo chỉ đạo Danny) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Line 3: Lash Density Specification with Vector Eye Icon */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span
                   style={{
-                    width: 16,
-                    height: 16,
+                    width: 18,
+                    height: 18,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
-                    color: '#1A1102',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 9,
-                    fontWeight: 900,
+                    border: '1px solid rgba(243, 206, 104, 0.5)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
                     flexShrink: 0,
                   }}
                 >
-                  👁️
+                  <Eye style={{ width: 10.5, height: 10.5, color: '#1A1102', strokeWidth: 2.5 }} />
                 </span>
                 <div
                   style={{
                     flex: 1,
                     borderBottom: '1.5px dotted rgba(243, 206, 104, 0.55)',
-                    paddingBottom: 1,
+                    paddingBottom: 1.5,
                     fontSize: 10.5,
                     fontWeight: 700,
                     color: '#FFE27A',
@@ -659,6 +675,47 @@ export function WingsComboCard({
             validityMonths={pkg.validityMonths}
             cvBonus={pkg.cvBonus}
             compact={compact}
+          />
+        </div>
+
+        {/* Elegant Section Divider: Separating Customer Profile & Combo Details */}
+        <div
+          style={{
+            margin: compact ? '12px 0 10px' : '14px 0 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              height: 1,
+              background: 'linear-gradient(90deg, rgba(243, 206, 104, 0.45) 0%, rgba(243, 206, 104, 0.08) 100%)',
+            }}
+          />
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: '0.12em',
+              color: 'rgba(255, 230, 160, 0.85)',
+              textTransform: 'uppercase',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4.5,
+              userSelect: 'none',
+            }}
+          >
+            <Sparkles style={{ width: 9.5, height: 9.5, color: '#F3CE68' }} />
+            <span>ĐẶC QUYỀN GÓI COMBO</span>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              height: 1,
+              background: 'linear-gradient(90deg, rgba(243, 206, 104, 0.08) 0%, rgba(243, 206, 104, 0.45) 100%)',
+            }}
           />
         </div>
 

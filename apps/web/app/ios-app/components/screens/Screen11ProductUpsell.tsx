@@ -656,6 +656,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     pkg={pkg}
                     customerName={customerName}
                     customerPhone={booking?.customerPhone}
+                    customerAvatar={booking?.customerAvatar}
                     selected={active}
                     compact
                     onSelect={() => {
