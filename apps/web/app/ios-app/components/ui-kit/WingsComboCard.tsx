@@ -608,38 +608,74 @@ export function WingsComboCard({
             >
               {/* Line 1: Customer Avatar & Name */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                {customerAvatar ? (
-                  <img
-                    src={customerAvatar}
-                    alt={customerName || 'Avatar'}
-                    style={{
-                      width: 21,
-                      height: 21,
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '1.5px solid #F3CE68',
-                      boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
-                      flexShrink: 0,
-                    }}
-                  />
-                ) : (
-                  <span
-                    style={{
-                      width: 21,
-                      height: 21,
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid #FFE27A',
-                      boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <User style={{ width: 11.5, height: 11.5, color: '#1A1102', strokeWidth: 2.5 }} />
-                  </span>
-                )}
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {customerAvatar ? (
+                    <>
+                      <img
+                        src={customerAvatar}
+                        alt={customerName || 'Avatar'}
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '1.5px solid #F3CE68',
+                          boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
+                          flexShrink: 0,
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          const fallback = parent?.querySelector('.avatar-fallback') as HTMLElement | null;
+                          if (fallback) fallback.style.display = 'inline-flex';
+                        }}
+                      />
+                      <span
+                        className="avatar-fallback"
+                        style={{
+                          display: 'none',
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px solid #FFE27A',
+                          boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <User style={{ width: 11, height: 11, color: '#1A1102', strokeWidth: 2.5 }} />
+                      </span>
+                    </>
+                  ) : (
+                    <span
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid #FFE27A',
+                        boxShadow: '0 0 6px rgba(243, 206, 104, 0.5)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <User style={{ width: 11, height: 11, color: '#1A1102', strokeWidth: 2.5 }} />
+                    </span>
+                  )}
+                </div>
                 <div
                   style={{
                     flex: 1,
@@ -659,22 +695,33 @@ export function WingsComboCard({
 
               {/* Line 2: Customer Phone with Vector Phone Icon */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <span
+                <div
                   style={{
-                    width: 17,
-                    height: 17,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
-                    display: 'inline-flex',
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '1px solid rgba(243, 206, 104, 0.5)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
                     flexShrink: 0,
                   }}
                 >
-                  <Phone style={{ width: 9, height: 9, color: '#1A1102', strokeWidth: 2.5 }} />
-                </span>
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid rgba(243, 206, 104, 0.6)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Phone style={{ width: 10, height: 10, color: '#1A1102', strokeWidth: 2.5 }} />
+                  </span>
+                </div>
                 <div
                   style={{
                     flex: 1,
@@ -693,22 +740,33 @@ export function WingsComboCard({
 
               {/* Line 3: Lash Density Specification with Vector Eye Icon */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <span
+                <div
                   style={{
-                    width: 17,
-                    height: 17,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
-                    display: 'inline-flex',
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '1px solid rgba(243, 206, 104, 0.5)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
                     flexShrink: 0,
                   }}
                 >
-                  <Eye style={{ width: 10, height: 10, color: '#1A1102', strokeWidth: 2.5 }} />
-                </span>
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #F7DF8B 0%, #B8861E 100%)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid rgba(243, 206, 104, 0.6)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Eye style={{ width: 11, height: 11, color: '#1A1102', strokeWidth: 2.5 }} />
+                  </span>
+                </div>
                 <div
                   style={{
                     flex: 1,
