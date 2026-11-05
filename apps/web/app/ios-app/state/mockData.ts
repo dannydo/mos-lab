@@ -655,7 +655,7 @@ export const STAFF_QUEUE = [
 export const SALON_INFO = {
   storeId: 6,
   name: 'Wings Beauty Salon Đề Thám',
-  address: '112 Đề Thám, P. Cầu Ông Lãnh, Quận 1, TP.HCM',
+  address: '159 - 159A Đề Thám, P. Cô Giang, Quận 1, TP.HCM',
   hotline: '0937.554.430',
   currentCc: { id: 37790, name: 'Diễm Hương', role: 'Tư Vấn Viên Quầy' },
 };

@@ -88,7 +88,7 @@ export function ScreenSettingsRoleSwitch({
       customerName: 'Khách Kiểm Thử Máy In',
       staffName: 'Thảo Ly (CV🪶)',
       storeName: 'Wings Lashes Q.1',
-      storeAddress: '112 Đề Thám, Cầu Ông Lãnh, Q.1',
+      storeAddress: '159 - 159A Đề Thám, P. Cô Giang, Q.1',
       storePhone: '1800 8154',
       dateStr: new Date().toLocaleString('vi-VN'),
       services: [

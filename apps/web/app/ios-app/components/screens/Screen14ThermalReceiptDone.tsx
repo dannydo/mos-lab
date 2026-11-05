@@ -44,6 +44,12 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
   const serumBonus = cartProducts.reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
   const tipEarned90 = Math.round(tipAmount * 0.9);
 
+  const branchCode = booking?.branchCode || 'DT';
+  const branchInfo =
+    branchCode === 'EP'
+      ? { name: 'CN ESTELLA PLACE', address: 'Tầng 5, L5-08-09 Estella Place, 88 Song Hành, TP. Thủ Đức' }
+      : { name: 'CN ĐỀ THÁM', address: '159 - 159A Đề Thám, P. Cô Giang, Q.1, TP.HCM' };
+
   return (
     <div className="flex-1 flex flex-col justify-between bg-black select-none px-4 pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] overflow-y-auto">
       {/* Top Header */}
@@ -52,105 +58,168 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
       </div>
 
       {/* White Thermal Receipt */}
-      <div className="bg-white rounded-2xl p-4 text-black space-y-2 shadow-2xl my-auto">
-        <div className="text-center">
-          <div className="text-[15px] font-black tracking-wide">WINGS LASHES & BEAUTY</div>
-          <div className="text-[11px] text-gray-600 mt-0.5">CN ĐỀ THÁM · 112 Đề Thám, Q.1, TP.HCM</div>
+      <div className="bg-white rounded-2xl p-4 text-black space-y-2.5 shadow-2xl my-auto">
+        <div className="text-center space-y-0.5">
+          <img
+            src="/images/combo-cards/wings-logo-gold.png"
+            alt="Wings Lashes"
+            className="h-6 w-auto mx-auto object-contain"
+          />
+          <div className="text-[16px] font-black tracking-wider text-black">WINGS LASHES</div>
+          <div className="text-[10.5px] text-gray-600 font-medium">
+            {branchInfo.name} · {branchInfo.address}
+          </div>
         </div>
 
         <div className="border-b border-dashed border-gray-400" />
 
         <div className="text-center">
-          <div className="text-[13px] font-black uppercase tracking-wider">PHIẾU THANH TOÁN & GHI NHẬN CA</div>
+          <div className="text-[13px] font-black uppercase tracking-wider text-black">
+            PHIẾU THANH TOÁN & GHI NHẬN CA
+          </div>
           <div className="text-[11px] text-gray-500 mt-0.5 font-mono">
-            HĐ: #{booking?.orderNumber || 'BK-336695'} · Hoàn tất
+            HĐ: #{booking?.orderNumber || 'BK-336925'} · Hoàn tất
           </div>
         </div>
 
-        <div className="text-[11px] space-y-0.5 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-          <div>
-            Khách hàng: <strong className="font-bold">{customerName}</strong> ({customerPhone})
+        <div className="text-[11px] space-y-1 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <span>Khách hàng:</span>
+            <strong className="font-bold text-black">
+              {customerName} ({customerPhone})
+            </strong>
           </div>
-          <div>
-            Chuyên Viên làm mi: <strong className="font-bold">{assignedStaff} (CV🪶)</strong>
+          <div className="flex items-center justify-between">
+            <span>Chuyên Viên làm mi:</span>
+            <strong className="font-bold text-black">{assignedStaff} (CV🪶)</strong>
           </div>
-          <div>
-            Check-in: <strong className="font-bold text-emerald-700">{checkInStaff}</strong> · Check-out:{' '}
-            <strong className="font-bold text-emerald-700">{checkOutStaff}</strong>
+          <div className="flex items-center justify-between border-t border-gray-200 pt-1 text-[10.5px]">
+            <span>
+              Check-in: <strong className="text-emerald-700">{checkInStaff}</strong>
+            </span>
+            <span>
+              Check-out: <strong className="text-emerald-700">{checkOutStaff}</strong>
+            </span>
           </div>
         </div>
 
         <div className="border-b border-dashed border-gray-400" />
 
         {/* Items Table */}
-        <div className="space-y-1 text-[12px]">
-          <div className="flex justify-between font-bold text-black uppercase text-[11px]">
+        <div className="space-y-1.5 text-[12px]">
+          <div className="flex justify-between font-black text-black uppercase text-[11px] tracking-wide">
             <span>TÊN MẶT HÀNG</span>
             <span>THÀNH TIỀN</span>
           </div>
-          <div className="flex justify-between text-gray-800">
-            <span>
-              1. {serviceName}
-              {selectedCombo ? ' (Trừ vào buổi 1 gói mới)' : comboRedemption ? ' (Trừ 1 lượt gói)' : ''}
-            </span>
-            <span className="tabular-nums font-medium">{effectiveServiceCharge.toLocaleString('vi-VN')}</span>
-          </div>
-          {selectedCombo && (
+
+          {/* Item 1: Dịch vụ làm mi */}
+          <div className="flex justify-between items-start text-gray-800">
             <div className="space-y-0.5">
-              <div className="flex justify-between text-gray-800">
+              <span className="font-bold text-black">1. {serviceName}</span>
+              {selectedCombo ? (
+                selectedCombo.todaySingleServiceWaived ? (
+                  <div className="text-[10.5px] text-emerald-700 font-bold">
+                    ✓ Trừ vào Buổi 1 gói mới mua (Miễn thu lẻ ca này)
+                  </div>
+                ) : (
+                  <div className="text-[10.5px] text-indigo-700 font-bold">
+                    ✓ Khách trả lẻ ca này · Giữ trọn số buổi gói mới mua
+                  </div>
+                )
+              ) : comboRedemption ? (
+                <div className="text-[10.5px] text-sky-700 font-bold">
+                  ✓ Trừ 1 lượt gói (Còn {comboRedemption.remainingAfterToday} lần)
+                </div>
+              ) : null}
+            </div>
+            <div className="text-right shrink-0">
+              <span className="tabular-nums font-bold text-black">
+                {effectiveServiceCharge.toLocaleString('vi-VN')} đ
+              </span>
+              {selectedCombo && selectedCombo.todaySingleServiceWaived && (
+                <span className="text-[10px] text-gray-400 line-through block tabular-nums">
+                  {servicePrice.toLocaleString('vi-VN')} đ
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Item 2: Gói Combo mua mới nếu có */}
+          {selectedCombo && (
+            <div className="space-y-1 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200">
+              <div className="flex justify-between items-center text-gray-900 font-bold">
                 <span>2. {selectedCombo.name}</span>
-                <span className="tabular-nums font-medium">{selectedCombo.price.toLocaleString('vi-VN')}</span>
+                <span className="tabular-nums text-black font-extrabold">
+                  {selectedCombo.price.toLocaleString('vi-VN')} đ
+                </span>
               </div>
               {selectedCombo.remainingAfterToday && (
-                <div className="text-[10px] text-indigo-800 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 tabular-nums">
-                  • Ví gói sau khi trừ buổi 1 hôm nay: còn{' '}
-                  <strong>
-                    {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} lần
-                  </strong>{' '}
-                  ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
-                  {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng)
+                <div className="text-[10.5px] text-indigo-950 bg-white/90 p-2 rounded-lg border border-indigo-200 tabular-nums space-y-0.5">
+                  <div className="font-bold flex items-center gap-1 text-indigo-900">
+                    <span>✨</span> Số dư ví gói sau khi trừ Buổi 1 hôm nay:
+                  </div>
+                  <div className="pl-4 text-gray-700">
+                    Còn{' '}
+                    <strong>
+                      {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} buổi
+                    </strong>{' '}
+                    ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
+                    {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng)
+                  </div>
                 </div>
               )}
             </div>
           )}
+
+          {/* Item nếu chỉ trừ gói cũ */}
           {comboRedemption && !selectedCombo && (
-            <div className="text-[10px] text-sky-900 bg-sky-50 px-2 py-1 rounded-lg border border-sky-200 tabular-nums">
+            <div className="text-[10.5px] text-sky-900 bg-sky-50 p-2 rounded-lg border border-sky-200 tabular-nums">
               • {comboRedemption.explanation} · Ví còn <strong>{comboRedemption.remainingAfterToday} lần</strong>
             </div>
           )}
+
+          {/* Item 3+: Sản phẩm dưỡng mi Yeppeum bán kèm */}
           {cartProducts.map((p, idx) => (
-            <div key={idx} className="flex justify-between text-gray-800">
+            <div key={idx} className="flex justify-between items-center text-gray-800">
               <span>
                 {selectedCombo ? idx + 3 : idx + 2}. {p.productName} (x{p.quantity})
               </span>
-              <span className="tabular-nums font-medium">{(p.price * p.quantity).toLocaleString('vi-VN')}</span>
+              <span className="tabular-nums font-bold text-black">
+                {(p.price * p.quantity).toLocaleString('vi-VN')} đ
+              </span>
             </div>
           ))}
+
+          {/* Tiền Tip */}
           {tipAmount > 0 && (
-            <div className="flex justify-between text-gray-800">
-              <span>Tiền Tip khách thưởng</span>
-              <span className="tabular-nums font-medium">+{tipAmount.toLocaleString('vi-VN')}</span>
+            <div className="flex justify-between items-center text-emerald-800 font-semibold bg-emerald-50/60 px-2 py-1 rounded-lg border border-emerald-200">
+              <span>💖 Tiền Tip khách thưởng</span>
+              <span className="tabular-nums font-bold">+{tipAmount.toLocaleString('vi-VN')} đ</span>
             </div>
           )}
+
+          {/* Cấn trừ Kim Cương */}
           {diamondUsed > 0 && (
-            <div className="flex justify-between text-cyan-800 font-bold bg-cyan-50 px-2 py-1 rounded-lg border border-cyan-200">
+            <div className="flex justify-between items-center text-cyan-900 font-bold bg-cyan-50 px-2 py-1 rounded-lg border border-cyan-200">
               <span>💎 Cấn trừ Ví Kim Cương ({diamondUsed} 💎)</span>
-              <span className="tabular-nums font-black">-{diamondDiscountAmount.toLocaleString('vi-VN')}</span>
+              <span className="tabular-nums font-black text-cyan-800">
+                -{diamondDiscountAmount.toLocaleString('vi-VN')} đ
+              </span>
             </div>
           )}
         </div>
 
         <div className="border-b border-dashed border-gray-400" />
 
-        {/* Total */}
-        <div className="space-y-1">
+        {/* Total & Payment Method */}
+        <div className="space-y-1.5">
           <div className="flex justify-between items-center text-[15px] font-black text-black">
             <span>TỔNG THANH TOÁN:</span>
-            <span className="tabular-nums text-[16px] text-[#FF9500]">{grandTotal.toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums text-[18px] text-[#FF9500]">{grandTotal.toLocaleString('vi-VN')} đ</span>
           </div>
-          <div className="flex justify-between text-[11px] text-gray-500 font-medium">
+          <div className="flex justify-between items-center text-[11px] text-gray-600 font-medium">
             <span>Hình thức thanh toán:</span>
-            <span className="font-bold text-gray-900">
+            <span className="font-bold text-black bg-gray-100 px-2 py-0.5 rounded">
               {grandTotal === 0 && diamondUsed > 0
                 ? '💎 100% Ví Kim Cương'
                 : booking?.billing?.paymentMethod === 'VIETQR'
@@ -160,18 +229,27 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
                     : 'Tiền mặt (Cash)'}
             </span>
           </div>
+
+          {/* Ảnh bill đối soát kế toán */}
           {booking?.billing?.transferProofPhoto && (
-            <div className="flex items-center justify-between text-[11px] bg-sky-50 px-2.5 py-1.5 rounded-lg border border-sky-200">
-              <span className="text-sky-900 font-bold flex items-center gap-1">
-                <span>📸</span> Bill chuyển khoản đối soát:
-              </span>
+            <div className="bg-sky-50 p-2.5 rounded-xl border border-sky-200 flex items-center justify-between gap-3">
+              <div className="space-y-0.5 min-w-0">
+                <div className="text-[11px] font-bold text-sky-950 flex items-center gap-1.5">
+                  <span className="text-base leading-none">📸</span>
+                  <span>Ảnh bill chuyển khoản đối soát (VCB):</span>
+                </div>
+                <div className="text-[10px] text-sky-800 font-medium truncate">
+                  Mã GD: {branchCode} {booking?.orderNumber?.replace(/\D/g, '') || booking?.id} DV TIP...
+                </div>
+              </div>
               <img
                 src={booking.billing.transferProofPhoto}
                 alt="Bill đối soát"
-                className="w-9 h-9 object-cover rounded border border-sky-300 shadow-2xs"
+                className="w-12 h-12 object-cover rounded-lg border border-sky-300 shadow-2xs shrink-0 cursor-pointer"
               />
             </div>
           )}
+
           {diamondUsed > 0 && (
             <div className="text-[10px] text-cyan-800 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 text-center">
               Ví Kim Cương sau ca: còn <strong>{booking?.diamondBalance ?? 0} 💎</strong>
@@ -180,29 +258,34 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
         </div>
 
         {/* CV🪶 Reward Summary Box */}
-        <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 space-y-1 text-[11px]">
-          <div className="font-extrabold text-emerald-900 uppercase">
-            🎉 QUYỀN LỢI GHI NHẬN CHO {checkOutStaff.toUpperCase()} (CV🪶):
+        <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 space-y-1.5 text-[11px]">
+          <div className="font-black text-emerald-950 uppercase tracking-wide flex items-center justify-between">
+            <span>🎉 QUYỀN LỢI GHI NHẬN CHO {checkOutStaff.toUpperCase()} (CV🪶):</span>
+            <span className="bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded text-[10px] font-bold">
+              Hoàn tất ca
+            </span>
           </div>
-          <div className="flex justify-between text-emerald-800">
-            <span>• Tiền Tip phân bổ nhận được:</span>
-            <span className="font-bold tabular-nums">+{tipEarned90.toLocaleString('vi-VN')} đ</span>
+          <div className="space-y-1 pt-0.5 text-emerald-900 font-medium">
+            <div className="flex justify-between">
+              <span>• Tiền Tip phân bổ thực nhận:</span>
+              <span className="font-bold tabular-nums">+{tipEarned90.toLocaleString('vi-VN')} đ</span>
+            </div>
+            {comboBonus > 0 && (
+              <div className="flex justify-between">
+                <span>• Thưởng chốt Gói Combo bậc thang:</span>
+                <span className="font-bold tabular-nums">+{Math.round(comboBonus / 1000)}🪶</span>
+              </div>
+            )}
+            {serumBonus > 0 && (
+              <div className="flex justify-between">
+                <span>• Thưởng bán Dưỡng mi Yeppeum:</span>
+                <span className="font-bold tabular-nums">+{Math.round(serumBonus / 1000)}🪶</span>
+              </div>
+            )}
           </div>
-          {comboBonus > 0 && (
-            <div className="flex justify-between text-emerald-800">
-              <span>• Thưởng chốt Gói Combo bậc thang CV🪶:</span>
-              <span className="font-bold tabular-nums">+{Math.round(comboBonus / 1000)}🪶</span>
-            </div>
-          )}
-          {serumBonus > 0 && (
-            <div className="flex justify-between text-emerald-800">
-              <span>• Thưởng bán Dưỡng mi Yeppeum 6ml:</span>
-              <span className="font-bold tabular-nums">+{Math.round(serumBonus / 1000)}🪶</span>
-            </div>
-          )}
-          <div className="pt-1 border-t border-emerald-200 flex justify-between font-black text-emerald-950 text-[12px]">
+          <div className="pt-1.5 border-t border-emerald-300/80 flex justify-between items-center font-black text-emerald-950 text-[12px]">
             <span>TỔNG THƯỞNG BÁN HÀNG:</span>
-            <span className="tabular-nums">
+            <span className="tabular-nums text-[13px] text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300">
               {comboBonus + serumBonus > 0 ? `+${Math.round((comboBonus + serumBonus) / 1000)}🪶` : '0🪶'}
             </span>
           </div>
