@@ -91,6 +91,7 @@ export interface MosChatDockedWindowsProps {
   accentSoftBg: string;
   accentBorder: string;
   accentContrast: string;
+  isDark?: boolean;
   token: SafeAny;
   renderUserAvatarNode: (opts: SafeAny) => React.ReactNode;
   isConversationParticipantOnline: (conv: MosChatConversation) => boolean;
@@ -156,6 +157,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
     accentSoftBg,
     accentBorder,
     accentContrast,
+    isDark = true,
     token,
     renderUserAvatarNode,
     isConversationParticipantOnline,
@@ -614,31 +616,35 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                         <button
                           type="button"
                           onClick={() => setActiveTabs((p) => ({ ...p, [cid]: 'chat' }))}
-                          className={`py-1 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                            currentTab === 'chat'
-                              ? 'bg-amber-500 text-neutral-950 font-bold shadow-sm'
-                              : 'text-neutral-400 hover:text-neutral-200'
-                          }`}
+                          className="py-1 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                          style={{
+                            background: currentTab === 'chat' ? (accentSoftBg || 'rgba(212, 168, 75, 0.16)') : 'transparent',
+                            color: currentTab === 'chat' ? (accentColor || '#d4a84b') : token.colorTextSecondary,
+                            border: currentTab === 'chat' ? `1px solid ${accentBorder || 'rgba(212, 168, 75, 0.4)'}` : '1px solid transparent',
+                            fontWeight: currentTab === 'chat' ? 700 : 500,
+                          }}
                         >
                           <span>💬 Tin nhắn</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setActiveTabs((p) => ({ ...p, [cid]: 'tasks' }))}
-                          className={`py-1 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                            currentTab === 'tasks'
-                              ? 'bg-amber-500 text-neutral-950 font-bold shadow-sm'
-                              : 'text-neutral-400 hover:text-neutral-200'
-                          }`}
+                          className="py-1 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                          style={{
+                            background: currentTab === 'tasks' ? (accentSoftBg || 'rgba(212, 168, 75, 0.16)') : 'transparent',
+                            color: currentTab === 'tasks' ? (accentColor || '#d4a84b') : token.colorTextSecondary,
+                            border: currentTab === 'tasks' ? `1px solid ${accentBorder || 'rgba(212, 168, 75, 0.4)'}` : '1px solid transparent',
+                            fontWeight: currentTab === 'tasks' ? 700 : 500,
+                          }}
                         >
                           <span>⏱️ Tác vụ</span>
                           {pendingConvTasks.length > 0 && (
                             <span
-                              className={`px-1.5 py-0.2 rounded-full text-[10px] tabular-nums font-extrabold ${
-                                currentTab === 'tasks'
-                                  ? 'bg-black/25 text-neutral-950'
-                                  : 'bg-amber-400/20 text-amber-400'
-                              }`}
+                              className="px-1.5 py-0.2 rounded-full text-[10px] tabular-nums font-extrabold"
+                              style={{
+                                background: currentTab === 'tasks' ? (accentBorder || 'rgba(212, 168, 75, 0.35)') : 'rgba(212, 168, 75, 0.15)',
+                                color: accentColor || '#d4a84b',
+                              }}
                             >
                               {pendingConvTasks.length}
                             </span>
@@ -713,22 +719,35 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                 avatarUrl: reply.senderAvatar,
                                 sizeClass: 'w-6 h-6 mt-0.5',
                                 textClass: 'text-[9px]',
-                                bgStyle: isMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
+                                bgStyle: isMine ? (accentColor || '#d4a84b') : '#2563eb',
                                 textColor: isMine ? '#000' : '#fff',
                               })}
                               <div
                                 className={`max-w-[82%] px-3 py-2 rounded-2xl text-[12px] shadow-sm ${
-                                  isMine
-                                    ? 'rounded-tr-xs bg-gradient-to-br from-[#d4a84b] to-[#b45309] text-neutral-950 font-medium'
-                                    : 'rounded-tl-xs bg-white/10 dark:bg-white/5 border border-white/10 text-neutral-100'
+                                  isMine ? 'rounded-tr-xs' : 'rounded-tl-xs'
                                 }`}
+                                style={{
+                                  background: isMine ? accentSoftBg : surfaceRaised,
+                                  border: `1px solid ${isMine ? accentBorder : borderColor}`,
+                                  color: token.colorText,
+                                }}
                               >
                                 <div
-                                  className={`flex items-center gap-1.5 mb-0.5 ${isMine ? 'justify-end text-neutral-900/80' : 'text-neutral-400'} text-[10px]`}
+                                  className={`flex items-center gap-1.5 mb-0.5 ${isMine ? 'justify-end' : 'justify-start'} text-[10px]`}
                                 >
-                                  <span className="font-bold">{reply.senderName}</span>
-                                  <span>·</span>
-                                  <span className="tabular-nums">{reply.timeLabel}</span>
+                                  <span
+                                    className="font-bold"
+                                    style={{ color: isMine ? (accentColor || '#d4a84b') : '#38bdf8' }}
+                                  >
+                                    {reply.senderName}
+                                  </span>
+                                  <span style={{ color: token.colorTextSecondary }}>·</span>
+                                  <span
+                                    className="tabular-nums font-normal"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    {reply.timeLabel}
+                                  </span>
                                   <button
                                     type="button"
                                     aria-label="Trả lời trong luồng"
@@ -744,7 +763,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                     <MessageSquareReply size={10} />
                                   </button>
                                 </div>
-                                <div className="break-words leading-relaxed">
+                                <div className="break-words leading-relaxed" style={{ color: token.colorText }}>
                                   {renderRichTextMessage(reply.text, isMine, {
                                     onQuoteClick: (senderName, quotedContent) => {
                                       const threadMsgs = (activeThreadMsg?.thread ?? []) as Array<{
@@ -854,33 +873,36 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                           <button
                             type="button"
                             onClick={() => setTaskFilterScopes((p) => ({ ...p, [cid]: 'pending' }))}
-                            className={`px-2.5 py-1 rounded-full cursor-pointer transition-all ${
-                              currentTaskFilter === 'pending'
-                                ? 'bg-amber-500 text-neutral-950 shadow-sm'
-                                : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
-                            }`}
+                            className="px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                            style={{
+                              background: currentTaskFilter === 'pending' ? (accentSoftBg || 'rgba(212, 168, 75, 0.2)') : 'transparent',
+                              color: currentTaskFilter === 'pending' ? (accentColor || '#d4a84b') : token.colorTextSecondary,
+                              border: currentTaskFilter === 'pending' ? `1px solid ${accentBorder || 'rgba(212, 168, 75, 0.4)'}` : `1px solid ${borderColor || 'transparent'}`,
+                            }}
                           >
                             Cần làm ({pendingConvTasks.length})
                           </button>
                           <button
                             type="button"
                             onClick={() => setTaskFilterScopes((p) => ({ ...p, [cid]: 'completed' }))}
-                            className={`px-2.5 py-1 rounded-full cursor-pointer transition-all ${
-                              currentTaskFilter === 'completed'
-                                ? 'bg-amber-500 text-neutral-950 shadow-sm'
-                                : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
-                            }`}
+                            className="px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                            style={{
+                              background: currentTaskFilter === 'completed' ? (accentSoftBg || 'rgba(212, 168, 75, 0.2)') : 'transparent',
+                              color: currentTaskFilter === 'completed' ? (accentColor || '#d4a84b') : token.colorTextSecondary,
+                              border: currentTaskFilter === 'completed' ? `1px solid ${accentBorder || 'rgba(212, 168, 75, 0.4)'}` : `1px solid ${borderColor || 'transparent'}`,
+                            }}
                           >
                             Đã xong ({convTasks.length - pendingConvTasks.length})
                           </button>
                           <button
                             type="button"
                             onClick={() => setTaskFilterScopes((p) => ({ ...p, [cid]: 'all' }))}
-                            className={`px-2.5 py-1 rounded-full cursor-pointer transition-all ${
-                              currentTaskFilter === 'all'
-                                ? 'bg-amber-500 text-neutral-950 shadow-sm'
-                                : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
-                            }`}
+                            className="px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                            style={{
+                              background: currentTaskFilter === 'all' ? (accentSoftBg || 'rgba(212, 168, 75, 0.2)') : 'transparent',
+                              color: currentTaskFilter === 'all' ? (accentColor || '#d4a84b') : token.colorTextSecondary,
+                              border: currentTaskFilter === 'all' ? `1px solid ${accentBorder || 'rgba(212, 168, 75, 0.4)'}` : `1px solid ${borderColor || 'transparent'}`,
+                            }}
                           >
                             Tất cả
                           </button>
@@ -1022,16 +1044,19 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                 avatarUrl: m.senderAvatar,
                                 sizeClass: 'w-6 h-6 mt-0.5 shrink-0',
                                 textClass: 'text-[9.5px]',
-                                bgStyle: isDockMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
+                                bgStyle: isDockMine ? (accentColor || '#d4a84b') : '#2563eb',
                                 textColor: isDockMine ? '#000' : '#fff',
                               })}
 
                               <div
                                 className={`max-w-[84%] p-2.5 rounded-2xl text-[12px] shadow-sm relative group/bubble ${
-                                  isDockMine
-                                    ? 'rounded-tr-xs bg-gradient-to-br from-[#d4a84b] to-[#b45309] text-neutral-950 font-medium'
-                                    : 'rounded-tl-xs bg-white/10 dark:bg-white/5 border border-white/10 text-neutral-100'
+                                  isDockMine ? 'rounded-tr-xs' : 'rounded-tl-xs'
                                 }`}
+                                style={{
+                                  background: isDockMine ? accentSoftBg : surfaceRaised,
+                                  border: `1px solid ${isDockMine ? accentBorder : borderColor}`,
+                                  color: token.colorText,
+                                }}
                               >
                                 {/* Message Header: Sender name, time, read status */}
                                 <div
@@ -1040,13 +1065,25 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   }`}
                                 >
                                   <span
-                                    className={`text-[10.5px] font-bold inline-flex items-center gap-1 ${
-                                      isDockMine ? 'text-neutral-900/80' : 'text-amber-400'
-                                    }`}
+                                    className="text-[10.5px] font-bold inline-flex items-center gap-1"
+                                    style={{ color: isDockMine ? (accentColor || '#d4a84b') : '#38bdf8' }}
                                   >
                                     <span>{m.senderName}</span>
-                                    <span>·</span>
-                                    <span className="tabular-nums font-normal">{m.timeLabel}</span>
+                                    {isDockMine && (
+                                      <span
+                                        className="inline-flex items-center justify-center leading-none px-1 py-0.2 rounded-full text-[8.5px] font-extrabold"
+                                        style={{
+                                          background: 'rgba(212, 168, 75, 0.2)',
+                                          color: accentColor || '#d4a84b',
+                                        }}
+                                      >
+                                        Bạn
+                                      </span>
+                                    )}
+                                    <span style={{ color: token.colorTextSecondary }}>·</span>
+                                    <span className="tabular-nums font-normal" style={{ color: token.colorTextSecondary }}>
+                                      {m.timeLabel}
+                                    </span>
                                     {isDockMine &&
                                       !m.isDeleted &&
                                       renderReadStatusCheckmark(dockBreakdown.seenBy, dockBreakdown.unseenBy, {
@@ -1061,9 +1098,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                       <button
                                         type="button"
                                         onClick={() => setActiveThreadMsgIds((p) => ({ ...p, [cid]: m.id }))}
-                                        className={`w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 ${
-                                          isDockMine ? 'text-neutral-900' : 'text-neutral-400'
-                                        }`}
+                                        className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 text-neutral-400 hover:text-amber-400"
                                       >
                                         <MessageSquareReply size={12} />
                                       </button>
@@ -1073,9 +1108,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                       <button
                                         type="button"
                                         onClick={() => openTaskModalFromMessage(m)}
-                                        className={`w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 ${
-                                          isDockMine ? 'text-neutral-900' : 'text-neutral-400'
-                                        }`}
+                                        className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 text-neutral-400 hover:text-amber-400"
                                       >
                                         <AlarmClockPlus size={12} />
                                       </button>
@@ -1103,17 +1136,17 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                           );
                                         }
                                       }}
-                                      className={`text-[11px] px-2 py-1 rounded mb-1.5 border-l-2 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-90 select-none ${
-                                        isDockMine
-                                          ? 'bg-neutral-900/10 border-neutral-900 text-neutral-900'
-                                          : 'bg-black/10 dark:bg-white/5 border-amber-500 text-slate-300'
-                                      }`}
+                                      className="text-[11px] px-2 py-1 rounded mb-1.5 border-l-2 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-90 select-none"
+                                      style={{
+                                        background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                                        borderLeftColor: accentColor || '#d4a84b',
+                                      }}
                                     >
                                       <div className="min-w-0 flex-1">
                                         <p className="font-bold text-[10.5px] truncate text-amber-500">
                                           {dockQuotedMessage.senderName}
                                         </p>
-                                        <p className="line-clamp-1 text-[10.5px] opacity-80">
+                                        <p className="line-clamp-1 text-[10.5px] opacity-80" style={{ color: token.colorText }}>
                                           {dockQuotedMessage.text}
                                         </p>
                                       </div>
@@ -1123,7 +1156,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
 
                                 {/* Message Text */}
                                 {m.text && (
-                                  <div className="break-words leading-relaxed text-[12.5px]">
+                                  <div className="break-words leading-relaxed text-[12.5px]" style={{ color: token.colorText }}>
                                     {renderRichTextMessage(m.text, isDockMine, {
                                       onQuoteClick: (senderName, quotedContent) => {
                                         const allMsgs = (conv?.messages ?? []) as Array<{
@@ -1147,15 +1180,14 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
 
                                 {/* Thread Replies Badge (Click to enter Thread) */}
                                 {threadCount > 0 && (
-                                  <div className="mt-2 pt-1.5 border-t border-black/10 dark:border-white/10">
+                                  <div
+                                    className="mt-2 pt-1.5 border-t"
+                                    style={{ borderColor: borderColor || 'rgba(255, 255, 255, 0.08)' }}
+                                  >
                                     <button
                                       type="button"
                                       onClick={() => setActiveThreadMsgIds((p) => ({ ...p, [cid]: m.id }))}
-                                      className={`w-full py-1 px-2 rounded-lg text-[11px] font-bold inline-flex items-center justify-between cursor-pointer transition-all ${
-                                        isDockMine
-                                          ? 'bg-black/15 text-neutral-950 hover:bg-black/25'
-                                          : 'bg-amber-400/15 text-amber-400 hover:bg-amber-400/25 border border-amber-400/20'
-                                      }`}
+                                      className="w-full py-1 px-2 rounded-lg text-[11px] font-bold inline-flex items-center justify-between cursor-pointer transition-all bg-amber-400/15 text-amber-400 hover:bg-amber-400/25 border border-amber-400/20"
                                     >
                                       <span className="inline-flex items-center gap-1.5">
                                         <MessageSquareReply size={12} />
