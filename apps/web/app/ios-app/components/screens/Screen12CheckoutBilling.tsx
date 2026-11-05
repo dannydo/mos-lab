@@ -39,10 +39,16 @@ export function Screen12CheckoutBilling({
   const upgradePrice = booking?.upgradePrice || 0;
   const originalBookedPrice = booking?.originalBookedServicePrice || servicePrice;
   const selectedCombo = booking?.selectedCombo || null;
+  const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
+  const effectiveServiceCharge = selectedCombo
+    ? 0
+    : comboRedemption
+      ? comboRedemption.totalCustomerPayToday
+      : servicePrice;
   const subtotal =
-    booking?.billing?.subtotal ||
-    servicePrice +
+    booking?.billing?.subtotal ??
+    effectiveServiceCharge +
       (selectedCombo ? selectedCombo.price : 0) +
       cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const vatRate = booking?.billing?.vatRate ?? 0.08;
@@ -119,22 +125,54 @@ export function Screen12CheckoutBilling({
                   Chuyên viên làm mi: {assignedStaff}
                   {booking?.attributes?.style && ` · Dáng ${booking.attributes.style}`}
                 </div>
-                {upgradePrice > 0 && (
-                  <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
-                    Gốc: {originalBookedPrice.toLocaleString('vi-VN')}đ + Nâng cấp: +
-                    {upgradePrice.toLocaleString('vi-VN')}đ (+8% VAT:{' '}
-                    {Math.round(upgradePrice * 1.08).toLocaleString('vi-VN')}đ)
+                {selectedCombo ? (
+                  <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                    ✓ Đã trừ luôn vào buổi 1 của gói mới mua (Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
                   </div>
+                ) : comboRedemption ? (
+                  <div className="text-[11px] text-sky-700 font-semibold mt-0.5">
+                    ✓ {comboRedemption.explanation} (Ví còn {comboRedemption.remainingAfterToday} lần)
+                  </div>
+                ) : (
+                  upgradePrice > 0 && (
+                    <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
+                      Gốc: {originalBookedPrice.toLocaleString('vi-VN')}đ + Nâng cấp: +
+                      {upgradePrice.toLocaleString('vi-VN')}đ (+8% VAT:{' '}
+                      {Math.round(upgradePrice * 1.08).toLocaleString('vi-VN')}đ)
+                    </div>
+                  )
                 )}
               </div>
               <div className="text-right">
-                <span className="text-[13px] text-gray-800 font-bold tabular-nums block">
-                  {servicePrice.toLocaleString('vi-VN')} đ
-                </span>
-                {upgradePrice > 0 && (
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                    Đã nâng cấp
-                  </span>
+                {selectedCombo ? (
+                  <>
+                    <span className="text-[13px] text-emerald-700 font-extrabold tabular-nums block">0 đ</span>
+                    <span className="text-[10px] text-gray-400 line-through tabular-nums block">
+                      {servicePrice.toLocaleString('vi-VN')} đ
+                    </span>
+                  </>
+                ) : comboRedemption ? (
+                  <>
+                    <span className="text-[13px] text-sky-800 font-extrabold tabular-nums block">
+                      {comboRedemption.totalCustomerPayToday > 0
+                        ? `+${comboRedemption.totalCustomerPayToday.toLocaleString('vi-VN')} đ`
+                        : '0 đ'}
+                    </span>
+                    <span className="text-[10px] text-sky-700 font-bold bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">
+                      Trừ 1 lượt gói
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[13px] text-gray-800 font-bold tabular-nums block">
+                      {servicePrice.toLocaleString('vi-VN')} đ
+                    </span>
+                    {upgradePrice > 0 && (
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        Đã nâng cấp
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -147,8 +185,16 @@ export function Screen12CheckoutBilling({
                   <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
                     Người chốt Checkout: {checkOutStaff} (+{selectedCombo.bonus.toLocaleString('vi-VN')}đ thưởng CV🪶)
                   </div>
+                  {selectedCombo.remainingAfterToday && (
+                    <div className="text-[10px] text-indigo-800 font-semibold mt-0.5 tabular-nums">
+                      Ví gói còn sau hôm nay: {selectedCombo.remainingAfterToday.totalRemaining}/
+                      {selectedCombo.sessions} lần ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
+                      {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng 0đ) · Doanh thu giữ ví:{' '}
+                      {(selectedCombo.deferredRevenueBalance || 0).toLocaleString('vi-VN')}đ
+                    </div>
+                  )}
                 </div>
-                <span className="text-[13px] text-gray-800 font-bold tabular-nums">
+                <span className="text-[13px] text-gray-800 font-bold tabular-nums shrink-0">
                   {selectedCombo.price.toLocaleString('vi-VN')} đ
                 </span>
               </div>

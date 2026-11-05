@@ -233,6 +233,40 @@ export interface BookingItem {
     price: number;
     bonus: number;
     sessions: number;
+    ruleName?: string;
+    categoryId?: string;
+    categoryName?: string;
+    volume?: number | 'under';
+    paidNewCount?: number;
+    paidRefillCount?: number;
+    bonusNewCount?: number;
+    bonusRefillCount?: number;
+    validityMonths?: number;
+    retailTotal?: number;
+    savingsAmount?: number;
+    avgPerSessionPrice?: number;
+    todaySingleServiceWaived?: boolean;
+    recognizedRevenueToday?: number;
+    deferredRevenueBalance?: number;
+    remainingAfterToday?: {
+      paidNew: number;
+      paidRefill: number;
+      bonusNew: number;
+      bonusRefill: number;
+      totalPaidRemaining: number;
+      totalBonusRemaining: number;
+      totalRemaining: number;
+    };
+  } | null;
+  comboRedemption?: {
+    comboName: string;
+    deductedBucket: string;
+    typeConversionSurcharge: number;
+    upgradeVolumeSurcharge: number;
+    totalCustomerPayToday: number;
+    recognizedRevenueToday: number;
+    remainingAfterToday: number;
+    explanation: string;
   } | null;
   attributes?: {
     style: string;
@@ -342,9 +376,9 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedBed: 'Giường 01',
     status: 'INCOMING',
     comboLiveStatus: {
-      isComboLive: true,
-      remainingSessions: 2,
-      comboName: 'Combo 5 lần New Hyperlight',
+      isComboLive: false,
+      remainingSessions: 0,
+      comboName: '',
       upsellOpportunity: true,
     },
     lashHistory: [],

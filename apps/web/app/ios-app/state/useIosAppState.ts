@@ -642,8 +642,9 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       const originalBookedServicePrice = prev.originalBookedServicePrice || prev.servicePrice;
 
       const comboPrice = nextCombo ? nextCombo.price : 0;
+      const effectiveServiceTotal = nextCombo ? 0 : nextServicePrice;
       const productTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
-      const subtotal = nextServicePrice + comboPrice + productTotal;
+      const subtotal = effectiveServiceTotal + comboPrice + productTotal;
       const vatRate = 0.08;
       const vatAmount = Math.round(subtotal * vatRate);
       const tipAmount = prev.billing?.tipAmount ?? 50000;
@@ -671,7 +672,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           subtotal,
           vatRate,
           vatAmount,
-          serviceTotal: nextServicePrice,
+          serviceTotal: effectiveServiceTotal,
           comboTotal: comboPrice,
           productTotal,
           paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
@@ -959,7 +960,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   // Step 12 -> Step 13: Save Product Upsell (Yeppeum) & Optional Combo + Lock in check_out_staff_id = actor!
   const handleGoToBilling = (upsellPayload?: {
     cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
-    selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null;
+    selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
+    comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
   }) => {
     updateActiveBooking((prev) => {
       const nextProducts =
@@ -978,9 +980,19 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
               ];
       const nextCombo =
         upsellPayload?.selectedCombo !== undefined ? upsellPayload.selectedCombo : prev.selectedCombo || null;
+      const nextRedemption =
+        upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
       const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
       const comboTotal = nextCombo ? nextCombo.price : 0;
-      const subtotal = prev.servicePrice + comboTotal + productTotal;
+
+      // Khi mua gói mới: trừ luôn buổi đầu vào gói -> phí lẻ buổi hôm nay = 0đ
+      // Khi trừ gói đang có: phí lẻ = phụ thu quy đổi/nâng cấp (nếu có) hoặc 0đ
+      const effectiveServiceTotal = nextCombo
+        ? 0
+        : nextRedemption
+          ? nextRedemption.totalCustomerPayToday
+          : prev.servicePrice;
+      const subtotal = effectiveServiceTotal + comboTotal + productTotal;
       const tipAmount = prev.billing?.tipAmount ?? 50000;
 
       const comboBonusAmount = nextCombo ? nextCombo.bonus : 0;
@@ -989,6 +1001,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       void postAction('SAVE_UPSELL_AND_CHECKOUT', {
         cartProducts: nextProducts,
         selectedCombo: nextCombo,
+        comboRedemption: nextRedemption,
       });
 
       return {
@@ -998,6 +1011,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         checkOutStaffTier: actor.tier,
         cartProducts: nextProducts,
         selectedCombo: nextCombo,
+        comboRedemption: nextRedemption,
         cvRewardBreakdown: {
           techTipPercent: 70,
           checkInTipPercent: 10,
@@ -1014,7 +1028,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           subtotal,
           vatRate: 0.08,
           vatAmount: Math.round(subtotal * 0.08),
-          serviceTotal: prev.servicePrice,
+          serviceTotal: effectiveServiceTotal,
           comboTotal,
           productTotal,
           paymentMethod: prev.billing?.paymentMethod || 'VIETQR',

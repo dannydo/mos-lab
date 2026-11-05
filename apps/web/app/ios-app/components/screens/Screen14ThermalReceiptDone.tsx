@@ -18,11 +18,17 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
   const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = booking?.servicePrice || 770000;
   const selectedCombo = booking?.selectedCombo || null;
+  const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
   const tipAmount = booking?.billing?.tipAmount ?? 50000;
+  const effectiveServiceCharge = selectedCombo
+    ? 0
+    : comboRedemption
+      ? comboRedemption.totalCustomerPayToday
+      : servicePrice;
   const grandTotal =
     booking?.billing?.grandTotal ||
-    servicePrice +
+    effectiveServiceCharge +
       (selectedCombo ? selectedCombo.price : 0) +
       cartProducts.reduce((s, p) => s + p.price * p.quantity, 0) +
       tipAmount;
@@ -76,13 +82,33 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
             <span>THÀNH TIỀN</span>
           </div>
           <div className="flex justify-between text-gray-800">
-            <span>1. {serviceName}</span>
-            <span className="tabular-nums font-medium">{servicePrice.toLocaleString('vi-VN')}</span>
+            <span>
+              1. {serviceName}
+              {selectedCombo ? ' (Trừ vào buổi 1 gói mới)' : comboRedemption ? ' (Trừ 1 lượt gói)' : ''}
+            </span>
+            <span className="tabular-nums font-medium">{effectiveServiceCharge.toLocaleString('vi-VN')}</span>
           </div>
           {selectedCombo && (
-            <div className="flex justify-between text-gray-800">
-              <span>2. {selectedCombo.name}</span>
-              <span className="tabular-nums font-medium">{selectedCombo.price.toLocaleString('vi-VN')}</span>
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-gray-800">
+                <span>2. {selectedCombo.name}</span>
+                <span className="tabular-nums font-medium">{selectedCombo.price.toLocaleString('vi-VN')}</span>
+              </div>
+              {selectedCombo.remainingAfterToday && (
+                <div className="text-[10px] text-indigo-800 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 tabular-nums">
+                  • Ví gói sau khi trừ buổi 1 hôm nay: còn{' '}
+                  <strong>
+                    {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} lần
+                  </strong>{' '}
+                  ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
+                  {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng 0đ)
+                </div>
+              )}
+            </div>
+          )}
+          {comboRedemption && !selectedCombo && (
+            <div className="text-[10px] text-sky-900 bg-sky-50 px-2 py-1 rounded-lg border border-sky-200 tabular-nums">
+              • {comboRedemption.explanation} · Ví còn <strong>{comboRedemption.remainingAfterToday} lần</strong>
             </div>
           )}
           {cartProducts.map((p, idx) => (

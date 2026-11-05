@@ -859,6 +859,53 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'COMBO-002',
+    book: 'CATALOG',
+    title: 'Hệ thống 13 Dòng Mi Combo, Khóa Gói Welcome Ngày Đầu & Tự Động Hạch Toán Ví Gói',
+    summary:
+      'Toàn bộ 13 dòng mi Combo tích hợp nội bộ tại mOS; khớp đúng dòng mi & số sợi tại Checkout, khóa gói Welcome (2 tặng 1) sau ngày đầu tiên, trừ ngay buổi đầu khi mua gói và tách bạch hạch toán Lượt Mua vs Lượt Tặng (0đ).',
+    commandments: [
+      '1. Khớp đúng dòng mi & số sợi tại Checkout (Smart Matching): Màn hình Checkout (/ios-app) bắt buộc tự động nhận diện đúng dòng mi (Classic & Volume 2D, Flawless Mink, HyperLight 2X..5X, IvyLight 3L..5L, UltraLight 3D..5D) và đúng mã số sợi/trụ mà khách vừa làm để gợi ý chính xác bảng giá gói (2 tặng 1, 4 tặng 1, 4 tặng 2, 7 tặng 3, 7 tặng 6, 10 tặng 6, 10 tặng 10, VVIP Pass); tuyệt đối không hiển thị gói mẫu cố định lệch dịch vụ.',
+      '2. Quy tắc Gói Welcome (2 tặng 1) — Chỉ Mở Duy Nhất Ngày Đầu Tiên: Gói 2 tặng 1 (Welcome) chỉ được mở bán cho khách hàng trong ngày đầu tiên sử dụng dịch vụ tại Wings (customerVisits <= 1 và chưa có lịch sử làm mi những ngày trước). Qua ngày hôm sau hoặc từ lần ghé thứ 2 trở đi, hệ thống tự động khóa gói 2 tặng 1.',
+      '3. Mua Gói Mới Tại Checkout — Trừ Ngay Buổi Đầu Tiên Vào Gói: Khi khách quyết định mua gói Combo ngay tại bước Checkout của ca làm, buổi làm mi hôm nay được trừ luôn làm buổi đầu tiên (1 Paid New) của gói vừa mua. Khách chỉ thanh toán đúng tiền gói Combo (miễn thu tiền lẻ buổi hôm nay).',
+      '4. Hạch Toán Kế Toán Ví Gói (FIFO Paid vs Bonus 0đ): Ví gói khách hàng tách bạch Lượt Mua (combo_new_count, combo_refill_count) và Lượt Tặng kèm (bonus_new_count, bonus_refill_count giá 0đ). Khi khách dùng gói, hệ thống ưu tiên trừ Lượt Mua trước (ghi nhận doanh thu thực hiện theo đơn giá chuẩn New/Refill từ quỹ doanh thu chờ phân bổ Deferred Revenue); sau khi hết Lượt Mua mới trừ đến Lượt Tặng với giá trị hạch toán 0đ.',
+      '5. Quy Đổi Linh Hoạt & Tự Động Tính Phụ Thu (Refill -> New & Up-size Volume): Nếu ví gói của khách chỉ còn lượt Dặm (Refill) nhưng khách làm Nối Mới (hoặc quá chu kỳ 25 ngày), hệ thống cho phép trừ 1 lượt Refill trong gói và tự động cộng phụ thu chênh lệch (Giá New - Giá Refill). Nếu khách nâng cấp số sợi (Up-size Volume) hoặc đổi lên dòng mi cao hơn, hệ thống trừ 1 lượt gói và tự động cộng phụ thu chênh lệch đơn giá.',
+      '6. Thưởng Tiền Tươi Chốt Combo Cho CV🪶 / 🪶CV🪶: Tính tự động theo bậc thang giá trị gói (Điều răn CV-002): < 2M thưởng 50.000đ; 2M - < 3M thưởng 100.000đ; 3M - < 4M thưởng 150.000đ; từ 4M trở lên thưởng Math.floor(ComboPrice / 1.000.000) * 50.000đ.',
+    ],
+    rationale:
+      'Thay thế hoàn toàn trang tra cứu rời rạc bên ngoài bằng nguồn chân lý duy nhất trong mOS, ngăn chặn việc chọn nhầm gói tại quầy/giường và tự động hóa 100% kế toán doanh thu chờ phân bổ cũng như phụ thu nâng cấp.',
+    tags: [
+      'Combo Catalog',
+      '13 dòng mi',
+      '2 tặng 1',
+      'Welcome',
+      'hạch toán combo',
+      'trừ gói',
+      'phụ thu nâng cấp',
+      'Deferred Revenue',
+      'FIFO',
+      'VVIP Pass',
+    ],
+    routeScopes: ['/dashboard/catalog', '/ios-app', '/dashboard/customers', '/dashboard/appointments'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-05',
+    sources: [
+      {
+        label: 'Wings Combo Catalog & Accounting Engine',
+        reference: 'packages/shared/src/catalog/wings-combo-catalog.ts',
+      },
+      {
+        label: 'Bàn Tư Vấn & So Sánh 13 Dòng Mi (/dashboard/catalog)',
+        reference: 'apps/web/app/dashboard/catalog/components/CatalogComboConsultTab.tsx',
+      },
+      {
+        label: 'Smart Combo Checkout & Upsell (/ios-app)',
+        reference: 'apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx',
+      },
+    ],
+  },
+  {
     id: 'CARE-001',
     book: 'CUSTOMER',
     title: 'Dặm mi có hạn, tình thương thì không',

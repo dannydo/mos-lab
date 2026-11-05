@@ -56,6 +56,7 @@ import CatalogReportHeader from './components/CatalogReportHeader';
 import CatalogLeaderboardCard from './components/CatalogLeaderboardCard';
 import CatalogItemDetailPanel from './components/CatalogItemDetailPanel';
 import CatalogComboLiveTab from './components/CatalogComboLiveTab';
+import CatalogComboConsultTab from './components/CatalogComboConsultTab';
 import CatalogBenchmarkTab from './components/CatalogBenchmarkTab';
 import CatalogBranchTab from './components/CatalogBranchTab';
 import { ServiceDeactivateConfirmModal } from './components/ServiceDeactivateConfirmModal';
@@ -1653,6 +1654,20 @@ export default function CatalogPage() {
                     }}
                     scroll={{ x: 900 }}
                   />
+                </div>
+              ),
+            },
+            {
+              key: 'combo-consult',
+              label: (
+                <Space>
+                  <TrophyOutlined className="text-amber-500" />
+                  <span>💎 Bàn Tư Vấn 13 Dòng Mi</span>
+                </Space>
+              ),
+              children: (
+                <div className={`${catalogStyles.tabPane} space-y-4`}>
+                  <CatalogComboConsultTab />
                 </div>
               ),
             },

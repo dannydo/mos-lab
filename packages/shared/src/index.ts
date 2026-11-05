@@ -81,3 +81,4 @@ export * from './types/cb-telemetry.js';
 export * from './types/fund.js';
 export * from './types/financial-goals.js';
 export * from './utils/cv-role-aliases.js';
+export * from './catalog/wings-combo-catalog.js';
