@@ -1418,27 +1418,39 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         );
                       })}
 
-                      <Popover
-                        trigger="click"
-                        placement={isMine ? 'topRight' : 'topLeft'}
-                        zIndex={1500}
-                        open={openStickerPopoverKey === `react:${m.id}`}
-                        onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `react:${m.id}` : null)}
-                        content={
-                          openStickerPopoverKey === `react:${m.id}` ? renderReactionPickerContent(m.id, m) : null
+                      <Tooltip
+                        title={
+                          openStickerPopoverKey === `react:${m.id}`
+                            ? undefined
+                            : 'Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)'
                         }
                       >
-                        <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
+                        <Popover
+                          trigger="click"
+                          placement={isMine ? 'topRight' : 'topLeft'}
+                          zIndex={1500}
+                          destroyOnHidden
+                          open={openStickerPopoverKey === `react:${m.id}`}
+                          onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `react:${m.id}` : null)}
+                          content={
+                            openStickerPopoverKey === `react:${m.id}` ? renderReactionPickerContent(m.id, m) : null
+                          }
+                        >
                           <button
                             type="button"
                             aria-label="Chọn biểu tượng cảm xúc"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const key = `react:${m.id}`;
+                              setOpenStickerPopoverKey(openStickerPopoverKey === key ? null : key);
+                            }}
                             className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
                             style={{ color: token.colorTextSecondary }}
                           >
                             <SmilePlus size={13} />
                           </button>
-                        </Tooltip>
-                      </Popover>
+                        </Popover>
+                      </Tooltip>
 
                       <span className="w-px h-3.5 mx-0.5" style={{ background: borderStrong }} />
 
