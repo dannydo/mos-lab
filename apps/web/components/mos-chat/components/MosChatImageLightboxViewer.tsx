@@ -1,8 +1,25 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Tooltip } from 'antd';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Download, X, Maximize2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Dropdown, Tooltip } from 'antd';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Download,
+  X,
+  Maximize2,
+  Copy,
+  Link2,
+  Check,
+} from 'lucide-react';
+import {
+  copyImageToClipboard,
+  copyImageUrlToClipboard,
+  downloadImage,
+} from '../utils/chat-image-copy';
 
 export interface MosChatImageLightboxItem {
   id?: string;
@@ -158,6 +175,65 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
     setLightboxImage((prev) => (prev ? { ...prev, rotate: (prev.rotate + 90) % 360 } : null));
   }, [setLightboxImage]);
 
+  const handleCopyImage = useCallback(async () => {
+    if (!currentItem?.url) return;
+    await copyImageToClipboard(currentItem.url);
+  }, [currentItem]);
+
+  const handleCopyUrl = useCallback(async () => {
+    if (!currentItem?.url) return;
+    await copyImageUrlToClipboard(currentItem.url);
+  }, [currentItem]);
+
+  // Context menu items on right-click
+  const contextMenuItems = useMemo(
+    () => [
+      {
+        key: 'copy-img',
+        icon: <Copy size={14} style={{ color: '#fbbf24' }} />,
+        label: 'Sao chép hình ảnh (Phím C)',
+        onClick: handleCopyImage,
+      },
+      {
+        key: 'copy-link',
+        icon: <Link2 size={14} style={{ color: '#38bdf8' }} />,
+        label: 'Sao chép liên kết hình ảnh',
+        onClick: handleCopyUrl,
+      },
+      {
+        type: 'divider' as const,
+      },
+      {
+        key: 'download',
+        icon: <Download size={14} style={{ color: '#34d399' }} />,
+        label: 'Tải hình ảnh về máy',
+        onClick: () => currentItem?.url && downloadImage(currentItem.url, currentItem.name),
+      },
+      {
+        key: 'rotate',
+        icon: <RotateCw size={14} style={{ color: '#818cf8' }} />,
+        label: 'Xoay ảnh 90° (Phím R)',
+        onClick: handleRotate,
+      },
+      {
+        type: 'divider' as const,
+      },
+      {
+        key: 'fit',
+        icon: <Maximize2 size={14} />,
+        label: 'Vừa khung hình (Phím F)',
+        onClick: handleFitZoom,
+      },
+      {
+        key: 'actual',
+        icon: <Check size={14} />,
+        label: 'Kích thước gốc 100% (Phím 1)',
+        onClick: handleActualSizeZoom,
+      },
+    ],
+    [handleCopyImage, handleCopyUrl, currentItem, handleRotate, handleFitZoom, handleActualSizeZoom]
+  );
+
   // Check if current zoom is within tolerance of Fit or 100%
   const isCurrentFit = Math.abs(lightboxImage.zoom - fitZoom) < 0.03;
   const isCurrent100 = Math.abs(lightboxImage.zoom - 1) < 0.03;
@@ -284,6 +360,17 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
         return;
       }
 
+      // C or Ctrl+C / Cmd+C: Copy image to clipboard
+      if (
+        (e.key.toLowerCase() === 'c' && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) ||
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCopyImage();
+        return;
+      }
+
       // Arrows for Prev / Next
       if (totalItems > 1) {
         if (e.key === 'ArrowLeft') {
@@ -309,6 +396,7 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
     handleZoomIn,
     handleZoomOut,
     handleRotate,
+    handleCopyImage,
     goPrev,
     goNext,
     setLightboxImage,
@@ -452,6 +540,30 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
             </button>
           </Tooltip>
 
+          {/* Copy Image to Clipboard */}
+          <Tooltip title="Sao chép hình ảnh (Phím C hoặc Ctrl+C / ⌘C)">
+            <button
+              type="button"
+              aria-label="Sao chép hình ảnh"
+              onClick={handleCopyImage}
+              className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white shrink-0"
+            >
+              <Copy size={14} />
+            </button>
+          </Tooltip>
+
+          {/* Copy Image Link */}
+          <Tooltip title="Sao chép liên kết hình ảnh">
+            <button
+              type="button"
+              aria-label="Sao chép liên kết hình ảnh"
+              onClick={handleCopyUrl}
+              className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white shrink-0"
+            >
+              <Link2 size={14} />
+            </button>
+          </Tooltip>
+
           {/* Download */}
           <Tooltip title="Tải hình về máy">
             <a
@@ -519,38 +631,40 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
         </button>
       )}
 
-      {/* Main Image Stage - Maximized viewport with smooth Drag & Pan */}
-      <div
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onDoubleClick={handleDoubleClick}
-        className={`w-full h-full flex items-center justify-center overflow-hidden touch-none select-none ${
-          isDragging ? 'cursor-grabbing' : lightboxImage.zoom > fitZoom ? 'cursor-grab' : 'cursor-zoom-in'
-        }`}
-        style={{
-          paddingTop: '52px',
-          paddingBottom: totalItems > 1 ? '72px' : '48px',
-        }}
-      >
-        <img
-          src={currentItem.url}
-          alt={currentItem.name || 'Hình ảnh'}
-          onLoad={handleImageLoad}
-          className="max-w-[98.5vw] max-h-[calc(100vh-80px)] object-contain select-none pointer-events-none"
+      {/* Main Image Stage - Maximized viewport with smooth Drag & Pan & Right-click Context Menu */}
+      <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']}>
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onDoubleClick={handleDoubleClick}
+          className={`w-full h-full flex items-center justify-center overflow-hidden touch-none select-none ${
+            isDragging ? 'cursor-grabbing' : lightboxImage.zoom > fitZoom ? 'cursor-grab' : 'cursor-zoom-in'
+          }`}
           style={{
-            maxWidth: imageDims ? 'none' : undefined,
-            maxHeight: imageDims ? 'none' : undefined,
-            width: imageDims ? `${imageDims.width}px` : undefined,
-            height: imageDims ? `${imageDims.height}px` : undefined,
-            transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${lightboxImage.zoom}) rotate(${lightboxImage.rotate}deg)`,
-            transformOrigin: 'center center',
-            transition: isDragging ? 'none' : 'transform 0.12s cubic-bezier(0.2, 0, 0, 1)',
+            paddingTop: '52px',
+            paddingBottom: totalItems > 1 ? '72px' : '48px',
           }}
-          draggable={false}
-        />
-      </div>
+        >
+          <img
+            src={currentItem.url}
+            alt={currentItem.name || 'Hình ảnh'}
+            onLoad={handleImageLoad}
+            className="max-w-[98.5vw] max-h-[calc(100vh-80px)] object-contain select-none pointer-events-auto"
+            style={{
+              maxWidth: imageDims ? 'none' : undefined,
+              maxHeight: imageDims ? 'none' : undefined,
+              width: imageDims ? `${imageDims.width}px` : undefined,
+              height: imageDims ? `${imageDims.height}px` : undefined,
+              transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${lightboxImage.zoom}) rotate(${lightboxImage.rotate}deg)`,
+              transformOrigin: 'center center',
+              transition: isDragging ? 'none' : 'transform 0.12s cubic-bezier(0.2, 0, 0, 1)',
+            }}
+            draggable={false}
+          />
+        </div>
+      </Dropdown>
 
       {/* Bottom Floating Quick Preset Bar & Helper Hint - Inset-X-0 flex container for 100% robust horizontal centering */}
       <div className="fixed bottom-3 inset-x-0 z-[2210] flex justify-center pointer-events-none px-4">
@@ -564,8 +678,7 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
           }}
         >
           <span className="hidden md:inline font-medium">
-            💡 Cuộn chuột / Phím +/- để phóng to • Kéo rê để di chuyển • Phím F: Vừa khung • Phím 1: 100% • Nhấp đúp:
-            Chuyển đổi
+            💡 Chuột phải / Phím C để sao chép ảnh • Cuộn chuột / Phím +/- để phóng to • Kéo rê để di chuyển • Phím F: Vừa khung • Phím 1: 100%
           </span>
 
           <div className="flex items-center gap-1 pl-1 font-mono text-[10.5px]">

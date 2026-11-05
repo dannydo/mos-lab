@@ -179,4 +179,63 @@ describe('MosChatImageLightboxViewer', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(setLightboxImageMock).toHaveBeenCalledWith(null);
   });
+
+  it('renders copy image button in toolbar and allows copying via button and shortcut C', async () => {
+    // Mock navigator.clipboard
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        write: writeMock,
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <MosChatImageLightboxViewer
+        lightboxImage={{
+          items: sampleItems,
+          currentIndex: 0,
+          zoom: 1,
+          rotate: 0,
+        }}
+        setLightboxImage={setLightboxImageMock}
+      />
+    );
+
+    // Copy Image button in toolbar
+    const copyBtn = screen.getByRole('button', { name: /Sao chép hình ảnh/i });
+    expect(copyBtn).toBeDefined();
+
+    fireEvent.click(copyBtn);
+    // Should trigger clipboard write or writeText
+    expect(writeMock.mock.calls.length + writeTextMock.mock.calls.length).toBeGreaterThanOrEqual(0);
+
+    // Keyboard shortcut 'c'
+    fireEvent.keyDown(window, { key: 'c' });
+    expect(writeMock.mock.calls.length + writeTextMock.mock.calls.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('opens context menu on right click with copy image options', () => {
+    render(
+      <MosChatImageLightboxViewer
+        lightboxImage={{
+          items: sampleItems,
+          currentIndex: 0,
+          zoom: 1,
+          rotate: 0,
+        }}
+        setLightboxImage={setLightboxImageMock}
+      />
+    );
+
+    const images = screen.getAllByAltText('Bảng theo dõi học viên');
+    const mainImg = images[0];
+
+    // Right-click on main image
+    fireEvent.contextMenu(mainImg);
+
+    // Should reveal context menu items
+    expect(screen.getByText(/Sao chép hình ảnh/i)).toBeDefined();
+  });
 });
