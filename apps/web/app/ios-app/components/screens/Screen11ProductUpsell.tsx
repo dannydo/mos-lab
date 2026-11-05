@@ -909,58 +909,76 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         </div>
 
         {/* Section 3: Summary card */}
-        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-1.5">
-          <div className="flex items-center justify-between text-[12px]">
-            <span className="text-gray-500">Dịch vụ hôm nay ({serviceName}):</span>
+        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-2">
+          {/* Row 1: Dịch vụ hôm nay */}
+          <div className="flex items-center justify-between text-[12.5px]">
+            <span className="text-gray-500 font-medium">Dịch vụ hôm nay:</span>
             {selectedComboPkg ? (
               <span className="text-emerald-700 font-bold tabular-nums">
-                0 đ{' '}
-                <span className="text-[10px] font-semibold">
-                  {isUpTierPackage
-                    ? `(Nâng cấp: Trừ vào buổi 1 của Gói ${selectedComboPkg.categoryName})`
-                    : '(Trừ vào buổi 1 của gói mới)'}
-                </span>
+                0đ <span className="text-[11px] font-semibold text-emerald-600">(Trừ vào gói)</span>
               </span>
             ) : selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting ? (
               <span className="text-sky-700 font-bold tabular-nums">
                 {redemptionAccounting.totalCustomerPayToday > 0
-                  ? `+${redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')} đ (Phụ thu gói)`
-                  : '0 đ (Trừ 1 lượt gói đang có)'}
+                  ? `+${redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')}đ (Phụ thu)`
+                  : '0đ (Trừ ví)'}
               </span>
             ) : (
-              <span className="text-gray-800 font-semibold tabular-nums">{servicePrice.toLocaleString('vi-VN')} đ</span>
+              <span className="text-gray-900 font-bold tabular-nums">{servicePrice.toLocaleString('vi-VN')}đ</span>
             )}
           </div>
+
+          {/* Row 2: Gói Combo đã chọn */}
           {selectedComboPkg && (
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="text-gray-700 font-semibold">{selectedComboPkg.displayName}:</span>
-              <span className="text-gray-900 font-bold tabular-nums">{comboTotal.toLocaleString('vi-VN')} đ</span>
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className="text-gray-700 font-medium">
+                Gói {selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName}:
+              </span>
+              <span className="text-gray-900 font-bold tabular-nums">{comboTotal.toLocaleString('vi-VN')}đ</span>
             </div>
           )}
+
+          {/* Row 2B: Gói Mi Dưới nếu có */}
           {selectedUnderComboPkg && (
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="text-gray-700 font-semibold">{selectedUnderComboPkg.displayName}:</span>
-              <span className="text-gray-900 font-bold tabular-nums">{underComboTotal.toLocaleString('vi-VN')} đ</span>
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className="text-gray-700 font-medium">
+                Gói Mi Dưới ({selectedUnderComboPkg.shortRuleLabel || selectedUnderComboPkg.ruleName}):
+              </span>
+              <span className="text-gray-900 font-bold tabular-nums">{underComboTotal.toLocaleString('vi-VN')}đ</span>
             </div>
           )}
+
+          {/* Row 2C: Dưỡng mi nếu có */}
           {yeppeumCount > 0 && (
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="text-gray-500">Dưỡng mi Yeppeum (x{yeppeumCount}):</span>
-              <span className="text-gray-800 font-semibold tabular-nums">{serumTotal.toLocaleString('vi-VN')} đ</span>
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className="text-gray-700 font-medium">
+                Dưỡng mi Yeppeum{yeppeumCount > 1 ? ` (x${yeppeumCount})` : ''}:
+              </span>
+              {selectedSerumTier.id === 'serum-free' ? (
+                <span className="text-emerald-700 font-bold tabular-nums">
+                  0đ <span className="text-[11px] font-semibold text-emerald-600">(Tặng kèm)</span>
+                </span>
+              ) : (
+                <span className="text-gray-900 font-bold tabular-nums">{serumTotal.toLocaleString('vi-VN')}đ</span>
+              )}
             </div>
           )}
+
+          {/* Row 3: Tổng tạm tính */}
           <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-[14px] font-bold text-black">Tổng tạm tính hóa đơn (Chưa VAT):</span>
-            <span className="text-[17px] font-black text-[#FF9500] tabular-nums">
-              {subtotal.toLocaleString('vi-VN')} đ
+            <span className="text-[14px] font-extrabold text-gray-900">Tổng thanh toán:</span>
+            <span className="text-[18px] font-black text-[#FF9500] tabular-nums">
+              {subtotal.toLocaleString('vi-VN')}đ
             </span>
           </div>
-          <div className="pt-1 flex items-center justify-between text-[12px] bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
-            <span className="text-emerald-800 font-bold flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              Thưởng chốt đơn của {actorName} ({actorTierBadge}):
+
+          {/* Row 4: Thưởng chốt đơn */}
+          <div className="flex items-center justify-between text-[12px] bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
+            <span className="text-emerald-800 font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              Thưởng chốt đơn:
             </span>
-            <span className="text-emerald-700 font-black tabular-nums">
+            <span className="text-emerald-700 font-black tabular-nums text-[13px]">
               +{Math.round((comboBonus + underComboBonus + serumBonus) / 1000)}🪶
             </span>
           </div>
@@ -970,9 +988,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         <div className="pt-1">
           <button
             onClick={handleConfirmCheckout}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[15px] shadow-md active:scale-98 transition-transform text-center"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide"
           >
-            CHỐT ĐƠN & SANG BƯỚC THANH TOÁN ({actorName})
+            CHỐT ĐƠN & THANH TOÁN
           </button>
         </div>
       </div>
