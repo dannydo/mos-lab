@@ -410,7 +410,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   <span className="text-[13px] font-black text-amber-950 truncate">
                     {selectedSerumTier.price > 0
                       ? `${selectedSerumTier.price.toLocaleString('vi-VN')}đ`
-                      : 'Tặng kèm (0đ)'}
+                      : 'Tặng kèm (Trị giá 1.100.000đ)'}
                   </span>
                   <span className="text-[10.5px] font-bold text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-200 truncate">
                     {selectedSerumTier.label.split('(')[0].trim()}
@@ -672,39 +672,128 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               })}
             </div>
 
-            {/* Live Accounting & Immediate First-Session Deduction Card when a New Combo is selected */}
-            {selectedComboPkg && purchaseAccounting && (
-              <div className="bg-indigo-50/90 border border-indigo-200 rounded-xl p-2.5 space-y-1 text-[11px]">
-                <div className="flex items-center justify-between font-extrabold text-indigo-950">
-                  <span className="flex items-center gap-1">
-                    <Calculator className="w-3.5 h-3.5 text-indigo-700" />
-                    Hạch Toán Tự Động & Trừ Luôn Buổi Đầu Vào Gói:
-                  </span>
-                  <span className="text-emerald-700">Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ</span>
-                </div>
-                <div className="text-[10px] text-indigo-900 space-y-0.5 tabular-nums">
-                  <div>
-                    • <strong>Trừ ngay buổi hôm nay (Lượt 1):</strong> Ghi nhận doanh thu thực hiện{' '}
-                    <strong>{purchaseAccounting.recognizedRevenueToday.toLocaleString('vi-VN')}đ</strong>
+            {/* Live Deduction & Wallet Status Card when a New Combo is selected */}
+            {selectedComboPkg &&
+              purchaseAccounting &&
+              (() => {
+                const bonusRemainingRetailValue =
+                  purchaseAccounting.remainingWalletAfterToday.bonusNew * (selectedComboPkg.newUnitPrice || 0) +
+                  purchaseAccounting.remainingWalletAfterToday.bonusRefill * (selectedComboPkg.refillUnitPrice || 0);
+
+                return (
+                  <div className="rounded-2xl p-3 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1] shadow-sm space-y-2.5">
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-black text-slate-800 uppercase tracking-wide leading-tight">
+                            Đặc quyền trừ buổi hôm nay vào gói
+                          </div>
+                          <div className="text-[9.5px] text-slate-500 font-medium leading-tight">
+                            Gói {selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName} · Buổi hôm nay tính làm
+                            Lượt 1
+                          </div>
+                        </div>
+                      </div>
+                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-[10.5px] font-black tabular-nums shadow-xs flex-shrink-0">
+                        <span>Miễn thu lẻ</span>
+                        <span className="font-extrabold">{servicePrice.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                    </div>
+
+                    {/* 2-Column Split Grid */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Box 1: Buổi hôm nay */}
+                      <div className="bg-white/95 rounded-xl p-2.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
+                        <div>
+                          <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Buổi hôm nay (Lượt 1)</span>
+                          </div>
+                          <div className="mt-1 text-[12.5px] font-black text-slate-900 leading-tight">
+                            Trừ vào 1 Buổi Nối Mới
+                          </div>
+                          <div className="text-[9.5px] text-slate-500 mt-0.5 leading-snug">
+                            Không tính tiền lẻ ca này, trừ thẳng vào lượt đầu của gói mới mua.
+                          </div>
+                        </div>
+                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                          <span className="text-slate-500 font-medium">Thu lẻ ca này:</span>
+                          <span className="font-black text-emerald-600 text-[11px] tabular-nums">0đ</span>
+                        </div>
+                      </div>
+
+                      {/* Box 2: Ví còn lại */}
+                      <div className="bg-white/95 rounded-xl p-2.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
+                        <div>
+                          <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                            <Wallet className="w-3 h-3 text-indigo-600" />
+                            <span>Ví còn lại sau ca này</span>
+                          </div>
+                          <div className="mt-1 flex items-baseline gap-1 text-slate-900 leading-tight">
+                            <span className="text-[15px] font-black tabular-nums text-indigo-700">
+                              {purchaseAccounting.remainingWalletAfterToday.totalRemaining}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-500">
+                              /{selectedComboPkg.totalSessions} buổi
+                            </span>
+                          </div>
+                          <div className="text-[9.5px] text-slate-600 mt-0.5 leading-snug space-y-0.5">
+                            <div>
+                              • <strong>{purchaseAccounting.remainingWalletAfterToday.totalPaidRemaining}</strong> buổi
+                              mua (
+                              {purchaseAccounting.remainingWalletAfterToday.paidNew > 0
+                                ? `${purchaseAccounting.remainingWalletAfterToday.paidNew} New + `
+                                : ''}
+                              {purchaseAccounting.remainingWalletAfterToday.paidRefill} Refill)
+                            </div>
+                            {purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining > 0 && (
+                              <div className="text-emerald-700 font-bold">
+                                • <strong>{purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining}</strong>{' '}
+                                buổi tặng{' '}
+                                <span className="text-[9px] font-extrabold text-emerald-800">
+                                  (Trị giá {bonusRemainingRetailValue.toLocaleString('vi-VN')}đ)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                          <span className="text-slate-500 font-medium">Hạn sử dụng:</span>
+                          <span className="font-black text-slate-700 tabular-nums">
+                            {selectedComboPkg.validityMonths ? `${selectedComboPkg.validityMonths} tháng` : '36 tháng'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Value / Savings Footer Strip */}
+                    <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-emerald-500/10 rounded-xl px-2.5 py-1.5 border border-amber-500/20 flex items-center justify-between text-[10px]">
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                        <span>
+                          Giá lẻ:{' '}
+                          <strong className="line-through text-slate-400 tabular-nums">
+                            {selectedComboPkg.retailTotal.toLocaleString('vi-VN')}đ
+                          </strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Giá gói:{' '}
+                          <strong className="text-slate-900 tabular-nums">
+                            {selectedComboPkg.comboPrice.toLocaleString('vi-VN')}đ
+                          </strong>
+                        </span>
+                      </div>
+                      <div className="font-black text-emerald-700 tabular-nums">
+                        Tiết kiệm {selectedComboPkg.savingsAmount.toLocaleString('vi-VN')}đ
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    • <strong>Số dư ví gói còn lại sau hôm nay:</strong>{' '}
-                    <strong>
-                      {purchaseAccounting.remainingWalletAfterToday.totalRemaining}/{selectedComboPkg.totalSessions} lần
-                    </strong>{' '}
-                    ({purchaseAccounting.remainingWalletAfterToday.paidNew} New mua +{' '}
-                    {purchaseAccounting.remainingWalletAfterToday.paidRefill} Refill mua ·{' '}
-                    {purchaseAccounting.remainingWalletAfterToday.bonusNew +
-                      purchaseAccounting.remainingWalletAfterToday.bonusRefill}{' '}
-                    lượt tặng 0đ)
-                  </div>
-                  <div>
-                    • <strong>Doanh thu chờ phân bổ (Deferred Revenue):</strong>{' '}
-                    <strong>{purchaseAccounting.deferredRevenueBalance.toLocaleString('vi-VN')}đ</strong>
-                  </div>
-                </div>
-              </div>
-            )}
+                );
+              })()}
 
             <button
               onClick={() => setSelectedComboId('NONE')}
@@ -962,7 +1051,8 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                         {t.id === 'serum-orig' && 'Bán đúng giá niêm yết khi khách mua lẻ tại giường.'}
                         {t.id === 'serum-disc-light' && 'Áp dụng giảm dưới 50% theo chương trình ưu đãi nhẹ.'}
                         {t.id === 'serum-disc-deep' && 'Áp dụng Flash sale, xả hàng hoặc ưu đãi sâu ≥ 50%.'}
-                        {t.id === 'serum-free' && 'Tặng kèm miễn phí 0đ khi khách chốt gói Combo lớn.'}
+                        {t.id === 'serum-free' &&
+                          'Tặng kèm miễn phí (Trị giá 1.100.000đ) khi khách chốt gói Combo lớn.'}
                       </div>
                     </div>
 

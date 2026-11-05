@@ -396,11 +396,28 @@ export function WingsComboCard({
   const bonusParts: string[] = [];
   if (pkg.bonusNewCount > 0) bonusParts.push(`${pkg.bonusNewCount} NEW`);
   if (pkg.bonusRefillCount > 0) bonusParts.push(`${pkg.bonusRefillCount} REFILL`);
+
+  const formatCompactBonusValue = (val: number) => {
+    if (val >= 1000000) {
+      const millions = val / 1000000;
+      return `${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2).replace(/\.?0+$/, '')}M`;
+    }
+    if (val >= 1000) {
+      return `${Math.round(val / 1000)}K`;
+    }
+    return `${val.toLocaleString('vi-VN')}đ`;
+  };
+
+  const bonusValStr =
+    pkg.bonusRetailValue && pkg.bonusRetailValue > 0
+      ? ` (Trị giá ${formatCompactBonusValue(pkg.bonusRetailValue)})`
+      : '';
+
   const bonusSessionLabel =
     pkg.packageKind === 'vvip_pass'
       ? 'CHIA SẺ NGƯỜI THÂN'
       : bonusParts.length > 0
-        ? `BONUS ${bonusParts.join(' ')}`
+        ? `BONUS ${bonusParts.join(' ')}${bonusValStr}`
         : '';
 
   return (

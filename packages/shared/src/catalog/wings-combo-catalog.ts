@@ -129,6 +129,8 @@ export interface MatchedComboPackageOption {
   savingsAmount: number;
   avgPerSessionPrice: number;
   cvBonus: number;
+  /** Tổng giá trị quà tặng thực tế theo giá lẻ = (bonusNewCount * newUnitPrice) + (bonusRefillCount * refillUnitPrice) */
+  bonusRetailValue: number;
   cardImageUrl: string;
   cardPreviewUrl: string;
   readableContent: string;
@@ -180,6 +182,10 @@ export interface ComboPurchaseAccountingBreakdown {
     totalRemaining: number;
   };
   cvComboBonus: number;
+  /** Tổng giá trị quà tặng thực tế theo giá lẻ ban đầu */
+  bonusRetailValue: number;
+  /** Giá trị các buổi tặng còn lại trong ví sau ca hôm nay */
+  bonusRemainingRetailValue: number;
   accountingSummaryNote: string;
 }
 
@@ -5416,7 +5422,8 @@ export function getVolumeFiberMeta(
 }
 
 export function formatReadableComboContent(
-  rule: Pick<WingsComboRule, 'comboNewCount' | 'comboRefillCount' | 'bonusNewCount' | 'bonusRefillCount' | 'content'>
+  rule: Pick<WingsComboRule, 'comboNewCount' | 'comboRefillCount' | 'bonusNewCount' | 'bonusRefillCount' | 'content'>,
+  bonusRetailValue?: number
 ): string {
   const paidParts: string[] = [];
   if (rule.comboNewCount > 0) paidParts.push(`${rule.comboNewCount} Nối mới`);
@@ -5427,12 +5434,13 @@ export function formatReadableComboContent(
   if (rule.bonusRefillCount > 0) bonusParts.push(`${rule.bonusRefillCount} Dặm`);
 
   if (paidParts.length > 0 || bonusParts.length > 0) {
-    return [
-      paidParts.length ? `Mua ${paidParts.join(' + ')}` : '',
-      bonusParts.length ? `Tặng ${bonusParts.join(' + ')}` : '',
-    ]
-      .filter(Boolean)
-      .join(' · ');
+    let bonusText = '';
+    if (bonusParts.length > 0) {
+      const valStr =
+        bonusRetailValue && bonusRetailValue > 0 ? ` (Trị giá ${bonusRetailValue.toLocaleString('vi-VN')}đ)` : '';
+      bonusText = `Tặng ${bonusParts.join(' + ')}${valStr}`;
+    }
+    return [paidParts.length ? `Mua ${paidParts.join(' + ')}` : '', bonusText].filter(Boolean).join(' · ');
   }
   return rule.content || 'Gói 20 lần VIP dùng chung bạn bè & người thân';
 }
@@ -5726,6 +5734,7 @@ export function getComboPackagesForCategoryAndVolume(params: {
         savingsAmount: retailTotal - comboPrice,
         avgPerSessionPrice: Math.round(comboPrice / totalSessions),
         cvBonus: calculateComboBonus(comboPrice),
+        bonusRetailValue: 0,
         cardImageUrl: rule.cardImageUrl,
         cardPreviewUrl: rule.cardPreviewUrl,
         readableContent: rule.special || '20 lần nối mi cao cấp · Dùng chung cho bạn bè & người thân',
@@ -5753,6 +5762,10 @@ export function getComboPackagesForCategoryAndVolume(params: {
     const ruleSlug = rule.name.replace(/\s+/g, '_');
     const volSlug = priceRow.isUnderLash ? 'under_390' : String(priceRow.volume);
 
+    const newUnitPrice = priceRow.newPrice;
+    const refillUnitPrice = priceRow.refillPrice || priceRow.newPrice;
+    const bonusRetailValue = rule.bonusNewCount * newUnitPrice + rule.bonusRefillCount * refillUnitPrice;
+
     results.push({
       id: `${category.id}:${ruleSlug}:${volSlug}`,
       categoryId: category.id,
@@ -5777,17 +5790,18 @@ export function getComboPackagesForCategoryAndVolume(params: {
       totalPaidSessions: rule.totalPaidSessions,
       totalBonusSessions: rule.totalBonusSessions,
       totalSessions,
-      newUnitPrice: priceRow.newPrice,
-      refillUnitPrice: priceRow.refillPrice || priceRow.newPrice,
+      newUnitPrice,
+      refillUnitPrice,
       retailTotal,
       comboPrice,
       comboPriceWithVat: Math.round(comboPrice * 1.08),
       savingsAmount: Math.max(0, retailTotal - comboPrice),
       avgPerSessionPrice: Math.round(comboPrice / totalSessions),
       cvBonus: calculateComboBonus(comboPrice),
+      bonusRetailValue,
       cardImageUrl: rule.cardImageUrl,
       cardPreviewUrl: rule.cardPreviewUrl,
-      readableContent: formatReadableComboContent(rule),
+      readableContent: formatReadableComboContent(rule, bonusRetailValue),
       theme: category.theme,
       allVolumePrices: rule.prices,
     });
@@ -5827,6 +5841,7 @@ export function getComboPackagesForCategoryAndVolume(params: {
         savingsAmount: 35400000 - comboPrice,
         avgPerSessionPrice: Math.round(comboPrice / 20),
         cvBonus: calculateComboBonus(comboPrice),
+        bonusRetailValue: 0,
         cardImageUrl: vvipRule.cardImageUrl,
         cardPreviewUrl: vvipRule.cardPreviewUrl,
         readableContent: '20 lần nối mi cao cấp · Hạn dùng 36 tháng · Chia sẻ cùng bạn bè & người thân',
@@ -5864,6 +5879,12 @@ export function calculateComboPurchaseAccounting(
   const totalPaidRemaining = paidNewAfter + paidRefillAfter;
   const totalBonusRemaining = bonusNewAfter + bonusRefillAfter;
   const totalRemaining = totalPaidRemaining + totalBonusRemaining;
+
+  const bonusRetailValue =
+    pkg.bonusRetailValue ||
+    pkg.bonusNewCount * (pkg.newUnitPrice || 0) + pkg.bonusRefillCount * (pkg.refillUnitPrice || 0);
+  const bonusRemainingRetailValue =
+    bonusNewAfter * (pkg.newUnitPrice || 0) + bonusRefillAfter * (pkg.refillUnitPrice || 0);
 
   return {
     mode: 'BUY_NEW_COMBO',
@@ -5905,7 +5926,13 @@ export function calculateComboPurchaseAccounting(
       totalRemaining,
     },
     cvComboBonus: pkg.cvBonus,
-    accountingSummaryNote: `Đã trừ buổi hôm nay vào lượt 1 của gói (${pkg.ruleName}). Miễn thu lẻ ${singleOriginal.toLocaleString('vi-VN')}đ. Còn lại ${totalRemaining}/${pkg.totalSessions} lần trong ví (${totalPaidRemaining} lượt mua + ${totalBonusRemaining} lượt tặng 0đ).`,
+    bonusRetailValue,
+    bonusRemainingRetailValue,
+    accountingSummaryNote: `Đã trừ buổi hôm nay vào lượt 1 của gói (${pkg.ruleName}). Miễn thu lẻ ${singleOriginal.toLocaleString('vi-VN')}đ. Còn lại ${totalRemaining}/${pkg.totalSessions} lần trong ví (${totalPaidRemaining} lượt mua${
+      totalBonusRemaining > 0
+        ? ` + ${totalBonusRemaining} lượt tặng trị giá ${bonusRemainingRetailValue.toLocaleString('vi-VN')}đ`
+        : ''
+    }).`,
   };
 }
 

@@ -160,7 +160,7 @@ export const SERUM_TIERS_CVL: SerumTierOption[] = [
   },
   {
     id: 'serum-free',
-    label: 'Tặng kèm Combo (0đ)',
+    label: 'Tặng kèm Combo (Trị giá 1.100.000đ)',
     price: 0,
     cvBonus: 1000,
     desc: 'Thưởng CV🪶: +1🪶/cây',
