@@ -5,6 +5,8 @@ import { Popover, Tooltip } from 'antd';
 import { MosChatStickerAndEmojiPicker, MOS_CHAT_EXPANDED_EMOJI_GROUPS } from '../mos-chat-stickers';
 import { MosChatSpaceEmojiColorPicker } from '../MosChatSpaceEmojiColorPicker';
 import { MosChatComposer, type MosChatComposerProps } from '../components/MosChatComposer';
+import { MosChatMessageFeed, type MosChatMessageFeedProps } from '../components/MosChatMessageFeed';
+import type { MosChatMessage } from '@mos-lab/shared';
 import { WINGS_SIGNATURE_EMOJIS, GOOGLE_CHAT_REACTION_EMOJIS } from '../constants/chat-constants';
 
 describe('MOS-BUG-187: Desktop Emoji Selection & Reaction Library', () => {
@@ -263,5 +265,167 @@ describe('MOS-BUG-187: Desktop Emoji Selection & Reaction Library', () => {
     expect(updateComposerText).toHaveBeenCalledWith('Hôm nay ✨trời đẹp');
     expect(focusSpy).toHaveBeenCalled();
     expect(setSelectionRangeSpy).toHaveBeenCalledWith(8 + '✨'.length, 8 + '✨'.length);
+  });
+
+  it('MOS-BUG-200: opens reaction emoji picker popover on message feed when clicking "Chọn biểu tượng cảm xúc" button', () => {
+    const setOpenStickerPopoverKey = vi.fn();
+    const handleToggleReaction = vi.fn();
+
+    const mockMessage: MosChatMessage = {
+      id: 'msg-bug-200',
+      conversationId: 'space-wings',
+      senderId: 2,
+      senderName: 'Lê Thảo',
+      senderRole: 'CV',
+      senderAvatar: '',
+      text: 'Chào buổi sáng mọi người',
+      createdAt: '2026-11-05T08:00:00.000Z',
+      timeLabel: '08:00',
+      reactions: {},
+      reactionUsers: {},
+    };
+
+    const renderReactionPickerContent = vi.fn((msgId: string, m: any) => (
+      <div data-testid="mock-reaction-picker">
+        <button
+          type="button"
+          data-testid="mock-picker-heart"
+          onClick={() => {
+            setOpenStickerPopoverKey(null);
+            handleToggleReaction(msgId, '❤️');
+          }}
+        >
+          ❤️
+        </button>
+      </div>
+    ));
+
+    const defaultFeedProps: Partial<MosChatMessageFeedProps> = {
+      isMobile: false,
+      activeConversation: {
+        id: 'space-wings',
+        type: 'space',
+        name: 'Wings Team',
+        messages: [mockMessage],
+      } as any,
+      currentUser: { id: 1, displayName: 'Danny' },
+      isDark: true,
+      token: { colorTextSecondary: '#94a3b8', colorText: '#f8fafc' },
+      surfaceRaised: '#1e293b',
+      borderColor: '#334155',
+      borderStrong: '#475569',
+      accentSoftBg: 'rgba(212, 168, 75, 0.1)',
+      accentBorder: '#d4a84b',
+      pinnedMessages: [],
+      pinnedBannerIndex: 0,
+      setPinnedBannerIndex: vi.fn(),
+      navigateToMessage: vi.fn(),
+      setActiveSubtab: vi.fn(),
+      handleTogglePin: vi.fn(),
+      formatMoveTargetSnippet: () => '',
+      mainMessagesContainerRef: { current: null },
+      messagesEndRef: { current: null },
+      uniqueTasks: [],
+      isMessageFromCurrentUser: () => false,
+      getMessageReadBreakdown: () => ({ seenBy: [], unseenBy: [] }),
+      stoppedReadersByMsgId: {},
+      canManageChatThreads: true,
+      AI_COPILOT_CONV_ID: 'ai-copilot',
+      draggingRootMsgId: null,
+      setDraggingRootMsgId: vi.fn(),
+      dragOverTargetMsgId: null,
+      setDragOverTargetMsgId: vi.fn(),
+      setDragOverThreadPane: vi.fn(),
+      handleMoveThreadItem: vi.fn(),
+      highlightedMsgId: null,
+      getMemberNickname: () => undefined,
+      renderReadStatusCheckmark: () => null,
+      renderUserAvatarNode: () => null,
+      expandedThinkingIds: {},
+      setExpandedThinkingIds: vi.fn(),
+      editingMessageId: null,
+      editingReplyId: null,
+      editingText: '',
+      handleCancelEdit: vi.fn(),
+      handleSaveEdit: vi.fn(),
+      isSavingEdit: false,
+      isComposingRef: { current: false },
+      lastCompositionEndMsRef: { current: 0 },
+      setHistoryModalMessage: vi.fn(),
+      setHistoryModalOpen: vi.fn(),
+      isDannyAccount: true,
+      handleRestoreMessage: vi.fn(),
+      handleMessageTap: vi.fn(),
+      heartFlyMsgId: null,
+      renderRichTextMessage: (t) => t,
+      appliedActionIds: {},
+      handleExecuteAiAction: vi.fn(),
+      speakingMsgId: null,
+      ttsSpeed: 1,
+      handleSpeakAiMessage: vi.fn(),
+      handleSetTtsSpeed: vi.fn(),
+      hasUserReacted: () => false,
+      handleToggleReaction,
+      mobileActiveMsgId: null,
+      openMovePopoverKey: null,
+      setOpenMovePopoverKey: vi.fn(),
+      openStickerPopoverKey: null,
+      setOpenStickerPopoverKey,
+      renderReactionPickerContent,
+      handleOpenThread: vi.fn(),
+      openTaskModalFromMessage: vi.fn(),
+      isStrictDannySuperAdmin: true,
+      openMissionModalFromChat: vi.fn(),
+      handleBuzzMessage: vi.fn(),
+      handleStartEdit: vi.fn(),
+      handleDeleteMessage: vi.fn(),
+      renderMiniSeenAvatarStack: () => null,
+      aiThinkingActive: false,
+      aiElapsedSec: 0,
+      getThreadReplyReadBreakdown: () => ({ seenBy: [], unseenBy: [] }),
+      renderTaskCard: () => null,
+      renderLiveMissionCard: () => null,
+      workflowInstances: [],
+      setWorkflowInstances: vi.fn(),
+      currentUserStaffMember: {},
+      fetchBootstrap: vi.fn(),
+      setLightboxImage: vi.fn(),
+      movingThreadItemKey: null,
+      threadOpen: false,
+      activeThreadMessage: null,
+      isDraggingOver: false,
+      antdMessage: {},
+    };
+
+    const { rerender } = render(
+      <MosChatMessageFeed
+        {...(defaultFeedProps as MosChatMessageFeedProps)}
+        openStickerPopoverKey={null}
+      />
+    );
+
+    // Find the "Chọn biểu tượng cảm xúc" button
+    const smileBtn = screen.getByRole('button', { name: 'Chọn biểu tượng cảm xúc' });
+    expect(smileBtn).toBeDefined();
+
+    // Click button to toggle popover
+    fireEvent.click(smileBtn);
+    expect(setOpenStickerPopoverKey).toHaveBeenCalledWith('react:msg-bug-200');
+
+    // Rerender with openStickerPopoverKey set to verify content renders
+    rerender(
+      <MosChatMessageFeed
+        {...(defaultFeedProps as MosChatMessageFeedProps)}
+        openStickerPopoverKey="react:msg-bug-200"
+      />
+    );
+
+    expect(renderReactionPickerContent).toHaveBeenCalledWith('msg-bug-200', expect.anything());
+    expect(screen.getByTestId('mock-reaction-picker')).toBeDefined();
+
+    // Select emoji inside picker
+    fireEvent.click(screen.getByTestId('mock-picker-heart'));
+    expect(handleToggleReaction).toHaveBeenCalledWith('msg-bug-200', '❤️');
+    expect(setOpenStickerPopoverKey).toHaveBeenCalledWith(null);
   });
 });

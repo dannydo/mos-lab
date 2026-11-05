@@ -1307,6 +1307,11 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                             <button
                               type="button"
                               aria-label="Gửi Sticker động hoặc Emoji"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const key = `composer:dock:${cid}`;
+                                setOpenStickerPopoverKey(openStickerPopoverKey === key ? null : key);
+                              }}
                               className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-white/10 text-neutral-400 hover:text-neutral-200 shrink-0"
                             >
                               <SmilePlus size={15} />

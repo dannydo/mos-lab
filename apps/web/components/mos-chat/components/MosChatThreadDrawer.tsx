@@ -994,29 +994,41 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                 <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Popover
-                  trigger="click"
-                  placement="bottomRight"
-                  zIndex={1500}
-                  open={openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`}
-                  onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `thread-root:${activeThreadMessage.id}` : null)}
-                  content={
+                <Tooltip
+                  title={
                     openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`
-                      ? renderReactionPickerContent(activeThreadMessage.id, activeThreadMessage)
-                      : null
+                      ? undefined
+                      : 'Thả biểu cảm vào tin nhắn gốc'
                   }
                 >
-                  <Tooltip title="Thả biểu cảm vào tin nhắn gốc">
+                  <Popover
+                    trigger="click"
+                    placement="bottomRight"
+                    zIndex={1500}
+                    destroyOnHidden
+                    open={openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`}
+                    onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `thread-root:${activeThreadMessage.id}` : null)}
+                    content={
+                      openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`
+                        ? renderReactionPickerContent(activeThreadMessage.id, activeThreadMessage)
+                        : null
+                    }
+                  >
                     <button
                       type="button"
                       aria-label="Thả biểu cảm vào tin nhắn gốc"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const key = `thread-root:${activeThreadMessage.id}`;
+                        setOpenStickerPopoverKey(openStickerPopoverKey === key ? null : key);
+                      }}
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
                     >
                       <SmilePlus size={12} />
                       <span className="hidden sm:inline">Thả biểu cảm</span>
                     </button>
-                  </Tooltip>
-                </Popover>
+                  </Popover>
+                </Tooltip>
 
                 <Tooltip title="Trả lời / Trích dẫn tin nhắn gốc này">
                   <button
@@ -2214,6 +2226,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       <button
                         type="button"
                         aria-label="Chọn biểu tượng cảm xúc vào luồng"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const key = 'composer:thread';
+                          setOpenStickerPopoverKey(openStickerPopoverKey === key ? null : key);
+                        }}
                         className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-transform cursor-pointer"
                         style={{ color: token.colorTextSecondary }}
                       >
@@ -2468,6 +2485,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         <button
                           type="button"
                           aria-label="Gửi Sticker động hoặc Emoji vào luồng"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const key = 'composer:thread';
+                            setOpenStickerPopoverKey(openStickerPopoverKey === key ? null : key);
+                          }}
                           className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
                           style={{ color: token.colorTextSecondary }}
                         >
