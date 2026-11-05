@@ -406,6 +406,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     bookingAccessTag: 'NEXT_CUSTOMER',
     assignedBed: 'Giường 01',
     status: 'INCOMING',
+    diamondBalance: 350,
     comboLiveStatus: {
       isComboLive: false,
       remainingSessions: 0,
@@ -450,6 +451,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedStaffName: 'Thảo Ly',
     assignedBed: 'Giường 01',
     status: 'INCOMING',
+    diamondBalance: 350,
     comboLiveStatus: {
       isComboLive: true,
       remainingSessions: 3,
@@ -502,6 +504,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedStaffName: 'Thảo Ly',
     assignedBed: 'Giường 02',
     status: 'INCOMING',
+    diamondBalance: 500,
     comboLiveStatus: {
       isComboLive: true,
       remainingSessions: 2,
@@ -544,6 +547,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedStaffName: 'Tuyết Nhi ❤️',
     assignedBed: 'Giường 03',
     status: 'INCOMING',
+    diamondBalance: 120,
     comboLiveStatus: {
       isComboLive: true,
       remainingSessions: 4,
@@ -586,6 +590,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     assignedStaffName: 'Phương Nhi',
     assignedBed: 'Giường 04',
     status: 'INCOMING',
+    diamondBalance: 350,
     comboLiveStatus: {
       isComboLive: false,
       remainingSessions: 0,

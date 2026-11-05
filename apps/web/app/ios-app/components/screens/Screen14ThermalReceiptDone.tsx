@@ -2,14 +2,16 @@
 
 import React from 'react';
 import { BookingItem } from '../../state/mockData';
+import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 
 interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
+  actor?: ActiveActorProfile;
   onFinishOrder: () => void;
 }
 
-export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14ThermalReceiptDoneProps) {
+export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Screen14ThermalReceiptDoneProps) {
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = booking?.customerPhone || '0933.779.207';
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
@@ -42,7 +44,8 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
 
   const comboBonus = selectedCombo?.bonus || 0;
   const serumBonus = cartProducts.reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
-  const tipEarned90 = Math.round(tipAmount * 0.9);
+  const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
+  const tipEarned = isCheckoutStaffCc ? Math.round(tipAmount * 0.2) : Math.round(tipAmount * 0.9);
 
   const branchCode = booking?.branchCode || 'DT';
   const branchInfo =
@@ -54,7 +57,9 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
     <div className="flex-1 flex flex-col justify-between bg-black select-none px-4 pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] overflow-y-auto">
       {/* Top Header */}
       <div className="text-center pb-2">
-        <h1 className="text-[#FFB400] font-bold text-[17px] tracking-tight">Hoàn Tất Ca Làm & Ghi Nhận Thưởng CV🪶</h1>
+        <h1 className="text-[#FFB400] font-bold text-[17px] tracking-tight">
+          Hoàn Tất Ca Làm & Ghi Nhận Thưởng {isCheckoutStaffCc ? 'CC' : 'CV🪶'}
+        </h1>
       </div>
 
       {/* White Thermal Receipt */}
@@ -146,26 +151,21 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
 
           {/* Item 2: Gói Combo mua mới nếu có */}
           {selectedCombo && (
-            <div className="space-y-1 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200">
-              <div className="flex justify-between items-center text-gray-900 font-bold">
-                <span>2. {selectedCombo.name}</span>
-                <span className="tabular-nums text-black font-extrabold">
+            <div className="space-y-1">
+              <div className="flex justify-between items-baseline gap-2 text-black">
+                <span className="font-bold text-[12.5px] flex-1 min-w-0">2. {selectedCombo.name}</span>
+                <span className="tabular-nums text-black font-extrabold whitespace-nowrap shrink-0 text-[12.5px]">
                   {selectedCombo.price.toLocaleString('vi-VN')} đ
                 </span>
               </div>
               {selectedCombo.remainingAfterToday && (
-                <div className="text-[10.5px] text-indigo-950 bg-white/90 p-2 rounded-lg border border-indigo-200 tabular-nums space-y-0.5">
-                  <div className="font-bold flex items-center gap-1 text-indigo-900">
-                    <span>✨</span> Số dư ví gói sau khi trừ Buổi 1 hôm nay:
-                  </div>
-                  <div className="pl-4 text-gray-700">
-                    Còn{' '}
-                    <strong>
-                      {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} buổi
-                    </strong>{' '}
-                    ({selectedCombo.remainingAfterToday.totalPaidRemaining} lượt mua +{' '}
-                    {selectedCombo.remainingAfterToday.totalBonusRemaining} lượt tặng)
-                  </div>
+                <div className="text-[10px] text-indigo-900 bg-indigo-50/80 px-2 py-1 rounded-md border border-indigo-200 tabular-nums">
+                  ✨ Số dư ví gói sau hôm nay: Còn{' '}
+                  <strong>
+                    {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} buổi
+                  </strong>{' '}
+                  ({selectedCombo.remainingAfterToday.totalPaidRemaining} mua +{' '}
+                  {selectedCombo.remainingAfterToday.totalBonusRemaining} tặng)
                 </div>
               )}
             </div>
@@ -250,52 +250,73 @@ export function Screen14ThermalReceiptDone({ booking, onFinishOrder }: Screen14T
             </div>
           )}
 
-          {diamondUsed > 0 && (
-            <div className="text-[10px] text-cyan-800 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 text-center">
-              Ví Kim Cương sau ca: còn <strong>{booking?.diamondBalance ?? 0} 💎</strong>
+          {/* Thông tin Ví Kim Cương minh bạch */}
+          {diamondUsed > 0 ? (
+            <div className="text-[10.5px] text-cyan-900 font-semibold bg-cyan-50 px-2.5 py-1.5 rounded-xl border border-cyan-200 flex items-center justify-between">
+              <span>
+                💎 Đã cấn trừ {diamondUsed} 💎 (-{diamondDiscountAmount.toLocaleString('vi-VN')}đ):
+              </span>
+              <span className="font-black text-cyan-950">
+                Ví còn {booking?.diamondBalance !== undefined ? booking.diamondBalance : 0} 💎
+              </span>
+            </div>
+          ) : (
+            <div className="text-[10.5px] text-cyan-900 font-medium bg-cyan-50/60 px-2.5 py-1 rounded-xl border border-cyan-100 flex items-center justify-between">
+              <span>💎 Số dư Ví Kim Cương:</span>
+              <span className="font-bold text-cyan-950">
+                {booking?.diamondBalance !== undefined ? booking.diamondBalance : 350} 💎 (còn nguyên)
+              </span>
             </div>
           )}
         </div>
 
-        {/* CV🪶 Reward Summary Box */}
-        <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 space-y-1.5 text-[11px]">
-          <div className="font-black text-emerald-950 uppercase tracking-wide flex items-center justify-between">
-            <span>🎉 QUYỀN LỢI GHI NHẬN CHO {checkOutStaff.toUpperCase()} (CV🪶):</span>
-            <span className="bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded text-[10px] font-bold">
-              Hoàn tất ca
-            </span>
-          </div>
-          <div className="space-y-1 pt-0.5 text-emerald-900 font-medium">
-            <div className="flex justify-between">
-              <span>• Tiền Tip phân bổ thực nhận:</span>
-              <span className="font-bold tabular-nums">+{tipEarned90.toLocaleString('vi-VN')} đ</span>
+        {/* Reward Summary Box */}
+        {(() => {
+          const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
+          return (
+            <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 space-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between font-black text-emerald-950 text-[12px]">
+                <span>{isCheckoutStaffCc ? 'Quyền Lợi CC khi checkout' : 'Quyền Lợi CV🪶'}</span>
+                <span
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#16A34A] text-white text-[11px] font-black shadow-xs"
+                  title="Done!"
+                >
+                  ✓
+                </span>
+              </div>
+              <div className="space-y-1 pt-0.5 text-emerald-900 font-medium">
+                <div className="flex justify-between">
+                  <span>• Tiền Tip phân bổ thực nhận:</span>
+                  <span className="font-bold tabular-nums">+{tipEarned.toLocaleString('vi-VN')} đ</span>
+                </div>
+                {comboBonus > 0 && (
+                  <div className="flex justify-between">
+                    <span>• Thưởng chốt Gói Combo:</span>
+                    <span className="font-bold tabular-nums">+{Math.round(comboBonus / 1000)}🪶</span>
+                  </div>
+                )}
+                {serumBonus > 0 && (
+                  <div className="flex justify-between">
+                    <span>• Thưởng bán Dưỡng mi Yeppeum:</span>
+                    <span className="font-bold tabular-nums">+{Math.round(serumBonus / 1000)}🪶</span>
+                  </div>
+                )}
+              </div>
+              <div className="pt-1.5 border-t border-emerald-300/80 flex justify-between items-center font-black text-emerald-950 text-[12px]">
+                <span>TỔNG THƯỞNG:</span>
+                <span className="tabular-nums text-[13px] text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300">
+                  {comboBonus + serumBonus > 0 ? `+${Math.round((comboBonus + serumBonus) / 1000)}🪶` : '0🪶'}
+                </span>
+              </div>
             </div>
-            {comboBonus > 0 && (
-              <div className="flex justify-between">
-                <span>• Thưởng chốt Gói Combo bậc thang:</span>
-                <span className="font-bold tabular-nums">+{Math.round(comboBonus / 1000)}🪶</span>
-              </div>
-            )}
-            {serumBonus > 0 && (
-              <div className="flex justify-between">
-                <span>• Thưởng bán Dưỡng mi Yeppeum:</span>
-                <span className="font-bold tabular-nums">+{Math.round(serumBonus / 1000)}🪶</span>
-              </div>
-            )}
-          </div>
-          <div className="pt-1.5 border-t border-emerald-300/80 flex justify-between items-center font-black text-emerald-950 text-[12px]">
-            <span>TỔNG THƯỞNG BÁN HÀNG:</span>
-            <span className="tabular-nums text-[13px] text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300">
-              {comboBonus + serumBonus > 0 ? `+${Math.round((comboBonus + serumBonus) / 1000)}🪶` : '0🪶'}
-            </span>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
       {/* Bottom Action Area */}
       <div className="pt-3 space-y-2">
         <div className="text-center text-[12px] font-bold text-[#22C55E]">
-          ✓ Đã ghi nhận check_in_staff_id & check_out_staff_id = {checkOutStaff} (CV🪶)
+          ✓ Đã ghi nhận check_in_staff_id & check_out_staff_id = {checkOutStaff} ({isCheckoutStaffCc ? 'CC' : 'CV🪶'})
         </div>
         <button
           onClick={onFinishOrder}

@@ -268,7 +268,13 @@ function IosAppInner() {
           />
         );
       case 15:
-        return <Screen14ThermalReceiptDone booking={state.activeBooking} onFinishOrder={state.handleFinishOrder} />;
+        return (
+          <Screen14ThermalReceiptDone
+            booking={state.activeBooking}
+            actor={state.actor}
+            onFinishOrder={state.handleFinishOrder}
+          />
+        );
       default:
         return (
           <Screen01IncomingBookings
