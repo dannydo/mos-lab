@@ -72,6 +72,7 @@ export function GuidedRequestConversation({
     return () => window.clearTimeout(timer);
   }, [conversation, poll]);
   const start = async () => {
+    if (busy) return;
     if (description.trim().length < 3) {
       setFallback('Hãy viết vài từ đầu tiên, rồi mOS sẽ hỏi từng câu ngắn.');
       return;
@@ -99,7 +100,7 @@ export function GuidedRequestConversation({
     }
   };
   const reply = async (message: string) => {
-    if (!conversation || !message.trim()) return;
+    if (busy || !conversation || !message.trim()) return;
     setBusy(true);
     try {
       const response = await apiClient.bugReports.replyConversation(conversation.id, { message: message.trim() });

@@ -623,6 +623,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       try {
         const input = request.body as CreateBugReportRequest;
         const data = await BugReportService.create(fastify, request.user.id, input);
+        fastify.cache?.invalidatePattern('^bug-reports:mine:');
         if (await InboxFollowUpService.enqueue(fastify, data.id, 'CREATED', String(data.id)))
           RequestClassifierWorkerHub.notify('inbox_follow_up_available');
         if (await InboxPlanService.enqueue(fastify, data.id, 'CREATED'))
@@ -660,6 +661,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         request.user.id,
         request.body as MarkBugReportNotificationsReadRequest
       );
+      fastify.cache?.invalidatePattern(`^bug-reports:mine:${request.user.id}$`);
       return reply.send({ success: true, data: { updatedCount }, message: 'Đã đọc thông báo.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Mark bug notifications read failed');
@@ -678,6 +680,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           id,
           request.body as ReviewBugReportRequest
         );
+        fastify.cache?.invalidatePattern('^bug-reports:mine:');
         if (
           (request.body as ReviewBugReportRequest)?.decision === 'REOPEN' &&
           (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_REOPENED', data.updatedAt))
@@ -703,6 +706,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           canManageBugInbox(request.user),
           request.body as CreateBugReportCommentRequest
         );
+        fastify.cache?.invalidatePattern('^bug-reports:mine:');
         // Only enqueue follow-up if ticket is actively waiting for reporter clarification
         if (data.report.clarification?.status === 'WAITING_REPORTER') {
           if (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_COMMENT', data.report.updatedAt))

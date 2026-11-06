@@ -178,7 +178,7 @@ export function BugReportConversation({
   );
 
   const submit = async () => {
-    if (!body.trim() && !files.length) return;
+    if (sending || processing || (!body.trim() && !files.length)) return;
     setSending(true);
     try {
       const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
@@ -384,7 +384,7 @@ export function BugReportConversation({
               type="primary"
               icon={<AppIcon icon={Send} size="sm" />}
               loading={sending}
-              disabled={processing || (!body.trim() && !files.length)}
+              disabled={processing || sending || (!body.trim() && !files.length)}
               onClick={() => void submit()}
             >
               Gửi bình luận

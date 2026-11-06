@@ -116,6 +116,7 @@ export function BugReportRejectionModal({
   };
 
   const handleSubmit = async () => {
+    if (submitting || processing) return;
     if (!unchanged && !note.trim() && !files.length) {
       messageApi.warning('Vui lòng mô tả cụ thể điểm chưa đúng hoặc đính kèm ảnh để Agent sửa lại.');
       return;
@@ -171,6 +172,7 @@ export function BugReportRejectionModal({
           type="primary"
           danger
           loading={submitting || processing}
+          disabled={submitting || processing}
           icon={<AppIcon icon={RotateCcw} size="sm" />}
           onClick={() => void handleSubmit()}
         >

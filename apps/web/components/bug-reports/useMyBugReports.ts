@@ -27,25 +27,28 @@ export function useMyBugReports(enabled: boolean) {
   const [error, setError] = React.useState<string | null>(null);
   const requestVersionRef = React.useRef(0);
 
-  const refresh = React.useCallback(async () => {
-    if (!enabled) return;
-    const requestVersion = ++requestVersionRef.current;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.bugReports.mine();
-      if (requestVersion !== requestVersionRef.current) return;
-      setData(response.data);
-      setNotifications(response.notifications);
-      setUnreadCount(response.unreadCount);
-      setActionRequiredCount(response.actionRequiredCount);
-    } catch (caught) {
-      if (requestVersion !== requestVersionRef.current) return;
-      setError(errorMessage(caught));
-    } finally {
-      if (requestVersion === requestVersionRef.current) setLoading(false);
-    }
-  }, [enabled]);
+  const refresh = React.useCallback(
+    async (options?: { force?: boolean }): Promise<void> => {
+      if (!enabled) return;
+      const requestVersion = ++requestVersionRef.current;
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await apiClient.bugReports.mine(options);
+        if (requestVersion !== requestVersionRef.current) return;
+        setData(response.data);
+        setNotifications(response.notifications);
+        setUnreadCount(response.unreadCount);
+        setActionRequiredCount(response.actionRequiredCount);
+      } catch (caught) {
+        if (requestVersion !== requestVersionRef.current) return;
+        setError(errorMessage(caught));
+      } finally {
+        if (requestVersion === requestVersionRef.current) setLoading(false);
+      }
+    },
+    [enabled]
+  );
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -72,10 +75,51 @@ export function useMyBugReports(enabled: boolean) {
 
   const review = React.useCallback(
     async (id: number, request: ReviewBugReportRequest) => {
-      const response = await apiClient.bugReports.review(id, request);
-      if (!response.data) throw new Error('Máy chủ không trả ticket sau khi duyệt.');
-      await refresh();
-      return response.data;
+      // Optimistic instant UI update to prevent duplicate clicks and ensure immediate feedback
+      setData((current) =>
+        current.map((item) => {
+          if (item.id !== id) return item;
+          if (request.decision === 'APPROVE') {
+            return {
+              ...item,
+              status: 'CLOSED',
+              canReview: false,
+              canReopenUnchanged: false,
+              reporterExperience: {
+                ...item.reporterExperience,
+                state: 'COMPLETED',
+                summary: 'Bạn đã xác nhận bản sửa hoạt động đúng.',
+              },
+            };
+          } else {
+            return {
+              ...item,
+              status: 'NEW',
+              canReview: false,
+              canReopenUnchanged: false,
+              reporterExperience: {
+                ...item.reporterExperience,
+                state: 'IN_PROGRESS',
+                summary: 'Đã nhận phản hồi của bạn; mOS đang kiểm tra và sửa lại.',
+              },
+            };
+          }
+        })
+      );
+      if (request.decision === 'APPROVE') {
+        setActionRequiredCount((prev) => Math.max(0, prev - 1));
+      }
+
+      try {
+        const response = await apiClient.bugReports.review(id, request);
+        if (!response.data) throw new Error('Máy chủ không trả ticket sau khi duyệt.');
+        await refresh({ force: true });
+        return response.data;
+      } catch (error) {
+        // Rollback state by re-fetching
+        await refresh({ force: true });
+        throw error;
+      }
     },
     [refresh]
   );
@@ -84,7 +128,7 @@ export function useMyBugReports(enabled: boolean) {
     async (id: number, request: CreateBugReportCommentRequest): Promise<BugReportCommentCreateResult> => {
       const response = await apiClient.bugReports.comment(id, request);
       if (!response.data) throw new Error('Máy chủ không trả về hội thoại sau khi bình luận.');
-      await refresh();
+      await refresh({ force: true });
       return response.data;
     },
     [refresh]

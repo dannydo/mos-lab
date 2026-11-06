@@ -2024,6 +2024,7 @@ export class BugReportService {
     });
 
     const attachmentWarnings = await saveAttachments(fastify, report.id, attachments);
+    fastify.cache?.invalidatePattern('^bug-reports:mine:');
 
     return { id: report.id, key: formatBugReportKey(report.id, requestType), attachmentWarnings };
   }
@@ -2265,6 +2266,7 @@ export class BugReportService {
     });
 
     const attachmentWarnings = await saveAttachments(fastify, id, attachments, comment.id);
+    fastify.cache?.invalidatePattern('^bug-reports:mine:');
     return { report: await this.detail(fastify, id), attachmentWarnings };
   }
 
@@ -2302,6 +2304,7 @@ export class BugReportService {
       },
       data: { readAt: new Date() },
     });
+    fastify.cache?.invalidatePattern(`^bug-reports:mine:${reporterStaffId}$`);
     return result.count;
   }
 
@@ -2419,6 +2422,7 @@ export class BugReportService {
     if (decision === 'REOPEN' && attachments.length) {
       await saveAttachments(fastify, id, attachments, completed.commentId);
     }
+    fastify.cache?.invalidatePattern('^bug-reports:mine:');
     return this.detail(fastify, completed.row.id);
   }
 

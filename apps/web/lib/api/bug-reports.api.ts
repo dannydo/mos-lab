@@ -93,8 +93,11 @@ export const bugReportsApi = {
       invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
-    mine: async (): Promise<MyBugReportsResponse> => {
-      return dedupeApiGet<MyBugReportsResponse>('/bug-reports/mine', undefined, 30000);
+    mine: async (options?: ApiRequestOptions & { force?: boolean }): Promise<MyBugReportsResponse> => {
+      if (options?.force) {
+        invalidateApiGetCache(['/bug-reports/mine']);
+      }
+      return dedupeApiGet<MyBugReportsResponse>('/bug-reports/mine', undefined, 5000, options);
     },
     review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
       const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);

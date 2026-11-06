@@ -241,8 +241,9 @@ export function MyBugReportsPanel({
   );
 
   const submitReview = async (payload: ReviewBugReportRequest) => {
+    if (saving) return;
     const selected = reports.find((item) => item.key === selectedKey) ?? reports[0];
-    if (!selected) return;
+    if (!selected || (payload.decision === 'APPROVE' && !selected.canReview)) return;
     setSaving(true);
     try {
       await onReview(selected.id, payload);
@@ -664,6 +665,7 @@ export function MyBugReportsPanel({
                       <Button
                         danger
                         loading={saving}
+                        disabled={saving}
                         icon={<AppIcon icon={RotateCcw} size="sm" />}
                         onClick={() => setRejectionModalOpen(true)}
                       >
@@ -673,6 +675,7 @@ export function MyBugReportsPanel({
                         <Button
                           type="primary"
                           loading={saving}
+                          disabled={saving}
                           icon={<AppIcon icon={CheckCircle2} size="sm" />}
                           onClick={() => void submitReview({ decision: 'APPROVE' })}
                         >

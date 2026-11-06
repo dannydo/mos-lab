@@ -513,6 +513,7 @@ export function BugReportSurface() {
   };
 
   const submit = async () => {
+    if (submitting) return;
     const draftView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
     const draft = drafts[draftView];
     const normalizedDescription = draft.description.trim();
@@ -568,7 +569,7 @@ export function BugReportSurface() {
         setFeatureDesiredOutcome('');
       }
       setSelectedReportKey(result.key);
-      await myBugs.refresh();
+      await myBugs.refresh({ force: true });
       setActiveView('history');
     } catch (error: any) {
       message.error(error?.response?.data?.message || error?.message || 'Không thể gửi yêu cầu.');
@@ -667,7 +668,7 @@ export function BugReportSurface() {
                 <Button
                   type="primary"
                   loading={submitting}
-                  disabled={activeDraft.description.trim().length < 3 || activeDraft.processingImages}
+                  disabled={submitting || activeDraft.description.trim().length < 3 || activeDraft.processingImages}
                   onClick={() => void submit()}
                 >
                   <IconText icon={<AppIcon icon={Send} size="sm" />}>
