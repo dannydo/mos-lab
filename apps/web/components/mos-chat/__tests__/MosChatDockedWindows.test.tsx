@@ -330,4 +330,54 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
 
     expect(screen.getByText('Chung')).toBeInTheDocument();
   });
+
+  it('renders sender name with theme colorText, white avatar text, and displays Bạn badge for own messages', () => {
+    const renderAvatarMock = vi.fn(({ name, textClass, textColor }) => (
+      <div data-testid="avatar-node" data-textcolor={textColor}>
+        {name}
+      </div>
+    ));
+
+    const convWithMine: MosChatConversation[] = [
+      {
+        ...sampleConversations[0],
+        messages: [
+          ...sampleMessages,
+          {
+            id: 'm-mine-test',
+            conversationId: 'core-team',
+            senderId: 'staff-6',
+            senderName: 'Nguyễn Quang Khải',
+            senderRole: 'Admin',
+            text: 'Tin nhắn gửi đi kiểm tra màu sắc chuẩn xác',
+            timeLabel: '14:38',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+    ];
+
+    render(
+      <MosChatDockedWindows
+        {...baseProps}
+        conversations={convWithMine}
+        currentUser={{ id: 6, displayName: 'Nguyễn Quang Khải' }}
+        isMessageFromCurrentUser={(m: any) => m.senderName === 'Nguyễn Quang Khải'}
+        renderUserAvatarNode={renderAvatarMock}
+        token={{ colorText: '#ededed', colorTextSecondary: '#a1a1aa' }}
+      />
+    );
+
+    // Verify "Bạn" badge is displayed
+    const banBadge = screen.getByText('Bạn');
+    expect(banBadge).toBeInTheDocument();
+
+    // Verify avatar mock was called with white text (#fff)
+    const ownAvatarCall = renderAvatarMock.mock.calls.find(
+      (args) => args[0]?.name === 'Nguyễn Quang Khải'
+    );
+    expect(ownAvatarCall).toBeDefined();
+    expect(ownAvatarCall![0].textColor).toBe('#fff');
+    expect(ownAvatarCall![0].staffId).toBe(6);
+  });
 });

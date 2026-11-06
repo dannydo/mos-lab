@@ -124,6 +124,7 @@ export interface MosChatDockedWindowsProps {
   triggerFilePicker: (scope: 'main' | 'thread' | 'dock', convId?: string) => void;
 
   // Additional props for iPhone Refactor (threads, tasks, resizing & persistence)
+  currentUser?: SafeAny;
   tasks?: MosChatTaskItem[];
   onToggleTaskDone?: (taskId: string) => Promise<void> | void;
   onQuickCreateTask?: (params: { conversationId: string; title: string }) => Promise<void> | void;
@@ -159,6 +160,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
     accentBorder,
     accentContrast,
     isDark = true,
+    currentUser,
     token,
     renderUserAvatarNode,
     isConversationParticipantOnline,
@@ -694,7 +696,9 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               sizeClass: 'w-5 h-5',
                               textClass: 'text-[9px]',
                             })}
-                            <span className="font-bold text-amber-500 text-[11px]">{activeThreadMsg.senderName}</span>
+                            <span className="font-bold text-[11px]" style={{ color: token.colorText }}>
+                              {activeThreadMsg.senderName}
+                            </span>
                             <span className="text-[10px] text-neutral-400 tabular-nums">
                               · {activeThreadMsg.timeLabel}
                             </span>
@@ -736,12 +740,14 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               className={`flex gap-2 items-start ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
                               {renderUserAvatarNode({
+                                staffId: isMine ? (currentUser?.id || reply.senderId) : reply.senderId,
                                 name: reply.senderName,
+                                rawAvatar: reply.senderAvatar,
                                 avatarUrl: reply.senderAvatar,
                                 sizeClass: 'w-6 h-6 mt-0.5',
                                 textClass: 'text-[9px]',
                                 bgStyle: isMine ? (accentColor || '#d4a84b') : '#2563eb',
-                                textColor: isMine ? '#000' : '#fff',
+                                textColor: '#fff',
                               })}
                               <div
                                 className={`max-w-[82%] px-3 py-2 rounded-2xl text-[12px] shadow-sm ${
@@ -757,10 +763,21 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   className={`flex items-center gap-1.5 mb-0.5 ${isMine ? 'justify-end' : 'justify-start'} text-[10px]`}
                                 >
                                   <span
-                                    className="font-bold"
-                                    style={{ color: isMine ? (accentColor || '#d4a84b') : '#38bdf8' }}
+                                    className="font-bold inline-flex items-center gap-1"
+                                    style={{ color: token.colorText }}
                                   >
-                                    {reply.senderName}
+                                    <span>{reply.senderName}</span>
+                                    {isMine && (
+                                      <span
+                                        className="inline-flex items-center justify-center leading-none px-1 py-0.2 rounded-full text-[8px] font-extrabold"
+                                        style={{
+                                          background: 'rgba(212, 168, 75, 0.2)',
+                                          color: accentColor || '#d4a84b',
+                                        }}
+                                      >
+                                        Bạn
+                                      </span>
+                                    )}
                                   </span>
                                   <span style={{ color: token.colorTextSecondary }}>·</span>
                                   <span
@@ -1061,12 +1078,14 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               className={`group/msg flex gap-2 items-start ${isDockMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
                               {renderUserAvatarNode({
+                                staffId: isDockMine ? (currentUser?.id || m.senderId) : m.senderId,
                                 name: m.senderName,
+                                rawAvatar: m.senderAvatar,
                                 avatarUrl: m.senderAvatar,
                                 sizeClass: 'w-6 h-6 mt-0.5 shrink-0',
                                 textClass: 'text-[9.5px]',
                                 bgStyle: isDockMine ? (accentColor || '#d4a84b') : '#2563eb',
-                                textColor: isDockMine ? '#000' : '#fff',
+                                textColor: '#fff',
                               })}
 
                               <div
@@ -1087,7 +1106,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                 >
                                   <span
                                     className="text-[10.5px] font-bold inline-flex items-center gap-1"
-                                    style={{ color: isDockMine ? (accentColor || '#d4a84b') : '#38bdf8' }}
+                                    style={{ color: token.colorText }}
                                   >
                                     <span>{m.senderName}</span>
                                     {isDockMine && (
