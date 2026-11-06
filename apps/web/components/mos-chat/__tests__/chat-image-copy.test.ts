@@ -81,7 +81,7 @@ describe('chat-image-copy utilities', () => {
     expect(converted).toBe(pngBlob);
   });
 
-  it('downloadImage creates an anchor element and clicks it', () => {
+  it('downloadImage creates an anchor element and clicks it', async () => {
     const clickMock = vi.fn();
     const originalCreateElement = document.createElement.bind(document);
 
@@ -93,7 +93,17 @@ describe('chat-image-copy utilities', () => {
       return el;
     });
 
-    downloadImage('/api/chat/media/pic.jpg', 'pic.jpg');
+    // Mock fetch so the blob path resolves and triggers click
+    const mockBlob = new Blob(['fake image'], { type: 'image/jpeg' });
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => mockBlob,
+    } as any);
+    // Mock URL.createObjectURL
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    global.URL.revokeObjectURL = vi.fn();
+
+    await downloadImage('/api/chat/media/pic.jpg', 'pic.jpg');
     expect(clickMock).toHaveBeenCalled();
   });
 });

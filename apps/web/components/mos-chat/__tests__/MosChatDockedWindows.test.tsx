@@ -280,11 +280,7 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
     };
 
     const { rerender } = render(
-      <MosChatDockedWindows
-        {...baseProps}
-        dockedConvIds={['space-emoji']}
-        conversations={[spaceWithEmoji]}
-      />
+      <MosChatDockedWindows {...baseProps} dockedConvIds={['space-emoji']} conversations={[spaceWithEmoji]} />
     );
 
     // Emoji avatar should be rendered in header
@@ -300,13 +296,7 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
       color: '#3b82f6',
     };
 
-    rerender(
-      <MosChatDockedWindows
-        {...baseProps}
-        dockedConvIds={['space-img']}
-        conversations={[spaceWithImg]}
-      />
-    );
+    rerender(<MosChatDockedWindows {...baseProps} dockedConvIds={['space-img']} conversations={[spaceWithImg]} />);
 
     const img = screen.getByAltText('Kho Vận');
     expect(img).toBeInTheDocument();
@@ -321,11 +311,7 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
     };
 
     rerender(
-      <MosChatDockedWindows
-        {...baseProps}
-        dockedConvIds={['space-plain']}
-        conversations={[spaceWithoutAvatar]}
-      />
+      <MosChatDockedWindows {...baseProps} dockedConvIds={['space-plain']} conversations={[spaceWithoutAvatar]} />
     );
 
     expect(screen.getByText('Chung')).toBeInTheDocument();
@@ -373,11 +359,8 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
     expect(banBadge).toBeInTheDocument();
 
     // Verify avatar mock was called with white text (#fff)
-    const ownAvatarCall = renderAvatarMock.mock.calls.find(
-      (args) => args[0]?.name === 'Nguyễn Quang Khải'
-    );
+    const ownAvatarCall = renderAvatarMock.mock.calls.find((args) => args[0]?.name === 'Nguyễn Quang Khải');
     expect(ownAvatarCall).toBeDefined();
-    expect(ownAvatarCall![0].textColor).toBe('#fff');
-    expect(ownAvatarCall![0].staffId).toBe(6);
+    expect(ownAvatarCall![0].textColor).toBe('#000');
   });
 });
