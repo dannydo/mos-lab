@@ -485,6 +485,17 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   {currentCategory.name} · {activeVolume === 'under' ? 'Mi Dưới 390' : `Mã ${activeVolume}`} (
                   {getVolumeFiberMeta(activeCategoryId, activeVolume).fanLabel})
                 </div>
+                <div className="text-[10.5px] font-semibold mt-0.5 flex items-center gap-1.5">
+                  <span
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold leading-none ${
+                      booking?.serviceType === 'Retain'
+                        ? 'bg-purple-500/25 text-purple-300 border border-purple-400/40'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                    }`}
+                  >
+                    {booking?.serviceType === 'Retain' ? 'Dặm' : 'Nối Mới'}
+                  </span>
+                </div>
                 {isUpTierPackage && (
                   <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
                     Gốc làm hôm nay: {getWingsComboCategory(autoMatched.categoryId).name} · Mã {autoMatched.volume}
