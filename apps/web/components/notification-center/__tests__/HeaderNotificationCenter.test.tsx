@@ -223,7 +223,7 @@ describe('HeaderNotificationCenter Instagram-Style UI (MOS-FEAT-194)', () => {
     await waitFor(() => {
       expect(screen.getByText('Thông báo')).toBeDefined();
       expect(screen.getByText('2 mới')).toBeDefined();
-      expect(screen.getByText('Mở mOS Inbox')).toBeDefined();
+      expect(screen.getByText('Mở mOS Mission')).toBeDefined();
     });
 
     // Check mobile drawer presence

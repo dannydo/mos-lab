@@ -204,7 +204,7 @@ export async function computeNotificationsFeed(
           badgeText,
           isActionable: true,
           actor: {
-            name: report.reporter?.displayName || 'mOS Inbox',
+            name: report.reporter?.displayName || 'mOS Mission',
             role: 'Reporter',
           },
           createdAt: report.updatedAt.toISOString(),
@@ -247,7 +247,7 @@ export async function computeNotificationsFeed(
           badgeText: report.status === 'FIXED' ? 'Đã đóng' : 'Chờ nghiệm thu',
           isActionable: false,
           actor: {
-            name: report.reporter?.displayName || 'mOS Inbox',
+            name: report.reporter?.displayName || 'mOS Mission',
             role: 'Reporter',
           },
           createdAt: report.updatedAt.toISOString(),
@@ -310,7 +310,7 @@ export async function computeNotificationsFeed(
       }
       items.push({
         id: notifId,
-        title: bn.title || `[mOS Inbox] Cập nhật ticket #${bn.reportId}`,
+        title: bn.title || `[mOS Mission] Cập nhật ticket #${bn.reportId}`,
         summary: bn.message || bn.report?.title || '',
         category: 'inbox_approval',
         priority: bn.readAt ? 'low' : 'normal',
@@ -318,7 +318,7 @@ export async function computeNotificationsFeed(
           type: 'navigate_bug_report',
           payload: { reportId: bn.reportId, actionUrl: bn.actionUrl },
         },
-        badgeText: 'Inbox',
+        badgeText: 'Mission',
         createdAt: bn.createdAt.toISOString(),
       });
     }
