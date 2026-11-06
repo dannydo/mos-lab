@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Copy } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Copy, Check } from 'lucide-react';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { copyImageToClipboard } from '../utils/chat-image-copy';
 
@@ -38,6 +38,28 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
   const [dragOffsetX, setDragOffsetX] = useState<number>(0);
   const [pullDownOffsetY, setPullDownOffsetY] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // Immediate visual feedback toast inside Gallery when copying
+  const [copiedFeedback, setCopiedFeedback] = useState<string | null>(null);
+  const copyFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showCopyFeedback = useCallback((msg: string) => {
+    if (copyFeedbackTimeoutRef.current) {
+      clearTimeout(copyFeedbackTimeoutRef.current);
+    }
+    setCopiedFeedback(msg);
+    copyFeedbackTimeoutRef.current = setTimeout(() => {
+      setCopiedFeedback(null);
+    }, 2500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Gesture tracking refs
   const touchStartRef = useRef<{ x: number; y: number; time: number }>({ x: 0, y: 0, time: 0 });
@@ -434,14 +456,19 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
             type="button"
             onClick={async () => {
               if (currentImage?.url) {
-                await copyImageToClipboard(currentImage.url);
+                const ok = await copyImageToClipboard(currentImage.url);
+                if (ok) {
+                  showCopyFeedback('Đã sao chép hình ảnh vào bộ nhớ tạm');
+                }
               }
             }}
-            className="w-7 h-7 rounded-full text-white/80 hover:text-white active:scale-90 flex items-center justify-center transition-all"
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+              copiedFeedback ? 'bg-emerald-500 text-slate-950 font-bold shadow-md' : 'text-white/80 hover:text-white active:scale-90'
+            }`}
             aria-label="Sao chép hình ảnh"
             title="Sao chép hình ảnh"
           >
-            <Copy className="w-3.5 h-3.5" />
+            {copiedFeedback ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
 
           {/* Download Original Link */}
@@ -468,6 +495,28 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
           </button>
         </div>
       </div>
+
+      {/* Floating Copy Feedback Banner inside Mobile Gallery (MOS-BUG-199) */}
+      {copiedFeedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-16 inset-x-0 z-30 flex justify-center pointer-events-none transition-all duration-200"
+        >
+          <div
+            className="pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 rounded-full font-bold text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95"
+            style={{
+              background: 'rgba(16, 185, 129, 0.95)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
+            }}
+          >
+            <Check className="w-3.5 h-3.5 text-white shrink-0" />
+            <span>{copiedFeedback}</span>
+          </div>
+        </div>
+      )}
 
       {/* Main Full-Viewport Image Area (100% Height & Width, Zero Outer Padding) */}
       <div
