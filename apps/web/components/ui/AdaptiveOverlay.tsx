@@ -115,6 +115,7 @@ export function resolveAdaptiveModalConfig({
         body: {
           flex: '1 1 auto',
           overflowY: 'auto',
+          overscrollBehavior: 'contain',
           minHeight: 0,
           WebkitOverflowScrolling: 'touch',
           ...styles?.body,
