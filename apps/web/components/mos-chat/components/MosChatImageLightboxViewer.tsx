@@ -61,6 +61,28 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [fitZoom, setFitZoom] = useState<number>(1);
 
+  // Immediate visual feedback toast inside Lightbox when copying
+  const [copiedFeedback, setCopiedFeedback] = useState<string | null>(null);
+  const copyFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showCopyFeedback = useCallback((msg: string) => {
+    if (copyFeedbackTimeoutRef.current) {
+      clearTimeout(copyFeedbackTimeoutRef.current);
+    }
+    setCopiedFeedback(msg);
+    copyFeedbackTimeoutRef.current = setTimeout(() => {
+      setCopiedFeedback(null);
+    }, 2500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Compute fit scale factor relative to viewport with generous padding
   const calcFitZoom = useCallback((nw: number, nh: number) => {
     if (!nw || !nh || typeof window === 'undefined') return 1;
@@ -177,13 +199,19 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
 
   const handleCopyImage = useCallback(async () => {
     if (!currentItem?.url) return;
-    await copyImageToClipboard(currentItem.url);
-  }, [currentItem]);
+    const ok = await copyImageToClipboard(currentItem.url);
+    if (ok) {
+      showCopyFeedback('Đã sao chép hình ảnh vào bộ nhớ tạm');
+    }
+  }, [currentItem, showCopyFeedback]);
 
   const handleCopyUrl = useCallback(async () => {
     if (!currentItem?.url) return;
-    await copyImageUrlToClipboard(currentItem.url);
-  }, [currentItem]);
+    const ok = await copyImageUrlToClipboard(currentItem.url);
+    if (ok) {
+      showCopyFeedback('Đã sao chép liên kết hình ảnh');
+    }
+  }, [currentItem, showCopyFeedback]);
 
   // Context menu items on right-click
   const contextMenuItems = useMemo(
@@ -541,14 +569,18 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
           </Tooltip>
 
           {/* Copy Image to Clipboard */}
-          <Tooltip title="Sao chép hình ảnh (Phím C hoặc Ctrl+C / ⌘C)">
+          <Tooltip title={copiedFeedback?.includes('hình ảnh') ? 'Đã sao chép ảnh!' : 'Sao chép hình ảnh (Phím C hoặc Ctrl+C / ⌘C)'}>
             <button
               type="button"
               aria-label="Sao chép hình ảnh"
               onClick={handleCopyImage}
-              className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white shrink-0"
+              className={`w-7 h-7 rounded-full inline-flex items-center justify-center cursor-pointer shrink-0 transition-colors ${
+                copiedFeedback?.includes('hình ảnh')
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-md'
+                  : 'hover:bg-white/15 text-white'
+              }`}
             >
-              <Copy size={14} />
+              {copiedFeedback?.includes('hình ảnh') ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </Tooltip>
 
@@ -590,6 +622,28 @@ export const MosChatImageLightboxViewer: React.FC<MosChatImageLightboxViewerProp
           </Tooltip>
         </div>
       </div>
+
+      {/* Floating Copy Feedback Banner inside Lightbox Viewport (MOS-BUG-199) */}
+      {copiedFeedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-14 inset-x-0 z-[2220] flex justify-center pointer-events-none transition-all duration-200"
+        >
+          <div
+            className="pointer-events-auto flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95"
+            style={{
+              background: 'rgba(16, 185, 129, 0.95)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
+            }}
+          >
+            <Check size={14} className="text-white shrink-0" />
+            <span>{copiedFeedback}</span>
+          </div>
+        </div>
+      )}
 
       {/* Prev Navigation Floating Button */}
       {totalItems > 1 && (

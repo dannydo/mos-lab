@@ -8320,6 +8320,12 @@ button:not(:disabled):not(.ant-btn-loading):active,
   color: var(--mos-text-muted) !important;
 }
 
+/* Ant Design Global Toast / Notification Stacking Elevation (MOS-BUG-199) */
+.ant-message,
+.ant-notification {
+  z-index: 99999 !important;
+}
+
 .dark-theme .ant-message .ant-message-notice-wrapper .ant-message-notice-content,
 .light-theme .ant-message .ant-message-notice-wrapper .ant-message-notice-content {
   background: var(--mos-surface-raised) !important;

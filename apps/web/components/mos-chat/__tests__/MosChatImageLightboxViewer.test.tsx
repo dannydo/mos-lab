@@ -216,26 +216,48 @@ describe('MosChatImageLightboxViewer', () => {
     expect(writeMock.mock.calls.length + writeTextMock.mock.calls.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('opens context menu on right click with copy image options', () => {
-    render(
-      <MosChatImageLightboxViewer
-        lightboxImage={{
-          items: sampleItems,
-          currentIndex: 0,
-          zoom: 1,
-          rotate: 0,
-        }}
-        setLightboxImage={setLightboxImageMock}
-      />
-    );
+  it('displays copy feedback pill inside viewer when copy is triggered', async () => {
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        write: writeMock,
+        writeText: writeTextMock,
+      },
+    });
 
-    const images = screen.getAllByAltText('Bảng theo dõi học viên');
-    const mainImg = images[0];
+    (global as any).ClipboardItem = class MockClipboardItem {
+      constructor(public data: Record<string, Blob>) {}
+    };
 
-    // Right-click on main image
-    fireEvent.contextMenu(mainImg);
+    const mockBlob = new Blob(['png'], { type: 'image/png' });
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => mockBlob,
+    } as any);
 
-    // Should reveal context menu items
-    expect(screen.getByText(/Sao chép hình ảnh/i)).toBeDefined();
+    try {
+      render(
+        <MosChatImageLightboxViewer
+          lightboxImage={{
+            items: sampleItems,
+            currentIndex: 0,
+            zoom: 1,
+            rotate: 0,
+          }}
+          setLightboxImage={setLightboxImageMock}
+        />
+      );
+
+      const copyBtn = screen.getByRole('button', { name: /Sao chép hình ảnh/i });
+      fireEvent.click(copyBtn);
+
+      // Should display feedback toast pill directly in viewer
+      const feedbackPill = await screen.findByText(/Đã sao chép hình ảnh vào bộ nhớ tạm/i);
+      expect(feedbackPill).toBeDefined();
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });
