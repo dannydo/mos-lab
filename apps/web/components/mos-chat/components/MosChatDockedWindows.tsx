@@ -703,7 +703,13 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                             Tin nhắn gốc
                           </span>
                         </div>
-                        <div className="pl-6 border-l-2 border-amber-500/40 text-neutral-200 text-[12px] leading-relaxed break-words">
+                        <div
+                          className="pl-6 border-l-2 text-[12px] leading-relaxed break-words"
+                          style={{
+                            borderLeftColor: accentBorder || 'rgba(212, 168, 75, 0.4)',
+                            color: token.colorText,
+                          }}
+                        >
                           {renderRichTextMessage(activeThreadMsg.text, false)}
                           {renderMessageAttachments(activeThreadMsg.attachments, true)}
                         </div>
@@ -718,10 +724,10 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                         className="flex-1 overflow-y-auto p-3 space-y-2.5"
                       >
                         {(!activeThreadMsg.thread || activeThreadMsg.thread.length === 0) && (
-                          <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 text-[12px] py-8">
-                            <MessageSquareReply size={28} className="text-neutral-500 mb-2 opacity-60" />
-                            <p className="font-medium text-neutral-300">Chưa có phản hồi nào trong luồng</p>
-                            <p className="text-[11px] text-neutral-500">
+                          <div className="h-full flex flex-col items-center justify-center text-center text-[12px] py-8">
+                            <MessageSquareReply size={28} className="mb-2 opacity-60" style={{ color: token.colorTextSecondary }} />
+                            <p className="font-medium" style={{ color: token.colorText }}>Chưa có phản hồi nào trong luồng</p>
+                            <p className="text-[11px]" style={{ color: token.colorTextSecondary }}>
                               Hãy là người đầu tiên trả lời câu hỏi này nhé.
                             </p>
                           </div>
@@ -757,10 +763,21 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   className={`flex items-center gap-1.5 mb-0.5 ${isMine ? 'justify-end' : 'justify-start'} text-[10px]`}
                                 >
                                   <span
-                                    className="font-bold"
-                                    style={{ color: isMine ? (accentColor || '#d4a84b') : '#38bdf8' }}
+                                    className="font-bold inline-flex items-center gap-1"
+                                    style={{ color: token.colorText }}
                                   >
-                                    {reply.senderName}
+                                    <span>{reply.senderName}</span>
+                                    {isMine && (
+                                      <span
+                                        className="inline-flex items-center justify-center leading-none px-1 py-0.2 rounded-full text-[8.5px] font-extrabold"
+                                        style={{
+                                          background: 'rgba(212, 168, 75, 0.2)',
+                                          color: accentColor || '#d4a84b',
+                                        }}
+                                      >
+                                        Bạn
+                                      </span>
+                                    )}
                                   </span>
                                   <span style={{ color: token.colorTextSecondary }}>·</span>
                                   <span
@@ -963,8 +980,8 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                               }
                             }}
                             placeholder="Thêm việc mới... (Nhấn Enter để tạo)"
-                            className="flex-1 text-[12px] bg-transparent outline-none focus:outline-none focus-visible:outline-none text-neutral-200 placeholder:text-neutral-500"
-                            style={{ outline: 'none', boxShadow: 'none' }}
+                            className="flex-1 text-[12px] bg-transparent outline-none focus:outline-none focus-visible:outline-none"
+                            style={{ color: token.colorText, outline: 'none', boxShadow: 'none' }}
                           />
                         </div>
                       </div>
@@ -972,10 +989,10 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                       {/* Tasks List */}
                       <div className="flex-1 overflow-y-auto p-3 space-y-2">
                         {filteredTasks.length === 0 ? (
-                          <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 text-[12px] py-10">
-                            <CheckCircle2 size={32} className="text-neutral-500 mb-2 opacity-50" />
-                            <p className="font-semibold text-neutral-300">Không có tác vụ nào</p>
-                            <p className="text-[11px] text-neutral-500">Mọi việc đã được xử lý gọn gàng!</p>
+                          <div className="h-full flex flex-col items-center justify-center text-center text-[12px] py-10">
+                            <CheckCircle2 size={32} className="mb-2 opacity-50" style={{ color: token.colorTextSecondary }} />
+                            <p className="font-semibold" style={{ color: token.colorText }}>Không có tác vụ nào</p>
+                            <p className="text-[11px]" style={{ color: token.colorTextSecondary }}>Mọi việc đã được xử lý gọn gàng!</p>
                           </div>
                         ) : (
                           filteredTasks.map((t) => {
@@ -1008,8 +1025,9 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                 <div className="flex-1 min-w-0">
                                   <p
                                     className={`text-[12.5px] leading-snug font-medium break-words ${
-                                      t.done ? 'line-through text-neutral-400' : 'text-neutral-100'
+                                      t.done ? 'line-through opacity-60' : ''
                                     }`}
+                                    style={{ color: t.done ? token.colorTextSecondary : token.colorText }}
                                   >
                                     {t.title}
                                   </p>
@@ -1087,7 +1105,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                 >
                                   <span
                                     className="text-[10.5px] font-bold inline-flex items-center gap-1"
-                                    style={{ color: isDockMine ? (accentColor || '#d4a84b') : '#38bdf8' }}
+                                    style={{ color: token.colorText }}
                                   >
                                     <span>{m.senderName}</span>
                                     {isDockMine && (
