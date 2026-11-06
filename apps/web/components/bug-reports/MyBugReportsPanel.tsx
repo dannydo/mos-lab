@@ -13,6 +13,7 @@ import type {
 import dayjs from 'dayjs';
 import {
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   CircleDotDashed,
   Clock3,
@@ -209,8 +210,18 @@ export function MyBugReportsPanel({
   const [saving, setSaving] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [technicalHistoryOpen, setTechnicalHistoryOpen] = React.useState(false);
+  // Mobile navigation: 'list' shows the ticket list, 'detail' shows the selected ticket detail
+  const [mobileView, setMobileView] = React.useState<'list' | 'detail'>('list');
 
   const [rejectionModalOpen, setRejectionModalOpen] = React.useState(false);
+
+  const handleMobileSelect = React.useCallback(
+    (key: string) => {
+      onSelect(key);
+      setMobileView('detail');
+    },
+    [onSelect]
+  );
 
   const visualForTone = React.useCallback(
     (tone: ReporterTone) => {
@@ -325,11 +336,12 @@ export function MyBugReportsPanel({
       ) : null}
 
       <div
-        className="reporter-request-layout grid grid-cols-1 overflow-hidden rounded-2xl border"
+        className="reporter-request-layout overflow-hidden rounded-2xl border"
         style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
       >
+        {/* Mobile: list view — hidden on desktop (lg+), visible on mobile only when mobileView='list' */}
         <section
-          className="reporter-request-list border-b"
+          className={`reporter-request-list lg:border-b ${mobileView === 'detail' ? 'hidden lg:block' : 'block'}`}
           style={{ borderColor: token.colorBorderSecondary }}
           aria-label="Danh sách yêu cầu của tôi"
         >
@@ -361,7 +373,7 @@ export function MyBugReportsPanel({
             />
           </div>
 
-          <div className="max-h-[612px] space-y-5 overflow-y-auto px-3 pb-5" aria-label="Các nhóm yêu cầu">
+          <div className="max-h-[612px] space-y-5 overflow-y-auto overscroll-contain px-3 pb-5" aria-label="Các nhóm yêu cầu">
             {groupedReports
               .filter((group) => group.reports.length > 0)
               .map((group) => {
@@ -399,7 +411,7 @@ export function MyBugReportsPanel({
                               background: active ? visual.background : token.colorFillQuaternary,
                               boxShadow: active ? `inset 3px 0 0 ${visual.accent}` : undefined,
                             }}
-                            onClick={() => onSelect(report.key)}
+                            onClick={() => handleMobileSelect(report.key)}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -456,7 +468,22 @@ export function MyBugReportsPanel({
         </section>
 
         {selected ? (
-          <section className="min-w-0" aria-label={`Chi tiết ${selected.key}`}>
+          <section className={`min-w-0 ${mobileView === 'list' ? 'hidden lg:block' : 'block'}`} aria-label={`Chi tiết ${selected.key}`}>
+            {/* Mobile back button — only shown on mobile when in detail view */}
+            <div
+              className="flex items-center border-b px-4 py-3 lg:hidden"
+              style={{ borderColor: token.colorBorderSecondary }}
+            >
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 text-sm font-medium"
+                style={{ color: token.colorPrimary }}
+                onClick={() => setMobileView('list')}
+              >
+                <AppIcon icon={ChevronLeft} size="sm" />
+                Danh sách yêu cầu
+              </button>
+            </div>
             <header
               className="border-b px-5 py-5 sm:px-7"
               style={{ borderColor: selectedVisual.border, background: selectedVisual.background }}
