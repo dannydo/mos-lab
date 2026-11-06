@@ -330,7 +330,7 @@ export function Screen01IncomingBookings({
             const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
 
             const isCurrentActiveServicing = Boolean(activeServicingBooking && b.id === activeServicingBooking.id);
-            const isOtherCustomerLocked = Boolean(activeServicingBooking && b.id !== activeServicingBooking.id);
+            const isOtherCustomerLocked = Boolean(activeServicingBooking && b.id !== activeServicingBooking.id && !isCvll);
 
             // Avatar Ring Indicator
             let avatarRingClass = 'border-2 border-emerald-500'; // Not Combo Live
