@@ -125,7 +125,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
             if (!seenUrgentIdsRef.current.has(item.id)) {
               seenUrgentIdsRef.current.add(item.id);
               tabNotificationManager.triggerAlert({
-                senderName: 'mOS Inbox',
+                senderName: 'mOS Mission',
                 snippet: cleanNotificationTitle(item.title),
               });
               const isDark = themeMode === 'dark';
@@ -803,7 +803,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
           }}
           className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors flex items-center gap-1 font-medium"
         >
-          <span>Xem mOS Inbox</span>
+          <span>Xem mOS Mission</span>
           <ArrowUpRight size={12} />
         </button>
       </div>
@@ -955,7 +955,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
             }}
             className="hover:text-amber-500 dark:hover:text-amber-400 text-amber-600 dark:text-amber-400 font-semibold transition-colors flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
           >
-            <span>Mở mOS Inbox</span>
+            <span>Mở mOS Mission</span>
             <ArrowUpRight size={14} />
           </button>
         </div>

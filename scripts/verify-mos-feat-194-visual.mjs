@@ -209,7 +209,7 @@ try {
               <!-- Footer -->
               <div class="px-4 py-2.5 border-t border-neutral-800 bg-neutral-900/40 text-[11px] text-neutral-400 flex items-center justify-between">
                 <span>Nhấn <strong>⌘I</strong> để đóng / mở nhanh</span>
-                <span class="text-amber-400 cursor-pointer">Xem mOS Inbox ↗</span>
+                <span class="text-amber-400 cursor-pointer">Xem mOS Mission ↗</span>
               </div>
             </div>
           </div>
@@ -334,7 +334,7 @@ try {
               <!-- Footer Light -->
               <div class="px-4 py-2.5 border-t border-neutral-200 bg-neutral-50/80 text-[11px] text-neutral-500 flex items-center justify-between">
                 <span>Nhấn <strong>⌘I</strong> để đóng / mở nhanh</span>
-                <span class="text-amber-600 cursor-pointer font-medium">Xem mOS Inbox ↗</span>
+                <span class="text-amber-600 cursor-pointer font-medium">Xem mOS Mission ↗</span>
               </div>
             </div>
           </div>

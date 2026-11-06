@@ -330,7 +330,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
     setConvertingBug(true);
     try {
       const res = await apiClient.frontendTelemetry.convertToBugReport(activeIssue.id);
-      message.success(`Đã tạo Bug Report ${res.key} trong mOS Inbox!`);
+      message.success(`Đã tạo Bug Report ${res.key} trong mOS Mission!`);
       setDetailDrawerOpen(false);
       void fetchData();
     } catch (err) {
@@ -459,7 +459,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
               <AppIcon icon={Zap} size="md" className="text-amber-500" />
               <span>Giám sát Trải nghiệm Frontend & Hộp đen (Telemetry)</span>
             </div>
-            <Tooltip title="Quét đối soát và tự động đồng bộ trạng thái các sự cố con theo Ticket mOS Inbox đã giải quyết">
+            <Tooltip title="Quét đối soát và tự động đồng bộ trạng thái các sự cố con theo Ticket mOS Mission đã giải quyết">
               <Button
                 icon={<AppIcon icon={RefreshCw} size="sm" className={syncing ? 'animate-spin text-purple-600' : ''} />}
                 loading={syncing}
@@ -1333,7 +1333,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                     loading={convertingBug}
                     className="bg-indigo-600 hover:bg-indigo-700"
                   >
-                    Chuyển sang mOS Bug Inbox
+                    Chuyển sang mOS Mission
                   </Button>
                 </Popconfirm>
               }
