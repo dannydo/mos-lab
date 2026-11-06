@@ -121,10 +121,7 @@ export async function loadImageToPngBlob(imageUrl: string): Promise<Blob> {
  * If writing image bytes fails (e.g. non-secure context or CORS restriction),
  * automatically falls back to copying the direct image URL.
  */
-export async function copyImageToClipboard(
-  rawUrl: string,
-  options: CopyImageOptions = {}
-): Promise<boolean> {
+export async function copyImageToClipboard(rawUrl: string, options: CopyImageOptions = {}): Promise<boolean> {
   const { showToast = true, onSuccess, onError } = options;
 
   if (typeof window === 'undefined') {
@@ -217,10 +214,7 @@ export async function copyImageToClipboard(
 /**
  * Copies the raw/resolved image link to clipboard
  */
-export async function copyImageUrlToClipboard(
-  rawUrl: string,
-  options: CopyImageOptions = {}
-): Promise<boolean> {
+export async function copyImageUrlToClipboard(rawUrl: string, options: CopyImageOptions = {}): Promise<boolean> {
   const { showToast = true, onSuccess, onError } = options;
   const fullUrl = resolveMediaUrl(rawUrl);
 
@@ -245,17 +239,34 @@ export async function copyImageUrlToClipboard(
 }
 
 /**
- * Initiates a browser download of an image
+ * Initiates a browser download of an image directly to disk.
+ * Uses fetch → blob URL to guarantee the browser saves the file
+ * instead of opening it in a new tab.
  */
-export function downloadImage(rawUrl: string, fileName?: string): void {
+export async function downloadImage(rawUrl: string, fileName?: string): Promise<void> {
   if (typeof window === 'undefined') return;
   const fullUrl = resolveMediaUrl(rawUrl);
-  const a = document.createElement('a');
-  a.href = fullUrl;
-  a.download = fileName || 'image.png';
-  a.target = '_blank';
-  a.rel = 'noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+
+  try {
+    const response = await fetch(fullUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName || 'image.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoke the blob URL after a short delay to allow the download to start
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+  } catch {
+    // Fallback: direct link download (no _blank, no rel — browser decides locally)
+    const a = document.createElement('a');
+    a.href = fullUrl;
+    a.download = fileName || 'image.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 }

@@ -481,11 +481,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     <span>🎯 Dịch vụ hôm nay</span>
                   )}
                 </div>
-                <div className="text-[13px] font-black text-white truncate">
-                  {currentCategory.name} · {activeVolume === 'under' ? 'Mi Dưới 390' : `Mã ${activeVolume}`} (
-                  {getVolumeFiberMeta(activeCategoryId, activeVolume).fanLabel})
+                <div className="text-[13px] font-black text-white leading-snug">
+                  {currentCategory.name} {activeVolume === 'under' ? 'Mi Dưới 390' : activeVolume}
                 </div>
-                <div className="text-[10.5px] font-semibold mt-0.5 flex items-center gap-1.5">
+                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                   <span
                     className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold leading-none ${
                       booking?.serviceType === 'Retain'
@@ -495,6 +494,16 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   >
                     {booking?.serviceType === 'Retain' ? 'Dặm' : 'Nối Mới'}
                   </span>
+                  <span className="text-neutral-300 text-[10px] font-semibold tabular-nums">
+                    {getVolumeFiberMeta(activeCategoryId, activeVolume).countPerEye} sợi
+                  </span>
+                  {(booking?.attributes?.curl || booking?.attributes?.thickness || booking?.attributes?.length) && (
+                    <span className="text-neutral-400 text-[10px] font-medium">
+                      {[booking?.attributes?.curl, booking?.attributes?.thickness, booking?.attributes?.length]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  )}
                 </div>
                 {isUpTierPackage && (
                   <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
@@ -926,90 +935,41 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
 
           <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[13px] font-black text-black">Gói Combo Mi Dưới 390 (Tùy chọn mua kèm)</div>
-                <div className="text-[10px] text-neutral-500 mt-0.5">
-                  Khách có thể mua đồng thời 1 Combo Mi Trên + 1 Combo Mi Dưới trong cùng 1 hóa đơn!
-                </div>
-              </div>
+            {/* Không lấy combo mi dưới pill */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedUnderComboId('NONE')}
+                className={`py-1.5 px-3 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+                  selectedUnderComboId === 'NONE'
+                    ? 'bg-neutral-800 text-white border-neutral-800 shadow-xs'
+                    : 'bg-[#F9F9FB] border-gray-200 text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                Không lấy Mi Dưới
+              </button>
               {selectedUnderComboPkg && (
-                <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shrink-0">
+                <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                   Đã chọn gói mi dưới
                 </span>
               )}
             </div>
 
-            {/* Quick Pills for 4 Under Lash Rules */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setSelectedUnderComboId('NONE')}
-                className={`py-2 px-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedUnderComboId === 'NONE'
-                    ? 'bg-neutral-800 text-white border-neutral-800 font-bold shadow-xs'
-                    : 'bg-[#F9F9FB] border-gray-200 text-gray-700'
-                }`}
-              >
-                <div className="text-[11px] font-bold">Không lấy Combo Mi Dưới</div>
-                <div className="text-[9px] opacity-80 mt-0.5">Chỉ lấy Mi Trên hoặc thanh toán lẻ</div>
-              </button>
-
-              {underLashPackages.map((pkg) => {
-                const active = selectedUnderComboId === pkg.id;
-                return (
-                  <button
-                    key={pkg.id}
-                    type="button"
-                    disabled={pkg.isLocked}
-                    onClick={() => setSelectedUnderComboId(pkg.id)}
-                    className={`py-2 px-2.5 rounded-xl border text-left transition-all cursor-pointer relative ${
-                      pkg.isLocked
-                        ? 'opacity-40 bg-gray-100 border-gray-200 cursor-not-allowed'
-                        : active
-                          ? 'bg-linear-to-r from-amber-50 to-emerald-50 border-amber-500 shadow-xs'
-                          : 'bg-[#F9F9FB] border-gray-200 hover:border-amber-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black text-black">{pkg.ruleName} · Mi Dưới</span>
-                      <span className="text-[10px] font-extrabold text-amber-700 tabular-nums">
-                        {pkg.comboPrice.toLocaleString('vi-VN')}đ
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between mt-1 text-[9px]">
-                      <span className="text-gray-500">
-                        {pkg.totalSessions} lần (TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ)
-                      </span>
-                      <span className="font-extrabold text-emerald-700">+{Math.round(pkg.cvBonus / 1000)}🪶</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selected Under Lash Combo Details Card */}
-            {selectedUnderComboPkg && underPurchaseAccounting && (
-              <div className="rounded-xl p-2.5 bg-[#1C1C1E] text-white border border-[#FFB400]/60 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[11px] font-black text-[#FFB400]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#FFB400]" />
-                    <span>{selectedUnderComboPkg.displayName}</span>
-                  </div>
-                  <span className="text-emerald-400 font-extrabold text-[11px] tabular-nums">
-                    +{Math.round(selectedUnderComboPkg.cvBonus / 1000)}🪶
-                  </span>
-                </div>
-                <div className="text-[10px] text-gray-300 leading-snug">
-                  • <strong>Giá combo:</strong> {selectedUnderComboPkg.comboPrice.toLocaleString('vi-VN')}đ (Giá lẻ{' '}
-                  {selectedUnderComboPkg.retailTotal.toLocaleString('vi-VN')}đ · Tiết kiệm{' '}
-                  {selectedUnderComboPkg.savingsAmount.toLocaleString('vi-VN')}đ)
-                  <br />• <strong>Quyền lợi ví:</strong> {selectedUnderComboPkg.totalSessions} lần làm mi dưới trong{' '}
-                  {selectedUnderComboPkg.validityMonths} tháng
-                  <br />• <strong>Hạch toán:</strong> Buổi mi dưới hôm nay (nếu có làm) được trừ luôn vào gói (0đ thu
-                  lẻ). Số dư còn lại trong ví: {underPurchaseAccounting.remainingWalletAfterToday.totalRemaining} lần.
-                </div>
-              </div>
+            {/* Unified Combo Card cho Mi Dưới */}
+            {underLashPackages.length > 0 && (
+              <WingsUnifiedComboCard
+                packages={underLashPackages}
+                customerName={customerName}
+                customerPhone={booking?.customerPhone}
+                customerAvatar={booking?.customerAvatar}
+                selectedPackageId={selectedUnderComboId !== 'NONE' ? selectedUnderComboId : null}
+                onSelectPackage={(pkg) => {
+                  setSelectedUnderComboId(pkg.id);
+                }}
+                onSelectLocked={() => {
+                  setIsLockedWelcomeModalOpen(true);
+                }}
+              />
             )}
           </div>
         </div>

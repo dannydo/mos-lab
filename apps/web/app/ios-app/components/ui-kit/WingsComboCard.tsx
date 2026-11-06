@@ -4,6 +4,16 @@ import React from 'react';
 import { User, Phone, Eye, Sparkles } from 'lucide-react';
 import type { MatchedComboPackageOption, WingsComboRulePrice } from '@mos-lab/shared';
 
+export interface WingsTierOption {
+  label: string; // e.g. "Mua 2 Tặng 1"
+  comboPrice: number;
+  avgPerSessionPrice: number;
+  discountPct?: number;
+  isActive: boolean;
+  isLocked: boolean;
+  onSelect: () => void;
+}
+
 export interface WingsComboCardProps {
   pkg: MatchedComboPackageOption;
   customerName?: string;
@@ -18,6 +28,8 @@ export interface WingsComboCardProps {
   onZoomOriginalCard?: (e: React.MouseEvent) => void;
   onCopyQuote?: (e: React.MouseEvent) => void;
   copiedQuote?: boolean;
+  /** Nếu có: thay thế bảng volume (390/770/880) bằng vertical tier selector bên trong card */
+  allTiers?: WingsTierOption[];
 }
 
 function formatCompactVnd(amount: number): string {
@@ -362,6 +374,7 @@ export function WingsComboCard({
   onZoomOriginalCard,
   onCopyQuote,
   copiedQuote = false,
+  allTiers,
 }: WingsComboCardProps) {
   const bgStyle = getCardBackgroundStyle(pkg.categoryId, pkg.theme);
   const brandSubtitle = formatCardBrandSubtitle(pkg.categoryId, pkg.categoryName);
@@ -895,89 +908,170 @@ export function WingsComboCard({
           )}
         </div>
 
-        {/* Volume Price Matrix Strip (Matching the Physical Card Bottom Row!) */}
+        {/* Volume Price Matrix Strip OR Tier List */}
         {pkg.packageKind !== 'vvip_pass' ? (
-          <div
-            style={{
-              marginTop: 6,
-              display: 'grid',
-              gridTemplateColumns: `repeat(${Math.min(volumePrices.length, 6)}, minmax(0, 1fr))`,
-              gap: 3.5,
-              alignItems: 'stretch',
-            }}
-          >
-            {volumePrices.slice(0, 6).map((vp) => {
-              const isCurrentVol =
-                pkg.volume === 'under'
-                  ? Boolean(vp.isUnderLash || vp.volume === 'under')
-                  : !vp.isUnderLash && Number(vp.volume) === Number(pkg.volume);
-              const vpComboPrice = includeVat ? Math.round(vp.comboPrice * 1.08) : vp.comboPrice;
-              const vpRetail = vp.retailTotal || vp.comboPrice;
-
-              return (
-                <div
-                  key={vp.isUnderLash ? 'under' : String(vp.volume)}
+          allTiers && allTiers.length > 0 ? (
+            /* Vertical Tier Selector — thay thế bảng 390/770/880 */
+            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {allTiers.map((tier, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    if (!tier.isLocked) tier.onSelect();
+                  }}
                   style={{
-                    padding: '4px 2px',
-                    borderRadius: 7,
-                    textAlign: 'center',
-                    background: isCurrentVol
-                      ? 'linear-gradient(180deg, rgba(245, 196, 81, 0.28) 0%, rgba(212, 155, 39, 0.16) 100%)'
-                      : 'rgba(0, 0, 0, 0.28)',
-                    border: isCurrentVol ? '1.5px solid #FFE27A' : '1px solid rgba(255, 255, 255, 0.1)',
-                    boxShadow: isCurrentVol ? '0 0 8px rgba(245, 196, 81, 0.25)' : 'none',
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    justifyContent: 'space-between',
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    border: tier.isActive ? '1.5px solid #FFE27A' : '1px solid rgba(255,255,255,0.12)',
+                    background: tier.isActive
+                      ? 'linear-gradient(180deg, rgba(245,196,81,0.22) 0%, rgba(212,155,39,0.12) 100%)'
+                      : tier.isLocked
+                        ? 'rgba(0,0,0,0.18)'
+                        : 'rgba(0,0,0,0.28)',
+                    opacity: tier.isLocked ? 0.5 : 1,
+                    cursor: tier.isLocked ? 'not-allowed' : 'pointer',
                     fontVariantNumeric: 'tabular-nums',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  {/* Volume Code Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {tier.isLocked && <span style={{ fontSize: 10 }}>🔒</span>}
+                    <span
+                      style={{
+                        fontSize: compact ? 11 : 12,
+                        fontWeight: 800,
+                        color: tier.isActive ? '#FFE27A' : tier.isLocked ? '#888' : '#E2E8F0',
+                      }}
+                    >
+                      {tier.label}
+                    </span>
+                    {tier.discountPct && tier.discountPct > 0 && (
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: tier.isActive ? '#1A1102' : '#F59E0B',
+                          background: tier.isActive ? '#FFE27A' : 'rgba(245,158,11,0.18)',
+                          padding: '1px 5px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        +{tier.discountPct}%
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div
+                      style={{
+                        fontSize: compact ? 11.5 : 12.5,
+                        fontWeight: 900,
+                        color: tier.isActive ? '#FFE27A' : '#F3CE68',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {formatCompactVnd(tier.comboPrice)}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: 'rgba(255,255,255,0.5)',
+                        marginTop: 1,
+                      }}
+                    >
+                      TB ~{formatCompactVnd(tier.avgPerSessionPrice)}/lần
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                marginTop: 6,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.min(volumePrices.length, 6)}, minmax(0, 1fr))`,
+                gap: 3.5,
+                alignItems: 'stretch',
+              }}
+            >
+              {' '}
+              {volumePrices.slice(0, 6).map((vp) => {
+                const isCurrentVol =
+                  pkg.volume === 'under'
+                    ? Boolean(vp.isUnderLash || vp.volume === 'under')
+                    : !vp.isUnderLash && Number(vp.volume) === Number(pkg.volume);
+                const vpComboPrice = includeVat ? Math.round(vp.comboPrice * 1.08) : vp.comboPrice;
+                const vpRetail = vp.retailTotal || vp.comboPrice;
+
+                return (
                   <div
+                    key={vp.isUnderLash ? 'under' : String(vp.volume)}
                     style={{
-                      display: 'inline-flex',
+                      padding: '4px 2px',
+                      borderRadius: 7,
+                      textAlign: 'center',
+                      background: isCurrentVol
+                        ? 'linear-gradient(180deg, rgba(245, 196, 81, 0.28) 0%, rgba(212, 155, 39, 0.16) 100%)'
+                        : 'rgba(0, 0, 0, 0.28)',
+                      border: isCurrentVol ? '1.5px solid #FFE27A' : '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: isCurrentVol ? '0 0 8px rgba(245, 196, 81, 0.25)' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      gap: 2,
-                      fontSize: compact ? 9.5 : 10,
-                      fontWeight: 800,
-                      color: isCurrentVol ? '#FFE27A' : '#E2E8F0',
+                      justifyContent: 'center',
+                      fontVariantNumeric: 'tabular-nums',
                     }}
                   >
-                    <LashVolumeIcon active={isCurrentVol} />
-                    <span>{vp.isUnderLash ? '390' : vp.volume}</span>
-                  </div>
+                    {/* Volume Code Row */}
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        fontSize: compact ? 9.5 : 10,
+                        fontWeight: 800,
+                        color: isCurrentVol ? '#FFE27A' : '#E2E8F0',
+                      }}
+                    >
+                      <LashVolumeIcon active={isCurrentVol} />
+                      <span>{vp.isUnderLash ? '390' : vp.volume}</span>
+                    </div>
 
-                  {/* Crossed-out Retail Price */}
-                  <div
-                    style={{
-                      fontSize: compact ? 8.5 : 9,
-                      fontWeight: 600,
-                      color: 'rgba(226, 232, 240, 0.62)',
-                      textDecoration: 'line-through',
-                      lineHeight: 1.15,
-                      marginTop: 1.5,
-                    }}
-                  >
-                    {formatCompactVnd(vpRetail)}
-                  </div>
+                    {/* Crossed-out Retail Price */}
+                    <div
+                      style={{
+                        fontSize: compact ? 8.5 : 9,
+                        fontWeight: 600,
+                        color: 'rgba(226, 232, 240, 0.62)',
+                        textDecoration: 'line-through',
+                        lineHeight: 1.15,
+                        marginTop: 1.5,
+                      }}
+                    >
+                      {formatCompactVnd(vpRetail)}
+                    </div>
 
-                  {/* Gold Combo Price */}
-                  <div
-                    style={{
-                      fontSize: compact ? 10.5 : 11.5,
-                      fontWeight: 900,
-                      color: isCurrentVol ? '#FFE27A' : '#F3CE68',
-                      lineHeight: 1.15,
-                      marginTop: 1,
-                    }}
-                  >
-                    {formatCompactVnd(vpComboPrice)}
+                    {/* Gold Combo Price */}
+                    <div
+                      style={{
+                        fontSize: compact ? 10.5 : 11.5,
+                        fontWeight: 900,
+                        color: isCurrentVol ? '#FFE27A' : '#F3CE68',
+                        lineHeight: 1.15,
+                        marginTop: 1,
+                      }}
+                    >
+                      {formatCompactVnd(vpComboPrice)}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )
         ) : (
           <div
             style={{
