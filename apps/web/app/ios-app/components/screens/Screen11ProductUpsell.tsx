@@ -35,6 +35,7 @@ import {
 } from '@mos-lab/shared';
 import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
 import { WingsComboCard } from '../ui-kit/WingsComboCard';
+import { WingsUnifiedComboCard } from '../ui-kit/WingsUnifiedComboCard';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
 
 interface Screen11ProductUpsellProps {
@@ -670,29 +671,20 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               </div>
             )}
 
-            {/* Dynamic Matched Combo Packages List — Luxury Wings Membership Cards */}
-            <div className="space-y-2.5">
-              {matchedPackages.map((pkg) => {
-                const active = selectedComboId === pkg.id;
-                return (
-                  <WingsComboCard
-                    key={pkg.id}
-                    pkg={pkg}
-                    customerName={customerName}
-                    customerPhone={booking?.customerPhone}
-                    customerAvatar={booking?.customerAvatar}
-                    selected={active}
-                    compact
-                    onSelect={() => {
-                      setSelectedComboId(pkg.id);
-                    }}
-                    onSelectLocked={() => {
-                      setIsLockedWelcomeModalOpen(true);
-                    }}
-                  />
-                );
-              })}
-            </div>
+            {/* Dynamic Matched Combo Packages List — 1 Unified Card với Tier Selector */}
+            <WingsUnifiedComboCard
+              packages={matchedPackages}
+              customerName={customerName}
+              customerPhone={booking?.customerPhone}
+              customerAvatar={booking?.customerAvatar}
+              selectedPackageId={selectedComboId}
+              onSelectPackage={(pkg) => {
+                setSelectedComboId(pkg.id);
+              }}
+              onSelectLocked={() => {
+                setIsLockedWelcomeModalOpen(true);
+              }}
+            />
 
             {/* Live Deduction & Wallet Status Card when a New Combo is selected */}
             {selectedComboPkg &&

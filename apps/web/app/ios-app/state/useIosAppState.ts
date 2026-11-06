@@ -395,7 +395,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
                       : incoming.serviceName,
                   servicePrice: existing.servicePrice || incoming.servicePrice,
                   serviceType: existing.serviceType || incoming.serviceType,
-                  attributes: existing.attributes || incoming.attributes,
+                  attributes: { ...(incoming.attributes || {}), ...(existing.attributes || {}) },
                   cvRotationPoints: existing.cvRotationPoints ?? incoming.cvRotationPoints,
                   cvRotationBreakdown: existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown,
                   status:
@@ -473,16 +473,9 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
             setActiveServicingBookingId(servicingId);
             setActiveBookingId(servicingId);
 
-            // Tự động nhảy vào đúng bước phục vụ trên màn hình nếu chưa tới hoặc đang ở tab khác
+            // Chỉ đồng bộ bước servicing, không tự động nhảy màn hình (tránh làm gián đoạn CV đang thao tác)
             if (serverStep && serverStep >= 6) {
               setActiveServicingStep(serverStep);
-              setCurrentStep((prevStep) => {
-                if (prevStep <= 6 || prevStep < serverStep) {
-                  setActiveTab('task');
-                  return serverStep;
-                }
-                return prevStep;
-              });
             }
           } else {
             // Không có ca làm servicing trên server, duy trì active booking an toàn

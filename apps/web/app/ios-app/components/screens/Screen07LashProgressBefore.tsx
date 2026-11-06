@@ -168,6 +168,47 @@ export function Screen07LashProgressBefore({
           </span>
         </div>
 
+        {/* Tech Spec Card: Thông số kỹ thuật mi */}
+        {booking && (
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+                📋 NGUYÊN VẬT LIỆU
+              </span>
+              <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                {booking.attributes?.material || 'UltraLight'} · {booking.attributes?.volume || '4D'} ·{' '}
+                {booking.attributes?.count || '60 fan'}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              <div className="bg-neutral-50 border border-neutral-200 rounded-xl py-1.5 px-1 text-center">
+                <span className="text-[8.5px] font-bold text-neutral-500 uppercase block">Dáng</span>
+                <span className="text-[11px] font-black text-neutral-800 block mt-0.5">
+                  {booking.attributes?.style || 'Doll'}
+                </span>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl py-1.5 px-1 text-center">
+                <span className="text-[8.5px] font-bold text-blue-500 uppercase block">Cong</span>
+                <span className="text-[11px] font-black text-blue-700 block mt-0.5">
+                  Cong {booking.attributes?.curl || 'C'}
+                </span>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl py-1.5 px-1 text-center">
+                <span className="text-[8.5px] font-bold text-emerald-600 uppercase block">Độ dài</span>
+                <span className="text-[11px] font-black text-emerald-700 block mt-0.5">
+                  {booking.attributes?.length || '10-12 mm'}
+                </span>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-xl py-1.5 px-1 text-center">
+                <span className="text-[8.5px] font-bold text-purple-500 uppercase block">Độ dày</span>
+                <span className="text-[11px] font-black text-purple-700 block mt-0.5">
+                  {booking.attributes?.thickness || '0.07 mm'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section title */}
         <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 pt-0.5">
           CHỤP ẢNH BEFORE MẮT MỘC (BẮT BUỘC)

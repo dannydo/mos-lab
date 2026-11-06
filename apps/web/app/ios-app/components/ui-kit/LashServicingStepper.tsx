@@ -8,13 +8,13 @@ interface LashServicingStepperProps {
 
 export function LashServicingStepper({ activeStep, elapsedMinutes }: LashServicingStepperProps) {
   const steps = [
-    { num: 1, label: 'Before' },
+    { num: 1, label: 'Bắt đầu' },
     { num: 2, label: 'Vệ Sinh' },
     {
       num: 3,
       label: elapsedMinutes && activeStep > 3 ? `${elapsedMinutes}p Nối` : 'Nối Mi',
     },
-    { num: 4, label: 'After' },
+    { num: 4, label: 'Kết thúc' },
   ];
 
   return (

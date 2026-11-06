@@ -27,6 +27,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { WingsComboCard } from '../ui-kit/WingsComboCard';
+import { WingsUnifiedComboCard } from '../ui-kit/WingsUnifiedComboCard';
 
 interface ComboCatalogConsultModalProps {
   open: boolean;
@@ -328,163 +329,23 @@ export function ComboCatalogConsultModal({
           </div>
         )}
 
-        {/* Step 3: Package Cards List */}
+        {/* Step 3: Package Cards List — 1 Unified Card với Tier Selector */}
         <div className="space-y-2.5">
           <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1">
-            3. Danh Sách Gói Ưu Đãi ({packages.length} Gói)
+            3. Chọn Gói Ưu Đãi ({packages.length} Gói)
           </div>
 
-          {packages.map((pkg) => {
-            const isSelected = selectedPackageId === pkg.id;
-            const isCompared = compareIds.includes(pkg.id);
-            const displayPrice = includeVat ? pkg.comboPriceWithVat : pkg.comboPrice;
-            const accounting = calculateComboPurchaseAccounting(pkg, todaySingleServicePrice);
-
-            return (
-              <div
-                key={pkg.id}
-                className={`bg-white rounded-2xl p-3 shadow-xs border-2 transition-all space-y-2.5 ${
-                  pkg.isLocked
-                    ? 'border-gray-200 opacity-75 bg-gray-50'
-                    : isSelected
-                      ? 'border-[#FF9500] bg-amber-50/30'
-                      : 'border-neutral-200'
-                }`}
-              >
-                {/* Luxury Membership Card Design */}
-                <WingsComboCard
-                  pkg={pkg}
-                  selected={isSelected}
-                  includeVat={includeVat}
-                  compact
-                  onSelect={() => {
-                    if (!pkg.isLocked) {
-                      onSelectPackage(pkg);
-                      onClose();
-                    }
-                  }}
-                  onZoomOriginalCard={
-                    pkg.cardImageUrl || pkg.cardPreviewUrl
-                      ? () =>
-                          setZoomedCard({
-                            title: pkg.displayName,
-                            imageUrl: pkg.cardImageUrl || pkg.cardPreviewUrl,
-                          })
-                      : undefined
-                  }
-                />
-
-                {/* Accounting & Immediate Deduction Preview Box */}
-                <div className="bg-[#F9F9FB] rounded-xl p-2.5 border border-gray-200 text-[11px] space-y-1">
-                  <div className="flex items-center justify-between font-bold text-gray-800">
-                    <span className="flex items-center gap-1 text-indigo-900">
-                      <Calculator className="w-3.5 h-3.5 text-indigo-600" />
-                      Hạch toán & Trừ gói ngay hôm nay:
-                    </span>
-                    <span className="text-emerald-700 font-extrabold tabular-nums">
-                      ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ / buổi
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5 text-[10px] text-gray-600 pt-0.5 tabular-nums">
-                    <div>
-                      • Buổi làm hôm nay: <strong className="text-emerald-700">Trừ luôn buổi 1 vào gói</strong>
-                    </div>
-                    <div>
-                      • Ví còn sau hôm nay:{' '}
-                      <strong className="text-black">
-                        {accounting.remainingWalletAfterToday.totalRemaining}/{pkg.totalSessions} buổi
-                      </strong>{' '}
-                      ({accounting.remainingWalletAfterToday.totalPaidRemaining} Mua +{' '}
-                      {accounting.remainingWalletAfterToday.totalBonusRemaining} Tặng)
-                    </div>
-                    <div>
-                      • Doanh thu thực hiện hôm nay:{' '}
-                      <strong className="text-black">
-                        {accounting.recognizedRevenueToday.toLocaleString('vi-VN')}đ
-                      </strong>
-                    </div>
-                    <div>
-                      • Doanh thu giữ trong ví (Deferred):{' '}
-                      <strong className="text-indigo-700">
-                        {accounting.deferredRevenueBalance.toLocaleString('vi-VN')}đ
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                {pkg.isLocked && pkg.lockReason && (
-                  <div className="text-[11px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 shrink-0" />
-                    <span>{pkg.lockReason}</span>
-                  </div>
-                )}
-
-                {/* Action Row */}
-                <div className="flex items-center gap-2 pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleCompare(pkg.id)}
-                    className={`px-2.5 py-2 rounded-xl text-[11px] font-bold border flex items-center gap-1 transition-all cursor-pointer ${
-                      isCompared
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Scale className="w-3.5 h-3.5" />
-                    {isCompared ? 'Đang so sánh' : 'So sánh'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => void handleCopyQuote(pkg)}
-                    className="px-2.5 py-2 rounded-xl text-[11px] font-bold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 flex items-center gap-1 transition-all cursor-pointer"
-                  >
-                    {copiedId === pkg.id ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-700">Đã copy</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy báo giá</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={pkg.isLocked}
-                    onClick={() => {
-                      onSelectPackage(pkg);
-                      onClose();
-                    }}
-                    className={`flex-1 py-2 px-3 rounded-xl text-[12px] font-extrabold flex items-center justify-center gap-1.5 transition-all ${
-                      pkg.isLocked
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : isSelected
-                          ? 'bg-emerald-600 text-white shadow-xs cursor-pointer'
-                          : 'bg-[#FFB400] text-black shadow-xs active:scale-98 cursor-pointer'
-                    }`}
-                  >
-                    {pkg.isLocked ? (
-                      <>
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>Đã khóa (Qua ngày đầu)</span>
-                      </>
-                    ) : isSelected ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Đang chọn gói này</span>
-                      </>
-                    ) : (
-                      <span>Chọn gói này ({displayPrice.toLocaleString('vi-VN')}đ)</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          <WingsUnifiedComboCard
+            packages={packages}
+            selectedPackageId={selectedPackageId}
+            onSelectPackage={(pkg) => {
+              onSelectPackage(pkg);
+              onClose();
+            }}
+            onSelectLocked={() => {
+              // ComboCatalogConsultModal không có locked modal riêng — hiện lock reason qua WingsComboCard
+            }}
+          />
         </div>
       </div>
 
