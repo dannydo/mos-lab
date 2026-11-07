@@ -14,6 +14,7 @@ import type {
 import {
   BUG_REPORT_MAX_ATTACHMENTS,
   BUG_REPORT_MAX_ATTACHMENT_BYTES,
+  BUG_REPORT_Z_INDEX,
   formatVietnamDateTime,
   getBugReportAgentDisplayName,
 } from '@mos-lab/shared';
@@ -93,6 +94,7 @@ function CommentFileThumbnail({ file }: { file: File }) {
       style={{ objectFit: 'cover', borderRadius: 4 }}
       preview={{
         mask: <span className="text-[10px] font-medium text-white">Xem</span>,
+        zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
       }}
     />
   ) : (
@@ -268,7 +270,7 @@ export function BugReportConversation({
                 {comment.attachments.some((item) => !item.deletedAt) ? (
                   <Image.PreviewGroup
                     preview={{
-                      zIndex: 12030,
+                      zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
                       countRender: (current: number, total: number) => (
                         <span className="tabular-nums font-semibold tracking-wide">
                           {current} / {total}
@@ -333,7 +335,7 @@ export function BugReportConversation({
           {files.length ? (
             <Image.PreviewGroup
               preview={{
-                zIndex: 12030,
+                zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
                 countRender: (current: number, total: number) => (
                   <span className="tabular-nums font-semibold tracking-wide">
                     {current} / {total}

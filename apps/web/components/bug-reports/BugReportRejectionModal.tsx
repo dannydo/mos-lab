@@ -3,7 +3,7 @@
 import React from 'react';
 import { Alert, Button, Checkbox, Image, Input, Modal, Typography, message, theme } from 'antd';
 import type { CreateBugReportAttachmentRequest } from '@mos-lab/shared';
-import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES } from '@mos-lab/shared';
+import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES, BUG_REPORT_Z_INDEX } from '@mos-lab/shared';
 import { AlertCircle, ImagePlus, RotateCcw, UploadCloud, X } from 'lucide-react';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { AppIcon } from '../ui';
@@ -180,7 +180,7 @@ export function BugReportRejectionModal({
         </Button>,
       ]}
       width={600}
-      zIndex={12050}
+      zIndex={BUG_REPORT_Z_INDEX.REJECTION_MODAL}
       destroyOnHidden
     >
       {contextHolder}
@@ -303,7 +303,7 @@ export function BugReportRejectionModal({
                 <div className="space-y-2">
                   <Image.PreviewGroup
                     preview={{
-                      zIndex: 12030,
+                      zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
                       countRender: (current: number, total: number) => (
                         <span className="tabular-nums font-semibold tracking-wide">
                           {current} / {total}
@@ -323,7 +323,7 @@ export function BugReportRejectionModal({
                               src={previewUrls[index]}
                               alt={file.name}
                               className="h-full w-full object-cover"
-                              preview={{ mask: 'Xem phóng to' }}
+                              preview={{ mask: 'Xem phóng to', zIndex: BUG_REPORT_Z_INDEX.PREVIEW }}
                             />
                           </div>
                           <div className="truncate p-1.5 text-[11px] text-slate-600 dark:text-slate-400">{file.name}</div>

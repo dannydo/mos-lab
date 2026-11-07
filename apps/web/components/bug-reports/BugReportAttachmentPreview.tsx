@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Alert, Button, Image, Typography } from 'antd';
-import type { BugReportAttachment } from '@mos-lab/shared';
+import { BUG_REPORT_Z_INDEX, type BugReportAttachment } from '@mos-lab/shared';
 import { ExternalLink, ImageOff, LoaderCircle } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { AppIcon } from '../ui';
@@ -127,7 +127,7 @@ export function BugReportAttachmentPreview({
         alt={`Ảnh bạn đã gửi: ${attachment.fileName}`}
         width={72}
         height={72}
-        preview={{ mask: 'Phóng to' }}
+        preview={{ mask: 'Phóng to', zIndex: BUG_REPORT_Z_INDEX.PREVIEW }}
         className="rounded-lg object-cover"
         style={{ border: '1px solid currentColor', objectFit: 'cover' }}
       />
@@ -139,6 +139,7 @@ export function BugReportAttachmentPreview({
       <Image
         src={url}
         alt={`Ảnh đính kèm ${attachment.fileName}`}
+        preview={{ zIndex: BUG_REPORT_Z_INDEX.PREVIEW }}
         className={compact ? 'max-h-40 rounded-lg object-contain' : 'max-h-60 rounded-lg object-contain'}
       />
       <div className="flex items-center justify-between gap-2">

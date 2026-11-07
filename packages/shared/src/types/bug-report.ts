@@ -146,6 +146,14 @@ export interface BugReportContext {
 export const BUG_REPORT_MAX_ATTACHMENTS = 10;
 export const BUG_REPORT_MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
+export const BUG_REPORT_Z_INDEX = {
+  LAUNCHER: 12000,
+  SURFACE_MODAL: 12010,
+  WORKFLOW_MODAL: 12040,
+  REJECTION_MODAL: 12050,
+  PREVIEW: 12200,
+} as const;
+
 export interface CreateBugReportAttachmentRequest {
   fileName: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';

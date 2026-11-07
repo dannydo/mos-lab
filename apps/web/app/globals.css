@@ -8447,6 +8447,12 @@ button:not(:disabled):not(.ant-btn-loading):active,
   overflow: hidden !important;
 }
 
+.ant-image-preview-mask {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
 .ant-image-preview .ant-image-preview-img {
   max-width: 98.5vw !important;
   max-height: 94vh !important;

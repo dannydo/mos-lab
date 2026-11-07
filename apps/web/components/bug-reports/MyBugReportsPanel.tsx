@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { Alert, Button, Image, Input, Typography, message, theme } from 'antd';
-import type {
-  BugReportCommentCreateResult,
+import {
+  BUG_REPORT_Z_INDEX,
+  type BugReportCommentCreateResult,
   BugReportNotification,
   BugReportReporterState,
   CreateBugReportCommentRequest,
@@ -531,7 +532,7 @@ export function MyBugReportsPanel({
                 <InfoBlock icon={ImageIcon} title="Ảnh bạn đã gửi">
                   <Image.PreviewGroup
                     preview={{
-                      zIndex: 12030,
+                      zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
                       countRender: (current: number, total: number) => (
                         <span className="tabular-nums font-semibold tracking-wide">
                           {current} / {total}

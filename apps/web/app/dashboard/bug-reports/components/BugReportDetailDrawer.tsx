@@ -24,6 +24,7 @@ import {
   type InboxImplementationExecutionOwner,
   type InboxImplementationModelTier,
   isDeferredBugReport,
+  BUG_REPORT_Z_INDEX,
 } from '@mos-lab/shared';
 import { CheckCircle2, Clock, Gavel, HelpCircle, RefreshCw, Send } from 'lucide-react';
 import {
@@ -669,7 +670,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               >
                 <Image.PreviewGroup
                   preview={{
-                    zIndex: 12030,
+                    zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
                     countRender: (current: number, total: number) => (
                       <span className="tabular-nums font-semibold tracking-wide">
                         {current} / {total}
