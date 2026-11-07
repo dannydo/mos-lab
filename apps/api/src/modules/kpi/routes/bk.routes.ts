@@ -423,7 +423,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
             FROM \`order\` o
             JOIN report_order ro ON ro.order_id = o.id
             WHERE o.id IN (${returnedOrderIds.join(',')})
-              AND o.order_state = 'Completed'
+              AND o.order_state IN ('Completed', 'CheckOut')
               AND ro.actual_booking_date_start IS NOT NULL
               AND ro.actual_booking_date_end IS NOT NULL
               AND NOT EXISTS (
@@ -1098,7 +1098,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
           AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND o.order_state = 'Completed'
+          AND o.order_state IN ('Completed', 'CheckOut')
           ${bookerFilter}
           ${storeFilter}
         ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC

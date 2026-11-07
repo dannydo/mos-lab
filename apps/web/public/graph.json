@@ -6218,7 +6218,7 @@
         "path": "/api/bug-reports/mine",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 641
+        "line": 642
       }
     },
     {
@@ -6232,7 +6232,7 @@
         "path": "/api/bug-reports/notifications/read",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 656
+        "line": 657
       }
     },
     {
@@ -6246,7 +6246,7 @@
         "path": "/api/bug-reports/:id/review",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 669
+        "line": 671
       }
     },
     {
@@ -6260,7 +6260,7 @@
         "path": "/api/bug-reports/:id/comments",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 693
+        "line": 696
       }
     },
     {
@@ -6274,7 +6274,7 @@
         "path": "/api/bug-reports/:id/retry-clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 723
+        "line": 727
       }
     },
     {
@@ -6288,7 +6288,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 739
+        "line": 743
       }
     },
     {
@@ -6302,7 +6302,7 @@
         "path": "/api/bug-reports/worker-health",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 747
+        "line": 751
       }
     },
     {
@@ -6316,7 +6316,7 @@
         "path": "/api/bug-reports/timing/dashboard",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 770
+        "line": 774
       }
     },
     {
@@ -6330,7 +6330,7 @@
         "path": "/api/bug-reports/:id/timing",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 784
+        "line": 788
       }
     },
     {
@@ -6344,7 +6344,7 @@
         "path": "/api/bug-reports/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 798
+        "line": 802
       }
     },
     {
@@ -6358,7 +6358,7 @@
         "path": "/api/bug-reports/:id/triage",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 807
+        "line": 811
       }
     },
     {
@@ -6372,7 +6372,7 @@
         "path": "/api/bug-reports/:id/implementation-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 817
+        "line": 821
       }
     },
     {
@@ -6386,7 +6386,7 @@
         "path": "/api/bug-reports/:id/implementation-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 863
+        "line": 867
       }
     },
     {
@@ -6400,7 +6400,7 @@
         "path": "/api/bug-reports/:id/ide-implementation-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 887
+        "line": 891
       }
     },
     {
@@ -6414,7 +6414,7 @@
         "path": "/api/bug-reports/:id/ide-handoff-cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 913
+        "line": 917
       }
     },
     {
@@ -6428,7 +6428,7 @@
         "path": "/api/bug-reports/:id/ide-commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 927
+        "line": 931
       }
     },
     {
@@ -6442,7 +6442,7 @@
         "path": "/api/bug-reports/:id/implementation-worker-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 953
+        "line": 957
       }
     },
     {
@@ -6456,7 +6456,7 @@
         "path": "/api/bug-reports/:id/implementation-commit-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 982
+        "line": 986
       }
     },
     {
@@ -6470,7 +6470,7 @@
         "path": "/api/bug-reports/:id/implementation-deploy-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1007
+        "line": 1011
       }
     },
     {
@@ -6484,7 +6484,7 @@
         "path": "/api/bug-reports/:id/implementation-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1032
+        "line": 1036
       }
     },
     {
@@ -6498,7 +6498,7 @@
         "path": "/api/bug-reports/:id/plan-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1056
+        "line": 1060
       }
     },
     {
@@ -6512,7 +6512,7 @@
         "path": "/api/ide-release-checkpoints/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1080
+        "line": 1084
       }
     },
     {
@@ -6526,7 +6526,7 @@
         "path": "/api/bug-reports/:id/implementation-acceptance",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1094
+        "line": 1098
       }
     },
     {
@@ -6540,7 +6540,7 @@
         "path": "/api/bug-reports/:id/confirm-close",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1112
+        "line": 1116
       }
     },
     {
@@ -6554,7 +6554,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1131
+        "line": 1135
       }
     },
     {
@@ -6568,7 +6568,7 @@
         "path": "/api/agent/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1149
+        "line": 1153
       }
     },
     {
@@ -6582,7 +6582,7 @@
         "path": "/api/agent/bug-reports/:key",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1157
+        "line": 1161
       }
     },
     {
@@ -6596,7 +6596,7 @@
         "path": "/api/agent/bug-reports/:key/clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1166
+        "line": 1170
       }
     },
     {
@@ -6610,7 +6610,7 @@
         "path": "/api/agent/bug-reports/:key/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1185
+        "line": 1189
       }
     },
     {
@@ -6624,7 +6624,7 @@
         "path": "/api/agent/bug-reports/:key/fixed",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1199
+        "line": 1203
       }
     },
     {
@@ -6638,7 +6638,7 @@
         "path": "/api/agent/bug-reports/:key/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1209
+        "line": 1213
       }
     },
     {
@@ -6652,7 +6652,7 @@
         "path": "/api/request-classifier/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1227
+        "line": 1231
       }
     },
     {
@@ -6666,7 +6666,7 @@
         "path": "/api/request-classifier/health/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1239
+        "line": 1243
       }
     },
     {
@@ -6680,7 +6680,7 @@
         "path": "/api/request-classifier/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1252
+        "line": 1256
       }
     },
     {
@@ -6694,7 +6694,7 @@
         "path": "/api/request-classifier/conversations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1262
+        "line": 1266
       }
     },
     {
@@ -6708,7 +6708,7 @@
         "path": "/api/request-classifier/conversations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1275
+        "line": 1279
       }
     },
     {
@@ -6722,7 +6722,7 @@
         "path": "/api/request-classifier/conversations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1295
+        "line": 1299
       }
     },
     {
@@ -6736,7 +6736,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1314
+        "line": 1318
       }
     },
     {
@@ -6750,7 +6750,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1327
+        "line": 1331
       }
     },
     {
@@ -6764,7 +6764,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1356
+        "line": 1360
       }
     },
     {
@@ -6778,7 +6778,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1376
+        "line": 1380
       }
     },
     {
@@ -6792,7 +6792,7 @@
         "path": "/api/request-classifier/inbox-plans/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1394
+        "line": 1398
       }
     },
     {
@@ -6806,7 +6806,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1407
+        "line": 1411
       }
     },
     {
@@ -6820,7 +6820,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1431
+        "line": 1435
       }
     },
     {
@@ -6834,7 +6834,7 @@
         "path": "/api/request-classifier/inbox-implementations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1449
+        "line": 1453
       }
     },
     {
@@ -6848,7 +6848,7 @@
         "path": "/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1467
+        "line": 1471
       }
     },
     {
@@ -6862,7 +6862,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1478
+        "line": 1482
       }
     },
     {
@@ -6876,7 +6876,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/start",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1494
+        "line": 1498
       }
     },
     {
@@ -6890,7 +6890,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/renew",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1514
+        "line": 1518
       }
     },
     {
@@ -6904,7 +6904,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1537
+        "line": 1541
       }
     },
     {
@@ -6918,7 +6918,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/commit-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1568
+        "line": 1572
       }
     },
     {
@@ -6932,7 +6932,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/deploy-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1586
+        "line": 1590
       }
     },
     {
@@ -6946,7 +6946,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1603
+        "line": 1607
       }
     },
     {
@@ -6960,7 +6960,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/continue",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1634
+        "line": 1638
       }
     },
     {
@@ -6974,7 +6974,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1663
+        "line": 1667
       }
     },
     {
@@ -6988,7 +6988,7 @@
         "path": "/api/request-classifier/jobs/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1683
+        "line": 1687
       }
     },
     {
@@ -7002,7 +7002,7 @@
         "path": "/api/request-classifier/jobs/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1706
+        "line": 1710
       }
     },
     {
@@ -7016,7 +7016,7 @@
         "path": "/api/request-classifier/jobs/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1726
+        "line": 1730
       }
     },
     {
@@ -32207,6 +32207,18 @@
       }
     },
     {
+      "id": "uicomp:bug-report-z-index.test",
+      "type": "UIComponent",
+      "label": "<bug-report-z-index.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/bug-report-z-index.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bug-report-z-index.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:useBugReportLauncherPreferences",
       "type": "UIComponent",
       "label": "<useBugReportLauncherPreferences />",
@@ -36422,8 +36434,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 128241,
-        "lineCount": 3064,
+        "sizeBytes": 128500,
+        "lineCount": 3068,
         "ext": ".ts"
       }
     },
@@ -36786,8 +36798,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 71117,
-        "lineCount": 1741,
+        "sizeBytes": 71390,
+        "lineCount": 1745,
         "ext": ".ts"
       }
     },
@@ -38359,7 +38371,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62707,
+        "sizeBytes": 62737,
         "lineCount": 1545,
         "ext": ".ts"
       }
@@ -38645,8 +38657,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 33135,
-        "lineCount": 849,
+        "sizeBytes": 33381,
+        "lineCount": 851,
         "ext": ".ts"
       }
     },
@@ -38671,8 +38683,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62737,
-        "lineCount": 1812,
+        "sizeBytes": 62859,
+        "lineCount": 1814,
         "ext": ".ts"
       }
     },
@@ -39009,7 +39021,7 @@
       "filePath": "apps/api/src/modules/notifications/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 26999,
+        "sizeBytes": 27007,
         "lineCount": 747,
         "ext": ".ts"
       }
@@ -43000,8 +43012,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkRevenueTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24637,
-        "lineCount": 634,
+        "sizeBytes": 28372,
+        "lineCount": 716,
         "ext": ".tsx"
       }
     },
@@ -43013,8 +43025,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 87324,
-        "lineCount": 1866,
+        "sizeBytes": 93643,
+        "lineCount": 1981,
         "ext": ".tsx"
       }
     },
@@ -43169,8 +43181,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37335,
-        "lineCount": 824,
+        "sizeBytes": 37378,
+        "lineCount": 825,
         "ext": ".tsx"
       }
     },
@@ -43364,7 +43376,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 71489,
+        "sizeBytes": 71491,
         "lineCount": 1449,
         "ext": ".tsx"
       }
@@ -47121,8 +47133,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ComboCatalogConsultModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22565,
-        "lineCount": 517,
+        "sizeBytes": 15984,
+        "lineCount": 378,
         "ext": ".tsx"
       }
     },
@@ -47264,7 +47276,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25887,
+        "sizeBytes": 25898,
         "lineCount": 549,
         "ext": ".tsx"
       }
@@ -47277,8 +47289,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 79889,
-        "lineCount": 1548,
+        "sizeBytes": 75455,
+        "lineCount": 1472,
         "ext": ".tsx"
       }
     },
@@ -47355,8 +47367,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11488,
-        "lineCount": 266,
+        "sizeBytes": 13242,
+        "lineCount": 294,
         "ext": ".tsx"
       }
     },
@@ -47368,8 +47380,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07bLashProgressCleaned.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11711,
-        "lineCount": 268,
+        "sizeBytes": 13444,
+        "lineCount": 296,
         "ext": ".tsx"
       }
     },
@@ -47394,8 +47406,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21980,
-        "lineCount": 502,
+        "sizeBytes": 21265,
+        "lineCount": 490,
         "ext": ".tsx"
       }
     },
@@ -47420,8 +47432,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 60036,
-        "lineCount": 1157,
+        "sizeBytes": 65634,
+        "lineCount": 1253,
         "ext": ".tsx"
       }
     },
@@ -47433,8 +47445,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21030,
-        "lineCount": 429,
+        "sizeBytes": 65691,
+        "lineCount": 1277,
         "ext": ".tsx"
       }
     },
@@ -47459,8 +47471,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8662,
-        "lineCount": 183,
+        "sizeBytes": 18806,
+        "lineCount": 382,
         "ext": ".tsx"
       }
     },
@@ -47511,7 +47523,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenSettingsRoleSwitch.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11069,
+        "sizeBytes": 11072,
         "lineCount": 270,
         "ext": ".tsx"
       }
@@ -47667,7 +47679,7 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/LashServicingStepper.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2308,
+        "sizeBytes": 2320,
         "lineCount": 67,
         "ext": ".tsx"
       }
@@ -47680,8 +47692,21 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40320,
-        "lineCount": 1158,
+        "sizeBytes": 44242,
+        "lineCount": 1252,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/WingsUnifiedComboCard.tsx",
+      "type": "File",
+      "label": "WingsUnifiedComboCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/WingsUnifiedComboCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3420,
+        "lineCount": 100,
         "ext": ".tsx"
       }
     },
@@ -47693,8 +47718,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14278,
-        "lineCount": 386,
+        "sizeBytes": 14366,
+        "lineCount": 392,
         "ext": ".tsx"
       }
     },
@@ -47719,8 +47744,8 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20479,
-        "lineCount": 702,
+        "sizeBytes": 21448,
+        "lineCount": 722,
         "ext": ".ts"
       }
     },
@@ -47745,8 +47770,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 44657,
-        "lineCount": 1215,
+        "sizeBytes": 45824,
+        "lineCount": 1242,
         "ext": ".ts"
       }
     },
@@ -48057,8 +48082,8 @@
       "filePath": "apps/web/lib/api/bug-reports.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13526,
-        "lineCount": 311,
+        "sizeBytes": 13673,
+        "lineCount": 314,
         "ext": ".ts"
       }
     },
@@ -48850,8 +48875,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6609,
-        "lineCount": 149,
+        "sizeBytes": 6577,
+        "lineCount": 145,
         "ext": ".ts"
       }
     },
@@ -48889,8 +48914,21 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13162,
-        "lineCount": 476,
+        "sizeBytes": 13867,
+        "lineCount": 497,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/bug-report.test.ts",
+      "type": "File",
+      "label": "bug-report.test.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/bug-report.test.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1295,
+        "lineCount": 33,
         "ext": ".ts"
       }
     },
@@ -48902,8 +48940,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 46375,
-        "lineCount": 1442,
+        "sizeBytes": 46536,
+        "lineCount": 1450,
         "ext": ".ts"
       }
     },
@@ -67276,6 +67314,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:bug-report-z-index.test:ws:apps/web",
+      "source": "uicomp:bug-report-z-index.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bug-report-z-index.test:token:color:primary",
+      "source": "uicomp:bug-report-z-index.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:useBugReportLauncherPreferences:ws:apps/web",
       "source": "uicomp:useBugReportLauncherPreferences",
       "target": "ws:apps/web",
@@ -75139,6 +75191,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/WingsUnifiedComboCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/WingsUnifiedComboCard.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -105287,8 +105346,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3820,
-    "totalEdges": 7946,
+    "totalNodes": 3823,
+    "totalEdges": 7949,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -105296,15 +105355,15 @@
       "Component": 65,
       "SharedType": 1383,
       "DesignToken": 12,
-      "UIComponent": 340,
-      "File": 1087
+      "UIComponent": 341,
+      "File": 1089
     },
     "edgeTypeCounts": {
       "EXPORTS": 1577,
       "HANDLES_ROUTE": 748,
-      "RENDERS": 405,
-      "USES_TOKEN": 342,
-      "IMPORTS": 605,
+      "RENDERS": 406,
+      "USES_TOKEN": 343,
+      "IMPORTS": 606,
       "QUERIES_MODEL": 426,
       "API_CALL": 3843
     },

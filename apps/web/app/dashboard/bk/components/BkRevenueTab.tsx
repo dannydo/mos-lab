@@ -23,7 +23,10 @@ import {
   removeVietnameseTones,
   type ReportComparisonMode,
   calculateFractionToday,
+  getRevCommissionRate,
+  DEFAULT_BK_REV_BONUS_TIERS,
 } from '@mos-lab/shared';
+import { formatCompactVND } from '../../../../lib/format-utils';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
@@ -108,10 +111,21 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
 
   const projectedCompletedOrders = Math.round((summary.completedOrdersCount || 0) / (ratio || 1));
   const projectedRevenue = Math.round((summary.totalRevenue || 0) / (ratio || 1));
-  const projectedCommissionBonus = Math.round((summary.totalCommissionBonus || 0) / (ratio || 1));
+  const projectedCommissionBonus = useMemo(() => {
+    if (leaderboard.length > 0) {
+      return leaderboard.reduce((acc, item) => {
+        const projRev = Math.round((item.totalRevenue || 0) / (ratio || 1));
+        const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
+        return acc + Math.round((projRev * projRate) / 100);
+      }, 0);
+    }
+    const projRev = Math.round((summary.totalRevenue || 0) / (ratio || 1));
+    const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
+    return Math.round((projRev * projRate) / 100);
+  }, [leaderboard, summary.totalRevenue, ratio]);
 
   const renderForecastSubtext = (projectedVal: number, unit = '') => {
-    if (isDayMode || !projectedVal) return null;
+    if (isDayMode) return null;
 
     if (isPastPeriod) {
       return (
@@ -131,8 +145,11 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
         title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
       >
         <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
-            🔮
+          <span className="inline-flex items-center gap-1">
+            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
+              🔮
+            </span>
+            <span className="text-[11px] text-slate-400">Cuối {periodNoun}:</span>
           </span>
           <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
             ~{unit === 'đ' ? formatCurrency(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
@@ -340,29 +357,74 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-xs text-indigo-400">{formatCurrency(val)}</span>
-      ),
+      render: (val: number) => {
+        const projRev = Math.round((val || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-xs text-indigo-400">{formatCurrency(val)}</span>
+            {!isDayMode && !isPastPeriod && projRev > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-indigo-400/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(projRev)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: '% Bonus',
       dataIndex: 'commissionRate',
       key: 'commissionRate',
       align: 'center' as const,
-      render: (val: number) => (
-        <Tag color="purple" className="tabular-nums font-semibold px-2 py-0 text-xs rounded-full m-0">
-          {val}%
-        </Tag>
-      ),
+      render: (val: number, r: BkRevenueLeaderboardEntry) => {
+        const projRev = Math.round((r.totalRevenue || 0) / (ratio || 1));
+        const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
+        return (
+          <div className="flex flex-col items-center">
+            <Tag color="purple" className="tabular-nums font-semibold px-2 py-0 text-xs rounded-full m-0">
+              {val}%
+            </Tag>
+            {!isDayMode && !isPastPeriod && (
+              <span className="text-[10px] text-purple-400/80 font-medium tabular-nums mt-0.5">🔮 {projRate}%</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Bonus Doanh Thu',
       dataIndex: 'totalCommissionBonus',
       key: 'totalCommissionBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-sm text-purple-400">{formatCurrency(val)}</span>
-      ),
+      render: (val: number, r: BkRevenueLeaderboardEntry) => {
+        const projRev = Math.round((r.totalRevenue || 0) / (ratio || 1));
+        const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
+        const projBonus = Math.round((projRev * projRate) / 100);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-sm text-purple-400">{formatCurrency(val)}</span>
+            {!isDayMode && !isPastPeriod && (
+              <Tooltip
+                title={
+                  projBonus > 0
+                    ? `Dự đoán doanh thu ~${formatCurrency(projRev)} (${projRate}%) → Thưởng: ~${formatCurrency(projBonus)}`
+                    : `Dự đoán doanh thu ~${formatCurrency(projRev)} (chưa đạt mốc 50M → thưởng ~0 đ)`
+                }
+              >
+                <div className="flex items-center gap-1 text-[11px] text-purple-400/80 font-medium tabular-nums cursor-help">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(projBonus)}</span>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Chi tiết',
@@ -536,11 +598,26 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
         columns={columns}
         selectedBooker={selectedBookerId || undefined}
         onSelectBooker={(bId) => handleSelectBooker(bId)}
-        mobileMetrics={(record) => [
-          { label: 'Đơn done', value: record.completedOrdersCount ?? 0, tone: 'accent' },
-          { label: 'Doanh thu net', value: formatCurrency(record.totalRevenue ?? 0), tone: 'accent' },
-          { label: 'Hoa hồng', value: formatCurrency(record.totalCommissionBonus ?? 0), tone: 'success' },
-        ]}
+        mobileMetrics={(record) => {
+          const projRev = Math.round((record.totalRevenue || 0) / (ratio || 1));
+          const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
+          const projBonus = Math.round((projRev * projRate) / 100);
+          return [
+            { label: 'Đơn done', value: record.completedOrdersCount ?? 0, tone: 'accent' },
+            {
+              label: 'Doanh thu net',
+              value: formatCurrency(record.totalRevenue ?? 0),
+              subtext: !isDayMode && !isPastPeriod ? `🔮 ~${formatCompactVND(projRev)}` : undefined,
+              tone: 'accent',
+            },
+            {
+              label: 'Hoa hồng',
+              value: formatCurrency(record.totalCommissionBonus ?? 0),
+              subtext: !isDayMode && !isPastPeriod ? `🔮 ~${formatCompactVND(projBonus)} (${projRate}%)` : undefined,
+              tone: 'success',
+            },
+          ];
+        }}
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
             <InfoCircleOutlined className="text-amber-500" />
