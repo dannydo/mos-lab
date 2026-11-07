@@ -21,6 +21,7 @@ import { usePathname } from 'next/navigation';
 import {
   BUG_REPORT_MAX_ATTACHMENTS,
   BUG_REPORT_MAX_ATTACHMENT_BYTES,
+  BUG_REPORT_Z_INDEX,
   isAdminOrSuperAdminRole,
   isCvRole,
   type BugReportClientError,
@@ -104,6 +105,7 @@ function BugReportFileThumbnail({ file }: { file: File }) {
       style={{ borderRadius: 6, objectFit: 'cover' }}
       preview={{
         mask: <span className="text-[10px] font-medium text-white">Xem</span>,
+        zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
       }}
     />
   );
@@ -591,7 +593,7 @@ export function BugReportSurface() {
             left: launcherPosition ? launcherPosition.x : 'max(12px, env(safe-area-inset-left))',
             top: launcherPosition ? launcherPosition.y : undefined,
             bottom: launcherPosition ? undefined : 'max(14px, env(safe-area-inset-bottom))',
-            zIndex: 12000,
+            zIndex: BUG_REPORT_Z_INDEX.LAUNCHER,
             width: LAUNCHER_SIZE,
             height: LAUNCHER_SIZE,
             transition: dragging ? 'none' : undefined,
@@ -655,7 +657,7 @@ export function BugReportSurface() {
         onCancel={closeReporter}
         maskClosable={!submitting}
         keyboard={!submitting}
-        zIndex={12010}
+        zIndex={BUG_REPORT_Z_INDEX.SURFACE_MODAL}
         destroyOnHidden
         footer={
           <AdaptiveOverlayFooter className="!static !m-0 !border-t-0 !p-0">
@@ -1005,7 +1007,7 @@ export function BugReportSurface() {
             {activeDraft.files.length > 0 && (
               <Image.PreviewGroup
                 preview={{
-                  zIndex: 12030,
+                  zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
                   countRender: (current: number, total: number) => (
                     <span className="tabular-nums font-semibold tracking-wide">
                       {current} / {total}
@@ -1050,7 +1052,7 @@ export function BugReportSurface() {
           </div>
         )}
       </AdaptiveModal>
-      <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} zIndex={12040} />
+      <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} zIndex={BUG_REPORT_Z_INDEX.WORKFLOW_MODAL} />
     </>
   );
 }
