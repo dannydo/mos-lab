@@ -409,7 +409,7 @@ export class BkLeaderboardService {
         WHERE ro.actual_booking_date_start >= '${startDateTimeStr}'
           AND ro.actual_booking_date_start <= '${endDateTimeStr}'
           AND o.created_staff_id IN (${candidateIdsStr})
-          AND o.order_state = 'Completed'
+          AND o.order_state IN ('Completed', 'CheckOut')
           ${comboStoreFilter}
         UNION
         SELECT o.id as order_id, o.created_staff_id
@@ -420,7 +420,7 @@ export class BkLeaderboardService {
           OR (o.booking_date_start IS NULL AND o.date_created >= '${startDateTimeStr}' AND o.date_created <= '${endDateTimeStr}')
         )
           AND o.created_staff_id IN (${candidateIdsStr})
-          AND o.order_state = 'Completed'
+          AND o.order_state IN ('Completed', 'CheckOut')
           AND ro.actual_booking_date_start IS NULL
           ${comboStoreFilter}
       ) matched_orders
@@ -683,13 +683,15 @@ export class BkLeaderboardService {
         FROM \`order\` o2
         LEFT JOIN report_order ro ON o2.id = ro.order_id
         WHERE o2.created_staff_id IN (${bkIdsStr})
-          AND o2.order_state = 'Completed'
-          AND o2.booking_date_start >= '${startPart} 00:00:00' - INTERVAL 2 DAY
-          AND o2.booking_date_start <= '${endPart} 23:59:59' + INTERVAL 2 DAY
+          AND o2.order_state IN ('Completed', 'CheckOut')
+          AND (
+            (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+            OR (ro.actual_booking_date_start IS NULL AND o2.booking_date_start >= '${startPart} 00:00:00' AND o2.booking_date_start <= '${endPart} 23:59:59')
+          )
       ) o ON o.created_staff_id = up.user_id 
         AND o.final_date >= '${startPart} 00:00:00' 
         AND o.final_date <= '${endPart} 23:59:59'
-        AND o.order_state = 'Completed'
+        AND o.order_state IN ('Completed', 'CheckOut')
         ${storeFilter}
       WHERE up.user_id IN (${bkIdsStr})
       GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
@@ -716,7 +718,7 @@ export class BkLeaderboardService {
         WHERE ro.actual_booking_date_start >= '${startDateTimeStr}'
           AND ro.actual_booking_date_start <= '${endDateTimeStr}'
           AND o.created_staff_id IN (${candidateIdsStr})
-          AND o.order_state = 'Completed'
+          AND o.order_state IN ('Completed', 'CheckOut')
           ${comboStoreFilter}
         UNION
         SELECT o.id as order_id, o.created_staff_id
@@ -727,7 +729,7 @@ export class BkLeaderboardService {
           OR (o.booking_date_start IS NULL AND o.date_created >= '${startDateTimeStr}' AND o.date_created <= '${endDateTimeStr}')
         )
           AND o.created_staff_id IN (${candidateIdsStr})
-          AND o.order_state = 'Completed'
+          AND o.order_state IN ('Completed', 'CheckOut')
           AND ro.actual_booking_date_start IS NULL
           ${comboStoreFilter}
       ) matched_orders

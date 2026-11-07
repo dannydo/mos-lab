@@ -49,6 +49,8 @@ import {
   TELESALES_ATTENDANCE_EXCEPTION_OPTIONS,
   type ReportComparisonMode,
   calculateFractionToday,
+  getRevCommissionRate,
+  DEFAULT_BK_REV_BONUS_TIERS,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -90,6 +92,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
     totalBaseSalary: 0,
     totalDoneBonus: 0,
     totalTipBonus: 0,
+    totalRevenue: 0,
     totalRevenueBonus: 0,
     totalHolidayBasePay: 0,
     totalHolidayPremiumPay: 0,
@@ -100,6 +103,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
     totalBaseSalary: number;
     totalDoneBonus: number;
     totalTipBonus: number;
+    totalRevenue: number;
     totalRevenueBonus: number;
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;
@@ -247,6 +251,8 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
           projectedBaseSalary: record.calculatedBaseSalary || 0,
           projectedDoneBonus: record.doneBonus || 0,
           projectedTipBonus: record.tipBonus || 0,
+          projectedRevenue: record.totalRevenue || 0,
+          projectedRevRate: record.revCommissionRate || 0,
           projectedRevenueBonus: record.revenueBonus || 0,
           projectedHolidayPay: holidayActual,
           projectedTotalIncome: record.totalIncome || 0,
@@ -265,7 +271,10 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
 
       const projectedDoneBonus = Math.round((record.doneBonus || 0) / (ratio || 1));
       const projectedTipBonus = Math.round((record.tipBonus || 0) / (ratio || 1));
-      const projectedRevenueBonus = Math.round((record.revenueBonus || 0) / (ratio || 1));
+      const currentRev = record.totalRevenue || 0;
+      const projectedRevenue = Math.round(currentRev / (ratio || 1));
+      const projectedRevRate = getRevCommissionRate(projectedRevenue, DEFAULT_BK_REV_BONUS_TIERS);
+      const projectedRevenueBonus = Math.round((projectedRevenue * projectedRevRate) / 100);
       const projectedHolidayPay = holidayActual;
 
       const projectedTotalIncome =
@@ -275,6 +284,8 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
         projectedBaseSalary,
         projectedDoneBonus,
         projectedTipBonus,
+        projectedRevenue,
+        projectedRevRate,
         projectedRevenueBonus,
         projectedHolidayPay,
         projectedTotalIncome,
@@ -295,26 +306,33 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
     }
 
     let sumProjectedBase = 0;
+    let sumProjectedRevenueBonus = 0;
     if (paystubs.length > 0) {
       sumProjectedBase = paystubs.reduce((acc, r) => {
         const proj = getProjectedRecord(r);
         return acc + proj.projectedBaseSalary;
       }, 0);
+      sumProjectedRevenueBonus = paystubs.reduce((acc, r) => {
+        const proj = getProjectedRecord(r);
+        return acc + (proj.projectedRevenueBonus || 0);
+      }, 0);
     } else {
       sumProjectedBase = Math.round((summary.totalBaseSalary || 0) / (ratio || 1));
+      const projRev = Math.round((summary.totalRevenue || 0) / (ratio || 1));
+      const rate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
+      sumProjectedRevenueBonus = Math.round((projRev * rate) / 100);
     }
 
     const projectedDoneBonus = Math.round((summary.totalDoneBonus || 0) / (ratio || 1));
-    const projectedRevenueBonus = Math.round((summary.totalRevenueBonus || 0) / (ratio || 1));
     const projectedTipBonus = Math.round((summary.totalTipBonus || 0) / (ratio || 1));
     const holidayAddition = summary.totalHolidayPayrollAddition || summary.totalHolidayPremiumPay || 0;
     const projectedTotalIncome =
-      sumProjectedBase + projectedDoneBonus + projectedRevenueBonus + projectedTipBonus + holidayAddition;
+      sumProjectedBase + projectedDoneBonus + sumProjectedRevenueBonus + projectedTipBonus + holidayAddition;
 
     return {
       projectedBaseSalary: sumProjectedBase,
       projectedDoneBonus,
-      projectedRevenueBonus,
+      projectedRevenueBonus: sumProjectedRevenueBonus,
       projectedTipBonus,
       projectedTotalIncome,
     };
@@ -376,18 +394,45 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
       ]);
       setPaystubs(res.data || []);
       setSummary(
-        res.summary || {
-          totalBaseSalary: 0,
-          totalDoneBonus: 0,
-          totalTipBonus: 0,
-          totalRevenueBonus: 0,
-          totalHolidayBasePay: 0,
-          totalHolidayPremiumPay: 0,
-          totalHolidayPayrollAddition: 0,
-          grandTotalIncome: 0,
-        }
+        res.summary
+          ? {
+              totalBaseSalary: res.summary.totalBaseSalary || 0,
+              totalDoneBonus: res.summary.totalDoneBonus || 0,
+              totalTipBonus: res.summary.totalTipBonus || 0,
+              totalRevenue: res.summary.totalRevenue || 0,
+              totalRevenueBonus: res.summary.totalRevenueBonus || 0,
+              totalHolidayBasePay: res.summary.totalHolidayBasePay || 0,
+              totalHolidayPremiumPay: res.summary.totalHolidayPremiumPay || 0,
+              totalHolidayPayrollAddition: res.summary.totalHolidayPayrollAddition || 0,
+              grandTotalIncome: res.summary.grandTotalIncome || 0,
+            }
+          : {
+              totalBaseSalary: 0,
+              totalDoneBonus: 0,
+              totalTipBonus: 0,
+              totalRevenue: 0,
+              totalRevenueBonus: 0,
+              totalHolidayBasePay: 0,
+              totalHolidayPremiumPay: 0,
+              totalHolidayPayrollAddition: 0,
+              grandTotalIncome: 0,
+            }
       );
-      setPreviousSummary(previousRes?.summary || null);
+      setPreviousSummary(
+        previousRes?.summary
+          ? {
+              totalBaseSalary: previousRes.summary.totalBaseSalary || 0,
+              totalDoneBonus: previousRes.summary.totalDoneBonus || 0,
+              totalTipBonus: previousRes.summary.totalTipBonus || 0,
+              totalRevenue: previousRes.summary.totalRevenue || 0,
+              totalRevenueBonus: previousRes.summary.totalRevenueBonus || 0,
+              totalHolidayBasePay: previousRes.summary.totalHolidayBasePay || 0,
+              totalHolidayPremiumPay: previousRes.summary.totalHolidayPremiumPay || 0,
+              totalHolidayPayrollAddition: previousRes.summary.totalHolidayPayrollAddition || 0,
+              grandTotalIncome: previousRes.summary.grandTotalIncome || 0,
+            }
+          : null
+      );
     } catch (err) {
       console.error('Error loading BK paystub', err);
     } finally {
@@ -558,13 +603,33 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
         return (
           <div className="flex flex-col items-end">
             <span className="tabular-nums font-semibold text-xs text-purple-400">+{formatCurrency(val)}</span>
-            {!isDayMode && !isPastPeriod && proj.projectedRevenueBonus > 0 && (
-              <div className="flex items-center gap-1 text-[11px] text-purple-500/80 font-medium tabular-nums">
-                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
-                  🔮
-                </span>
-                <span>~{formatCompactVND(proj.projectedRevenueBonus)}</span>
-              </div>
+            <Tooltip
+              title={
+                r.totalRevenue && r.totalRevenue >= 50000000
+                  ? `Doanh thu ghi nhận: ${formatCurrency(r.totalRevenue)} (Mức hoa hồng: ${r.revCommissionRate || 0}%)`
+                  : `Doanh thu ghi nhận: ${formatCurrency(r.totalRevenue || 0)} (Chưa đạt mốc tối thiểu 50.000.000 đ để hưởng hoa hồng)`
+              }
+            >
+              <span className="text-[10px] text-slate-400 font-medium tabular-nums cursor-help">
+                Rev: {formatCompactVND(r.totalRevenue || 0)}
+                {r.revCommissionRate ? ` (${r.revCommissionRate}%)` : ''}
+              </span>
+            </Tooltip>
+            {!isDayMode && !isPastPeriod && (
+              <Tooltip
+                title={
+                  proj.projectedRevenueBonus > 0
+                    ? `Dự đoán doanh thu cuối ${periodNoun}: ~${formatCurrency(proj.projectedRevenue)} (Mức ${proj.projectedRevRate}%) → Thưởng: ~${formatCurrency(proj.projectedRevenueBonus)}`
+                    : `Dự đoán doanh thu cuối ${periodNoun}: ~${formatCurrency(proj.projectedRevenue)} (dưới mốc 50M → thưởng ~0 đ)`
+                }
+              >
+                <div className="flex items-center gap-1 text-[11px] text-purple-400/80 font-medium tabular-nums cursor-help">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedRevenueBonus)}</span>
+                </div>
+              </Tooltip>
             )}
           </div>
         );
@@ -715,6 +780,21 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               compact={isMobile}
             />
             {renderForecastSubtext(projectedSummary.projectedRevenueBonus)}
+            <div className="mt-1.5 pt-1.5 border-t border-slate-700/20 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Doanh thu:</span>
+              <Tooltip
+                title={`Tổng doanh thu đơn hợp lệ (Completed + CheckOut): ${formatCurrency(summary.totalRevenue || 0)}${previousSummary?.totalRevenue !== undefined ? ` (Kỳ trước: ${formatCurrency(previousSummary.totalRevenue)})` : ''}`}
+              >
+                <span className="font-semibold text-purple-400 tabular-nums cursor-help">
+                  {formatCompactVND(summary.totalRevenue || 0)}
+                  {previousSummary?.totalRevenue !== undefined && (
+                    <span className="text-slate-500 font-normal ml-1">
+                      (Kỳ tr: {formatCompactVND(previousSummary.totalRevenue)})
+                    </span>
+                  )}
+                </span>
+              </Tooltip>
+            </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -850,6 +930,9 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                       <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
                         +{formatCurrency((record.doneBonus || 0) + (record.tipBonus || 0) + (record.revenueBonus || 0))}
                       </dd>
+                      <div className="text-[10px] text-slate-400 font-medium tabular-nums truncate">
+                        Rev: {formatCompactVND(record.totalRevenue || 0)}
+                      </div>
                       {!isDayMode && !isPastPeriod && (
                         <div className="text-[10px] text-emerald-500/80 font-medium tabular-nums">
                           🔮 ~
@@ -990,15 +1073,52 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex justify-between items-center">
+            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 flex justify-between items-center">
               <div>
-                <div className="text-xs text-slate-500 font-semibold uppercase">Thưởng Hoa Hồng Doanh Thu</div>
-                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                  Tính trên Tổng doanh thu đơn Completed (Lẻ + Combo + SP)
+                <div className="text-xs text-purple-600 dark:text-purple-300 font-semibold uppercase">
+                  Thưởng Hoa Hồng Doanh Thu
                 </div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  Doanh thu ghi nhận:{' '}
+                  <strong className="text-purple-600 dark:text-purple-300 tabular-nums">
+                    {formatCurrency(activePaystub.totalRevenue || 0)}
+                  </strong>
+                  {activePaystub.revCommissionRate ? (
+                    <span className="ml-1 text-xs text-purple-500 font-semibold">
+                      ({activePaystub.revCommissionRate}%)
+                    </span>
+                  ) : (
+                    <span className="ml-1 text-xs text-slate-400 font-normal">
+                      (Chưa đạt mốc tối thiểu 50.000.000 đ để hưởng hoa hồng)
+                    </span>
+                  )}
+                </div>
+                {!isDayMode &&
+                  !isPastPeriod &&
+                  (() => {
+                    const proj = getProjectedRecord(activePaystub);
+                    return (
+                      <div className="text-xs text-purple-400/90 mt-0.5">
+                        🔮 Dự đoán cuối {periodNoun}: Doanh thu ~{formatCurrency(proj.projectedRevenue)} (
+                        {proj.projectedRevRate}%) → Thưởng: ~{formatCurrency(proj.projectedRevenueBonus)}
+                      </div>
+                    );
+                  })()}
               </div>
-              <div className="text-base font-bold text-purple-600 dark:text-purple-400">
-                +{formatCurrency(activePaystub.revenueBonus)}
+              <div className="text-right">
+                <div className="text-base font-bold text-purple-600 dark:text-purple-400">
+                  +{formatCurrency(activePaystub.revenueBonus)}
+                </div>
+                {!isDayMode &&
+                  !isPastPeriod &&
+                  (() => {
+                    const proj = getProjectedRecord(activePaystub);
+                    return proj.projectedRevenueBonus > 0 ? (
+                      <div className="text-xs text-purple-400/80 font-medium tabular-nums">
+                        ~{formatCurrency(proj.projectedRevenueBonus)}
+                      </div>
+                    ) : null;
+                  })()}
               </div>
             </div>
 

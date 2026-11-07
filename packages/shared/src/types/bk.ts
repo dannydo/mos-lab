@@ -327,6 +327,8 @@ export interface BkPaystubRecord extends HolidayPayBreakdown {
   doneBonus: number;
   tipBonus: number;
   revenueBonus: number;
+  totalRevenue?: number;
+  revCommissionRate?: number;
   totalIncome: number;
 }
 
@@ -342,7 +344,23 @@ export interface BkPaystubResponse {
     totalHolidayPremiumPay: number;
     totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
+    totalRevenue?: number;
   };
+}
+
+export const DEFAULT_BK_REV_BONUS_TIERS: Array<{ minRev: number; rate: number }> = [
+  { minRev: 50000000, rate: 0.7 },
+  { minRev: 100000000, rate: 0.8 },
+  { minRev: 150000000, rate: 0.9 },
+  { minRev: 200000000, rate: 1.0 },
+  { minRev: 250000000, rate: 1.1 },
+  { minRev: 300000000, rate: 1.2 },
+];
+
+export function getRevCommissionRate(totalRevenue: number, tiers?: Array<{ minRev: number; rate: number }>): number {
+  const sorted = [...(tiers || DEFAULT_BK_REV_BONUS_TIERS)].sort((a, b) => b.minRev - a.minRev);
+  const found = sorted.find((t) => totalRevenue >= t.minRev);
+  return found ? found.rate : 0;
 }
 
 export interface BkStaffOption {
