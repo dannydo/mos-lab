@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { message as antdMessage } from 'antd';
 import type { AiChatMessage, MosChatImageAttachment, MosChatImageMimeType, MosChatMessage, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
 import { removeVietnameseTones } from '@mos-lab/shared';
 import { cleanMarkdownForSpeech } from '../../voice-assistant/speech-utils';
@@ -1159,5 +1160,52 @@ export function hasUserReactedToMessage(
   if (!userKey) return false;
   return users.map(String).includes(userKey);
 }
+
+/**
+ * Sao chép nội dung tin nhắn hoặc link đính kèm vào clipboard (MOS-FEAT-205).
+ * Hỗ trợ fallback document.execCommand nếu navigator.clipboard không khả dụng.
+ */
+export async function copyMessageToClipboard(
+  text?: string | null,
+  attachments?: Array<{ url?: string; name?: string }> | null,
+  options?: { customSuccessMsg?: string }
+): Promise<boolean> {
+  const content = (text || '').trim();
+  let textToCopy = content;
+
+  if (!textToCopy && attachments && attachments.length > 0) {
+    const urls = attachments.map((a) => a.url).filter(Boolean);
+    if (urls.length > 0) {
+      textToCopy = urls.join('\n');
+    }
+  }
+
+  if (!textToCopy) {
+    antdMessage.warning('Tin nhắn không có nội dung để sao chép');
+    return false;
+  }
+
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(textToCopy);
+    } else if (typeof document !== 'undefined') {
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    antdMessage.success(options?.customSuccessMsg || 'Đã sao chép nội dung tin nhắn');
+    return true;
+  } catch {
+    antdMessage.error('Không thể sao chép vào bộ nhớ tạm');
+    return false;
+  }
+}
+
 
 

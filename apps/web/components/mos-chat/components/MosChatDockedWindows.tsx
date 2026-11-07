@@ -26,6 +26,7 @@ import {
   Paperclip,
   Check,
   ArrowDown,
+  Copy,
 } from 'lucide-react';
 import { Tooltip, Popover, Dropdown } from 'antd';
 import dayjs from 'dayjs';
@@ -46,6 +47,7 @@ import {
   scrollToMessageAndFlash,
   formatQuotePayload,
 } from '../utils/quoteUtils';
+import { copyMessageToClipboard } from '../utils/chat-helpers';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 import { isSpaceEmoji } from '../constants/chat-constants';
 
@@ -814,6 +816,19 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   >
                                     <MessageSquareReply size={10} />
                                   </button>
+                                  <button
+                                    type="button"
+                                    aria-label="Sao chép phản hồi"
+                                    title="Sao chép phản hồi này"
+                                    onClick={async () => {
+                                      await copyMessageToClipboard(reply.text, reply.attachments, {
+                                        customSuccessMsg: 'Đã sao chép phản hồi',
+                                      });
+                                    }}
+                                    className="opacity-60 hover:opacity-100 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded cursor-pointer transition-opacity text-slate-400 hover:text-amber-400"
+                                  >
+                                    <Copy size={10} />
+                                  </button>
                                 </div>
                                 <div className="break-words leading-relaxed" style={{ color: token.colorText }}>
                                   {renderRichTextMessage(reply.text, isMine, {
@@ -1193,6 +1208,19 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                         className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 text-neutral-400 hover:text-amber-400"
                                       >
                                         <AlarmClockPlus size={12} />
+                                      </button>
+                                    </Tooltip>
+                                    {/* Copy Message (MOS-FEAT-205) */}
+                                    <Tooltip title="Sao chép tin nhắn">
+                                      <button
+                                        type="button"
+                                        aria-label="Sao chép tin nhắn"
+                                        onClick={async () => {
+                                          await copyMessageToClipboard(m.text, m.attachments);
+                                        }}
+                                        className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 text-neutral-400 hover:text-amber-400"
+                                      >
+                                        <Copy size={12} />
                                       </button>
                                     </Tooltip>
                                   </div>

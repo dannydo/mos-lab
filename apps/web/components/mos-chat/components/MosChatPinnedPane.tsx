@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pin, CornerDownRight, MessageSquare, PinOff } from 'lucide-react';
+import { Pin, CornerDownRight, MessageSquare, PinOff, Copy } from 'lucide-react';
 import { Tooltip } from 'antd';
 import type { MosChatConversation, MosChatMessage } from '@mos-lab/shared';
+import { copyMessageToClipboard } from '../utils/chat-helpers';
 
 export interface MosChatPinnedPaneProps {
   pinnedMessages: MosChatMessage[];
@@ -130,6 +131,21 @@ export const MosChatPinnedPane: React.FC<MosChatPinnedPaneProps> = React.memo(
                     >
                       <CornerDownRight size={12} />
                       <span>Đi đến tin nhắn</span>
+                    </button>
+                  </Tooltip>
+
+                  {/* Nút sao chép tin nhắn (MOS-FEAT-205) */}
+                  <Tooltip title="Sao chép tin nhắn">
+                    <button
+                      type="button"
+                      aria-label="Sao chép tin nhắn"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await copyMessageToClipboard(m.text, m.attachments);
+                      }}
+                      className="w-6 h-6 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                    >
+                      <Copy size={13} />
                     </button>
                   </Tooltip>
 

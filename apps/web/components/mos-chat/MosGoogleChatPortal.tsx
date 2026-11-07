@@ -5261,6 +5261,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     ) {
       return;
     }
+    // Prevent triggering tap / subthread opening when user is selecting text to copy (MOS-FEAT-205)
+    if (typeof window !== 'undefined' && window.getSelection()?.toString()?.trim()) {
+      return;
+    }
     const msgId = m.id;
     const now = Date.now();
     const hasSubthread = Boolean(m.thread && m.thread.length > 0);

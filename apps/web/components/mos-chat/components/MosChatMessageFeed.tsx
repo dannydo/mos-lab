@@ -37,7 +37,7 @@ import {
 } from '@mos-lab/shared';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
+import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
 import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
@@ -957,7 +957,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                                   isPureSticker
                                     ? 'px-1 py-0.5 rounded-2xl'
                                     : `px-3.5 py-2 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}`
-                                } text-[13px] leading-relaxed break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all ${
+                                } text-[13px] leading-relaxed break-words max-w-[85%] cursor-pointer select-text active:scale-[0.985] transition-all ${
                                   m.isBuzzed ? 'ring-2 ring-amber-500/70 shadow-lg shadow-amber-500/15' : ''
                                 } ${hasSubthread ? 'hover:ring-1 hover:ring-amber-500/50' : ''}`}
                                 style={{
@@ -1561,6 +1561,24 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                           <Pin size={13} />
                         </button>
                       </Tooltip>
+
+                      {/* Copy Message Button (MOS-FEAT-205) */}
+                      {!m.isDeleted && (
+                        <Tooltip title="Sao chép tin nhắn">
+                          <button
+                            type="button"
+                            aria-label="Sao chép tin nhắn"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await copyMessageToClipboard(m.text, m.attachments);
+                            }}
+                            className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                            style={{ color: token.colorTextSecondary }}
+                          >
+                            <Copy size={13} />
+                          </button>
+                        </Tooltip>
+                      )}
 
                       {/* Buzz / Bump Urgent Message Button */}
                       {!m.isDeleted && (

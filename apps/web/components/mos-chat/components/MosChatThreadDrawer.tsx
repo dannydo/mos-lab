@@ -52,7 +52,7 @@ import { MosChatThreadChecklist } from './MosChatThreadChecklist';
 import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
+import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import {
   findSourceMessage,
@@ -1050,6 +1050,26 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <span>Trả lời</span>
                   </button>
                 </Tooltip>
+
+                {/* Copy Thread Root Message Button (MOS-FEAT-205) */}
+                {!activeThreadMessage.isDeleted && (
+                  <Tooltip title="Sao chép tin nhắn gốc">
+                    <button
+                      type="button"
+                      aria-label="Sao chép tin nhắn gốc trong luồng"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await copyMessageToClipboard(activeThreadMessage.text, activeThreadMessage.attachments, {
+                          customSuccessMsg: 'Đã sao chép nội dung tin nhắn gốc',
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors shrink-0"
+                    >
+                      <Copy size={12} />
+                      <span className="hidden sm:inline">Sao chép</span>
+                    </button>
+                  </Tooltip>
+                )}
               </div>
             </div>
             {activeThreadMessage.text && (
@@ -1631,6 +1651,25 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                             </Tooltip>
                           )}
                         </>
+                      )}
+
+                      {/* Copy Thread Reply Button (MOS-FEAT-205) */}
+                      {!r.isDeleted && (
+                        <Tooltip title="Sao chép phản hồi">
+                          <button
+                            type="button"
+                            aria-label="Sao chép phản hồi trong luồng"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await copyMessageToClipboard(r.text, r.attachments, {
+                                customSuccessMsg: 'Đã sao chép phản hồi',
+                              });
+                            }}
+                            className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-slate-400 hover:text-amber-400 transition-colors"
+                          >
+                            <Copy size={11} />
+                          </button>
+                        </Tooltip>
                       )}
 
                       {/* Buzz / Bump Urgent Reply Button */}
