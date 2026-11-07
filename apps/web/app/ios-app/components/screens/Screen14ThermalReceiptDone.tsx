@@ -133,7 +133,16 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
                 )
               ) : comboRedemption ? (
                 <div className="text-[10.5px] text-sky-700 font-bold">
-                  ✓ Trừ 1 lượt gói (Còn {comboRedemption.remainingAfterToday} lần)
+                  ✓ Trừ 1 lượt gói · Ví còn{' '}
+                  <span className="tabular-nums">
+                    {(comboRedemption.paidRemaining ?? 0) + (comboRedemption.bonusRemaining ?? 0)}
+                    {comboRedemption.totalSessions ? `/${comboRedemption.totalSessions}` : ''}
+                  </span>
+                  {(comboRedemption.paidRemaining !== undefined) && (
+                    <span className="font-semibold">
+                      {' '}({comboRedemption.paidRemaining} mua + {comboRedemption.bonusRemaining ?? 0} tặng)
+                    </span>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -174,7 +183,14 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
           {/* Item nếu chỉ trừ gói cũ */}
           {comboRedemption && !selectedCombo && (
             <div className="text-[10.5px] text-sky-900 bg-sky-50 p-2 rounded-lg border border-sky-200 tabular-nums">
-              • {comboRedemption.explanation} · Ví còn <strong>{comboRedemption.remainingAfterToday} lần</strong>
+              • {comboRedemption.explanation} · Ví còn{' '}
+              <strong>
+                {(comboRedemption.paidRemaining ?? 0) + (comboRedemption.bonusRemaining ?? 0)}
+                {comboRedemption.totalSessions ? `/${comboRedemption.totalSessions}` : ''} buổi
+              </strong>
+              {comboRedemption.paidRemaining !== undefined && (
+                <span> ({comboRedemption.paidRemaining} mua + {comboRedemption.bonusRemaining ?? 0} tặng)</span>
+              )}
             </div>
           )}
 

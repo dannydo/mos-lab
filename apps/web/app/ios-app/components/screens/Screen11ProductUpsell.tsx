@@ -18,6 +18,7 @@ import {
   Info,
   X,
   Eye,
+  ShoppingCart,
 } from 'lucide-react';
 import {
   WingsComboCategoryId,
@@ -144,6 +145,8 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
 
   const [selectedComboId, setSelectedComboId] = useState<string>(defaultComboSelection);
   const [deductTodayIntoCombo, setDeductTodayIntoCombo] = useState<boolean>(true);
+  // Ẩn section mua combo mới khi khách đang có gói combo còn lượt; CVL nhấn "Mua Thêm Combo" mới mở ra
+  const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!isExistingComboLive);
 
   React.useEffect(() => {
     setSelectedComboId(defaultComboSelection);
@@ -334,6 +337,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             recognizedRevenueToday: redemptionAccounting.recognizedRevenueToday,
             remainingAfterToday: redemptionAccounting.walletAfter.totalRemaining,
             explanation: redemptionAccounting.explanation,
+            // === Breakdown ví gói chi tiết ===
+            totalSessions: redemptionAccounting.walletBefore.paidNew + redemptionAccounting.walletBefore.paidRefill + redemptionAccounting.walletBefore.bonusNew + redemptionAccounting.walletBefore.bonusRefill + 1, // +1 vì chưa trừ buổi hôm nay
+            paidRemaining: redemptionAccounting.walletAfter.paidNew + redemptionAccounting.walletAfter.paidRefill,
+            bonusRemaining: redemptionAccounting.walletAfter.bonusNew + redemptionAccounting.walletAfter.bonusRefill,
           }
         : null;
 
@@ -458,16 +465,17 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
         </div>
 
-        {/* Section 2: GÓI COMBO CHỐT TẠI GIƯỜNG — KHỚP ĐÚNG DÒNG MI & SỐ SỢI CỦA CA LÀM */}
-        <div>
-          <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-            <span>2. GÓI COMBO ĐÚNG DÒNG MI & HẠCH TOÁN VÍ</span>
-            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
-              +{Math.round(comboBonus / 1000)}🪶
-            </span>
-          </div>
+        {/* Section 2: GÓI COMBO ĐÚNG DÒNG MI & HẠCH TOÁN VÍ — ẩn khi khách có combo đang chạy */}
+        {(!isExistingComboLive || showNewComboSection) && (
+          <div>
+            <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+              <span>2. GÓI COMBO ĐÚNG DÒNG MI &amp; HẠCH TOÁN VÍ</span>
+              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
+                +{Math.round(comboBonus / 1000)}🪶
+              </span>
+            </div>
 
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
+            <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
             {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
             <div className="bg-[#1C1C1E] text-white rounded-xl p-2.5 flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -691,7 +699,20 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               </div>
             )}
 
-            {/* Dynamic Matched Combo Packages List — 1 Unified Card với Tier Selector */}
+            {/* Nút "Mua Thêm Combo" — chỉ hiện khi khách có combo đang chạy và chưa muốn mua thêm */}
+            {isExistingComboLive && !showNewComboSection && (
+              <button
+                type="button"
+                onClick={() => setShowNewComboSection(true)}
+                className="mt-1 w-full py-2 px-3 rounded-xl border border-dashed border-amber-400 text-amber-700 bg-amber-50 text-[12px] font-extrabold flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>Mua Thêm Combo</span>
+              </button>
+            )}
+          </div>
+
+          {/* Dynamic Matched Combo Packages List — 1 Unified Card với Tier Selector */}
             <WingsUnifiedComboCard
               packages={matchedPackages}
               customerName={customerName}
@@ -920,10 +941,11 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               {servicePrice.toLocaleString('vi-VN')}đ)
             </button>
           </div>
-        </div>
+        )}
 
-        {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI (MUA CÙNG LÚC VỚI MI TRÊN) */}
-        <div>
+        {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI — ẩn khi khách có combo đang chạy */}
+        {(!isExistingComboLive || showNewComboSection) && (
+          <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-[#FFB400]" />
@@ -973,6 +995,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             )}
           </div>
         </div>
+        )}
 
         {/* Section 3: Summary card */}
         <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-2">

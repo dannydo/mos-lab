@@ -36,7 +36,6 @@ export function Screen07LashProgressBefore({
   onAutoSavePhoto,
 }: Screen07LashProgressBeforeProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const libraryInputRef = useRef<HTMLInputElement>(null);
   const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'uploading' | 'synced' | 'offline'>('idle');
 
@@ -139,7 +138,7 @@ export function Screen07LashProgressBefore({
       {/* 1. Header Navigation: Bỏ hoàn toàn thông tin Giường và Online theo yêu cầu */}
       <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ca Làm" />
 
-      {/* Hidden file inputs for iPhone Camera and Photo Library */}
+      {/* Hidden file input — camera only (capture="environment"), không cho tải từ thư viện */}
       <input
         ref={cameraInputRef}
         type="file"
@@ -148,7 +147,6 @@ export function Screen07LashProgressBefore({
         className="hidden"
         onChange={handleFileChange}
       />
-      <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {/* 2. Steps Subheader (Gom thành 1 thanh ngang Segmented Stepper chuẩn iOS) */}
       <LashServicingStepper activeStep={1} />
@@ -269,26 +267,15 @@ export function Screen07LashProgressBefore({
             </div>
           </div>
 
-          {/* Action Buttons to Trigger iPhone Camera or Photo Library */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              className="py-3 px-3 bg-neutral-900 text-white hover:bg-black font-extrabold text-[13px] rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
-            >
-              <Camera className="w-4 h-4 text-amber-400" />
-              <span>{photoPreview ? 'Chụp lại Camera' : 'Chụp Bằng Camera'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => libraryInputRef.current?.click()}
-              className="py-3 px-3 bg-[#E5E7EB] hover:bg-neutral-300 text-gray-800 font-extrabold text-[13px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
-            >
-              <ImageIcon className="w-4 h-4 text-blue-600" />
-              <span>Chọn Từ Thư Viện</span>
-            </button>
-          </div>
+          {/* Action Button — Camera Only */}
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="w-full py-3 px-3 bg-neutral-900 text-white hover:bg-black font-extrabold text-[13px] rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer"
+          >
+            <Camera className="w-4 h-4 text-amber-400" />
+            <span>{photoPreview ? 'Chụp lại Camera' : 'Chụp Bằng Camera'}</span>
+          </button>
         </div>
 
         {/* 5. Big CTA Button */}

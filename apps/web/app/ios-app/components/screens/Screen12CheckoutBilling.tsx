@@ -294,7 +294,19 @@ export function Screen12CheckoutBilling({
                   )
                 ) : comboRedemption ? (
                   <div className="text-[11px] text-sky-700 font-semibold mt-0.5">
-                    ✓ {comboRedemption.explanation} (Ví còn {comboRedemption.remainingAfterToday} lần)
+                    <div>✓ {comboRedemption.explanation}</div>
+                    <div className="tabular-nums">
+                      Ví còn:{' '}
+                      <span className="font-black">
+                        {(comboRedemption.paidRemaining ?? 0) + (comboRedemption.bonusRemaining ?? 0)}
+                        {comboRedemption.totalSessions ? `/${comboRedemption.totalSessions}` : ''}
+                      </span>
+                      {(comboRedemption.paidRemaining !== undefined && comboRedemption.bonusRemaining !== undefined) && (
+                        <span className="text-sky-600">
+                          {' '}({comboRedemption.paidRemaining} mua + {comboRedemption.bonusRemaining} tặng)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   upgradePrice > 0 && (

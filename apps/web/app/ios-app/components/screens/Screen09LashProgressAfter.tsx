@@ -14,7 +14,7 @@ import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
 import {
   Camera,
-  Image as ImageIcon,
+
   Zap,
   CheckCircle2,
   Award,
@@ -39,7 +39,6 @@ export function Screen09LashProgressAfter({
   onAutoSavePhoto,
 }: Screen09LashProgressAfterProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const libraryInputRef = useRef<HTMLInputElement>(null);
   const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'uploading' | 'synced' | 'offline'>('idle');
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; title: string } | null>(null);
@@ -224,7 +223,7 @@ export function Screen09LashProgressAfter({
       {/* 1. Header Navigation */}
       <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Giờ Phục Vụ" />
 
-      {/* Hidden file inputs for iPhone Camera and Photo Library */}
+      {/* Hidden file input — camera only (capture="environment"), không cho tải từ thư viện */}
       <input
         ref={cameraInputRef}
         type="file"
@@ -233,7 +232,6 @@ export function Screen09LashProgressAfter({
         className="hidden"
         onChange={handleFileChange}
       />
-      <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {/* Lightbox Zoom Modal */}
       {zoomPhoto && (
@@ -365,25 +363,15 @@ export function Screen09LashProgressAfter({
             )}
           </div>
 
-          {/* Nút chụp ảnh Camera & Chọn Thư Viện */}
-          <div className="grid grid-cols-2 gap-2 pt-0.5">
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              className="py-3 px-2 bg-neutral-900 text-white font-extrabold text-[12.5px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
-            >
-              <Camera className="w-4 h-4 text-amber-400" />
-              <span>{afterPhotoPreview ? 'Chụp lại After' : 'Chụp Bằng Camera'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => libraryInputRef.current?.click()}
-              className="py-3 px-2 bg-[#E5E7EB] text-gray-800 font-extrabold text-[12.5px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
-            >
-              <ImageIcon className="w-4 h-4 text-blue-600" />
-              <span>Chọn Từ Thư Viện</span>
-            </button>
-          </div>
+          {/* Nút chụp ảnh Camera Only */}
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="w-full py-3 px-2 bg-neutral-900 text-white font-extrabold text-[12.5px] rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-98 transition-all cursor-pointer"
+          >
+            <Camera className="w-4 h-4 text-amber-400" />
+            <span>{afterPhotoPreview ? 'Chụp lại After' : 'Chụp Bằng Camera'}</span>
+          </button>
         </div>
 
         {/* KHỐI 2: ĐỐI CHIẾU NHANH VỚI 2 ẢNH TRƯỚC (THU GỌN THÀNH 2 THUMBNAIL PHÍA DƯỚI) */}

@@ -293,8 +293,12 @@ export interface BookingItem {
     upgradeVolumeSurcharge: number;
     totalCustomerPayToday: number;
     recognizedRevenueToday: number;
-    remainingAfterToday: number;
+    remainingAfterToday: number; // tổng lượt còn (backward compat)
     explanation: string;
+    // === Breakdown chi tiết ví gói (mới) ===
+    totalSessions: number;    // Tổng buổi của gói
+    paidRemaining: number;    // Buổi mua còn lại sau hôm nay
+    bonusRemaining: number;   // Buổi tặng còn lại sau hôm nay
   } | null;
   attributes?: {
     style: string;
