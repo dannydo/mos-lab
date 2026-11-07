@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { isAdminOrSuperAdminRole, resolveLockedIosRoleForUser, maskPhoneNumber } from '@mos-lab/shared';
+import {
+  isAdminOrSuperAdminRole,
+  resolveLockedIosRoleForUser,
+  maskPhoneNumber,
+  canViewUnmaskedCustomerPhone,
+} from '@mos-lab/shared';
 import {
   BookingItem,
   INITIAL_BOOKINGS,
@@ -285,7 +290,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         b.status === 'SERVICING' ||
         Boolean(activeServicingBooking && Number(b.id) === Number(activeServicingBooking.id));
 
-      const maskedPhone = !isAdmin ? maskPhoneNumber(b.customerPhone) : b.customerPhone;
+      const canViewFull = isAdmin || canViewUnmaskedCustomerPhone(role);
+      const maskedPhone = !canViewFull ? maskPhoneNumber(b.customerPhone) : b.customerPhone;
 
       if (isServicing && b.status !== 'SERVICING' && b.status !== 'DONE') {
         return {

@@ -9,6 +9,7 @@ import {
   normalizeCvFeatherRole,
   formatComboName,
   maskPhoneNumber,
+  canViewUnmaskedCustomerPhone,
 } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../../../ios-app/state/mockData';
 
@@ -284,7 +285,7 @@ function formatTimeSlot(dateStart: Date | string | null, durationMinutes: number
 }
 
 function formatPhoneNumberDots(phone: string | null | undefined, isMasked: boolean = false): string {
-  if (!phone) return isMasked ? 'XXXX******' : '0901.xxx.xxx';
+  if (!phone) return isMasked ? '**** ******' : '0901.xxx.xxx';
   if (isMasked) {
     return maskPhoneNumber(phone);
   }
@@ -353,6 +354,7 @@ export async function GET(request: NextRequest) {
     })();
     const requestedDate = searchParams.get('date') || todayVn;
     const isAdmin = authCheck.user?.careerTier === 'ADMIN';
+    const canViewFullPhone = isAdmin || canViewUnmaskedCustomerPhone(searchParams.get('role'));
     const effectiveRole = isAdmin
       ? (searchParams.get('role') || 'CVL').toUpperCase()
       : authCheck.user?.careerTier || 'CVL';
@@ -885,7 +887,7 @@ export async function GET(request: NextRequest) {
         id: Number(r.id),
         orderNumber: orderNum,
         customerName: (r.customer_name || 'Khách').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim(),
-        customerPhone: formatPhoneNumberDots(r.customer_phone, !isAdmin),
+        customerPhone: formatPhoneNumberDots(r.customer_phone, !canViewFullPhone),
         customerId,
         customerAvatar: resolveCustomerAvatar(r.customer_avatar),
         assignedStaffAvatar: resolveStaffAvatar(r.staff_avatar),
