@@ -38,6 +38,9 @@ import type {
   SafeAny,
   SaveThreadAsWorkflowTemplateRequest,
   SaveThreadAsWorkflowTemplateResponse,
+  SearchMosChatMessagesQuery,
+  SearchMosChatMessagesResponse,
+  MosChatSearchResultItem,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
   UpdateMosChatNicknameRequest,
@@ -338,6 +341,17 @@ export const chatApi = {
       const res = await api.post('/chat/workflows/templates/from-thread', payload);
       invalidateApiGetCache(['/chat/bootstrap', '/chat/workflows']);
       return res.data;
+    },
+    searchMessages: async (
+      params: SearchMosChatMessagesQuery,
+      options?: ApiRequestOptions
+    ): Promise<SearchMosChatMessagesResponse> => {
+      return dedupeApiGet<SearchMosChatMessagesResponse>(
+        '/chat/messages/search',
+        params as unknown as Record<string, string | number | boolean | undefined>,
+        500,
+        options
+      );
     },
   },
 };

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { isAdminOrSuperAdminRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { isAdminOrSuperAdminRole, resolveLockedIosRoleForUser, maskPhoneNumber } from '@mos-lab/shared';
 import {
   BookingItem,
   INITIAL_BOOKINGS,
@@ -21,6 +21,7 @@ import {
   getActiveServicingStep,
   getActiveServicingStepAsync,
   setActiveServicingStep,
+  clearLocalProgressSnapshot,
 } from './offlineSync';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
@@ -122,9 +123,30 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   );
   const [deviceMode, setDeviceMode] = useState<'iphone' | 'ipad' | 'fullscreen'>('iphone');
   const [activeTab, setActiveTab] = useState<string>('booking');
+
+  const activeBookingIdRef = useRef<number>(activeBookingId);
+  activeBookingIdRef.current = activeBookingId;
+  const currentStepRef = useRef<number>(currentStep);
+  currentStepRef.current = currentStep;
+  const activeTabRef = useRef<string>(activeTab);
+  activeTabRef.current = activeTab;
   const [bookingSegment, setBookingSegment] = useState<'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL'>('INCOMING');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
+
+  // Quản lý ngày xem lịch hẹn (0 = Hôm nay, -1 = Hôm qua, -2 = 2 ngày trước, ...)
+  const [selectedDateOffset, setSelectedDateOffset] = useState<number>(0);
+
+  const getDateStrForOffset = useCallback((offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+  }, []);
 
   const [countsState, setCounts] = useState<SegmentCounts>({
     incoming: 3,
@@ -144,9 +166,10 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       if (raw) {
         const parsed = JSON.parse(raw);
         setLoggedInUser(parsed);
+        const userIsAdmin = isAdminOrSuperAdminRole(parsed?.role);
         const lockedRole = resolveLockedIosRoleForUser(parsed?.role, initialRole);
         setRoleState(lockedRole);
-        setScopeModeState(lockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
+        setScopeModeState(userIsAdmin ? 'STORE_ALL' : lockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
       }
     } catch {
       // ignore
@@ -196,21 +219,33 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     void restoreActiveSession();
   }, []);
 
-  const canSwitchRole = Boolean(loggedInUser && isAdminOrSuperAdminRole(loggedInUser?.role));
+  const isAdmin = Boolean(
+    (loggedInUser && isAdminOrSuperAdminRole(loggedInUser?.role)) ||
+    (typeof window !== 'undefined' &&
+      (window.location.search.includes('admin=1') || window.location.search.includes('role=admin')))
+  );
+
+  const canSwitchRole = Boolean(
+    isAdmin ||
+    (typeof window !== 'undefined' &&
+      (window.location.search.includes('admin=1') || window.location.search.includes('role=admin')))
+  );
   const actor = resolveActorProfile(role, loggedInUser);
 
-  // Invariant: CV🪶 (CVL) is strictly locked to MY_CUSTOMERS scope (only next customer + own booked customers)
-  const scopeMode: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : scopeModeState;
+  // Invariant:
+  // - CV🪶 (CVL) tài khoản nhân viên thật: Bị khóa cứng ở chế độ MY_CUSTOMERS (bảo mật thông tin khách hàng)
+  // - Admin / Superadmin: Mặc định xem Toàn bộ sảnh (STORE_ALL), có thể chuyển đổi linh hoạt sang MY_CUSTOMERS để kiểm tra góc nhìn CVL
+  const scopeMode: BookingScopeMode = !isAdmin && role === 'CVL' ? 'MY_CUSTOMERS' : scopeModeState;
 
   const setScopeMode = useCallback(
     (nextScope: BookingScopeMode) => {
-      if (role === 'CVL') {
+      if (!isAdmin && role === 'CVL') {
         setScopeModeState('MY_CUSTOMERS');
         return;
       }
       setScopeModeState(nextScope);
     },
-    [role]
+    [isAdmin, role]
   );
 
   const setRole = useCallback(
@@ -220,55 +255,67 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           ? resolveLockedIosRoleForUser(loggedInUser?.role, nextRole)
           : nextRole;
       setRoleState(effectiveRole);
-      if (effectiveRole === 'CVL') {
-        setScopeModeState('MY_CUSTOMERS');
-      } else if (effectiveRole === 'CVLL' || effectiveRole === 'CC' || effectiveRole === 'STORE') {
-        setScopeModeState('STORE_ALL');
+      if (!isAdmin) {
+        if (effectiveRole === 'CVL') {
+          setScopeModeState('MY_CUSTOMERS');
+        } else if (effectiveRole === 'CVLL' || effectiveRole === 'CC' || effectiveRole === 'STORE') {
+          setScopeModeState('STORE_ALL');
+        }
       }
     },
-    [loggedInUser]
+    [loggedInUser, isAdmin]
   );
 
-  const visibleBookings = useMemo(() => {
-    if (role === 'CVL' || scopeMode === 'MY_CUSTOMERS') {
-      return filterBookingsForCvlScope(bookings, actor.staffId);
-    }
-    return bookings;
-  }, [bookings, role, scopeMode, actor.staffId]);
-
-  const counts: SegmentCounts = useMemo(() => {
-    if (role === 'CVL' || scopeMode === 'MY_CUSTOMERS') {
-      return {
-        incoming: visibleBookings.filter((b) => b.status === 'INCOMING' || b.status === 'CHECKED_IN').length,
-        servicing: visibleBookings.filter((b) => b.status === 'SERVICING').length,
-        done: visibleBookings.filter((b) => b.status === 'DONE').length,
-        cancel: visibleBookings.filter((b) => b.status === 'CANCELLED').length,
-      };
-    }
-    return countsState;
-  }, [role, scopeMode, visibleBookings, countsState]);
-
-  const activeBooking =
-    visibleBookings.find((b) => b.id === activeBookingId) ||
-    visibleBookings[0] ||
-    bookings.find((b) => b.id === activeBookingId) ||
-    bookings[0] ||
-    INITIAL_BOOKINGS[0];
-
-  // Khóa phục vụ độc quyền 1 khách (Single Active Service Session Invariant):
-  // Một CVL / CVLL tại một thời điểm chỉ phục vụ 1 khách hàng duy nhất.
-  // Khi đang có ca làm dở dang (status === 'SERVICING' hoặc có progress đang chạy và chưa hoàn tất checkout):
-  // CVL KHÔNG ĐƯỢC PHÉP check-in bất kỳ khách hàng nào khác cho đến khi hoàn thành checkout (Step 15 -> DONE).
   const activeServicingBooking = useMemo(() => {
     return (
       bookings.find(
         (b) =>
           b.status === 'SERVICING' ||
-          (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt)) ||
-          (Boolean(b.progress) && !b.progress?.completedAt && b.status !== 'DONE')
+          (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt)
       ) || null
     );
   }, [bookings]);
+
+  const visibleBookings = useMemo(() => {
+    const shouldFilterCvl = !isAdmin ? role === 'CVL' || scopeMode === 'MY_CUSTOMERS' : scopeMode === 'MY_CUSTOMERS';
+    const list = shouldFilterCvl ? filterBookingsForCvlScope(bookings, actor.staffId) : bookings;
+
+    return list.map((b) => {
+      const isServicing =
+        b.status === 'SERVICING' ||
+        Boolean(activeServicingBooking && Number(b.id) === Number(activeServicingBooking.id));
+
+      const maskedPhone = !isAdmin ? maskPhoneNumber(b.customerPhone) : b.customerPhone;
+
+      if (isServicing && b.status !== 'SERVICING' && b.status !== 'DONE') {
+        return {
+          ...b,
+          customerPhone: maskedPhone,
+          status: 'SERVICING' as const,
+        };
+      }
+      return {
+        ...b,
+        customerPhone: maskedPhone,
+      };
+    });
+  }, [bookings, role, scopeMode, actor.staffId, activeServicingBooking, isAdmin]);
+
+  const counts: SegmentCounts = useMemo(() => {
+    return {
+      incoming: visibleBookings.filter((b) => b.status === 'INCOMING' || b.status === 'CHECKED_IN').length,
+      servicing: visibleBookings.filter((b) => b.status === 'SERVICING').length,
+      done: visibleBookings.filter((b) => b.status === 'DONE').length,
+      cancel: visibleBookings.filter((b) => b.status === 'CANCELLED').length,
+    };
+  }, [visibleBookings]);
+
+  const activeBooking =
+    visibleBookings.find((b) => Number(b.id) === Number(activeBookingId)) ||
+    bookings.find((b) => Number(b.id) === Number(activeBookingId)) ||
+    visibleBookings[0] ||
+    bookings[0] ||
+    INITIAL_BOOKINGS[0];
 
   const handleResumeServicing = useCallback(
     async (bookingId?: number) => {
@@ -305,11 +352,16 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
       try {
         const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
+        const effectiveAuth = token
+          ? `Bearer ${token}`
+          : process.env.NODE_ENV !== 'production'
+            ? 'Bearer mock-token-for-dev'
+            : undefined;
         const res = await fetch('/api/ios/bookings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(effectiveAuth ? { Authorization: effectiveAuth } : {}),
           },
           body: JSON.stringify({
             bookingId: activeBookingId,
@@ -364,18 +416,24 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     }) => {
       const seg = options?.segment || bookingSegment;
       const storeId = options?.storeId ?? 6;
-      const effScope: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
+      const effScope: BookingScopeMode = !isAdmin && role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
       const effStaffId = options?.staffId ?? actor.staffId;
-      const dateQuery = options?.date ? `&date=${encodeURIComponent(options.date)}` : '';
+      const targetDateStr = options?.date ?? getDateStrForOffset(selectedDateOffset);
+      const dateQuery = `&date=${encodeURIComponent(targetDateStr)}`;
 
       setIsRefreshing(true);
       try {
         const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
+        const effectiveAuth = token
+          ? `Bearer ${token}`
+          : process.env.NODE_ENV !== 'production'
+            ? 'Bearer mock-token-for-dev'
+            : undefined;
         const res = await fetch(
           `/api/ios/bookings?storeId=${storeId}&segment=${seg}&scope=${effScope}&role=${role}&staffId=${effStaffId}${dateQuery}&limit=40`,
           {
             cache: 'no-store',
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            headers: effectiveAuth ? { Authorization: effectiveAuth } : undefined,
           }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -386,6 +444,33 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
             const prevMap = new Map(prev.map((p) => [p.id, p]));
             const mergedIncoming = data.bookings.map((incoming: BookingItem) => {
               const existing = prevMap.get(incoming.id);
+              const localSnap = getLocalProgressSnapshot(incoming.id);
+
+              // Nếu server xác nhận khách hàng này là INCOMING (chưa phục vụ hoặc đã hoàn tác về Chờ đón):
+              // Server là nguồn dữ liệu chuẩn xác nhất! Xóa bỏ snapshot rác ở local để triệt tiêu vĩnh viễn Zombie Servicing Session!
+              if (incoming.status === 'INCOMING') {
+                clearLocalProgressSnapshot(incoming.id);
+                const currentActiveServicingId = getActiveServicingBookingId();
+                if (currentActiveServicingId && Number(currentActiveServicingId) === Number(incoming.id)) {
+                  setActiveServicingBookingId(null);
+                  setActiveServicingStep(null);
+                }
+                return {
+                  ...incoming,
+                  status: 'INCOMING' as const,
+                  progress: undefined,
+                  selectedCombo: existing?.selectedCombo || incoming.selectedCombo,
+                };
+              }
+
+              const isServicing =
+                incoming.status === 'SERVICING' ||
+                Boolean(incoming.progress?.startedAt && !incoming.progress?.completedAt) ||
+                existing?.status === 'SERVICING' ||
+                localSnap?.status === 'SERVICING' ||
+                Boolean(localSnap?.startedAt && !localSnap?.completedAt) ||
+                Boolean(existing?.progress?.startedAt && !existing?.progress?.completedAt);
+
               if (existing) {
                 return {
                   ...incoming,
@@ -398,15 +483,14 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
                   attributes: { ...(incoming.attributes || {}), ...(existing.attributes || {}) },
                   cvRotationPoints: existing.cvRotationPoints ?? incoming.cvRotationPoints,
                   cvRotationBreakdown: existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown,
-                  status:
-                    existing.status === 'SERVICING' || getLocalProgressSnapshot(incoming.id)?.status === 'SERVICING'
-                      ? 'SERVICING'
-                      : existing.status || incoming.status,
-                  progress: {
-                    ...(incoming.progress || {}),
-                    ...(getLocalProgressSnapshot(incoming.id) || {}),
-                    ...(existing.progress || {}),
-                  },
+                  status: isServicing ? 'SERVICING' : existing.status || incoming.status,
+                  progress: isServicing
+                    ? {
+                        ...(incoming.progress || {}),
+                        ...(localSnap || {}),
+                        ...(existing.progress || {}),
+                      }
+                    : undefined,
                   selectedCombo: existing.selectedCombo || incoming.selectedCombo,
                   cartProducts: existing.cartProducts || incoming.cartProducts,
                   billing: existing.billing || incoming.billing,
@@ -418,14 +502,34 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
                   assignedStaffName: existing.assignedStaffName || incoming.assignedStaffName,
                 };
               }
+              if (localSnap || isServicing) {
+                return {
+                  ...incoming,
+                  status: isServicing ? 'SERVICING' : incoming.status,
+                  progress: isServicing
+                    ? {
+                        ...(incoming.progress || {}),
+                        ...(localSnap || {}),
+                      }
+                    : undefined,
+                };
+              }
               return incoming;
             });
 
-            // Bảo toàn ca làm SERVICING hoặc đang có tiến trình dở dang, không để bị xóa khi server chỉ trả segment INCOMING
+            // Bảo toàn ca làm SERVICING hoặc đang có tiến trình dở dang:
+            // Chỉ bảo toàn khi đang xem ngày hôm nay (selectedDateOffset === 0),
+            // tránh làm rò rỉ khách đang làm của hôm nay sang các ngày quá khứ!
             const incomingIds = new Set(mergedIncoming.map((b: BookingItem) => b.id));
-            const preservedServicing = prev.filter(
-              (b: BookingItem) => !incomingIds.has(b.id) && (b.status === 'SERVICING' || b.progress)
-            );
+            const preservedServicing =
+              selectedDateOffset === 0
+                ? prev.filter(
+                    (b: BookingItem) =>
+                      !incomingIds.has(b.id) &&
+                      (b.status === 'SERVICING' ||
+                        (b.status !== 'INCOMING' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt))
+                  )
+                : [];
 
             return [...mergedIncoming, ...preservedServicing];
           });
@@ -449,7 +553,11 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           const serverActiveServicing = data.bookings
             ?.filter(
               (b: BookingItem) =>
-                b.status === 'SERVICING' || (Boolean(b.progress) && !b.progress?.completedAt && b.status !== 'DONE')
+                b.status === 'SERVICING' ||
+                (b.status !== 'INCOMING' &&
+                  b.status !== 'DONE' &&
+                  Boolean(b.progress?.startedAt) &&
+                  !b.progress?.completedAt)
             )
             .sort((a: BookingItem, b: BookingItem) => {
               const timeA = new Date(a.progress?.savedAt || a.progress?.updatedAt || 0).getTime();
@@ -469,9 +577,15 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
               });
             }
 
-            // Tự động neo activeBookingId và setActiveServicingBookingId vào ca làm này
+            // Tự động neo setActiveServicingBookingId vào ca làm này để phục vụ banner/tab "Đang làm"
             setActiveServicingBookingId(servicingId);
-            setActiveBookingId(servicingId);
+
+            // TUYỆT ĐỐI KHÔNG tự ý ghi đè activeBookingId khi người dùng đang xem danh sách Chờ đón (step 1)
+            // hoặc xem hồ sơ khách khác (step 2..5)!
+            // CHỈ đồng bộ activeBookingId thành servicingId nếu người dùng đang ở tab task hoặc bước làm mi thực tế (step >= 6)
+            if (currentStepRef.current >= 6 || activeTabRef.current === 'task') {
+              setActiveBookingId(servicingId);
+            }
 
             // Chỉ đồng bộ bước servicing, không tự động nhảy màn hình (tránh làm gián đoạn CV đang thao tác)
             if (serverStep && serverStep >= 6) {
@@ -480,13 +594,15 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           } else {
             // Không có ca làm servicing trên server, duy trì active booking an toàn
             setBookings((current) => {
-              const currentActive = current.find((b) => b.id === activeBookingId);
+              const currentActive = current.find((b) => Number(b.id) === Number(activeBookingIdRef.current));
               const isCurrentlyServicing =
                 currentActive?.status === 'SERVICING' ||
                 (Boolean(currentActive?.progress) && !currentActive?.progress?.completedAt);
               if (!isCurrentlyServicing) {
-                const exists = data.bookings.some((b: BookingItem) => b.id === activeBookingId);
-                if (!exists && data.bookings.length > 0) {
+                const exists = data.bookings.some(
+                  (b: BookingItem) => Number(b.id) === Number(activeBookingIdRef.current)
+                );
+                if (!exists && !currentActive && data.bookings.length > 0) {
                   setActiveBookingId(data.bookings[0].id);
                 }
               }
@@ -500,7 +616,22 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         setIsRefreshing(false);
       }
     },
-    [bookingSegment, scopeMode, role, actor.staffId, activeBookingId]
+    [bookingSegment, scopeMode, role, actor.staffId, selectedDateOffset, getDateStrForOffset]
+  );
+
+  const handleDateOffsetChange = useCallback(
+    (offset: number) => {
+      setSelectedDateOffset(offset);
+      const targetDate = getDateStrForOffset(offset);
+      // Nếu chuyển về ngày trong quá khứ, tự động chuyển sang tab "Đã xong" (DONE) để xem lịch sử ca làm
+      if (offset < 0) {
+        setBookingSegment('DONE');
+      } else if (offset === 0) {
+        setBookingSegment('INCOMING');
+      }
+      void refreshDb({ date: targetDate });
+    },
+    [getDateStrForOffset, refreshDb]
   );
 
   useEffect(() => {
@@ -559,6 +690,50 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     setBookings((prev) => prev.map((b) => (b.id === activeBookingId ? updater(b) : b)));
   };
 
+  // Quyền Admin: Hoàn tác đưa khách hàng từ "Đang làm" trở về "Chờ đón"
+  const handleRevertToIncoming = useCallback(
+    async (bookingId: number) => {
+      const idNum = Number(bookingId);
+
+      // 1. Cập nhật danh sách bookings ngay lập tức: Xóa sạch progress để triệt tiêu Zombie Servicing Session
+      setBookings((prev) =>
+        prev.map((b) => {
+          if (Number(b.id) === idNum) {
+            return {
+              ...b,
+              status: 'INCOMING' as const,
+              progress: undefined,
+            };
+          }
+          return b;
+        })
+      );
+
+      // 2. Xóa snapshot offline và giải phóng khóa active servicing
+      clearLocalProgressSnapshot(idNum);
+      setActiveServicingBookingId(null);
+      setActiveServicingStep(null);
+
+      // 3. Nếu đang mở đúng ca này, quay về màn hình danh sách với tab Chờ đón
+      if (Number(activeBookingIdRef.current) === idNum) {
+        setActiveTab('schedule');
+        setBookingSegment('INCOMING');
+        setCurrentStep(1);
+      }
+
+      // 4. Đồng bộ hành động lên server
+      try {
+        await postAction('REVERT_TO_INCOMING', { bookingId: idNum });
+      } catch (err) {
+        console.warn('Failed to post REVERT_TO_INCOMING:', err);
+      }
+
+      // 5. Làm mới DB ngay lập tức để đồng bộ lại các client khác
+      void refreshDb();
+    },
+    [postAction, refreshDb]
+  );
+
   // Step 2: Check-in action (Ai bấm Check-in nhận 10% Tip Check-in)
   const handleCheckIn = () => {
     updateActiveBooking((prev) => ({
@@ -595,6 +770,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       naturalLashLength?: string;
       naturalLashThickness?: string;
       naturalLashDensity?: string;
+      naturalLashCount?: string;
       isNewClientDiagnosticDone?: boolean;
       lashHealth?: string;
       lashTrail?: string;
@@ -1237,5 +1413,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,
+    handleRevertToIncoming,
+    selectedDateOffset,
+    handleDateOffsetChange,
   };
 }

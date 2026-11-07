@@ -17,7 +17,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CALL_RESULT_LABELS } from '@mos-lab/shared';
+import { CALL_RESULT_LABELS, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 import CalendarPlusIcon from '~/components/icons/CalendarPlusIcon';
 import { CampaignTouchpointCell } from '~/components/campaign/CampaignTouchpointCell';
@@ -127,22 +127,30 @@ export function useCampaignCustomerColumns(options: UseCampaignCustomerColumnsOp
               >
                 {name}
               </div>
-              {phone && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <div
-                    style={{ fontSize: '11px', color: '#D4A84B', fontWeight: '500', lineHeight: '1.2' }}
-                    className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums font-mono"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMakeCall(phone);
-                    }}
-                  >
-                    <PhoneOutlined style={{ fontSize: '9px' }} />
-                    <span>{phone}</span>
-                  </div>
-                  <CopyPhoneButton phone={phone} size="xs" />
-                </div>
-              )}
+              {phone &&
+                (() => {
+                  const isMaskedRole =
+                    typeof window !== 'undefined'
+                      ? shouldMaskCustomerPhone(JSON.parse(window.localStorage.getItem('mos_user') || '{}')?.role)
+                      : true;
+                  const displayPhone = isMaskedRole ? maskPhoneNumber(phone) : phone;
+                  return (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div
+                        style={{ fontSize: '11px', color: '#D4A84B', fontWeight: '500', lineHeight: '1.2' }}
+                        className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums font-mono"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMakeCall(phone);
+                        }}
+                      >
+                        <PhoneOutlined style={{ fontSize: '9px' }} />
+                        <span>{displayPhone}</span>
+                      </div>
+                      {!isMaskedRole && <CopyPhoneButton phone={phone} size="xs" />}
+                    </div>
+                  );
+                })()}
             </div>
           </Space>
         );

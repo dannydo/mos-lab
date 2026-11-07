@@ -1200,7 +1200,7 @@ export default function CatalogPage() {
       ),
     },
     {
-      title: 'Số lượt nối',
+      title: '✦ Lượt nối',
       key: 'normalCount',
       align: 'center' as const,
       render: (_: any, record: CatalogServicePrice) => {
@@ -1208,11 +1208,11 @@ export default function CatalogPage() {
         return (
           <Space direction="vertical" size={2} align="center">
             <span className="tabular-nums font-medium">
-              {hasBonus ? `${record.normalCount} mua` : `${record.normalCount}`}
+              {hasBonus ? `✦ ${record.normalCount} mua` : `✦ ${record.normalCount}`}
             </span>
             {hasBonus && (
               <Tag color="green" style={{ fontSize: '11px', margin: 0 }}>
-                + {record.bonusNormalCount} tặng
+                +✦ {record.bonusNormalCount} tặng
               </Tag>
             )}
           </Space>
@@ -1220,7 +1220,7 @@ export default function CatalogPage() {
       },
     },
     {
-      title: 'Số lượt dặm',
+      title: '↻ Lượt dặm',
       key: 'retainCount',
       align: 'center' as const,
       render: (_: any, record: CatalogServicePrice) => {
@@ -1228,11 +1228,11 @@ export default function CatalogPage() {
         return (
           <Space direction="vertical" size={2} align="center">
             <span className="tabular-nums font-medium">
-              {hasBonus ? `${record.retainCount} mua` : `${record.retainCount}`}
+              {hasBonus ? `↻ ${record.retainCount} mua` : `↻ ${record.retainCount}`}
             </span>
             {hasBonus && (
               <Tag color="cyan" style={{ fontSize: '11px', margin: 0 }}>
-                + {record.bonusRetainCount} tặng
+                +↻ {record.bonusRetainCount} tặng
               </Tag>
             )}
           </Space>

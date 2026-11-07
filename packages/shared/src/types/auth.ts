@@ -52,7 +52,7 @@ export function isAdminOrSuperAdminRole(role?: string | null): boolean {
   const normalizedRole = String(role || '')
     .trim()
     .toLowerCase();
-  return normalizedRole === 'admin' || normalizedRole === 'super_admin';
+  return normalizedRole === 'admin' || normalizedRole === 'super_admin' || normalizedRole === 'superadmin';
 }
 
 export function isHrRole(role?: string | null): boolean {

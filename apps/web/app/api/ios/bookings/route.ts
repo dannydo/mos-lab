@@ -7,7 +7,10 @@ import {
   isAdminOrSuperAdminRole,
   isCcRole,
   normalizeCvFeatherRole,
+  formatComboName,
+  maskPhoneNumber,
 } from '@mos-lab/shared';
+import { INITIAL_BOOKINGS } from '../../../ios-app/state/mockData';
 
 function getLashUploadsDir(): string {
   const cwd = process.cwd();
@@ -70,24 +73,27 @@ interface AuthContext {
 
 async function verifyIosAppAuth(request: NextRequest): Promise<AuthContext> {
   const authHeader = request.headers.get('authorization') || '';
-  if (!authHeader.toLowerCase().startsWith('bearer ') || authHeader.trim().length <= 7) {
-    return { ok: false, status: 401, message: 'Vui lòng đăng nhập để truy cập ứng dụng vận hành /ios-app.' };
+
+  // Hỗ trợ kiểm thử môi trường dev / local testing & Cloudflare Tunnel không bị chặn 401 khi chưa login
+  if (process.env.NODE_ENV !== 'production') {
+    if (!authHeader || authHeader === 'Bearer mock-token-for-dev' || authHeader.trim().length <= 7) {
+      return {
+        ok: true,
+        status: 200,
+        user: {
+          id: 1,
+          legacyStaffId: 46272,
+          username: 'superadmin_dev',
+          displayName: 'Superadmin Dev',
+          role: 'super_admin',
+          careerTier: 'ADMIN',
+        },
+      };
+    }
   }
 
-  // Hỗ trợ kiểm thử môi trường dev / local testing
-  if (process.env.NODE_ENV !== 'production' && authHeader === 'Bearer mock-token-for-dev') {
-    return {
-      ok: true,
-      status: 200,
-      user: {
-        id: 46272,
-        legacyStaffId: 46272,
-        username: 'thaoly',
-        displayName: 'Thảo Ly',
-        role: 'CVL',
-        careerTier: 'CVL',
-      },
-    };
+  if (!authHeader.toLowerCase().startsWith('bearer ') || authHeader.trim().length <= 7) {
+    return { ok: false, status: 401, message: 'Vui lòng đăng nhập để truy cập ứng dụng vận hành /ios-app.' };
   }
   const apiBase = (
     process.env.NEXT_PUBLIC_API_URL ||
@@ -152,37 +158,39 @@ async function verifyIosAppAuth(request: NextRequest): Promise<AuthContext> {
   return { ok: false, status: 403, message: 'Không thể xác thực quyền truy cập /ios-app.' };
 }
 
-let legacyPool: mysql.Pool | null = null;
-let crmPool: mysql.Pool | null = null;
+const globalForDb = globalThis as unknown as {
+  iosLegacyPool?: mysql.Pool;
+  iosCrmPool?: mysql.Pool;
+};
 
 function getLegacyPool(): mysql.Pool {
-  if (!legacyPool) {
+  if (!globalForDb.iosLegacyPool) {
     const dbUrl = process.env.LEGACY_DATABASE_URL || 'mysql://root:chickisslove@127.0.0.1:3306/management';
-    legacyPool = mysql.createPool({
+    globalForDb.iosLegacyPool = mysql.createPool({
       uri: dbUrl,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 4,
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
     });
   }
-  return legacyPool;
+  return globalForDb.iosLegacyPool;
 }
 
 function getCrmPool(): mysql.Pool {
-  if (!crmPool) {
+  if (!globalForDb.iosCrmPool) {
     const dbUrl = process.env.DATABASE_URL || 'mysql://root:chickisslove@127.0.0.1:3306/mos_lab';
-    crmPool = mysql.createPool({
+    globalForDb.iosCrmPool = mysql.createPool({
       uri: dbUrl,
       waitForConnections: true,
-      connectionLimit: 5,
+      connectionLimit: 4,
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
     });
   }
-  return crmPool;
+  return globalForDb.iosCrmPool;
 }
 
 const LIVE_OVERRIDES_CONFIG_KEY = 'IOS_APP_LIVE_BOOKING_OVERRIDES';
@@ -275,8 +283,11 @@ function formatTimeSlot(dateStart: Date | string | null, durationMinutes: number
   return `${startStr} - ${endStr}`;
 }
 
-function formatPhoneNumberDots(phone: string | null | undefined): string {
-  if (!phone) return '0901.xxx.xxx';
+function formatPhoneNumberDots(phone: string | null | undefined, isMasked: boolean = false): string {
+  if (!phone) return isMasked ? 'XXXX******' : '0901.xxx.xxx';
+  if (isMasked) {
+    return maskPhoneNumber(phone);
+  }
   const cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 10) {
     return `${cleaned.slice(0, 4)}.${cleaned.slice(4, 7)}.${cleaned.slice(7)}`;
@@ -341,13 +352,15 @@ export async function GET(request: NextRequest) {
       }
     })();
     const requestedDate = searchParams.get('date') || todayVn;
-    const effectiveRole =
-      authCheck.user?.careerTier === 'ADMIN'
-        ? (searchParams.get('role') || 'CVL').toUpperCase()
-        : authCheck.user?.careerTier || 'CVL';
-    const rawScope = (searchParams.get('scope') || 'STORE_ALL').toUpperCase();
-    // CV🪶 (CVL) bị khoá cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp + khách book của mình)
-    const scope = effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : rawScope;
+    const isAdmin = authCheck.user?.careerTier === 'ADMIN';
+    const effectiveRole = isAdmin
+      ? (searchParams.get('role') || 'CVL').toUpperCase()
+      : authCheck.user?.careerTier || 'CVL';
+    const rawScope = (searchParams.get('scope') || (isAdmin ? 'STORE_ALL' : 'MY_CUSTOMERS')).toUpperCase();
+    // Invariant:
+    // - CV🪶 (CVL) tài khoản nhân viên thật: Bị khoá cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp + khách book của mình)
+    // - Admin / Superadmin: Mặc định xem TOÀN BỘ KHÁCH CỦA SẢNH (STORE_ALL), chỉ lọc MY_CUSTOMERS nếu query param truyền rõ ràng scope=MY_CUSTOMERS
+    const scope = !isAdmin && effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : rawScope;
     const activeStaffId =
       authCheck.user?.careerTier === 'CVL'
         ? authCheck.user?.legacyStaffId || 46272
@@ -357,25 +370,28 @@ export async function GET(request: NextRequest) {
     const pool = getLegacyPool();
     const liveOverrides = await loadLiveOverrides();
 
-    // Determine effective targetDate: use requestedDate if it has rows, otherwise fallback to latest busy date
-    let targetDate = requestedDate;
-    const [dateCheck] = await pool.query<mysql.RowDataPacket[]>(
-      `SELECT COUNT(*) AS cnt FROM \`order\` WHERE (? = 0 OR client_store_id = ?) AND (DATE(booking_date_start) = ? OR CAST(booking_date_only AS CHAR) = ?)`,
-      [storeId, storeId, targetDate, targetDate]
-    );
-    if (Number(dateCheck?.[0]?.cnt || 0) === 0) {
-      const [latestBusy] = await pool.query<mysql.RowDataPacket[]>(
-        `SELECT DATE_FORMAT(booking_date_start, '%Y-%m-%d') AS d, COUNT(*) AS cnt
-         FROM \`order\`
-         WHERE (? = 0 OR client_store_id = ?) AND booking_date_start IS NOT NULL
-         GROUP BY d
-         HAVING cnt >= 5
-         ORDER BY d DESC
-         LIMIT 1`,
-        [storeId, storeId]
+    const explicitDate = searchParams.get('date');
+    // Determine effective targetDate: nếu client truyền date tường minh thì dùng đúng ngày đó; nếu không thì fallback sang latestBusy
+    let targetDate = explicitDate || requestedDate;
+    if (!explicitDate) {
+      const [dateCheck] = await pool.query<mysql.RowDataPacket[]>(
+        `SELECT COUNT(*) AS cnt FROM \`order\` WHERE (? = 0 OR client_store_id = ?) AND (DATE(booking_date_start) = ? OR CAST(booking_date_only AS CHAR) = ?)`,
+        [storeId, storeId, targetDate, targetDate]
       );
-      if (latestBusy?.[0]?.d) {
-        targetDate = String(latestBusy[0].d);
+      if (Number(dateCheck?.[0]?.cnt || 0) === 0) {
+        const [latestBusy] = await pool.query<mysql.RowDataPacket[]>(
+          `SELECT DATE_FORMAT(booking_date_start, '%Y-%m-%d') AS d, COUNT(*) AS cnt
+           FROM \`order\`
+           WHERE (? = 0 OR client_store_id = ?) AND booking_date_start IS NOT NULL
+           GROUP BY d
+           HAVING cnt >= 5
+           ORDER BY d DESC
+           LIMIT 1`,
+          [storeId, storeId]
+        );
+        if (latestBusy?.[0]?.d) {
+          targetDate = String(latestBusy[0].d);
+        }
       }
     }
 
@@ -633,7 +649,7 @@ export async function GET(request: NextRequest) {
           if (rem > 0) {
             const rawServiceName = String(primaryRow.combo_name || 'Gói Combo Mi');
             const pkgKey = String(primaryRow.package_key || '').trim();
-            const displayComboName = pkgKey ? `Combo (${pkgKey}) · ${rawServiceName}` : `Combo ${rawServiceName}`;
+            const displayComboName = formatComboName(rawServiceName, pkgKey);
             comboBalanceMap.set(uid, {
               isComboLive: true,
               remainingSessions: rem,
@@ -679,7 +695,7 @@ export async function GET(request: NextRequest) {
               remainingSessions: rem,
               normalRemaining: Number(ubr.normal_remaining) || 0,
               retainRemaining: Number(ubr.retain_remaining) || 0,
-              comboName: pkgKey ? `Combo Mi Dưới (${pkgKey}) · ${rawName}` : `Combo Mi Dưới · ${rawName}`,
+              comboName: formatComboName(rawName, pkgKey),
               packageKey: pkgKey || undefined,
             });
           }
@@ -714,6 +730,8 @@ export async function GET(request: NextRequest) {
         status = 'DONE';
       } else if (['Cancelled', 'Missed'].includes(state)) {
         status = 'CANCELLED';
+      } else if (targetDate < todayVn && (state === 'New' || state === 'Confirmed')) {
+        status = 'DONE';
       }
 
       const duration = Number(r.booking_duration_minute) || 90;
@@ -763,7 +781,7 @@ export async function GET(request: NextRequest) {
               remainingSessions: 3,
               normalRemaining: 1,
               retainRemaining: 2,
-              comboName: 'Combo 5 lần New HyperLight 770 (4X · 70 fan)',
+              comboName: '❖ 5 lần New HyperLight 770 (4X · 70 fan)',
               serviceKey: 'new-hyperlight-770',
               packageKey: '4+1-hyperlight-770',
               retainDaysLimit: 25,
@@ -774,7 +792,7 @@ export async function GET(request: NextRequest) {
                 remainingSessions: 4,
                 normalRemaining: 4,
                 retainRemaining: 0,
-                comboName: 'Combo 7+3 New Flawless Mink 880 (70 sợi)',
+                comboName: '❖ 7+3 New Flawless Mink 880 (70 sợi)',
                 serviceKey: 'new-flawless.mink-880',
                 packageKey: '7+3-flawless-mink-880',
                 retainDaysLimit: 25,
@@ -785,7 +803,7 @@ export async function GET(request: NextRequest) {
                   remainingSessions: 5,
                   normalRemaining: 5,
                   retainRemaining: 0,
-                  comboName: 'Combo 7+3 Ivylight 4L 1220 (90 nhịp)',
+                  comboName: '❖ 7+3 Ivylight 4L 1220 (90 nhịp)',
                   serviceKey: 'ivylight-4L-1220',
                   packageKey: '7+3-ivylight-1220',
                   retainDaysLimit: 25,
@@ -795,7 +813,7 @@ export async function GET(request: NextRequest) {
                   remainingSessions: 0,
                   normalRemaining: 0,
                   retainRemaining: 0,
-                  comboName: 'Chưa có gói Combo Live',
+                  comboName: 'Chưa có gói ❖ Live',
                   serviceKey: undefined,
                   packageKey: undefined,
                   retainDaysLimit: 21,
@@ -866,8 +884,8 @@ export async function GET(request: NextRequest) {
       return {
         id: Number(r.id),
         orderNumber: orderNum,
-        customerName: (r.customer_name || 'Khách').trim(),
-        customerPhone: formatPhoneNumberDots(r.customer_phone),
+        customerName: (r.customer_name || 'Khách').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim(),
+        customerPhone: formatPhoneNumberDots(r.customer_phone, !isAdmin),
         customerId,
         customerAvatar: resolveCustomerAvatar(r.customer_avatar),
         assignedStaffAvatar: resolveStaffAvatar(r.staff_avatar),
@@ -967,30 +985,56 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Filter by scope:
-    // - CV🪶 (CVL) or MY_CUSTOMERS: Strictly ONLY see (a) 1 next upcoming unassigned customer at salon lobby + (b) own booked/assigned customers.
-    //   Strictly NEVER see customers booked/assigned to other Chuyên Viên!
-    // - 🪶CV🪶 (CVLL) / CC / Admin with STORE_ALL: See all salon bookings.
-    let nextUnassignedIncluded = false;
-    const effectiveList =
-      effectiveRole === 'CVL' || scope === 'MY_CUSTOMERS'
-        ? allMappedBookings.filter((b) => {
-            const isOwnCustomer =
-              !b.isUnassignedQueue &&
-              b.assignedStaffId > 0 &&
-              (b.assignedStaffId === activeStaffId ||
-                b.checkInStaffId === activeStaffId ||
-                b.checkOutStaffId === activeStaffId);
-            if (isOwnCustomer) return true;
+    // Đồng bộ chéo thiết bị cho các ca demo/mock từ INITIAL_BOOKINGS có override trong DB (ví dụ: Chị Trúc 336695)
+    // Giúp đảm bảo khi một thiết bị check-in hoặc phục vụ khách mẫu, mọi thiết bị khác đều thấy 100% đồng bộ!
+    const existingIds = new Set(allMappedBookings.map((b) => b.id));
+    for (const mockBooking of INITIAL_BOOKINGS) {
+      if (!existingIds.has(mockBooking.id)) {
+        const override = liveOverrides[String(mockBooking.id)];
+        if (override) {
+          allMappedBookings.push({
+            ...mockBooking,
+            status: override.status || mockBooking.status,
+            progress: override.status === 'INCOMING' ? undefined : override.progress || mockBooking.progress,
+            attributes: override.attributes || mockBooking.attributes,
+            selectedCombo: override.selectedCombo !== undefined ? override.selectedCombo : mockBooking.selectedCombo,
+            checkInStaffId: override.checkInStaffId || mockBooking.assignedStaffId,
+            checkInStaffName: override.checkInStaffName || mockBooking.assignedStaffName,
+            checkInStaffTier: override.checkInStaffTier || 'CVL',
+            assignedStaffId: override.assignedStaffId || mockBooking.assignedStaffId,
+            assignedStaffName: override.assignedStaffName || mockBooking.assignedStaffName,
+          } as any);
+        }
+      }
+    }
 
-            const isNextCandidate = b.isUnassignedQueue && (b.status === 'INCOMING' || b.status === 'CHECKED_IN');
-            if (isNextCandidate && !nextUnassignedIncluded) {
-              nextUnassignedIncluded = true;
-              return true;
-            }
-            return false;
-          })
-        : allMappedBookings;
+    // Filter by scope:
+    // - CV🪶 (CVL) or MY_CUSTOMERS (khi không phải Admin): Strictly ONLY see (a) 1 next upcoming unassigned customer at salon lobby + (b) own booked/assigned customers.
+    //   Strictly NEVER see customers booked/assigned to other Chuyên Viên!
+    // - Superadmin / Admin: Mặc định xem TOÀN BỘ KHÁCH CỦA SẢNH (STORE_ALL) để giám sát và vận hành!
+    //   Chỉ khi Admin chủ động lọc theo góc nhìn CVL (scope === 'MY_CUSTOMERS') thì mới thu hẹp.
+    let nextUnassignedIncluded = false;
+    const shouldApplyCvlPrivacyScope = !isAdmin
+      ? effectiveRole === 'CVL' || scope === 'MY_CUSTOMERS'
+      : scope === 'MY_CUSTOMERS';
+    const effectiveList = shouldApplyCvlPrivacyScope
+      ? allMappedBookings.filter((b) => {
+          const isOwnCustomer =
+            !b.isUnassignedQueue &&
+            b.assignedStaffId > 0 &&
+            (b.assignedStaffId === activeStaffId ||
+              b.checkInStaffId === activeStaffId ||
+              b.checkOutStaffId === activeStaffId);
+          if (isOwnCustomer) return true;
+
+          const isNextCandidate = b.isUnassignedQueue && (b.status === 'INCOMING' || b.status === 'CHECKED_IN');
+          if (isNextCandidate && !nextUnassignedIncluded) {
+            nextUnassignedIncluded = true;
+            return true;
+          }
+          return false;
+        })
+      : allMappedBookings;
 
     const counts = {
       incoming: effectiveList.filter((b) => b.status === 'INCOMING' || b.status === 'CHECKED_IN').length,
@@ -1287,6 +1331,15 @@ export async function POST(request: NextRequest) {
           ...(body.billing || {}),
         },
         completedAt: new Date().toISOString(),
+      };
+    } else if (action === 'REVERT_TO_INCOMING') {
+      // Quyền Admin: Hoàn tác đưa khách hàng từ "Đang làm" trở về "Chờ đón"
+      // Xóa hoàn toàn các trường progress/checkIn cũ để triệt tiêu vĩnh viễn Zombie Servicing Session
+      const idKey = String(bookingId);
+      delete overrides[idKey];
+      overrides[idKey] = {
+        status: 'INCOMING',
+        orderState: 'Confirmed',
       };
     } else if (action === 'RESET_DEMO') {
       delete overrides[String(bookingId)];

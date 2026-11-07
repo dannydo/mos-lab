@@ -997,678 +997,671 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             </div>
           )}
         </div>
-          {/* Branch Check */}
-          <div>
-            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
-              <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
-            </h4>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {STORES.map((s) => {
-                const isSelected = selectedCN?.id === s.id;
-                return (
-                  <div
-                    key={s.id}
-                    onClick={() => setSelectedCN(s)}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: '20px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s',
-                      background: isSelected ? '#D4A84B' : themeMode === 'dark' ? '#1e293b' : '#f3f4f6',
-                      border: `1px solid ${isSelected ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                      color: isSelected ? '#fff' : themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <span>{s.name}</span>
-                    {suggestedBranch?.id === s.id && (
-                      <Tag
-                        color={isSelected ? 'magenta' : 'orange'}
-                        style={{
-                          marginLeft: '6px',
-                          marginRight: 0,
-                          fontSize: '10px',
-                          padding: '0 6px',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        💖 Hay đi
-                      </Tag>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {selectedCV && (
-              <div style={{ fontSize: '12px', color: '#fa8c16', marginTop: '6px' }}>
-                * Tự động gợi ý chi nhánh làm việc chính của <strong>{selectedCV.displayName}</strong>.
-              </div>
-            )}
-          </div>
-
-          {/* Customer Search or New Lead */}
-          <Card
-            title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
-                  <UserOutlined /> THÔNG TIN KHÁCH HÀNG
-                </span>
+        {/* Branch Check */}
+        <div>
+          <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
+            <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
+          </h4>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {STORES.map((s) => {
+              const isSelected = selectedCN?.id === s.id;
+              return (
                 <div
+                  key={s.id}
+                  onClick={() => setSelectedCN(s)}
                   style={{
-                    display: 'flex',
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s',
+                    background: isSelected ? '#D4A84B' : themeMode === 'dark' ? '#1e293b' : '#f3f4f6',
+                    border: `1px solid ${isSelected ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                    color: isSelected ? '#fff' : themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    flexWrap: 'wrap',
-                    justifyContent: 'flex-end',
+                    gap: '4px',
                   }}
                 >
-                  <Button
-                    size="small"
-                    type="dashed"
-                    icon={<UserOutlined />}
-                    onClick={() => setIsCreateCustomerModalOpen(true)}
-                  >
-                    Thêm khách, chưa đặt lịch
-                  </Button>
-                  <Radio.Group
-                    size="small"
-                    value={isNewLead ? 'new' : 'existing'}
-                    onChange={(e) => {
-                      setIsNewLead(e.target.value === 'new');
-                      setSelectedCustomer(null);
-                    }}
-                  >
-                    <Radio.Button value="existing">Khách hàng cũ</Radio.Button>
-                    <Radio.Button value="new">Khách mới</Radio.Button>
-                  </Radio.Group>
-                </div>
-              </div>
-            }
-            styles={{ body: { padding: '16px' } }}
-            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff', borderColor: '#e5e7eb' }}
-          >
-            {!isNewLead ? (
-              <div>
-                <Select
-                  showSearch
-                  placeholder="Tìm kiếm khách hàng bằng tên hoặc SĐT..."
-                  filterOption={false}
-                  onSearch={handleSearchCustomers}
-                  loading={searchingCustomers}
-                  style={{ width: '100%' }}
-                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                  onChange={(val) => {
-                    const cust = customerList.find((c) => c.id === val);
-                    setSelectedCustomer(cust);
-                  }}
-                  notFoundContent={searchQuery ? 'Không tìm thấy khách hàng nào' : null}
-                  options={customerList.map((c) => ({
-                    value: c.id,
-                    label: `${c.name} - ${c.phone} (Mã: ${c.id})`,
-                  }))}
-                />
-
-                {selectedCustomer && (
-                  <div
-                    style={{
-                      marginTop: '12px',
-                      padding: '10px',
-                      background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                      border: '1px solid #ffe58f',
-                      borderRadius: '6px',
-                    }}
-                  >
-                    <div style={{ fontWeight: 'bold', color: token.colorText }}>{selectedCustomer.name}</div>
-                    <div
-                      style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}
-                      className="flex items-center gap-1"
+                  <span>{s.name}</span>
+                  {suggestedBranch?.id === s.id && (
+                    <Tag
+                      color={isSelected ? 'magenta' : 'orange'}
+                      style={{
+                        marginLeft: '6px',
+                        marginRight: 0,
+                        fontSize: '10px',
+                        padding: '0 6px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                      }}
                     >
-                      <span>SĐT: {selectedCustomer.phone}</span>
-                      <CopyPhoneButton phone={selectedCustomer.phone} size="xs" />
-                      <span>| Phân loại:</span>
-                      <Tag color="warning">{selectedCustomer.bucket}</Tag>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <Input
-                  placeholder="Tên khách hàng mới"
-                  prefix={<UserOutlined />}
-                  value={leadName}
-                  onChange={(e) => setLeadName(e.target.value)}
-                />
-                <Input
-                  placeholder="Số điện thoại khách"
-                  prefix={<PhoneOutlined />}
-                  value={leadPhone}
-                  onChange={(e) => setLeadPhone(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div
-              style={{
-                marginTop: '10px',
-                paddingTop: '8px',
-                borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span style={{ fontSize: '12px', fontWeight: 600, color: token.colorText }}>🌐 Khách nước ngoài</span>
-              <Switch checked={isForeignCustomer} onChange={(checked) => setIsForeignCustomer(checked)} size="small" />
-            </div>
-          </Card>
-
-          {/* Service Select */}
-          <div>
-            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
-              <InboxOutlined /> CHỌN DỊCH VỤ (SERVICE)
-            </h4>
-            <Select
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              style={{ width: '100%' }}
-              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-              placeholder="Chọn hoặc tìm dịch vụ..."
-              value={selectedService?.id}
-              onChange={(val) => {
-                const srv = services.find((s) => s.id === val);
-                setSelectedService(srv);
-              }}
-              options={services.map((s) => ({
-                value: s.id,
-                label:
-                  s.id === 0
-                    ? `${s.name} (${s.duration} phút)`
-                    : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`,
-              }))}
-            />
-
-            {/* Favorite Service Suggestion */}
-            {suggestedServices.filter((sName) =>
-              services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-            ).length > 0 && (
-              <div style={{ marginTop: '6px', fontSize: '12px' }}>
-                <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
-                {suggestedServices
-                  .filter((sName) =>
-                    services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-                  )
-                  .map((sName) => {
-                    return (
-                      <span
-                        key={sName}
-                        style={{
-                          color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
-                          textDecoration: 'underline',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          marginLeft: '4px',
-                        }}
-                        onClick={() => {
-                          const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
-                          if (matchedSrv) {
-                            setSelectedService(matchedSrv);
-                            message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
-                          } else {
-                            message.info(`Hay đi: ${sName}`);
-                          }
-                        }}
-                      >
-                        {sName}
-                      </span>
-                    );
-                  })}
-              </div>
-            )}
-
-            {/* Last Service Used Suggestion */}
-            {lastUsedServices.filter((sName) =>
-              services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-            ).length > 0 && (
-              <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                <span style={{ color: '#096dd9', fontWeight: 'bold' }}>🕒 Dịch vụ khách dùng cuối cùng: </span>
-                {lastUsedServices
-                  .filter((sName) =>
-                    services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-                  )
-                  .map((sName) => {
-                    return (
-                      <span
-                        key={sName}
-                        style={{
-                          color: themeMode === 'dark' ? '#177ddc' : '#096dd9',
-                          textDecoration: 'underline',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          marginLeft: '4px',
-                        }}
-                        onClick={() => {
-                          const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
-                          if (matchedSrv) {
-                            setSelectedService(matchedSrv);
-                            message.success(`Đã chọn dịch vụ cuối cùng: ${matchedSrv.name}`);
-                          } else {
-                            message.info(`Dùng cuối cùng: ${sName}`);
-                          }
-                        }}
-                      >
-                        {sName}
-                      </span>
-                    );
-                  })}
-              </div>
-            )}
-
-            {/* Active Combo Balances Suggestions */}
-            {comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 && (
-              <div style={{ marginTop: '8px', marginBottom: '12px' }}>
-                <div style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold', marginBottom: '6px' }}>
-                  🎁 GÓI COMBO ĐANG CHẠY (CLICK ĐỂ CHỌN NHANH DÒNG MI):
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {comboBalances
-                    .filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
-                    .map((cb: SafeAny) => {
-                      return (
-                        <div
-                          key={cb.id}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            border: `1px solid ${themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'}`,
-                            background: themeMode === 'dark' ? 'rgba(219, 39, 119, 0.1)' : 'rgba(219, 39, 119, 0.03)',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            color: token.colorText,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                          onClick={() => {
-                            const cleanName = cb.serviceName.split('(')[0].trim().toLowerCase();
-                            const matchedSrv = services.find(
-                              (s) =>
-                                s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase())
-                            );
-                            if (matchedSrv) {
-                              setSelectedService(matchedSrv);
-                              message.success(`Đã chọn dòng mi từ Combo: ${matchedSrv.name}`);
-                            } else {
-                              message.info(`Gói combo: ${cb.serviceName}`);
-                            }
-                          }}
-                        >
-                          <div>
-                            <span style={{ fontWeight: 'bold' }}>{cb.serviceName}</span>
-                            <div
-                              style={{
-                                fontSize: '11px',
-                                color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                                marginTop: '2px',
-                              }}
-                            >
-                              Còn lại: {cb.normalCount || 0} mới | {cb.retainCount || 0} dặm
-                            </div>
-                          </div>
-                          <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>
-                            Chọn
-                          </Tag>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Campaign Promotion Section (Ưu đãi chiến dịch) */}
-          {visibleCustomerCampaignPromotions.length > 0 && (
-            <div
-              style={{
-                padding: '14px',
-                borderRadius: '10px',
-                background: themeMode === 'dark' ? 'rgba(124, 58, 237, 0.12)' : '#f3e8ff',
-                border: `1.5px solid ${themeMode === 'dark' ? '#7c3aed' : '#c084fc'}`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <GiftOutlined style={{ color: '#9333ea', fontSize: '16px' }} />
-                  <span
-                    style={{
-                      fontWeight: 'bold',
-                      fontSize: '13px',
-                      color: themeMode === 'dark' ? '#d8b4fe' : '#7e22ce',
-                    }}
-                  >
-                    ƯU ĐÃI CHIẾN DỊCH (CAMPAIGN PROMOTION)
-                  </span>
-                </div>
-                {selectedCampaignPromotion && (
-                  <Button
-                    type="link"
-                    size="small"
-                    danger
-                    onClick={() => setSelectedCampaignPromotion(null)}
-                    style={{ padding: 0, height: 'auto', fontSize: '12px' }}
-                  >
-                    Bỏ chọn ưu đãi
-                  </Button>
-                )}
-              </div>
-
-              {visibleCustomerCampaignPromotions.map((camp) => (
-                <div key={camp.campaignId} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Tag color="purple" style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
-                      🎯 Chiến dịch: {camp.campaignName}
+                      💖 Hay đi
                     </Tag>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {camp.promotions.map((promo) => {
-                      const isSelected = selectedCampaignPromotion?.id === promo.id;
-                      let badgeColor = 'purple';
-                      if (
-                        promo.type === 'PERCENT_DISCOUNT' ||
-                        promo.type === 'FIXED_DISCOUNT' ||
-                        promo.type === 'FIXED_FINAL_PRICE'
-                      ) {
-                        badgeColor = 'red';
-                      } else if (promo.type === 'FREE_SERVICE') {
-                        badgeColor = 'cyan';
-                      } else if (promo.type === 'FREE_PRODUCT') {
-                        badgeColor = 'green';
-                      }
-
-                      return (
-                        <div
-                          key={promo.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedCampaignPromotion(null);
-                            } else {
-                              setSelectedCampaignPromotion(promo);
-                              setSelectedPromotion(null);
-                            }
-                          }}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            background: isSelected
-                              ? themeMode === 'dark'
-                                ? '#581c87'
-                                : '#e9d5ff'
-                              : themeMode === 'dark'
-                                ? '#1e1b4b'
-                                : '#ffffff',
-                            border: `1.5px solid ${isSelected ? '#9333ea' : themeMode === 'dark' ? '#3730a3' : '#e9d5ff'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            transition: 'all 0.2s',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                            <Tag color={badgeColor} style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
-                              {promo.label}
-                            </Tag>
-                            <span
-                              style={{
-                                fontSize: '12.5px',
-                                fontWeight: isSelected ? 'bold' : 'normal',
-                                color: token.colorText,
-                              }}
-                            >
-                              {promo.name}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <Tag color="success" style={{ margin: 0, fontSize: '10px', fontWeight: 'bold' }}>
-                              ✓ Đã chọn
-                            </Tag>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  )}
                 </div>
-              ))}
+              );
+            })}
+          </div>
+          {selectedCV && (
+            <div style={{ fontSize: '12px', color: '#fa8c16', marginTop: '6px' }}>
+              * Tự động gợi ý chi nhánh làm việc chính của <strong>{selectedCV.displayName}</strong>.
             </div>
           )}
+        </div>
 
-          {/* Promotion & Referral Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>🎟️ CHỌN KHUYẾN MÃI (PROMOTION)</h4>
-              <Select
-                showSearch
-                allowClear
-                filterOption={vietnameseSearchFilter}
-                style={{ width: '100%' }}
-                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                placeholder="Chọn chương trình khuyến mãi (nếu có)..."
-                value={selectedCampaignPromotion ? `CAMP_${selectedCampaignPromotion.id}` : selectedPromotion?.id}
-                onChange={(val) => {
-                  if (!val) {
-                    setSelectedPromotion(null);
-                    setSelectedCampaignPromotion(null);
-                    return;
-                  }
-                  if (typeof val === 'string' && val.startsWith('CAMP_')) {
-                    const campPromoId = parseInt(val.replace('CAMP_', ''), 10);
-                    let foundCampPromo: CustomerCampaignPromotionItem | null = null;
-                    for (const camp of customerCampaignPromotions) {
-                      const match = camp.promotions.find((p) => p.id === campPromoId);
-                      if (match) {
-                        foundCampPromo = match;
-                        break;
-                      }
-                    }
-                    if (foundCampPromo) {
-                      setSelectedCampaignPromotion(foundCampPromo);
-                      setSelectedPromotion(null);
-                    }
-                  } else {
-                    const promo = promotions.find((p) => p.id === val);
-                    setSelectedPromotion(promo || null);
-                    setSelectedCampaignPromotion(null);
-                  }
-                }}
-                options={[
-                  ...visibleCustomerCampaignPromotions.flatMap((camp) =>
-                    camp.promotions.map((p) => {
-                      let valText = '';
-                      if (p.type === 'PERCENT_DISCOUNT') valText = ` (Giảm ${p.value}%)`;
-                      else if (p.type === 'FIXED_DISCOUNT') valText = ` (Giảm ${p.value.toLocaleString('vi-VN')}đ)`;
-                      else if (p.type === 'FIXED_FINAL_PRICE') {
-                        valText = ` (Thanh toán ${p.value.toLocaleString('vi-VN')}đ · ${getFixedPriceScopeLabel(p)})`;
-                      }
-                      return {
-                        value: `CAMP_${p.id}`,
-                        label: `🎯 [Ưu đãi Chiến dịch: ${camp.campaignName}] ${p.label}${valText}`,
-                      };
-                    })
-                  ),
-                  ...promotions.map((p) => ({
-                    value: p.id,
-                    label:
-                      p.discountPercentage > 0
-                        ? `${p.name} (Giảm ${p.discountPercentage}%)`
-                        : p.discountAmount > 0
-                          ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)`
-                          : p.name,
-                  })),
-                ]}
-              />
-              {fixedPriceEligibilityNotices.map((notice) => (
-                <div
-                  key={notice.id}
-                  style={{
-                    marginTop: '7px',
-                    fontSize: '11px',
-                    color: notice.isEligible ? (themeMode === 'dark' ? '#86efac' : '#15803d') : '#fa8c16',
-                  }}
-                >
-                  {notice.isEligible
-                    ? `✓ Dịch vụ đang chọn đủ điều kiện Đồng giá ${notice.price.toLocaleString('vi-VN')}đ (${notice.scopeLabel}).`
-                    : `Đồng giá ${notice.price.toLocaleString('vi-VN')}đ chỉ áp dụng cho ${notice.scopeLabel}; dịch vụ đang chọn không thuộc phạm vi.`}
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-                👥 MÃ GIỚI THIỆU (SĐT NGƯỜI GIỚI THIỆU)
-              </h4>
-              <Input
-                placeholder="Nhập số điện thoại của khách giới thiệu (nếu có)..."
-                value={referralPhone}
-                onChange={(e) => setReferralPhone(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Price Calculation details */}
-          {selectedService && selectedService.id !== 0 && (
-            <div
-              style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                background: themeMode === 'dark' ? '#1e293b' : '#f8fafc',
-                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                fontSize: '13px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#888' }}>Giá gốc dịch vụ:</span>
-                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                  {priceInfo.original.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-              {priceInfo.discount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fa8c16' }}>
-                  <span>
-                    Giảm giá (
-                    {selectedCampaignPromotion
-                      ? `${selectedCampaignPromotion.name} - ${selectedCampaignPromotion.label}`
-                      : selectedPromotion?.name}
-                    ):
-                  </span>
-                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    -{priceInfo.discount.toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              )}
-              {selectedCampaignPromotion?.type === 'FIXED_FINAL_PRICE' && (
-                <div style={{ color: themeMode === 'dark' ? '#c4b5fd' : '#7e22ce', fontSize: '12px' }}>
-                  Đồng giá {Math.round(selectedCampaignPromotion.value).toLocaleString('vi-VN')}đ là giá thanh toán cuối
-                  cùng cho {getFixedPriceScopeLabel(selectedCampaignPromotion)}.
-                </div>
-              )}
+        {/* Customer Search or New Lead */}
+        <Card
+          title={
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                <UserOutlined /> THÔNG TIN KHÁCH HÀNG
+              </span>
               <div
                 style={{
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                  borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                  paddingTop: '4px',
-                  marginTop: '2px',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  justifyContent: 'flex-end',
                 }}
               >
-                <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>Giá thanh toán tạm tính:</span>
-                <span style={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums' }}>
-                  {priceInfo.final.toLocaleString('vi-VN')}đ
-                </span>
+                <Button
+                  size="small"
+                  type="dashed"
+                  icon={<UserOutlined />}
+                  onClick={() => setIsCreateCustomerModalOpen(true)}
+                >
+                  Thêm khách, chưa đặt lịch
+                </Button>
+                <Radio.Group
+                  size="small"
+                  value={isNewLead ? 'new' : 'existing'}
+                  onChange={(e) => {
+                    setIsNewLead(e.target.value === 'new');
+                    setSelectedCustomer(null);
+                  }}
+                >
+                  <Radio.Button value="existing">Khách hàng cũ</Radio.Button>
+                  <Radio.Button value="new">Khách mới</Radio.Button>
+                </Radio.Group>
               </div>
+            </div>
+          }
+          styles={{ body: { padding: '16px' } }}
+          style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff', borderColor: '#e5e7eb' }}
+        >
+          {!isNewLead ? (
+            <div>
+              <Select
+                showSearch
+                placeholder="Tìm kiếm khách hàng bằng tên hoặc SĐT..."
+                filterOption={false}
+                onSearch={handleSearchCustomers}
+                loading={searchingCustomers}
+                style={{ width: '100%' }}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                onChange={(val) => {
+                  const cust = customerList.find((c) => c.id === val);
+                  setSelectedCustomer(cust);
+                }}
+                notFoundContent={searchQuery ? 'Không tìm thấy khách hàng nào' : null}
+                options={customerList.map((c) => ({
+                  value: c.id,
+                  label: `${c.name} - ${c.phone} (Mã: ${c.id})`,
+                }))}
+              />
+
+              {selectedCustomer && (
+                <div
+                  style={{
+                    marginTop: '12px',
+                    padding: '10px',
+                    background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
+                    border: '1px solid #ffe58f',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', color: token.colorText }}>{selectedCustomer.name}</div>
+                  <div
+                    style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}
+                    className="flex items-center gap-1"
+                  >
+                    <span>SĐT: {selectedCustomer.phone}</span>
+                    <CopyPhoneButton phone={selectedCustomer.phone} size="xs" />
+                    <span>| Phân loại:</span>
+                    <Tag color="warning">{selectedCustomer.bucket}</Tag>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Input
+                placeholder="Tên khách hàng mới"
+                prefix={<UserOutlined />}
+                value={leadName}
+                onChange={(e) => setLeadName(e.target.value)}
+              />
+              <Input
+                placeholder="Số điện thoại khách"
+                prefix={<PhoneOutlined />}
+                value={leadPhone}
+                onChange={(e) => setLeadPhone(e.target.value)}
+              />
             </div>
           )}
 
-          {/* Select Channels & Booking Note */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-                KÊNH TIẾP NHẬN ĐẶT LỊCH (BOOKING CHANNEL)
-              </h4>
-              <Radio.Group
-                value={bookingChannel}
-                onChange={(e) => setBookingChannel(e.target.value)}
-                buttonStyle="solid"
-              >
-                {CHANNELS.map((ch) => (
-                  <Radio.Button
-                    key={ch.key}
-                    value={ch.key}
-                    style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}
-                  >
-                    {ch.key}
-                  </Radio.Button>
-                ))}
-              </Radio.Group>
+          <div
+            style={{
+              marginTop: '10px',
+              paddingTop: '8px',
+              borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span style={{ fontSize: '12px', fontWeight: 600, color: token.colorText }}>🌐 Khách nước ngoài</span>
+            <Switch checked={isForeignCustomer} onChange={(checked) => setIsForeignCustomer(checked)} size="small" />
+          </div>
+        </Card>
+
+        {/* Service Select */}
+        <div>
+          <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
+            <InboxOutlined /> CHỌN DỊCH VỤ (SERVICE)
+          </h4>
+          <Select
+            showSearch
+            filterOption={vietnameseSearchFilter}
+            style={{ width: '100%' }}
+            getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+            placeholder="Chọn hoặc tìm dịch vụ..."
+            value={selectedService?.id}
+            onChange={(val) => {
+              const srv = services.find((s) => s.id === val);
+              setSelectedService(srv);
+            }}
+            options={services.map((s) => ({
+              value: s.id,
+              label:
+                s.id === 0
+                  ? `${s.name} (${s.duration} phút)`
+                  : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`,
+            }))}
+          />
+
+          {/* Favorite Service Suggestion */}
+          {suggestedServices.filter((sName) =>
+            services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+          ).length > 0 && (
+            <div style={{ marginTop: '6px', fontSize: '12px' }}>
+              <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
+              {suggestedServices
+                .filter((sName) =>
+                  services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+                )
+                .map((sName) => {
+                  return (
+                    <span
+                      key={sName}
+                      style={{
+                        color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginLeft: '4px',
+                      }}
+                      onClick={() => {
+                        const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
+                        if (matchedSrv) {
+                          setSelectedService(matchedSrv);
+                          message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
+                        } else {
+                          message.info(`Hay đi: ${sName}`);
+                        }
+                      }}
+                    >
+                      {sName}
+                    </span>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Last Service Used Suggestion */}
+          {lastUsedServices.filter((sName) =>
+            services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+          ).length > 0 && (
+            <div style={{ marginTop: '4px', fontSize: '12px' }}>
+              <span style={{ color: '#096dd9', fontWeight: 'bold' }}>🕒 Dịch vụ khách dùng cuối cùng: </span>
+              {lastUsedServices
+                .filter((sName) =>
+                  services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
+                )
+                .map((sName) => {
+                  return (
+                    <span
+                      key={sName}
+                      style={{
+                        color: themeMode === 'dark' ? '#177ddc' : '#096dd9',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginLeft: '4px',
+                      }}
+                      onClick={() => {
+                        const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
+                        if (matchedSrv) {
+                          setSelectedService(matchedSrv);
+                          message.success(`Đã chọn dịch vụ cuối cùng: ${matchedSrv.name}`);
+                        } else {
+                          message.info(`Dùng cuối cùng: ${sName}`);
+                        }
+                      }}
+                    >
+                      {sName}
+                    </span>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Active Combo Balances Suggestions */}
+          {comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 && (
+            <div style={{ marginTop: '8px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold', marginBottom: '6px' }}>
+                🎁 GÓI COMBO ĐANG CHẠY (CLICK ĐỂ CHỌN NHANH DÒNG MI):
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {comboBalances
+                  .filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
+                  .map((cb: SafeAny) => {
+                    return (
+                      <div
+                        key={cb.id}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: `1px solid ${themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'}`,
+                          background: themeMode === 'dark' ? 'rgba(219, 39, 119, 0.1)' : 'rgba(219, 39, 119, 0.03)',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: token.colorText,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                        onClick={() => {
+                          const cleanName = cb.serviceName.split('(')[0].trim().toLowerCase();
+                          const matchedSrv = services.find(
+                            (s) => s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase())
+                          );
+                          if (matchedSrv) {
+                            setSelectedService(matchedSrv);
+                            message.success(`Đã chọn dòng mi từ Combo: ${matchedSrv.name}`);
+                          } else {
+                            message.info(`Gói combo: ${cb.serviceName}`);
+                          }
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontWeight: 'bold' }}>{cb.serviceName}</span>
+                          <div
+                            style={{
+                              fontSize: '11px',
+                              color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                              marginTop: '2px',
+                            }}
+                          >
+                            Còn lại: ✦ {cb.normalCount || 0} · ↻ {cb.retainCount || 0}
+                          </div>
+                        </div>
+                        <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>
+                          Chọn
+                        </Tag>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Campaign Promotion Section (Ưu đãi chiến dịch) */}
+        {visibleCustomerCampaignPromotions.length > 0 && (
+          <div
+            style={{
+              padding: '14px',
+              borderRadius: '10px',
+              background: themeMode === 'dark' ? 'rgba(124, 58, 237, 0.12)' : '#f3e8ff',
+              border: `1.5px solid ${themeMode === 'dark' ? '#7c3aed' : '#c084fc'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <GiftOutlined style={{ color: '#9333ea', fontSize: '16px' }} />
+                <span
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    color: themeMode === 'dark' ? '#d8b4fe' : '#7e22ce',
+                  }}
+                >
+                  ƯU ĐÃI CHIẾN DỊCH (CAMPAIGN PROMOTION)
+                </span>
+              </div>
+              {selectedCampaignPromotion && (
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  onClick={() => setSelectedCampaignPromotion(null)}
+                  style={{ padding: 0, height: 'auto', fontSize: '12px' }}
+                >
+                  Bỏ chọn ưu đãi
+                </Button>
+              )}
             </div>
 
-            <div>
-              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
-              <TextArea
-                rows={3}
-                placeholder="Nhập các ghi chú đặc biệt từ khách hàng hoặc thay đổi đặt lịch..."
-                value={bookingNote}
-                onChange={(e) => setBookingNote(e.target.value)}
-              />
-            </div>
+            {visibleCustomerCampaignPromotions.map((camp) => (
+              <div key={camp.campaignId} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Tag color="purple" style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
+                    🎯 Chiến dịch: {camp.campaignName}
+                  </Tag>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {camp.promotions.map((promo) => {
+                    const isSelected = selectedCampaignPromotion?.id === promo.id;
+                    let badgeColor = 'purple';
+                    if (
+                      promo.type === 'PERCENT_DISCOUNT' ||
+                      promo.type === 'FIXED_DISCOUNT' ||
+                      promo.type === 'FIXED_FINAL_PRICE'
+                    ) {
+                      badgeColor = 'red';
+                    } else if (promo.type === 'FREE_SERVICE') {
+                      badgeColor = 'cyan';
+                    } else if (promo.type === 'FREE_PRODUCT') {
+                      badgeColor = 'green';
+                    }
+
+                    return (
+                      <div
+                        key={promo.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedCampaignPromotion(null);
+                          } else {
+                            setSelectedCampaignPromotion(promo);
+                            setSelectedPromotion(null);
+                          }
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          background: isSelected
+                            ? themeMode === 'dark'
+                              ? '#581c87'
+                              : '#e9d5ff'
+                            : themeMode === 'dark'
+                              ? '#1e1b4b'
+                              : '#ffffff',
+                          border: `1.5px solid ${isSelected ? '#9333ea' : themeMode === 'dark' ? '#3730a3' : '#e9d5ff'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                          <Tag color={badgeColor} style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
+                            {promo.label}
+                          </Tag>
+                          <span
+                            style={{
+                              fontSize: '12.5px',
+                              fontWeight: isSelected ? 'bold' : 'normal',
+                              color: token.colorText,
+                            }}
+                          >
+                            {promo.name}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <Tag color="success" style={{ margin: 0, fontSize: '10px', fontWeight: 'bold' }}>
+                            ✓ Đã chọn
+                          </Tag>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Promotion & Referral Section */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>🎟️ CHỌN KHUYẾN MÃI (PROMOTION)</h4>
+            <Select
+              showSearch
+              allowClear
+              filterOption={vietnameseSearchFilter}
+              style={{ width: '100%' }}
+              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+              placeholder="Chọn chương trình khuyến mãi (nếu có)..."
+              value={selectedCampaignPromotion ? `CAMP_${selectedCampaignPromotion.id}` : selectedPromotion?.id}
+              onChange={(val) => {
+                if (!val) {
+                  setSelectedPromotion(null);
+                  setSelectedCampaignPromotion(null);
+                  return;
+                }
+                if (typeof val === 'string' && val.startsWith('CAMP_')) {
+                  const campPromoId = parseInt(val.replace('CAMP_', ''), 10);
+                  let foundCampPromo: CustomerCampaignPromotionItem | null = null;
+                  for (const camp of customerCampaignPromotions) {
+                    const match = camp.promotions.find((p) => p.id === campPromoId);
+                    if (match) {
+                      foundCampPromo = match;
+                      break;
+                    }
+                  }
+                  if (foundCampPromo) {
+                    setSelectedCampaignPromotion(foundCampPromo);
+                    setSelectedPromotion(null);
+                  }
+                } else {
+                  const promo = promotions.find((p) => p.id === val);
+                  setSelectedPromotion(promo || null);
+                  setSelectedCampaignPromotion(null);
+                }
+              }}
+              options={[
+                ...visibleCustomerCampaignPromotions.flatMap((camp) =>
+                  camp.promotions.map((p) => {
+                    let valText = '';
+                    if (p.type === 'PERCENT_DISCOUNT') valText = ` (Giảm ${p.value}%)`;
+                    else if (p.type === 'FIXED_DISCOUNT') valText = ` (Giảm ${p.value.toLocaleString('vi-VN')}đ)`;
+                    else if (p.type === 'FIXED_FINAL_PRICE') {
+                      valText = ` (Thanh toán ${p.value.toLocaleString('vi-VN')}đ · ${getFixedPriceScopeLabel(p)})`;
+                    }
+                    return {
+                      value: `CAMP_${p.id}`,
+                      label: `🎯 [Ưu đãi Chiến dịch: ${camp.campaignName}] ${p.label}${valText}`,
+                    };
+                  })
+                ),
+                ...promotions.map((p) => ({
+                  value: p.id,
+                  label:
+                    p.discountPercentage > 0
+                      ? `${p.name} (Giảm ${p.discountPercentage}%)`
+                      : p.discountAmount > 0
+                        ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)`
+                        : p.name,
+                })),
+              ]}
+            />
+            {fixedPriceEligibilityNotices.map((notice) => (
+              <div
+                key={notice.id}
+                style={{
+                  marginTop: '7px',
+                  fontSize: '11px',
+                  color: notice.isEligible ? (themeMode === 'dark' ? '#86efac' : '#15803d') : '#fa8c16',
+                }}
+              >
+                {notice.isEligible
+                  ? `✓ Dịch vụ đang chọn đủ điều kiện Đồng giá ${notice.price.toLocaleString('vi-VN')}đ (${notice.scopeLabel}).`
+                  : `Đồng giá ${notice.price.toLocaleString('vi-VN')}đ chỉ áp dụng cho ${notice.scopeLabel}; dịch vụ đang chọn không thuộc phạm vi.`}
+              </div>
+            ))}
           </div>
 
-          {/* Divider separating inputs from slots */}
-          <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '6px 0' }} />
-
-          {/* SLOT AVAILABILITY MATRIX */}
           <div>
+            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+              👥 MÃ GIỚI THIỆU (SĐT NGƯỜI GIỚI THIỆU)
+            </h4>
+            <Input
+              placeholder="Nhập số điện thoại của khách giới thiệu (nếu có)..."
+              value={referralPhone}
+              onChange={(e) => setReferralPhone(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Price Calculation details */}
+        {selectedService && selectedService.id !== 0 && (
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              background: themeMode === 'dark' ? '#1e293b' : '#f8fafc',
+              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+              fontSize: '13px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#888' }}>Giá gốc dịch vụ:</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{priceInfo.original.toLocaleString('vi-VN')}đ</span>
+            </div>
+            {priceInfo.discount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fa8c16' }}>
+                <span>
+                  Giảm giá (
+                  {selectedCampaignPromotion
+                    ? `${selectedCampaignPromotion.name} - ${selectedCampaignPromotion.label}`
+                    : selectedPromotion?.name}
+                  ):
+                </span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  -{priceInfo.discount.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+            )}
+            {selectedCampaignPromotion?.type === 'FIXED_FINAL_PRICE' && (
+              <div style={{ color: themeMode === 'dark' ? '#c4b5fd' : '#7e22ce', fontSize: '12px' }}>
+                Đồng giá {Math.round(selectedCampaignPromotion.value).toLocaleString('vi-VN')}đ là giá thanh toán cuối
+                cùng cho {getFixedPriceScopeLabel(selectedCampaignPromotion)}.
+              </div>
+            )}
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '16px',
-                flexWrap: 'wrap',
-                gap: '10px',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                paddingTop: '4px',
+                marginTop: '2px',
               }}
             >
-              <div>
-                <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
-                <CvDatePicker
-                  key={`${selectedCV ? selectedCV.id : 'no-cv'}-${safeBookingDate ? safeBookingDate.valueOf() : 0}-${pickerNonce}-${(staffList || []).length}`}
-                  style={{ marginLeft: '8px' }}
-                  value={safeBookingDate}
-                  onChange={(val) => {
-                    if (!val) return;
-                    setBookingDate(dayjs(val));
-                    setPickerNonce((prev) => prev + 1);
-                  }}
-                  selectedCV={selectedCV}
-                  staffList={staffList}
-                  themeMode={themeMode}
-                />
+              <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>Giá thanh toán tạm tính:</span>
+              <span style={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums' }}>
+                {priceInfo.final.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+          </div>
+        )}
 
-                <style>{`
+        {/* Select Channels & Booking Note */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+              KÊNH TIẾP NHẬN ĐẶT LỊCH (BOOKING CHANNEL)
+            </h4>
+            <Radio.Group value={bookingChannel} onChange={(e) => setBookingChannel(e.target.value)} buttonStyle="solid">
+              {CHANNELS.map((ch) => (
+                <Radio.Button
+                  key={ch.key}
+                  value={ch.key}
+                  style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}
+                >
+                  {ch.key}
+                </Radio.Button>
+              ))}
+            </Radio.Group>
+          </div>
+
+          <div>
+            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
+            <TextArea
+              rows={3}
+              placeholder="Nhập các ghi chú đặc biệt từ khách hàng hoặc thay đổi đặt lịch..."
+              value={bookingNote}
+              onChange={(e) => setBookingNote(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Divider separating inputs from slots */}
+        <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '6px 0' }} />
+
+        {/* SLOT AVAILABILITY MATRIX */}
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '10px',
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
+              <CvDatePicker
+                key={`${selectedCV ? selectedCV.id : 'no-cv'}-${safeBookingDate ? safeBookingDate.valueOf() : 0}-${pickerNonce}-${(staffList || []).length}`}
+                style={{ marginLeft: '8px' }}
+                value={safeBookingDate}
+                onChange={(val) => {
+                  if (!val) return;
+                  setBookingDate(dayjs(val));
+                  setPickerNonce((prev) => prev + 1);
+                }}
+                selectedCV={selectedCV}
+                staffList={staffList}
+                themeMode={themeMode}
+              />
+
+              <style>{`
                   .ant-picker-dropdown .ant-picker-cell-today .ant-picker-cell-inner::before,
                   .ant-picker-cell-today .ant-picker-cell-inner::before {
                     display: none !important;
@@ -1686,241 +1679,237 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                     cursor: not-allowed !important;
                   }
                 `}</style>
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1890ff' }}>
-                {safeBookingDate.format('dddd (DD/MM/YYYY)')}
-              </div>
             </div>
-
-            <SlotMatrixGrid
-              slotMatrix={slotMatrix}
-              loadingSlots={loadingSlots}
-              selectedSlot={selectedSlot}
-              setSelectedSlot={handleSelectSlot}
-              selectedCN={selectedCN}
-              morning={morning}
-              afternoon={afternoon}
-              night={night}
-              themeMode={themeMode}
-              selectedCV={selectedCV}
-            />
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1890ff' }}>
+              {safeBookingDate.format('dddd (DD/MM/YYYY)')}
+            </div>
           </div>
 
-          {/* OPTIONAL COLLAPSIBLE MESSAGE CONFIRMATION TEMPLATE */}
-          <Card
-            size="small"
-            title={
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                }}
-                onClick={() => setShowMessagePreview((prev) => !prev)}
-              >
-                <span
-                  style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
+          <SlotMatrixGrid
+            slotMatrix={slotMatrix}
+            loadingSlots={loadingSlots}
+            selectedSlot={selectedSlot}
+            setSelectedSlot={handleSelectSlot}
+            selectedCN={selectedCN}
+            morning={morning}
+            afternoon={afternoon}
+            night={night}
+            themeMode={themeMode}
+            selectedCV={selectedCV}
+          />
+        </div>
+
+        {/* OPTIONAL COLLAPSIBLE MESSAGE CONFIRMATION TEMPLATE */}
+        <Card
+          size="small"
+          title={
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+              }}
+              onClick={() => setShowMessagePreview((prev) => !prev)}
+            >
+              <span style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN ĐẶT LỊCH
+              </span>
+              <Button size="small" type="link" style={{ padding: 0 }}>
+                {showMessagePreview ? 'Thu gọn ▲' : 'Mở rộng / Tùy chỉnh mẫu ▼'}
+              </Button>
+            </div>
+          }
+          style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
+        >
+          {showMessagePreview ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '6px',
+                  }}
                 >
-                  <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN ĐẶT LỊCH
-                </span>
-                <Button size="small" type="link" style={{ padding: 0 }}>
-                  {showMessagePreview ? 'Thu gọn ▲' : 'Mở rộng / Tùy chỉnh mẫu ▼'}
-                </Button>
-              </div>
-            }
-            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
-          >
-            {showMessagePreview ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <div
+                  <label
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
                     }}
                   >
-                    <label
+                    MẪU TIN NHẮN HỆ THỐNG:
+                  </label>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<SettingOutlined />}
+                    onClick={() => setIsManagerModalOpen(true)}
+                    style={{ color: '#D4A84B', padding: 0 }}
+                  >
+                    ⚙️ Quản lý Mẫu
+                  </Button>
+                </div>
+                <Select
+                  style={{ width: '100%' }}
+                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                  value={selectedTemplateId}
+                  loading={loadingTemplates}
+                  onChange={(val) => {
+                    setSelectedTemplateId(val);
+                    const chosen = bookingTemplates.find((t) => t.id === val);
+                    if (chosen) setCustomMessage(chosen.content);
+                  }}
+                  options={bookingTemplates.map((t) => ({
+                    label: t.title,
+                    value: t.id,
+                  }))}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '8px',
+                  }}
+                >
+                  CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
+                    <Button
+                      key={tagDef.tag}
+                      size="small"
+                      type="dashed"
+                      onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
                       style={{
-                        fontSize: '12.5px',
-                        fontWeight: '600',
-                        color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                        fontSize: '12px',
+                        borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+                        color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
                       }}
                     >
-                      MẪU TIN NHẮN HỆ THỐNG:
-                    </label>
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<SettingOutlined />}
-                      onClick={() => setIsManagerModalOpen(true)}
-                      style={{ color: '#D4A84B', padding: 0 }}
-                    >
-                      ⚙️ Quản lý Mẫu
+                      + {tagDef.label}
                     </Button>
-                  </div>
-                  <Select
-                    style={{ width: '100%' }}
-                    getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                    value={selectedTemplateId}
-                    loading={loadingTemplates}
-                    onChange={(val) => {
-                      setSelectedTemplateId(val);
-                      const chosen = bookingTemplates.find((t) => t.id === val);
-                      if (chosen) setCustomMessage(chosen.content);
-                    }}
-                    options={bookingTemplates.map((t) => ({
-                      label: t.title,
-                      value: t.id,
-                    }))}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '12.5px',
-                      fontWeight: '600',
-                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
-                  </label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
-                      <Button
-                        key={tagDef.tag}
-                        size="small"
-                        type="dashed"
-                        onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
-                        style={{
-                          fontSize: '12px',
-                          borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
-                          color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
-                        }}
-                      >
-                        + {tagDef.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '12.5px',
-                      fontWeight: '600',
-                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    NỘI DUNG MẪU TÙY CHỈNH:
-                  </label>
-                  <TextArea
-                    rows={4}
-                    value={customMessage}
-                    onChange={(e) => setCustomMessage(e.target.value)}
-                    style={{
-                      fontFamily: 'monospace',
-                      fontSize: '13px',
-                      backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                      color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      fontSize: '12.5px',
-                      fontWeight: '600',
-                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                      marginBottom: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <span>
-                      XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
-                      <strong style={{ color: '#D4A84B' }}>
-                        {isNewLead
-                          ? leadName
-                          : selectedCustomer?.name || selectedCustomer?.customerName || 'KHÁCH HÀNG'}
-                      </strong>
-                      :
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                      {evaluateBookingTemplate(customMessage).length} ký tự
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
-                      border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                      color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
-                      fontSize: '13px',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: '1.6',
-                    }}
-                  >
-                    {evaluateBookingTemplate(customMessage)}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <Button icon={<SaveOutlined />} size="small" loading={savingTemplate} onClick={handleSaveTemplate}>
-                    Lưu Template Mẫu
-                  </Button>
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={handleCopyMessage}
-                    style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
-                  >
-                    Sao chép tin nhắn
-                  </Button>
+                  ))}
                 </div>
               </div>
-            ) : (
-              <div
-                style={{
-                  fontSize: '12.5px',
-                  color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {evaluateBookingTemplate(customMessage)}
-              </div>
-            )}
-          </Card>
 
-          {/* Primary 1-Step Submit Button */}
-          <Button
-            type="primary"
-            size="large"
-            icon={<CheckOutlined />}
-            loading={creatingBooking}
-            disabled={isSubmitDisabled}
-            onClick={handleFinalCreateBooking}
-            style={{
-              width: '100%',
-              backgroundColor: isSubmitDisabled ? undefined : '#52c41a',
-              borderColor: isSubmitDisabled ? undefined : '#52c41a',
-              fontWeight: 'bold',
-            }}
-          >
-            Hoàn tất & Tạo Lịch
-          </Button>
-        </div>
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '6px',
+                  }}
+                >
+                  NỘI DUNG MẪU TÙY CHỈNH:
+                </label>
+                <TextArea
+                  rows={4}
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                  }}
+                />
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                    marginBottom: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span>
+                    XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
+                    <strong style={{ color: '#D4A84B' }}>
+                      {isNewLead ? leadName : selectedCustomer?.name || selectedCustomer?.customerName || 'KHÁCH HÀNG'}
+                    </strong>
+                    :
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    {evaluateBookingTemplate(customMessage).length} ký tự
+                  </span>
+                </div>
+                <div
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                    color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+                    fontSize: '13px',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: '1.6',
+                  }}
+                >
+                  {evaluateBookingTemplate(customMessage)}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <Button icon={<SaveOutlined />} size="small" loading={savingTemplate} onClick={handleSaveTemplate}>
+                  Lưu Template Mẫu
+                </Button>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={handleCopyMessage}
+                  style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+                >
+                  Sao chép tin nhắn
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: '12.5px',
+                color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {evaluateBookingTemplate(customMessage)}
+            </div>
+          )}
+        </Card>
+
+        {/* Primary 1-Step Submit Button */}
+        <Button
+          type="primary"
+          size="large"
+          icon={<CheckOutlined />}
+          loading={creatingBooking}
+          disabled={isSubmitDisabled}
+          onClick={handleFinalCreateBooking}
+          style={{
+            width: '100%',
+            backgroundColor: isSubmitDisabled ? undefined : '#52c41a',
+            borderColor: isSubmitDisabled ? undefined : '#52c41a',
+            fontWeight: 'bold',
+          }}
+        >
+          Hoàn tất & Tạo Lịch
+        </Button>
+      </div>
 
       <CreateCustomerModal
         open={isCreateCustomerModalOpen}

@@ -49,6 +49,43 @@ export async function authRoutes(fastify: FastifyInstance) {
     return !!roleRecord?.omicallAutoInit;
   };
 
+  // GET /api/auth/dev-directory (Local Dev Only)
+  if (process.env.NODE_ENV !== 'production') {
+    fastify.get(
+      '/auth/dev-directory',
+      {
+        schema: {
+          tags: ['Auth'],
+          summary: 'List active staff directory for local dev mock login',
+        },
+      },
+      async (_request, reply) => {
+        try {
+          const staffs = await fastify.prisma.crm.crmStaff.findMany({
+            where: { isActive: true },
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              role: true,
+              email: true,
+              avatarUrl: true,
+            },
+            orderBy: [{ role: 'asc' }, { displayName: 'asc' }],
+          });
+
+          return reply.send({ staffs });
+        } catch (error: SafeAny) {
+          fastify.log.error(error, 'Failed to fetch dev directory:');
+          return reply.status(500).send({
+            error: 'Internal Server Error',
+            message: 'Failed to fetch dev directory',
+          });
+        }
+      }
+    );
+  }
+
   // POST /api/auth/login
   fastify.post(
     '/auth/login',
@@ -58,10 +95,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         summary: 'User login with username and password',
         body: {
           type: 'object',
-          required: ['username', 'password'],
+          required: ['username'],
           properties: {
             username: { type: 'string', minLength: 1 },
-            password: { type: 'string', minLength: 1 },
+            password: { type: 'string' },
           },
         },
       },
@@ -69,18 +106,24 @@ export async function authRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { username, password } = request.body as LoginRequest;
 
-      if (!username || !password) {
+      if (!username) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Username and password are required',
+          message: 'Username is required',
         });
       }
 
       try {
-        // Find staff in CRM DB
-        const staff = await fastify.prisma.crm.crmStaff.findUnique({
+        // Find staff in CRM DB by username or email
+        let staff = await fastify.prisma.crm.crmStaff.findUnique({
           where: { username },
         });
+
+        if (!staff) {
+          staff = await fastify.prisma.crm.crmStaff.findFirst({
+            where: { email: username },
+          });
+        }
 
         if (!staff || !staff.isActive) {
           return reply.status(401).send({
@@ -89,13 +132,39 @@ export async function authRoutes(fastify: FastifyInstance) {
           });
         }
 
-        // Check password
-        const isPasswordValid = await bcrypt.compare(password, staff.passwordHash);
-        if (!isPasswordValid) {
-          return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Invalid username or password',
-          });
+        const isSuperAdmin =
+          isSuperAdminRole(staff.role) ||
+          isCanonicalSuperAdminIdentity({ username: staff.username, email: staff.email });
+
+        // On local dev: non-superadmin accounts require no password, superadmin requires 3264 (or real password)
+        if (process.env.NODE_ENV !== 'production') {
+          if (isSuperAdmin) {
+            const isDevPassValid = password === '3264';
+            const isRealPassValid =
+              staff.passwordHash && password ? await bcrypt.compare(password, staff.passwordHash) : false;
+            if (!isDevPassValid && !isRealPassValid) {
+              return reply.status(401).send({
+                error: 'Unauthorized',
+                message: 'Mật khẩu Super Admin không đúng',
+              });
+            }
+          } else {
+            // Local dev mock: non-superadmin accounts bypass password check
+          }
+        } else {
+          if (!password) {
+            return reply.status(400).send({
+              error: 'Bad Request',
+              message: 'Username and password are required',
+            });
+          }
+          const isPasswordValid = await bcrypt.compare(password, staff.passwordHash);
+          if (!isPasswordValid) {
+            return reply.status(401).send({
+              error: 'Unauthorized',
+              message: 'Invalid username or password',
+            });
+          }
         }
 
         const payload: JwtUserPayload = {

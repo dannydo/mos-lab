@@ -42,7 +42,13 @@ import {
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { useTheme } from '../../../../context/ThemeContext';
-import { Staff, LocaStaffActivityStats, LocaStaffActivityLogItem } from '@mos-lab/shared';
+import {
+  Staff,
+  LocaStaffActivityStats,
+  LocaStaffActivityLogItem,
+  maskPhoneNumber,
+  shouldMaskCustomerPhone,
+} from '@mos-lab/shared';
 
 dayjs.extend(isoWeek);
 
@@ -253,16 +259,26 @@ export const LocaStaffActivityTab: React.FC<LocaStaffActivityTabProps> = ({
               >
                 {record.customerName}
               </Button>
-              <div className="flex items-center gap-1">
-                <Text
-                  type="secondary"
-                  className="text-[11px] tabular-nums font-mono flex items-center justify-start gap-1 text-slate-400 text-left"
-                >
-                  <PhoneOutlined className="text-[9px] text-slate-500" />
-                  {record.customerPhone}
-                </Text>
-                <CopyPhoneButton phone={record.customerPhone} size="xs" />
-              </div>
+              {record.customerPhone &&
+                (() => {
+                  const isMaskedRole =
+                    typeof window !== 'undefined'
+                      ? shouldMaskCustomerPhone(JSON.parse(window.localStorage.getItem('mos_user') || '{}')?.role)
+                      : true;
+                  const displayPhone = isMaskedRole ? maskPhoneNumber(record.customerPhone) : record.customerPhone;
+                  return (
+                    <div className="flex items-center gap-1">
+                      <Text
+                        type="secondary"
+                        className="text-[11px] tabular-nums font-mono flex items-center justify-start gap-1 text-slate-400 text-left"
+                      >
+                        <PhoneOutlined className="text-[9px] text-slate-500" />
+                        {displayPhone}
+                      </Text>
+                      {!isMaskedRole && <CopyPhoneButton phone={record.customerPhone} size="xs" />}
+                    </div>
+                  );
+                })()}
             </div>
           </div>
         );

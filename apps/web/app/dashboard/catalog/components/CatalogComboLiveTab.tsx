@@ -156,18 +156,18 @@ export default function CatalogComboLiveTab() {
           ),
       },
       {
-        title: 'Lượt nối còn',
+        title: '✦ Lượt nối còn',
         dataIndex: 'normalCount',
         key: 'normalCount',
         align: 'center',
-        render: (count: number) => <StatusTag status="success" label={`${count} lượt`} />,
+        render: (count: number) => <StatusTag status="success" label={`✦ ${count}`} />,
       },
       {
-        title: 'Lượt dặm còn',
+        title: '↻ Lượt dặm còn',
         dataIndex: 'retainCount',
         key: 'retainCount',
         align: 'center',
-        render: (count: number) => <StatusTag status={count > 0 ? 'cyan' : 'default'} label={`${count} lượt`} />,
+        render: (count: number) => <StatusTag status={count > 0 ? 'cyan' : 'default'} label={`↻ ${count}`} />,
       },
       {
         title: 'Hạn sử dụng',

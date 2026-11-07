@@ -11,16 +11,7 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
-import {
-  EyeOff,
-  Camera,
-
-  Sparkles,
-  CheckCircle2,
-  CloudUpload,
-  CloudCheck,
-  CloudOff,
-} from 'lucide-react';
+import { EyeOff, Camera, Sparkles, CheckCircle2, CloudUpload, CloudCheck, CloudOff } from 'lucide-react';
 
 interface Screen07bLashProgressCleanedProps {
   booking?: BookingItem;
@@ -120,14 +111,24 @@ export function Screen07bLashProgressCleaned({
     onSavePhoto(finalPhoto);
   };
 
-  const customerName = booking?.customerName || 'Chị Quyên';
+  const customerName = (booking?.customerName || 'Chị Quyên').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const displayServiceName = resolveDisplayServiceName(booking);
   const lashSpecDetail = useMemo(() => {
     const parts: string[] = [];
-    if (booking?.attributes?.style) parts.push(`Dáng ${booking.attributes.style}`);
-    if (booking?.attributes?.curl) parts.push(`Cong ${booking.attributes.curl}`);
-    if (booking?.attributes?.length) parts.push(`Dài ${booking.attributes.length}`);
-    if (booking?.attributes?.thickness) parts.push(`${booking.attributes.thickness}`);
+    if (booking?.attributes?.style) parts.push(booking.attributes.style);
+    if (booking?.attributes?.curl) parts.push(booking.attributes.curl);
+    if (booking?.attributes?.length) {
+      parts.push(
+        booking.attributes.length.includes('mm') ? booking.attributes.length : `${booking.attributes.length} mm`
+      );
+    }
+    if (booking?.attributes?.thickness) {
+      parts.push(
+        booking.attributes.thickness.includes('mm')
+          ? booking.attributes.thickness
+          : `${booking.attributes.thickness} mm`
+      );
+    }
     return parts.length > 0 ? parts.join(' · ') : '';
   }, [booking]);
 
@@ -150,18 +151,42 @@ export function Screen07bLashProgressCleaned({
       <LashServicingStepper activeStep={2} />
 
       <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
-        {/* 3. Customer Info Header Card */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 flex items-center justify-between">
-          <div>
-            <div className="text-[16px] font-extrabold text-black">{customerName}</div>
-            <div className="text-[12px] text-gray-500 mt-0.5 font-medium">
-              {displayServiceName}
-              {lashSpecDetail ? ` (${lashSpecDetail})` : ''}
+        {/* 3. Customer Info Header Card: Refactored chuẩn iOS kèm Avatar & 3 dòng thông tin */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 flex items-center gap-3">
+          <div className="relative w-11 h-11 flex-shrink-0">
+            <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 border border-neutral-200 shadow-xs">
+              {booking?.customerAvatar ? (
+                <img
+                  src={booking.customerAvatar}
+                  alt={customerName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <img src="/ios-assets/no-image.png" alt="No Image" className="w-full h-full object-cover" />
+              )}
             </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
           </div>
-          <span className="bg-[#22C55E] text-white font-extrabold text-[11px] px-3 py-1 rounded-full shadow-xs">
-            Đang phục vụ
-          </span>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[15px] font-extrabold text-black truncate tracking-tight">{customerName}</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[9.5px] font-black leading-none shrink-0 shadow-xs">
+                ⚡ Đang phục vụ
+              </span>
+            </div>
+
+            <div className="text-[12px] text-gray-800 font-bold truncate mt-0.5">{displayServiceName}</div>
+
+            {lashSpecDetail && (
+              <div className="text-[11px] text-neutral-500 font-semibold truncate mt-0.5 tabular-nums">
+                {lashSpecDetail}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Tech Spec Card: Thông số kỹ thuật mi */}

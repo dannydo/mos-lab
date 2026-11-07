@@ -7,7 +7,19 @@ import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
-import { Hourglass, Clock, Wifi, WifiOff, AlertTriangle, Zap, Play, Pause, Edit3, CheckCircle2 } from 'lucide-react';
+import {
+  Hourglass,
+  Clock,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
+  Zap,
+  Play,
+  Pause,
+  Edit3,
+  CheckCircle2,
+  RotateCcw,
+} from 'lucide-react';
 
 interface Screen08LashProgressTimerProps {
   booking: BookingItem;
@@ -15,6 +27,7 @@ interface Screen08LashProgressTimerProps {
   onFinishTimer: () => void;
   onEditService?: () => void;
   isAdmin?: boolean;
+  onRevertToIncoming?: (bookingId: number) => void;
 }
 
 export function Screen08LashProgressTimer({
@@ -23,6 +36,7 @@ export function Screen08LashProgressTimer({
   onFinishTimer,
   onEditService,
   isAdmin = false,
+  onRevertToIncoming,
 }: Screen08LashProgressTimerProps) {
   // 1. Tính toán thời gian định mức (Target Duration) chuẩn xác theo dịch vụ
   const displayServiceName = resolveDisplayServiceName(booking);
@@ -176,7 +190,30 @@ export function Screen08LashProgressTimer({
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
-      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ảnh Vệ Sinh" />
+      <IosNavigationBar
+        title="Tiến Trình Nối Mi"
+        onBack={onBack}
+        backTitle="Ảnh Vệ Sinh"
+        rightAction={
+          isAdmin && onRevertToIncoming ? (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Admin: Bạn có chắc chắn muốn hủy ca làm của ${booking.customerName} và đưa về danh sách Chờ đón không?`
+                  )
+                ) {
+                  onRevertToIncoming(booking.id);
+                }
+              }}
+              className="text-rose-500 font-bold text-[12px] px-1 py-1 active:opacity-60 flex items-center gap-1 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Về Chờ đón</span>
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* 2. Steps Subheader (Gom thành 1 thanh ngang Segmented Stepper chuẩn iOS) */}
       <LashServicingStepper activeStep={3} />
@@ -294,8 +331,14 @@ export function Screen08LashProgressTimer({
             <div className="flex items-center justify-between text-gray-500">
               <span>Khay 1 · Mi trên:</span>
               <span className="font-bold text-gray-900">
-                Dáng {booking?.attributes?.style || 'Natural'} · Cong {booking?.attributes?.curl || 'C'} · Dài{' '}
-                {booking?.attributes?.length || '10-12mm'} · Dày {booking?.attributes?.thickness || '0.07mm'}
+                {[
+                  booking?.attributes?.style || 'Natural',
+                  booking?.attributes?.curl || 'C',
+                  booking?.attributes?.length || '10-12 mm',
+                  booking?.attributes?.thickness || '0.07 mm',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </span>
             </div>
             {booking?.attributes?.hasUnderMink && (

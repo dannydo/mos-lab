@@ -159,24 +159,62 @@ export interface NaturalLashDensityOption {
   advice: string;
 }
 
+export function resolveNaturalLashCountLabel(countOrDensity?: string): string | null {
+  if (!countOrDensity) return null;
+  const str = countOrDensity.trim();
+  // Khớp dải số cữ như "60-80", "80-100", "40-60", "100-120", "120-140", "140+", "60 - 80"
+  const matched = str.match(/(\d+\s*[-–+]\s*\d+|\d+\+)/);
+  if (matched) {
+    return matched[0].replace(/\s+/g, '');
+  }
+  // Khớp số thuần ví dụ "70", "85", "80 sợi"
+  const singleNumber = str.match(/^(\d{2,3})/);
+  if (singleNumber) {
+    return singleNumber[1];
+  }
+  // Khớp định dạng cũ: "Thưa (< 80 sợi/mắt)" -> "60-80"
+  if (str.includes('< 80') || str.toLowerCase().includes('thưa')) return '60-80';
+  if (str.includes('80 - 120') || str.toLowerCase().includes('vừa')) return '80-120';
+  if (str.includes('> 120') || str.toLowerCase().includes('dày')) return '120-140';
+  return null;
+}
+
 export const NATURAL_LASH_DENSITY_OPTIONS: NaturalLashDensityOption[] = [
   {
-    id: 'Thưa (< 80 sợi/mắt)',
-    label: 'Thưa (< 80 sợi)',
-    countRange: '< 80 sợi',
-    advice: 'Khuyên tư vấn Volume 2D-3D nhẹ để dặm đầy khoảng trống mà không nặng mi.',
+    id: '40-60',
+    label: '40-60 sợi',
+    countRange: '40-60',
+    advice: 'Nền mi rất thưa, nang mi mỏng. Khuyên nối Volume 2D nhẹ hoặc Classic sợi mảnh để bảo vệ nang mi.',
   },
   {
-    id: 'Vừa (80 - 120 sợi/mắt)',
-    label: 'Vừa (80 - 120 sợi)',
-    countRange: '80 - 120 sợi',
-    advice: 'Mật độ mi tiêu chuẩn cân đối. Nối tự nhiên hay quyến rũ đều rất êm đẹp.',
+    id: '60-80',
+    label: '60-80 sợi',
+    countRange: '60-80',
+    advice: 'Nền mi thưa nhẹ. Khuyên tư vấn Volume 2D-3D nhẹ để dặm đầy khoảng trống mà không nặng mi.',
   },
   {
-    id: 'Dày (> 120 sợi/mắt)',
-    label: 'Dày rậm (> 120 sợi)',
-    countRange: '> 120 sợi',
-    advice: 'Nền mi tự nhiên đã rậm rạp. Chỉ cần nối sợi mảnh 0.07mm đã rất sắc nét.',
+    id: '80-100',
+    label: '80-100 sợi',
+    countRange: '80-100',
+    advice: 'Mật độ mi vừa chuẩn cân đối. Nối tự nhiên hay quyến rũ đều rất êm đẹp.',
+  },
+  {
+    id: '100-120',
+    label: '100-120 sợi',
+    countRange: '100-120',
+    advice: 'Mật độ mi đầy đặn tiêu chuẩn. Rất dễ phối kiểu dáng mi thiết kế.',
+  },
+  {
+    id: '120-140',
+    label: '120-140 sợi',
+    countRange: '120-140',
+    advice: 'Nền mi dày rậm rạp. Chỉ cần nối sợi mảnh 0.07mm đã cực kỳ sắc nét.',
+  },
+  {
+    id: '140+',
+    label: '140+ sợi',
+    countRange: '140+',
+    advice: 'Nền mi cực dày. Khuyên nối tơ nhẹ, không cần nối 100% sợi thật để tránh cộm mắt.',
   },
 ];
 

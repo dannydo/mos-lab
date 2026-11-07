@@ -321,7 +321,21 @@ export function matchesStaffGroupBackend(member: MosChatStaffMember, groupKey: s
   switch (groupKey) {
     case 'DEPT_SHOP':
       return (
-        depts.includes('SHOP') || ['cc', 'coca', 'consultant', 'cv', 'lt', 'technician', 'ktv', 'qa_qc'].includes(role)
+        depts.includes('SHOP') ||
+        [
+          'cc',
+          'coca',
+          'consultant',
+          'cv',
+          'cvl',
+          'cvll',
+          'cv_plus',
+          'cv_plus_plus',
+          'lt',
+          'technician',
+          'ktv',
+          'qa_qc',
+        ].includes(role)
       );
     case 'DEPT_GROWTH':
       return depts.includes('GROWTH') || ['telesales', 'booker', 'oc', 'ls', 'cs', 'control'].includes(role);
@@ -350,7 +364,10 @@ export function matchesStaffGroupBackend(member: MosChatStaffMember, groupKey: s
     case 'TEAM_CC':
       return teams.includes('CC') || ['cc', 'coca', 'consultant'].includes(role);
     case 'TEAM_CV':
-      return teams.includes('CV') || ['cv', 'lt', 'technician', 'ktv'].includes(role);
+      return (
+        teams.includes('CV') ||
+        ['cv', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus', 'lt', 'technician', 'ktv'].includes(role)
+      );
     case 'TEAM_TELESALES':
       return (
         teams.includes('BK_TELESALES') || teams.includes('BK') || ['telesales', 'booker', 'oc', 'ls'].includes(role)

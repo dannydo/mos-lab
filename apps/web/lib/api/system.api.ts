@@ -218,6 +218,19 @@ export const systemApi = {
       const response = await api.post('/auth/impersonate/exit', { auditId });
       return response.data;
     },
+    getDevDirectory: async (): Promise<{
+      staffs: Array<{
+        id: number;
+        username: string;
+        displayName: string;
+        role: string;
+        email?: string | null;
+        avatarUrl?: string | null;
+      }>;
+    }> => {
+      const response = await api.get('/auth/dev-directory');
+      return response.data;
+    },
   },
   roles: {
     list: async (): Promise<unknown[]> => {

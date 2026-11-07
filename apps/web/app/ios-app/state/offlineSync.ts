@@ -341,6 +341,26 @@ export async function getLocalProgressSnapshotAsync(bookingId: number) {
 }
 
 /**
+ * Xóa hoàn toàn snapshot tiến độ của một booking khi Admin hủy ca hoặc trả về Chờ đón
+ */
+export function clearLocalProgressSnapshot(bookingId: number) {
+  if (typeof window === 'undefined' || !bookingId) return;
+  try {
+    const idNum = Number(bookingId);
+    progressMemoryCache.delete(idNum);
+    window.localStorage.removeItem(`${PROGRESS_STORAGE_PREFIX}${idNum}`);
+    void saveToIndexedDb(`${PROGRESS_STORAGE_PREFIX}${idNum}`, null);
+    const activeId = getActiveServicingBookingId();
+    if (activeId && Number(activeId) === idNum) {
+      setActiveServicingBookingId(null);
+      setActiveServicingStep(null);
+    }
+  } catch (err) {
+    console.warn('[OfflineSync] Failed to clear local progress snapshot:', err);
+  }
+}
+
+/**
  * Đồng bộ toàn bộ các action đang chờ lên máy chủ
  */
 export async function syncPendingActions(actorInfo?: {
@@ -356,7 +376,12 @@ export async function syncPendingActions(actorInfo?: {
   const actions = getPendingActions();
   if (actions.length === 0) return { syncedCount: 0, remainingCount: 0 };
 
-  const token = window.localStorage.getItem('mos_token') || '';
+  const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
+  const effectiveAuth = token
+    ? `Bearer ${token}`
+    : process.env.NODE_ENV !== 'production'
+      ? 'Bearer mock-token-for-dev'
+      : undefined;
   let syncedCount = 0;
 
   for (const item of actions) {
@@ -365,7 +390,7 @@ export async function syncPendingActions(actorInfo?: {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(effectiveAuth ? { Authorization: effectiveAuth } : {}),
         },
         body: JSON.stringify({
           bookingId: item.bookingId,

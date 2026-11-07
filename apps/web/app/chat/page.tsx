@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
+import { isCvRole } from '@mos-lab/shared';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 
@@ -29,6 +30,11 @@ function ChatPageContent() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
+      const token = window.localStorage.getItem('mos_token');
+      if (!token) {
+        window.location.replace('/login');
+        return;
+      }
       const stored = window.localStorage.getItem('mos_user');
       if (stored) {
         setCurrentUser(JSON.parse(stored));
@@ -80,7 +86,7 @@ function ChatPageContent() {
         if (typeof window !== 'undefined' && window.opener) {
           window.close();
         } else if (typeof window !== 'undefined') {
-          window.location.href = '/dashboard';
+          window.location.href = isCvRole(currentUser?.role) ? '/dashboard/cv' : '/dashboard';
         }
       }}
       onToggle={() => {}}

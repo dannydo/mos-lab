@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Space, Button, Tooltip, Tag, Popconfirm, message } from 'antd';
-import { InboxOutlined, SunOutlined, SyncOutlined, CopyOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { InboxOutlined, CopyOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { CopyComboModal } from './CopyComboModal';
 import { ElsaReservationModal } from './ElsaReservationModal';
@@ -44,11 +44,12 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
     const warningTextColor = themeMode === 'dark' ? '#fbbf24' : '#92400e';
     const infoTextColor = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
 
-    const activeCombos = (comboBalances || []).filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0);
+    const activeCombos = (comboBalances || []).filter(
+      (cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0
+    );
     const effectiveCustomerId = customerId || customer?.id;
     const isElsaActive =
-      customer?.bucket === 'COMBO_ELSA' ||
-      (customer?.elsaReservation && customer.elsaReservation.status === 'ACTIVE');
+      customer?.bucket === 'COMBO_ELSA' || (customer?.elsaReservation && customer.elsaReservation.status === 'ACTIVE');
 
     const handleReleaseElsa = async () => {
       if (!effectiveCustomerId) return;
@@ -122,13 +123,9 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '16px' }}>❄️</span>
-                  <span style={{ fontWeight: 700, color: '#0284c7', fontSize: '13px' }}>
-                    ĐANG BẢO LƯU COMBO ELSA
-                  </span>
+                  <span style={{ fontWeight: 700, color: '#0284c7', fontSize: '13px' }}>ĐANG BẢO LƯU COMBO ELSA</span>
                   <Tag color="cyan" style={{ marginLeft: 4, fontWeight: 600 }}>
-                    {customer?.elsaReservation?.reservationType === 'INDEFINITE'
-                      ? 'Vô thời hạn (PXL)'
-                      : 'Có thời hạn'}
+                    {customer?.elsaReservation?.reservationType === 'INDEFINITE' ? 'Vô thời hạn (PXL)' : 'Có thời hạn'}
                   </Tag>
                 </div>
                 <Space size={6}>
@@ -167,8 +164,7 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
                   </div>
                   {customer.elsaReservation.endDate && (
                     <div>
-                      <strong>Hạn bảo lưu:</strong>{' '}
-                      {dayjs(customer.elsaReservation.endDate).format('DD/MM/YYYY')}
+                      <strong>Hạn bảo lưu:</strong> {dayjs(customer.elsaReservation.endDate).format('DD/MM/YYYY')}
                     </div>
                   )}
                   {customer.elsaReservation.reminderDate && (
@@ -300,12 +296,12 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
                       }}
                     >
                       <Space size={4}>
-                        <SunOutlined style={{ color: warningTextColor, fontSize: '13px' }} />
+                        <span style={{ color: warningTextColor, fontSize: '13px', fontWeight: 900 }}>✦</span>
                         <strong>{cb.normalCount}</strong>
                       </Space>
 
                       <Space size={4}>
-                        <SyncOutlined style={{ color: infoTextColor, fontSize: '12px' }} />
+                        <span style={{ color: infoTextColor, fontSize: '13px', fontWeight: 900 }}>↻</span>
                         <strong>{cb.retainCount}</strong>
                       </Space>
 
@@ -332,13 +328,13 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>New (Nối mới):</span>
+                        <span>✦ Nối mới:</span>
                         <span>
                           <strong>{cb.normalCount}</strong> / {info.totalNew} buổi
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Refill (Dặm):</span>
+                        <span>↻ Dặm:</span>
                         <span>
                           <strong>{cb.retainCount}</strong> / {info.totalRefill} buổi
                         </span>

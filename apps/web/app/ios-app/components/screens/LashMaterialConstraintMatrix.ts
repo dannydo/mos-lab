@@ -1501,22 +1501,71 @@ export function resolveLashSkuPricing(
   };
 }
 
+import { formatComboName as sharedFormatComboName } from '@mos-lab/shared';
+
+/**
+ * Fallback-safe wrapper for formatComboName to prevent Webpack HMR bundle desync errors
+ */
+export function formatComboName(name?: string, packageKey?: string): string {
+  if (typeof sharedFormatComboName === 'function') {
+    return sharedFormatComboName(name, packageKey);
+  }
+  const raw = String(name || '').trim();
+  if (!raw) return '';
+  return raw.startsWith('❖') ? raw : `❖ ${raw}`;
+}
+
+export interface CustomerTypeMeta {
+  symbol: string;
+  label: string;
+  colorClass: string;
+}
+
+/**
+ * Phân định bộ ký hiệu Unicode sang trọng cho 4 nhóm khách hàng (Kinh Thánh mOS Điều răn COMBO-003):
+ * - ✦ : Khách mới lần đầu (customerVisits <= 1)
+ * - ❖ : Khách có Gói Combo Live (> 2 suất còn lại)
+ * - ❖! : Khách Combo sắp hết (còn ≤ 2 suất)
+ * - ↻ : Khách quay lại
+ */
+export function resolveCustomerTypeMeta(booking?: {
+  customerVisits?: number;
+  comboLiveStatus?: { isComboLive?: boolean; remainingSessions?: number };
+}): CustomerTypeMeta {
+  const visits = booking?.customerVisits || 1;
+  const isCombo = Boolean(booking?.comboLiveStatus?.isComboLive);
+  const remaining = booking?.comboLiveStatus?.remainingSessions ?? 0;
+
+  if (visits <= 1) {
+    return { symbol: '✦', label: 'Khách mới lần đầu', colorClass: 'text-cyan-400' };
+  }
+  if (isCombo && remaining > 0) {
+    if (remaining <= 2) {
+      return { symbol: '❖!', label: 'Khách Combo sắp hết (≤ 2 lần)', colorClass: 'text-rose-400' };
+    }
+    return { symbol: '❖', label: 'Khách có Combo Live', colorClass: 'text-amber-400' };
+  }
+  return { symbol: '↻', label: 'Khách quay lại', colorClass: 'text-purple-300' };
+}
+
 /**
  * Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn placeholder tạm "Any - Lashes"
  */
 export function resolveDisplayServiceName(booking?: {
   serviceName?: string;
-  comboLiveStatus?: { isComboLive?: boolean; comboName?: string };
+  comboLiveStatus?: { isComboLive?: boolean; comboName?: string; packageKey?: string };
+  packageKey?: string;
   lashHistory?: Array<{ serviceName?: string }>;
   attributes?: { material?: string; count?: string; volume?: string; style?: string };
   customerVisits?: number;
 }): string {
   const s = String(booking?.serviceName || '').trim();
+  const pkgKey = booking?.packageKey || booking?.comboLiveStatus?.packageKey;
   if (s && !s.toLowerCase().includes('any')) {
-    return s;
+    return formatComboName(s, pkgKey);
   }
   if (booking?.comboLiveStatus?.isComboLive && booking.comboLiveStatus.comboName) {
-    return booking.comboLiveStatus.comboName;
+    return formatComboName(booking.comboLiveStatus.comboName, pkgKey);
   }
   if (booking?.lashHistory && booking.lashHistory.length > 0) {
     const validHistory = booking.lashHistory.find((h) => h.serviceName && !h.serviceName.toLowerCase().includes('any'));

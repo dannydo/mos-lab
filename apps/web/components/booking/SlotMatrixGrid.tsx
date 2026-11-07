@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { Row, Col, Spin, theme, Popover, Avatar, Button } from 'antd';
 import { EyeOutlined, CopyOutlined } from '@ant-design/icons';
-import { SlotMatrixMap, SlotBookingInfo, SafeAny } from '@mos-lab/shared';
+import { SlotMatrixMap, SlotBookingInfo, SafeAny, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { LashDetailModal } from './LashDetailModal';
 
 interface SlotMatrixGridProps {
-  slotMatrix: SlotMatrixMap | { [time: string]: { available: number; roster: number; booked?: number; bookings?: SlotBookingInfo[] } };
+  slotMatrix:
+    | SlotMatrixMap
+    | { [time: string]: { available: number; roster: number; booked?: number; bookings?: SlotBookingInfo[] } };
   loadingSlots: boolean;
   selectedSlot: string | null;
   setSelectedSlot: (slot: string | null) => void;
@@ -27,6 +29,11 @@ const CustomerBookingTooltipContent: React.FC<{
 }> = ({ booking, onOpenDetail, themeMode }) => {
   const isDark = themeMode === 'dark';
   const [copied, setCopied] = useState(false);
+  const isMaskedRole =
+    typeof window !== 'undefined'
+      ? shouldMaskCustomerPhone(JSON.parse(window.localStorage.getItem('mos_user') || '{}')?.role)
+      : true;
+  const displayPhone = isMaskedRole ? maskPhoneNumber(booking.customerPhone) : booking.customerPhone;
 
   const handleCopy = (e: React.MouseEvent, text?: string | null) => {
     e.stopPropagation();
@@ -78,24 +85,26 @@ const CustomerBookingTooltipContent: React.FC<{
           >
             {booking.customerName}
           </div>
-          {booking.customerPhone && (
+          {displayPhone && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
               <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b' }} className="tabular-nums">
-                📞 {booking.customerPhone}
+                📞 {displayPhone}
               </span>
-              <Button
-                type="text"
-                size="small"
-                onClick={(e) => handleCopy(e, booking.customerPhone)}
-                style={{
-                  height: 18,
-                  padding: '0 4px',
-                  fontSize: '10px',
-                  color: copied ? '#10b981' : isDark ? '#94a3b8' : '#64748b',
-                }}
-              >
-                {copied ? 'Đã chép' : 'Chép'}
-              </Button>
+              {!isMaskedRole && (
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={(e) => handleCopy(e, displayPhone)}
+                  style={{
+                    height: 18,
+                    padding: '0 4px',
+                    fontSize: '10px',
+                    color: copied ? '#10b981' : isDark ? '#94a3b8' : '#64748b',
+                  }}
+                >
+                  {copied ? 'Đã chép' : 'Chép'}
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -191,10 +200,21 @@ const CustomerBookingTooltipContent: React.FC<{
           </div>
           {booking.previousBooking ? (
             <div>
-              <div style={{ fontWeight: 'bold', fontSize: '11px', color: isDark ? '#f1f5f9' : '#0f172a' }} className="tabular-nums">
+              <div
+                style={{ fontWeight: 'bold', fontSize: '11px', color: isDark ? '#f1f5f9' : '#0f172a' }}
+                className="tabular-nums"
+              >
                 {dayjs(booking.previousBooking.date).format('DD/MM/YYYY')}
               </div>
-              <div style={{ fontSize: '11px', color: '#d4a84b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: '#d4a84b',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {booking.previousBooking.serviceName}
               </div>
               <div style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#64748b' }}>
@@ -222,10 +242,21 @@ const CustomerBookingTooltipContent: React.FC<{
           </div>
           {booking.nextBooking ? (
             <div>
-              <div style={{ fontWeight: 'bold', fontSize: '11px', color: isDark ? '#f1f5f9' : '#0f172a' }} className="tabular-nums">
+              <div
+                style={{ fontWeight: 'bold', fontSize: '11px', color: isDark ? '#f1f5f9' : '#0f172a' }}
+                className="tabular-nums"
+              >
                 {dayjs(booking.nextBooking.date).format('DD/MM/YYYY')}
               </div>
-              <div style={{ fontSize: '11px', color: '#10b981', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: '#10b981',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {booking.nextBooking.serviceName}
               </div>
               <div style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#64748b' }}>
@@ -269,8 +300,10 @@ const CustomerBookingTooltipContent: React.FC<{
             paddingRight: 4,
           }}
         >
-          {(!booking.recentLashSets || booking.recentLashSets.length === 0) ? (
-            <div style={{ fontSize: '11px', color: isDark ? '#64748b' : '#94a3b8', padding: '6px 0', textAlign: 'center' }}>
+          {!booking.recentLashSets || booking.recentLashSets.length === 0 ? (
+            <div
+              style={{ fontSize: '11px', color: isDark ? '#64748b' : '#94a3b8', padding: '6px 0', textAlign: 'center' }}
+            >
               Chưa có dữ liệu bộ mi hoàn tất
             </div>
           ) : (
@@ -324,7 +357,7 @@ const CustomerBookingTooltipContent: React.FC<{
                 </div>
 
                 {/* Photo indicator badges */}
-                {(set.beforePhotoUrl || set.afterPhotoUrl) ? (
+                {set.beforePhotoUrl || set.afterPhotoUrl ? (
                   <span
                     style={{
                       background: isDark ? 'rgba(6, 182, 212, 0.15)' : '#ecfeff',
@@ -384,7 +417,7 @@ export const SlotMatrixGrid: React.FC<SlotMatrixGridProps> = ({
   const { token } = theme.useToken();
   const [selectedBookingForDetail, setSelectedBookingForDetail] = useState<SlotBookingInfo | null>(null);
 
-  const cvDisplayName = selectedCV ? (selectedCV.displayName || selectedCV.fullName || 'Chuyên viên') : null;
+  const cvDisplayName = selectedCV ? selectedCV.displayName || selectedCV.fullName || 'Chuyên viên' : null;
 
   return (
     <div>
@@ -637,7 +670,9 @@ export const SlotMatrixGrid: React.FC<SlotMatrixGridProps> = ({
                                   fontSize: '11px',
                                 }}
                               >
-                                {bookings[0].customerName ? bookings[0].customerName.trim().charAt(0).toUpperCase() : 'K'}
+                                {bookings[0].customerName
+                                  ? bookings[0].customerName.trim().charAt(0).toUpperCase()
+                                  : 'K'}
                               </Avatar>
                               {bookings.length > 1 && (
                                 <span

@@ -145,8 +145,15 @@ export function IosProfileMenuSheet({
             <button
               onClick={() => {
                 onClose();
-                if (onOpenChat) onOpenChat();
-                else window.open('/dashboard/chat', '_blank');
+                if (onOpenChat) {
+                  onOpenChat();
+                } else {
+                  const chatUrl = '/chat';
+                  const win = window.open(chatUrl, '_blank');
+                  if (!win || win.closed || typeof win.closed === 'undefined') {
+                    window.location.href = chatUrl;
+                  }
+                }
               }}
               className="w-full p-2.5 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer border border-neutral-800/80 text-left"
             >
@@ -165,8 +172,16 @@ export function IosProfileMenuSheet({
             <button
               onClick={() => {
                 onClose();
-                if (onOpenCareer) onOpenCareer();
-                else window.open('/dashboard/career', '_blank');
+                if (onOpenCareer) {
+                  onOpenCareer();
+                } else {
+                  const staffIdParam = actor?.staffId ? `?staffId=${actor.staffId}` : '';
+                  const careerUrl = `/dashboard/career-path${staffIdParam}`;
+                  const win = window.open(careerUrl, '_blank');
+                  if (!win || win.closed || typeof win.closed === 'undefined') {
+                    window.location.href = careerUrl;
+                  }
+                }
               }}
               className="w-full p-2.5 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer border border-neutral-800/80 text-left"
             >

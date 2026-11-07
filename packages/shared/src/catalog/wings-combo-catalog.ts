@@ -5446,6 +5446,48 @@ export function formatReadableComboContent(
 }
 
 /**
+ * Chuẩn hóa tên combo hiển thị theo quy chuẩn Kinh Thánh mOS:
+ * Hàng 1: ❖ <Tên dòng mi> <Mức giá> <Tỷ lệ Mua+Tặng>
+ * Ví dụ:
+ * - "10+6-volume-550" + "New Volume 550" -> "❖ Volume 550 10+6"
+ * - "10+10-flawless-mink-990" + "New Flawless Mink 990" -> "❖ Flawless Mink 990 10+10"
+ * - "4+1-hyperlight-770" + "New HyperLight 770" -> "❖ HyperLight 770 4+1"
+ * - "7+3-flawless-mink-880" + "New Flawless Mink 880" -> "❖ Flawless Mink 880 7+3"
+ * - "7+3-ivylight-1220" + "Ivylight 4L 1220" -> "❖ Ivylight 1220 7+3"
+ */
+export function formatComboName(name?: string, packageKey?: string): string {
+  if (!name && !packageKey) return '';
+  const str = String(name || '').trim();
+
+  // 1. Trích xuất tỷ lệ mua+tặng (10+6, 10+10, 7+3, 4+1, 5+2, 5 lần, ...) từ packageKey hoặc name
+  const textToScan = `${packageKey || ''} ${str}`;
+  const ratioMatch = textToScan.match(/\b(\d+\+\d+)\b/) || textToScan.match(/\b(\d+\s*lần)\b/i);
+  const ratio = ratioMatch ? ratioMatch[1].replace(/\s+/g, ' ') : '';
+
+  // 2. Chuẩn hóa tên dòng mi:
+  let cleanName = str
+    .replace(/^Combo\s+/i, '')
+    .replace(/^❖\s*/i, '')
+    // Bỏ phần slug database trong ngoặc đơn "(10+6-volume-550) · "
+    .replace(/\([^)]*(\d+\+\d+|\d+\s*lần|volume|mink|hyper|ivy|classic|under)[^)]*\)\s*·?\s*/gi, '')
+    // Bỏ thông số fan/sợi trong ngoặc ở cuối "(70 sợi)", "(4X · 70 fan)", "(90 nhịp)"
+    .replace(/\s*\([^)]*\)$/, '')
+    .trim();
+
+  // Bỏ các từ đếm số buổi như "5 lần", "10 lần" hoặc "7+3" nếu đang dính trong cleanName
+  cleanName = cleanName.replace(/\b\d+\s*lần\b/gi, '').trim();
+  cleanName = cleanName.replace(/\b\d+\+\d+\b/g, '').trim();
+
+  // Bỏ từ "New " hoặc "Gói " ở đầu tên theo chuẩn: "New Volume 550" -> "Volume 550"
+  cleanName = cleanName.replace(/^(New|Gói)\s+/i, '').trim();
+  cleanName = cleanName.replace(/\s{2,}/g, ' ');
+
+  // Ghép lại chuẩn: ❖ <Tên dòng mi> <Tỷ lệ>
+  const finalTitle = [cleanName, ratio].filter(Boolean).join(' ');
+  return finalTitle ? `❖ ${finalTitle}` : '❖ Gói Đang Active';
+}
+
+/**
  * Kiểm tra điều kiện mua gói Welcome (2 tặng 1):
  * Quy tắc bất biến: Chỉ áp dụng duy nhất trong ngày đầu tiên khách sử dụng dịch vụ tại Wings.
  * Qua ngày hôm sau (hoặc khách đã có lịch sử nối mi từ các ngày trước / customerVisits > 1) thì khóa gói 2 tặng 1.

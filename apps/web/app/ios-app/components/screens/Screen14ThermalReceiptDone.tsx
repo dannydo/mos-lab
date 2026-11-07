@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
@@ -9,9 +10,10 @@ interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
   onFinishOrder: () => void;
+  onBack?: () => void;
 }
 
-export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Screen14ThermalReceiptDoneProps) {
+export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBack }: Screen14ThermalReceiptDoneProps) {
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = booking?.customerPhone || '0933.779.207';
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
@@ -56,9 +58,20 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
   return (
     <div className="flex-1 flex flex-col justify-between bg-black select-none px-4 pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] overflow-y-auto">
       {/* Top Header */}
-      <div className="text-center pb-2">
-        <h1 className="text-[#FFB400] font-bold text-[17px] tracking-tight">
-          Hoàn Tất Ca Làm & Ghi Nhận Thưởng {isCheckoutStaffCc ? 'CC' : 'CV🪶'}
+      <div className="relative flex items-center justify-center pb-2">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="absolute left-0 p-1.5 -ml-1 rounded-full bg-[#1C1C1E] border border-neutral-800 text-neutral-300 hover:text-white active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4 text-amber-400" />
+            <span>Quay lại</span>
+          </button>
+        )}
+        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight">
+          {booking?.status === 'DONE'
+            ? 'Chi Tiết Hóa Đơn & Ghi Nhận Thưởng'
+            : `Hoàn Tất Ca Làm & Ghi Nhận Thưởng ${isCheckoutStaffCc ? 'CC' : 'CV🪶'}`}
         </h1>
       </div>
 
@@ -134,15 +147,9 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
               ) : comboRedemption ? (
                 <div className="text-[10.5px] text-sky-700 font-bold">
                   ✓ Trừ 1 lượt gói · Ví còn{' '}
-                  <span className="tabular-nums">
-                    {(comboRedemption.paidRemaining ?? 0) + (comboRedemption.bonusRemaining ?? 0)}
-                    {comboRedemption.totalSessions ? `/${comboRedemption.totalSessions}` : ''}
+                  <span className="tabular-nums font-black text-sky-900">
+                    ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
                   </span>
-                  {(comboRedemption.paidRemaining !== undefined) && (
-                    <span className="font-semibold">
-                      {' '}({comboRedemption.paidRemaining} mua + {comboRedemption.bonusRemaining ?? 0} tặng)
-                    </span>
-                  )}
                 </div>
               ) : null}
             </div>
@@ -162,35 +169,35 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
           {selectedCombo && (
             <div className="space-y-1">
               <div className="flex justify-between items-baseline gap-2 text-black">
-                <span className="font-bold text-[12.5px] flex-1 min-w-0">2. {selectedCombo.name}</span>
+                <span className="font-bold text-[12.5px] flex-1 min-w-0">
+                  {comboRedemption ? '2. Mua thêm: ' : '2. '}
+                  {selectedCombo.name}
+                </span>
                 <span className="tabular-nums text-black font-extrabold whitespace-nowrap shrink-0 text-[12.5px]">
                   {selectedCombo.price.toLocaleString('vi-VN')} đ
                 </span>
               </div>
               {selectedCombo.remainingAfterToday && (
                 <div className="text-[10px] text-indigo-900 bg-indigo-50/80 px-2 py-1 rounded-md border border-indigo-200 tabular-nums">
-                  ✨ Số dư ví gói sau hôm nay: Còn{' '}
+                  ✨ Ví gói mới: ✦{' '}
                   <strong>
-                    {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} buổi
+                    {selectedCombo.remainingAfterToday.paidNew + selectedCombo.remainingAfterToday.bonusNew}
                   </strong>{' '}
-                  ({selectedCombo.remainingAfterToday.totalPaidRemaining} mua +{' '}
-                  {selectedCombo.remainingAfterToday.totalBonusRemaining} tặng)
+                  · ↻{' '}
+                  <strong>
+                    {selectedCombo.remainingAfterToday.paidRefill + selectedCombo.remainingAfterToday.bonusRefill}
+                  </strong>{' '}
+                  (Đủ {selectedCombo.remainingAfterToday.totalRemaining} buổi)
                 </div>
               )}
             </div>
           )}
 
-          {/* Item nếu chỉ trừ gói cũ */}
-          {comboRedemption && !selectedCombo && (
+          {/* Item nếu trừ gói cũ */}
+          {comboRedemption && (
             <div className="text-[10.5px] text-sky-900 bg-sky-50 p-2 rounded-lg border border-sky-200 tabular-nums">
-              • {comboRedemption.explanation} · Ví còn{' '}
-              <strong>
-                {(comboRedemption.paidRemaining ?? 0) + (comboRedemption.bonusRemaining ?? 0)}
-                {comboRedemption.totalSessions ? `/${comboRedemption.totalSessions}` : ''} buổi
-              </strong>
-              {comboRedemption.paidRemaining !== undefined && (
-                <span> ({comboRedemption.paidRemaining} mua + {comboRedemption.bonusRemaining ?? 0} tặng)</span>
-              )}
+              • {comboRedemption.explanation} · Ví cũ sau ca còn ✦ <strong>{comboRedemption.paidRemaining ?? 0}</strong>{' '}
+              · ↻ <strong>{comboRedemption.bonusRemaining ?? 0}</strong>
             </div>
           )}
 
@@ -370,10 +377,10 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder }: Sc
           ✓ Đã ghi nhận check_in_staff_id & check_out_staff_id = {checkOutStaff} ({isCheckoutStaffCc ? 'CC' : 'CV🪶'})
         </div>
         <button
-          onClick={onFinishOrder}
-          className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[15px] shadow-md active:scale-98 transition-transform text-center"
+          onClick={booking?.status === 'DONE' ? onBack || onFinishOrder : onFinishOrder}
+          className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer"
         >
-          ĐÓNG & QUAY VỀ DANH SÁCH KHÁCH HÀNG
+          {booking?.status === 'DONE' ? 'QUAY VỀ DANH SÁCH LỊCH HẸN' : 'ĐÓNG & QUAY VỀ DANH SÁCH KHÁCH HÀNG'}
         </button>
       </div>
     </div>

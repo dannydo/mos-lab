@@ -906,6 +906,62 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'COMBO-003',
+    book: 'CUSTOMER',
+    title:
+      'Bộ Ba Ký Hiệu Chuẩn Combo Toàn Hệ Thống: ❖ Gói Combo · ✦ Nối mới · ↻ Dặm & Phân Định Tuyệt Đối Với Ví Kim Cương 💎',
+    summary:
+      'Toàn bộ hệ sinh thái mOS bắt buộc dùng ký hiệu ❖ (Gói Combo, thay thế chữ "Combo"), ✦ (Nối mới) và ↻ (Dặm); cấm tuyệt đối dùng biểu tượng 💎 cho Combo để tránh nhầm lẫn với Ví Kim Cương.',
+    commandments: [
+      '1. Ký hiệu Gói Combo (❖ · Unicode U+2756 · Hoa thoi 4 cánh): Biểu tượng duy nhất đại diện cho Gói Combo (thay thế hoàn toàn chữ "Combo" dài dòng gây tràn dòng trên màn hình hẹp, card và hóa đơn). Ví dụ: "❖ 5 lần New HyperLight 770", "❖ (10+6) · New Volume".',
+      '2. Ký hiệu Nối Mới (✦ · Full Set): Đại diện duy nhất cho số suất Nối mới (normal_count / paid_new / bonus_new).',
+      '3. Ký hiệu Dặm Mi (↻ · Retouch / Refill): Đại diện duy nhất cho số suất Dặm bảo hành/Dặm định kỳ (retain_count / paid_refill / bonus_refill).',
+      '4. Cấm tuyệt đối dùng icon 💎 cho Combo: Biểu tượng 💎 chỉ được phép sử dụng duy nhất cho Ví Kim Cương (Loyalty Points, quy đổi 1 💎 = 1.000 VNĐ dùng để cấn trừ thanh toán hóa đơn). Mọi giao diện, bảng biểu, thẻ card và hóa đơn tuyệt đối không được gán 💎 vào số lượt Combo.',
+      '5. Quy tắc hiển thị Unicode tối giản: Không dùng chữ rườm rà trên các nhãn card; hiển thị theo định dạng "✦ X · ↻ Y" (Ví dụ: "✦ 2 · ↻ 9").',
+      '6. Quy tắc hiển thị cặp đôi luôn đầy đủ (The Pair Invariant): Mọi gói combo tại Wings luôn luôn được xem là một set đi liền [✦ Nối mới] và [↻ Dặm] theo định dạng "✦ X · ↻ Y" (Ví dụ: "✦ 4 · ↻ 0", "✦ 0 · ↻ 3"). Người dùng và Chuyên Viên không bao giờ phải suy nghĩ hay phỏng đoán một con số đơn lẻ đại diện cho loại suất nào.',
+      '7. Quy tắc số 0 màu xám trung tính (Gray Zero Invariant): Khi một trong hai vế không có lượt làm (normal = 0 hoặc retain = 0), bắt buộc vẫn ghi rõ số 0 và áp dụng màu xám trung tính (text-neutral-500 font-bold) để biểu thị rõ ràng đã hết hoặc không có, trong khi vế còn lại (> 0) giữ màu sắc nhận diện nổi bật (✦ Vàng Gold / ↻ Xanh Cyan).',
+    ],
+    rationale:
+      'Chữ "Combo" chiếm diện tích ngang lớn làm cắt cụt tên dịch vụ trên màn hình di động ("Combo 5 lần New HyperLi..."). Đồng thời khách hàng và nhân viên thường xuyên nhầm lẫn giữa số lượt làm mi trong gói Combo và điểm số dư trong Ví Kim Cương. Bộ ba ký hiệu ❖ Gói Combo · ✦ Nối mới · ↻ Dặm tạo ra ngôn ngữ thị giác đẳng cấp, tinh gọn và chuẩn mực nhất trên toàn hệ sinh thái mOS. Việc luôn hiển thị đủ bộ cặp [✦ Nối · ↻ Dặm] với màu xám cho số 0 triệt tiêu hoàn toàn sự bối rối khi đọc số dư.',
+    tags: [
+      'Combo Canon',
+      '❖ Gói Combo',
+      '✦ Nối mới',
+      '↻ Dặm',
+      'Ví Kim Cương',
+      '💎',
+      'Ký hiệu chuẩn',
+      'UI Invariant',
+      'The Pair Invariant',
+      'Gray Zero Invariant',
+    ],
+    routeScopes: [
+      '/ios-app',
+      '/dashboard/customers',
+      '/dashboard/appointments',
+      '/dashboard/catalog',
+      '/dashboard/loca',
+      '/dashboard/bk',
+    ],
+    status: 'ACTIVE',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-07',
+    sources: [
+      {
+        label: 'Kinh Thánh mOS · Điều răn COMBO-003',
+        reference: 'packages/shared/src/business-rules/mos-bible.ts',
+      },
+      {
+        label: 'Component ComboSessionBadge dùng chung',
+        reference: 'apps/web/app/ios-app/components/ui-kit/ComboSessionBadge.tsx',
+      },
+      {
+        label: 'Thẻ Khách hàng mOS & Hóa đơn nhiệt',
+        reference: 'apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx',
+      },
+    ],
+  },
+  {
     id: 'CARE-001',
     book: 'CUSTOMER',
     title: 'Dặm mi có hạn, tình thương thì không',

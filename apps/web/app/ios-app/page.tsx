@@ -136,6 +136,8 @@ function IosAppInner() {
             lastRefreshedAt={state.lastRefreshedAt}
             isLiveDb={state.isLiveDb}
             onRefreshDb={() => state.refreshDb()}
+            dateOffset={state.selectedDateOffset}
+            onDateOffsetChange={state.handleDateOffsetChange}
             role={state.role}
             canSwitchRole={state.canSwitchRole}
             onRoleChange={state.setRole}
@@ -145,19 +147,29 @@ function IosAppInner() {
             activeServicingBooking={state.activeServicingBooking}
             onResumeServicing={state.handleResumeServicing}
             onSelectBooking={(id) => {
-              state.setActiveBookingId(id);
-              state.setCurrentStep(2);
+              const idNum = Number(id);
+              state.setActiveBookingId(idNum);
+              const target = state.bookings.find((b) => Number(b.id) === idNum);
+              if (target?.status === 'DONE') {
+                state.setCurrentStep(15);
+              } else {
+                state.setCurrentStep(2);
+              }
             }}
             onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
+            isAdmin={state.isAdmin}
+            onRevertToIncoming={state.handleRevertToIncoming}
           />
         );
-      case 2:
+      case 2: {
+        const currentBooking =
+          state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) || state.activeBooking;
         return (
           <Screen02CheckInProfile
-            booking={state.activeBooking}
+            booking={currentBooking}
             actor={state.actor}
             isCheckInLocked={Boolean(
-              state.activeServicingBooking && state.activeBooking.id !== state.activeServicingBooking.id
+              !state.isAdmin && state.activeServicingBooking && currentBooking.id !== state.activeServicingBooking.id
             )}
             activeServicingCustomerName={state.activeServicingBooking?.customerName}
             onResumeServicing={() => state.handleResumeServicing()}
@@ -166,15 +178,19 @@ function IosAppInner() {
             onQuickCheckIn={state.handleSaveConsultation}
           />
         );
-      case 3:
+      }
+      case 3: {
+        const currentBooking =
+          state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) || state.activeBooking;
         return (
           <Screen03ConsultationMatrix
-            booking={state.activeBooking}
+            booking={currentBooking}
             actor={state.actor}
             onBack={() => state.setCurrentStep(2)}
             onSave={state.handleSaveConsultation}
           />
         );
+      }
       case 4:
         return <Screen04StaffQueueAssign onBack={() => state.setCurrentStep(3)} onAssign={state.handleAssignStaff} />;
       case 5:
@@ -218,6 +234,7 @@ function IosAppInner() {
             onFinishTimer={state.handleFinishTimer}
             onEditService={() => state.handleOpenConsultation(9)}
             isAdmin={state.isAdmin}
+            onRevertToIncoming={state.handleRevertToIncoming}
           />
         );
       case 10:
@@ -273,6 +290,7 @@ function IosAppInner() {
             booking={state.activeBooking}
             actor={state.actor}
             onFinishOrder={state.handleFinishOrder}
+            onBack={() => state.setCurrentStep(1)}
           />
         );
       default:
@@ -281,6 +299,8 @@ function IosAppInner() {
             bookings={state.bookings}
             bookingSegment={state.bookingSegment}
             setBookingSegment={state.setBookingSegment}
+            dateOffset={state.selectedDateOffset}
+            onDateOffsetChange={state.handleDateOffsetChange}
             role={state.role}
             canSwitchRole={state.canSwitchRole}
             onRoleChange={state.setRole}
@@ -288,10 +308,18 @@ function IosAppInner() {
             scopeMode={state.scopeMode}
             onScopeModeChange={state.setScopeMode}
             onSelectBooking={(id) => {
-              state.setActiveBookingId(id);
-              state.setCurrentStep(2);
+              const idNum = Number(id);
+              state.setActiveBookingId(idNum);
+              const target = state.bookings.find((b) => Number(b.id) === idNum);
+              if (target?.status === 'DONE') {
+                state.setCurrentStep(15);
+              } else {
+                state.setCurrentStep(2);
+              }
             }}
             onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
+            isAdmin={state.isAdmin}
+            onRevertToIncoming={state.handleRevertToIncoming}
           />
         );
     }
@@ -366,9 +394,20 @@ function IosAppInner() {
           }}
           onOpenChat={() => {
             setIsProfileSheetOpen(false);
+            const chatUrl = '/chat';
+            const win = window.open(chatUrl, '_blank');
+            if (!win || win.closed || typeof win.closed === 'undefined') {
+              window.location.href = chatUrl;
+            }
           }}
           onOpenCareer={() => {
             setIsProfileSheetOpen(false);
+            const staffIdParam = state.actor?.staffId ? `?staffId=${state.actor.staffId}` : '';
+            const careerUrl = `/dashboard/career-path${staffIdParam}`;
+            const win = window.open(careerUrl, '_blank');
+            if (!win || win.closed || typeof win.closed === 'undefined') {
+              window.location.href = careerUrl;
+            }
           }}
         />
       </div>

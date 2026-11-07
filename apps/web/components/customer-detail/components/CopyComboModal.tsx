@@ -147,8 +147,8 @@ export const CopyComboModal: React.FC<CopyComboModalProps> = ({
     if (!combo) return {};
     const comboName = `${combo.serviceName || ''} ${combo.packageKey ? `(${combo.packageKey})` : ''}`.trim();
     const expiryStr = combo.dateExpired ? new Date(combo.dateExpired).toLocaleDateString('vi-VN') : 'Không thời hạn';
-    const newStr = `${combo.normalCount || 0}/${comboInfo?.totalNew || 0} buổi`;
-    const refillStr = `${combo.retainCount || 0}/${comboInfo?.totalRefill || 0} buổi`;
+    const newStr = `✦ ${combo.normalCount || 0}/${comboInfo?.totalNew || 0} buổi`;
+    const refillStr = `↻ ${combo.retainCount || 0}/${comboInfo?.totalRefill || 0} buổi`;
     const ccStr = combo.creatorStaffName || 'Wings Lashes';
     const nameStr = customerName || 'Khách hàng';
 
@@ -208,8 +208,8 @@ export const CopyComboModal: React.FC<CopyComboModalProps> = ({
   const availableTags = [
     { label: 'Tên KH', tag: '{ten_khach}', color: 'orange' },
     { label: 'Tên Combo', tag: '{ten_combo}', color: 'blue' },
-    { label: 'Nối mới', tag: '{noi_moi}', color: 'gold' },
-    { label: 'Dặm mi', tag: '{dam_mi}', color: 'cyan' },
+    { label: '✦ Nối mới', tag: '{noi_moi}', color: 'gold' },
+    { label: '↻ Dặm mi', tag: '{dam_mi}', color: 'cyan' },
     { label: 'Hạn dùng', tag: '{han_dung}', color: 'red' },
     { label: 'Tư vấn viên', tag: '{cc_phu_trach}', color: 'purple' },
   ];

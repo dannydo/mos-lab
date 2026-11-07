@@ -68,7 +68,8 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
       key: 'sessions',
       render: (_: SafeAny, record: SafeAny) => (
         <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-          Mới: <strong>{record.normalCount}</strong> / Dặm: <strong>{record.retainCount}</strong>
+          <span style={{ color: '#d97706', fontWeight: 900 }}>✦</span> <strong>{record.normalCount}</strong> ·{' '}
+          <span style={{ color: '#0284c7', fontWeight: 900 }}>↻</span> <strong>{record.retainCount}</strong>
         </span>
       ),
       width: '130px',

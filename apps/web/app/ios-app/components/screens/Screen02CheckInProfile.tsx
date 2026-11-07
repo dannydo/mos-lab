@@ -6,6 +6,7 @@ import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl } from '../../state
 import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
 import {
   Check,
   Sparkles,
@@ -29,10 +30,13 @@ import {
   parseUnderMinkLengthMm,
   resolveQuickCheckInComboPreset,
   resolveDisplayServiceName,
+  formatComboName,
+  resolveCustomerTypeMeta,
   stepUnderMinkCount,
   stepUnderMinkLength,
   UNDER_MINK_PREP_SPEC,
 } from './LashMaterialConstraintMatrix';
+import { resolveNaturalLashCountLabel } from './NaturalLashAssessmentData';
 
 interface Screen02CheckInProfileProps {
   booking: BookingItem;
@@ -64,6 +68,7 @@ interface Screen02CheckInProfileProps {
       naturalLashLength?: string;
       naturalLashThickness?: string;
       naturalLashDensity?: string;
+      naturalLashCount?: string;
       isNewClientDiagnosticDone?: boolean;
       lashHealth?: string;
       lashTrail?: string;
@@ -103,7 +108,7 @@ export function Screen02CheckInProfile({
   onCheckIn,
   onQuickCheckIn,
 }: Screen02CheckInProfileProps) {
-  const customerName = booking?.customerName || 'Khách Hàng';
+  const customerName = (booking?.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const customerPhone = booking?.customerPhone || '0901.xxx.xxx';
   const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = booking?.servicePrice ? `${booking.servicePrice.toLocaleString('vi-VN')} đ` : '550.000 đ';
@@ -376,7 +381,11 @@ export function Screen02CheckInProfile({
         eyeShape: booking?.attributes?.eyeShape || 'Mí lót / Sụp mí (Hooded)',
         naturalLashLength: booking?.attributes?.naturalLashLength || '8mm',
         naturalLashThickness: booking?.attributes?.naturalLashThickness || '0.05-0.07mm',
-        naturalLashDensity: booking?.attributes?.naturalLashDensity || 'Vừa (80 - 120 sợi/mắt)',
+        naturalLashDensity: booking?.attributes?.naturalLashDensity || '60-80',
+        naturalLashCount:
+          booking?.attributes?.naturalLashCount ||
+          resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity) ||
+          '60-80',
         isNewClientDiagnosticDone: true,
         lashHealth: booking?.attributes?.lashHealth || 'Mi khỏe (Healthy)',
         lashTrail: booking?.attributes?.lashTrail || 'Chúc xuống (Downwards)',
@@ -430,18 +439,29 @@ export function Screen02CheckInProfile({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-[17px] font-bold text-white tracking-tight truncate">{customerName}</h2>
-              {visits >= 5 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30 font-bold tracking-tight">
-                  GOLD VIP
-                </span>
-              )}
-            </div>
+            {(() => {
+              const typeMeta = resolveCustomerTypeMeta(booking);
+              return (
+                <div className="flex items-center gap-2">
+                  <span className={`text-[14px] font-black select-none ${typeMeta.colorClass}`} title={typeMeta.label}>
+                    {typeMeta.symbol}
+                  </span>
+                  <h2 className="text-[17px] font-bold text-white tracking-tight truncate">{customerName}</h2>
+                  {visits >= 5 && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30 font-bold tracking-tight">
+                      GOLD VIP
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             <div className="text-[13px] text-neutral-400 font-normal mt-0.5 tabular-nums">{customerPhone}</div>
             <div className="text-[12px] text-neutral-300 font-medium mt-0.5">
               <span>
                 Lần ghé: <strong className="font-bold text-white">{visits}</strong>
+                {preset.daysSinceLastVisit !== null && visits > 1 && (
+                  <span className="text-neutral-400 ml-1">· {preset.daysSinceLastVisit}N</span>
+                )}
               </span>
             </div>
           </div>
@@ -457,7 +477,7 @@ export function Screen02CheckInProfile({
                   <Zap className="w-3 h-3 fill-current" />
                 </span>
                 <span className="text-[12.5px] font-black text-white truncate">
-                  {booking?.comboLiveStatus?.comboName || 'Gói Combo Live'}
+                  {formatComboName(booking?.comboLiveStatus?.comboName) || 'Gói ❖ Live'}
                 </span>
               </div>
               <div className="flex items-center gap-1 shrink-0 tabular-nums">
@@ -472,9 +492,13 @@ export function Screen02CheckInProfile({
                     {preset.daysSinceLastVisit} ngày
                   </span>
                 )}
-                <span className="bg-[#FFB400] text-black text-[10.5px] font-black px-2 py-0.5 rounded-full">
-                  Còn {remainingSessions}
-                </span>
+                <ComboSessionBadge
+                  normalRemaining={preset.normalRemaining}
+                  retainRemaining={preset.retainRemaining}
+                  remainingSessions={remainingSessions}
+                  comboName={booking?.comboLiveStatus?.comboName}
+                  size="xs"
+                />
               </div>
             </div>
 
@@ -988,33 +1012,30 @@ export function Screen02CheckInProfile({
                 Đã lưu
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2.5 py-2 flex flex-col justify-between">
-                <span className="text-neutral-400 text-[10px] font-semibold">Độ dài</span>
-                <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="font-extrabold text-[12.5px] text-white">
-                    {(booking?.attributes?.naturalLashLength || '8 mm (Chuẩn)').split('(')[0].trim()}
-                  </span>
-                  <span className="text-[10px] font-semibold text-neutral-400">
-                    {(booking?.attributes?.naturalLashLength || '8 mm (Chuẩn)').match(/\(([^)]+)\)/)?.[1] || 'Chuẩn'}
-                  </span>
+            <div className="grid grid-cols-4 gap-1.5">
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">
+                <span className="text-neutral-400 text-[9.5px] font-semibold">Số sợi</span>
+                <div className="font-extrabold text-[12px] text-[#FFB400] mt-0.5 truncate">
+                  {resolveNaturalLashCountLabel(
+                    booking?.attributes?.naturalLashCount || booking?.attributes?.naturalLashDensity
+                  ) || '60-80'}
                 </div>
               </div>
-              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2.5 py-2 flex flex-col justify-between">
-                <span className="text-neutral-400 text-[10px] font-semibold">Độ dày</span>
-                <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="font-extrabold text-[12.5px] text-white">
-                    {(booking?.attributes?.naturalLashThickness || '0.07 mm (Mảnh)').split('(')[0].trim()}
-                  </span>
-                  <span className="text-[10px] font-semibold text-neutral-400">
-                    {(booking?.attributes?.naturalLashThickness || '0.07 mm (Mảnh)').match(/\(([^)]+)\)/)?.[1] ||
-                      'Mảnh'}
-                  </span>
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">
+                <span className="text-neutral-400 text-[9.5px] font-semibold">Độ dài</span>
+                <div className="font-extrabold text-[12px] text-white mt-0.5 truncate">
+                  {(booking?.attributes?.naturalLashLength || '8 mm').split('(')[0].trim()}
                 </div>
               </div>
-              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2.5 py-2 flex flex-col justify-between">
-                <span className="text-neutral-400 text-[10px] font-semibold">Mắt / Mí</span>
-                <div className="font-extrabold text-[12.5px] text-white mt-0.5 truncate">
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">
+                <span className="text-neutral-400 text-[9.5px] font-semibold">Độ dày</span>
+                <div className="font-extrabold text-[11px] text-white mt-0.5 truncate">
+                  {(booking?.attributes?.naturalLashThickness || '0.05-0.07mm').split('(')[0].trim()}
+                </div>
+              </div>
+              <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">
+                <span className="text-neutral-400 text-[9.5px] font-semibold">Dáng mắt</span>
+                <div className="font-extrabold text-[11px] text-white mt-0.5 truncate">
                   {booking?.attributes?.eyeShape?.split('(')[0].trim() || 'Mí lót'}
                 </div>
               </div>

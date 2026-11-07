@@ -19,6 +19,8 @@ import {
   X,
   Eye,
   ShoppingCart,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   WingsComboCategoryId,
@@ -37,7 +39,8 @@ import {
 import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
 import { WingsComboCard } from '../ui-kit/WingsComboCard';
 import { WingsUnifiedComboCard } from '../ui-kit/WingsUnifiedComboCard';
-import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
+import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
+import { parseDaysSinceLastVisit, formatComboName } from './LashMaterialConstraintMatrix';
 
 interface Screen11ProductUpsellProps {
   booking?: BookingItem;
@@ -124,51 +127,58 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const isExistingComboLive = Boolean(
     booking?.comboLiveStatus?.isComboLive && (booking?.comboLiveStatus?.remainingSessions ?? 0) > 0
   );
+  const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
 
-  // Mặc định:
-  // - Nếu khách đã chọn gói từ bước trước -> giữ nguyên
-  // - Nếu khách đang có gói Combo Live còn lượt -> mặc định 'REDEEM_EXISTING' (trừ gói đang có), nhưng vẫn hiển thị danh sách gói để mua thêm/renew nếu muốn
-  // - Nếu khách chưa có gói -> chọn gói mở khóa đầu tiên (Gói 2 tặng 1 nếu ngày đầu, hoặc Gói 4 tặng 1 nếu từ lần 2)
+  // Nếu khách có combo và còn > 2 lần: mặc định ẨN (collapsed) phần mua thêm combo
+  // CVL có nút tự đóng/mở chủ động bất kỳ lúc nào
+  const shouldCollapseNewComboByDefault = isExistingComboLive && remainingSessions > 2;
+  const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!shouldCollapseNewComboByDefault);
+
+  React.useEffect(() => {
+    setShowNewComboSection(!shouldCollapseNewComboByDefault);
+  }, [shouldCollapseNewComboByDefault]);
+
+  // Mặc định cho gói combo mới:
+  // - Nếu khách đã có gói combo đang active -> 'NONE' (mặc định chỉ trừ gói cũ cho ca này, không mua thêm)
+  // - Nếu khách chưa có gói combo -> chọn gói mở khóa đầu tiên (Gói 2 tặng 1 nếu ngày 1, hoặc 4 tặng 1 nếu lần 2+)
   const existingSelectedComboId = booking?.selectedCombo?.id;
-  const defaultComboSelection = useMemo(() => {
+  const defaultNewComboSelection = useMemo(() => {
     if (existingSelectedComboId) {
       const exists = matchedPackages.find((p) => p.id === existingSelectedComboId && !p.isLocked);
       if (exists) return exists.id;
     }
     if (isExistingComboLive) {
-      return 'REDEEM_EXISTING';
+      return 'NONE';
     }
     const firstUnlocked =
       matchedPackages.find((p) => !p.isLocked && p.ruleName === '4 tặng 1') || matchedPackages.find((p) => !p.isLocked);
     return firstUnlocked ? firstUnlocked.id : 'NONE';
   }, [existingSelectedComboId, isExistingComboLive, matchedPackages]);
 
-  const [selectedComboId, setSelectedComboId] = useState<string>(defaultComboSelection);
+  const [selectedNewComboId, setSelectedNewComboId] = useState<string>(defaultNewComboSelection);
   const [deductTodayIntoCombo, setDeductTodayIntoCombo] = useState<boolean>(true);
-  // Ẩn section mua combo mới khi khách đang có gói combo còn lượt; CVL nhấn "Mua Thêm Combo" mới mở ra
-  const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!isExistingComboLive);
 
   React.useEffect(() => {
-    setSelectedComboId(defaultComboSelection);
-  }, [defaultComboSelection]);
+    setSelectedNewComboId(defaultNewComboSelection);
+  }, [defaultNewComboSelection]);
 
   const currentCategory = useMemo(() => getWingsComboCategory(activeCategoryId), [activeCategoryId]);
   const selectedSerumTier = SERUM_TIERS_CVL.find((t) => t.id === selectedSerumTierId) || SERUM_TIERS_CVL[0];
-  const selectedComboPkg: MatchedComboPackageOption | null = useMemo(
-    () => matchedPackages.find((c) => c.id === selectedComboId && !c.isLocked) || null,
-    [matchedPackages, selectedComboId]
+  const selectedNewComboPkg: MatchedComboPackageOption | null = useMemo(
+    () => matchedPackages.find((c) => c.id === selectedNewComboId && !c.isLocked) || null,
+    [matchedPackages, selectedNewComboId]
   );
 
   const servicePrice = booking?.servicePrice || 770000;
   const serviceName = booking?.serviceName || 'New Flawless Mink 770';
-  const customerName = booking?.customerName || 'Chị Trúc';
+  const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const actorName = actor?.name || 'Thảo Ly';
   const actorTierBadge = actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? 'CV🪶' : 'CC';
 
-  // 4. Tính hạch toán khi MUA GÓI MỚI (Trừ luôn buổi đầu vào gói, không thu lẻ buổi hôm nay)
+  // 4. Tính hạch toán khi MUA GÓI MỚI (Trừ luôn buổi đầu vào gói nếu khách chưa có combo)
   const purchaseAccounting = useMemo(
-    () => (selectedComboPkg ? calculateComboPurchaseAccounting(selectedComboPkg, servicePrice) : null),
-    [selectedComboPkg, servicePrice]
+    () => (selectedNewComboPkg ? calculateComboPurchaseAccounting(selectedNewComboPkg, servicePrice) : null),
+    [selectedNewComboPkg, servicePrice]
   );
 
   // 4B. Danh sách gói Combo Mi Dưới (Tùy chọn mua kèm cùng lúc với Combo Mi Trên)
@@ -248,23 +258,25 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
 
   const serumTotal = yeppeumCount > 0 ? selectedSerumTier.price * yeppeumCount : 0;
   const serumBonus = yeppeumCount > 0 ? selectedSerumTier.cvBonus * yeppeumCount : 0;
-  const comboTotal = selectedComboPkg ? selectedComboPkg.comboPrice : 0;
-  const comboBonus = selectedComboPkg ? selectedComboPkg.cvBonus : 0;
+  const newComboTotal = selectedNewComboPkg ? selectedNewComboPkg.comboPrice : 0;
+  const newComboBonus = selectedNewComboPkg ? selectedNewComboPkg.cvBonus : 0;
 
-  // Khi MUA GÓI MỚI:
-  // - Nếu deductTodayIntoCombo = true: buổi hôm nay được trừ luôn vào buổi 1 của gói mới -> todayServiceCharge = 0
-  // - Nếu deductTodayIntoCombo = false: khách thanh toán lẻ ca này riêng & giữ nguyên trọn vẹn số buổi gói mới mua -> todayServiceCharge = servicePrice
-  // Khi TRỪ GÓI ĐANG CÓ: buổi hôm nay trừ vào ví gói -> todayServiceCharge = redemptionAccounting.totalCustomerPayToday (0đ hoặc phụ thu chênh lệch)
-  // Khi THANH TOÁN LẺ ('NONE'): khách trả servicePrice
-  const effectiveServiceChargeToday = selectedComboPkg
-    ? deductTodayIntoCombo
-      ? 0
-      : servicePrice
-    : selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting
+  // Tính tiền dịch vụ hôm nay:
+  // - Nếu khách có combo đang chạy: ca hôm nay trừ vào gói combo cũ (0đ hoặc phụ thu nâng cấp/up-size)
+  // - Nếu khách KHÔNG có combo cũ và mua combo mới:
+  //     + deductTodayIntoCombo = true -> 0đ (buổi 1 trừ vào gói mới)
+  //     + deductTodayIntoCombo = false -> trả giá lẻ ca này
+  // - Nếu khách KHÔNG có combo cũ và KHÔNG mua combo mới -> trả giá lẻ ca này
+  const effectiveServiceChargeToday =
+    isExistingComboLive && redemptionAccounting
       ? redemptionAccounting.totalCustomerPayToday
-      : servicePrice;
+      : selectedNewComboPkg
+        ? deductTodayIntoCombo
+          ? 0
+          : servicePrice
+        : servicePrice;
 
-  const subtotal = effectiveServiceChargeToday + comboTotal + underComboTotal + serumTotal;
+  const subtotal = effectiveServiceChargeToday + newComboTotal + underComboTotal + serumTotal;
 
   const handleConfirmCheckout = () => {
     const cartProducts =
@@ -280,54 +292,68 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           ]
         : [];
 
-    const remainingWallet =
-      deductTodayIntoCombo && purchaseAccounting
+    const remainingWallet = isExistingComboLive
+      ? selectedNewComboPkg
+        ? {
+            // Mua thêm combo khi đang có combo: Gói mới giữ nguyên 100% số buổi!
+            paidNew: selectedNewComboPkg.comboNewCount,
+            paidRefill: selectedNewComboPkg.comboRefillCount,
+            bonusNew: selectedNewComboPkg.bonusNewCount,
+            bonusRefill: selectedNewComboPkg.bonusRefillCount,
+            totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
+            totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
+            totalRemaining: selectedNewComboPkg.totalSessions,
+          }
+        : undefined
+      : deductTodayIntoCombo && purchaseAccounting
         ? purchaseAccounting.remainingWalletAfterToday
-        : selectedComboPkg
+        : selectedNewComboPkg
           ? {
-              paidNew: selectedComboPkg.comboNewCount,
-              paidRefill: selectedComboPkg.comboRefillCount,
-              bonusNew: selectedComboPkg.bonusNewCount,
-              bonusRefill: selectedComboPkg.bonusRefillCount,
-              totalPaidRemaining: selectedComboPkg.comboNewCount + selectedComboPkg.comboRefillCount,
-              totalBonusRemaining: selectedComboPkg.bonusNewCount + selectedComboPkg.bonusRefillCount,
-              totalRemaining: selectedComboPkg.totalSessions,
+              paidNew: selectedNewComboPkg.comboNewCount,
+              paidRefill: selectedNewComboPkg.comboRefillCount,
+              bonusNew: selectedNewComboPkg.bonusNewCount,
+              bonusRefill: selectedNewComboPkg.bonusRefillCount,
+              totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
+              totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
+              totalRemaining: selectedNewComboPkg.totalSessions,
             }
           : undefined;
 
     const selectedCombo: NonNullable<BookingItem['selectedCombo']> | null =
-      selectedComboPkg && purchaseAccounting
+      selectedNewComboPkg && (isExistingComboLive || purchaseAccounting)
         ? {
-            id: selectedComboPkg.id,
-            name: selectedComboPkg.displayName,
-            price: selectedComboPkg.comboPrice,
-            bonus: selectedComboPkg.cvBonus,
-            sessions: selectedComboPkg.totalSessions,
-            ruleName: selectedComboPkg.ruleName,
-            categoryId: selectedComboPkg.categoryId,
-            categoryName: selectedComboPkg.categoryName,
-            volume: selectedComboPkg.volume,
-            paidNewCount: selectedComboPkg.comboNewCount,
-            paidRefillCount: selectedComboPkg.comboRefillCount,
-            bonusNewCount: selectedComboPkg.bonusNewCount,
-            bonusRefillCount: selectedComboPkg.bonusRefillCount,
-            validityMonths: selectedComboPkg.validityMonths,
-            retailTotal: selectedComboPkg.retailTotal,
-            savingsAmount: selectedComboPkg.savingsAmount,
-            avgPerSessionPrice: selectedComboPkg.avgPerSessionPrice,
-            todaySingleServiceWaived: deductTodayIntoCombo,
+            id: selectedNewComboPkg.id,
+            name: selectedNewComboPkg.displayName,
+            price: selectedNewComboPkg.comboPrice,
+            bonus: selectedNewComboPkg.cvBonus,
+            sessions: selectedNewComboPkg.totalSessions,
+            ruleName: selectedNewComboPkg.ruleName,
+            categoryId: selectedNewComboPkg.categoryId,
+            categoryName: selectedNewComboPkg.categoryName,
+            volume: selectedNewComboPkg.volume,
+            paidNewCount: selectedNewComboPkg.comboNewCount,
+            paidRefillCount: selectedNewComboPkg.comboRefillCount,
+            bonusNewCount: selectedNewComboPkg.bonusNewCount,
+            bonusRefillCount: selectedNewComboPkg.bonusRefillCount,
+            validityMonths: selectedNewComboPkg.validityMonths,
+            retailTotal: selectedNewComboPkg.retailTotal,
+            savingsAmount: selectedNewComboPkg.savingsAmount,
+            avgPerSessionPrice: selectedNewComboPkg.avgPerSessionPrice,
+            todaySingleServiceWaived: isExistingComboLive ? false : deductTodayIntoCombo,
             isUpTierUpgrade: isUpTierPackage,
             originalServiceCategory: autoMatched.categoryId,
-            recognizedRevenueToday: deductTodayIntoCombo ? purchaseAccounting.recognizedRevenueToday : servicePrice,
-            deferredRevenueBalance: deductTodayIntoCombo
-              ? purchaseAccounting.deferredRevenueBalance
-              : selectedComboPkg.comboPrice,
+            recognizedRevenueToday: isExistingComboLive
+              ? 0
+              : deductTodayIntoCombo && purchaseAccounting
+                ? purchaseAccounting.recognizedRevenueToday
+                : servicePrice,
+            deferredRevenueBalance: selectedNewComboPkg.comboPrice,
             remainingAfterToday: remainingWallet,
           }
         : null;
 
     const comboRedemption: NonNullable<BookingItem['comboRedemption']> | null =
-      !selectedComboPkg && selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting
+      isExistingComboLive && redemptionAccounting
         ? {
             comboName: redemptionAccounting.comboName,
             deductedBucket: redemptionAccounting.deductedBucket,
@@ -338,7 +364,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             remainingAfterToday: redemptionAccounting.walletAfter.totalRemaining,
             explanation: redemptionAccounting.explanation,
             // === Breakdown ví gói chi tiết ===
-            totalSessions: redemptionAccounting.walletBefore.paidNew + redemptionAccounting.walletBefore.paidRefill + redemptionAccounting.walletBefore.bonusNew + redemptionAccounting.walletBefore.bonusRefill + 1, // +1 vì chưa trừ buổi hôm nay
+            totalSessions:
+              redemptionAccounting.walletBefore.paidNew +
+              redemptionAccounting.walletBefore.paidRefill +
+              redemptionAccounting.walletBefore.bonusNew +
+              redemptionAccounting.walletBefore.bonusRefill +
+              1, // +1 vì chưa trừ buổi hôm nay
             paidRemaining: redemptionAccounting.walletAfter.paidNew + redemptionAccounting.walletAfter.paidRefill,
             bonusRemaining: redemptionAccounting.walletAfter.bonusNew + redemptionAccounting.walletAfter.bonusRefill,
           }
@@ -384,10 +415,98 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
+        {/* Section 1A: CA HÔM NAY · TRỪ VÀO GÓI COMBO ĐANG CÓ (Chỉ hiện khi khách có combo đang chạy) */}
+        {isExistingComboLive && redemptionAccounting && (
+          <div>
+            <div className="text-[11px] font-extrabold text-sky-900 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-sky-700" />
+                1. CA HÔM NAY · TRỪ GÓI ❖ ĐANG CÓ
+              </span>
+            </div>
+
+            <div className="bg-gradient-to-br from-sky-50/90 to-sky-100/60 rounded-2xl p-3 border border-sky-300 shadow-xs space-y-2">
+              <div>
+                <div className="text-[14px] font-black text-sky-950 leading-snug">
+                  {formatComboName(booking?.comboLiveStatus?.comboName, booking?.comboLiveStatus?.packageKey) ||
+                    '❖ Gói Đang Active'}
+                </div>
+                <div className="text-[12px] text-sky-800 font-semibold mt-0.5 leading-snug">
+                  {booking?.serviceType === 'Retain' ||
+                  redemptionAccounting.deductedBucket === 'PAID_REFILL' ||
+                  redemptionAccounting.deductedBucket === 'BONUS_REFILL'
+                    ? 'Trừ 1 lượt dặm'
+                    : 'Trừ 1 lượt nối mới'}
+                  {redemptionAccounting.totalCustomerPayToday > 0 && (
+                    <span className="text-amber-800 font-black ml-1.5">
+                      (+{redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')}đ phụ thu)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Chi tiết số dư ví trước và sau ca */}
+              <div className="p-2.5 bg-white rounded-xl border border-sky-200/80 flex items-center justify-between gap-2 text-[11.5px]">
+                <div className="flex items-center gap-1.5 text-neutral-600">
+                  <span className="font-semibold text-neutral-500">Trước ca:</span>
+                  <ComboSessionBadge
+                    normalRemaining={
+                      redemptionAccounting.walletBefore.paidNew + redemptionAccounting.walletBefore.bonusNew
+                    }
+                    retainRemaining={
+                      redemptionAccounting.walletBefore.paidRefill + redemptionAccounting.walletBefore.bonusRefill
+                    }
+                    remainingSessions={
+                      redemptionAccounting.walletBefore.paidNew +
+                      redemptionAccounting.walletBefore.bonusNew +
+                      redemptionAccounting.walletBefore.paidRefill +
+                      redemptionAccounting.walletBefore.bonusRefill
+                    }
+                    variant="inline"
+                    theme="light"
+                  />
+                </div>
+                <div className="text-neutral-400 font-bold">➔</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-sky-900">Sau ca:</span>
+                  <ComboSessionBadge
+                    normalRemaining={
+                      redemptionAccounting.walletAfter.paidNew + redemptionAccounting.walletAfter.bonusNew
+                    }
+                    retainRemaining={
+                      redemptionAccounting.walletAfter.paidRefill + redemptionAccounting.walletAfter.bonusRefill
+                    }
+                    remainingSessions={
+                      redemptionAccounting.walletAfter.paidNew +
+                      redemptionAccounting.walletAfter.bonusNew +
+                      redemptionAccounting.walletAfter.paidRefill +
+                      redemptionAccounting.walletAfter.bonusRefill
+                    }
+                    size="sm"
+                    theme="light"
+                  />
+                </div>
+              </div>
+
+              {/* Nút giả lập test */}
+              <div className="pt-1 flex items-center justify-between text-[10px] text-sky-800/80">
+                <span>Trạng thái: Đang ưu tiên trừ gói cũ</span>
+                <button
+                  type="button"
+                  onClick={() => setSimulateOnlyRefillLeft((v) => !v)}
+                  className="px-2 py-0.5 rounded-md bg-white border border-sky-300 text-sky-900 font-bold hover:bg-sky-50 active:scale-95 cursor-pointer"
+                >
+                  {simulateOnlyRefillLeft ? 'Đặt lại: Còn suất Nối' : 'Giả lập: Chỉ còn suất Dặm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section 1: CÂY DƯỠNG MI YEPPEUM KOREA (THANG THƯỞNG CV🪶) */}
         <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-            <span>1. DƯỠNG MI YEPPEUM KOREA</span>
+            <span>{isExistingComboLive ? '3. DƯỠNG MI YEPPEUM KOREA' : '2. DƯỠNG MI YEPPEUM KOREA'}</span>
             <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
               {yeppeumCount > 0
                 ? `+${Math.round(serumBonus / 1000)}🪶`
@@ -465,536 +584,606 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
         </div>
 
-        {/* Section 2: GÓI COMBO ĐÚNG DÒNG MI & HẠCH TOÁN VÍ — ẩn khi khách có combo đang chạy */}
-        {(!isExistingComboLive || showNewComboSection) && (
-          <div>
-            <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-              <span>2. GÓI COMBO ĐÚNG DÒNG MI &amp; HẠCH TOÁN VÍ</span>
-              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
-                +{Math.round(comboBonus / 1000)}🪶
-              </span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
-            {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
-            <div className="bg-[#1C1C1E] text-white rounded-xl p-2.5 flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider flex items-center gap-1">
-                  {isUpTierPackage ? (
-                    <>
-                      <Sparkles className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400">Nâng cấp gói</span>
-                    </>
-                  ) : (
-                    <span>🎯 Dịch vụ hôm nay</span>
-                  )}
-                </div>
-                <div className="text-[13px] font-black text-white leading-snug">
-                  {currentCategory.name} {activeVolume === 'under' ? 'Mi Dưới 390' : activeVolume}
-                </div>
-                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold leading-none ${
-                      booking?.serviceType === 'Retain'
-                        ? 'bg-purple-500/25 text-purple-300 border border-purple-400/40'
-                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-                    }`}
-                  >
-                    {booking?.serviceType === 'Retain' ? 'Dặm' : 'Nối Mới'}
-                  </span>
-                  <span className="text-neutral-300 text-[10px] font-semibold tabular-nums">
-                    {getVolumeFiberMeta(activeCategoryId, activeVolume).countPerEye} sợi
-                  </span>
-                  {(booking?.attributes?.curl || booking?.attributes?.thickness || booking?.attributes?.length) && (
-                    <span className="text-neutral-400 text-[10px] font-medium">
-                      {[booking?.attributes?.curl, booking?.attributes?.thickness, booking?.attributes?.length]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                  )}
-                </div>
-                {isUpTierPackage && (
-                  <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
-                    Gốc làm hôm nay: {getWingsComboCategory(autoMatched.categoryId).name} · Mã {autoMatched.volume}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsConsultModalOpen(true)}
-                className="shrink-0 px-2.5 py-1.5 rounded-xl bg-[#FFB400] text-black text-[11px] font-extrabold flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Combo Menu</span>
-              </button>
-            </div>
-
-            {/* Family Level Quick Switcher (2X, 3X, 4X, 5X | 3ℓ, 4ℓ, 5ℓ | 3D, 4D, 5D) */}
-            {familyInfo.siblings.length > 1 && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-extrabold text-neutral-600 uppercase px-0.5">
-                  <span>Cấp độ {familyInfo.familyName}:</span>
-                  {isUpTierPackage && (
-                    <span className="text-amber-700 font-extrabold flex items-center gap-0.5">
-                      <Sparkles className="w-3 h-3 text-amber-500" /> Nâng cấp gói
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {familyInfo.siblings.map((sib) => {
-                    const active = activeCategoryId === sib.categoryId;
-                    const isTodayDone = autoMatched.categoryId === sib.categoryId;
-                    return (
-                      <button
-                        key={sib.categoryId}
-                        type="button"
-                        onClick={() => handleSelectFamilyCategory(sib.categoryId)}
-                        className={`py-1.5 px-2 rounded-xl text-center border transition-all cursor-pointer relative flex flex-col items-center justify-center ${
-                          active
-                            ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
-                            : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200/80'
-                        }`}
-                      >
-                        <span className="text-[13.5px] font-black tracking-tight">{sib.shortLabel}</span>
-                        <span className="text-[9px] font-semibold opacity-90 truncate max-w-full">
-                          {sib.fiberDensityLabel}
-                        </span>
-                        {isTodayDone ? (
-                          <span
-                            className={`text-[8px] font-black px-1 rounded-sm mt-0.5 ${
-                              active ? 'bg-[#FFB400] text-black' : 'bg-neutral-300 text-neutral-800'
-                            }`}
-                          >
-                            Đang làm
-                          </span>
-                        ) : (
-                          active && (
-                            <span className="text-[8px] font-black px-1 rounded-sm mt-0.5 bg-emerald-500 text-white">
-                              Nâng cấp
-                            </span>
-                          )
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Up-Tier Upsell Privilege Banner — Minimalist Bedside Pitch */}
-            {isUpTierPackage && (
-              <div className="rounded-xl px-2.5 py-2 bg-amber-50/90 border border-amber-300 flex items-center justify-between gap-2 shadow-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-[#FFB400] text-black flex items-center justify-center shrink-0 shadow-xs">
-                    <Sparkles className="w-4 h-4 text-black" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[12px] font-black text-amber-950 flex items-center gap-1.5 flex-wrap leading-tight">
-                      <span>Nâng cấp gói: {currentCategory.name}</span>
-                    </div>
-                    <div className="text-[10.5px] text-neutral-600 leading-tight mt-0.5">
-                      Trừ thẳng vào Buổi Nối Mới #1 · 0đ thu lẻ hôm nay
-                    </div>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="inline-flex items-center bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full tabular-nums shadow-xs whitespace-nowrap">
-                    Tiết kiệm {servicePrice.toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Volume Pills for Current Category — Density Only & No Scrollbar */}
-            {currentCategory.unitPrices.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <div
-                  className="w-7 h-7 rounded-lg bg-[#F2F2F7] text-neutral-600 flex items-center justify-center shrink-0"
-                  title="Số trụ/sợi mi trên mắt"
-                >
-                  <Eye className="w-4 h-4 text-neutral-700" />
-                </div>
-                <div
-                  className="flex-1 flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                  {currentCategory.unitPrices.map((u) => {
-                    const volKey: number | 'under' = u.isUnderLash ? 'under' : Number(u.volume);
-                    const active = activeVolume === volKey;
-                    const meta = getVolumeFiberMeta(currentCategory.id, volKey);
-                    const label = u.isUnderLash ? 'Mi Dưới' : `${meta.countPerEye} ${meta.unitWord}`;
-                    return (
-                      <button
-                        key={String(u.volume)}
-                        type="button"
-                        onClick={() => setActiveVolume(volKey)}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black shrink-0 border transition-all cursor-pointer ${
-                          active
-                            ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
-                            : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Existing Combo Redemption Option (if customer has an active combo) */}
-            {isExistingComboLive && redemptionAccounting && (
-              <div
-                onClick={() => setSelectedComboId('REDEEM_EXISTING')}
-                className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all space-y-1.5 ${
-                  selectedComboId === 'REDEEM_EXISTING'
-                    ? 'bg-sky-50/90 border-sky-500 shadow-xs'
-                    : 'bg-[#F9F9FB] border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Wallet className="w-3.5 h-3.5 text-sky-700" />
-                      <span className="text-[12px] font-extrabold text-sky-950">
-                        Trừ 1 lượt từ Gói đang có: {booking?.comboLiveStatus?.comboName}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-sky-800 font-medium mt-0.5">
-                      {redemptionAccounting.explanation}
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-[12px] font-black text-sky-900 tabular-nums block">
-                      {redemptionAccounting.totalCustomerPayToday > 0
-                        ? `+${redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')} đ`
-                        : '0 đ (Trừ gói)'}
-                    </span>
-                    <span className="text-[9px] font-bold text-sky-700">
-                      Còn {redemptionAccounting.walletAfter.totalRemaining} lượt sau ca
-                    </span>
-                  </div>
-                </div>
-
-                {/* Toggle to test/handle case where wallet only has Refill left while customer does New */}
-                <div className="pt-1 border-t border-sky-200/70 flex items-center justify-between gap-2 text-[10px]">
-                  <span className="text-gray-600">
-                    Trạng thái ví gói:{' '}
-                    {simulateOnlyRefillLeft
-                      ? 'Chỉ còn lượt Refill (Tự động bù chênh lệch New)'
-                      : `Còn ${redemptionAccounting.walletBefore.paidNew + redemptionAccounting.walletBefore.bonusNew} New · ${redemptionAccounting.walletBefore.paidRefill + redemptionAccounting.walletBefore.bonusRefill} Refill`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSimulateOnlyRefillLeft((v) => !v);
-                      setSelectedComboId('REDEEM_EXISTING');
-                    }}
-                    className="px-2 py-0.5 rounded-md bg-white border border-sky-300 text-sky-800 font-bold hover:bg-sky-100 cursor-pointer"
-                  >
-                    {simulateOnlyRefillLeft ? 'Đặt lại ví còn New' : 'Giả lập ví chỉ còn Refill'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Nút "Mua Thêm Combo" — chỉ hiện khi khách có combo đang chạy và chưa muốn mua thêm */}
-            {isExistingComboLive && !showNewComboSection && (
-              <button
-                type="button"
-                onClick={() => setShowNewComboSection(true)}
-                className="mt-1 w-full py-2 px-3 rounded-xl border border-dashed border-amber-400 text-amber-700 bg-amber-50 text-[12px] font-extrabold flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
-              >
-                <ShoppingCart className="w-3.5 h-3.5" />
-                <span>Mua Thêm Combo</span>
-              </button>
-            )}
-          </div>
-
-          {/* Dynamic Matched Combo Packages List — 1 Unified Card với Tier Selector */}
-            <WingsUnifiedComboCard
-              packages={matchedPackages}
-              customerName={customerName}
-              customerPhone={booking?.customerPhone}
-              customerAvatar={booking?.customerAvatar}
-              selectedPackageId={selectedComboId}
-              onSelectPackage={(pkg) => {
-                setSelectedComboId(pkg.id);
-              }}
-              onSelectLocked={() => {
-                setIsLockedWelcomeModalOpen(true);
-              }}
-            />
-
-            {/* Live Deduction & Wallet Status Card when a New Combo is selected */}
-            {selectedComboPkg &&
-              purchaseAccounting &&
-              (() => {
-                const bonusRemainingRetailValue = deductTodayIntoCombo
-                  ? purchaseAccounting.remainingWalletAfterToday.bonusNew * (selectedComboPkg.newUnitPrice || 0) +
-                    purchaseAccounting.remainingWalletAfterToday.bonusRefill * (selectedComboPkg.refillUnitPrice || 0)
-                  : selectedComboPkg.bonusNewCount * (selectedComboPkg.newUnitPrice || 0) +
-                    selectedComboPkg.bonusRefillCount * (selectedComboPkg.refillUnitPrice || 0);
-
-                const walletRemainingDisplay = deductTodayIntoCombo
-                  ? purchaseAccounting.remainingWalletAfterToday.totalRemaining
-                  : selectedComboPkg.totalSessions;
-                const paidRemainingDisplay = deductTodayIntoCombo
-                  ? purchaseAccounting.remainingWalletAfterToday.totalPaidRemaining
-                  : selectedComboPkg.comboNewCount + selectedComboPkg.comboRefillCount;
-                const paidNewDisplay = deductTodayIntoCombo
-                  ? purchaseAccounting.remainingWalletAfterToday.paidNew
-                  : selectedComboPkg.comboNewCount;
-                const paidRefillDisplay = deductTodayIntoCombo
-                  ? purchaseAccounting.remainingWalletAfterToday.paidRefill
-                  : selectedComboPkg.comboRefillCount;
-                const bonusRemainingDisplay = deductTodayIntoCombo
-                  ? purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining
-                  : selectedComboPkg.bonusNewCount + selectedComboPkg.bonusRefillCount;
-
-                return (
-                  <div className="rounded-2xl p-3 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1] shadow-sm space-y-2.5">
-                    {/* Segmented Switch: Trừ vào gói vs Trả lẻ ca này */}
-                    <div className="bg-slate-200/90 p-1 rounded-xl grid grid-cols-2 gap-1 text-[11px] font-bold">
-                      <button
-                        type="button"
-                        onClick={() => setDeductTodayIntoCombo(true)}
-                        className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
-                          deductTodayIntoCombo
-                            ? 'bg-white text-emerald-800 shadow-xs font-black'
-                            : 'text-slate-600 hover:text-slate-900 font-semibold'
-                        }`}
-                      >
-                        {deductTodayIntoCombo && <span>✓</span>}
-                        <span>Trừ vào gói</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeductTodayIntoCombo(false)}
-                        className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
-                          !deductTodayIntoCombo
-                            ? 'bg-white text-indigo-900 shadow-xs font-black'
-                            : 'text-slate-600 hover:text-slate-900 font-semibold'
-                        }`}
-                      >
-                        {!deductTodayIntoCombo && <span>✓</span>}
-                        <span>Trả lẻ ca này</span>
-                      </button>
-                    </div>
-
-                    {/* Card Header */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <div
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            deductTodayIntoCombo
-                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600'
-                              : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-600'
-                          }`}
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-black text-slate-800 uppercase tracking-wide leading-tight">
-                            {deductTodayIntoCombo
-                              ? 'Đặc quyền trừ buổi hôm nay vào gói'
-                              : 'Thanh toán lẻ riêng & Giữ nguyên gói'}
-                          </div>
-                          <div className="text-[9.5px] text-slate-500 font-medium leading-tight">
-                            {deductTodayIntoCombo
-                              ? `Gói ${selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName} · Buổi hôm nay tính làm Lượt 1`
-                              : `Gói ${selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName} · Giữ nguyên ${selectedComboPkg.totalSessions} buổi cho lần sau`}
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black tabular-nums shadow-xs flex-shrink-0 ${
-                          deductTodayIntoCombo
-                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700'
-                            : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-700'
-                        }`}
-                      >
-                        <span>{deductTodayIntoCombo ? 'Miễn thu lẻ' : 'Thu lẻ riêng'}</span>
-                        <span className="font-extrabold">{servicePrice.toLocaleString('vi-VN')}đ</span>
-                      </div>
-                    </div>
-
-                    {/* 2-Column Split Grid */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Box 1: Buổi hôm nay */}
-                      <div className="bg-white/95 rounded-xl p-2.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
-                        <div>
-                          <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>{deductTodayIntoCombo ? 'Buổi hôm nay (Lượt 1)' : 'Buổi hôm nay (Ca lẻ)'}</span>
-                          </div>
-                          <div className="mt-1 text-[12.5px] font-black text-slate-900 leading-tight">
-                            {deductTodayIntoCombo ? 'Trừ vào 1 Buổi Nối Mới' : 'Thanh toán lẻ riêng ca này'}
-                          </div>
-                          <div className="text-[9.5px] text-slate-500 mt-0.5 leading-snug">
-                            {deductTodayIntoCombo
-                              ? 'Không tính tiền lẻ ca này, trừ thẳng vào lượt đầu của gói mới mua.'
-                              : 'Khách trả riêng tiền dịch vụ hôm nay, không trừ vào bất kỳ buổi nào của gói.'}
-                          </div>
-                        </div>
-                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                          <span className="text-slate-500 font-medium">Thu lẻ ca này:</span>
-                          <span
-                            className={`font-black text-[11px] tabular-nums ${
-                              deductTodayIntoCombo ? 'text-emerald-600' : 'text-slate-900'
-                            }`}
-                          >
-                            {deductTodayIntoCombo ? '0đ' : `${servicePrice.toLocaleString('vi-VN')}đ`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Box 2: Ví còn lại */}
-                      <div className="bg-white/95 rounded-xl p-2.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
-                        <div>
-                          <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                            <Wallet className="w-3 h-3 text-indigo-600" />
-                            <span>{deductTodayIntoCombo ? 'Ví còn lại sau ca này' : 'Ví nguyên vẹn cho lần sau'}</span>
-                          </div>
-                          <div className="mt-1 flex items-baseline gap-1 text-slate-900 leading-tight">
-                            <span className="text-[15px] font-black tabular-nums text-indigo-700">
-                              {walletRemainingDisplay}
-                            </span>
-                            <span className="text-[11px] font-bold text-slate-500">
-                              /{selectedComboPkg.totalSessions} buổi
-                            </span>
-                          </div>
-                          <div className="text-[9.5px] text-slate-600 mt-0.5 leading-snug space-y-0.5">
-                            <div>
-                              • <strong>{paidRemainingDisplay}</strong> buổi mua (
-                              {paidNewDisplay > 0 ? `${paidNewDisplay} New + ` : ''}
-                              {paidRefillDisplay} Refill)
-                            </div>
-                            {bonusRemainingDisplay > 0 && (
-                              <div className="text-emerald-700 font-bold">
-                                • <strong>{bonusRemainingDisplay}</strong> buổi tặng{' '}
-                                <span className="text-[9px] font-extrabold text-emerald-800">
-                                  (Trị giá {bonusRemainingRetailValue.toLocaleString('vi-VN')}đ)
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                          <span className="text-slate-500 font-medium">Hạn sử dụng:</span>
-                          <span className="font-black text-slate-700 tabular-nums">
-                            {selectedComboPkg.validityMonths ? `${selectedComboPkg.validityMonths} tháng` : '36 tháng'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Value / Savings Footer Strip */}
-                    <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-emerald-500/10 rounded-xl px-2.5 py-1.5 border border-amber-500/20 flex items-center justify-between text-[10px]">
-                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                        {deductTodayIntoCombo ? (
-                          <>
-                            <span>
-                              Giá lẻ:{' '}
-                              <strong className="line-through text-slate-400 tabular-nums">
-                                {selectedComboPkg.retailTotal.toLocaleString('vi-VN')}đ
-                              </strong>
-                            </span>
-                            <span>•</span>
-                            <span>
-                              Giá gói:{' '}
-                              <strong className="text-slate-900 tabular-nums">
-                                {selectedComboPkg.comboPrice.toLocaleString('vi-VN')}đ
-                              </strong>
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span>
-                              Lẻ ca này: <strong>{servicePrice.toLocaleString('vi-VN')}đ</strong>
-                            </span>
-                            <span>+</span>
-                            <span>
-                              Gói: <strong>{selectedComboPkg.comboPrice.toLocaleString('vi-VN')}đ</strong>
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <div className="font-black text-emerald-700 tabular-nums">
-                        {deductTodayIntoCombo
-                          ? `Tiết kiệm ${selectedComboPkg.savingsAmount.toLocaleString('vi-VN')}đ`
-                          : `Tổng ${(servicePrice + selectedComboPkg.comboPrice).toLocaleString('vi-VN')}đ`}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-            <button
-              onClick={() => setSelectedComboId('NONE')}
-              className={`w-full py-2 rounded-xl text-[11px] font-bold transition-colors ${
-                selectedComboId === 'NONE' ? 'bg-gray-800 text-white' : 'bg-[#F2F2F7] text-gray-600'
-              }`}
-            >
-              {selectedComboId === 'NONE' ? '✓ ' : ''}Không mua gói mới · Thanh toán lẻ buổi hôm nay (
-              {servicePrice.toLocaleString('vi-VN')}đ)
-            </button>
-          </div>
-        )}
-
-        {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI — ẩn khi khách có combo đang chạy */}
-        {(!isExistingComboLive || showNewComboSection) && (
-          <div>
+        {/* Section 2: GÓI COMBO MUA THÊM (GỐI ĐẦU / RENEW) HOẶC COMBO CHÍNH */}
+        <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-            <span className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#FFB400]" />
-              <span>2B. MUA THÊM COMBO MI DƯỚI (MUA CÙNG LÚC)</span>
+            <span>
+              {isExistingComboLive ? '2. MUA THÊM GÓI ❖ (GỐI ĐẦU / RENEW)' : '1. GÓI ❖ ĐÚNG DÒNG MI & HẠCH TOÁN VÍ'}
             </span>
-            {underComboBonus > 0 && (
-              <span className="text-emerald-700 font-bold">+{Math.round(underComboBonus / 1000)}🪶</span>
-            )}
-          </div>
-
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
-            {/* Không lấy combo mi dưới pill */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedUnderComboId('NONE')}
-                className={`py-1.5 px-3 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
-                  selectedUnderComboId === 'NONE'
-                    ? 'bg-neutral-800 text-white border-neutral-800 shadow-xs'
-                    : 'bg-[#F9F9FB] border-gray-200 text-gray-700 hover:border-gray-400'
-                }`}
-              >
-                Không lấy Mi Dưới
-              </button>
-              {selectedUnderComboPkg && (
-                <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                  Đã chọn gói mi dưới
+            <div className="flex items-center gap-1.5">
+              {showNewComboSection && newComboBonus > 0 && (
+                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
+                  +{Math.round(newComboBonus / 1000)}🪶
                 </span>
               )}
+              {isExistingComboLive && showNewComboSection && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewComboSection(false);
+                    setSelectedNewComboId('NONE');
+                    setSelectedUnderComboId('NONE');
+                  }}
+                  className="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border border-neutral-700"
+                >
+                  <span>Thu gọn</span>
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Unified Combo Card cho Mi Dưới */}
-            {underLashPackages.length > 0 && (
+          {/* Khi khách có gói còn > 2 lần và đang ẩn, hiển thị Bar thu gọn (chỉ 1 nút duy nhất) */}
+          {isExistingComboLive && !showNewComboSection ? (
+            <div
+              onClick={() => setShowNewComboSection(true)}
+              className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-200/80 hover:border-amber-300 flex items-center justify-between gap-3 cursor-pointer active:scale-99 transition-all select-none"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-600 font-black text-sm">
+                  ❖
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[12px] font-extrabold text-neutral-900 truncate">
+                    Khách còn {remainingSessions} lượt gói ❖ · Đang trừ ví ca này
+                  </div>
+                  <div className="text-[10.5px] text-neutral-500 truncate">
+                    Mặc định ẩn · Bấm nếu khách muốn mua gối đầu / renew sớm
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="shrink-0 px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[11px] shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>+ Mua thêm</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
+              {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
+              <div className="bg-[#1C1C1E] text-white rounded-xl p-2.5 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider flex items-center gap-1">
+                    {isUpTierPackage ? (
+                      <>
+                        <Sparkles className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400">Nâng cấp gói</span>
+                      </>
+                    ) : (
+                      <span>🎯 Dịch vụ hôm nay</span>
+                    )}
+                  </div>
+                  <div className="text-[13px] font-black text-white leading-snug">
+                    {currentCategory.name} {activeVolume === 'under' ? 'Mi Dưới 390' : activeVolume}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold leading-none ${
+                        booking?.serviceType === 'Retain'
+                          ? 'bg-purple-500/25 text-purple-300 border border-purple-400/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                      }`}
+                    >
+                      {booking?.serviceType === 'Retain' ? 'Dặm' : 'Nối Mới'}
+                    </span>
+                    <span className="text-neutral-300 text-[10px] font-semibold tabular-nums">
+                      {getVolumeFiberMeta(activeCategoryId, activeVolume).countPerEye} sợi
+                    </span>
+                    {(booking?.attributes?.curl || booking?.attributes?.thickness || booking?.attributes?.length) && (
+                      <span className="text-neutral-400 text-[10px] font-medium">
+                        {[booking?.attributes?.curl, booking?.attributes?.thickness, booking?.attributes?.length]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    )}
+                  </div>
+                  {isUpTierPackage && (
+                    <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
+                      Gốc làm hôm nay: {getWingsComboCategory(autoMatched.categoryId).name} · Mã {autoMatched.volume}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsConsultModalOpen(true)}
+                  className="shrink-0 px-2.5 py-1.5 rounded-xl bg-[#FFB400] text-black text-[11px] font-extrabold flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>❖ Menu</span>
+                </button>
+              </div>
+
+              {/* Family Level Quick Switcher (2X, 3X, 4X, 5X | 3ℓ, 4ℓ, 5ℓ | 3D, 4D, 5D) */}
+              {familyInfo.siblings.length > 1 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px] font-extrabold text-neutral-600 uppercase px-0.5">
+                    <span>Cấp độ {familyInfo.familyName}:</span>
+                    {isUpTierPackage && (
+                      <span className="text-amber-700 font-extrabold flex items-center gap-0.5">
+                        <Sparkles className="w-3 h-3 text-amber-500" /> Nâng cấp gói
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {familyInfo.siblings.map((sib) => {
+                      const active = activeCategoryId === sib.categoryId;
+                      const isTodayDone = autoMatched.categoryId === sib.categoryId;
+                      return (
+                        <button
+                          key={sib.categoryId}
+                          type="button"
+                          onClick={() => handleSelectFamilyCategory(sib.categoryId)}
+                          className={`py-1.5 px-2 rounded-xl text-center border transition-all cursor-pointer relative flex flex-col items-center justify-center ${
+                            active
+                              ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
+                              : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200/80'
+                          }`}
+                        >
+                          <span className="text-[13.5px] font-black tracking-tight">{sib.shortLabel}</span>
+                          <span className="text-[9px] font-semibold opacity-90 truncate max-w-full">
+                            {sib.fiberDensityLabel}
+                          </span>
+                          {isTodayDone ? (
+                            <span
+                              className={`text-[8px] font-black px-1 rounded-sm mt-0.5 ${
+                                active ? 'bg-[#FFB400] text-black' : 'bg-neutral-300 text-neutral-800'
+                              }`}
+                            >
+                              Đang làm
+                            </span>
+                          ) : (
+                            active && (
+                              <span className="text-[8px] font-black px-1 rounded-sm mt-0.5 bg-emerald-500 text-white">
+                                Nâng cấp
+                              </span>
+                            )
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Up-Tier Upsell Privilege Banner — Minimalist Bedside Pitch */}
+              {isUpTierPackage && (
+                <div className="rounded-xl px-2.5 py-2 bg-amber-50/90 border border-amber-300 flex items-center justify-between gap-2 shadow-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-[#FFB400] text-black flex items-center justify-center shrink-0 shadow-xs">
+                      <Sparkles className="w-4 h-4 text-black" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-black text-amber-950 flex items-center gap-1.5 flex-wrap leading-tight">
+                        <span>Nâng cấp gói: {currentCategory.name}</span>
+                      </div>
+                      <div className="text-[10.5px] text-neutral-600 leading-tight mt-0.5">
+                        Trừ thẳng vào Buổi Nối Mới #1 · 0đ thu lẻ hôm nay
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="inline-flex items-center bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full tabular-nums shadow-xs whitespace-nowrap">
+                      Tiết kiệm {servicePrice.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Volume Pills for Current Category — Density Only & No Scrollbar */}
+              {currentCategory.unitPrices.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="w-7 h-7 rounded-lg bg-[#F2F2F7] text-neutral-600 flex items-center justify-center shrink-0"
+                    title="Số trụ/sợi mi trên mắt"
+                  >
+                    <Eye className="w-4 h-4 text-neutral-700" />
+                  </div>
+                  <div
+                    className="flex-1 flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {currentCategory.unitPrices.map((u) => {
+                      const volKey: number | 'under' = u.isUnderLash ? 'under' : Number(u.volume);
+                      const active = activeVolume === volKey;
+                      const meta = getVolumeFiberMeta(currentCategory.id, volKey);
+                      const label = u.isUnderLash ? 'Mi Dưới' : `${meta.countPerEye} ${meta.unitWord}`;
+                      return (
+                        <button
+                          key={String(u.volume)}
+                          type="button"
+                          onClick={() => setActiveVolume(volKey)}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-black shrink-0 border transition-all cursor-pointer ${
+                            active
+                              ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
+                              : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Thanh trạng thái chọn mua thêm gói đối với khách đã có combo */}
+              {isExistingComboLive && (
+                <div className="p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 text-[12px] bg-neutral-50 border-neutral-200">
+                  {selectedNewComboPkg ? (
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold text-[12.5px]">
+                        <span>✓ Đang chọn mua thêm:</span>
+                        <span className="truncate">{selectedNewComboPkg.displayName}</span>
+                      </div>
+                      <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                        {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ · Cộng đủ{' '}
+                        {selectedNewComboPkg.totalSessions} buổi vào ví (+
+                        {Math.round(selectedNewComboPkg.cvBonus / 1000)}🪶 thưởng)
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 min-w-0 text-neutral-600 text-[11.5px]">
+                      <span className="font-semibold text-neutral-800">⚪ Chưa chọn mua thêm gói mới.</span>
+                      <span className="text-neutral-500 block text-[10.5px]">
+                        Bấm vào một gói bên dưới nếu khách muốn mua thêm/gối đầu.
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedNewComboPkg && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedNewComboId('NONE')}
+                      className="shrink-0 px-2.5 py-1 rounded-lg bg-white border border-rose-300 text-rose-700 font-bold text-[11px] hover:bg-rose-50 active:scale-95 cursor-pointer shadow-2xs"
+                    >
+                      ✕ Bỏ chọn
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Dynamic Matched Combo Packages List — 1 Unified Card với Tier Selector */}
               <WingsUnifiedComboCard
-                packages={underLashPackages}
+                packages={matchedPackages}
                 customerName={customerName}
                 customerPhone={booking?.customerPhone}
                 customerAvatar={booking?.customerAvatar}
-                selectedPackageId={selectedUnderComboId !== 'NONE' ? selectedUnderComboId : null}
+                selectedPackageId={selectedNewComboId === 'NONE' ? null : selectedNewComboId}
                 onSelectPackage={(pkg) => {
-                  setSelectedUnderComboId(pkg.id);
+                  setSelectedNewComboId((prev) => (prev === pkg.id ? 'NONE' : pkg.id));
                 }}
                 onSelectLocked={() => {
                   setIsLockedWelcomeModalOpen(true);
                 }}
               />
-            )}
-          </div>
+
+              {/* Live Deduction & Wallet Status Card when a New Combo is selected */}
+              {selectedNewComboPkg &&
+                (isExistingComboLive ? (
+                  <div className="p-3 bg-amber-50/80 border border-amber-300 rounded-xl space-y-2 text-[12px]">
+                    <div className="flex items-center justify-between font-extrabold text-amber-950">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        Hạch toán Gói ❖ Mua Thêm:
+                      </span>
+                      <span className="tabular-nums text-[13.5px] font-black text-amber-900">
+                        {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')} đ
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-amber-200 text-[11px] text-gray-700 space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-600">Buổi làm hôm nay:</span>
+                        <strong className="text-emerald-700 font-bold">✓ Đã trừ vào Gói cũ (0đ)</strong>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-600">Số buổi Gói mới cộng vào ví:</span>
+                        <span className="font-extrabold text-indigo-900 tabular-nums">
+                          ✦ {selectedNewComboPkg.comboNewCount + selectedNewComboPkg.bonusNewCount} · ↻{' '}
+                          {selectedNewComboPkg.comboRefillCount + selectedNewComboPkg.bonusRefillCount} (Đủ{' '}
+                          {selectedNewComboPkg.totalSessions} buổi)
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-1 border-t border-gray-100">
+                        <span className="text-neutral-600">Thưởng chốt cho {actorName}:</span>
+                        <strong className="text-emerald-700 font-black tabular-nums">
+                          +{Math.round(selectedNewComboPkg.cvBonus / 1000)}🪶
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                ) : purchaseAccounting ? (
+                  (() => {
+                    const bonusRemainingRetailValue = deductTodayIntoCombo
+                      ? purchaseAccounting.remainingWalletAfterToday.bonusNew *
+                          (selectedNewComboPkg.newUnitPrice || 0) +
+                        purchaseAccounting.remainingWalletAfterToday.bonusRefill *
+                          (selectedNewComboPkg.refillUnitPrice || 0)
+                      : selectedNewComboPkg.bonusNewCount * (selectedNewComboPkg.newUnitPrice || 0) +
+                        selectedNewComboPkg.bonusRefillCount * (selectedNewComboPkg.refillUnitPrice || 0);
+
+                    const walletRemainingDisplay = deductTodayIntoCombo
+                      ? purchaseAccounting.remainingWalletAfterToday.totalRemaining
+                      : selectedNewComboPkg.totalSessions;
+                    const paidRemainingDisplay = deductTodayIntoCombo
+                      ? purchaseAccounting.remainingWalletAfterToday.totalPaidRemaining
+                      : selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount;
+                    const paidNewDisplay = deductTodayIntoCombo
+                      ? purchaseAccounting.remainingWalletAfterToday.paidNew
+                      : selectedNewComboPkg.comboNewCount;
+                    const paidRefillDisplay = deductTodayIntoCombo
+                      ? purchaseAccounting.remainingWalletAfterToday.paidRefill
+                      : selectedNewComboPkg.comboRefillCount;
+                    const bonusRemainingDisplay = deductTodayIntoCombo
+                      ? purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining
+                      : selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount;
+
+                    return (
+                      <div className="rounded-2xl p-3 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] border border-[#CBD5E1] shadow-sm space-y-2.5">
+                        {/* Segmented Switch: Trừ vào gói vs Trả lẻ ca này */}
+                        <div className="bg-slate-200/90 p-1 rounded-xl grid grid-cols-2 gap-1 text-[11px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() => setDeductTodayIntoCombo(true)}
+                            className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
+                              deductTodayIntoCombo
+                                ? 'bg-white text-emerald-800 shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900 font-semibold'
+                            }`}
+                          >
+                            {deductTodayIntoCombo && <span>✓</span>}
+                            <span>Trừ vào gói</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeductTodayIntoCombo(false)}
+                            className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
+                              !deductTodayIntoCombo
+                                ? 'bg-white text-indigo-900 shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900 font-semibold'
+                            }`}
+                          >
+                            {!deductTodayIntoCombo && <span>✓</span>}
+                            <span>Trả lẻ ca này</span>
+                          </button>
+                        </div>
+
+                        {/* Card Header */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <div
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                deductTodayIntoCombo
+                                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600'
+                                  : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-600'
+                              }`}
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-black text-slate-800 uppercase tracking-wide leading-tight">
+                                {deductTodayIntoCombo
+                                  ? 'Đặc quyền trừ buổi hôm nay vào gói'
+                                  : 'Thanh toán lẻ riêng & Giữ nguyên gói'}
+                              </div>
+                              <div className="text-[9.5px] text-slate-500 font-medium leading-tight">
+                                {deductTodayIntoCombo
+                                  ? `Gói ${selectedNewComboPkg.shortRuleLabel || selectedNewComboPkg.ruleName} · Buổi hôm nay tính làm Lượt 1`
+                                  : `Gói ${selectedNewComboPkg.shortRuleLabel || selectedNewComboPkg.ruleName} · Giữ nguyên ${selectedNewComboPkg.totalSessions} buổi cho lần sau`}
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black tabular-nums shadow-xs flex-shrink-0 ${
+                              deductTodayIntoCombo
+                                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700'
+                                : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-700'
+                            }`}
+                          >
+                            <span>{deductTodayIntoCombo ? 'Miễn thu lẻ' : 'Thu lẻ riêng'}</span>
+                            <span className="font-extrabold">{servicePrice.toLocaleString('vi-VN')}đ</span>
+                          </div>
+                        </div>
+
+                        {/* 2-Column Split Grid */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Box 1: Buổi hôm nay */}
+                          <div className="bg-white/95 rounded-xl p-2.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
+                            <div>
+                              <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>{deductTodayIntoCombo ? 'Buổi hôm nay (Lượt 1)' : 'Buổi hôm nay (Ca lẻ)'}</span>
+                              </div>
+                              <div className="mt-1 text-[12.5px] font-black text-slate-900 leading-tight">
+                                {deductTodayIntoCombo ? 'Trừ vào 1 Buổi Nối Mới' : 'Thanh toán lẻ riêng ca này'}
+                              </div>
+                              <div className="text-[9.5px] text-slate-500 mt-0.5 leading-snug">
+                                {deductTodayIntoCombo
+                                  ? 'Không tính tiền lẻ ca này, trừ thẳng vào lượt đầu của gói mới mua.'
+                                  : 'Khách trả riêng tiền dịch vụ hôm nay, không trừ vào bất kỳ buổi nào của gói.'}
+                              </div>
+                            </div>
+                            <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                              <span className="text-slate-500 font-medium">Thu lẻ ca này:</span>
+                              <span
+                                className={`font-black text-[11px] tabular-nums ${
+                                  deductTodayIntoCombo ? 'text-emerald-600' : 'text-slate-900'
+                                }`}
+                              >
+                                {deductTodayIntoCombo ? '0đ' : `${servicePrice.toLocaleString('vi-VN')}đ`}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Box 2: Ví còn lại */}
+                          <div className="bg-white/95 rounded-xl p-2.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
+                            <div>
+                              <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                                <Wallet className="w-3 h-3 text-indigo-600" />
+                                <span>
+                                  {deductTodayIntoCombo ? 'Ví còn lại sau ca này' : 'Ví nguyên vẹn cho lần sau'}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex items-baseline gap-1 text-slate-900 leading-tight">
+                                <span className="text-[15px] font-black tabular-nums text-indigo-700">
+                                  {walletRemainingDisplay}
+                                </span>
+                                <span className="text-[11px] font-bold text-slate-500">
+                                  /{selectedNewComboPkg.totalSessions} buổi
+                                </span>
+                              </div>
+                              <div className="text-[9.5px] text-slate-600 mt-0.5 leading-snug space-y-0.5">
+                                <div>
+                                  • <strong>{paidRemainingDisplay}</strong> buổi mua (
+                                  {paidNewDisplay > 0 ? `${paidNewDisplay} New + ` : ''}
+                                  {paidRefillDisplay} Refill)
+                                </div>
+                                {bonusRemainingDisplay > 0 && (
+                                  <div className="text-emerald-700 font-bold">
+                                    • <strong>{bonusRemainingDisplay}</strong> buổi tặng{' '}
+                                    <span className="text-[9px] font-extrabold text-emerald-800">
+                                      (Trị giá {bonusRemainingRetailValue.toLocaleString('vi-VN')}đ)
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                              <span className="text-slate-500 font-medium">Hạn sử dụng:</span>
+                              <span className="font-black text-slate-700 tabular-nums">
+                                {selectedNewComboPkg.validityMonths
+                                  ? `${selectedNewComboPkg.validityMonths} tháng`
+                                  : '36 tháng'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Value / Savings Footer Strip */}
+                        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-emerald-500/10 rounded-xl px-2.5 py-1.5 border border-amber-500/20 flex items-center justify-between text-[10px]">
+                          <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                            {deductTodayIntoCombo ? (
+                              <>
+                                <span>
+                                  Giá lẻ:{' '}
+                                  <strong className="line-through text-slate-400 tabular-nums">
+                                    {selectedNewComboPkg.retailTotal.toLocaleString('vi-VN')}đ
+                                  </strong>
+                                </span>
+                                <span>•</span>
+                                <span>
+                                  Giá gói:{' '}
+                                  <strong className="text-slate-900 tabular-nums">
+                                    {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ
+                                  </strong>
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span>
+                                  Lẻ ca này: <strong>{servicePrice.toLocaleString('vi-VN')}đ</strong>
+                                </span>
+                                <span>+</span>
+                                <span>
+                                  Gói: <strong>{selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ</strong>
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <div className="font-black text-emerald-700 tabular-nums">
+                            {deductTodayIntoCombo
+                              ? `Tiết kiệm ${selectedNewComboPkg.savingsAmount.toLocaleString('vi-VN')}đ`
+                              : `Tổng ${(servicePrice + selectedNewComboPkg.comboPrice).toLocaleString('vi-VN')}đ`}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : null)}
+
+              {!isExistingComboLive && (
+                <button
+                  onClick={() => setSelectedNewComboId('NONE')}
+                  className={`w-full py-2 rounded-xl text-[11px] font-bold transition-colors ${
+                    selectedNewComboId === 'NONE' ? 'bg-gray-800 text-white' : 'bg-[#F2F2F7] text-gray-600'
+                  }`}
+                >
+                  {selectedNewComboId === 'NONE' ? '✓ ' : ''}Không mua gói mới · Thanh toán lẻ buổi hôm nay (
+                  {servicePrice.toLocaleString('vi-VN')}đ)
+                </button>
+              )}
+
+              {isExistingComboLive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewComboSection(false);
+                    setSelectedNewComboId('NONE');
+                    setSelectedUnderComboId('NONE');
+                  }}
+                  className="w-full py-2.5 rounded-xl border border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-xs flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer"
+                >
+                  <ChevronUp className="w-3.5 h-3.5" />
+                  <span>Thu gọn phần mua thêm combo (Chỉ trừ gói cũ hôm nay)</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI */}
+        {(!isExistingComboLive || showNewComboSection) && (
+          <div>
+            <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#FFB400]" />
+                <span>2B. MUA THÊM GÓI ❖ MI DƯỚI (MUA CÙNG LÚC)</span>
+              </span>
+              {underComboBonus > 0 && (
+                <span className="text-emerald-700 font-bold">+{Math.round(underComboBonus / 1000)}🪶</span>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200 space-y-2.5">
+              {/* Không lấy combo mi dưới pill */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedUnderComboId('NONE')}
+                  className={`py-1.5 px-3 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+                    selectedUnderComboId === 'NONE'
+                      ? 'bg-neutral-800 text-white border-neutral-800 shadow-xs'
+                      : 'bg-[#F9F9FB] border-gray-200 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  Không lấy Mi Dưới
+                </button>
+                {selectedUnderComboPkg && (
+                  <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                    Đã chọn gói mi dưới
+                  </span>
+                )}
+              </div>
+
+              {/* Unified Combo Card cho Mi Dưới */}
+              {underLashPackages.length > 0 && (
+                <WingsUnifiedComboCard
+                  packages={underLashPackages}
+                  customerName={customerName}
+                  customerPhone={booking?.customerPhone}
+                  customerAvatar={booking?.customerAvatar}
+                  selectedPackageId={selectedUnderComboId !== 'NONE' ? selectedUnderComboId : null}
+                  onSelectPackage={(pkg) => {
+                    setSelectedUnderComboId(pkg.id);
+                  }}
+                  onSelectLocked={() => {
+                    setIsLockedWelcomeModalOpen(true);
+                  }}
+                />
+              )}
+            </div>
+          </div>
         )}
 
         {/* Section 3: Summary card */}
@@ -1002,7 +1191,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           {/* Row 1: Dịch vụ hôm nay */}
           <div className="flex items-center justify-between text-[12.5px]">
             <span className="text-gray-500 font-medium">Dịch vụ hôm nay:</span>
-            {selectedComboPkg ? (
+            {selectedNewComboPkg ? (
               deductTodayIntoCombo ? (
                 <span className="text-emerald-700 font-bold tabular-nums">
                   0đ <span className="text-[11px] font-semibold text-emerald-600">(Trừ vào gói)</span>
@@ -1013,7 +1202,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   <span className="text-[11px] font-semibold text-indigo-700">(Trả lẻ)</span>
                 </span>
               )
-            ) : selectedComboId === 'REDEEM_EXISTING' && redemptionAccounting ? (
+            ) : isExistingComboLive && redemptionAccounting ? (
               <span className="text-sky-700 font-bold tabular-nums">
                 {redemptionAccounting.totalCustomerPayToday > 0
                   ? `+${redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')}đ (Phụ thu)`
@@ -1025,12 +1214,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
 
           {/* Row 2: Gói Combo đã chọn */}
-          {selectedComboPkg && (
+          {selectedNewComboPkg && (
             <div className="flex items-center justify-between text-[12.5px]">
               <span className="text-gray-700 font-medium">
-                Gói {selectedComboPkg.shortRuleLabel || selectedComboPkg.ruleName}:
+                Gói {selectedNewComboPkg.shortRuleLabel || selectedNewComboPkg.ruleName}:
               </span>
-              <span className="text-gray-900 font-bold tabular-nums">{comboTotal.toLocaleString('vi-VN')}đ</span>
+              <span className="text-gray-900 font-bold tabular-nums">{newComboTotal.toLocaleString('vi-VN')}đ</span>
             </div>
           )}
 
@@ -1075,7 +1264,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               Thưởng chốt đơn:
             </span>
             <span className="text-emerald-700 font-black tabular-nums text-[13px]">
-              +{Math.round((comboBonus + underComboBonus + serumBonus) / 1000)}🪶
+              +{Math.round((newComboBonus + underComboBonus + serumBonus) / 1000)}🪶
             </span>
           </div>
         </div>
@@ -1098,12 +1287,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         initialCategoryId={activeCategoryId}
         initialVolume={activeVolume}
         welcomeEligibility={welcomeEligibility}
-        selectedPackageId={selectedComboPkg?.id || null}
+        selectedPackageId={selectedNewComboPkg?.id || null}
         todaySingleServicePrice={servicePrice}
         onSelectPackage={(pkg) => {
           setActiveCategoryId(pkg.categoryId);
           setActiveVolume(pkg.volume);
-          setSelectedComboId(pkg.id);
+          setSelectedNewComboId(pkg.id);
         }}
       />
 

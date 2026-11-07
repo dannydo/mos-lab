@@ -13,7 +13,7 @@ import {
   HistoryOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import { SlotBookingInfo, LashSetDetail, SafeAny } from '@mos-lab/shared';
+import { SlotBookingInfo, LashSetDetail, SafeAny, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -25,12 +25,7 @@ interface LashDetailModalProps {
   themeMode: string;
 }
 
-export const LashDetailModal: React.FC<LashDetailModalProps> = ({
-  open,
-  onClose,
-  booking,
-  themeMode,
-}) => {
+export const LashDetailModal: React.FC<LashDetailModalProps> = ({ open, onClose, booking, themeMode }) => {
   const [copied, setCopied] = React.useState(false);
   const isDark = themeMode === 'dark';
 
@@ -43,9 +38,7 @@ export const LashDetailModal: React.FC<LashDetailModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const setsWithPhotos = (booking.recentLashSets || []).filter(
-    (s) => s.beforePhotoUrl || s.afterPhotoUrl
-  );
+  const setsWithPhotos = (booking.recentLashSets || []).filter((s) => s.beforePhotoUrl || s.afterPhotoUrl);
 
   return (
     <Modal
@@ -98,7 +91,8 @@ export const LashDetailModal: React.FC<LashDetailModalProps> = ({
               Chi Tiết Khách Hàng & Bộ Mi: {booking.customerName}
             </div>
             <div style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b' }}>
-              Slot hẹn: <span className="tabular-nums font-semibold">{booking.bookingTime}</span> ({booking.duration} phút) · Dịch vụ: {booking.serviceName || 'Nối mi'}
+              Slot hẹn: <span className="tabular-nums font-semibold">{booking.bookingTime}</span> ({booking.duration}{' '}
+              phút) · Dịch vụ: {booking.serviceName || 'Nối mi'}
             </div>
           </div>
         </div>
@@ -137,22 +131,36 @@ export const LashDetailModal: React.FC<LashDetailModalProps> = ({
             <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#0f172a' }}>
               {booking.customerName}
             </div>
-            {booking.customerPhone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                <span style={{ fontSize: '13px', color: isDark ? '#94a3b8' : '#64748b' }} className="tabular-nums">
-                  📞 {booking.customerPhone}
-                </span>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<CopyOutlined style={{ fontSize: '11px' }} />}
-                  onClick={() => handleCopyPhone(booking.customerPhone)}
-                  style={{ color: copied ? '#10b981' : (isDark ? '#94a3b8' : '#64748b'), padding: '0 4px', height: '20px' }}
-                >
-                  {copied ? 'Đã chép' : 'Chép'}
-                </Button>
-              </div>
-            )}
+            {booking.customerPhone &&
+              (() => {
+                const isMaskedRole =
+                  typeof window !== 'undefined'
+                    ? shouldMaskCustomerPhone(JSON.parse(window.localStorage.getItem('mos_user') || '{}')?.role)
+                    : true;
+                const displayPhone = isMaskedRole ? maskPhoneNumber(booking.customerPhone) : booking.customerPhone;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                    <span style={{ fontSize: '13px', color: isDark ? '#94a3b8' : '#64748b' }} className="tabular-nums">
+                      📞 {displayPhone}
+                    </span>
+                    {!isMaskedRole && (
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined style={{ fontSize: '11px' }} />}
+                        onClick={() => handleCopyPhone(displayPhone)}
+                        style={{
+                          color: copied ? '#10b981' : isDark ? '#94a3b8' : '#64748b',
+                          padding: '0 4px',
+                          height: '20px',
+                        }}
+                      >
+                        {copied ? 'Đã chép' : 'Chép'}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
           </div>
         </div>
 
@@ -255,12 +263,18 @@ export const LashDetailModal: React.FC<LashDetailModalProps> = ({
                             }}
                           >
                             <div>
-                              <span style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#0f172a' }}>
+                              <span
+                                style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#0f172a' }}
+                              >
                                 {set.serviceName}
                               </span>
-                              <div style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b', marginTop: '2px' }}>
+                              <div
+                                style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b', marginTop: '2px' }}
+                              >
                                 <CalendarOutlined style={{ marginRight: '4px' }} />
-                                <span className="tabular-nums">{dayjs(set.bookingDate).format('DD/MM/YYYY HH:mm')}</span>
+                                <span className="tabular-nums">
+                                  {dayjs(set.bookingDate).format('DD/MM/YYYY HH:mm')}
+                                </span>
                                 {' · '}
                                 <UserOutlined style={{ marginRight: '4px' }} />
                                 <span>CV: {set.technicianName}</span>
@@ -454,7 +468,9 @@ export const LashDetailModal: React.FC<LashDetailModalProps> = ({
                           </span>
                         </div>
                         <div style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b', marginTop: '4px' }}>
-                          <span className="tabular-nums font-semibold">{dayjs(set.bookingDate).format('DD/MM/YYYY HH:mm')}</span>
+                          <span className="tabular-nums font-semibold">
+                            {dayjs(set.bookingDate).format('DD/MM/YYYY HH:mm')}
+                          </span>
                           {' · '}
                           <span>CV: {set.technicianName}</span>
                           {' · '}
@@ -469,12 +485,15 @@ export const LashDetailModal: React.FC<LashDetailModalProps> = ({
 
                       <div style={{ textAlign: 'right' }}>
                         {set.totalPrice ? (
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#10b981' }} className="tabular-nums">
+                          <div
+                            style={{ fontSize: '13px', fontWeight: 'bold', color: '#10b981' }}
+                            className="tabular-nums"
+                          >
                             {set.totalPrice.toLocaleString('vi-VN')}đ
                           </div>
                         ) : null}
                         <div style={{ marginTop: '4px' }}>
-                          {(set.beforePhotoUrl || set.afterPhotoUrl) ? (
+                          {set.beforePhotoUrl || set.afterPhotoUrl ? (
                             <Tag color="cyan" icon={<PictureOutlined />}>
                               Có {set.beforePhotoUrl && set.afterPhotoUrl ? '2 ảnh' : '1 ảnh'}
                             </Tag>

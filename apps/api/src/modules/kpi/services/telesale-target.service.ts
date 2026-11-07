@@ -22,6 +22,7 @@ import {
   TelesaleTvQuoteItem,
   TelesaleTvQuotesConfig,
   TelesaleTvQuotesOverviewResponse,
+  maskPhoneNumber,
 } from '@mos-lab/shared';
 import { BkLeaderboardService } from './bk-leaderboard.service.js';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
@@ -1269,13 +1270,7 @@ export class TelesaleTargetService {
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    // Helper: Mask phone number (090***1234)
-    const maskPhoneNumber = (phone?: string): string => {
-      if (!phone) return '';
-      const clean = phone.replace(/\\D/g, '');
-      if (clean.length < 7) return clean;
-      return clean.slice(0, 3) + '***' + clean.slice(-4);
-    };
+    // Using maskPhoneNumber from @mos-lab/shared (XXXX123456)
 
     // Helper: Format Booking Date Display ("Hôm nay 14:30" or "08/10 10:00")
     const formatBookingDateDisplay = (dateStr?: string): string => {

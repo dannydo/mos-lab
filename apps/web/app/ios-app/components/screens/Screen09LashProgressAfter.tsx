@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
-import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import {
   saveLocalProgressSnapshot,
@@ -12,18 +11,7 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
-import {
-  Camera,
-
-  Zap,
-  CheckCircle2,
-  Award,
-  CloudUpload,
-  CloudCheck,
-  CloudOff,
-  Maximize2,
-  Check,
-} from 'lucide-react';
+import { Camera, Zap, CheckCircle2, Clock, CloudUpload, CloudCheck, CloudOff, Maximize2, Check } from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
   booking: BookingItem;
@@ -120,40 +108,52 @@ export function Screen09LashProgressAfter({
 
   const diffMinutes = actualMinutes - targetMinutes;
 
-  // Đánh giá thăng cấp
-  const promotionAudit = useMemo(() => {
+  // Báo cáo thời gian ca làm & Khích lệ tinh thần (không thưởng thêm điểm)
+  const performanceMeta = useMemo(() => {
     if (diffMinutes <= -5) {
       return {
-        rating: 'XUẤT SẮC (FAST)',
-        title: `Nhanh hơn cam kết ${Math.abs(diffMinutes)} phút`,
-        impact: (
-          <span>
-            +5 Điểm Thăng Cấp (Đạt chuẩn <CvFeather2Badge />)
-          </span>
-        ),
-        color: 'text-emerald-700',
-        badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        statusLabel: 'XUẤT SẮC',
+        badgeStyle: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+        diffText: `⚡ Nhanh hơn ${Math.abs(diffMinutes)} phút`,
+        boxBg: 'bg-emerald-50/70 border-emerald-200',
+        diffTextColor: 'text-emerald-700',
+        praiseIcon: '🌟',
+        praiseTitle: 'Biểu dương tốc độ & tay nghề tinh hoa!',
+        praiseMessage: 'Chuyên Viên hoàn thành rất nhanh nhưng vẫn đảm bảo trọn vẹn độ tơi mướt và chuẩn mực mi Wings!',
+        praiseBg: 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200',
+        praiseTitleColor: 'text-emerald-950',
+        praiseDescColor: 'text-emerald-800',
       };
     }
     if (diffMinutes <= 5) {
       return {
-        rating: 'CHUẨN TIẾN ĐỘ (NORMAL)',
-        title: 'Đúng khung giờ tư vấn',
-        impact: <span>Duy trì chuẩn kỹ năng tay nghề</span>,
-        color: 'text-blue-700',
-        badgeBg: 'bg-blue-100 text-blue-800 border-blue-300',
+        statusLabel: 'CHUẨN TIẾN ĐỘ',
+        badgeStyle: 'bg-blue-50 text-blue-700 border-blue-300',
+        diffText: '✓ Đúng khung giờ chuẩn',
+        boxBg: 'bg-blue-50/70 border-blue-200',
+        diffTextColor: 'text-blue-700',
+        praiseIcon: '👏',
+        praiseTitle: 'Kiểm soát thời gian ca làm rất tốt!',
+        praiseMessage:
+          'Tuyệt vời! Ca làm diễn ra đúng nhịp độ, đem lại trải nghiệm êm ái và thư giãn tối đa cho khách hàng.',
+        praiseBg: 'bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200',
+        praiseTitleColor: 'text-blue-950',
+        praiseDescColor: 'text-blue-800',
       };
     }
     return {
-      rating: 'CHẬM TIẾN ĐỘ (SLOW)',
-      title: `Trễ hơn cam kết +${diffMinutes} phút`,
-      impact: (
-        <span>
-          Cần nâng cao tốc độ để xét thăng cấp <CvFeather2Badge />
-        </span>
-      ),
-      color: 'text-amber-700',
-      badgeBg: 'bg-amber-100 text-amber-800 border-amber-300',
+      statusLabel: 'CHẬM TIẾN ĐỘ',
+      badgeStyle: 'bg-amber-50 text-amber-700 border-amber-300',
+      diffText: `⏱ Trễ hơn +${diffMinutes} phút`,
+      boxBg: 'bg-amber-50/70 border-amber-200',
+      diffTextColor: 'text-amber-700',
+      praiseIcon: '💪',
+      praiseTitle: 'Khích lệ tinh thần tỉ mỉ chăm sóc!',
+      praiseMessage:
+        'Cảm ơn bạn đã dồn hết sự cẩn trọng cho bộ mi của khách. Ca sau hãy tiếp tục phát huy tay nghề và tối ưu nhịp độ hơn nhé!',
+      praiseBg: 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200',
+      praiseTitleColor: 'text-amber-950',
+      praiseDescColor: 'text-amber-800',
     };
   }, [diffMinutes]);
 
@@ -438,31 +438,68 @@ export function Screen09LashProgressAfter({
           </div>
         </div>
 
-        {/* KHỐI 3: TỐC ĐỘ HOÀN THÀNH & ĐIỂM THĂNG CẤP (TINH GỌN SÚC TÍCH) */}
-        <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-200/80 space-y-2">
-          <div className="flex items-center justify-between">
+        {/* KHỐI 3: BÁO CÁO THỜI GIAN CA LÀM & KHEN KHÍCH LỆ TINH THẦN (KHÔNG THƯỞNG ĐIỂM) */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-2.5">
+          {/* Header Báo Cáo Thời Gian */}
+          <div className="flex items-center justify-between pb-1 border-b border-neutral-100">
             <div className="flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-emerald-600" />
-              <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">
-                HIỆU SUẤT CA LÀM · {promotionAudit.rating}
+              <Clock className="w-4 h-4 text-neutral-700" />
+              <span className="text-[11px] font-bold text-neutral-700 uppercase tracking-wider">
+                BÁO CÁO THỜI GIAN CA LÀM
               </span>
             </div>
-            <span className="text-[12.5px] font-black text-neutral-900 tabular-nums">
-              {actualMinutes}p <span className="text-neutral-400 font-normal text-[11px]">/ {targetMinutes}p</span>
+            <span
+              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${performanceMeta.badgeStyle}`}
+            >
+              {performanceMeta.statusLabel}
             </span>
           </div>
 
-          <div className="bg-neutral-50 rounded-xl p-2.5 border border-neutral-200/70 flex items-center justify-between text-[12px]">
-            <span className="font-extrabold text-amber-600 flex items-center gap-1">
-              <Award className="w-4 h-4" />
-              <span>{promotionAudit.impact}</span>
-            </span>
-            <span className={`font-black ${promotionAudit.color}`}>{promotionAudit.title}</span>
+          {/* 2 Cột: Cam Kết Định Mức vs Hoàn Tất Thực Tế */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Cột 1: Thời gian cam kết */}
+            <div className="bg-neutral-50 rounded-xl p-2.5 border border-neutral-200/70">
+              <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-tight">
+                Cam kết định mức
+              </div>
+              <div className="text-[17px] font-black text-neutral-800 tabular-nums mt-0.5">
+                {targetMinutes} <span className="text-[11px] font-bold text-neutral-500">phút</span>
+              </div>
+              <div className="text-[10px] text-neutral-400 mt-0.5">Tiêu chuẩn dịch vụ</div>
+            </div>
+
+            {/* Cột 2: Hoàn tất thực tế */}
+            <div className={`rounded-xl p-2.5 border ${performanceMeta.boxBg}`}>
+              <div className="text-[10px] font-semibold text-neutral-600 uppercase tracking-tight">
+                Hoàn tất thực tế
+              </div>
+              <div className="text-[17px] font-black text-neutral-900 tabular-nums mt-0.5">
+                {actualMinutes} <span className="text-[11px] font-bold text-neutral-500">phút</span>
+              </div>
+              <div className={`text-[10.5px] font-extrabold mt-0.5 tabular-nums ${performanceMeta.diffTextColor}`}>
+                {performanceMeta.diffText}
+              </div>
+            </div>
+          </div>
+
+          {/* Banner Khen Ngợi & Khích Lệ Tinh Thần */}
+          <div className={`rounded-xl p-2.5 border ${performanceMeta.praiseBg}`}>
+            <div className="flex items-start gap-2">
+              <span className="text-base select-none leading-none pt-0.5">{performanceMeta.praiseIcon}</span>
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <div className={`text-[12px] font-black ${performanceMeta.praiseTitleColor}`}>
+                  {performanceMeta.praiseTitle}
+                </div>
+                <div className={`text-[11px] leading-relaxed font-medium ${performanceMeta.praiseDescColor}`}>
+                  {performanceMeta.praiseMessage}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Dòng nghiệm thu kỹ thuật rút gọn tinh tế */}
-          <div className="pt-0.5 flex items-center justify-center gap-2 text-[11.5px] text-emerald-700 font-bold">
-            <Check className="w-3.5 h-3.5" />
+          <div className="pt-0.5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 font-bold">
+            <Check className="w-3.5 h-3.5 shrink-0" />
             <span>Chuẩn kỹ thuật Wings · Mi tơi mướt · Không dính chân · Không cay mắt</span>
           </div>
         </div>

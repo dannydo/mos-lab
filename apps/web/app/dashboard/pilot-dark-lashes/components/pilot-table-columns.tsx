@@ -18,11 +18,8 @@ import {
   User,
 } from 'lucide-react';
 import dayjs from 'dayjs';
-import type {
-  DarkLashesSessionStatus,
-  PilotFollowUpStatus,
-  PilotSession,
-} from '@mos-lab/shared';
+import type { DarkLashesSessionStatus, PilotFollowUpStatus, PilotSession } from '@mos-lab/shared';
+import { maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { CopyPhoneButton } from '../../../../components/ui/CopyPhoneButton';
@@ -38,12 +35,30 @@ export function formatVND(value: number): string {
 export const OP_STATUS_CONFIG: Record<DarkLashesSessionStatus, { text: string; badge: string }> = {
   BOOKED: { text: '1. Đã đặt lịch', badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
   CHECKED_IN: { text: '2. Đã đến shop', badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
-  ASSESSED: { text: '3. Đã đánh giá đạt', badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
-  INELIGIBLE: { text: 'Không đủ điều kiện', badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' },
-  BEFORE_PHOTO: { text: '4. Đã chụp Before', badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-  SERVICE_DONE: { text: '5. Làm xong', badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
-  AFTER_PHOTO: { text: '6. Đã chụp After', badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
-  FEEDBACK_DONE: { text: '7. Đã feedback', badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
+  ASSESSED: {
+    text: '3. Đã đánh giá đạt',
+    badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+  },
+  INELIGIBLE: {
+    text: 'Không đủ điều kiện',
+    badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+  },
+  BEFORE_PHOTO: {
+    text: '4. Đã chụp Before',
+    badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  },
+  SERVICE_DONE: {
+    text: '5. Làm xong',
+    badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+  },
+  AFTER_PHOTO: {
+    text: '6. Đã chụp After',
+    badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+  },
+  FEEDBACK_DONE: {
+    text: '7. Đã feedback',
+    badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+  },
   CHECKED_OUT: { text: '8. Đã check-out', badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20' },
 };
 
@@ -67,7 +82,8 @@ export function renderFollowUpBadge(status: PilotFollowUpStatus, hours: '24h' | 
           : 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
       }`}
     >
-      <AppIcon icon={is24 ? Clock : AlertTriangle} size="sm" className={`mr-1 ${is24 ? '' : 'text-rose-500'}`} /> Chờ gọi {hours}
+      <AppIcon icon={is24 ? Clock : AlertTriangle} size="sm" className={`mr-1 ${is24 ? '' : 'text-rose-500'}`} /> Chờ
+      gọi {hours}
     </span>
   );
 }
@@ -109,11 +125,21 @@ export function createPilotColumns({
       render: (_, r) => (
         <div className="flex flex-col gap-0.5">
           <span className="font-semibold text-slate-800 dark:text-slate-100 text-xs">{r.customerName}</span>
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-            <AppIcon icon={Phone} size="sm" />
-            <span className="tabular-nums font-mono">{r.customerPhone}</span>
-            <CopyPhoneButton phone={r.customerPhone} />
-          </div>
+          {r.customerPhone &&
+            (() => {
+              const isMaskedRole =
+                typeof window !== 'undefined'
+                  ? shouldMaskCustomerPhone(JSON.parse(window.localStorage.getItem('mos_user') || '{}')?.role)
+                  : true;
+              const displayPhone = isMaskedRole ? maskPhoneNumber(r.customerPhone) : r.customerPhone;
+              return (
+                <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <AppIcon icon={Phone} size="sm" />
+                  <span className="tabular-nums font-mono">{displayPhone}</span>
+                  {!isMaskedRole && <CopyPhoneButton phone={r.customerPhone} />}
+                </div>
+              );
+            })()}
           {r.bookingNote && (
             <span className="text-[11px] text-slate-400 dark:text-slate-500 italic truncate max-w-[150px]">
               &ldquo;{r.bookingNote}&rdquo;
@@ -178,7 +204,13 @@ export function createPilotColumns({
             {r.beforePhotoUrl ? (
               <Tooltip title="Xem ảnh Before">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shrink-0">
-                  <img src={resolveMediaUrl(r.beforePhotoUrl)} alt="Before" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  <img
+                    src={resolveMediaUrl(r.beforePhotoUrl)}
+                    alt="Before"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
               </Tooltip>
             ) : (
@@ -189,7 +221,13 @@ export function createPilotColumns({
             {r.afterPhotoUrl ? (
               <Tooltip title="Xem ảnh After">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-emerald-500/40 bg-slate-900 shrink-0">
-                  <img src={resolveMediaUrl(r.afterPhotoUrl)} alt="After" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  <img
+                    src={resolveMediaUrl(r.afterPhotoUrl)}
+                    alt="After"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
               </Tooltip>
             ) : (
@@ -244,7 +282,9 @@ export function createPilotColumns({
         const badgeLabel = badgeLabels[val.suitability] || val.suitability;
         return (
           <div className="flex flex-col gap-0.5 items-start">
-            <span className={`inline-flex items-center leading-none text-[10.5px] px-1.5 py-0.5 rounded border font-semibold ${badgeClass}`}>
+            <span
+              className={`inline-flex items-center leading-none text-[10.5px] px-1.5 py-0.5 rounded border font-semibold ${badgeClass}`}
+            >
               <AppIcon icon={Sparkles} size={11} className="mr-1" />
               {badgeLabel}
             </span>
@@ -287,8 +327,8 @@ export function createPilotColumns({
             val > 0
               ? 'text-emerald-600 dark:text-emerald-400'
               : val < 0
-              ? 'text-rose-600 dark:text-rose-400'
-              : 'text-slate-500'
+                ? 'text-rose-600 dark:text-rose-400'
+                : 'text-slate-500'
           }`}
         >
           {formatVND(val)}
@@ -311,7 +351,10 @@ export function createPilotColumns({
               </div>
             ) : null}
             {r.feedbackNote && (
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[110px]" title={r.feedbackNote}>
+              <span
+                className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[110px]"
+                title={r.feedbackNote}
+              >
                 &ldquo;{r.feedbackNote}&rdquo;
               </span>
             )}

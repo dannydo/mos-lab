@@ -46,7 +46,10 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
   const [viewMode, setViewMode] = useState<'single' | 'chart'>('single');
 
   const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
   const touchEndXRef = useRef<number | null>(null);
+  const touchEndYRef = useRef<number | null>(null);
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -65,6 +68,19 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
     setCurrentIndex((prev) => (prev < LASH_CURL_LIST.length - 1 ? prev + 1 : 0));
   }, []);
 
+  // Auto-scroll active tab into view when current curl changes
+  useEffect(() => {
+    if (!isOpen || viewMode !== 'single') return;
+    const activeCurl = LASH_CURL_LIST[currentIndex];
+    if (activeCurl && tabRefs.current[activeCurl.id]) {
+      tabRefs.current[activeCurl.id]?.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+    }
+  }, [currentIndex, isOpen, viewMode]);
+
   // Keyboard navigation (Left / Right arrow keys, ESC to close)
   useEffect(() => {
     if (!isOpen) return;
@@ -77,27 +93,51 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handlePrev, handleNext, onClose]);
 
-  // Touch swipe support (Swipe Left/Right on mobile)
+  // High-sensitivity touch swipe support with vertical scroll tolerance for iOS Safari
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.targetTouches[0].clientX;
+    touchStartYRef.current = e.targetTouches[0].clientY;
+    touchEndXRef.current = e.targetTouches[0].clientX;
+    touchEndYRef.current = e.targetTouches[0].clientY;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndXRef.current = e.targetTouches[0].clientX;
+    touchEndYRef.current = e.targetTouches[0].clientY;
   };
 
   const handleTouchEnd = () => {
-    if (touchStartXRef.current === null || touchEndXRef.current === null) return;
+    if (
+      touchStartXRef.current === null ||
+      touchEndXRef.current === null ||
+      touchStartYRef.current === null ||
+      touchEndYRef.current === null
+    ) {
+      return;
+    }
     const deltaX = touchStartXRef.current - touchEndXRef.current;
-    const minSwipeDistance = 45;
+    const deltaY = touchStartYRef.current - touchEndYRef.current;
+    const minSwipeDistance = 28; // Responsive swipe threshold for mobile
 
-    if (deltaX > minSwipeDistance) {
-      handleNext();
-    } else if (deltaX < -minSwipeDistance) {
-      handlePrev();
+    // Trigger horizontal swipe only when horizontal travel dominates vertical gesture
+    if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
+      if (deltaX > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
     }
     touchStartXRef.current = null;
+    touchStartYRef.current = null;
     touchEndXRef.current = null;
+    touchEndYRef.current = null;
+  };
+
+  const handleTouchCancel = () => {
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    touchEndXRef.current = null;
+    touchEndYRef.current = null;
   };
 
   if (!isOpen) return null;
@@ -173,14 +213,18 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
             return (
               <button
                 key={curl.id}
+                ref={(el) => {
+                  tabRefs.current[curl.id] = el;
+                }}
                 type="button"
                 onClick={() => setCurrentIndex(idx)}
-                className={`flex-1 min-w-[52px] py-1.5 px-2 rounded-xl text-center text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 border relative ${
+                style={{ touchAction: 'manipulation' }}
+                className={`flex-1 min-w-[56px] py-1.5 px-2.5 rounded-xl text-center text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 border relative cursor-pointer active:scale-95 ${
                   active
-                    ? 'bg-[#FFB400] border-[#FFB400] text-black shadow-md scale-102'
+                    ? 'bg-[#FFB400] border-[#FFB400] text-black shadow-md scale-102 ring-2 ring-[#FFB400]/40'
                     : isAllowed
                       ? 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'
-                      : 'bg-white/[0.02] border-white/5 text-gray-500 opacity-60'
+                      : 'bg-white/[0.04] border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10'
                 }`}
               >
                 <div className="flex items-center gap-0.5 leading-none">
@@ -202,6 +246,7 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
         onTouchStart={viewMode === 'single' ? handleTouchStart : undefined}
         onTouchMove={viewMode === 'single' ? handleTouchMove : undefined}
         onTouchEnd={viewMode === 'single' ? handleTouchEnd : undefined}
+        onTouchCancel={viewMode === 'single' ? handleTouchCancel : undefined}
       >
         {viewMode === 'chart' ? (
           /* BẢNG SO SÁNH TỔNG HỢP (BL LASHES STYLE) */
@@ -216,29 +261,44 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
         ) : (
           /* PHÓNG TO CHI TIẾT TỪNG ĐỘ CONG VỚI MI THẬT & NGỌN NHỌN */
           <>
-            {/* Floating Left/Right Chevrons for Desktop/iPad */}
-            <button
-              type="button"
-              onClick={handlePrev}
-              aria-label="Độ cong trước"
-              className="absolute left-2 top-28 z-10 w-8 h-8 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+            {/* Big Graphic Card Container with Built-in 44x44 Touch Chevrons and Pan-Y Swipe Support */}
+            <div
+              style={{ touchAction: 'pan-y' }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchCancel}
+              className="bg-gradient-to-b from-white/10 to-white/5 rounded-3xl p-3 border border-white/10 shadow-2xl relative overflow-hidden flex flex-col items-center"
             >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+              {/* Apple HIG 44x44 Floating Chevrons Centered Inside the Card */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrev();
+                }}
+                aria-label="Độ cong trước"
+                style={{ touchAction: 'manipulation' }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 hover:bg-black active:bg-amber-500 active:text-black border-2 border-amber-400/50 hover:border-amber-400 text-amber-300 shadow-2xl flex items-center justify-center cursor-pointer transition-all active:scale-90"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
 
-            <button
-              type="button"
-              onClick={handleNext}
-              aria-label="Độ cong kế tiếp"
-              className="absolute right-2 top-28 z-10 w-8 h-8 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNext();
+                }}
+                aria-label="Độ cong kế tiếp"
+                style={{ touchAction: 'manipulation' }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 hover:bg-black active:bg-amber-500 active:text-black border-2 border-amber-400/50 hover:border-amber-400 text-amber-300 shadow-2xl flex items-center justify-center cursor-pointer transition-all active:scale-90"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
 
-            {/* Big Graphic Card Container */}
-            <div className="bg-gradient-to-b from-white/10 to-white/5 rounded-3xl p-3 border border-white/10 shadow-2xl relative overflow-hidden flex flex-col items-center">
               {/* Category Pill + Headline Compact */}
-              <div className="w-full flex items-center justify-between mb-1">
+              <div className="w-full flex items-center justify-between mb-1 pl-12 pr-12">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     {currentCurl.categoryTitle}
@@ -248,7 +308,7 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
                 <span className="text-xs font-black text-[#FFB400]">Góc {currentCurl.degrees}°</span>
               </div>
 
-              <h3 className="text-base font-black text-[#FFB400] self-start tracking-tight mb-0.5">
+              <h3 className="text-base font-black text-[#FFB400] self-start tracking-tight mb-0.5 pl-12 pr-12">
                 {currentCurl.headline}
               </h3>
 
@@ -279,6 +339,58 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
                 <span>
                   Ngọn mi: <strong className="text-amber-300">Vuốt nhọn sắc nét</strong>
                 </span>
+              </div>
+
+              {/* Interactive Carousel Navigation Bar with Prev/Next Pills & Dots Indicator */}
+              <div className="w-full flex items-center justify-between mt-3 pt-2.5 border-t border-white/10 gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrev();
+                  }}
+                  style={{ touchAction: 'manipulation' }}
+                  className="py-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-amber-500/20 text-xs font-bold text-gray-200 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <ChevronLeft className="w-4 h-4 text-amber-400" />
+                  <span>{LASH_CURL_LIST[currentIndex > 0 ? currentIndex - 1 : LASH_CURL_LIST.length - 1].code}</span>
+                </button>
+
+                {/* 7 Carousel Dots (Clickable) */}
+                <div className="flex items-center gap-1.5 py-1">
+                  {LASH_CURL_LIST.map((curl, dotIdx) => {
+                    const isDotActive = dotIdx === currentIndex;
+                    return (
+                      <button
+                        key={curl.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentIndex(dotIdx);
+                        }}
+                        aria-label={`Chuyển đến độ cong ${curl.label}`}
+                        className={`transition-all duration-200 cursor-pointer ${
+                          isDotActive
+                            ? 'w-6 h-2 rounded-full bg-[#FFB400] shadow-sm'
+                            : 'w-2 h-2 rounded-full bg-white/30 hover:bg-white/60 active:scale-125'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNext();
+                  }}
+                  style={{ touchAction: 'manipulation' }}
+                  className="py-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-amber-500/20 text-xs font-bold text-gray-200 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <span>{LASH_CURL_LIST[currentIndex < LASH_CURL_LIST.length - 1 ? currentIndex + 1 : 0].code}</span>
+                  <ChevronRight className="w-4 h-4 text-amber-400" />
+                </button>
               </div>
             </div>
 

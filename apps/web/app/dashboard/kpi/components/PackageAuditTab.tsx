@@ -245,8 +245,8 @@ export const PackageAuditTab: React.FC = () => {
       key: 'added',
       render: (_: SafeAny, r: PackageAuditRecord) => (
         <div>
-          {r.normalCountAdded > 0 && <Tag color="blue">+{r.normalCountAdded} Nối mới</Tag>}
-          {r.retainCountAdded > 0 && <Tag color="orange">+{r.retainCountAdded} Dặm mi</Tag>}
+          {r.normalCountAdded > 0 && <Tag color="blue">+✦ {r.normalCountAdded} Nối mới</Tag>}
+          {r.retainCountAdded > 0 && <Tag color="orange">+↻ {r.retainCountAdded} Dặm mi</Tag>}
         </div>
       ),
       width: 160,
@@ -478,7 +478,7 @@ export const PackageAuditTab: React.FC = () => {
               <div>
                 Lượt cộng:{' '}
                 <strong>
-                  +{selectedRecord.normalCountAdded} Nối mới, +{selectedRecord.retainCountAdded} Dặm mi
+                  +✦ {selectedRecord.normalCountAdded} Nối mới, +↻ {selectedRecord.retainCountAdded} Dặm mi
                 </strong>
               </div>
               <div>

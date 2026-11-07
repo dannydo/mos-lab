@@ -61,6 +61,7 @@ import {
   Volume2,
   VolumeX,
   Settings,
+  Lock,
   Copy,
   Users,
   UserMinus,
@@ -166,6 +167,7 @@ import type {
 import {
   hexToRgba,
   isCanonicalSuperAdminIdentity,
+  isCvRole,
   normalizeAndEnrichTaskChecklist,
   removeVietnameseTones,
   resolveBestSourceMessageForTaskChecklist,
@@ -239,6 +241,8 @@ import { MosChatMessageFeed } from './components/MosChatMessageFeed';
 import { MosChatComposer } from './components/MosChatComposer';
 import { MosChatThreadDrawer } from './components/MosChatThreadDrawer';
 import { MosChatModals } from './components/MosChatModals';
+import { MosChatSearchModal } from './components/MosChatSearchModal';
+import type { MosChatSearchResultItem } from '@mos-lab/shared';
 import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
 import { MosChatPinnedPane } from './components/MosChatPinnedPane';
@@ -1364,6 +1368,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   // Notification Settings Modal (Tiered Notification Filter)
   const [notifSettingsModalOpen, setNotifSettingsModalOpen] = useState(false);
+
+  // Message Content Search Modal (⌘K / Ctrl+K)
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  // Global ⌘K / Ctrl+K shortcut for message search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchModalOpen((p) => !p);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Personal Sidebar Customization (Google Chat Workspace style - per individual user)
   const userSidebarPrefsStorageKey = useMemo(() => {
@@ -5230,6 +5249,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   useEffect(() => {
     navigateToMessageRef.current = navigateToMessage;
   }, [navigateToMessage]);
+
+  const handleSelectSearchResult = useCallback(
+    (item: MosChatSearchResultItem) => {
+      setSearchModalOpen(false);
+      navigateToMessage(item.conversationId, item.id);
+    },
+    [navigateToMessage]
+  );
 
   const lastProcessedNavRef = useRef<string | null>(null);
 
@@ -10086,6 +10113,33 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   if (!canUserAccessChat) {
+    if (standalone) {
+      const isCv = isCvRole(currentUser?.role);
+      return (
+        <div className="w-full h-screen bg-[#090d16] flex flex-col items-center justify-center p-6 text-center text-slate-300">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 border border-amber-500/20 shadow-md">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Chưa được cấp quyền truy cập mOS Chat</h2>
+          <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
+            Tài khoản của bạn ({currentUser?.displayName || currentUser?.username || 'nhân sự'}) hiện chưa được quản trị
+            viên mở quyền tham gia mOS Chat nội bộ. Vui lòng liên hệ Admin để được cấp quyền.
+          </p>
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.opener) {
+                window.close();
+              } else if (typeof window !== 'undefined') {
+                window.location.href = isCv ? '/dashboard/cv' : '/dashboard';
+              }
+            }}
+            className="px-5 py-2.5 rounded-xl bg-amber-400 text-black font-bold text-sm hover:bg-amber-300 active:scale-95 transition-all cursor-pointer shadow-lg"
+          >
+            Quay lại mOS Dashboard
+          </button>
+        </div>
+      );
+    }
     return null;
   }
 
@@ -10555,6 +10609,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                 {/* ── Header Right: Essential Icons + ⋯ More Overflow ── */}
                 <div className="flex items-center gap-0.5">
+                  {/* Search Message Button (Command Palette ⌘K) */}
+                  <Tooltip title="Tìm kiếm tin nhắn (⌘K)">
+                    <button
+                      type="button"
+                      aria-label="Tìm kiếm tin nhắn"
+                      onClick={() => setSearchModalOpen(true)}
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
+                      style={{
+                        background: searchModalOpen ? 'rgba(234, 179, 8, 0.16)' : 'transparent',
+                        border: `1px solid ${searchModalOpen ? 'rgba(234, 179, 8, 0.35)' : borderColor}`,
+                        color: searchModalOpen ? '#eab308' : token.colorTextSecondary,
+                      }}
+                    >
+                      <Search size={14} />
+                    </button>
+                  </Tooltip>
+
                   {/* Group 1: Notification & Thread (feature toggles) */}
                   {/* Notification Settings Button (Tiered Notification Filter) */}
                   <Tooltip title="Cài đặt thông báo (Lọc tin nhắn & BUZZ)">
@@ -11328,6 +11399,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         onChangeGlobalMode={handleChangeGlobalNotificationMode}
         onChangeChannelOverride={handleChangeChannelNotificationOverride}
         themeMode={themeMode}
+      />
+
+      {/* Message Content Search Modal (⌘K / Ctrl+K) */}
+      <MosChatSearchModal
+        open={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        activeConversation={activeConversation}
+        onSelectMessage={handleSelectSearchResult}
       />
 
       <MosChatModals

@@ -995,3 +995,39 @@ export interface MosChatRealtimeEvent {
   actorStaffId?: number | string | null;
   payload: Record<string, unknown>;
 }
+
+export interface SearchMosChatMessagesQuery {
+  q: string;
+  conversationId?: string;
+  inThreadOnly?: boolean;
+  hasAttachment?: boolean;
+  limit?: number;
+}
+
+export interface MosChatSearchResultItem {
+  id: string;
+  conversationId: string;
+  conversationName: string;
+  conversationType: 'space' | 'dm';
+  isThreadReply: boolean;
+  parentMessageId?: string | null;
+  senderId: string;
+  senderName: string;
+  senderRole?: string;
+  senderAvatar?: string | null;
+  roleColor?: string | null;
+  text: string;
+  timeLabel: string;
+  createdAt: string;
+  isDeleted?: boolean;
+  deletedByName?: string | null;
+  hasAttachments?: boolean;
+  attachmentNames?: string[];
+}
+
+export interface SearchMosChatMessagesResponse {
+  success: boolean;
+  query: string;
+  totalMatches: number;
+  items: MosChatSearchResultItem[];
+}

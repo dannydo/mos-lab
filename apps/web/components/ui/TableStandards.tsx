@@ -8,6 +8,7 @@ import type { TablePaginationConfig } from 'antd/es/table';
 import { ListOrdered, Phone, Settings2, UserRound } from 'lucide-react';
 import { AppIcon } from './AppIcon';
 import { CopyPhoneButton } from './CopyPhoneButton';
+import { maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 
 /** The one page-size contract used by every operational data table. */
 export const STANDARD_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
@@ -165,6 +166,11 @@ export function CustomerIdentityCell({
 }: CustomerIdentityCellProps) {
   const { token } = theme.useToken();
   const resolvedAccent = accentColor || token.colorPrimary;
+  const isMaskedRole =
+    typeof window !== 'undefined'
+      ? shouldMaskCustomerPhone(JSON.parse(window.localStorage.getItem('mos_user') || '{}')?.role)
+      : true;
+  const displayPhone = isMaskedRole ? maskPhoneNumber(phone) : phone;
 
   return (
     <div className="customer-identity-cell">
@@ -195,16 +201,16 @@ export function CustomerIdentityCell({
             <button
               type="button"
               className="customer-identity-cell-phone"
-              aria-label={onCall ? `Gọi ${phone}` : `Số điện thoại ${phone}`}
+              aria-label={onCall ? `Gọi ${displayPhone}` : `Số điện thoại ${displayPhone}`}
               onClick={(event) => {
                 event.stopPropagation();
                 onCall?.();
               }}
             >
               <AppIcon icon={Phone} size="disclosure" style={{ color: resolvedAccent }} />
-              <span>{phone}</span>
+              <span>{displayPhone}</span>
             </button>
-            <CopyPhoneButton phone={phone} size="xs" />
+            {!isMaskedRole && <CopyPhoneButton phone={phone} size="xs" />}
           </div>
         ) : (
           <span className="customer-identity-cell-phone customer-identity-cell-phone-empty">Chưa có SĐT</span>

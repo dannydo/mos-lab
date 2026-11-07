@@ -1,6 +1,13 @@
 import dayjs from 'dayjs';
 import { message as antdMessage } from 'antd';
-import type { AiChatMessage, MosChatImageAttachment, MosChatImageMimeType, MosChatMessage, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
+import type {
+  AiChatMessage,
+  MosChatImageAttachment,
+  MosChatImageMimeType,
+  MosChatMessage,
+  MosChatStaffMember,
+  SafeAny,
+} from '@mos-lab/shared';
 import { removeVietnameseTones } from '@mos-lab/shared';
 import { cleanMarkdownForSpeech } from '../../voice-assistant/speech-utils';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
@@ -16,7 +23,21 @@ export function matchesStaffGroup(member: MosChatStaffMember, groupKey: string):
   switch (groupKey) {
     case 'DEPT_SHOP':
       return (
-        depts.includes('SHOP') || ['cc', 'coca', 'consultant', 'cv', 'lt', 'technician', 'ktv', 'qa_qc'].includes(role)
+        depts.includes('SHOP') ||
+        [
+          'cc',
+          'coca',
+          'consultant',
+          'cv',
+          'cvl',
+          'cvll',
+          'cv_plus',
+          'cv_plus_plus',
+          'lt',
+          'technician',
+          'ktv',
+          'qa_qc',
+        ].includes(role)
       );
     case 'DEPT_GROWTH':
       return depts.includes('GROWTH') || ['telesales', 'booker', 'oc', 'ls', 'cs', 'control'].includes(role);
@@ -45,7 +66,10 @@ export function matchesStaffGroup(member: MosChatStaffMember, groupKey: string):
     case 'TEAM_CC':
       return teams.includes('CC') || ['cc', 'coca', 'consultant'].includes(role);
     case 'TEAM_CV':
-      return teams.includes('CV') || ['cv', 'lt', 'technician', 'ktv'].includes(role);
+      return (
+        teams.includes('CV') ||
+        ['cv', 'cvl', 'cvll', 'cv_plus', 'cv_plus_plus', 'lt', 'technician', 'ktv'].includes(role)
+      );
     case 'TEAM_TELESALES':
       return (
         teams.includes('BK_TELESALES') || teams.includes('BK') || ['telesales', 'booker', 'oc', 'ls'].includes(role)
@@ -1080,7 +1104,7 @@ export function formatBackendAiMessage(
  * If userKey already reacted with emoji, removes it. Otherwise, adds it.
  */
 export function toggleReactionState<
-  T extends { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
+  T extends { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> },
 >(target: T, emoji: string, userKey: string): T {
   const nextReactions = { ...(target.reactions || {}) };
   const nextReactionUsers = { ...(target.reactionUsers || {}) };
@@ -1124,9 +1148,7 @@ export function toggleReactionState<
  */
 export function hasUserReacted(
   target:
-    | { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
-    | undefined
-    | null,
+    { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> } | undefined | null,
   emoji: string,
   userKey: string
 ): boolean {
@@ -1206,6 +1228,3 @@ export async function copyMessageToClipboard(
     return false;
   }
 }
-
-
-

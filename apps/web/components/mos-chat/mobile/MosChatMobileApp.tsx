@@ -29,6 +29,7 @@ import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMoveThreadModal } from './MosChatMobileMoveThreadModal';
+import { MosChatMobileSearchSheet } from './MosChatMobileSearchSheet';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
@@ -43,7 +44,7 @@ import {
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
-import type { MosChatImageAttachment, MosChatCustomerCard } from '@mos-lab/shared';
+import type { MosChatImageAttachment, MosChatCustomerCard, MosChatSearchResultItem } from '@mos-lab/shared';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -126,6 +127,25 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     images: [],
     initialIndex: 0,
   });
+
+  // Mobile Message Search Sheet state
+  const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+
+  const handleSelectSearchResult = (item: MosChatSearchResultItem) => {
+    setSearchSheetOpen(false);
+    const targetConv = conversations.find((c) => c.id === item.conversationId);
+    if (targetConv) {
+      setActiveConvId(targetConv.id);
+      setMobileView('room');
+    }
+    if (item.isThreadReply && item.parentMessageId) {
+      const parent = targetConv?.messages?.find((m) => m.id === item.parentMessageId);
+      if (parent) {
+        setActiveThreadMsg(parent);
+        setMobileView('thread');
+      }
+    }
+  };
 
   const handleOpenStreamGallery = (msg: MosChatMessage, attIdx: number) => {
     const list: MosChatGalleryImage[] = [];
@@ -334,7 +354,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     const sourceMsg = params?.sourceMsg || activeThreadMsg || null;
     // CRITICAL (MOS-BUG-190): Only set editingTaskForModal if existingTask is explicitly passed.
     // If user is adding a subtask/task in the thread (or isNew is true), do NOT fallback to the thread's main task.
-    const existing = params?.isNew ? null : (params?.existingTask || null);
+    const existing = params?.isNew ? null : params?.existingTask || null;
 
     setEditingTaskForModal(existing);
     setTaskSourceMsg(sourceMsg);
@@ -558,6 +578,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onOpenSettings={() => setSpaceConfigModalOpen(true)}
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
         onOpenTaskModal={() => openTaskModalForThread()}
+        onOpenSearch={() => setSearchSheetOpen(true)}
       />
 
       {/* Dynamic Screen View */}
@@ -915,6 +936,14 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         open={spaceMembersModalOpen}
         conversation={activeConversation}
         onClose={() => setSpaceMembersModalOpen(false)}
+      />
+
+      {/* Message Search Full-Screen Sheet */}
+      <MosChatMobileSearchSheet
+        open={searchSheetOpen}
+        onClose={() => setSearchSheetOpen(false)}
+        activeConversation={activeConversation}
+        onSelectMessage={handleSelectSearchResult}
       />
     </div>
   );

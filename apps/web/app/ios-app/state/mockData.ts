@@ -228,6 +228,7 @@ export interface BookingItem {
   };
   diamondBalance?: number; // Số dư ví Kim Cương của khách (1 💎 = 1.000 VNĐ)
   branchCode?: string; // Mã chi nhánh (ví dụ: 'DT' - Đề Thám)
+  lastVisitDate?: string; // Ngày ghé gần nhất (DD/MM/YYYY)
   lashHistory?: LashHistoryItem[];
   selectedCombo?: {
     id: string;
@@ -296,9 +297,9 @@ export interface BookingItem {
     remainingAfterToday: number; // tổng lượt còn (backward compat)
     explanation: string;
     // === Breakdown chi tiết ví gói (mới) ===
-    totalSessions: number;    // Tổng buổi của gói
-    paidRemaining: number;    // Buổi mua còn lại sau hôm nay
-    bonusRemaining: number;   // Buổi tặng còn lại sau hôm nay
+    totalSessions: number; // Tổng buổi của gói
+    paidRemaining: number; // Buổi mua còn lại sau hôm nay
+    bonusRemaining: number; // Buổi tặng còn lại sau hôm nay
   } | null;
   attributes?: {
     style: string;
@@ -322,6 +323,7 @@ export interface BookingItem {
     naturalLashLength?: string;
     naturalLashThickness?: string;
     naturalLashDensity?: string;
+    naturalLashCount?: string;
     isNewClientDiagnosticDone?: boolean;
     lashHealth?: string;
     lashTrail?: string;
@@ -393,7 +395,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
   {
     id: 337001,
     orderNumber: 'BK-337001',
-    customerName: 'Chị Mai Linh (Khách Mới)',
+    customerName: 'Chị Mai Linh',
     customerPhone: '0908.112.334',
     customerId: 62105,
     customerAvatar: undefined,
@@ -467,7 +469,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       remainingSessions: 3,
       normalRemaining: 3,
       retainRemaining: 0,
-      comboName: 'Combo 5 lần New Flawless Mink 880 (70 sợi)',
+      comboName: '❖ 5 lần New Flawless Mink 880 (70 sợi)',
       serviceKey: 'new-flawless.mink-880',
       packageKey: '4+1-flawless-mink-880',
       retainDaysLimit: 25,
@@ -484,7 +486,8 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       thickness: '0.10 mm',
       naturalLashLength: '8mm',
       naturalLashThickness: '0.05-0.07mm',
-      naturalLashDensity: 'Vừa (80 - 120 sợi/mắt)',
+      naturalLashDensity: '60-80',
+      naturalLashCount: '60-80',
       eyeShape: 'Mí lót / Sụp mí (Hooded)',
       lashHealth: 'Mi khỏe (Healthy)',
       lashTrail: 'Chúc xuống (Downwards)',
@@ -520,7 +523,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       remainingSessions: 2,
       normalRemaining: 1,
       retainRemaining: 1,
-      comboName: 'Combo 5 lần New HyperLight 770 (4𝑿 · 70 fan)',
+      comboName: '❖ 5 lần New HyperLight 770 (4𝑿 · 70 fan)',
       serviceKey: 'new-hyperlight-770',
       packageKey: '4+1-hyperlight-770',
       retainDaysLimit: 25,
@@ -563,7 +566,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       remainingSessions: 4,
       normalRemaining: 4,
       retainRemaining: 0,
-      comboName: 'Combo 7+3 Ivylight 4𝓵 1220 (90 nhịp)',
+      comboName: '❖ 7+3 Ivylight 4𝓵 1220 (90 nhịp)',
       serviceKey: 'ivylight-4L-1220',
       packageKey: '7+3-ivylight-1220',
       retainDaysLimit: 25,
@@ -604,7 +607,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     comboLiveStatus: {
       isComboLive: false,
       remainingSessions: 0,
-      comboName: 'Chưa có gói Combo Live',
+      comboName: 'Chưa có gói ❖ Live',
       retainDaysLimit: 21,
       upsellOpportunity: true,
     },
@@ -687,15 +690,21 @@ export function filterBookingsForCvlScope(bookings: BookingItem[], activeStaffId
   const result: BookingItem[] = [];
 
   for (const b of bookings) {
+    const isServicing =
+      b.status === 'SERVICING' ||
+      (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt);
+
     const isMyBookedCustomer =
       !b.isUnassignedQueue &&
       ((b.assignedStaffId && b.assignedStaffId === activeStaffId) ||
         (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
-        (b.checkOutStaffId && b.checkOutStaffId === activeStaffId));
+        (b.checkOutStaffId && b.checkOutStaffId === activeStaffId) ||
+        isServicing);
 
     if (isMyBookedCustomer) {
       result.push({
         ...b,
+        status: isServicing ? 'SERVICING' : b.status,
         isNextQueueCustomer: false,
         bookingAccessTag: 'MY_BOOKED_CUSTOMER',
       });
@@ -703,6 +712,7 @@ export function filterBookingsForCvlScope(bookings: BookingItem[], activeStaffId
     }
 
     const isUnassignedIncoming =
+      !isServicing &&
       (b.status === 'INCOMING' || b.status === 'CHECKED_IN') &&
       (b.isUnassignedQueue === true || !b.assignedStaffId || b.assignedStaffId === 0);
 

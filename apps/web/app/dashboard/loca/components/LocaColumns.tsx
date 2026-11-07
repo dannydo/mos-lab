@@ -231,7 +231,7 @@ export const getLocaColumns = ({
               Còn {totalRemaining} lần
             </Tag>
             <div style={{ fontSize: '11px', color: 'var(--client-desc-color)', marginTop: '2px' }}>
-              (Mới: {record.comboBalance.normalCount || 0} | Dặm: {record.comboBalance.retainCount || 0})
+              ✦ {record.comboBalance.normalCount || 0} · ↻ {record.comboBalance.retainCount || 0}
             </div>
           </div>
         );

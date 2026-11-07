@@ -4,8 +4,13 @@ import React, { useState, useMemo } from 'react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
-import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
-import { Camera, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
+import {
+  resolveDisplayServiceName,
+  parseDaysSinceLastVisit,
+  resolveCustomerTypeMeta,
+} from './LashMaterialConstraintMatrix';
+import { Camera, RefreshCw, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 
 interface SegmentCounts {
   incoming: number;
@@ -26,6 +31,8 @@ interface Screen01IncomingBookingsProps {
   lastRefreshedAt?: string | null;
   isLiveDb?: boolean;
   onRefreshDb?: () => void;
+  dateOffset?: number;
+  onDateOffsetChange?: (offset: number) => void;
   role?: IosUserRole;
   canSwitchRole?: boolean;
   onRoleChange?: (role: IosUserRole) => void;
@@ -33,6 +40,8 @@ interface Screen01IncomingBookingsProps {
   scopeMode?: BookingScopeMode;
   onScopeModeChange?: (scope: BookingScopeMode) => void;
   onOpenProfileMenu?: () => void;
+  isAdmin?: boolean;
+  onRevertToIncoming?: (bookingId: number) => void;
 }
 
 function getStepShortTitle(step?: number): string {
@@ -72,10 +81,23 @@ export function Screen01IncomingBookings({
   counts,
   isRefreshing,
   onRefreshDb,
+  dateOffset = 0,
+  onDateOffsetChange,
   role = 'CVL',
   actor,
+  scopeMode = 'STORE_ALL',
+  onScopeModeChange,
   onOpenProfileMenu,
+  isAdmin = false,
+  onRevertToIncoming,
 }: Screen01IncomingBookingsProps) {
+  // Modal xác nhận Admin trả khách về Chờ đón
+  const [revertConfirmModal, setRevertConfirmModal] = useState<{
+    isOpen: boolean;
+    bookingId: number;
+    customerName: string;
+  } | null>(null);
+
   // Modal cảnh báo khi cố tình bấm check-in khách khác lúc đang có ca làm dở dang
   const [lockedCustomerModal, setLockedCustomerModal] = useState<{
     isOpen: boolean;
@@ -83,8 +105,6 @@ export function Screen01IncomingBookings({
   } | null>(null);
 
   // 1. Quản lý ngày xem lịch hẹn (Hôm qua < Hôm nay > Ngày mai)
-  const [dateOffset, setDateOffset] = useState<number>(0);
-
   const targetDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + dateOffset);
@@ -106,18 +126,32 @@ export function Screen01IncomingBookings({
   }, [targetDate]);
 
   const filteredBookings = useMemo(() => {
-    // Nếu chuyển sang ngày khác mà chưa có dữ liệu lịch hẹn mock cho ngày đó
-    if (dateOffset !== 0) {
-      return [];
-    }
-
     return bookings.filter((b) => {
-      if (bookingSegment === 'INCOMING') return b.status === 'INCOMING' || b.status === 'CHECKED_IN';
-      if (bookingSegment === 'SERVICING') return b.status === 'SERVICING';
+      const isServicing =
+        b.status === 'SERVICING' ||
+        Boolean(activeServicingBooking && b.id === activeServicingBooking.id) ||
+        Boolean(b.progress?.startedAt && !b.progress?.completedAt) ||
+        Boolean(
+          b.progress?.currentStep && b.progress.currentStep >= 3 && !b.progress?.completedAt && b.status !== 'DONE'
+        );
+
+      // 1. Tab CHỜ ĐÓN (INCOMING): Không hiển thị card ca đang phục vụ trong danh sách chờ đón (ca đang làm đã có Banner ghim ở trên)
+      if (bookingSegment === 'INCOMING') {
+        if (isServicing) return false;
+        return b.status === 'INCOMING' || b.status === 'CHECKED_IN';
+      }
+
+      // 2. Tab ĐANG LÀM (SERVICING): Hiển thị đầy đủ tất cả ca đang phục vụ (bao gồm activeServicingBooking)
+      if (bookingSegment === 'SERVICING') {
+        return isServicing;
+      }
+
+      // 3. Tab ĐÃ XONG (DONE)
       if (bookingSegment === 'DONE') return b.status === 'DONE';
+
       return b.status === 'CANCELLED';
     });
-  }, [bookings, bookingSegment, dateOffset]);
+  }, [bookings, bookingSegment, dateOffset, activeServicingBooking]);
 
   const actorName = actor?.name || 'Thảo Ly';
   const isCvll = role === 'CVLL';
@@ -140,7 +174,7 @@ export function Screen01IncomingBookings({
         {/* Center: Chuyển ngày < Hôm nay > mượt mà */}
         <div className="flex items-center gap-0.5 bg-[#1C1C1E] px-1 py-0.5 rounded-full border border-neutral-800 shadow-inner">
           <button
-            onClick={() => setDateOffset((prev) => prev - 1)}
+            onClick={() => onDateOffsetChange?.(dateOffset - 1)}
             className="w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
             title="Xem ngày trước"
           >
@@ -148,7 +182,7 @@ export function Screen01IncomingBookings({
           </button>
 
           <button
-            onClick={() => setDateOffset(0)}
+            onClick={() => onDateOffsetChange?.(0)}
             className="px-2 py-0.5 flex items-center gap-1.5 cursor-pointer active:opacity-75"
             title={dateOffset !== 0 ? 'Bấm để về lại Hôm nay' : undefined}
           >
@@ -163,7 +197,7 @@ export function Screen01IncomingBookings({
           </button>
 
           <button
-            onClick={() => setDateOffset((prev) => prev + 1)}
+            onClick={() => onDateOffsetChange?.(dateOffset + 1)}
             className="w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
             title="Xem ngày kế tiếp"
           >
@@ -190,6 +224,35 @@ export function Screen01IncomingBookings({
           </div>
         </button>
       </div>
+
+      {/* 1.5 Superadmin Scope Switcher Toolbar */}
+      {isAdmin && (
+        <div className="px-3 py-1.5 bg-[#181611] border-b border-amber-500/20 flex items-center justify-between z-10 flex-shrink-0">
+          <div className="flex items-center gap-1.5 text-amber-400 font-extrabold text-[11px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+            <span>Superadmin:</span>
+          </div>
+
+          <div className="flex items-center gap-1 bg-[#1C1C1E] p-0.5 rounded-full border border-neutral-800">
+            <button
+              onClick={() => onScopeModeChange?.('STORE_ALL')}
+              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer ${
+                scopeMode === 'STORE_ALL' ? 'bg-amber-400 text-black shadow-xs' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Toàn bộ sảnh ({bookings.length})
+            </button>
+            <button
+              onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}
+              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer ${
+                scopeMode === 'MY_CUSTOMERS' ? 'bg-amber-400 text-black shadow-xs' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Lọc CV🪶 ({actor?.name || 'Thảo Ly'})
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Native iOS Dark Segmented Control */}
       <div className="px-3 pt-2.5 pb-2 flex-shrink-0 bg-black">
@@ -252,57 +315,6 @@ export function Screen01IncomingBookings({
 
       {/* 3. Customer Booking Cards (Số thứ tự đặt góc Avatar, không tốn diện tích card!) */}
       <div className="flex-1 bg-black overflow-y-auto px-3 py-1 space-y-2.5 pb-20">
-        {/* Banner Ca Làm Đang Diễn Ra (Khóa không cho checkin người khác) */}
-        {activeServicingBooking && (
-          <div
-            onClick={() => {
-              if (onResumeServicing) onResumeServicing(activeServicingBooking.id);
-              else onSelectBooking(activeServicingBooking.id);
-            }}
-            className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/25 via-[#252015] to-emerald-500/20 border-2 border-amber-400 shadow-xl cursor-pointer active:scale-98 transition-all flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative shrink-0">
-                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-amber-400 bg-neutral-900 shadow-md">
-                  {activeServicingBooking.customerAvatar ? (
-                    <img
-                      src={activeServicingBooking.customerAvatar}
-                      alt={activeServicingBooking.customerName}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <img src="/ios-assets/no-image.png" alt="No image" className="w-full h-full object-cover" />
-                  )}
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-black animate-pulse" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-black leading-none">
-                    ⚡ ĐANG PHỤC VỤ
-                  </span>
-                  <span className="text-[10.5px] font-bold text-amber-300">
-                    {getStepShortTitle(activeServicingBooking.progress?.currentStep)}
-                  </span>
-                </div>
-                <div className="text-[14px] font-black text-white truncate mt-0.5">
-                  {activeServicingBooking.customerName} · {resolveDisplayServiceName(activeServicingBooking)}
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="px-3 py-1.5 rounded-xl bg-amber-400 text-black font-black text-[11.5px] shrink-0 active:scale-95 shadow-xs flex items-center gap-1 cursor-pointer"
-            >
-              <span>Vào ca</span>
-              <span>→</span>
-            </button>
-          </div>
-        )}
-
         {filteredBookings.length === 0 ? (
           <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-3">
             <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-amber-400 text-base font-bold">
@@ -317,7 +329,7 @@ export function Screen01IncomingBookings({
             </p>
             {dateOffset !== 0 && (
               <button
-                onClick={() => setDateOffset(0)}
+                onClick={() => onDateOffsetChange?.(0)}
                 className="px-3.5 py-1.5 rounded-full bg-amber-400 text-black font-extrabold text-[11px] shadow-sm active:scale-95 transition-transform cursor-pointer"
               >
                 Về lại Hôm nay
@@ -329,8 +341,17 @@ export function Screen01IncomingBookings({
             const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
             const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
 
+            const cleanCustomerName = (b.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
+            const visits = b.customerVisits || 1;
+            const typeMeta = resolveCustomerTypeMeta(b);
+            const lastVisitDateStr = b.lastVisitDate || b.lashHistory?.[0]?.date;
+            const daysSinceLastVisit = parseDaysSinceLastVisit(lastVisitDateStr);
+            const daysText = visits > 1 && daysSinceLastVisit !== null ? ` · ${daysSinceLastVisit}N` : '';
+
             const isCurrentActiveServicing = Boolean(activeServicingBooking && b.id === activeServicingBooking.id);
-            const isOtherCustomerLocked = Boolean(activeServicingBooking && b.id !== activeServicingBooking.id && !isCvll);
+            const isOtherCustomerLocked = Boolean(
+              activeServicingBooking && b.id !== activeServicingBooking.id && !isCvll && !isAdmin
+            );
 
             // Avatar Ring Indicator
             let avatarRingClass = 'border-2 border-emerald-500'; // Not Combo Live
@@ -402,15 +423,21 @@ export function Screen01IncomingBookings({
 
                 {/* 3.2 Middle: Customer Identity & Compact Icon Badges (Full Width!) */}
                 <div className="flex-1 min-w-0 pr-1 flex flex-col justify-start">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[12px] flex-shrink-0 select-none">{b.customerTypeIcon || '🌟'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[12.5px] font-black flex-shrink-0 select-none ${typeMeta.colorClass}`}
+                      title={typeMeta.label}
+                    >
+                      {typeMeta.symbol}
+                    </span>
                     <span className="text-[14px] font-extrabold text-white truncate tracking-tight">
-                      {b.customerName}
+                      {cleanCustomerName}
                     </span>
                   </div>
 
                   <div className="text-[11px] text-neutral-400 font-medium leading-tight mt-0.5 tabular-nums">
-                    {b.customerPhone} · Lần {b.customerVisits || 1}
+                    {b.customerPhone} · Lần {visits}
+                    {daysText}
                   </div>
 
                   {/* Badges Row: Icons instead of verbose words */}
@@ -440,15 +467,12 @@ export function Screen01IncomingBookings({
                     )}
 
                     {isComboLive && remainingSessions > 0 && (
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold leading-none ${
-                          remainingSessions <= 2
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
-                            : 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
-                        }`}
-                      >
-                        💎 {remainingSessions} lượt
-                      </span>
+                      <ComboSessionBadge
+                        normalRemaining={b.comboLiveStatus?.normalRemaining}
+                        retainRemaining={b.comboLiveStatus?.retainRemaining}
+                        remainingSessions={remainingSessions}
+                        comboName={b.comboLiveStatus?.comboName}
+                      />
                     )}
                   </div>
 
@@ -488,6 +512,26 @@ export function Screen01IncomingBookings({
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/30 text-[9.5px] font-bold">
                         Chờ Check-in
                       </span>
+                    )}
+
+                    {/* Nút Admin: Hoàn tác đưa khách hàng về Chờ đón */}
+                    {b.status === 'SERVICING' && isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRevertConfirmModal({
+                            isOpen: true,
+                            bookingId: b.id,
+                            customerName: cleanCustomerName,
+                          });
+                        }}
+                        className="mt-1.5 w-full py-1 px-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[9.5px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
+                        title="Quyền Admin: Trả khách hàng này về danh sách Chờ đón"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5 shrink-0" />
+                        <span>Về Chờ đón</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -538,6 +582,50 @@ export function Screen01IncomingBookings({
                 className="w-full py-2.5 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-neutral-300 font-bold text-[12px] active:scale-98 transition-all cursor-pointer"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Xác Nhận Admin Trả Khách Về Chờ Đón */}
+      {revertConfirmModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-[340px] bg-[#1C1C1E] border border-neutral-700 rounded-3xl p-5 shadow-2xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center mx-auto text-rose-400">
+              <RotateCcw className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black text-white">Trả khách về Chờ đón?</h3>
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                Bạn có chắc chắn muốn hủy ca làm dở dang của khách hàng{' '}
+                <strong className="text-amber-400">{revertConfirmModal.customerName}</strong> và đưa về lại danh sách{' '}
+                <strong className="text-white">Chờ đón</strong>?
+              </p>
+              <p className="text-[11px] text-neutral-400 leading-normal pt-1">
+                Thời gian làm dở dang sẽ được giải phóng để Chuyên Viên có thể nhận ca tiếp theo.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setRevertConfirmModal(null)}
+                className="w-full py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-xs active:scale-95 transition-all cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (revertConfirmModal?.bookingId && onRevertToIncoming) {
+                    onRevertToIncoming(revertConfirmModal.bookingId);
+                  }
+                  setRevertConfirmModal(null);
+                }}
+                className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs active:scale-95 transition-all cursor-pointer shadow-md"
+              >
+                Xác nhận trả về
               </button>
             </div>
           </div>

@@ -29,6 +29,7 @@ export interface MosChatMobileHeaderProps {
   onCallRoom?: () => void;
   onOpenTaskModal?: () => void;
   onOpenMembersModal?: () => void;
+  onOpenSearch?: () => void;
 }
 
 export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
@@ -36,6 +37,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   onCallRoom,
   onOpenTaskModal,
   onOpenMembersModal,
+  onOpenSearch,
 }) => {
   const {
     currentUser,
@@ -128,6 +130,17 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenSearch && (
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className="p-2 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 active:scale-95 transition-transform"
+                aria-label="Tìm kiếm tin nhắn"
+                title="Tìm kiếm tin nhắn (⌘K)"
+              >
+                <Search className="w-4 h-4 text-amber-400" />
+              </button>
+            )}
             <Dropdown menu={{ items: presenceMenuItems }} trigger={['click']} placement="bottomRight">
               <button
                 type="button"
@@ -313,6 +326,19 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
           </button>
         ) : (
           <>
+            {/* Search Button in Room Header */}
+            {onOpenSearch && (
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
+                aria-label="Tìm kiếm tin nhắn"
+                title="Tìm kiếm tin nhắn (⌘K)"
+              >
+                <Search className="w-4 h-4 text-amber-400" />
+              </button>
+            )}
+
             {/* Toggle Pin Space / DM */}
             {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
               <button

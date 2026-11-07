@@ -54,6 +54,7 @@ import {
   isAiCopilotConversationId,
   isCanonicalSuperAdminIdentity,
   normalizeAndEnrichTaskChecklist,
+  MosChatSearchResultItem,
   removeVietnameseTones,
   resolveBestSourceMessageForTaskChecklist,
   sortChecklistItemsByDeadline,
@@ -66,6 +67,7 @@ import { chatRealtimeHub, computeDeltaFromSnapshot } from './chat-realtime.hub.j
 import {
   deduplicateMovedMessagesInConversation,
   deleteChatMessagesFromRelationalDb,
+  ensureChatRelationalTables,
   deleteSingleTaskFromRelationalDb,
   loadOrMigrateRelationalChatData,
   paginateConversationMessages,
@@ -276,7 +278,7 @@ const STATE_DB_SYNC_TTL_MS = 30_000;
 function buildDefaultAccessConfig(): MosChatAccessConfig {
   return {
     allowAllStaff: false,
-    allowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_CC', 'TEAM_TELESALES'],
+    allowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_CC', 'TEAM_CV', 'TEAM_TELESALES', 'DEPT_SHOP'],
     allowedStaffIds: [],
     aiCopilotAllowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_TELESALES'],
     aiCopilotAllowedStaffIds: [],
@@ -5111,6 +5113,205 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(500).send({
           error: 'Internal Server Error',
           message: 'Không thể tải lịch sử tin nhắn.',
+        });
+      }
+    }
+  );
+
+  // GET /api/chat/messages/search?q=<query>&conversationId=<id>&inThreadOnly=<bool>&hasAttachment=<bool>&limit=<n>
+  fastify.get(
+    '/chat/messages/search',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const query = (request.query || {}) as SafeAny;
+        const rawQ = String(query.q || '').trim();
+        if (!rawQ) {
+          return {
+            success: true,
+            query: '',
+            totalMatches: 0,
+            items: [],
+          };
+        }
+
+        const requestedConvId = query.conversationId ? String(query.conversationId).trim() : undefined;
+        const inThreadOnly = query.inThreadOnly === 'true' || query.inThreadOnly === true;
+        const hasAttachmentOnly = query.hasAttachment === 'true' || query.hasAttachment === true;
+        const limit = Math.min(Math.max(Number(query.limit) || 30, 1), 100);
+
+        const [{ conversations, userPrefsByUserKey }, staffDirectory] = await Promise.all([
+          loadChatState(fastify),
+          loadStaffDirectoryCached(fastify),
+        ]);
+
+        const accessibleConvs = conversations.filter((c) => canUserAccessConversation(c, user, staffDirectory));
+        const convMap = new Map<string, MosChatConversation>();
+        for (const c of accessibleConvs) {
+          const prefKey = resolveUserPrefKey(user, staffDirectory);
+          const currentUserPrefs = userPrefsByUserKey[prefKey] || buildDefaultUserSidebarPrefs();
+          const formatted = formatConversationForUser(c, user, staffDirectory, currentUserPrefs, userPrefsByUserKey);
+          convMap.set(c.id, formatted);
+        }
+
+        if (requestedConvId && !convMap.has(requestedConvId)) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Bạn không có quyền truy cập cuộc trò chuyện này.',
+          });
+        }
+
+        const targetConvIds = requestedConvId ? [requestedConvId] : Array.from(convMap.keys());
+        if (targetConvIds.length === 0) {
+          return {
+            success: true,
+            query: rawQ,
+            totalMatches: 0,
+            items: [],
+          };
+        }
+
+        const ready = await ensureChatRelationalTables(fastify);
+        const crm = (fastify as SafeAny)?.prisma?.crm;
+        const normQ = removeVietnameseTones(rawQ.toLowerCase());
+
+        let matchedMessages: SafeAny[] = [];
+
+        if (ready && crm?.crmChatMessage) {
+          const whereClause: SafeAny = {
+            conversationId: { in: targetConvIds },
+            isDeleted: false,
+          };
+          if (inThreadOnly) {
+            whereClause.parentMessageId = { not: null };
+          }
+
+          const dbResults = await crm.crmChatMessage.findMany({
+            where: whereClause,
+            orderBy: { createdAt: 'desc' },
+            take: 300,
+            select: {
+              id: true,
+              conversationId: true,
+              parentMessageId: true,
+              senderId: true,
+              senderName: true,
+              senderRole: true,
+              senderAvatar: true,
+              roleColor: true,
+              text: true,
+              timeLabel: true,
+              isDeleted: true,
+              metadataJson: true,
+              createdAt: true,
+            },
+          });
+
+          matchedMessages = dbResults.filter((row: SafeAny) => {
+            const meta = (row.metadataJson || {}) as SafeAny;
+            const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
+            if (hasAttachmentOnly && attachments.length === 0) {
+              return false;
+            }
+
+            const textMatch = removeVietnameseTones(String(row.text || '').toLowerCase()).includes(normQ);
+            const senderMatch = removeVietnameseTones(String(row.senderName || '').toLowerCase()).includes(normQ);
+            const attachmentMatch = attachments.some((att: SafeAny) =>
+              removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
+            );
+
+            return textMatch || senderMatch || attachmentMatch;
+          });
+        } else {
+          for (const convId of targetConvIds) {
+            const c = convMap.get(convId);
+            if (!c) continue;
+            for (const m of c.messages || []) {
+              const meta = m as SafeAny;
+              const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
+              if (!inThreadOnly && (!hasAttachmentOnly || attachments.length > 0)) {
+                const textMatch = removeVietnameseTones(String(m.text || '').toLowerCase()).includes(normQ);
+                const senderMatch = removeVietnameseTones(String(m.senderName || '').toLowerCase()).includes(normQ);
+                const attMatch = attachments.some((att: SafeAny) =>
+                  removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
+                );
+                if (textMatch || senderMatch || attMatch) {
+                  matchedMessages.push({
+                    ...m,
+                    conversationId: c.id,
+                    parentMessageId: null,
+                    metadataJson: m,
+                  });
+                }
+              }
+              for (const r of m.thread || []) {
+                const rMeta = r as SafeAny;
+                const rAtts = Array.isArray(rMeta.attachments) ? rMeta.attachments : [];
+                if (!hasAttachmentOnly || rAtts.length > 0) {
+                  const rTextMatch = removeVietnameseTones(String(r.text || '').toLowerCase()).includes(normQ);
+                  const rSenderMatch = removeVietnameseTones(String(r.senderName || '').toLowerCase()).includes(normQ);
+                  const rAttMatch = rAtts.some((att: SafeAny) =>
+                    removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
+                  );
+                  if (rTextMatch || rSenderMatch || rAttMatch) {
+                    matchedMessages.push({
+                      ...r,
+                      conversationId: c.id,
+                      parentMessageId: m.id,
+                      metadataJson: r,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        const totalMatches = matchedMessages.length;
+        const sliced = matchedMessages.slice(0, limit);
+
+        const items: MosChatSearchResultItem[] = sliced.map((row: SafeAny) => {
+          const conv = convMap.get(row.conversationId);
+          const meta = (row.metadataJson || {}) as SafeAny;
+          const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
+          const attNames = attachments.map((a: SafeAny) => String(a.name || a.fileName || '')).filter(Boolean);
+
+          return {
+            id: row.id,
+            conversationId: row.conversationId,
+            conversationName: conv ? conv.name : row.conversationId,
+            conversationType: conv ? conv.type : 'space',
+            isThreadReply: Boolean(row.parentMessageId),
+            parentMessageId: row.parentMessageId || null,
+            senderId: String(row.senderId),
+            senderName: row.senderName || 'Nhân sự',
+            senderRole: row.senderRole,
+            senderAvatar: row.senderAvatar || null,
+            roleColor: row.roleColor || null,
+            text: row.text || '',
+            timeLabel: row.timeLabel || '',
+            createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || ''),
+            isDeleted: Boolean(row.isDeleted),
+            deletedByName: meta.deletedByName || null,
+            hasAttachments: attachments.length > 0,
+            attachmentNames: attNames,
+          };
+        });
+
+        return {
+          success: true,
+          query: rawQ,
+          totalMatches,
+          items,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('GET /chat/messages/search error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể tìm kiếm tin nhắn lúc này.',
         });
       }
     }

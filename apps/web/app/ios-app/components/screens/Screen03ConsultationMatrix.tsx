@@ -5,6 +5,7 @@ import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
 import {
   Sparkles,
   CheckCircle2,
@@ -50,6 +51,7 @@ import {
   isAlwaysFullSetMaterial,
   parseDaysSinceLastVisit,
   resolveServiceSpecsFromComboOrHistory,
+  formatComboName,
   COMBO_RETAIN_CYCLE_DAYS_LIMIT,
   SINGLE_RETAIN_CYCLE_DAYS_LIMIT,
   getRetainCycleDaysLimit,
@@ -71,6 +73,7 @@ import {
   NATURAL_EYE_SHAPES,
   NATURAL_LASH_HEALTH_CONDITIONS,
   computeLashRecommendation,
+  resolveNaturalLashCountLabel,
 } from './NaturalLashAssessmentData';
 
 interface Screen03ConsultationMatrixProps {
@@ -99,6 +102,7 @@ interface Screen03ConsultationMatrixProps {
       naturalLashLength?: string;
       naturalLashThickness?: string;
       naturalLashDensity?: string;
+      naturalLashCount?: string;
       isNewClientDiagnosticDone?: boolean;
       lashHealth?: string;
       lashTrail?: string;
@@ -527,9 +531,14 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   const [naturalThickness, setNaturalThickness] = useState<string>(
     booking?.attributes?.naturalLashThickness || '0.05-0.07mm'
   );
-  const [naturalDensity, setNaturalDensity] = useState<string>(
-    booking?.attributes?.naturalLashDensity || 'Vừa (80 - 120 sợi/mắt)'
-  );
+  const [naturalDensity, setNaturalDensity] = useState<string>(booking?.attributes?.naturalLashDensity || '60-80');
+  const [naturalCount, setNaturalCount] = useState<string>(() => {
+    return (
+      booking?.attributes?.naturalLashCount ||
+      resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity) ||
+      '60-80'
+    );
+  });
 
   const [selectedEyeShape, setSelectedEyeShape] = useState(booking?.attributes?.eyeShape || 'Mí lót / Sụp mí (Hooded)');
   const [selectedLashHealth, setSelectedLashHealth] = useState(
@@ -614,6 +623,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   const naturalThicknessSpec = useMemo(() => {
     return NATURAL_LASH_THICKNESS_OPTIONS.find((o) => o.id === naturalThickness) || NATURAL_LASH_THICKNESS_OPTIONS[0];
   }, [naturalThickness]);
+
+  const naturalCountLabel = useMemo(() => {
+    return resolveNaturalLashCountLabel(
+      naturalCount || naturalDensity || booking?.attributes?.naturalLashCount || booking?.attributes?.naturalLashDensity
+    );
+  }, [naturalCount, naturalDensity, booking?.attributes?.naturalLashCount, booking?.attributes?.naturalLashDensity]);
 
   const recommendation = useMemo(() => {
     return computeLashRecommendation({
@@ -766,6 +781,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         naturalLashLength: naturalLength,
         naturalLashThickness: naturalThickness,
         naturalLashDensity: naturalDensity,
+        naturalLashCount: naturalCount,
         isNewClientDiagnosticDone: true,
         lashHealth: selectedLashHealth,
         lashTrail: selectedLashTrail,
@@ -784,7 +800,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     );
   };
 
-  const customerName = booking?.customerName || 'Chị Trúc';
+  const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const customerPhone = booking?.customerPhone || '0933.779.207';
   const serviceName = booking?.serviceName || 'New Flawless Mink';
   const servicePrice = booking?.servicePrice ? booking.servicePrice.toLocaleString('vi-VN') : '770.000';
@@ -860,19 +876,25 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           </div>
         ) : (
           <div className="bg-white rounded-2xl px-3 py-1.5 shadow-xs border border-neutral-100 flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
               <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="text-gray-500 font-medium">Mi thật đã lưu:</span>
-              <strong className="text-black font-bold">
-                {naturalLengthSpec.label} · Sợi {naturalThicknessSpec.label}
+              <span className="text-gray-500 font-medium shrink-0">Mi Thật:</span>
+              <strong className="text-black font-extrabold truncate">
+                {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
+                {naturalLengthSpec.label} · {naturalThicknessSpec.label.replace(/^Sợi\s*/i, '')}
               </strong>
+              {!naturalCountLabel && (
+                <span className="text-amber-700 bg-amber-50 border border-amber-200 text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                  Chưa đo sợi
+                </span>
+              )}
             </div>
             <button
               type="button"
               onClick={() => setActiveSubTab('PROFILE')}
-              className="text-[#D97706] font-bold text-[10.5px] hover:underline cursor-pointer"
+              className="text-[#D97706] font-bold text-[10.5px] hover:underline cursor-pointer shrink-0 ml-1.5"
             >
-              Đo lại mi →
+              {naturalCountLabel ? 'Đo lại mi →' : '+ Bổ sung số sợi →'}
             </button>
           </div>
         )}
@@ -917,7 +939,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     <Zap className="w-3 h-3 fill-current" />
                   </span>
                   <span className="text-[12px] font-extrabold text-neutral-900 truncate">
-                    {isComboLive ? comboName : 'Khách lẻ Single (Chu kỳ 21N)'}
+                    {isComboLive ? formatComboName(comboName) : 'Khách lẻ Single (Chu kỳ 21N)'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0 tabular-nums">
@@ -931,9 +953,13 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     </span>
                   )}
                   {isComboLive && (
-                    <span className="bg-[#FFB400] text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                      Còn {comboRemainingSessions}
-                    </span>
+                    <ComboSessionBadge
+                      normalRemaining={comboNormalRemaining}
+                      retainRemaining={comboRetainRemaining}
+                      remainingSessions={comboRemainingSessions}
+                      comboName={comboName}
+                      size="xs"
+                    />
                   )}
                 </div>
               </div>
@@ -2033,38 +2059,56 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               </div>
             </div>
 
-            {/* 4. MỤC 0.3: MẬT ĐỘ MI THẬT (NATURAL LASH DENSITY) */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2">
+            {/* 4. MỤC 0.3: SỐ LƯỢNG SỢI & MẬT ĐỘ MI THẬT */}
+            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className="w-4 h-4 rounded-full bg-amber-500 text-black text-[10px] font-black inline-flex items-center justify-center">
                     3
                   </span>
                   <span className="text-[11px] font-extrabold text-black uppercase">
-                    MẬT ĐỘ MI THẬT (SỐ LƯỢNG SỢI TRÊN BỜ MÍ)
+                    SỐ LƯỢNG SỢI MI THẬT (MẬT ĐỘ TRÊN BỜ MÍ)
                   </span>
                 </div>
+                <span className="text-[10px] text-gray-500 font-semibold">Đo số sợi mỗi mắt</span>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 {NATURAL_LASH_DENSITY_OPTIONS.map((den) => {
-                  const active = naturalDensity === den.id;
+                  const active =
+                    naturalCount === den.countRange || naturalDensity === den.id || naturalDensity === den.label;
                   return (
                     <button
                       key={den.id}
                       type="button"
-                      onClick={() => setNaturalDensity(den.id)}
+                      onClick={() => {
+                        setNaturalCount(den.countRange);
+                        setNaturalDensity(den.id);
+                      }}
                       className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                         active
-                          ? 'bg-[#FFB400] border-[#FFB400] text-black font-extrabold shadow-xs'
+                          ? 'bg-[#FFB400] border-[#FFB400] text-black font-extrabold shadow-xs ring-1 ring-[#FFB400]'
                           : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
                       }`}
                     >
-                      <div className="text-[12px] font-bold">{den.label}</div>
-                      <div className="text-[9.5px] opacity-80 mt-0.5 leading-tight line-clamp-2">{den.advice}</div>
+                      <div className="text-[13px] font-black tracking-tight">{den.countRange}</div>
+                      <div className="text-[9.5px] opacity-80 mt-0.5 leading-tight line-clamp-1">{den.label}</div>
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Hộp đối chiếu tóm tắt thông số Mi Thật chuẩn */}
+              <div className="bg-neutral-900 text-white rounded-xl p-2.5 flex items-center justify-between text-[11px] shadow-2xs">
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
+                  <span className="text-gray-300">Thông số Mi Thật:</span>
+                  <strong className="text-[#FFB400] font-black">
+                    {naturalCount || '60-80'} · {naturalLengthSpec.label} ·{' '}
+                    {naturalThicknessSpec.label.replace(/^Sợi\s*/i, '')}
+                  </strong>
+                </div>
+                <span className="text-[10px] text-gray-400 font-medium">Chuẩn Wings</span>
               </div>
             </div>
 

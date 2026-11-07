@@ -280,7 +280,7 @@ export function Screen12CheckoutBilling({
                 </div>
                 <div className="text-[11px] text-gray-500 mt-0.5">
                   Chuyên viên làm mi: {assignedStaff}
-                  {booking?.attributes?.style && ` · Dáng ${booking.attributes.style}`}
+                  {booking?.attributes?.style && ` · ${booking.attributes.style}`}
                 </div>
                 {selectedCombo ? (
                   selectedCombo.todaySingleServiceWaived ? (
@@ -297,15 +297,9 @@ export function Screen12CheckoutBilling({
                     <div>✓ {comboRedemption.explanation}</div>
                     <div className="tabular-nums">
                       Ví còn:{' '}
-                      <span className="font-black">
-                        {(comboRedemption.paidRemaining ?? 0) + (comboRedemption.bonusRemaining ?? 0)}
-                        {comboRedemption.totalSessions ? `/${comboRedemption.totalSessions}` : ''}
+                      <span className="font-black text-sky-950">
+                        ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
                       </span>
-                      {(comboRedemption.paidRemaining !== undefined && comboRedemption.bonusRemaining !== undefined) && (
-                        <span className="text-sky-600">
-                          {' '}({comboRedemption.paidRemaining} mua + {comboRedemption.bonusRemaining} tặng)
-                        </span>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -363,11 +357,15 @@ export function Screen12CheckoutBilling({
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[13px] font-bold text-black">2. {selectedCombo.name}</span>
-                    {selectedCombo.isUpTierUpgrade && (
+                    {comboRedemption ? (
+                      <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                        ✦ Gói Mua Thêm
+                      </span>
+                    ) : selectedCombo.isUpTierUpgrade ? (
                       <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
                         ⭐ Nâng Cấp Gói
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap text-[11px]">
                     <span className="text-emerald-700 font-bold">
@@ -377,9 +375,10 @@ export function Screen12CheckoutBilling({
                       <>
                         <span className="text-gray-300">•</span>
                         <span className="text-indigo-800 font-semibold tabular-nums">
-                          Ví còn: {selectedCombo.remainingAfterToday.totalRemaining}/{selectedCombo.sessions} buổi (
-                          {selectedCombo.remainingAfterToday.totalPaidRemaining} mua +{' '}
-                          {selectedCombo.remainingAfterToday.totalBonusRemaining} tặng)
+                          Ví gói mới: ✦{' '}
+                          {selectedCombo.remainingAfterToday.paidNew + selectedCombo.remainingAfterToday.bonusNew} · ↻{' '}
+                          {selectedCombo.remainingAfterToday.paidRefill + selectedCombo.remainingAfterToday.bonusRefill}{' '}
+                          (Đủ {selectedCombo.remainingAfterToday.totalRemaining} buổi)
                         </span>
                       </>
                     )}
