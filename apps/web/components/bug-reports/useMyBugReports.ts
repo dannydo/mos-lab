@@ -26,6 +26,11 @@ export function useMyBugReports(enabled: boolean) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const requestVersionRef = React.useRef(0);
+  const inFlightReviewsRef = React.useRef(new Set<number>());
+
+  const addOptimisticReport = React.useCallback((item: MyBugReportItem) => {
+    setData((current) => [item, ...current.filter((r) => r.id !== item.id && r.key !== item.key)]);
+  }, []);
 
   const refresh = React.useCallback(
     async (options?: { force?: boolean }): Promise<void> => {
@@ -75,6 +80,10 @@ export function useMyBugReports(enabled: boolean) {
 
   const review = React.useCallback(
     async (id: number, request: ReviewBugReportRequest) => {
+      if (inFlightReviewsRef.current.has(id)) return;
+      inFlightReviewsRef.current.add(id);
+
+      const nowIso = new Date().toISOString();
       // Optimistic instant UI update to prevent duplicate clicks and ensure immediate feedback
       setData((current) =>
         current.map((item) => {
@@ -88,7 +97,16 @@ export function useMyBugReports(enabled: boolean) {
               reporterExperience: {
                 ...item.reporterExperience,
                 state: 'COMPLETED',
+                label: 'Đã hoàn tất',
                 summary: 'Bạn đã xác nhận bản sửa hoạt động đúng.',
+                nextAction: {
+                  label: 'Bạn đã xác nhận hoàn tất',
+                  detail: 'Cảm ơn bạn đã kiểm tra kết quả.',
+                },
+                updates: [
+                  ...item.reporterExperience.updates,
+                  { label: 'Bạn đã xác nhận hoàn tất', occurredAt: nowIso },
+                ],
               },
             };
           } else {
@@ -100,15 +118,22 @@ export function useMyBugReports(enabled: boolean) {
               reporterExperience: {
                 ...item.reporterExperience,
                 state: 'IN_PROGRESS',
+                label: 'Đang xử lý',
                 summary: 'Đã nhận phản hồi của bạn; mOS đang kiểm tra và sửa lại.',
+                nextAction: {
+                  label: 'mOS đang sửa lại',
+                  detail: 'Agent đang tiếp nhận phản hồi để điều chỉnh bản sửa.',
+                },
+                updates: [
+                  ...item.reporterExperience.updates,
+                  { label: 'Đã gửi yêu cầu sửa lại cho Agent', occurredAt: nowIso },
+                ],
               },
             };
           }
         })
       );
-      if (request.decision === 'APPROVE') {
-        setActionRequiredCount((prev) => Math.max(0, prev - 1));
-      }
+      setActionRequiredCount((prev) => Math.max(0, prev - 1));
 
       try {
         const response = await apiClient.bugReports.review(id, request);
@@ -119,6 +144,8 @@ export function useMyBugReports(enabled: boolean) {
         // Rollback state by re-fetching
         await refresh({ force: true });
         throw error;
+      } finally {
+        inFlightReviewsRef.current.delete(id);
       }
     },
     [refresh]
@@ -159,5 +186,6 @@ export function useMyBugReports(enabled: boolean) {
     review,
     comment,
     markNotificationsRead,
+    addOptimisticReport,
   };
 }

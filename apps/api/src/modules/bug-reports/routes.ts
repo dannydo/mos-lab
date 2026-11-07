@@ -640,14 +640,25 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/bug-reports/mine', { preHandler: [requireAuth] }, async (request, reply) => {
+    reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    reply.header('Pragma', 'no-cache');
+    reply.header('Expires', '0');
+
+    const bypassCache = Boolean((request.query as { _t?: string })?._t);
     const cacheKey = `bug-reports:mine:${request.user.id}`;
-    const cached = fastify.cache?.get<MyBugReportsResponse>(cacheKey);
-    if (cached) {
-      return reply.send(cached);
+    if (!bypassCache) {
+      const cached = fastify.cache?.get<MyBugReportsResponse>(cacheKey);
+      if (cached) {
+        return reply.send(cached);
+      }
     }
     try {
       const data = await BugReportService.mine(fastify, request.user.id);
-      fastify.cache?.set(cacheKey, data, 15_000);
+      if (!bypassCache) {
+        fastify.cache?.set(cacheKey, data, 15_000);
+      } else {
+        fastify.cache?.invalidatePattern(`^bug-reports:mine:${request.user.id}$`);
+      }
       return reply.send(data);
     } catch (error) {
       return sendError(fastify, reply, error, 'List own bug reports failed');

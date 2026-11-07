@@ -179,6 +179,7 @@ describe('useMyBugReports', () => {
           reporterExperience: {
             ...mockItem.reporterExperience,
             state: 'IN_PROGRESS',
+            label: 'Đang xử lý',
             summary: 'Đã nhận phản hồi của bạn; mOS đang kiểm tra và sửa lại.',
           },
         }),
@@ -201,5 +202,61 @@ describe('useMyBugReports', () => {
     expect(result.current.data[0].canReview).toBe(false);
     expect(result.current.data[0].status).toBe('NEW');
     expect(result.current.data[0].reporterExperience.state).toBe('IN_PROGRESS');
+    expect(result.current.data[0].reporterExperience.label).toBe('Đang xử lý');
+    expect(result.current.actionRequiredCount).toBe(0);
+  });
+
+  it('prepends an optimistic report immediately via addOptimisticReport', async () => {
+    const initialResponse: MyBugReportsResponse = {
+      data: [makeMockBugItem({ id: 100, key: 'MOS-BUG-100' })],
+      notifications: [],
+      unreadCount: 0,
+      actionRequiredCount: 0,
+    };
+    apiMocks.mine.mockResolvedValue(initialResponse);
+
+    const { result } = renderHook(() => useMyBugReports(true));
+    await waitFor(() => expect(result.current.data.length).toBe(1));
+
+    const newReport = makeMockBugItem({ id: 205, key: 'MOS-BUG-205', title: 'New bug' });
+    act(() => {
+      result.current.addOptimisticReport(newReport);
+    });
+
+    expect(result.current.data.length).toBe(2);
+    expect(result.current.data[0].key).toBe('MOS-BUG-205');
+  });
+
+  it('prevents concurrent duplicate review calls for the same ticket', async () => {
+    const mockItem = makeMockBugItem();
+    const initialResponse: MyBugReportsResponse = {
+      data: [mockItem],
+      notifications: [],
+      unreadCount: 0,
+      actionRequiredCount: 1,
+    };
+    apiMocks.mine.mockResolvedValue(initialResponse);
+    let resolveReview: (val: any) => void;
+    apiMocks.review.mockImplementation(() => new Promise((resolve) => { resolveReview = resolve; }));
+
+    const { result } = renderHook(() => useMyBugReports(true));
+    await waitFor(() => expect(result.current.data.length).toBe(1));
+
+    // Call review twice concurrently
+    let p1: Promise<any>;
+    let p2: Promise<any>;
+    act(() => {
+      p1 = result.current.review(197, { decision: 'APPROVE' });
+      p2 = result.current.review(197, { decision: 'APPROVE' });
+    });
+
+    // Only 1 review API call should be fired
+    expect(apiMocks.review).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveReview!({ success: true, data: { ...mockItem, status: 'CLOSED' } });
+      await p1!;
+      await p2!;
+    });
   });
 });
