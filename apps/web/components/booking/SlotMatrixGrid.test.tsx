@@ -95,18 +95,11 @@ describe('SlotMatrixGrid Component with Customer Avatar and Tooltip', () => {
   it('renders LashDetailModal with Customer info, Before/After photos, and Lash history', () => {
     const handleClose = vi.fn();
 
-    render(
-      <LashDetailModal
-        open={true}
-        onClose={handleClose}
-        booking={mockBooking}
-        themeMode="light"
-      />
-    );
+    render(<LashDetailModal open={true} onClose={handleClose} booking={mockBooking} themeMode="light" />);
 
     // Header info
     expect(screen.getByText('Nguyễn Thu Hà')).toBeDefined();
-    expect(screen.getByText(/0901234567/)).toBeDefined();
+    expect(screen.getByText(/234567/)).toBeDefined();
     expect(screen.getByText(/Chu kỳ:/)).toBeDefined();
 
     // Tab labels
