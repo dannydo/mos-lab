@@ -31,6 +31,7 @@ import {
   type BugReportRequestType,
   type CreateBugReportAttachmentRequest,
   type FeatureRequestAudience,
+  type MyBugReportItem,
   type RequestClassificationJob,
 } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
@@ -597,9 +598,19 @@ export function BugReportSurface() {
           clarifiedAt: null,
         },
         reopen: null,
-        agentProgress: null,
+        agentProgress: {
+          stage: 'NOT_VIEWED',
+          note: null,
+          updatedAt: nowIso,
+        },
         implementation: null,
-        nextAction: null,
+        nextAction: {
+          actor: 'AGENT',
+          type: 'NONE',
+          label: 'Chờ tiếp nhận',
+          detail: 'mOS đang chuẩn bị tiếp nhận yêu cầu của bạn.',
+          waitingSince: nowIso,
+        },
         reporterExperience: {
           state: 'RECEIVED',
           label: 'Đã nhận yêu cầu',
@@ -610,7 +621,7 @@ export function BugReportSurface() {
           },
           updates: [{ label: 'Đã nhận yêu cầu của bạn', occurredAt: nowIso }],
         },
-        reporter: { id: 0, displayName: 'Tôi', email: null, avatarUrl: null },
+        reporter: { id: 0, displayName: 'Tôi', role: 'CV', avatarUrl: null },
         approvedAt: null,
         timeline: {
           reportedAt: nowIso,
@@ -625,12 +636,10 @@ export function BugReportSurface() {
         resolution: null,
         evidenceAttachments: attachments.map((att, idx) => ({
           id: -1 - idx,
-          reportId: result.id,
           commentId: null,
-          originalName: att.fileName,
+          fileName: att.fileName,
           mimeType: att.mimeType,
           sizeBytes: att.sizeBytes,
-          storagePath: '',
           createdAt: nowIso,
           deletedAt: null,
         })),
@@ -1133,7 +1142,11 @@ export function BugReportSurface() {
           </div>
         )}
       </AdaptiveModal>
-      <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} zIndex={BUG_REPORT_Z_INDEX.WORKFLOW_MODAL} />
+      <BugReportWorkflowModal
+        open={workflowOpen}
+        onClose={() => setWorkflowOpen(false)}
+        zIndex={BUG_REPORT_Z_INDEX.WORKFLOW_MODAL}
+      />
     </>
   );
 }
