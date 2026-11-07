@@ -46,8 +46,8 @@ export const ALL_LASH_DESIGNS: LashDesignOption[] = [
   },
   {
     id: 'Kim - K',
-    name: 'Kim - K (Sole Katun)',
-    shortName: 'Kim - K',
+    name: 'Kim K',
+    shortName: 'Kim K',
     desc: 'Đan xen các trụ sợi dài ngắn tạo hiệu ứng tia',
     eyeEffect: 'Bắt sáng nổi bật, cá tính thời thượng',
     image: '/lashes/designs/lash-design-kimk.jpg',

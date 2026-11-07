@@ -329,13 +329,13 @@ export function Screen08LashProgressTimer({
 
           <div className="space-y-1 text-[11.5px]">
             <div className="flex items-center justify-between text-gray-500">
-              <span>Khay 1 · Mi trên:</span>
+              <span>Mi trên:</span>
               <span className="font-bold text-gray-900">
                 {[
                   booking?.attributes?.style || 'Natural',
-                  booking?.attributes?.curl || 'C',
-                  booking?.attributes?.length || '10-12 mm',
-                  booking?.attributes?.thickness || '0.07 mm',
+                  (booking?.attributes?.curl || 'C').replace(/^Cong\s+/i, ''),
+                  (booking?.attributes?.length || '10-12 mm').replace(/\s*mm/gi, ''),
+                  (booking?.attributes?.thickness || '0.07 mm').replace(/\s*mm/gi, ''),
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -343,11 +343,12 @@ export function Screen08LashProgressTimer({
             </div>
             {booking?.attributes?.hasUnderMink && (
               <div className="flex items-center justify-between text-purple-700 bg-purple-50 rounded-lg px-2 py-1 border border-purple-200">
-                <span className="font-bold text-[10.5px]">Khay 2 · Mi dưới:</span>
+                <span className="font-bold text-[10.5px]">Mi dưới:</span>
                 <span className="font-black text-[11px] text-purple-900">
-                  1D · Cong {booking?.attributes?.underMinkCurl || 'B'} ·{' '}
-                  {booking?.attributes?.underMinkThickness || '0.10 mm'} ·{' '}
-                  {booking?.attributes?.underMinkLength || '7 mm'} · {booking?.attributes?.underMinkCount || '30 sợi'}
+                  1D · {(booking?.attributes?.underMinkCurl || 'B').replace(/^Cong\s+/i, '')} ·{' '}
+                  {(booking?.attributes?.underMinkThickness || '0.10').replace(/\s*mm/gi, '')} ·{' '}
+                  {(booking?.attributes?.underMinkLength || '7').replace(/\s*mm/gi, '')} ·{' '}
+                  {booking?.attributes?.underMinkCount || '30 sợi'}
                 </span>
               </div>
             )}

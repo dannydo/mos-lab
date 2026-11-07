@@ -1024,13 +1024,16 @@ export function Screen02CheckInProfile({
               <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">
                 <span className="text-neutral-400 text-[9.5px] font-semibold">Độ dài</span>
                 <div className="font-extrabold text-[12px] text-white mt-0.5 truncate">
-                  {(booking?.attributes?.naturalLashLength || '8 mm').split('(')[0].trim()}
+                  {(booking?.attributes?.naturalLashLength || '8').replace(/\s*mm/gi, '').split('(')[0].trim()}
                 </div>
               </div>
               <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">
                 <span className="text-neutral-400 text-[9.5px] font-semibold">Độ dày</span>
                 <div className="font-extrabold text-[11px] text-white mt-0.5 truncate">
-                  {(booking?.attributes?.naturalLashThickness || '0.05-0.07mm').split('(')[0].trim()}
+                  {(booking?.attributes?.naturalLashThickness || '0.05-0.07')
+                    .replace(/\s*mm/gi, '')
+                    .split('(')[0]
+                    .trim()}
                 </div>
               </div>
               <div className="bg-[#2C2C2E] border border-neutral-700/80 rounded-xl px-2 py-2 flex flex-col justify-between">

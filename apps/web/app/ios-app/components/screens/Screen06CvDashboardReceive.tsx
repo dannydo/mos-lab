@@ -201,11 +201,11 @@ export function Screen06CvDashboardReceive({
               </span>
             </div>
 
-            {/* Slot 1: Khay 1 · Mi Trên */}
+            {/* Slot 1: Mi Trên */}
             <div className="bg-gradient-to-b from-[#2A2315] to-[#1A1A1C] rounded-xl p-2.5 border border-amber-500/40 space-y-2 shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[10.5px] font-black text-amber-400 uppercase tracking-tight flex items-center gap-1.5">
-                  <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> KHAY 1 · MI TRÊN
+                  <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> MI TRÊN
                 </span>
                 <span className="text-[9.5px] font-black text-amber-200 bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 rounded-md">
                   {booking.attributes?.material || 'HyperLight'} · {booking.attributes?.volume || '3X'} ·{' '}
@@ -213,41 +213,54 @@ export function Screen06CvDashboardReceive({
                 </span>
               </div>
 
-              {/* 4 Stat Chips Grid */}
-              <div className="grid grid-cols-4 gap-1">
-                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 text-center">
+              {/* 4 Stat Chips Grid: Cột Độ dài rộng hơn để chứa đủ 5 sizes */}
+              <div className="grid grid-cols-[1fr_0.75fr_1.6fr_0.85fr] gap-1">
+                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 text-center min-w-0">
                   <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">Dáng</span>
-                  <span className="text-[10px] font-black text-white block truncate mt-0.5 whitespace-nowrap">
+                  <span className="text-[10.5px] font-black text-white block truncate mt-0.5 whitespace-nowrap">
                     {booking.attributes?.style || 'Natural'}
                   </span>
                 </div>
-                <div className="bg-black/60 border border-blue-500/30 rounded-lg py-1 px-1 text-center">
+                <div className="bg-black/60 border border-blue-500/30 rounded-lg py-1 px-1 text-center min-w-0">
                   <span className="text-[8.5px] font-bold text-blue-400 uppercase block">Cong</span>
-                  <span className="text-[10px] font-black text-blue-300 block truncate mt-0.5 whitespace-nowrap">
-                    Cong {booking.attributes?.curl || 'C'}
+                  <span className="text-[11px] font-black text-blue-300 block truncate mt-0.5 whitespace-nowrap">
+                    {(booking.attributes?.curl || 'C').replace(/^Cong\s+/i, '')}
                   </span>
                 </div>
-                <div className="bg-black/60 border border-emerald-500/30 rounded-lg py-1 px-1 text-center">
+                <div className="bg-black/60 border border-emerald-500/30 rounded-lg py-1 px-1 text-center min-w-0">
                   <span className="text-[8.5px] font-bold text-emerald-400 uppercase block">Độ dài</span>
-                  <span className="text-[10px] font-black text-emerald-300 block truncate mt-0.5 whitespace-nowrap">
-                    {booking.attributes?.length || '10-12 mm'}
-                  </span>
+                  {(() => {
+                    const rawLen = (booking.attributes?.length || '10-12')
+                      .replace(/\s*mm/gi, '')
+                      .replace(/\s*-\s*/g, '-')
+                      .trim();
+                    return (
+                      <span
+                        className={`font-black text-emerald-300 block mt-0.5 whitespace-nowrap tabular-nums tracking-tighter ${
+                          rawLen.length > 9 ? 'text-[9.5px]' : 'text-[11px]'
+                        }`}
+                        title={booking.attributes?.length}
+                      >
+                        {rawLen}
+                      </span>
+                    );
+                  })()}
                 </div>
-                <div className="bg-black/60 border border-purple-500/30 rounded-lg py-1 px-1 text-center">
+                <div className="bg-black/60 border border-purple-500/30 rounded-lg py-1 px-1 text-center min-w-0">
                   <span className="text-[8.5px] font-bold text-purple-400 uppercase block">Độ dày</span>
-                  <span className="text-[10px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap">
-                    {booking.attributes?.thickness || '0.10 mm'}
+                  <span className="text-[11px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap tabular-nums">
+                    {(booking.attributes?.thickness || '0.10').replace(/\s*mm/gi, '')}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Slot 2: Khay 2 · Mi Dưới */}
+            {/* Slot 2: Mi Dưới */}
             {booking.attributes?.hasUnderMink && (
               <div className="bg-gradient-to-b from-[#261633] to-[#1A1A1C] rounded-xl p-2.5 border border-purple-500/50 space-y-2 shadow-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-[10.5px] font-black text-purple-300 uppercase tracking-tight flex items-center gap-1.5">
-                    <LashTrayIcon className="w-3.5 h-3.5 text-purple-300 shrink-0" /> KHAY 2 · MI DƯỚI (
+                    <LashTrayIcon className="w-3.5 h-3.5 text-purple-300 shrink-0" /> MI DƯỚI (
                     {booking.attributes?.underMinkServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'})
                   </span>
                   <span className="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 border border-purple-400/40">
@@ -256,29 +269,29 @@ export function Screen06CvDashboardReceive({
                 </div>
 
                 {/* 4 Stat Chips Grid */}
-                <div className="grid grid-cols-4 gap-1">
-                  <div className="bg-black/60 border border-purple-400/20 rounded-lg py-1 px-1 text-center">
+                <div className="grid grid-cols-[1fr_0.75fr_1.6fr_0.85fr] gap-1">
+                  <div className="bg-black/60 border border-purple-400/20 rounded-lg py-1 px-1 text-center min-w-0">
                     <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">Chất liệu</span>
-                    <span className="text-[10px] font-black text-purple-200 block truncate mt-0.5 whitespace-nowrap">
+                    <span className="text-[10.5px] font-black text-purple-200 block truncate mt-0.5 whitespace-nowrap">
                       1D Mink
                     </span>
                   </div>
-                  <div className="bg-black/60 border border-blue-500/30 rounded-lg py-1 px-1 text-center">
+                  <div className="bg-black/60 border border-blue-500/30 rounded-lg py-1 px-1 text-center min-w-0">
                     <span className="text-[8.5px] font-bold text-blue-400 uppercase block">Cong</span>
-                    <span className="text-[10px] font-black text-blue-300 block truncate mt-0.5 whitespace-nowrap">
-                      Cong {booking.attributes?.underMinkCurl || 'B'}
+                    <span className="text-[11px] font-black text-blue-300 block truncate mt-0.5 whitespace-nowrap">
+                      {(booking.attributes?.underMinkCurl || 'B').replace(/^Cong\s+/i, '')}
                     </span>
                   </div>
-                  <div className="bg-black/60 border border-emerald-500/30 rounded-lg py-1 px-1 text-center">
+                  <div className="bg-black/60 border border-emerald-500/30 rounded-lg py-1 px-1 text-center min-w-0">
                     <span className="text-[8.5px] font-bold text-emerald-400 uppercase block">Độ dài</span>
-                    <span className="text-[10px] font-black text-emerald-300 block truncate mt-0.5 whitespace-nowrap">
-                      {booking.attributes?.underMinkLength || '7 mm'}
+                    <span className="text-[11px] font-black text-emerald-300 block truncate mt-0.5 whitespace-nowrap tabular-nums">
+                      {(booking.attributes?.underMinkLength || '7').replace(/\s*mm/gi, '')}
                     </span>
                   </div>
-                  <div className="bg-black/60 border border-purple-500/30 rounded-lg py-1 px-1 text-center">
+                  <div className="bg-black/60 border border-purple-500/30 rounded-lg py-1 px-1 text-center min-w-0">
                     <span className="text-[8.5px] font-bold text-purple-400 uppercase block">Độ dày</span>
-                    <span className="text-[10px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap">
-                      {booking.attributes?.underMinkThickness || '0.10 mm'}
+                    <span className="text-[11px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap tabular-nums">
+                      {(booking.attributes?.underMinkThickness || '0.10').replace(/\s*mm/gi, '')}
                     </span>
                   </div>
                 </div>
@@ -293,22 +306,22 @@ export function Screen06CvDashboardReceive({
                 </span>
                 <span className="text-[9px] text-blue-300/80 font-bold">Đã lưu</span>
               </span>
-              <div className="grid grid-cols-3 gap-1.5 text-center">
-                <div className="bg-black/50 border border-blue-400/20 rounded-lg py-1 px-1.5">
-                  <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">⚡ Dài</span>
-                  <span className="text-[12px] font-black text-white block mt-0.2">
-                    {booking.attributes?.naturalLashLength || '8mm'}
+              <div className="grid grid-cols-[0.85fr_1.35fr_1fr] gap-1.5 text-center">
+                <div className="bg-black/50 border border-blue-400/20 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8.5px] font-bold text-blue-400 uppercase block">Dài</span>
+                  <span className="text-[11.5px] font-black text-white block mt-0.5 whitespace-nowrap tabular-nums">
+                    {(booking.attributes?.naturalLashLength || '8').replace(/\s*mm/gi, '').trim()}
                   </span>
                 </div>
-                <div className="bg-black/50 border border-emerald-400/20 rounded-lg py-1 px-1.5">
-                  <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">🛡️ Dày</span>
-                  <span className="text-[12px] font-black text-emerald-300 block mt-0.2">
-                    {booking.attributes?.naturalLashThickness || '0.05-0.07mm'}
+                <div className="bg-black/50 border border-emerald-400/20 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8.5px] font-bold text-emerald-400 uppercase block">Dày</span>
+                  <span className="text-[11px] font-black text-emerald-300 block mt-0.5 whitespace-nowrap tabular-nums tracking-tight">
+                    {(booking.attributes?.naturalLashThickness || '0.05-0.07').replace(/\s*mm/gi, '').trim()}
                   </span>
                 </div>
-                <div className="bg-black/50 border border-purple-400/20 rounded-lg py-1 px-1">
-                  <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">👁️ Mí</span>
-                  <span className="text-[10px] font-black text-purple-300 block truncate mt-0.2">
+                <div className="bg-black/50 border border-purple-400/20 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8.5px] font-bold text-purple-400 uppercase block">Mí</span>
+                  <span className="text-[10.5px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap">
                     {booking.attributes?.eyeShape?.split('(')[0].split('/')[0].trim() || 'Mí lót'}
                   </span>
                 </div>

@@ -30,13 +30,14 @@ import {
   Leaf,
   Layers,
   Crown,
+  X,
 } from 'lucide-react';
 import { isSuperAdminRole, isCanonicalSuperAdminIdentity } from '@mos-lab/shared';
 import { LASH_CURL_LIST } from './LashCurlData';
 import { LashCurlIllustration } from './LashCurlIllustration';
 import { LashCurlZoomModal } from './LashCurlZoomModal';
 import { LashMaterialConfiguratorModal } from './LashMaterialConfiguratorModal';
-import { LashDesignCompareModal } from './LashDesignCompareModal';
+import { LashDesignZoomModal } from './LashDesignZoomModal';
 import { EyeShapeCompareModal } from './EyeShapeCompareModal';
 import { LashConsultationInfoModal, type InfoModalType } from './LashConsultationInfoModal';
 import {
@@ -119,6 +120,134 @@ interface Screen03ConsultationMatrixProps {
       serviceType?: string;
     } | null
   ) => void;
+}
+
+// ---------------------------------------------------------------------------
+// DUAL-THUMB RANGE SLIDER (Min-Max 2 đầu kéo chuẩn iOS)
+// ---------------------------------------------------------------------------
+interface DualThumbRangeSliderProps {
+  min: number;
+  max: number;
+  step: number;
+  value: [number, number];
+  onChange: (val: [number, number]) => void;
+  formatValue?: (val: number) => string;
+}
+
+function parseLengthRange(val?: string | null): [number, number] {
+  if (!val) return [6, 12];
+  const nums = val.match(/\d+/g);
+  if (!nums || nums.length === 0) return [6, 12];
+  if (nums.length === 1) {
+    const n = Math.max(5, Math.min(15, parseInt(nums[0], 10)));
+    return [n, n];
+  }
+  const n1 = Math.max(5, Math.min(15, parseInt(nums[0], 10)));
+  const n2 = Math.max(5, Math.min(15, parseInt(nums[1], 10)));
+  return [Math.min(n1, n2), Math.max(n1, n2)];
+}
+
+function parseThicknessRange(val?: string | null): [number, number] {
+  if (!val) return [0.05, 0.07];
+  const nums = val.match(/\d+\.\d+|\d+/g);
+  if (!nums || nums.length === 0) return [0.05, 0.07];
+  if (nums.length === 1) {
+    const raw = parseFloat(nums[0]);
+    const n = raw < 0.05 ? 0.05 : raw > 0.2 ? 0.2 : Math.round(raw * 100) / 100;
+    return [n, n];
+  }
+  const r1 = parseFloat(nums[0]);
+  const r2 = parseFloat(nums[1]);
+  const n1 = r1 < 0.05 ? 0.05 : r1 > 0.2 ? 0.2 : Math.round(r1 * 100) / 100;
+  const n2 = r2 < 0.05 ? 0.05 : r2 > 0.2 ? 0.2 : Math.round(r2 * 100) / 100;
+  return [Math.min(n1, n2), Math.max(n1, n2)];
+}
+
+function parseCountRange(val?: string | null): [number, number] {
+  if (!val) return [60, 80];
+  const nums = val.match(/\d+/g);
+  if (!nums || nums.length === 0) return [60, 80];
+  if (nums.length === 1) {
+    const n = Math.max(40, Math.min(200, parseInt(nums[0], 10)));
+    return [n, n];
+  }
+  const n1 = Math.max(40, Math.min(200, parseInt(nums[0], 10)));
+  const n2 = Math.max(40, Math.min(200, parseInt(nums[1], 10)));
+  return [Math.min(n1, n2), Math.max(n1, n2)];
+}
+
+function DualThumbRangeSlider({ min, max, step, value, onChange, formatValue }: DualThumbRangeSliderProps) {
+  const [valMin, valMax] = value;
+  const minPct = Math.max(0, Math.min(100, ((valMin - min) / (max - min)) * 100));
+  const maxPct = Math.max(0, Math.min(100, ((valMax - min) / (max - min)) * 100));
+
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    if (v > valMax) {
+      onChange([v, v]);
+    } else {
+      onChange([v, valMax]);
+    }
+  };
+
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    if (v < valMin) {
+      onChange([v, v]);
+    } else {
+      onChange([valMin, v]);
+    }
+  };
+
+  // Đổi z-index linh hoạt khi 2 thumb trùng nhau
+  const isMinHigher = valMin > min + (max - min) * 0.5;
+
+  return (
+    <div className="flex items-center gap-2 pt-0.5 select-none">
+      <span className="text-[10px] font-bold text-gray-400 tabular-nums w-8 text-right shrink-0">
+        {formatValue ? formatValue(min) : min}
+      </span>
+      <div className="relative flex-1 h-6 flex items-center">
+        {/* Track nền xám */}
+        <div className="absolute left-0 right-0 h-2 bg-gray-200 rounded-full" />
+        {/* Dải vàng highlight giữa min và max */}
+        <div
+          className="absolute h-2 bg-[#FFB400] rounded-full pointer-events-none"
+          style={{
+            left: `${minPct}%`,
+            width: `${Math.max(0, maxPct - minPct)}%`,
+          }}
+        />
+        {/* Input Min Thumb */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={valMin}
+          onChange={handleMinChange}
+          aria-label="Giá trị tối thiểu"
+          className="absolute w-full h-2 appearance-none bg-transparent pointer-events-none focus:outline-none cursor-pointer [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#FFB400] [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab active:[&::-webkit-slider-thumb]:scale-110 active:[&::-webkit-slider-thumb]:cursor-grabbing [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#FFB400] [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-grab"
+          style={{ zIndex: isMinHigher ? 25 : 20 }}
+        />
+        {/* Input Max Thumb */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={valMax}
+          onChange={handleMaxChange}
+          aria-label="Giá trị tối đa"
+          className="absolute w-full h-2 appearance-none bg-transparent pointer-events-none focus:outline-none cursor-pointer [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#FFB400] [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab active:[&::-webkit-slider-thumb]:scale-110 active:[&::-webkit-slider-thumb]:cursor-grabbing [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#FFB400] [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-grab"
+          style={{ zIndex: isMinHigher ? 20 : 25 }}
+        />
+      </div>
+      <span className="text-[10px] font-bold text-gray-400 tabular-nums w-8 shrink-0">
+        {formatValue ? formatValue(max) : max}
+      </span>
+    </div>
+  );
 }
 
 export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: Screen03ConsultationMatrixProps) {
@@ -256,7 +385,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   });
 
   const [selectedLength, setSelectedLength] = useState<string>(booking?.attributes?.length || initialMat.defaultLength);
-  const [selectedColor, setSelectedColor] = useState<string>(booking?.attributes?.color || 'Đen Tuyền (Jet Black)');
+  const [selectedColors, setSelectedColors] = useState<string[]>(() => {
+    const raw = booking?.attributes?.color || 'Đen Tuyền (Jet Black)';
+    const parts = raw.split(/\s*\+\s*/).filter(Boolean);
+    return parts.length > 0 ? parts : [raw];
+  });
+  const selectedColor = useMemo(() => selectedColors.join(' + '), [selectedColors]);
   const [selectedVolume, setSelectedVolume] = useState<string>(autoComboSpec.volume || initialMat.defaultVolume);
   const [selectedCount, setSelectedCount] = useState<string>(autoComboSpec.count || initialMat.defaultCount);
   const [serviceType, setServiceType] = useState<'Normal' | 'Retain'>(expectedAutoServiceType);
@@ -525,20 +659,63 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     );
   }, [booking?.customerVisits, booking?.attributes?.lashHealth, booking?.attributes?.isNewClientDiagnosticDone]);
 
-  const [naturalLength, setNaturalLength] = useState<string>(
-    booking?.attributes?.naturalLashLength || (isNewClient ? '7mm' : '8mm')
-  );
-  const [naturalThickness, setNaturalThickness] = useState<string>(
-    booking?.attributes?.naturalLashThickness || '0.05-0.07mm'
-  );
-  const [naturalDensity, setNaturalDensity] = useState<string>(booking?.attributes?.naturalLashDensity || '60-80');
-  const [naturalCount, setNaturalCount] = useState<string>(() => {
-    return (
+  // Dual-Thumb Range State: Dài [5, 15], Dày [0.05, 0.20], Số sợi [40, 200]
+  const [naturalLengthRange, setNaturalLengthRange] = useState<[number, number]>(() => {
+    return parseLengthRange(booking?.attributes?.naturalLashLength || (isNewClient ? '7mm' : '8mm'));
+  });
+  const [naturalThicknessRange, setNaturalThicknessRange] = useState<[number, number]>(() => {
+    return parseThicknessRange(booking?.attributes?.naturalLashThickness || '0.05-0.07mm');
+  });
+  const [naturalCountRange, setNaturalCountRange] = useState<[number, number]>(() => {
+    return parseCountRange(
       booking?.attributes?.naturalLashCount ||
-      resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity) ||
-      '60-80'
+        resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity) ||
+        '60-80'
     );
   });
+
+  const naturalLengthLabel = useMemo(() => {
+    if (naturalLengthRange[0] === naturalLengthRange[1]) return `${naturalLengthRange[0]}`;
+    return `${naturalLengthRange[0]} – ${naturalLengthRange[1]}`;
+  }, [naturalLengthRange]);
+
+  const naturalThicknessLabel = useMemo(() => {
+    if (naturalThicknessRange[0] === naturalThicknessRange[1]) return `${naturalThicknessRange[0].toFixed(2)}`;
+    return `${naturalThicknessRange[0].toFixed(2)} – ${naturalThicknessRange[1].toFixed(2)}`;
+  }, [naturalThicknessRange]);
+
+  const naturalCountLabel = useMemo(() => {
+    if (naturalCountRange[0] === naturalCountRange[1]) return `${naturalCountRange[0]}`;
+    return `${naturalCountRange[0]} – ${naturalCountRange[1]}`;
+  }, [naturalCountRange]);
+
+  const naturalLength = useMemo(() => {
+    return naturalLengthRange[0] === naturalLengthRange[1]
+      ? `${naturalLengthRange[0]}mm`
+      : `${naturalLengthRange[0]}-${naturalLengthRange[1]}mm`;
+  }, [naturalLengthRange]);
+
+  const naturalThickness = useMemo(() => {
+    return naturalThicknessRange[0] === naturalThicknessRange[1]
+      ? `${naturalThicknessRange[0].toFixed(2)}mm`
+      : `${naturalThicknessRange[0].toFixed(2)}-${naturalThicknessRange[1].toFixed(2)}mm`;
+  }, [naturalThicknessRange]);
+
+  const naturalCount = useMemo(() => {
+    return naturalCountRange[0] === naturalCountRange[1]
+      ? `${naturalCountRange[0]}`
+      : `${naturalCountRange[0]}-${naturalCountRange[1]}`;
+  }, [naturalCountRange]);
+
+  const naturalDensity = useMemo(() => {
+    const maxCount = naturalCountRange[1];
+    if (maxCount <= 60) return '40-60';
+    if (maxCount <= 80) return '60-80';
+    if (maxCount <= 100) return '80-100';
+    if (maxCount <= 120) return '100-120';
+    if (maxCount <= 140) return '120-140';
+    return '140+';
+  }, [naturalCountRange]);
 
   const [selectedEyeShape, setSelectedEyeShape] = useState(booking?.attributes?.eyeShape || 'Mí lót / Sụp mí (Hooded)');
   const [selectedLashHealth, setSelectedLashHealth] = useState(
@@ -617,18 +794,24 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   }, [booking?.id, isWithin25Days, hasUnderMinkCombo, underComboNormalRemaining, underComboRetainRemaining]);
 
   const naturalLengthSpec = useMemo(() => {
-    return NATURAL_LASH_LENGTH_OPTIONS.find((o) => o.id === naturalLength) || NATURAL_LASH_LENGTH_OPTIONS[2];
-  }, [naturalLength]);
+    const maxMm = naturalLengthRange[1];
+    return (
+      NATURAL_LASH_LENGTH_OPTIONS.find((o) => o.valueMm === maxMm) ||
+      NATURAL_LASH_LENGTH_OPTIONS.find((o) => o.id === `${maxMm}mm`) ||
+      NATURAL_LASH_LENGTH_OPTIONS[2]
+    );
+  }, [naturalLengthRange]);
 
   const naturalThicknessSpec = useMemo(() => {
-    return NATURAL_LASH_THICKNESS_OPTIONS.find((o) => o.id === naturalThickness) || NATURAL_LASH_THICKNESS_OPTIONS[0];
-  }, [naturalThickness]);
-
-  const naturalCountLabel = useMemo(() => {
-    return resolveNaturalLashCountLabel(
-      naturalCount || naturalDensity || booking?.attributes?.naturalLashCount || booking?.attributes?.naturalLashDensity
-    );
-  }, [naturalCount, naturalDensity, booking?.attributes?.naturalLashCount, booking?.attributes?.naturalLashDensity]);
+    const maxThick = naturalThicknessRange[1];
+    if (maxThick <= 0.08) {
+      return NATURAL_LASH_THICKNESS_OPTIONS[0];
+    }
+    if (maxThick <= 0.11) {
+      return NATURAL_LASH_THICKNESS_OPTIONS[1];
+    }
+    return NATURAL_LASH_THICKNESS_OPTIONS[2];
+  }, [naturalThicknessRange]);
 
   const recommendation = useMemo(() => {
     return computeLashRecommendation({
@@ -702,18 +885,18 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     if (nums && nums.length > 0) {
       const maxChosenMm = Math.max(...nums.map(Number));
       if (maxChosenMm > naturalLengthSpec.safeMaxExtensionMm) {
-        return `⚠️ Chiều dài nối ${selectedLength} dài hơn mi thật (${naturalLengthSpec.label}) quá +2mm (khuyên dùng tối đa ${naturalLengthSpec.safeMaxExtensionMm}mm) có thể gây nặng sụp mí và hại nang mi!`;
+        return `⚠️ Chiều dài nối ${selectedLength} dài hơn mi thật (${naturalLengthLabel}) quá +2mm (khuyên dùng tối đa ${naturalLengthSpec.safeMaxExtensionMm}mm) có thể gây nặng sụp mí và hại nang mi!`;
       }
     }
     return null;
-  }, [selectedLength, naturalLengthSpec]);
+  }, [selectedLength, naturalLengthSpec, naturalLengthLabel]);
 
   const thicknessWarning = useMemo(() => {
-    if (naturalThickness.includes('0.05') && selectedThickness.includes('0.15')) {
-      return `🛑 Cảnh báo an toàn: Mi thật của khách là Mi tơ mảnh (0.07mm). Nối sợi Classic 0.15mm thô nặng sẽ làm gãy rụng nang mi thật!`;
+    if (naturalThicknessRange[1] <= 0.08 && selectedThickness.includes('0.15')) {
+      return `🛑 Cảnh báo an toàn: Mi thật của khách là Mi tơ mảnh (${naturalThicknessLabel}). Nối sợi Classic 0.15mm thô nặng sẽ làm gãy rụng nang mi thật!`;
     }
     return null;
-  }, [naturalThickness, selectedThickness]);
+  }, [naturalThicknessRange, selectedThickness, naturalThicknessLabel]);
 
   const [notes, setNotes] = useState(
     booking?.attributes?.notes ||
@@ -726,7 +909,15 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   const [isCurlZoomOpen, setIsCurlZoomOpen] = useState(false);
   const [zoomCurlId, setZoomCurlId] = useState<string>('C');
   const [isCompareDesignsOpen, setIsCompareDesignsOpen] = useState<boolean>(false);
+  const [zoomDesignId, setZoomDesignId] = useState<string>(selectedStyle);
   const [isEyeCompareOpen, setIsEyeCompareOpen] = useState<boolean>(false);
+  const [zoomEyeShapeId, setZoomEyeShapeId] = useState<string>(selectedEyeShape);
+  const [activeInfoModal, setActiveInfoModal] = useState<{
+    title: string;
+    badge?: string;
+    advice?: string;
+    content: string;
+  } | null>(null);
 
   const isSuperAdmin = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -810,7 +1001,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-hidden select-none">
       <IosNavigationBar
-        title="Tư Vấn Dáng Mi Chuẩn iOS"
+        title="Tư Vấn Dáng Mi"
         onBack={onBack}
         backTitle="Check In"
         rightAction={
@@ -881,7 +1072,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               <span className="text-gray-500 font-medium shrink-0">Mi Thật:</span>
               <strong className="text-black font-extrabold truncate">
                 {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
-                {naturalLengthSpec.label} · {naturalThicknessSpec.label.replace(/^Sợi\s*/i, '')}
+                {naturalLengthLabel} · {naturalThicknessLabel}
               </strong>
               {!naturalCountLabel && (
                 <span className="text-amber-700 bg-amber-50 border border-amber-200 text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
@@ -909,7 +1100,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>0. Khám Mi Thật</span>
+            <span>Khám Mi Thật</span>
             {isNewClient && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
           </button>
 
@@ -921,7 +1112,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>1. Dòng Mi → Dáng → Thông Số</span>
+            <span>Thiết Kế Trên Mi Thật</span>
           </button>
         </div>
 
@@ -1308,14 +1499,6 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   >
                     <Info className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCompareDesignsOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100/90 hover:bg-amber-200 text-amber-950 text-[10px] font-extrabold shadow-2xs cursor-pointer active:scale-95 transition-all"
-                  >
-                    <Images className="w-3 h-3 text-amber-700" />
-                    <span>So sánh</span>
-                  </button>
                 </div>
               </div>
 
@@ -1332,7 +1515,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         <button
                           key={style.id}
                           type="button"
-                          onClick={() => setSelectedStyle(style.id)}
+                          onClick={() => {
+                            setSelectedStyle(style.id);
+                            setZoomDesignId(style.id);
+                            setIsCompareDesignsOpen(true);
+                          }}
                           className={`p-1 rounded-xl border text-left transition-all relative cursor-pointer overflow-hidden ${
                             active
                               ? 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-2 ring-[#FFB400]/40'
@@ -1386,7 +1573,8 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   <Activity className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span className="text-gray-600 font-medium">Mi thật:</span>
                   <strong className="text-black font-extrabold truncate">
-                    {naturalLengthSpec.label} · Sợi {naturalThicknessSpec.label}
+                    {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
+                    {naturalLengthLabel} · {naturalThicknessLabel}
                   </strong>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -1731,28 +1919,45 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   </div>
                 </div>
 
-                {/* Màu sắc sợi mi */}
+                {/* Màu sắc sợi mi: Chọn được nhiều màu cùng lúc */}
                 <div className="pt-1.5 border-t border-gray-100">
-                  <div className="text-[10px] font-semibold text-gray-500 mb-1">Màu sắc sợi mi:</div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="text-[10px] font-semibold text-gray-500">Màu sắc sợi mi:</div>
+                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                      Chọn được nhiều màu
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {currentMaterialSpec.allowedColors.map((c) => {
-                      const active = selectedColor === c.id;
+                      const isSelected =
+                        selectedColors.includes(c.id) || selectedColors.some((sc) => sc.includes(c.label));
                       return (
                         <button
                           key={c.id}
                           type="button"
-                          onClick={() => setSelectedColor(c.id)}
-                          className={`p-2 rounded-xl border flex items-center gap-2 transition-all cursor-pointer ${
-                            active
-                              ? 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs'
-                              : 'bg-[#F9F9FB] border-gray-100 text-gray-800'
+                          onClick={() => {
+                            if (isSelected) {
+                              if (selectedColors.length > 1) {
+                                setSelectedColors((prev) => prev.filter((id) => id !== c.id && !id.includes(c.label)));
+                              }
+                            } else {
+                              setSelectedColors((prev) => [...prev, c.id]);
+                            }
+                          }}
+                          className={`p-2 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs ring-1 ring-amber-400'
+                              : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
                           }`}
                         >
-                          <span
-                            className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
-                            style={{ backgroundColor: c.colorCode }}
-                          />
-                          <span className="text-[11px] truncate">{c.label}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
+                              style={{ backgroundColor: c.colorCode }}
+                            />
+                            <span className="text-[11px] truncate font-semibold">{c.label}</span>
+                          </div>
+                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500] shrink-0" />}
                         </button>
                       );
                     })}
@@ -1762,74 +1967,41 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             </div>
 
             {/* --------------------------------------------------------------------- */}
-            {/* OPTION LÀM KÈM: MI DƯỚI (UNDER MINK) - ĐI VỚI 6 MI TRÊN                */}
+            {/* OPTION LÀM KÈM: MI DƯỚI (UNDER MINK) - CHỈ HIỆN KHI BẬT Ở PHẦN TRÊN     */}
             {/* --------------------------------------------------------------------- */}
-            <div>
-              <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-purple-700 text-white text-[10px] font-black inline-flex items-center justify-center">
-                    +
-                  </span>
-                  <span>OPTION MI DƯỚI (UNDER MINK)</span>
-                </div>
-                <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-                  Đi kèm 6 chất liệu trên
-                </span>
-              </div>
-
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Option 1: Không nối mi dưới */}
+            {hasUnderMink && (
+              <div>
+                <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-purple-700 text-white text-[10px] font-black inline-flex items-center justify-center">
+                      +
+                    </span>
+                    <span>OPTION MI DƯỚI (UNDER MINK)</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setHasUnderMink(false)}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      !hasUnderMink
-                        ? 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-1 ring-[#FFB400]'
-                        : 'bg-[#F9F9FB] border-gray-100 text-gray-700 hover:border-gray-200'
-                    }`}
+                    className="text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-red-50"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-black leading-tight">Không nối mi dưới</span>
-                      {!hasUnderMink && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500]" />}
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-1">Chỉ làm trọn bộ mi trên</div>
-                    <div className="text-[12px] font-black text-gray-900 mt-1.5 pt-1 border-t border-gray-100">0 đ</div>
-                  </button>
-
-                  {/* Option 2: Nối Mi Dưới Under Mink */}
-                  <button
-                    type="button"
-                    onClick={() => setHasUnderMink(true)}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      hasUnderMink
-                        ? 'bg-purple-50/95 border-purple-500 text-purple-950 shadow-xs ring-1 ring-purple-500'
-                        : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-purple-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 min-w-0">
-                        <ArrowDownRight className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                        <span className="text-[12px] font-black leading-tight truncate">+Mi Dưới Under</span>
-                      </div>
-                      {hasUnderMink && <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />}
-                    </div>
-                    <div className="text-[10px] text-purple-800/80 mt-1 font-semibold">
-                      Cong {underMinkCurl} · {underMinkLength} · {underMinkCount}
-                    </div>
-                    <div className="text-[12px] font-black text-purple-700 mt-1.5 pt-1 border-t border-purple-100 flex items-center justify-between">
-                      <span>
-                        {hasUnderMinkCombo ? '0đ (Trừ gói)' : underMinkServiceType === 'Retain' ? '+250K' : '+390K'}
-                      </span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
-                        {underMinkServiceType === 'Retain' ? 'Dặm dưới' : 'Mới dưới'}
-                      </span>
-                    </div>
+                    Bỏ chọn ✕
                   </button>
                 </div>
 
-                {/* 1 Dòng Ngang Duy Nhất Khi Bật Mi Dưới: [B|C] · [6|7|6-7] · [20|30|40] + Chọn độc lập [Mới | Dặm] */}
-                {hasUnderMink && (
+                <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-purple-100 space-y-2">
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-purple-50/80 border border-purple-200">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <ArrowDownRight className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                      <span className="text-[12px] font-black text-purple-950 truncate">+Mi Dưới Under</span>
+                      <span className="text-[11px] font-semibold text-purple-800/80 tabular-nums">
+                        Cong {underMinkCurl} · {underMinkLength} · {underMinkCount}
+                      </span>
+                    </div>
+                    <div className="text-[12px] font-black text-purple-700 shrink-0 tabular-nums">
+                      {hasUnderMinkCombo ? '0đ (Trừ gói)' : underMinkServiceType === 'Retain' ? '+250K' : '+390K'}
+                    </div>
+                  </div>
+
+                  {/* 1 Dòng Ngang Duy Nhất Khi Bật Mi Dưới: [B|C] · [6|7|6-7] · [20|30|40] + Chọn độc lập [Mới | Dặm] */}
                   <div className="pt-2 border-t border-neutral-100 flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap">
                     <div className="flex items-center gap-1">
                       <div className="inline-flex items-center bg-neutral-50 p-0.5 rounded-lg border border-neutral-200">
@@ -1928,9 +2100,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       </button>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1938,405 +2110,406 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         {/* TAB 0: HỒ SƠ ĐO KHÁM MI THẬT (NATURAL LASH ASSESSMENT - ĐIỀU RĂN KHOA HỌC) */}
         {/* ========================================================================= */}
         {activeSubTab === 'PROFILE' && (
-          <div className="space-y-3.5">
-            {/* 1. Header Khám Mi Thật */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-black text-[#FFB400] flex items-center justify-center font-black text-[12px]">
-                  0
-                </span>
-                <div>
-                  <h3 className="text-[13px] font-extrabold text-black">KHÁM & ĐO THÔNG SỐ MI THẬT</h3>
-                  <p className="text-[10.5px] text-gray-500 font-medium">
-                    {isNewClient
-                      ? 'Khách Hàng Mới · Bắt buộc đo cữ mm trước khi chọn mi nối'
-                      : 'Hồ sơ sức khỏe nang mi của khách hàng'}
-                  </p>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                Chuẩn Khoa Học Wings
-              </span>
-            </div>
-
-            {/* 2. MỤC 0.1: CHIỀU DÀI MI THẬT (NATURAL LASH LENGTH) */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2.5">
-              <div className="flex items-center justify-between">
+          <div className="space-y-3">
+            {/* CARD 1: 4 CHỈ SỐ ĐO MI THẬT (SLIDER MIN-MAX + UNICODE HƯỚNG) */}
+            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-3">
+              <div className="flex items-center justify-between pb-1 border-b border-gray-100">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-amber-500 text-black text-[10px] font-black inline-flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-black text-[#FFB400] text-[10.5px] font-black inline-flex items-center justify-center">
                     1
                   </span>
-                  <span className="text-[11px] font-extrabold text-black uppercase">
-                    CHIỀU DÀI MI THẬT (ĐO CỮ THƯỚC MM THỰC TẾ)
+                  <span className="text-[11.5px] font-extrabold text-black uppercase tracking-tight">
+                    Đo 4 thông số mi thật
                   </span>
                 </div>
-                <span className="text-[10px] text-gray-500 font-semibold">Tỷ lệ an toàn: +2mm</span>
-              </div>
-
-              {/* Dãy nút đo mm */}
-              <div className="grid grid-cols-7 gap-1">
-                {NATURAL_LASH_LENGTH_OPTIONS.map((len) => {
-                  const active = naturalLength === len.id;
-                  return (
-                    <button
-                      key={len.id}
-                      type="button"
-                      onClick={() => setNaturalLength(len.id)}
-                      className={`py-2 px-0.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                        active
-                          ? 'bg-[#FFB400] border-[#FFB400] text-black font-black shadow-xs ring-1 ring-[#FFB400]'
-                          : 'bg-[#F9F9FB] border-gray-100 text-gray-700 hover:border-gray-200'
-                      }`}
-                    >
-                      <span className="text-[12px] font-black tracking-tight">{len.label}</span>
-                      <span className="text-[8.5px] opacity-75 mt-0.5 font-bold uppercase truncate max-w-full">
-                        {len.tier === 'SHORT' ? 'Ngắn' : len.tier === 'STANDARD' ? 'Chuẩn' : 'Dài'}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Thước đối chiếu thông số an toàn */}
-              <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 text-white rounded-xl p-2.5 space-y-1.5 shadow-2xs">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-gray-300">
-                    Mi thật đo được: <strong className="text-white font-bold">{naturalLengthSpec.label}</strong> (
-                    {naturalLengthSpec.tierLabel})
-                  </span>
-                  <span className="bg-[#FFB400] text-black text-[10px] font-black px-2 py-0.5 rounded-full">
-                    Nối tối đa: ≤ {naturalLengthSpec.safeMaxExtensionMm} mm
-                  </span>
-                </div>
-                <div className="text-[10.5px] text-amber-200 font-medium leading-relaxed">
-                  💡 {naturalLengthSpec.advice} (Dải mi nối khuyên dùng:{' '}
-                  <strong className="text-white font-bold">{naturalLengthSpec.recommendedLengths}</strong>)
-                </div>
-              </div>
-            </div>
-
-            {/* 3. MỤC 0.2: ĐỘ DÀY SỢI MI THẬT (NATURAL LASH THICKNESS / CALIBER) */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-amber-500 text-black text-[10px] font-black inline-flex items-center justify-center">
-                    2
-                  </span>
-                  <span className="text-[11px] font-extrabold text-black uppercase">
-                    ĐỘ DÀY SỢI MI THẬT (ĐƯỜNG KÍNH THÂN KERATIN)
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-500 font-semibold">Tải trọng nang mi</span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2">
-                {NATURAL_LASH_THICKNESS_OPTIONS.map((thick) => {
-                  const active = naturalThickness === thick.id;
-                  return (
-                    <button
-                      key={thick.id}
-                      type="button"
-                      onClick={() => setNaturalThickness(thick.id)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer relative ${
-                        active
-                          ? 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-1 ring-[#FFB400]'
-                          : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-black">{thick.label}</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${thick.colorTag}`}>
-                            {thick.name}
-                          </span>
-                        </div>
-                        {active && <CheckCircle2 className="w-4 h-4 text-[#FF9500]" />}
-                      </div>
-                      <div className="text-[10.5px] text-gray-600 mt-1 leading-snug">{thick.safetyRule}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. MỤC 0.3: SỐ LƯỢNG SỢI & MẬT ĐỘ MI THẬT */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-amber-500 text-black text-[10px] font-black inline-flex items-center justify-center">
-                    3
-                  </span>
-                  <span className="text-[11px] font-extrabold text-black uppercase">
-                    SỐ LƯỢNG SỢI MI THẬT (MẬT ĐỘ TRÊN BỜ MÍ)
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-500 font-semibold">Đo số sợi mỗi mắt</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {NATURAL_LASH_DENSITY_OPTIONS.map((den) => {
-                  const active =
-                    naturalCount === den.countRange || naturalDensity === den.id || naturalDensity === den.label;
-                  return (
-                    <button
-                      key={den.id}
-                      type="button"
-                      onClick={() => {
-                        setNaturalCount(den.countRange);
-                        setNaturalDensity(den.id);
-                      }}
-                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                        active
-                          ? 'bg-[#FFB400] border-[#FFB400] text-black font-extrabold shadow-xs ring-1 ring-[#FFB400]'
-                          : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
-                      }`}
-                    >
-                      <div className="text-[13px] font-black tracking-tight">{den.countRange}</div>
-                      <div className="text-[9.5px] opacity-80 mt-0.5 leading-tight line-clamp-1">{den.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Hộp đối chiếu tóm tắt thông số Mi Thật chuẩn */}
-              <div className="bg-neutral-900 text-white rounded-xl p-2.5 flex items-center justify-between text-[11px] shadow-2xs">
-                <div className="flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
-                  <span className="text-gray-300">Thông số Mi Thật:</span>
-                  <strong className="text-[#FFB400] font-black">
-                    {naturalCount || '60-80'} · {naturalLengthSpec.label} ·{' '}
-                    {naturalThicknessSpec.label.replace(/^Sợi\s*/i, '')}
-                  </strong>
-                </div>
-                <span className="text-[10px] text-gray-400 font-medium">Chuẩn Wings</span>
-              </div>
-            </div>
-
-            {/* 5. MỤC 0.4: HƯỚNG MỌC & DÁNG MẮT (TRAIL & EYE SHAPE) */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-3">
-              <div>
-                <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>HƯỚNG MỌC MI THẬT (LASH DIRECTION)</span>
-                  <span className="text-[10px] text-amber-700 font-semibold">Quyết định độ cong</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {NATURAL_LASH_DIRECTIONS.map((dir) => {
-                    const active = selectedLashTrail === dir.id;
-                    return (
-                      <button
-                        key={dir.id}
-                        type="button"
-                        onClick={() => setSelectedLashTrail(dir.id)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          active
-                            ? 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs'
-                            : 'bg-[#F9F9FB] border-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <div className="text-[12px] font-bold flex items-center justify-between">
-                          <span>{dir.name}</span>
-                          {active && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500]" />}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-0.5 leading-snug">{dir.desc}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-gray-100">
-                <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-amber-600" />
-                    <span>DÁNG MẮT KHÁCH HÀNG (EYE SHAPE)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsEyeCompareOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300 shadow-2xs transition-colors cursor-pointer"
-                  >
-                    <Images className="w-3 h-3 text-[#FF9500]" />
-                    <span>So sánh 5 dáng mắt</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {NATURAL_EYE_SHAPES.map((eye, idx) => {
-                    const active = selectedEyeShape === eye.id;
-                    const isLastOdd = idx === NATURAL_EYE_SHAPES.length - 1 && NATURAL_EYE_SHAPES.length % 2 !== 0;
-                    return (
-                      <button
-                        key={eye.id}
-                        type="button"
-                        onClick={() => setSelectedEyeShape(eye.id)}
-                        className={`group p-2 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
-                          isLastOdd ? 'col-span-2 sm:col-span-1' : ''
-                        } ${
-                          active
-                            ? 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs ring-1 ring-[#FFB400]'
-                            : 'bg-[#F9F9FB] hover:bg-white border-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <div>
-                          {/* 4:3 Image of the eye on the exact same Asian face */}
-                          <div className="relative aspect-4/3 w-full rounded-lg overflow-hidden bg-neutral-900 mb-1.5 border border-black/5 shadow-2xs">
-                            <img
-                              src={eye.image}
-                              alt={eye.name}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              loading="lazy"
-                            />
-                            <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-[9px] font-bold text-white">
-                              {eye.recommendedCurl} Curl · {eye.recommendedDesign}
-                            </div>
-                            <span
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsEyeCompareOpen(true);
-                              }}
-                              title="Phóng to so sánh"
-                              className="absolute bottom-1 right-1 w-5 h-5 rounded-md bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors cursor-pointer"
-                            >
-                              <ZoomIn className="w-3 h-3" />
-                            </span>
-                          </div>
-
-                          <div className="text-[12px] font-bold flex items-center justify-between text-gray-900 leading-tight">
-                            <span className="truncate">{eye.name}</span>
-                            {active && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500] shrink-0 ml-1" />}
-                          </div>
-
-                          <div className="text-[9.5px] text-amber-900 bg-amber-100/60 rounded px-1.5 py-0.5 mt-1 font-medium leading-snug">
-                            <span className="font-bold">Đặc điểm: </span>
-                            {eye.keyFeature}
-                          </div>
-                        </div>
-
-                        <div className="text-[9px] text-gray-500 mt-1 leading-tight pt-1 border-t border-gray-100/80">
-                          <span className="font-semibold text-gray-700">💡 Gợi ý: </span>
-                          {eye.lashAdvice}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* 6. MỤC 0.5: SỨC KHỎE NANG MI & ĐỘ NHẠY CẢM */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-3">
-              <div>
-                <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1.5">
-                  TÌNH TRẠNG NANG MI & TIỀN SỬ
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {NATURAL_LASH_HEALTH_CONDITIONS.map((cond) => {
-                    const active = selectedLashHealth === cond.id;
-                    return (
-                      <button
-                        key={cond.id}
-                        type="button"
-                        onClick={() => setSelectedLashHealth(cond.id)}
-                        className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                          active
-                            ? 'bg-[#FFB400] border-[#FFB400] text-black font-bold shadow-xs'
-                            : 'bg-[#F9F9FB] border-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <div className="text-[11.5px] font-bold">{cond.name}</div>
-                        <div className="text-[9.5px] opacity-80 mt-0.5 leading-tight">{cond.note}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-gray-100">
-                <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1.5">
-                  VẤN ĐỀ NHẠY CẢM MẮT (MEDICAL & SENSITIVITY)
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'Bình thường (Good)', desc: 'Không kích ứng, mắt khỏe mạnh' },
-                    { id: 'Mắt nhạy cảm (Sensitive)', desc: 'Dùng keo siêu êm dịu, quạt khô kỹ' },
-                    { id: 'Mắt hở khi ngủ', desc: 'Dán pad mi che kín lòng trắng mắt' },
-                    { id: 'Mới phẫu thuật / phun mí', desc: 'Thao tác nhẹ tay, tránh chạm bờ mí' },
-                  ].map((med) => {
-                    const active = selectedMedicalProblem === med.id;
-                    return (
-                      <button
-                        key={med.id}
-                        type="button"
-                        onClick={() => setSelectedMedicalProblem(med.id)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          active
-                            ? 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs'
-                            : 'bg-[#F9F9FB] border-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <div className="text-[12px] font-bold flex items-center justify-between">
-                          <span>{med.id.split(' ')[0]}</span>
-                          {active && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500]" />}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">{med.desc}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* 7. MỤC 0.6: KHUYẾN NGHỊ KHOA HỌC AN TOÀN TỰ ĐỘNG TỪ CHUYÊN GIA WINGS */}
-            <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/15 border-2 border-[#FFB400] rounded-2xl p-3.5 space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#FF9500]" />
-                  <span className="text-[12px] font-black text-amber-950 uppercase tracking-wide">
-                    KHUYẾN NGHỊ KHOA HỌC TỪ WINGS
-                  </span>
-                </div>
-                <span className="bg-[#FFB400] text-black text-[10px] font-black px-2 py-0.5 rounded-full">
-                  Chuẩn Tỷ Lệ Vàng
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                  Chuẩn Wings
                 </span>
               </div>
 
-              {/* Thông số đề xuất */}
-              <div className="grid grid-cols-2 gap-2 text-[11.5px]">
-                <div className="bg-white/90 rounded-xl p-2 border border-amber-200">
-                  <div className="text-gray-500 text-[10px]">Dòng mi khuyên dùng</div>
-                  <div className="font-extrabold text-black mt-0.5 truncate">{recommendation.recommendedMaterial}</div>
-                </div>
-                <div className="bg-white/90 rounded-xl p-2 border border-amber-200">
-                  <div className="text-gray-500 text-[10px]">Dáng & Độ cong</div>
-                  <div className="font-extrabold text-black mt-0.5">
-                    {recommendation.recommendedDesign} · Cong {recommendation.recommendedCurl}
+              <div className="space-y-3">
+                {/* Dòng 1: Chiều Dài (Dual Slider 5 - 15) */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11.5px] font-extrabold text-gray-800">Dài</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveInfoModal({
+                            title: 'Chiều Dài Mi Thật',
+                            badge: `Đang chọn: ${naturalLengthLabel} (${naturalLengthSpec.tierLabel})`,
+                            content:
+                              'Đo cữ thước mm thực tế bờ mi khách. Tỷ lệ vàng khoa học: Chiều dài mi nối an toàn tối đa = Chiều dài mi thật + 2mm (tối đa +3mm với mi siêu khỏe).',
+                            advice: naturalLengthSpec.advice,
+                          })
+                        }
+                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                        title="Xem hướng dẫn đo chiều dài"
+                      >
+                        <Info className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                    </div>
+                    {/* Badge hiển thị dải min - max */}
+                    <span className="px-2 py-0.5 rounded-full bg-[#FFB400] text-black font-black text-[11.5px] tabular-nums shadow-xs">
+                      {naturalLengthLabel}
+                    </span>
                   </div>
+
+                  {/* Dual-Thumb Slider 5 - 15 */}
+                  <DualThumbRangeSlider
+                    min={5}
+                    max={15}
+                    step={1}
+                    value={naturalLengthRange}
+                    onChange={setNaturalLengthRange}
+                  />
                 </div>
-                <div className="bg-white/90 rounded-xl p-2 border border-amber-200">
-                  <div className="text-gray-500 text-[10px]">Độ dày an toàn</div>
-                  <div className="font-extrabold text-emerald-700 mt-0.5">{recommendation.recommendedThickness}</div>
+
+                {/* Dòng 2: Độ Dày (Dual Slider 0.05 - 0.20, step 0.01) */}
+                <div className="space-y-1 pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11.5px] font-extrabold text-gray-800">Dày</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveInfoModal({
+                            title: 'Độ Dày Sợi Mi Thật',
+                            badge: `Đang chọn: ${naturalThicknessLabel} (${naturalThicknessSpec.name})`,
+                            content: naturalThicknessSpec.safetyRule,
+                            advice: `Khuyên dùng: ${naturalThicknessSpec.recommendedMaterial}`,
+                          })
+                        }
+                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                        title="Xem tải trọng nang mi"
+                      >
+                        <Info className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                    </div>
+                    {/* Badge hiển thị dải min - max */}
+                    <span className="px-2 py-0.5 rounded-full bg-[#FFB400] text-black font-black text-[11px] tabular-nums shadow-xs">
+                      {naturalThicknessLabel}
+                    </span>
+                  </div>
+
+                  {/* Dual-Thumb Slider 0.05 - 0.20 */}
+                  <DualThumbRangeSlider
+                    min={0.05}
+                    max={0.2}
+                    step={0.01}
+                    value={naturalThicknessRange}
+                    onChange={setNaturalThicknessRange}
+                    formatValue={(v) => v.toFixed(2)}
+                  />
                 </div>
-                <div className="bg-white/90 rounded-xl p-2 border border-amber-200">
-                  <div className="text-gray-500 text-[10px]">Chiều dài an toàn</div>
-                  <div className="font-extrabold text-emerald-700 mt-0.5">
-                    {recommendation.safeRangeLabel} (Max {recommendation.maxSafeMm}mm)
+
+                {/* Dòng 3: Số Sợi / Mật Độ (Dual Slider 40 - 200, step 5) */}
+                <div className="space-y-1 pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11.5px] font-extrabold text-gray-800">Số sợi</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveInfoModal({
+                            title: 'Số Lượng & Mật Độ Sợi Mi Thật',
+                            badge: `Đang chọn: ${naturalCountLabel} sợi/mắt`,
+                            content:
+                              'Đếm sơ bộ số lượng sợi mi thật trên một bờ mí trên: 40-60 sợi (thưa, khuyên làm fan nhẹ 2D-3D bù khuyết), 60-80 sợi (tiêu chuẩn, tải trọng cân bằng), 80-120+ sợi (dày khỏe, thích hợp nối classic hoặc volume đậm).',
+                          })
+                        }
+                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                        title="Xem hướng dẫn mật độ sợi"
+                      >
+                        <Info className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                    </div>
+                    {/* Badge hiển thị dải min - max */}
+                    <span className="px-2 py-0.5 rounded-full bg-[#FFB400] text-black font-black text-[11px] tabular-nums shadow-xs">
+                      {naturalCountLabel}
+                    </span>
+                  </div>
+
+                  {/* Dual-Thumb Slider 40 - 200 */}
+                  <DualThumbRangeSlider
+                    min={40}
+                    max={200}
+                    step={5}
+                    value={naturalCountRange}
+                    onChange={setNaturalCountRange}
+                  />
+                </div>
+
+                {/* Dòng 4: Hướng Mọc (Dùng UNICODE toàn bộ, không dùng emoji!) */}
+                <div className="flex items-center justify-between gap-1 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[11.5px] font-extrabold text-gray-800">Hướng</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveInfoModal({
+                          title: 'Hướng Mọc Mi Thật',
+                          badge: `Đang chọn: ${selectedLashTrail || 'Chúc xuống'}`,
+                          content:
+                            'Hướng mọc quyết định độ cong cần chọn: Mi chúc xuống (↘) cần độ cong CC hoặc D để nâng bờ mi không sụp mắt; mi mọc thẳng (➔) chọn cong C/B; mi hướng lên (↗) chọn cong B nhẹ nhàng; mi đan chéo (⇄) cần định hình trục mi.',
+                        })
+                      }
+                      className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Xem hướng mọc mi"
+                    >
+                      <Info className="w-3 h-3 stroke-[2.5]" />
+                    </button>
+                  </div>
+
+                  {/* 4 nút hướng mọc thuần UNICODE (không dùng emoji màu) */}
+                  <div className="flex items-center gap-2">
+                    {[
+                      { id: 'Chúc xuống (Downwards)', icon: '↘', title: 'Chúc xuống' },
+                      { id: 'Mọc thẳng (Straight)', icon: '➔', title: 'Mọc thẳng' },
+                      { id: 'Hướng lên (Upwards)', icon: '↗', title: 'Hướng lên' },
+                      { id: 'Lộn xộn/Đan chéo (Criss-Cross)', icon: '⇄', title: 'Lộn xộn' },
+                    ].map((dir) => {
+                      const active = selectedLashTrail === dir.id;
+                      return (
+                        <button
+                          key={dir.id}
+                          type="button"
+                          title={dir.title}
+                          onClick={() => setSelectedLashTrail(dir.id)}
+                          className={`w-9 h-8 rounded-lg text-center transition-all cursor-pointer text-[16px] font-black flex items-center justify-center ${
+                            active
+                              ? 'bg-[#FFB400] text-black shadow-xs ring-1 ring-amber-400'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {dir.icon}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Kịch bản tư vấn mẫu */}
-              <div className="bg-white/95 rounded-xl p-2.5 border border-amber-200 text-[11px] text-gray-800 leading-relaxed font-medium">
-                <span className="text-[#D97706] font-bold">💬 Lời khuyên tư vấn cho khách: </span>
-                <span className="italic">{recommendation.consultationScript}</span>
+            {/* CARD 2: DÁNG MẮT & SỨC KHỎE NANG MI */}
+            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-3">
+              <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-black text-[#FFB400] text-[10.5px] font-black inline-flex items-center justify-center">
+                    2
+                  </span>
+                  <span className="text-[11.5px] font-extrabold text-black uppercase tracking-tight">
+                    Dáng mắt & sức khỏe
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomEyeShapeId(selectedEyeShape);
+                    setIsEyeCompareOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 transition-colors cursor-pointer"
+                >
+                  <Images className="w-3 h-3 text-[#FF9500]" />
+                  <span>So sánh 5 dáng (i)</span>
+                </button>
               </div>
 
-              {/* Nút 1-chạm áp dụng */}
+              <div className="space-y-2.5">
+                {/* Dáng mắt: 5 chip nhỏ kèm thumbnail mini */}
+                <div>
+                  <div className="text-[11px] font-extrabold text-gray-700 mb-1.5 flex items-center justify-between">
+                    <span>Dáng mắt khách</span>
+                    <span className="text-[10px] text-amber-700 font-bold">
+                      {NATURAL_EYE_SHAPES.find((e) => e.id === selectedEyeShape)
+                        ?.name.split('(')[0]
+                        .trim() || 'Mí lót'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {NATURAL_EYE_SHAPES.map((eye) => {
+                      const active = selectedEyeShape === eye.id;
+                      const shortName = eye.name.split('(')[0].replace('Mắt', '').trim();
+                      return (
+                        <button
+                          key={eye.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEyeShape(eye.id);
+                            setZoomEyeShapeId(eye.id);
+                            setIsEyeCompareOpen(true);
+                          }}
+                          className={`p-1 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                            active
+                              ? 'bg-amber-50 border-[#FFB400] text-black font-black shadow-xs ring-1 ring-amber-400'
+                              : 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="w-6 h-6 rounded-full overflow-hidden bg-neutral-900 border border-black/10 shrink-0 mb-1">
+                            <img src={eye.image} alt={eye.name} className="w-full h-full object-cover" loading="lazy" />
+                          </div>
+                          <span className="text-[9.5px] font-bold leading-tight truncate max-w-full">{shortName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Nang mi */}
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="text-[11px] font-extrabold text-gray-700 mb-1.5 flex items-center justify-between">
+                    <span>Nang mi</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveInfoModal({
+                          title: 'Tình Trạng Nang Mi & Tiền Sử',
+                          content:
+                            'Đánh giá nang mi giúp xác định dòng mi an toàn: Mi mới lần đầu cần keo dịu nhẹ; mi tổn thương/gãy rụng chỉ nối 0.05-0.07mm kết hợp dưỡng Yeppeum.',
+                        })
+                      }
+                      className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Xem hướng dẫn nang mi"
+                    >
+                      <Info className="w-3 h-3 stroke-[2.5]" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { id: 'Khách mới lần đầu nối mi (Virgin Lashes)', short: 'Mới lần đầu' },
+                      { id: 'Mi khỏe (Healthy)', short: 'Khỏe mạnh' },
+                      { id: 'Mi thưa/khuyết (Gappy)', short: 'Thưa khuyết' },
+                      { id: 'Mi yếu/gãy rụng sau nối sai nơi khác (Damaged)', short: 'Yếu tổn thương' },
+                    ].map((h) => {
+                      const active = selectedLashHealth === h.id;
+                      return (
+                        <button
+                          key={h.id}
+                          type="button"
+                          onClick={() => setSelectedLashHealth(h.id)}
+                          className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer font-bold text-[10px] leading-tight ${
+                            active
+                              ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {h.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Độ nhạy cảm mắt */}
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="text-[11px] font-extrabold text-gray-700 mb-1.5 flex items-center justify-between">
+                    <span>Độ nhạy cảm</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveInfoModal({
+                          title: 'Lưu Ý Độ Nhạy Cảm Mắt',
+                          content:
+                            'Mắt nhạy cảm dùng keo siêu êm dịu Wings và sấy quạt kỹ; mắt hở khi ngủ dán pad che kín lòng trắng mắt; mắt mới phun mí thao tác nhẹ tay tránh chạm chân mí.',
+                        })
+                      }
+                      className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Xem lưu ý nhạy cảm"
+                    >
+                      <Info className="w-3 h-3 stroke-[2.5]" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { id: 'Bình thường (Good)', short: 'Bình thường' },
+                      { id: 'Mắt nhạy cảm (Sensitive)', short: 'Nhạy cảm' },
+                      { id: 'Mắt hở khi ngủ', short: 'Hở khi ngủ' },
+                      { id: 'Mới phẫu thuật / phun mí', short: 'Mới phun/PT' },
+                    ].map((m) => {
+                      const active = selectedMedicalProblem === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setSelectedMedicalProblem(m.id)}
+                          className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer font-bold text-[10px] leading-tight ${
+                            active
+                              ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {m.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: KHUYẾN NGHỊ KHOA HỌC WINGS (TINH GIẢN WIDGET) */}
+            <div className="bg-[#1C1C1E] text-white rounded-2xl p-3 shadow-sm border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#FFB400]" />
+                  <span className="text-[11.5px] font-black uppercase text-amber-400 tracking-wide">
+                    Gợi ý tỷ lệ vàng Wings
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveInfoModal({
+                      title: 'Kịch Bản Tư Vấn & Phân Tích Nang Mi',
+                      badge: `Khuyên dùng: ${recommendation.recommendedMaterial}`,
+                      content: recommendation.consultationScript,
+                      advice: `Dáng ${recommendation.recommendedDesign} · Cong ${recommendation.recommendedCurl} · Độ dày ${recommendation.recommendedThickness} · Dài an toàn ≤ ${recommendation.maxSafeMm}mm`,
+                    })
+                  }
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 px-2 py-0.5 rounded-full border border-amber-500/30 transition-colors cursor-pointer"
+                >
+                  <Info className="w-3 h-3" />
+                  <span>Kịch bản tư vấn (i)</span>
+                </button>
+              </div>
+
+              {/* 4 Chip thông số gợi ý trên 1 hàng */}
+              <div className="grid grid-cols-4 gap-1 text-center">
+                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dòng mi</span>
+                  <span className="text-[10px] font-black text-amber-300 block truncate mt-0.5">
+                    {recommendation.recommendedMaterial.replace(/New\s*/i, '').replace(/\s*\(.*\)/, '')}
+                  </span>
+                </div>
+                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dáng/Cong</span>
+                  <span className="text-[10px] font-black text-white block truncate mt-0.5">
+                    {recommendation.recommendedDesign} {recommendation.recommendedCurl}
+                  </span>
+                </div>
+                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dày</span>
+                  <span className="text-[10px] font-black text-emerald-300 block truncate mt-0.5 tabular-nums">
+                    {recommendation.recommendedThickness.replace(/\s*mm/gi, '')}
+                  </span>
+                </div>
+                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
+                  <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dài tối đa</span>
+                  <span className="text-[10px] font-black text-blue-300 block truncate mt-0.5 tabular-nums">
+                    ≤ {recommendation.maxSafeMm}
+                  </span>
+                </div>
+              </div>
+
+              {/* Nút bấm chuyển tiếp sang Thiết kế mi */}
               <button
                 type="button"
                 onClick={handleApplyRecommendation}
-                className="w-full py-3 px-4 rounded-xl bg-[#FFB400] hover:bg-amber-400 text-black font-extrabold text-[13px] shadow-sm flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl bg-[#FFB400] hover:bg-amber-400 text-black font-extrabold text-[12px] shadow-sm flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
               >
-                <span>Áp Dụng Thông Số Này & Sang Bước Nối Mi</span>
-                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                <span>Áp Dụng Thông Số Này & Thiết Kế Ngay</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
             </div>
           </div>
@@ -2367,7 +2540,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px] font-medium">
             <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-              0. Mi thật: <strong>{naturalLengthSpec.label}</strong> · <strong>{naturalThicknessSpec.label}</strong>
+              0. Mi thật:{' '}
+              <strong>
+                {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
+                {naturalLengthLabel} · {naturalThicknessLabel}
+              </strong>
             </span>
             <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
               1. Chất liệu: <strong>{currentMaterialSpec.shortLabel}</strong>
@@ -2410,7 +2587,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               📦 KHAY NGUYÊN VẬT LIỆU CẦN CHUẨN BỊ:
             </div>
             <div className="flex items-center justify-between text-neutral-200">
-              <span className="text-neutral-400 font-semibold">Khay 1 (Mi Trên):</span>
+              <span className="text-neutral-400 font-semibold">Mi Trên:</span>
               <span className="font-bold text-white">
                 {currentMaterialSpec.shortLabel} · {selectedVolume} ({selectedCount}) · Cong {selectedCurl} · Dày{' '}
                 {selectedThickness} · {selectedLength}
@@ -2502,22 +2679,24 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         />
       )}
 
-      {/* Modal So Sánh 4 Dáng Mi Trên Cùng 1 Dáng Mắt Mẫu Thực Tế */}
-      <LashDesignCompareModal
-        open={isCompareDesignsOpen}
-        selectedDesignId={selectedStyle}
-        allowedDesignIds={currentMaterialSpec.allowedDesigns}
+      {/* Modal Dáng Mi Thiết Kế Zoom Carousel & Kịch Bản Tư Vấn (i) */}
+      <LashDesignZoomModal
+        isOpen={isCompareDesignsOpen}
+        initialDesignId={zoomDesignId || selectedStyle}
+        allowedDesigns={currentMaterialSpec.allowedDesigns}
         materialName={currentMaterialSpec.shortLabel}
+        lockedDesignReasons={currentMaterialSpec.lockedDesignReasons}
         onClose={() => setIsCompareDesignsOpen(false)}
         onSelectDesign={(designId) => {
           setSelectedStyle(designId);
         }}
       />
 
-      {/* Modal So Sánh 5 Dáng Mắt Trên Cùng 1 Khuôn Mặt Mẫu Thực Tế */}
+      {/* Modal So Sánh 5 Dáng Mắt Zoom Carousel & Chi Tiết (i) */}
       <EyeShapeCompareModal
         open={isEyeCompareOpen}
         selectedEyeShapeId={selectedEyeShape}
+        initialEyeShapeId={zoomEyeShapeId}
         onClose={() => setIsEyeCompareOpen(false)}
         onSelectEyeShape={(eyeId) => {
           setSelectedEyeShape(eyeId);
@@ -2589,6 +2768,49 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 ⚠️ Xác nhận Override
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS-Style Minimalist Info Modal Sheet */}
+      {activeInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-[#1C1C1E] text-white rounded-2xl w-full max-w-sm p-4 border border-neutral-800 shadow-2xl space-y-3 relative">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Info className="w-4 h-4 text-[#FFB400]" />
+                <h4 className="text-[13px] font-black uppercase text-white tracking-wide">{activeInfoModal.title}</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveInfoModal(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {activeInfoModal.badge && (
+              <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FFB400]/20 text-[#FFB400] border border-[#FFB400]/30">
+                {activeInfoModal.badge}
+              </span>
+            )}
+
+            <p className="text-[12px] text-neutral-300 leading-relaxed font-medium">{activeInfoModal.content}</p>
+
+            {activeInfoModal.advice && (
+              <div className="bg-neutral-800/80 rounded-xl p-2.5 border border-amber-400/20 text-[11px] text-amber-200 leading-relaxed font-medium">
+                💡 <strong>Quy chuẩn Wings:</strong> {activeInfoModal.advice}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setActiveInfoModal(null)}
+              className="w-full py-2.5 rounded-xl bg-[#FFB400] hover:bg-amber-400 text-black font-extrabold text-[12px] transition-colors cursor-pointer shadow-xs"
+            >
+              Đã hiểu
+            </button>
           </div>
         </div>
       )}

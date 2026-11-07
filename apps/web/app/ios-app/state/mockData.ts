@@ -482,8 +482,8 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     attributes: {
       style: 'Natural',
       curl: 'C',
-      length: '10-12 mm',
-      thickness: '0.10 mm',
+      length: '8 - 9 - 10 - 11 - 12 mm',
+      thickness: '0.07 mm',
       naturalLashLength: '8mm',
       naturalLashThickness: '0.05-0.07mm',
       naturalLashDensity: '60-80',

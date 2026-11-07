@@ -315,10 +315,11 @@ export const LashCurlIllustration: React.FC<LashCurlIllustrationProps> = ({
   const ghostCurls = LASH_CURL_LIST.filter((c) => c.category === curl.category && c.id !== curl.id);
 
   return (
-    <div className={`w-full flex flex-col items-center justify-center relative select-none ${className}`}>
+    <div className={`w-full h-full flex flex-col items-center justify-center relative select-none ${className}`}>
       <svg
         viewBox="2 0 124 78"
-        className="w-full max-w-[350px] h-[175px] overflow-visible drop-shadow-xl"
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full h-full max-w-[420px] max-h-[340px] overflow-visible drop-shadow-xl"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
