@@ -126,6 +126,7 @@ export function BugReportSurface() {
   const [expertDetailsExpanded, setExpertDetailsExpanded] = React.useState(false);
   const [rememberExpertDetails, setRememberExpertDetails] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
+  const submittingRef = React.useRef(false);
   const [authenticated, setAuthenticated] = React.useState(false);
   const [isCvAccount, setIsCvAccount] = React.useState(false);
   const [canViewInbox, setCanViewInbox] = React.useState(false);
@@ -515,7 +516,7 @@ export function BugReportSurface() {
   };
 
   const submit = async () => {
-    if (submitting) return;
+    if (submitting || submittingRef.current) return;
     const draftView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
     const draft = drafts[draftView];
     const normalizedDescription = draft.description.trim();
@@ -530,6 +531,7 @@ export function BugReportSurface() {
     // nothing; capture a fresh safe context at the submit boundary instead.
     const submissionContext = context ?? captureBugReportContext(release, null);
     setSubmitting(true);
+    submittingRef.current = true;
     try {
       const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
         draft.files.map(async (file) => ({
@@ -570,13 +572,91 @@ export function BugReportSurface() {
         setFeatureAudience('TEAM');
         setFeatureDesiredOutcome('');
       }
+
+      // Optimistically switch to history view and add new report to eliminate any UI lag or double clicks
       setSelectedReportKey(result.key);
-      await myBugs.refresh({ force: true });
       setActiveView('history');
+
+      const nowIso = new Date().toISOString();
+      const optimisticItem: MyBugReportItem = {
+        id: result.id,
+        key: result.key,
+        requestType,
+        title: normalizedDescription,
+        description: normalizedDescription,
+        status: 'NEW',
+        priority: null,
+        triageNote: null,
+        sourcePath: submissionContext.path,
+        overlay: submissionContext.overlays[0] || null,
+        attachmentCount: attachments.length,
+        commentCount: 0,
+        clarification: {
+          status: 'PENDING_AGENT',
+          summary: null,
+          clarifiedAt: null,
+        },
+        reopen: null,
+        agentProgress: null,
+        implementation: null,
+        nextAction: null,
+        reporterExperience: {
+          state: 'RECEIVED',
+          label: 'Đã nhận yêu cầu',
+          summary: 'mOS đang xem yêu cầu và thông tin bạn đã gửi.',
+          nextAction: {
+            label: 'Bạn chưa cần làm gì',
+            detail: 'mOS sẽ báo bạn khi cần thêm thông tin hoặc có kết quả để kiểm tra.',
+          },
+          updates: [{ label: 'Đã nhận yêu cầu của bạn', occurredAt: nowIso }],
+        },
+        reporter: { id: 0, displayName: 'Tôi', email: null, avatarUrl: null },
+        approvedAt: null,
+        timeline: {
+          reportedAt: nowIso,
+          approvedAt: null,
+          startedAt: null,
+          fixedAt: null,
+          closedAt: null,
+          updatedAt: nowIso,
+        },
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        resolution: null,
+        evidenceAttachments: attachments.map((att, idx) => ({
+          id: -1 - idx,
+          reportId: result.id,
+          commentId: null,
+          originalName: att.fileName,
+          mimeType: att.mimeType,
+          sizeBytes: att.sizeBytes,
+          storagePath: '',
+          createdAt: nowIso,
+          deletedAt: null,
+        })),
+        comments: [],
+        reviewUrl: `/dashboard?bugReview=${encodeURIComponent(result.key)}`,
+        canReview: false,
+        canReopenUnchanged: false,
+        featureRequest:
+          requestType === 'FEATURE'
+            ? {
+                reason: normalizedFeatureReason || normalizedDescription,
+                audience: featureAudience,
+                desiredOutcome: featureDesiredOutcome.trim() || null,
+              }
+            : null,
+        expertDetails: draft.expertDetails,
+        planReview: null,
+      };
+
+      myBugs.addOptimisticReport(optimisticItem);
+      void myBugs.refresh({ force: true });
     } catch (error: any) {
       message.error(error?.response?.data?.message || error?.message || 'Không thể gửi yêu cầu.');
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
