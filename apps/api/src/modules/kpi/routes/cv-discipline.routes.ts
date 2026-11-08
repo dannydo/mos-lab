@@ -9,6 +9,21 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 
+function toMinutes(timeStr: string | null | undefined): number {
+  if (!timeStr) return 0;
+  const parts = timeStr.split(':').map(Number);
+  return (parts[0] || 0) * 60 + (parts[1] || 0);
+}
+
+function normalizeStoreCode(key: string | null | undefined, fallback: string = 'DT'): string {
+  if (!key) return fallback;
+  const upper = key.toUpperCase();
+  if (upper.includes('THAM') || upper.includes('DT') || upper === 'DE-THAM') return 'DT';
+  if (upper.includes('ESTELLA') || upper.includes('EP') || upper === 'ESTELLA-PLACE') return 'EP';
+  if (upper.includes('PXL') || upper.includes('PHAN')) return 'PXL';
+  return fallback;
+}
+
 export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Promise<void> {
   // GET /api/kpi/cv-discipline
   fastify.get('/kpi/cv-discipline', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -55,12 +70,12 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
       const staffListStr = activeCvIds.join(',');
 
       // 2. Fetch staff profiles (Excluding CC / non-CV)
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      const staffProfilesRaw = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT 
           up.user_id as userId,
           up.full_name as fullName,
           up.avatar as avatar,
-          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
+          cs.client_store_key as rawStoreKey
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
         LEFT JOIN \`user_group_language\` ugl ON up.user_group_id = ugl.user_group_id AND ugl.language_id = 1
@@ -75,6 +90,13 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
             OR up.full_name LIKE '%(CC)%'
           )
       `);
+
+      const staffProfiles = staffProfilesRaw.map((s) => ({
+        userId: Number(s.userId),
+        fullName: s.fullName,
+        avatar: s.avatar,
+        store: normalizeStoreCode(s.rawStoreKey, 'DT'),
+      }));
 
       let filteredStaffProfiles = staffProfiles;
       if (store && store !== 'ALL') {
@@ -104,68 +126,48 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
       const validStaffIds = filteredStaffProfiles.map((s) => Number(s.userId));
       const validStaffListStr = validStaffIds.join(',');
 
-      // 3. Parallel queries for attendance, shifts, urgent off leaves, and banana penalty transactions
-      const [crmStaffs, reportStaffRows, shiftRows, dayOffRows, penaltyTransactions] = await Promise.all([
+      // 3. Parallel queries for CRM staff metadata, real staff_activity penalties, and banana penalty ledger transactions
+      const [crmStaffs, activityRows, penaltyTransactions] = await Promise.all([
         fastify.prisma.crm.crmStaff.findMany({
           where: { legacyStaffId: { in: validStaffIds } },
           select: { id: true, legacyStaffId: true, role: true, avatarUrl: true, displayName: true },
         }),
-        // Attendance records with late check-in or early check-out
+        // Real disciplinary penalties logged in staff_activity joined with rules, shifts, attendance, and stores
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
-            rs.id as reportStaffId,
-            rs.user_id as userId,
-            DATE_FORMAT(rs.date, '%Y-%m-%d') as date,
-            MIN(TIME_FORMAT(rs.check_in_date, '%H:%i:%s')) as checkInTime,
-            MAX(TIME_FORMAT(rs.check_out_date, '%H:%i:%s')) as checkOutTime,
-            TIME_FORMAT(rs.working_shift_start_time, '%H:%i') as shiftStart,
-            TIME_FORMAT(rs.working_shift_end_time, '%H:%i') as shiftEnd,
-            MIN(rs.check_in_minute_diff) as checkInDiff,
-            MIN(rs.check_out_minute_diff) as checkOutDiff,
-            UPPER(COALESCE(MAX(cs.client_store_key), 'PXL')) as store
-          FROM \`report_staff\` rs
-          LEFT JOIN \`client_store\` cs ON cs.id = rs.client_store_id
-          WHERE rs.user_id IN (${validStaffListStr})
-            AND rs.date >= '${startPart}'
-            AND rs.date <= '${endPart}'
-            AND (rs.check_in_minute_diff < 0 OR rs.check_out_minute_diff < 0)
-          GROUP BY rs.id, rs.user_id, rs.date, rs.working_shift_start_time, rs.working_shift_end_time
-          ORDER BY rs.date DESC, rs.id DESC
-        `),
-        // Staff working shifts for time mapping and join with penalties
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT 
-            sws.id as shiftId,
-            sws.user_id as userId,
-            DATE_FORMAT(sws.date, '%Y-%m-%d') as date,
-            TIME_FORMAT(sws.start_time, '%H:%i') as startTime,
-            TIME_FORMAT(sws.end_time, '%H:%i') as endTime
-          FROM \`staff_working_shift\` sws
-          WHERE sws.user_id IN (${validStaffListStr})
-            AND sws.date >= '${startPart}'
-            AND sws.date <= '${endPart}'
-        `),
-        // Day off records with urgent reason or urgent attribute
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT 
-            sdo.id as dayOffId,
-            sdo.from_user_id as userId,
-            DATE_FORMAT(sdo.from_date, '%Y-%m-%d') as date,
-            sdo.attribute_option_id as attributeOptionId,
-            sdo.note,
-            sdo.request_state as requestState,
-            UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
-          FROM \`staff_day_off\` sdo
-          LEFT JOIN \`client_store\` cs ON cs.id = sdo.client_store_id
-          WHERE sdo.from_user_id IN (${validStaffListStr})
-            AND sdo.from_date >= '${startPart}'
-            AND sdo.from_date <= '${endPart}'
-            AND sdo.request_state IN ('Approved', 'Submitted', 'Pending')
-            AND (
-              sdo.attribute_option_id = 113
-              OR LOWER(COALESCE(sdo.note, '')) REGEXP 'gấp|đột xuất|bệnh|ốm|khẩn|cấp cứu'
-            )
-          ORDER BY sdo.from_date DESC
+            sa.id as activityId,
+            sa.user_id as userId,
+            sa.staff_activity_rule_id as ruleId,
+            sarl.staff_activity_rule_title as ruleTitle,
+            sa.amount as bananaAmount,
+            sa.type as targetType,
+            sa.item_id as targetId,
+            sa.note as activityNote,
+            DATE_FORMAT(sa.date_created, '%Y-%m-%d %H:%i:%s') as dateCreated,
+            DATE_FORMAT(COALESCE(sws.date, sdo.from_date, sa.date_created), '%Y-%m-%d') as incidentDate,
+            TIME_FORMAT(sws.start_time, '%H:%i') as shiftStart,
+            TIME_FORMAT(sws.end_time, '%H:%i') as shiftEnd,
+            TIME_FORMAT(rs.check_in_date, '%H:%i:%s') as checkInTime,
+            TIME_FORMAT(rs.check_out_date, '%H:%i:%s') as checkOutTime,
+            rs.check_in_minute_diff as checkInDiff,
+            rs.check_out_minute_diff as checkOutDiff,
+            COALESCE(cs.client_store_key, cs_up.client_store_key, 'DT') as rawStoreKey,
+            sdo.note as dayOffNote,
+            sdo.attribute_option_value as dayOffReason
+          FROM \`staff_activity\` sa
+          JOIN \`user_profile\` up ON up.user_id = sa.user_id
+          JOIN \`staff_activity_rule\` sar ON sar.id = sa.staff_activity_rule_id
+          JOIN \`staff_activity_rule_language\` sarl ON sarl.staff_activity_rule_id = sar.id AND sarl.language_id = 1
+          LEFT JOIN \`client_store\` cs ON cs.id = sa.client_store_id
+          LEFT JOIN \`client_store\` cs_up ON cs_up.id = up.client_store_id
+          LEFT JOIN \`staff_working_shift\` sws ON sws.id = sa.item_id AND sa.type = 'staff_working_shift'
+          LEFT JOIN \`staff_day_off\` sdo ON sdo.id = sa.item_id AND sa.type = 'staff_day_off'
+          LEFT JOIN \`report_staff\` rs ON rs.user_id = sa.user_id AND rs.date = COALESCE(sws.date, DATE(sa.date_created))
+          WHERE sa.user_id IN (${validStaffListStr})
+            AND sa.amount < 0
+            AND sa.date_created >= '${startPart} 00:00:00'
+            AND sa.date_created <= '${endPart} 23:59:59'
+          ORDER BY sa.date_created DESC
         `),
         // Banana penalty transactions (currency_id = 3, amount < 0)
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
@@ -177,6 +179,7 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
             ubt.amount,
             ubt.balance,
             ubt.description,
+            ubt.tracking_key as trackingKey,
             DATE_FORMAT(ubt.date_created, '%Y-%m-%d %H:%i:%s') as dateCreated,
             DATE_FORMAT(ubt.date_created, '%Y-%m-%d') as dateStr
           FROM \`user_balance_transaction\` ubt
@@ -195,203 +198,137 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
         if (cs.legacyStaffId) crmStaffMap.set(Number(cs.legacyStaffId), cs);
       });
 
-      // Shift map: userId -> date -> sws
-      const shiftMap = new Map<string, SafeAny>();
-      const shiftIdToShift = new Map<number, SafeAny>();
-      shiftRows.forEach((s) => {
-        const key = `${s.userId}-${s.date}`;
-        shiftMap.set(key, s);
-        shiftIdToShift.set(Number(s.shiftId), s);
-      });
-
-      // Penalty mapping
-      const shiftPenalties = new Map<number, SafeAny[]>(); // shiftId -> ubt[]
-      const dayOffPenalties = new Map<number, SafeAny[]>(); // dayOffId -> ubt[]
-      const dateUserPenalties = new Map<string, SafeAny[]>(); // `${userId}-${dateStr}` -> ubt[]
-      const userPenalties = new Map<number, SafeAny[]>(); // userId -> ubt[]
-      const usedUbtIds = new Set<string>();
-
-      penaltyTransactions.forEach((ubt) => {
-        const uId = Number(ubt.userId);
-        const itId = Number(ubt.itemId);
-        const type = String(ubt.itemType || '');
-
-        if (!userPenalties.has(uId)) userPenalties.set(uId, []);
-        userPenalties.get(uId)!.push(ubt);
-
-        const dateKey = `${uId}-${ubt.dateStr}`;
-        if (!dateUserPenalties.has(dateKey)) dateUserPenalties.set(dateKey, []);
-        dateUserPenalties.get(dateKey)!.push(ubt);
-
-        if (type === 'staff_working_shift' && itId > 0) {
-          if (!shiftPenalties.has(itId)) shiftPenalties.set(itId, []);
-          shiftPenalties.get(itId)!.push(ubt);
-        } else if (type === 'staff_day_off' && itId > 0) {
-          if (!dayOffPenalties.has(itId)) dayOffPenalties.set(itId, []);
-          dayOffPenalties.get(itId)!.push(ubt);
-        }
-      });
-
       // Group incidents by staff
       const staffIncidentMap = new Map<number, CvDisciplineIncident[]>();
+      const usedUbtIds = new Set<string>();
 
-      // 4. Process Report Staff rows (Đi trễ & Về sớm)
-      reportStaffRows.forEach((rs) => {
-        const uId = Number(rs.userId);
+      // 4. Map real disciplinary penalties from staff_activity
+      activityRows.forEach((act) => {
+        const uId = Number(act.userId);
         if (!staffIncidentMap.has(uId)) staffIncidentMap.set(uId, []);
 
-        const shiftKey = `${uId}-${rs.date}`;
-        const matchedShift = shiftMap.get(shiftKey);
-        const shiftId = matchedShift ? Number(matchedShift.shiftId) : null;
-
-        const scheduledStart = rs.shiftStart || matchedShift?.startTime || '08:00';
-        const scheduledEnd = rs.shiftEnd || matchedShift?.endTime || '17:00';
-        const scheduledTimeStr = `${scheduledStart} - ${scheduledEnd}`;
-
-        // Check LATE
-        const checkInDiff = rs.checkInDiff !== null && rs.checkInDiff !== undefined ? Number(rs.checkInDiff) : 0;
-        if (checkInDiff < 0) {
-          const lateMins = Math.abs(checkInDiff);
-          let fineUbt: SafeAny = null;
-
-          if (shiftId && shiftPenalties.has(shiftId)) {
-            const list = shiftPenalties.get(shiftId)!;
-            fineUbt = list.find((p) => !usedUbtIds.has(String(p.ubtId)));
-          }
-          if (!fineUbt) {
-            const dateList = dateUserPenalties.get(`${uId}-${rs.date}`) || [];
-            fineUbt = dateList.find(
-              (p) => !usedUbtIds.has(String(p.ubtId)) && (p.itemType === 'staff_working_shift' || !p.itemType)
-            );
-          }
-
-          if (fineUbt) usedUbtIds.add(String(fineUbt.ubtId));
-
-          const finedBananas = fineUbt ? Math.abs(Number(fineUbt.amount)) : 0;
-
-          staffIncidentMap.get(uId)!.push({
-            id: `late-${rs.reportStaffId}`,
-            date: rs.date,
-            type: 'LATE',
-            title: `Đi trễ ${lateMins} phút`,
-            description: `Vào ca lúc ${rs.checkInTime || 'chưa ghi nhận'} (lịch vào ca: ${scheduledStart})`,
-            scheduledTime: scheduledTimeStr,
-            actualTime: rs.checkInTime ? `Check-in: ${rs.checkInTime}` : 'Trễ ca',
-            diffMinutes: lateMins,
-            store: rs.store,
-            isFined: finedBananas > 0,
-            finedBananas,
-            fineTransactionId: fineUbt?.ubtId || null,
-            fineDate: fineUbt?.dateCreated || null,
-          });
-        }
-
-        // Check EARLY
-        const checkOutDiff = rs.checkOutDiff !== null && rs.checkOutDiff !== undefined ? Number(rs.checkOutDiff) : 0;
-        if (checkOutDiff < 0) {
-          const earlyMins = Math.abs(checkOutDiff);
-          let fineUbt: SafeAny = null;
-
-          if (shiftId && shiftPenalties.has(shiftId)) {
-            const list = shiftPenalties.get(shiftId)!;
-            fineUbt = list.find((p) => !usedUbtIds.has(String(p.ubtId)));
-          }
-          if (!fineUbt) {
-            const dateList = dateUserPenalties.get(`${uId}-${rs.date}`) || [];
-            fineUbt = dateList.find(
-              (p) => !usedUbtIds.has(String(p.ubtId)) && (p.itemType === 'staff_working_shift' || !p.itemType)
-            );
-          }
-
-          if (fineUbt) usedUbtIds.add(String(fineUbt.ubtId));
-
-          const finedBananas = fineUbt ? Math.abs(Number(fineUbt.amount)) : 0;
-
-          staffIncidentMap.get(uId)!.push({
-            id: `early-${rs.reportStaffId}`,
-            date: rs.date,
-            type: 'EARLY',
-            title: `Về sớm ${earlyMins} phút`,
-            description: `Ra ca lúc ${rs.checkOutTime || 'chưa ghi nhận'} (lịch kết thúc: ${scheduledEnd})`,
-            scheduledTime: scheduledTimeStr,
-            actualTime: rs.checkOutTime ? `Check-out: ${rs.checkOutTime}` : 'Về sớm',
-            diffMinutes: earlyMins,
-            store: rs.store,
-            isFined: finedBananas > 0,
-            finedBananas,
-            fineTransactionId: fineUbt?.ubtId || null,
-            fineDate: fineUbt?.dateCreated || null,
-          });
-        }
-      });
-
-      // 5. Process Day Off rows (Off gấp)
-      dayOffRows.forEach((sdo) => {
-        const uId = Number(sdo.userId);
-        if (!staffIncidentMap.has(uId)) staffIncidentMap.set(uId, []);
-
-        const doId = Number(sdo.dayOffId);
-        let fineUbt: SafeAny = null;
-
-        if (dayOffPenalties.has(doId)) {
-          const list = dayOffPenalties.get(doId)!;
-          fineUbt = list.find((p) => !usedUbtIds.has(String(p.ubtId)));
+        const actId = String(act.activityId);
+        let fineUbt = penaltyTransactions.find(
+          (u) =>
+            !usedUbtIds.has(String(u.ubtId)) &&
+            u.trackingKey &&
+            u.trackingKey.includes(`"staff_activity_id":"${actId}"`)
+        );
+        if (!fineUbt && act.targetType && act.targetId) {
+          fineUbt = penaltyTransactions.find(
+            (u) =>
+              !usedUbtIds.has(String(u.ubtId)) &&
+              String(u.itemType) === String(act.targetType) &&
+              String(u.itemId) === String(act.targetId)
+          );
         }
         if (!fineUbt) {
-          const dateList = dateUserPenalties.get(`${uId}-${sdo.date}`) || [];
-          fineUbt = dateList.find((p) => !usedUbtIds.has(String(p.ubtId)) && p.itemType === 'staff_day_off');
+          fineUbt = penaltyTransactions.find(
+            (u) =>
+              !usedUbtIds.has(String(u.ubtId)) &&
+              Number(u.userId) === uId &&
+              Math.abs(Number(u.amount)) === Math.abs(Number(act.bananaAmount))
+          );
         }
-
         if (fineUbt) usedUbtIds.add(String(fineUbt.ubtId));
 
-        const finedBananas = fineUbt ? Math.abs(Number(fineUbt.amount)) : 0;
+        const staffProfile = filteredStaffProfiles.find((p) => Number(p.userId) === uId);
+        const incidentStore = normalizeStoreCode(act.rawStoreKey, staffProfile?.store || 'DT');
+        const finedBananas = Math.abs(Number(act.bananaAmount));
+        const ruleTitleLower = String(act.ruleTitle || '').toLowerCase();
+
+        let type: 'LATE' | 'EARLY' | 'URGENT_OFF' | 'OTHER' = 'OTHER';
+        let diffMinutes: number | null = null;
+        let title = act.ruleTitle || 'Vi phạm kỷ luật';
+        let description = act.activityNote || act.ruleTitle || null;
+        let scheduledTime: string | null = null;
+        let actualTime: string | null = null;
+
+        if (act.shiftStart && act.shiftEnd) {
+          scheduledTime = `${act.shiftStart} - ${act.shiftEnd}`;
+        }
+
+        if (ruleTitleLower.includes('đi trễ')) {
+          type = 'LATE';
+          diffMinutes = Math.abs(Number(act.checkInDiff || 0));
+          if (diffMinutes === 0 && act.checkInTime && act.shiftStart) {
+            const inM = toMinutes(act.checkInTime);
+            const startM = toMinutes(act.shiftStart);
+            if (inM > startM) diffMinutes = inM - startM;
+          }
+          if (diffMinutes === 0 && ruleTitleLower.includes('30 phút')) {
+            diffMinutes = 30;
+          }
+          title = diffMinutes > 0 ? `Đi trễ ${diffMinutes} phút` : act.ruleTitle;
+          actualTime = act.checkInTime ? `Check-in: ${act.checkInTime}` : 'Trễ ca';
+          description = `Vào ca lúc ${act.checkInTime || 'chưa ghi nhận'} (lịch vào ca: ${act.shiftStart || '09:00'})`;
+        } else if (ruleTitleLower.includes('về sớm')) {
+          type = 'EARLY';
+          diffMinutes = Math.abs(Number(act.checkOutDiff || 0));
+          if (diffMinutes === 0 && act.checkOutTime && act.shiftEnd) {
+            const outM = toMinutes(act.checkOutTime);
+            const endM = toMinutes(act.shiftEnd);
+            if (endM > outM) diffMinutes = endM - outM;
+          }
+          title = diffMinutes > 0 ? `Về sớm ${diffMinutes} phút` : act.ruleTitle;
+          actualTime = act.checkOutTime ? `Check-out: ${act.checkOutTime}` : 'Về sớm';
+          description = `Ra ca lúc ${act.checkOutTime || 'chưa ghi nhận'} (lịch kết thúc: ${act.shiftEnd || '18:00'})`;
+        } else if (
+          ruleTitleLower.includes('nghỉ') ||
+          ruleTitleLower.includes('off') ||
+          ruleTitleLower.includes('vắng') ||
+          act.targetType === 'staff_day_off'
+        ) {
+          type = 'URGENT_OFF';
+          title = act.ruleTitle;
+          description = act.dayOffNote || act.activityNote || act.dayOffReason || act.ruleTitle;
+        } else {
+          type = 'OTHER';
+          title = act.ruleTitle;
+          description = act.activityNote || act.ruleTitle;
+        }
 
         staffIncidentMap.get(uId)!.push({
-          id: `urgent-off-${sdo.dayOffId}`,
-          date: sdo.date,
-          type: 'URGENT_OFF',
-          title: 'Off gấp / Nghỉ đột xuất',
-          description: sdo.note ? `Lý do: ${sdo.note}` : 'Xin nghỉ việc khẩn cấp / đột xuất',
-          scheduledTime: null,
-          actualTime: null,
-          diffMinutes: null,
-          store: sdo.store,
-          isFined: finedBananas > 0,
+          id: `sa-${act.activityId}`,
+          date: act.incidentDate,
+          type,
+          title,
+          description,
+          scheduledTime,
+          actualTime,
+          diffMinutes,
+          store: incidentStore,
+          isFined: true,
           finedBananas,
           fineTransactionId: fineUbt?.ubtId || null,
-          fineDate: fineUbt?.dateCreated || null,
+          fineDate: fineUbt?.dateCreated || act.dateCreated,
         });
       });
 
-      // 6. Process unused banana penalties (Tác phong, 5S, nội quy salon khác)
+      // 5. Process remaining banana penalties from user_balance_transaction (excluding non-penalty order/redemption spendings)
       penaltyTransactions.forEach((ubt) => {
         const ubtIdStr = String(ubt.ubtId);
         if (usedUbtIds.has(ubtIdStr)) return;
+
+        const tracking = String(ubt.trackingKey || '');
+        if (tracking.includes('order_id') || tracking === '[]') return;
 
         const uId = Number(ubt.userId);
         if (!staffIncidentMap.has(uId)) staffIncidentMap.set(uId, []);
 
         const finedBananas = Math.abs(Number(ubt.amount));
-        const itemType = String(ubt.itemType || '');
-        const title =
-          itemType === 'staff_activity'
-            ? 'Phạt tác phong làm việc'
-            : itemType === 'staff_task'
-              ? 'Phạt vi phạm nhiệm vụ / 5S'
-              : 'Phạt trừ ví chuối';
-
-        const description = ubt.description || (itemType ? `Vi phạm ${itemType}` : 'Trừ chuối kỷ luật');
+        const staffProfile = filteredStaffProfiles.find((p) => Number(p.userId) === uId);
 
         staffIncidentMap.get(uId)!.push({
           id: `fine-${ubt.ubtId}`,
           date: ubt.dateStr,
           type: 'OTHER',
-          title,
-          description,
+          title: ubt.description || 'Phạt trừ ví chuối',
+          description: ubt.description || 'Trừ chuối kỷ luật',
           scheduledTime: null,
           actualTime: null,
           diffMinutes: null,
-          store: 'PXL', // Default fallback
+          store: staffProfile?.store || 'DT',
           isFined: true,
           finedBananas,
           fineTransactionId: ubt.ubtId,

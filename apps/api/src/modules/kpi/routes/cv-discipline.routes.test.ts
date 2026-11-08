@@ -1,27 +1,22 @@
-import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { FastifyInstance } from 'fastify';
+import assert from 'node:assert/strict';
+import { FastifyInstance } from 'fastify';
 import { registerCvDisciplineRoutes } from './cv-discipline.routes.js';
-import { SafeAny } from '@mos-lab/shared';
+import type { SafeAny } from '@mos-lab/shared';
 
 test('registerCvDisciplineRoutes registers GET /kpi/cv-discipline route', async () => {
   let registeredPath = '';
-  let registeredMethod = '';
-
   const mockFastify = {
-    get: (path: string, _opts: unknown, _handler: unknown) => {
+    get: (path: string) => {
       registeredPath = path;
-      registeredMethod = 'GET';
     },
   } as unknown as FastifyInstance;
 
   await registerCvDisciplineRoutes(mockFastify);
-
   assert.equal(registeredPath, '/kpi/cv-discipline');
-  assert.equal(registeredMethod, 'GET');
 });
 
-test('CV Discipline API maps violations and penalty banana transactions', async () => {
+test('CV Discipline API maps real violations from staff_activity and banana transactions', async () => {
   let routeHandler: (request: SafeAny, reply: SafeAny) => Promise<SafeAny> = async () => {};
 
   const mockFastify = {
@@ -45,12 +40,22 @@ test('CV Discipline API maps violations and penalty banana transactions', async 
         },
         crmStaff: {
           findMany: async (args: SafeAny) => {
-            if (args?.where?.employmentStatus) {
-              return [];
-            }
+            if (args?.where?.employmentStatus) return [];
             return [
-              { id: 101, legacyStaffId: 5001, role: 'CVL', avatarUrl: 'avatar-cv1.jpg', displayName: 'Bảo Trâm CV🪶' },
-              { id: 102, legacyStaffId: 5002, role: 'CV', avatarUrl: null, displayName: 'Thùy Dương' },
+              {
+                id: 10,
+                legacyStaffId: 5001,
+                role: 'CVL',
+                avatarUrl: 'https://cdn.example.com/avatar1.jpg',
+                displayName: 'Bảo Trâm',
+              },
+              {
+                id: 11,
+                legacyStaffId: 5002,
+                role: 'CV',
+                avatarUrl: null,
+                displayName: 'Thùy Dương',
+              },
             ];
           },
         },
@@ -65,54 +70,74 @@ test('CV Discipline API maps violations and penalty banana transactions', async 
           }
           if (sql.includes('FROM `user_profile` up')) {
             return [
-              { userId: 5001, fullName: 'Bảo Trâm', avatar: 'legacy-avatar1.jpg', store: 'PXL' },
-              { userId: 5002, fullName: 'Thùy Dương', avatar: null, store: 'Q1' },
+              { userId: 5001, fullName: 'Bảo Trâm', avatar: 'legacy-avatar1.jpg', rawStoreKey: 'de-tham' },
+              { userId: 5002, fullName: 'Thùy Dương', avatar: null, rawStoreKey: 'estella-place' },
             ];
           }
-          if (sql.includes('FROM `report_staff` rs')) {
+          if (sql.includes('FROM `staff_activity` sa')) {
             return [
               {
-                reportStaffId: 901,
+                activityId: 801,
                 userId: 5001,
-                date: '2026-11-07',
-                checkInTime: '08:15:00',
-                checkOutTime: '17:00:00',
+                ruleId: 32,
+                ruleTitle: 'CV - Đi trễ',
+                bananaAmount: -50,
+                targetType: 'staff_working_shift',
+                targetId: 1001,
+                activityNote: 'Oops, you are late!',
+                dateCreated: '2026-11-07 08:15:00',
+                incidentDate: '2026-11-07',
                 shiftStart: '08:00',
                 shiftEnd: '17:00',
-                checkInDiff: -15, // 15 mins late
+                checkInTime: '08:15:00',
+                checkOutTime: '17:00:00',
+                checkInDiff: -15,
                 checkOutDiff: 0,
-                store: 'PXL',
+                rawStoreKey: 'de-tham',
+                dayOffNote: null,
+                dayOffReason: null,
               },
               {
-                reportStaffId: 902,
+                activityId: 802,
+                userId: 5001,
+                ruleId: 54,
+                ruleTitle: 'CV - Báo off phép tháng gấp (trước 1 ngày)',
+                bananaAmount: -300,
+                targetType: 'staff_day_off',
+                targetId: 2001,
+                activityNote: 'Xin nghỉ sốt xuất huyết',
+                dateCreated: '2026-11-05 10:00:00',
+                incidentDate: '2026-11-05',
+                shiftStart: null,
+                shiftEnd: null,
+                checkInTime: null,
+                checkOutTime: null,
+                checkInDiff: null,
+                checkOutDiff: null,
+                rawStoreKey: 'de-tham',
+                dayOffNote: 'Xin nghỉ sốt xuất huyết',
+                dayOffReason: 'Nghỉ ốm',
+              },
+              {
+                activityId: 803,
                 userId: 5002,
-                date: '2026-11-06',
-                checkInTime: '09:00:00',
-                checkOutTime: '17:30:00',
+                ruleId: 33,
+                ruleTitle: 'CV - Về sớm',
+                bananaAmount: -300,
+                targetType: 'staff_working_shift',
+                targetId: 1002,
+                activityNote: "Wait, don't leave me too early girl...",
+                dateCreated: '2026-11-06 17:30:00',
+                incidentDate: '2026-11-06',
                 shiftStart: '09:00',
                 shiftEnd: '18:00',
+                checkInTime: '09:00:00',
+                checkOutTime: '17:30:00',
                 checkInDiff: 0,
-                checkOutDiff: -30, // 30 mins early
-                store: 'Q1',
-              },
-            ];
-          }
-          if (sql.includes('FROM `staff_working_shift` sws')) {
-            return [
-              { shiftId: 1001, userId: 5001, date: '2026-11-07', startTime: '08:00', endTime: '17:00' },
-              { shiftId: 1002, userId: 5002, date: '2026-11-06', startTime: '09:00', endTime: '18:00' },
-            ];
-          }
-          if (sql.includes('FROM `staff_day_off` sdo')) {
-            return [
-              {
-                dayOffId: 2001,
-                userId: 5001,
-                date: '2026-11-05',
-                attributeOptionId: 113,
-                note: 'Xin nghỉ sốt xuất huyết',
-                requestState: 'Approved',
-                store: 'PXL',
+                checkOutDiff: -30,
+                rawStoreKey: 'estella-place',
+                dayOffNote: null,
+                dayOffReason: null,
               },
             ];
           }
@@ -126,6 +151,7 @@ test('CV Discipline API maps violations and penalty banana transactions', async 
                 amount: -50,
                 balance: 100,
                 description: 'Trừ chuối đi trễ ca',
+                trackingKey: '{"staff_activity_id":"801"}',
                 dateCreated: '2026-11-07 08:16:00',
                 dateStr: '2026-11-07',
               },
@@ -137,8 +163,21 @@ test('CV Discipline API maps violations and penalty banana transactions', async 
                 amount: -300,
                 balance: -200,
                 description: 'Trừ chuối nghỉ gấp',
+                trackingKey: '{"staff_activity_id":"802"}',
                 dateCreated: '2026-11-05 10:00:00',
                 dateStr: '2026-11-05',
+              },
+              {
+                ubtId: 7003,
+                userId: 5002,
+                itemId: 1002,
+                itemType: 'staff_working_shift',
+                amount: -300,
+                balance: 500,
+                description: 'Trừ chuối về sớm',
+                trackingKey: '{"staff_activity_id":"803"}',
+                dateCreated: '2026-11-06 17:31:00',
+                dateStr: '2026-11-06',
               },
             ];
           }
@@ -176,7 +215,7 @@ test('CV Discipline API maps violations and penalty banana transactions', async 
   assert.equal(sentPayload.summary.totalEarlyRecords, 1);
   assert.equal(sentPayload.summary.totalEarlyMinutes, 30);
   assert.equal(sentPayload.summary.totalUrgentOffs, 1);
-  assert.equal(sentPayload.summary.totalFinedBananas, 350); // 50 + 300
+  assert.equal(sentPayload.summary.totalFinedBananas, 650); // 50 + 300 + 300
 
   // Staff 5001 (Bảo Trâm) has 2 violations (1 late + 1 urgent off) and 350 fined bananas
   const staff1 = sentPayload.data.find((s: SafeAny) => s.legacyUserId === 5001);
@@ -192,15 +231,88 @@ test('CV Discipline API maps violations and penalty banana transactions', async 
   assert.equal(lateViolation.isFined, true);
   assert.equal(lateViolation.finedBananas, 50);
 
-  // Staff 5002 (Thùy Dương) has 1 early violation with NO fine
+  // Staff 5002 (Thùy Dương) has 1 early violation with fine 300 bananas
   const staff2 = sentPayload.data.find((s: SafeAny) => s.legacyUserId === 5002);
   assert.ok(staff2);
   assert.equal(staff2.earlyCount, 1);
   assert.equal(staff2.earlyMinutes, 30);
-  assert.equal(staff2.finedBananaAmount, 0);
+  assert.equal(staff2.finedBananaAmount, 300);
 
   const earlyViolation = staff2.violations.find((v: SafeAny) => v.type === 'EARLY');
   assert.ok(earlyViolation);
-  assert.equal(earlyViolation.isFined, false);
-  assert.equal(earlyViolation.finedBananas, 0);
+  assert.equal(earlyViolation.isFined, true);
+  assert.equal(earlyViolation.finedBananas, 300);
+});
+
+test('CV Discipline API ignores false early checkout and returns 0 violations if no penalty in DB', async () => {
+  let routeHandler: (request: SafeAny, reply: SafeAny) => Promise<SafeAny> = async () => {};
+
+  const mockFastify = {
+    get: (_path: string, _opts: SafeAny, handler: SafeAny) => {
+      routeHandler = handler;
+    },
+    prisma: {
+      crm: {
+        crmConfig: { findUnique: async () => null },
+        crmTeam: {
+          findUnique: async () => ({
+            id: 1,
+            code: 'CV',
+            members: [{ legacyStaffId: 3832, isActive: true }],
+          }),
+        },
+        crmStaff: {
+          findMany: async (args: SafeAny) => {
+            if (args?.where?.employmentStatus) return [];
+            return [{ id: 20, legacyStaffId: 3832, role: 'CV', avatarUrl: null, displayName: 'Ánh Tuyết' }];
+          },
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('SELECT user_id FROM user_profile')) return [{ user_id: 3832 }];
+          if (sql.includes('FROM `user_profile` up')) {
+            return [{ userId: 3832, fullName: 'Ánh Tuyết', avatar: null, rawStoreKey: 'de-tham' }];
+          }
+          // No activities in staff_activity for Ánh Tuyết in late or early
+          if (sql.includes('FROM `staff_activity` sa')) {
+            return [];
+          }
+          if (sql.includes('FROM `user_balance_transaction` ubt')) {
+            return [];
+          }
+          return [];
+        },
+      },
+    },
+    log: { error: () => {}, warn: () => {} },
+  } as unknown as FastifyInstance;
+
+  await registerCvDisciplineRoutes(mockFastify);
+
+  let sentPayload: SafeAny = null;
+  const mockReply = {
+    send: (payload: SafeAny) => {
+      sentPayload = payload;
+      return mockReply;
+    },
+    status: () => mockReply,
+  };
+
+  await routeHandler({ query: { dateFrom: '2026-10-01', dateTo: '2026-10-31' } }, mockReply);
+
+  assert.ok(sentPayload);
+  assert.equal(sentPayload.summary.totalEarlyRecords, 0);
+  assert.equal(sentPayload.summary.totalEarlyMinutes, 0);
+  assert.equal(sentPayload.summary.totalLateRecords, 0);
+  assert.equal(sentPayload.summary.totalLateMinutes, 0);
+  assert.equal(sentPayload.summary.totalFinedBananas, 0);
+
+  const staff = sentPayload.data.find((s: SafeAny) => s.legacyUserId === 3832);
+  assert.ok(staff);
+  assert.equal(staff.earlyCount, 0);
+  assert.equal(staff.earlyMinutes, 0);
+  assert.equal(staff.lateCount, 0);
+  assert.equal(staff.finedBananaAmount, 0);
+  assert.equal(staff.violations.length, 0);
 });

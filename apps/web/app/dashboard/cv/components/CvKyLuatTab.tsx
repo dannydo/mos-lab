@@ -237,14 +237,11 @@ export default function CvKyLuatTab({ dateRange, selectedStore = 'ALL' }: CvKyLu
           <Select
             value={filterStore}
             onChange={setFilterStore}
-            className="w-28 rounded-xl"
+            className="w-36 rounded-xl"
             options={[
               { label: 'Tất cả Salon', value: 'ALL' },
-              { label: 'PXL', value: 'PXL' },
-              { label: 'Q1', value: 'Q1' },
-              { label: 'Q7', value: 'Q7' },
-              { label: 'EP', value: 'EP' },
-              { label: 'DT', value: 'DT' },
+              { label: 'Đề Thám (DT)', value: 'DT' },
+              { label: 'Estella (EP)', value: 'EP' },
             ]}
           />
         </div>

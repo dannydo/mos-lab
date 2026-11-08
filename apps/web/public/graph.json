@@ -11034,7 +11034,7 @@
         "path": "/api/kpi/cv-discipline",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 14
+        "line": 29
       }
     },
     {
@@ -38748,8 +38748,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-discipline.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6993,
-        "lineCount": 207,
+        "sizeBytes": 11071,
+        "lineCount": 319,
         "ext": ".ts"
       }
     },
@@ -38761,8 +38761,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19952,
-        "lineCount": 512,
+        "sizeBytes": 17854,
+        "lineCount": 449,
         "ext": ".ts"
       }
     },
@@ -44871,8 +44871,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12350,
-        "lineCount": 314,
+        "sizeBytes": 12223,
+        "lineCount": 302,
         "ext": ".tsx"
       }
     },
@@ -44884,8 +44884,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23264,
-        "lineCount": 587,
+        "sizeBytes": 22787,
+        "lineCount": 544,
         "ext": ".tsx"
       }
     },
@@ -45014,8 +45014,8 @@
       "filePath": "apps/web/app/dashboard/cv/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11151,
-        "lineCount": 311,
+        "sizeBytes": 11084,
+        "lineCount": 313,
         "ext": ".tsx"
       }
     },
@@ -47653,8 +47653,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 58367,
-        "lineCount": 1253,
+        "sizeBytes": 58311,
+        "lineCount": 1251,
         "ext": ".tsx"
       }
     },
@@ -49070,8 +49070,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 152593,
-        "lineCount": 2005,
+        "sizeBytes": 152636,
+        "lineCount": 2012,
         "ext": ".ts"
       }
     },
