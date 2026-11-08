@@ -45,7 +45,7 @@ interface Screen02CheckInProfileProps {
   activeServicingCustomerName?: string;
   onResumeServicing?: () => void;
   onBack: () => void;
-  onCheckIn: () => void;
+  onCheckIn: (bookingId?: number) => void;
   onQuickCheckIn?: (
     attributes: {
       style: string;
@@ -83,7 +83,8 @@ interface Screen02CheckInProfileProps {
       cvPoints?: number;
       cvBreakdown?: string;
       serviceType?: string;
-    } | null
+    } | null,
+    targetBookingId?: number
   ) => void;
 }
 
@@ -173,6 +174,11 @@ export function Screen02CheckInProfile({
     reasons: string[];
     onConfirm: (reason: string) => void;
   } | null>(null);
+  const [pendingComboNewConfirmation, setPendingComboNewConfirmation] = useState<{
+    title: string;
+    remainingSessions: number;
+    onConfirm: () => void;
+  } | null>(null);
   const [selectedOverrideReasonDraft, setSelectedOverrideReasonDraft] = useState<string>('');
   const [isRotationExpanded, setIsRotationExpanded] = useState<boolean>(false);
   const [isRotationInfoOpen, setIsRotationInfoOpen] = useState<boolean>(false);
@@ -206,12 +212,21 @@ export function Screen02CheckInProfile({
   const handleRequestQuickServiceTypeChange = (targetType: 'Normal' | 'Retain') => {
     if (targetType === quickServiceType) return;
 
-    // 1. Nếu khách có Gói Combo và muốn NỐI MỚI (dù đi <= 25 ngày) và trong gói CÒN LẦN NỐI MỚI (normalRemaining > 0):
-    // -> Cho phép chọn Nối Mới trực tiếp (trừ 1 lần Nối Mới trong gói), KHÔNG bật cảnh báo lỗi Override!
-    if (targetType === 'Normal' && isComboLive && !preset.isAlwaysFullSet && preset.hasNormalRemaining) {
-      setQuickServiceType('Normal');
-      setIsOverridden(false);
-      setOverrideReason('');
+    // 1. Khách có Gói Combo và muốn NỐI MỚI (dù đi <= 25 ngày) và trong gói CÒN LẦN NỐI MỚI (normalRemaining > 0):
+    // -> Khách được đi Nối Mới thoải mái: Cảnh báo trừ lần mới không hoàn phí, và nhân viên BẮT BUỘC gỡ sạch mi cũ nối mới 100%!
+    if (targetType === 'Normal' && isComboLive && preset.hasNormalRemaining) {
+      setPendingComboNewConfirmation({
+        title: '✨ Xác Nhận Nối Mới (Gói Combo)',
+        remainingSessions: preset.normalRemaining,
+        onConfirm: () => {
+          setQuickServiceType('Normal');
+          setIsOverridden(false);
+          setOverrideReason(
+            `[Khách chọn Nối Mới Combo: Trừ 1 lần Mới không hoàn phí (${preset.normalRemaining - 1} lần còn lại) — Nhân viên bắt buộc gỡ toàn bộ mi cũ và nối mới 100%]`
+          );
+          setPendingComboNewConfirmation(null);
+        },
+      });
       return;
     }
 
@@ -224,7 +239,7 @@ export function Screen02CheckInProfile({
     }
 
     // 3. Nếu khách có Gói Combo muốn NỐI MỚI nhưng trong gói ĐÃ HẾT LẦN NỐI MỚI (normalRemaining === 0)
-    if (targetType === 'Normal' && isComboLive && !preset.isAlwaysFullSet && !preset.hasNormalRemaining) {
+    if (targetType === 'Normal' && isComboLive && !preset.hasNormalRemaining) {
       const reasons = [
         `Quy đổi 2 lần Dặm trong gói thành 1 lần Nối Mới (Quản lý duyệt)`,
         `Khách bù chênh lệch nâng cấp từ suất Dặm lên Nối Mới`,
@@ -246,7 +261,7 @@ export function Screen02CheckInProfile({
     }
 
     // 4. Nếu khách có Gói Combo muốn DẶM nhưng trong gói ĐÃ HẾT LẦN DẶM (retainRemaining === 0)
-    if (targetType === 'Retain' && isComboLive && !preset.isAlwaysFullSet && !preset.hasRetainRemaining) {
+    if (targetType === 'Retain' && isComboLive && !preset.hasRetainRemaining) {
       const reasons = [
         `Khách đồng ý dùng 1 lần Nối Mới trong gói để thực hiện Dặm`,
         `Khách thanh toán lẻ buổi Dặm hôm nay, giữ nguyên ${preset.normalRemaining} lần Nối Mới`,
@@ -294,8 +309,8 @@ export function Screen02CheckInProfile({
       return;
     }
 
-    // 6. Nếu khách lẻ Single (hoặc Mink/IvyLight) đi trong hạn được hưởng Giá Dặm mà chuyển sang thu Giá Nối Mới
-    if (targetType === 'Normal' && preset.isWithinRetainWindow) {
+    // 6. Nếu khách lẻ Single đi trong hạn được hưởng Giá Dặm mà chuyển sang thu Giá Nối Mới
+    if (targetType === 'Normal' && !isComboLive && preset.isWithinRetainWindow) {
       const reasons = [
         `Mi cũ rụng > 70% không đủ điều kiện dặm — khách đồng ý tính Nối Mới`,
         `Khách yêu cầu tháo làm bộ mới hoàn toàn và tính suất Nối Mới`,
@@ -303,10 +318,8 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `⚠️ Cảnh Báo Override: Đi Trong ${preset.retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Single'})`,
-        message: isComboLive
-          ? `Khách Gói Combo ghé lần cuối ngày ${preset.lastVisitDate} (${preset.daysSinceLastVisit} ngày trước ≤ 25 ngày). Theo quy định khách mua Combo đi trong 25 ngày luôn luôn được tính DẶM, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`
-          : `Khách lẻ (Single) ghé lần cuối ngày ${preset.lastVisitDate} (${preset.daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách Single đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
+        title: `⚠️ Cảnh Báo Override: Đi Trong ${preset.retainDaysLimit} Ngày (Single)`,
+        message: `Khách lẻ (Single) ghé lần cuối ngày ${preset.lastVisitDate} (${preset.daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách Single đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
         reasons,
         onConfirm: (reason: string) => {
           setQuickServiceType('Normal');
@@ -357,7 +370,7 @@ export function Screen02CheckInProfile({
 
   const handleExecuteQuickCheckIn = () => {
     if (!onQuickCheckIn) {
-      onCheckIn();
+      onCheckIn(booking?.id);
       return;
     }
     onQuickCheckIn(
@@ -399,7 +412,8 @@ export function Screen02CheckInProfile({
         cvPoints: activePointsBreakdown.totalPoints,
         cvBreakdown: activePointsBreakdown.breakdownLabel,
         serviceType: quickServiceType,
-      }
+      },
+      booking?.id
     );
   };
 
@@ -411,7 +425,7 @@ export function Screen02CheckInProfile({
         backTitle="Lịch hẹn"
         rightAction={
           <button
-            onClick={isComboLive && onQuickCheckIn ? handleExecuteQuickCheckIn : onCheckIn}
+            onClick={isComboLive && onQuickCheckIn ? handleExecuteQuickCheckIn : () => onCheckIn(booking?.id)}
             className="text-[#FFB400] font-bold text-sm py-1 px-1 active:opacity-60 cursor-pointer"
           >
             Check In
@@ -652,6 +666,16 @@ export function Screen02CheckInProfile({
               </div>
             )}
 
+            {/* Banner Ca Nối Mới Combo: Trừ 1 suất Mới · Nhân viên bắt buộc gỡ sạch 100% mi cũ */}
+            {isComboLive && quickServiceType === 'Normal' && (
+              <div className="px-2.5 py-1.5 rounded-xl bg-amber-950/50 border border-amber-500/60 flex items-start gap-2 text-[10.5px] text-amber-200 font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span className="leading-snug">
+                  ✨ Trừ 1 suất Nối Mới Combo · ⚠️ Nhân viên bắt buộc gỡ toàn bộ mi cũ &amp; nối mới 100%
+                </span>
+              </div>
+            )}
+
             {/* 2 Nút chọn chế độ tối giản: ✨ Mới (X) | 🔄 Dặm (Y) */}
             <div className="bg-[#2C2C2E] p-1 rounded-xl grid grid-cols-2 gap-1 border border-neutral-700/60">
               <button
@@ -664,7 +688,7 @@ export function Screen02CheckInProfile({
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>{preset.isAlwaysFullSet ? 'Mới · Giá mới' : `Mới (${preset.normalRemaining})`}</span>
+                <span>{isComboLive ? `✦ ${preset.normalRemaining}` : '✦ Mới'}</span>
               </button>
 
               <button
@@ -677,7 +701,7 @@ export function Screen02CheckInProfile({
                 }`}
               >
                 <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                <span>{preset.isAlwaysFullSet ? 'Mới · Giá dặm' : `Dặm (${preset.retainRemaining})`}</span>
+                <span>{isComboLive ? `↻ ${preset.retainRemaining}` : '↻ Dặm'}</span>
               </button>
             </div>
           </div>
@@ -1253,7 +1277,7 @@ export function Screen02CheckInProfile({
             </button>
             <button
               type="button"
-              onClick={onCheckIn}
+              onClick={() => onCheckIn(booking?.id)}
               className="py-3 px-3.5 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-amber-400 border border-amber-500/40 font-bold text-[12.5px] flex items-center justify-center gap-1.5 shrink-0 active:scale-98 transition-transform cursor-pointer"
               title="Đổi dáng / Độ cong / Tư vấn lại"
             >
@@ -1263,7 +1287,7 @@ export function Screen02CheckInProfile({
           </div>
         ) : (
           <button
-            onClick={onCheckIn}
+            onClick={() => onCheckIn(booking?.id)}
             className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-500 text-black font-black text-[13.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
           >
             <Check className="w-4.5 h-4.5 stroke-[3]" />
@@ -1338,6 +1362,81 @@ export function Screen02CheckInProfile({
                 className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-black shadow-md cursor-pointer"
               >
                 ⚠️ Xác nhận Override
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác Nhận Nối Mới Cho Khách Combo (Trừ 1 suất Mới không hoàn phí · Bắt buộc gỡ 100% mi cũ) */}
+      {pendingComboNewConfirmation && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-[370px] bg-[#1C1C1E] text-white rounded-3xl p-4.5 shadow-2xl border-2 border-amber-500/80 space-y-3.5 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-[14px] font-black text-amber-300 leading-snug">
+                  {pendingComboNewConfirmation.title}
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+                  Khách hàng còn{' '}
+                  <strong className="text-white font-extrabold">
+                    {pendingComboNewConfirmation.remainingSessions} lần Nối Mới
+                  </strong>{' '}
+                  trong gói
+                </p>
+              </div>
+            </div>
+
+            {/* 2 Warning / Instruction Cards */}
+            <div className="space-y-2 text-[11.5px]">
+              {/* Card 1: Khách hàng */}
+              <div className="bg-black/50 border border-white/10 rounded-2xl p-3 space-y-1">
+                <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>✨</span> DÀNH CHO KHÁCH HÀNG
+                </div>
+                <p className="text-neutral-200 leading-relaxed font-medium">
+                  Khách được đi <strong className="text-amber-300">Nối Mới thoải mái</strong>. Hệ thống sẽ{' '}
+                  <strong className="text-white">TRỪ 1 LẦN NỐI MỚI</strong> trong gói (không hoàn phí/bù trừ nếu bộ mi
+                  cũ vẫn còn nhiều).
+                </p>
+              </div>
+
+              {/* Card 2: Quy chuẩn bắt buộc cho Nhân viên */}
+              <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 space-y-1">
+                <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⚠️</span> QUY CHUẨN KỸ THUẬT (BẮT BUỘC)
+                </div>
+                <p className="text-amber-100/90 leading-relaxed font-bold">
+                  Nhân viên{' '}
+                  <strong className="text-amber-300 underline underline-offset-2">
+                    BẮT BUỘC phải gỡ ra toàn bộ mi cũ
+                  </strong>{' '}
+                  và <strong className="text-white">nối bộ mi mới 100%</strong> cho khách hàng (không được dặm đè lên mi
+                  cũ khi trừ suất Nối Mới)!
+                </p>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setPendingComboNewConfirmation(null)}
+                className="py-2.5 px-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[12px] font-bold cursor-pointer transition-all"
+              >
+                Hủy · Giữ Dặm
+              </button>
+              <button
+                type="button"
+                onClick={() => pendingComboNewConfirmation.onConfirm()}
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black text-[12px] font-black shadow-lg cursor-pointer transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>✓</span>
+                <span>Xác nhận Nối Mới</span>
               </button>
             </div>
           </div>

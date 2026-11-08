@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import crypto from 'crypto';
-import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { mkdir, readFile, writeFile, unlink, stat } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve, sep } from 'node:path';
@@ -95,6 +96,7 @@ const CHAT_USER_PREFS_CONFIG_KEY = 'mos_chat:user_prefs_v1';
 import {
   MAX_CHAT_IMAGE_BYTES,
   MAX_CHAT_FILE_BYTES,
+  MAX_CHAT_VIDEO_BYTES,
   CHAT_IMAGE_BODY_LIMIT,
   CHAT_MIME_EXTENSIONS,
   EXT_TO_CHAT_MIME,
@@ -104,6 +106,7 @@ import {
   decodeAndValidateChatFile,
   decodeAndValidateChatImage,
   sanitizeChatAttachments,
+  saveChatVideoBuffer,
 } from './chat-file.service.js';
 import {
   COMMON_VI_SURNAMES_NORM,
@@ -1640,6 +1643,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       const rawName = String(body.fileName || `file.${ext}`);
       const safeName = rawName.replace(/\.(heic|heif)$/i, `.${ext}`).slice(0, 150);
+      const isVideo = finalMimeType.startsWith('video/') || ['mp4', 'webm', 'mov'].includes(ext);
 
       const attachment: MosChatImageAttachment = {
         id: `att-${fileUuid.slice(0, 8)}`,
@@ -1649,7 +1653,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         sizeBytes: buffer.length,
         width: body.width ? Number(body.width) : undefined,
         height: body.height ? Number(body.height) : undefined,
+        durationSec: body.durationSec ? Number(body.durationSec) : undefined,
+        posterUrl: body.posterUrl ? String(body.posterUrl).trim() : undefined,
+        isVideo: isVideo ? true : undefined,
         source: body.source || 'upload',
+        fileExt: ext,
       };
       const response: UploadMosChatImageResponse = {
         success: true,
@@ -1684,7 +1692,69 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     handleUploadChatFile
   );
 
-  // GET /api/chat/media/:fileName
+  // POST /api/chat/upload-video (MOS-CHAT-VIDEO: Multipart video streaming upload)
+  fastify.post(
+    '/chat/upload-video',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const data = await request.file();
+        if (!data) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Không tìm thấy tệp video được tải lên.',
+          });
+        }
+
+        const buffer = await data.toBuffer();
+        const originalFileName = data.filename || `video-${Date.now()}.mp4`;
+        const mimeType = data.mimetype;
+
+        const { fileName, mimeType: finalMime, ext } = await saveChatVideoBuffer(buffer, originalFileName, mimeType);
+
+        const fields = (data.fields || {}) as Record<string, SafeAny>;
+        const durationSecRaw = fields?.durationSec
+          ? Number(fields.durationSec?.value || fields.durationSec)
+          : undefined;
+        const widthRaw = fields?.width ? Number(fields.width?.value || fields.width) : undefined;
+        const heightRaw = fields?.height ? Number(fields.height?.value || fields.height) : undefined;
+        const posterUrlRaw = fields?.posterUrl ? String(fields.posterUrl?.value || fields.posterUrl).trim() : undefined;
+
+        const fileUuid = fileName.split('.')[0];
+        const safeName = originalFileName.slice(0, 150);
+
+        const attachment: MosChatImageAttachment = {
+          id: `att-${fileUuid.slice(0, 8)}`,
+          url: `/api/chat/media/${fileName}`,
+          name: safeName,
+          mimeType: finalMime,
+          sizeBytes: buffer.length,
+          width: widthRaw && !isNaN(widthRaw) ? widthRaw : undefined,
+          height: heightRaw && !isNaN(heightRaw) ? heightRaw : undefined,
+          durationSec: durationSecRaw && !isNaN(durationSecRaw) ? durationSecRaw : undefined,
+          posterUrl: posterUrlRaw || undefined,
+          isVideo: true,
+          source: 'upload',
+          fileExt: ext,
+        };
+
+        const response: UploadMosChatImageResponse = {
+          success: true,
+          attachment,
+        };
+        return response;
+      } catch (err: SafeAny) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: err?.message || 'Không thể tải video lên.',
+        });
+      }
+    }
+  );
+
+  // GET /api/chat/media/:fileName (MOS-CHAT-VIDEO: HTTP 206 Partial Content Range Streaming support)
   fastify.get('/chat/media/:fileName', async (request, reply) => {
     try {
       const { fileName } = request.params as { fileName: string };
@@ -1703,11 +1773,41 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (!targetPath.startsWith(`${rootDir}${sep}`)) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
       }
-      const buffer = await readFile(targetPath);
+
+      const fileStat = await stat(targetPath);
+      const totalSize = fileStat.size;
+      const rangeHeader = request.headers.range;
+
+      if (rangeHeader && typeof rangeHeader === 'string' && rangeHeader.startsWith('bytes=')) {
+        const parts = rangeHeader.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+
+        if (isNaN(start) || start >= totalSize || end >= totalSize || start > end) {
+          reply.header('Content-Range', `bytes */${totalSize}`);
+          return reply.status(416).send({ error: 'Range Not Satisfiable' });
+        }
+
+        const chunkSize = end - start + 1;
+        const stream = createReadStream(targetPath, { start, end });
+
+        reply.status(206);
+        reply.header('Content-Range', `bytes ${start}-${end}/${totalSize}`);
+        reply.header('Accept-Ranges', 'bytes');
+        reply.header('Content-Length', chunkSize);
+        reply.header('Content-Type', mimeType);
+        reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+        return reply.send(stream);
+      }
+
       reply.header('Content-Type', mimeType);
+      reply.header('Accept-Ranges', 'bytes');
+      reply.header('Content-Length', totalSize);
       reply.header('Cache-Control', 'public, max-age=31536000, immutable');
       reply.header('Content-Disposition', `inline; filename="${encodeURIComponent(normalized)}"`);
-      return reply.send(buffer);
+
+      const stream = createReadStream(targetPath);
+      return reply.send(stream);
     } catch (_) {
       return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
     }

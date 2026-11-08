@@ -205,6 +205,8 @@ export interface BookingItem {
   assignedBed?: string;
   isUnassignedQueue?: boolean;
   isNextQueueCustomer?: boolean;
+  isBookedInAdvance?: boolean;
+  isTuaAssigned?: boolean;
   bookingAccessTag?: 'NEXT_CUSTOMER' | 'NEXT_QUEUE_CUSTOMER' | 'MY_BOOKED_CUSTOMER' | 'STORE_CUSTOMER';
   status: 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
   comboLiveStatus?: {
@@ -388,6 +390,7 @@ export interface BookingItem {
       voucherCode?: string;
     };
     grandTotal: number;
+    completedAt?: string;
   };
 }
 
@@ -699,7 +702,7 @@ export function filterBookingsForCvlScope(bookings: BookingItem[], activeStaffId
       (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
       (b.checkOutStaffId && b.checkOutStaffId === activeStaffId);
 
-    const isMyBookedCustomer = !b.isUnassignedQueue && Boolean(isStaffAssigned);
+    const isMyBookedCustomer = Boolean(isStaffAssigned);
 
     if (isMyBookedCustomer) {
       result.push({
@@ -728,4 +731,47 @@ export function filterBookingsForCvlScope(bookings: BookingItem[], activeStaffId
   }
 
   return result;
+}
+
+export type CustomerBookingTab = 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
+
+/**
+ * Phân định trạng thái duy nhất của mỗi khách hàng vào đúng 1 tab theo chỉ đạo của Danny:
+ * "1 khách hàng chỉ ở 1 tab, chờ, đang làm, hoặc là đã xong
+ * - khi tính tiền xong thì bắt buộc phải đưa khách hàng qua đã xong"
+ *
+ * Bất biến:
+ * 1. ĐÃ XONG (DONE): status === 'DONE' HOẶC có progress.completedAt HOẶC billing.completedAt.
+ *    -> Tuyệt đối KHÔNG bao giờ rơi vào SERVICING hay INCOMING.
+ * 2. ĐÃ HỦY (CANCEL): status === 'CANCELLED'.
+ * 3. ĐANG LÀM (SERVICING): Chưa xong/hủy, và (status === 'SERVICING' HOẶC trùng activeServicingBookingId HOẶC progress đã bắt đầu).
+ * 4. CHỜ ĐÓN (INCOMING): Tất cả các khách hàng còn lại (INCOMING, CHECKED_IN chưa bắt đầu làm).
+ */
+export function resolveCustomerBookingTab(
+  b: BookingItem,
+  activeServicingBookingId?: number | null
+): CustomerBookingTab {
+  if (b.status === 'CANCELLED') return 'CANCEL';
+
+  // Bất biến Danny: "khi tính tiền xong thì bắt buộc phải đưa khách hàng qua đã xong"
+  // Khách hàng ĐÃ XONG (DONE) khi status === 'DONE' HOẶC đã có billing.completedAt (đã chốt tính tiền)
+  // HOẶC có progress.completedAt nhưng status KHÔNG PHẢI là SERVICING.
+  const isDone =
+    b.status === 'DONE' ||
+    Boolean(b.billing?.completedAt) ||
+    (Boolean(b.progress?.completedAt) && b.status !== 'SERVICING');
+
+  if (isDone) {
+    return 'DONE';
+  }
+
+  const isServicing =
+    b.status === 'SERVICING' ||
+    Boolean(activeServicingBookingId && Number(b.id) === Number(activeServicingBookingId)) ||
+    Boolean(b.progress?.startedAt && !b.progress?.completedAt) ||
+    Boolean(b.progress?.currentStep && b.progress.currentStep >= 3 && !b.progress?.completedAt);
+
+  if (isServicing) return 'SERVICING';
+
+  return 'INCOMING';
 }

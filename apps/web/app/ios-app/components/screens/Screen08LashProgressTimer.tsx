@@ -185,6 +185,12 @@ export function Screen08LashProgressTimer({
     };
   }, [isOvertime, remainingSeconds]);
 
+  const isComboNewFullSet =
+    Boolean(booking?.comboLiveStatus?.isComboLive) &&
+    (booking?.serviceType === 'Normal' ||
+      Boolean(booking?.attributes?.overrideReason?.includes('gỡ toàn bộ')) ||
+      Boolean(booking?.attributes?.overrideReason?.includes('Nối Mới Combo')));
+
   const bedLabel = booking.assignedBed || 'G03';
 
   return (
@@ -306,6 +312,24 @@ export function Screen08LashProgressTimer({
           </div>
           <p className="text-[11.5px] text-neutral-600 leading-snug font-medium">{speedEvaluation.sub}</p>
         </div>
+
+        {/* Tech Invariant Banner: Ca Nối Mới Combo bắt buộc gỡ sạch 100% mi cũ */}
+        {isComboNewFullSet && (
+          <div className="bg-amber-500/10 border-2 border-amber-500 rounded-2xl p-3 flex items-start gap-2.5 mx-1 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11.5px] font-black text-amber-800 uppercase tracking-tight">
+                ⚠️ QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
+              </div>
+              <div className="text-[11px] font-bold text-amber-950 leading-snug mt-0.5">
+                Nhân viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi cũ
+                khi trừ suất nối mới)!
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Card (Lash Specs) */}
         <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-2 mx-1">

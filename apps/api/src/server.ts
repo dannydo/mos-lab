@@ -7,6 +7,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import compress from '@fastify/compress';
 import websocket from '@fastify/websocket';
+import multipart from '@fastify/multipart';
 import dotenv from 'dotenv';
 import prismaPlugin from './plugins/prisma.js';
 import slowQueryLoggerPlugin from './plugins/slow-query-logger.js';
@@ -119,6 +120,14 @@ const start = async () => {
 
     // Must be registered before any route which opts into websocket handling.
     await server.register(websocket);
+
+    // Register Multipart plugin for file & video uploads (MOS-CHAT-VIDEO: 55MB limit)
+    await server.register(multipart, {
+      limits: {
+        fileSize: 55 * 1024 * 1024,
+        files: 1,
+      },
+    });
 
     // Register JWT
     await server.register(jwt, {

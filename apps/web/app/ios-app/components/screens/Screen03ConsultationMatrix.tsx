@@ -118,7 +118,8 @@ interface Screen03ConsultationMatrixProps {
       cvPoints?: number;
       cvBreakdown?: string;
       serviceType?: string;
-    } | null
+    } | null,
+    targetBookingId?: number
   ) => void;
 }
 
@@ -307,11 +308,6 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     materialCatalog,
   ]);
 
-  // Chế độ giá tự động theo chu kỳ 25 ngày:
-  // - Trong 25 ngày (<= 25 ngày): Tự động chọn 'Retain' (Dặm mi, hoặc với Mink & IvyLight thì luôn Nối Mới nhưng tính Giá Dặm)
-  // - Sau 25 ngày (> 25 ngày) hoặc khách mới chưa có lịch sử: Tự động chọn 'Normal' (Nối Mới & Giá Mới)
-  const expectedAutoServiceType: 'Normal' | 'Retain' = isWithin25Days ? 'Retain' : 'Normal';
-
   const initialMat = useMemo(
     () => resolveMaterialSpec(autoComboSpec.materialId, materialCatalog),
     [autoComboSpec.materialId, materialCatalog]
@@ -346,6 +342,27 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
       initialMat.code,
       initialMat.id,
     ]);
+
+  // Chế độ giá tự động theo chu kỳ 25 ngày và số lần còn lại trong gói Combo:
+  // - Nếu khách có gói Combo mà gói HẾT LẦN DẶM (0 Dặm) nhưng còn lần Nối Mới: Bắt buộc chọn 'Normal' (Nối Mới).
+  // - Nếu khách có gói Combo mà gói HẾT LẦN NỐI MỚI (0 Mới) nhưng còn lần Dặm: Bắt buộc chọn 'Retain' (Dặm mi).
+  // - Nếu khách có gói Combo còn cả Mới lẫn Dặm và đi trong 25 ngày: Tự động chọn 'Retain' (Dặm mi, hoặc Mink/IvyLight).
+  // - Nếu đi > 25 ngày hoặc không có gói Combo: Tự động chọn 'Normal'.
+  const expectedAutoServiceType: 'Normal' | 'Retain' = useMemo(() => {
+    if (isComboLive) {
+      if (!hasComboRetainRemaining && hasComboNormalRemaining) {
+        return 'Normal';
+      }
+      if (!hasComboNormalRemaining && hasComboRetainRemaining) {
+        return 'Retain';
+      }
+      if (isWithin25Days && hasComboRetainRemaining) {
+        return 'Retain';
+      }
+      return 'Normal';
+    }
+    return isWithin25Days ? 'Retain' : 'Normal';
+  }, [isComboLive, hasComboRetainRemaining, hasComboNormalRemaining, isWithin25Days]);
 
   // ---------------------------------------------------------------------------
   // BƯỚC 1: CHẤT LIỆU / DÒNG MI (MATERIAL FAMILY - NGUỒN RÀNG BUỘC GỐC)
@@ -437,6 +454,20 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   } | null>(null);
   const [selectedOverrideReasonDraft, setSelectedOverrideReasonDraft] = useState<string>('');
 
+  // Trạng thái Nâng cấp Combo (Upgrade Flow tương tự iOS App cũ)
+  const [upgradeScope, setUpgradeScope] = useState<'SINGLE' | 'ALL'>('SINGLE');
+  const [retainUpgradeMode, setRetainUpgradeMode] = useState<'DEDUCT_NORMAL' | 'PAY_DIFF'>('DEDUCT_NORMAL');
+  const [pendingUpgradeConfirmation, setPendingUpgradeConfirmation] = useState<{
+    fromName: string;
+    toName: string;
+    singleDiff: number;
+    upgradeScope: 'SINGLE' | 'ALL';
+    totalAmount: number;
+    remainingSessionsCount: number;
+    onConfirm: () => void;
+  } | null>(null);
+  const [hasConfirmedUpgrade, setHasConfirmedUpgrade] = useState<boolean>(false);
+
   // Tự động đồng bộ đúng dịch vụ Gói Combo & Chu kỳ 25 ngày mỗi khi mở hồ sơ khách
   useEffect(() => {
     setSelectedMaterial(initialMat.id);
@@ -450,6 +481,17 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     setIsOverridden(Boolean(booking?.attributes?.isOverridden));
     setOverrideReason(booking?.attributes?.overrideReason || '');
   }, [booking?.id, initialMat.id, autoComboSpec.volume, autoComboSpec.count, expectedAutoServiceType]);
+
+  // Đảm bảo khi gói không còn Mới (0 Mới), hệ thống tự động chọn mode PAY_DIFF (trừ 1 Dặm + bù tiền) và KHÔNG BAO GIỜ trừ Mới
+  useEffect(() => {
+    if (isComboLive) {
+      if (!hasComboNormalRemaining && hasComboRetainRemaining) {
+        setRetainUpgradeMode('PAY_DIFF');
+      } else if (hasComboNormalRemaining && !hasComboRetainRemaining) {
+        setRetainUpgradeMode('DEDUCT_NORMAL');
+      }
+    }
+  }, [isComboLive, hasComboNormalRemaining, hasComboRetainRemaining]);
 
   // Tự động đồng bộ khi danh mục cấu hình thay đổi hoặc khi chọn chất liệu mới
   useEffect(() => {
@@ -999,7 +1041,173 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     }
   }, []);
 
-  const handleSubmit = () => {
+  // ---------------------------------------------------------------------------
+  // TÍNH TOÁN NÂNG CẤP COMBO (UPGRADE PRICING ENGINE - CHUẨN IOS APP & MOS-LAB)
+  // ---------------------------------------------------------------------------
+  const comboCatalogPricing = useMemo(() => {
+    const normal = calculateLashPricingAndCvPoints({
+      materialId: autoComboSpec.materialId,
+      volumeStr: autoComboSpec.volume,
+      countStr: autoComboSpec.count,
+      serviceType: 'Normal',
+    });
+    const retain = calculateLashPricingAndCvPoints({
+      materialId: autoComboSpec.materialId,
+      volumeStr: autoComboSpec.volume,
+      countStr: autoComboSpec.count,
+      serviceType: 'Retain',
+    });
+    return {
+      newPrice: normal.skuPrice,
+      refillPrice: retain.skuPrice,
+    };
+  }, [autoComboSpec]);
+
+  const bookingServicePrice = booking?.servicePrice;
+  const comboBaseServicePrice = useMemo(() => {
+    if (comboCatalogPricing.newPrice && comboCatalogPricing.newPrice > 0) return comboCatalogPricing.newPrice;
+    const match = comboName.match(/\b(390|440|550|660|770|880|990|1110|1220|1330|1440|1550|1770|2110)\b/);
+    if (match) return Number(match[1]) * 1000;
+    if (bookingServicePrice && bookingServicePrice > 0) return bookingServicePrice;
+    return 770000;
+  }, [comboCatalogPricing.newPrice, comboName, bookingServicePrice]);
+
+  const comboBaseRetainPrice = useMemo(() => {
+    if (comboCatalogPricing.refillPrice && comboCatalogPricing.refillPrice > 0) return comboCatalogPricing.refillPrice;
+    if (comboBaseServicePrice <= 440000) return 220000;
+    if (comboBaseServicePrice <= 550000) return 280000;
+    if (comboBaseServicePrice <= 770000) return 340000;
+    if (comboBaseServicePrice <= 880000) return 530000;
+    if (comboBaseServicePrice <= 990000) return 590000;
+    return Math.round(comboBaseServicePrice / 2);
+  }, [comboCatalogPricing.refillPrice, comboBaseServicePrice]);
+
+  const isSameAsComboService = useMemo(() => {
+    if (!isComboLive) return false;
+    const sameMaterial =
+      currentMaterialSpec.code === autoComboSpec.materialCode ||
+      currentMaterialSpec.id === autoComboSpec.materialId ||
+      currentMaterialSpec.shortLabel.toLowerCase() === autoComboSpec.materialShortLabel.toLowerCase();
+
+    const selectedCountNum = parseInt(selectedCount.replace(/\D/g, ''), 10) || 70;
+    const comboCountNum = parseInt((autoComboSpec.count || '70').replace(/\D/g, ''), 10) || 70;
+    const withinCount = selectedCountNum <= comboCountNum;
+
+    const selectedVolNum = parseInt(selectedVolume.replace(/\D/g, ''), 10) || 1;
+    const comboVolNum = parseInt((autoComboSpec.volume || '1D').replace(/\D/g, ''), 10) || 1;
+    const withinVolume = selectedVolNum <= comboVolNum;
+
+    return sameMaterial && withinCount && withinVolume;
+  }, [
+    isComboLive,
+    currentMaterialSpec.code,
+    currentMaterialSpec.id,
+    currentMaterialSpec.shortLabel,
+    autoComboSpec.materialCode,
+    autoComboSpec.materialId,
+    autoComboSpec.materialShortLabel,
+    selectedCount,
+    autoComboSpec.count,
+    selectedVolume,
+    autoComboSpec.volume,
+  ]);
+
+  const singleUpgradeDiff = useMemo(() => {
+    if (!isComboLive) {
+      return livePricingAndCvPoints.upgradePrice;
+    }
+
+    // 1. Khách làm đúng dòng mi và định mức số sợi/volume của Gói Combo:
+    if (isSameAsComboService) {
+      // Dòng mi luôn nối mới theo giá dặm (Flawless Mink / Ivylight) hoặc ca tính giá Dặm:
+      if (serviceType === 'Retain' || isAlwaysFullSet) {
+        return 0;
+      }
+      // Khách chọn Nối Mới:
+      // a) Nếu gói còn suất Nối Mới và chọn trừ Mới: Trừ 1 suất Mới (0đ bù)
+      if (hasComboNormalRemaining && retainUpgradeMode === 'DEDUCT_NORMAL') {
+        return 0;
+      }
+      // b) Nếu gói hết suất Nối Mới (0 Mới) hoặc khách chọn trừ Dặm: KHÔNG THỂ trừ Mới! BẮT BUỘC bù chênh lệch Mới - Dặm và trừ 1 Dặm
+      if (hasComboRetainRemaining) {
+        return Math.max(0, comboBaseServicePrice - comboBaseRetainPrice);
+      }
+      return comboBaseServicePrice;
+    }
+
+    // 2. Khách thực sự nâng cấp sang dòng mi cao hơn hoặc vượt số sợi định mức:
+    if (serviceType === 'Normal') {
+      // a) Gói còn suất Mới và chọn trừ Mới: Trừ 1 suất Mới, bù chênh lệch nâng cấp từ giá Mới của gói
+      if (hasComboNormalRemaining && retainUpgradeMode === 'DEDUCT_NORMAL') {
+        return Math.max(0, livePricingAndCvPoints.skuPrice - comboBaseServicePrice);
+      }
+      // b) Gói hết suất Mới (0 Mới) hoặc chọn trừ Dặm: KHÔNG THỂ trừ Mới! BẮT BUỘC trừ 1 Dặm và bù chênh lệch từ giá Dặm của gói
+      if (hasComboRetainRemaining) {
+        return Math.max(0, livePricingAndCvPoints.skuPrice - comboBaseRetainPrice);
+      }
+      return livePricingAndCvPoints.skuPrice;
+    }
+
+    return Math.max(0, livePricingAndCvPoints.skuPrice - comboBaseRetainPrice);
+  }, [
+    isComboLive,
+    isSameAsComboService,
+    serviceType,
+    isAlwaysFullSet,
+    isWithin25Days,
+    expectedAutoServiceType,
+    retainUpgradeMode,
+    hasComboNormalRemaining,
+    hasComboRetainRemaining,
+    livePricingAndCvPoints.skuPrice,
+    livePricingAndCvPoints.upgradePrice,
+    comboBaseServicePrice,
+    comboBaseRetainPrice,
+  ]);
+
+  const normalUpgradeDiff = useMemo(() => {
+    const targetNormalPrice = calculateLashPricingAndCvPoints({
+      materialId: selectedMaterial,
+      volumeStr: selectedVolume,
+      countStr: selectedCount,
+      serviceType: 'Normal',
+    }).skuPrice;
+    return Math.max(0, targetNormalPrice - comboBaseServicePrice);
+  }, [selectedMaterial, selectedVolume, selectedCount, comboBaseServicePrice]);
+
+  const retainUpgradeDiff = useMemo(() => {
+    const targetRetainPrice = calculateLashPricingAndCvPoints({
+      materialId: selectedMaterial,
+      volumeStr: selectedVolume,
+      countStr: selectedCount,
+      serviceType: 'Retain',
+    }).skuPrice;
+    return Math.max(0, targetRetainPrice - comboBaseRetainPrice);
+  }, [selectedMaterial, selectedVolume, selectedCount, comboBaseRetainPrice]);
+
+  const totalUpgradeAmount = useMemo(() => {
+    if (!isComboLive) return singleUpgradeDiff;
+    if (upgradeScope === 'ALL' && comboRemainingSessions > 1) {
+      // Chuẩn iOS App WingsBeauty (Mode NN & RR):
+      // Nâng cấp đúng N lần Mới (NN) và R lần Dặm (RR) lên dòng mi mới tương ứng
+      const totalNormalDiff = normalUpgradeDiff * comboNormalRemaining;
+      const totalRetainDiff = retainUpgradeDiff * comboRetainRemaining;
+      return totalNormalDiff + totalRetainDiff;
+    }
+    return singleUpgradeDiff;
+  }, [
+    isComboLive,
+    upgradeScope,
+    comboRemainingSessions,
+    singleUpgradeDiff,
+    normalUpgradeDiff,
+    retainUpgradeDiff,
+    comboNormalRemaining,
+    comboRetainRemaining,
+  ]);
+
+  const executeFinalSave = (confirmedUpgradePrice?: number) => {
+    const finalUpgradePrice = confirmedUpgradePrice !== undefined ? confirmedUpgradePrice : totalUpgradeAmount;
     const finalNotes = isOverridden && overrideReason ? `[CV🪶 Override: ${overrideReason}] ${notes}`.trim() : notes;
 
     onSave(
@@ -1035,12 +1243,34 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
       {
         skuName: livePricingAndCvPoints.skuName,
         skuPrice: livePricingAndCvPoints.skuPrice,
-        upgradePrice: livePricingAndCvPoints.upgradePrice,
+        upgradePrice: finalUpgradePrice,
         cvPoints: livePricingAndCvPoints.totalPoints,
         cvBreakdown: livePricingAndCvPoints.breakdownLabel,
         serviceType,
-      }
+      },
+      booking?.id
     );
+  };
+
+  const handleSubmit = () => {
+    if (isComboLive && totalUpgradeAmount > 0 && !hasConfirmedUpgrade) {
+      setPendingUpgradeConfirmation({
+        fromName: `${formatComboName(comboName)} (${(serviceType === 'Retain' ? comboBaseRetainPrice : comboBaseServicePrice).toLocaleString('vi-VN')} đ)`,
+        toName: `${livePricingAndCvPoints.skuName} (${livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ)`,
+        singleDiff: singleUpgradeDiff,
+        upgradeScope,
+        totalAmount: totalUpgradeAmount,
+        remainingSessionsCount: comboRemainingSessions,
+        onConfirm: () => {
+          setHasConfirmedUpgrade(true);
+          setPendingUpgradeConfirmation(null);
+          executeFinalSave(totalUpgradeAmount);
+        },
+      });
+      return;
+    }
+
+    executeFinalSave();
   };
 
   const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
@@ -1351,7 +1581,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
               )}
 
-              {/* 2 Nút chọn chế độ tối giản: ✨ Mới (X) | 🔄 Dặm (Y) */}
+              {/* 2 Nút chọn chế độ tối giản: ✦ (X) | ↻ (Y) */}
               <div className="bg-neutral-900 p-1 rounded-xl grid grid-cols-2 gap-1">
                 <button
                   type="button"
@@ -1361,45 +1591,210 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span>
-                    {isAlwaysFullSet
-                      ? 'Mới · Giá mới'
-                      : isComboLive
-                        ? `Mới (${comboNormalRemaining})`
-                        : `Nối mới (>${retainDaysLimit}N)`}
-                  </span>
+                  <span>{isAlwaysFullSet ? '✦ Mới' : isComboLive ? `✦ ${comboNormalRemaining}` : '✦ Mới'}</span>
                 </button>
 
                 <button
                   type="button"
+                  disabled={isComboLive && !hasComboRetainRemaining}
                   onClick={() => handleRequestServiceTypeChange('Retain')}
-                  className={`py-1.5 px-2 rounded-lg font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition-all cursor-pointer tabular-nums ${
-                    serviceType === 'Retain' ? 'bg-[#34C759] text-white shadow-xs' : 'text-neutral-400 hover:text-white'
+                  className={`py-1.5 px-2 rounded-lg font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition-all tabular-nums ${
+                    serviceType === 'Retain'
+                      ? 'bg-[#34C759] text-white shadow-xs'
+                      : isComboLive && !hasComboRetainRemaining
+                        ? 'text-neutral-600 opacity-30 cursor-not-allowed'
+                        : 'text-neutral-400 hover:text-white cursor-pointer'
                   }`}
+                  title={isComboLive && !hasComboRetainRemaining ? 'Gói đã hết lần Dặm' : undefined}
                 >
                   <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                  <span>
-                    {isAlwaysFullSet
-                      ? 'Mới · Giá dặm'
-                      : isComboLive
-                        ? `Dặm (${comboRetainRemaining})`
-                        : 'Giá dặm (≤21N)'}
-                  </span>
+                  <span>{isAlwaysFullSet ? '↻ Dặm' : isComboLive ? `↻ ${comboRetainRemaining}` : '↻ Dặm'}</span>
                 </button>
               </div>
+
+              {/* Card Nâng Cấp Dịch Vụ Từ Gói Combo (Chỉ hiển thị khi thực sự có nâng cấp chênh lệch > 0) */}
+              {isComboLive && totalUpgradeAmount > 0 && (
+                <div className="bg-gradient-to-b from-[#1E293B] to-[#0F172A] rounded-xl p-3 border border-sky-500/40 text-white space-y-2.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-sky-400 uppercase tracking-wide flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" /> NÂNG CẤP TỪ GÓI COMBO
+                    </span>
+                    <span className="text-[10px] font-bold text-sky-200 bg-sky-500/20 px-2 py-0.5 rounded-full border border-sky-400/30">
+                      Gói:{' '}
+                      {(serviceType === 'Retain' ? comboBaseRetainPrice : comboBaseServicePrice).toLocaleString(
+                        'vi-VN'
+                      )}{' '}
+                      đ
+                    </span>
+                  </div>
+
+                  {/* Phạm vi áp dụng: ✦ 1 / ↻ 1 vs ✦ N · ↻ M */}
+                  <div className="bg-black/40 p-1 rounded-lg grid grid-cols-2 gap-1 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setUpgradeScope('SINGLE')}
+                      className={`py-1.5 px-2 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                        upgradeScope === 'SINGLE'
+                          ? 'bg-sky-500 text-white shadow-xs'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      <span>{serviceType === 'Normal' ? '✦ 1' : '↻ 1'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUpgradeScope('ALL')}
+                      className={`py-1.5 px-2 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                        upgradeScope === 'ALL' ? 'bg-sky-500 text-white shadow-xs' : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      <span>
+                        ✦ {comboNormalRemaining} · ↻ {comboRetainRemaining}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Lựa chọn khi chuyển Dặm sang Nối Mới hoặc khi gói hết suất Mới */}
+                  {serviceType === 'Normal' && isComboLive && hasComboRetainRemaining && (
+                    <div className="space-y-1.5 bg-black/30 p-2 rounded-lg border border-white/5 text-[11px]">
+                      <div className="text-[10.5px] font-semibold text-neutral-300">
+                        {!hasComboNormalRemaining ? '⚠️ Hết ✦ (0) · Phương án làm ✦:' : 'Khách nối Mới:'}
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          disabled={!hasComboNormalRemaining}
+                          onClick={() => setRetainUpgradeMode('DEDUCT_NORMAL')}
+                          className={`p-1.5 rounded-md text-left transition-all border ${
+                            retainUpgradeMode === 'DEDUCT_NORMAL' && hasComboNormalRemaining
+                              ? 'bg-emerald-600/30 border-emerald-400 text-emerald-200 font-bold'
+                              : 'bg-neutral-800/60 border-neutral-700 text-neutral-400 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="text-[10.5px] font-black">✦ 1</div>
+                          <div className="text-[9.5px] text-neutral-300">
+                            {hasComboNormalRemaining ? `✦ ${comboNormalRemaining} (0đ)` : '❌ 0'}
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!hasComboRetainRemaining}
+                          onClick={() => setRetainUpgradeMode('PAY_DIFF')}
+                          className={`p-1.5 rounded-md text-left transition-all border ${
+                            (retainUpgradeMode === 'PAY_DIFF' || !hasComboNormalRemaining) && hasComboRetainRemaining
+                              ? 'bg-amber-600/30 border-amber-400 text-amber-200 font-bold'
+                              : 'bg-neutral-800/60 border-neutral-700 text-neutral-400 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="text-[10.5px] font-black">↻ 1 + bù</div>
+                          <div className="text-[9.5px] text-neutral-300">
+                            {hasComboRetainRemaining
+                              ? `+${(comboBaseServicePrice - comboBaseRetainPrice).toLocaleString('vi-VN')} đ (↻ ${comboRetainRemaining})`
+                              : '❌ 0'}
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bảng tính chênh lệch thời gian thực */}
+                  <div className="bg-black/50 rounded-lg p-2.5 border border-white/10 space-y-1.5 text-[11.5px]">
+                    <div className="flex items-center justify-between text-neutral-300">
+                      <span>Dịch vụ:</span>
+                      <span className="font-bold text-white truncate max-w-[210px]">
+                        {cleanServiceName} ({livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ)
+                      </span>
+                    </div>
+                    {upgradeScope === 'ALL' ? (
+                      <div className="pt-1.5 border-t border-white/10 space-y-1 text-[11px]">
+                        <div className="flex items-center justify-between text-neutral-300">
+                          <span>
+                            ✦ {comboNormalRemaining} (+{normalUpgradeDiff.toLocaleString('vi-VN')} đ):
+                          </span>
+                          <span className="font-bold text-white tabular-nums">
+                            +{(normalUpgradeDiff * comboNormalRemaining).toLocaleString('vi-VN')} đ
+                          </span>
+                        </div>
+                        {comboRetainRemaining > 0 && (
+                          <div className="flex items-center justify-between text-neutral-300">
+                            <span>
+                              ↻ {comboRetainRemaining} (+{retainUpgradeDiff.toLocaleString('vi-VN')} đ):
+                            </span>
+                            <span className="font-bold text-white tabular-nums">
+                              +{(retainUpgradeDiff * comboRetainRemaining).toLocaleString('vi-VN')} đ
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-emerald-400 font-bold pt-1 border-t border-white/5">
+                          <span>
+                            Phụ thu (✦ {comboNormalRemaining} · ↻ {comboRetainRemaining}):
+                          </span>
+                          <span className="text-[13px] font-black tabular-nums">
+                            +{totalUpgradeAmount.toLocaleString('vi-VN')} đ
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between text-neutral-300">
+                        <span>Phụ thu ({serviceType === 'Normal' ? '✦ 1' : '↻ 1'}):</span>
+                        <span
+                          className={`font-black tabular-nums text-[13px] ${
+                            totalUpgradeAmount > 0 ? 'text-emerald-400' : 'text-sky-300'
+                          }`}
+                        >
+                          {totalUpgradeAmount > 0 ? `+${totalUpgradeAmount.toLocaleString('vi-VN')} đ` : '0 đ'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-neutral-400 text-[10.5px] pt-1 border-t border-white/10">
+                      <span>↻ CV🪶:</span>
+                      <span className="font-bold text-amber-300 tabular-nums">
+                        +{livePricingAndCvPoints.totalPoints} pts
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Thông báo xanh khi khách dùng đúng dịch vụ trong gói Combo */}
+              {isComboLive && totalUpgradeAmount === 0 && (
+                <div className="bg-emerald-50/90 border border-emerald-300/80 rounded-xl p-2.5 flex items-center justify-between text-[11.5px] text-emerald-900 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0">
+                      ✓
+                    </span>
+                    <span className="font-semibold">
+                      Dịch vụ trong gói Combo ·{' '}
+                      <strong className="text-emerald-950 font-black">Miễn phụ thu (0đ)</strong>
+                    </span>
+                  </div>
+                  <span className="font-mono text-[10.5px] font-bold bg-white px-2 py-0.5 rounded text-emerald-800 border border-emerald-200 shadow-2xs shrink-0">
+                    Trừ 1 suất {serviceType === 'Retain' ? 'Dặm' : 'Mới'}
+                  </span>
+                </div>
+              )}
 
               {isComboLive && (
                 <button
                   type="button"
                   onClick={handleSubmit}
                   className={`w-full py-2.5 px-3 rounded-xl font-extrabold text-[12px] flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer ${
-                    serviceType === 'Normal' && !isAlwaysFullSet
-                      ? 'bg-[#FFB400] hover:bg-amber-500 text-black'
+                    totalUpgradeAmount > 0
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-900/30'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
-                  <span>Quick Check-in</span>
+                  {totalUpgradeAmount > 0 ? (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 fill-current shrink-0" />
+                      <span>Nhận Ca & Nâng Cấp (+{totalUpgradeAmount.toLocaleString('vi-VN')} đ)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
+                      <span>Nhận Ca (Trừ 1 suất combo · 0đ)</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -2808,6 +3203,87 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             >
               Đã hiểu
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác Nhận Nâng Cấp Dịch Vụ Từ Combo */}
+      {pendingUpgradeConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-[#1C1C1E] text-white rounded-2xl w-full max-w-sm p-4 border border-emerald-500/50 shadow-2xl space-y-3.5 relative">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </span>
+                <div>
+                  <h4 className="text-[13.5px] font-black uppercase text-emerald-400 tracking-wide">
+                    Xác Nhận Nâng Cấp
+                  </h4>
+                  <span className="text-[10.5px] text-neutral-400 font-medium">Từ Gói Combo Đang Sử Dụng</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingUpgradeConfirmation(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-neutral-900/90 rounded-xl p-3 border border-neutral-800 space-y-2 text-[12px]">
+              <div className="flex items-center justify-between text-neutral-400">
+                <span>Dịch vụ gốc:</span>
+                <span className="text-neutral-200 font-bold truncate max-w-[190px] text-right">
+                  {pendingUpgradeConfirmation.fromName}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-neutral-400">
+                <span>Nâng cấp lên:</span>
+                <span className="text-amber-300 font-bold truncate max-w-[190px] text-right">
+                  {pendingUpgradeConfirmation.toName}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-neutral-400">
+                <span>Phạm vi áp dụng:</span>
+                <span className="text-neutral-200 font-bold">
+                  {pendingUpgradeConfirmation.upgradeScope === 'ALL'
+                    ? `Gói (✦ ${comboNormalRemaining} · ↻ ${comboRetainRemaining})`
+                    : serviceType === 'Normal'
+                      ? '✦ 1 Mới'
+                      : '↻ 1 Dặm'}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-neutral-800 flex items-center justify-between">
+                <span className="font-bold text-white">Phụ thu thanh toán:</span>
+                <span className="text-[15px] font-black text-emerald-400 tabular-nums">
+                  +{pendingUpgradeConfirmation.totalAmount.toLocaleString('vi-VN')} đ
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-emerald-950/60 rounded-xl p-2.5 border border-emerald-500/30 text-[11px] text-emerald-200/90 leading-snug">
+              ℹ️ Khoản phụ thu này sẽ được tự động cộng vào hóa đơn tại quầy Thu Ngân khi khách làm xong và Checkout.
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setPendingUpgradeConfirmation(null)}
+                className="py-2.5 px-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-[12px] cursor-pointer transition-all"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={pendingUpgradeConfirmation.onConfirm}
+                className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[12px] shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Xác nhận</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

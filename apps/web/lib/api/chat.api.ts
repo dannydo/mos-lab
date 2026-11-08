@@ -145,6 +145,16 @@ export const chatApi = {
       const res = await api.post('/chat/upload-file', payload);
       return res.data;
     },
+    uploadVideo: async (
+      formData: FormData,
+      onUploadProgress?: (progressEvent: SafeAny) => void
+    ): Promise<UploadMosChatImageResponse> => {
+      const res = await api.post('/chat/upload-video', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress,
+      });
+      return res.data;
+    },
     sendMessage: async (
       payload: CreateMosChatMessageRequest
     ): Promise<{ success: boolean; message: MosChatMessage; conversation: MosChatConversation }> => {

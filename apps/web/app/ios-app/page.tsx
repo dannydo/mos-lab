@@ -124,6 +124,13 @@ function IosAppInner() {
     }
 
     // 5. Core Service Flow (14 màn hình chuẩn iOS kết nối DB thực tế cho CV🪶 & 🪶CV🪶)
+    const currentBooking =
+      state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) ||
+      (state.activeServicingBooking
+        ? state.bookings.find((b) => Number(b.id) === Number(state.activeServicingBooking?.id))
+        : null) ||
+      state.activeBooking;
+
     switch (state.currentStep) {
       case 1:
         return (
@@ -162,8 +169,6 @@ function IosAppInner() {
           />
         );
       case 2: {
-        const currentBooking =
-          state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) || state.activeBooking;
         return (
           <Screen02CheckInProfile
             booking={currentBooking}
@@ -180,8 +185,6 @@ function IosAppInner() {
         );
       }
       case 3: {
-        const currentBooking =
-          state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) || state.activeBooking;
         return (
           <Screen03ConsultationMatrix
             booking={currentBooking}
@@ -194,11 +197,11 @@ function IosAppInner() {
       case 4:
         return <Screen04StaffQueueAssign onBack={() => state.setCurrentStep(3)} onAssign={state.handleAssignStaff} />;
       case 5:
-        return <Screen05ServicingTransfer booking={state.activeBooking} onTransferToCv={state.handleTransferToCv} />;
+        return <Screen05ServicingTransfer booking={currentBooking} onTransferToCv={state.handleTransferToCv} />;
       case 6:
         return (
           <Screen06CvDashboardReceive
-            booking={state.activeBooking}
+            booking={currentBooking}
             onStartTask={state.handleCvStartTask}
             onEditService={() => state.handleOpenConsultation(6)}
             onBack={() => {
@@ -211,7 +214,7 @@ function IosAppInner() {
       case 7:
         return (
           <Screen07LashProgressBefore
-            booking={state.activeBooking}
+            booking={currentBooking}
             onBack={() => state.setCurrentStep(6)}
             onSavePhoto={state.handleSaveBeforePhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('before', url)}
@@ -220,7 +223,7 @@ function IosAppInner() {
       case 8:
         return (
           <Screen07bLashProgressCleaned
-            booking={state.activeBooking}
+            booking={currentBooking}
             onBack={() => state.setCurrentStep(7)}
             onSavePhoto={state.handleSaveCleanedPhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('cleaned', url)}
@@ -229,7 +232,7 @@ function IosAppInner() {
       case 9:
         return (
           <Screen08LashProgressTimer
-            booking={state.activeBooking}
+            booking={currentBooking}
             onBack={() => state.setCurrentStep(8)}
             onFinishTimer={state.handleFinishTimer}
             onEditService={() => state.handleOpenConsultation(9)}
@@ -240,7 +243,7 @@ function IosAppInner() {
       case 10:
         return (
           <Screen09LashProgressAfter
-            booking={state.activeBooking}
+            booking={currentBooking}
             onBack={() => state.setCurrentStep(9)}
             onSavePhoto={state.handleSaveAfterPhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('after', url)}
@@ -249,9 +252,9 @@ function IosAppInner() {
       case 11:
         return (
           <Screen10CustomerSurvey
-            booking={state.activeBooking}
-            customerName={state.activeBooking.customerName}
-            staffName={state.activeBooking.assignedStaffName}
+            booking={currentBooking}
+            customerName={currentBooking.customerName}
+            staffName={currentBooking.assignedStaffName}
             onBack={state.handleBackToAfterPhoto}
             onComplete={state.handleCompleteSurvey}
           />
@@ -259,7 +262,7 @@ function IosAppInner() {
       case 12:
         return (
           <Screen11ProductUpsell
-            booking={state.activeBooking}
+            booking={currentBooking}
             actor={state.actor}
             onBack={state.handleBackToAfterPhoto}
             onGoToBilling={state.handleGoToBilling}
@@ -268,7 +271,7 @@ function IosAppInner() {
       case 13:
         return (
           <Screen12CheckoutBilling
-            booking={state.activeBooking}
+            booking={currentBooking}
             actor={state.actor}
             onBack={() => state.setCurrentStep(12)}
             onChoosePayment={state.handleChoosePaymentMethod}
@@ -278,7 +281,7 @@ function IosAppInner() {
       case 14:
         return (
           <Screen13CheckoutTip
-            booking={state.activeBooking}
+            booking={currentBooking}
             actor={state.actor}
             onBack={() => state.setCurrentStep(13)}
             onRecordTip={state.handleRecordTip}
@@ -287,10 +290,14 @@ function IosAppInner() {
       case 15:
         return (
           <Screen14ThermalReceiptDone
-            booking={state.activeBooking}
+            booking={currentBooking}
             actor={state.actor}
             onFinishOrder={state.handleFinishOrder}
-            onBack={() => state.setCurrentStep(1)}
+            onBack={() => {
+              state.setActiveServicingBookingId(null);
+              state.setBookingSegment('DONE');
+              state.setCurrentStep(1);
+            }}
           />
         );
       default:

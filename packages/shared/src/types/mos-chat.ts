@@ -5,8 +5,11 @@ export type MosChatTaskPriority = 'URGENT' | 'HIGH' | 'NORMAL';
 export type MosChatImageMimeType =
   'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/heic' | 'image/heif' | 'image/svg+xml' | 'image/bmp';
 
+export type MosChatVideoMimeType = 'video/mp4' | 'video/webm' | 'video/quicktime';
+
 export type MosChatFileMimeType =
   | MosChatImageMimeType
+  | MosChatVideoMimeType
   | 'application/pdf'
   | 'application/msword'
   | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -31,6 +34,9 @@ export interface MosChatImageAttachment {
   sizeBytes: number;
   width?: number;
   height?: number;
+  durationSec?: number;
+  posterUrl?: string;
+  isVideo?: boolean;
   source?: 'clipboard' | 'drive' | 'upload';
   fileExt?: string;
 }
@@ -557,6 +563,9 @@ export interface UploadMosChatImageRequest {
   fileName?: string;
   width?: number;
   height?: number;
+  durationSec?: number;
+  posterUrl?: string;
+  isVideo?: boolean;
   source?: 'clipboard' | 'drive' | 'upload';
 }
 
@@ -568,6 +577,7 @@ export interface UploadMosChatImageResponse {
 }
 
 export type UploadMosChatFileResponse = UploadMosChatImageResponse;
+export type UploadMosChatVideoResponse = UploadMosChatImageResponse;
 
 export interface CreateMosChatTaskRequest {
   conversationId: string;

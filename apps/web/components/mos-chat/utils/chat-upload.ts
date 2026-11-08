@@ -1,7 +1,11 @@
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
+import { isSupportedVideoFile, extractVideoMetadata } from './chat-video';
 
 const EXT_TO_MIME_FALLBACK: Record<string, string> = {
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
   pdf: 'application/pdf',
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   xls: 'application/vnd.ms-excel',
@@ -24,9 +28,56 @@ const EXT_TO_MIME_FALLBACK: Record<string, string> = {
 };
 
 /**
- * Reads any local file (image, PDF, Excel, Word, ZIP, etc.) as Base64 and uploads it to mOS Chat Storage
+ * Uploads a video file using Multipart/FormData streaming with client-side poster extraction
  */
-export async function uploadSingleChatFile(file: File): Promise<MosChatImageAttachment | null> {
+export async function uploadSingleChatVideo(
+  file: File,
+  onPercentProgress?: (percent: number) => void
+): Promise<MosChatImageAttachment | null> {
+  const metadata = await extractVideoMetadata(file).catch(() => ({
+    durationSec: 0,
+    width: undefined as number | undefined,
+    height: undefined as number | undefined,
+    posterDataUrl: undefined as string | undefined,
+  }));
+
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  if (metadata.durationSec) formData.append('durationSec', String(metadata.durationSec));
+  if (metadata.width) formData.append('width', String(metadata.width));
+  if (metadata.height) formData.append('height', String(metadata.height));
+
+  const res = await apiClient.chat.uploadVideo(formData, (evt: SafeAny) => {
+    if (evt?.total && evt.total > 0) {
+      const pct = Math.round((evt.loaded * 100) / evt.total);
+      onPercentProgress?.(pct);
+    }
+  });
+
+  if (res?.attachment) {
+    if (!res.attachment.posterUrl && metadata.posterDataUrl) {
+      res.attachment.posterUrl = metadata.posterDataUrl;
+    }
+    if (!res.attachment.durationSec && metadata.durationSec) {
+      res.attachment.durationSec = metadata.durationSec;
+    }
+    res.attachment.isVideo = true;
+    return res.attachment;
+  }
+  return null;
+}
+
+/**
+ * Reads any local file (video, image, PDF, Excel, Word, ZIP, etc.) and uploads it to mOS Chat Storage
+ */
+export async function uploadSingleChatFile(
+  file: File,
+  onPercentProgress?: (percent: number) => void
+): Promise<MosChatImageAttachment | null> {
+  if (isSupportedVideoFile(file)) {
+    return uploadSingleChatVideo(file, onPercentProgress);
+  }
+
   const base64Data = await new Promise<string | null>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -61,7 +112,7 @@ export async function uploadSingleChatFile(file: File): Promise<MosChatImageAtta
 export const uploadSingleChatImage = uploadSingleChatFile;
 
 /**
- * Uploads multiple files (images, PDFs, documents) concurrently in parallel,
+ * Uploads multiple files (videos, images, PDFs, documents) concurrently in parallel,
  * reporting progress and returning all successfully uploaded attachments.
  */
 export async function uploadMultipleChatFiles(

@@ -79,21 +79,23 @@ export function Screen12CheckoutBilling({
   const selectedUnderCombo = booking?.selectedUnderCombo || null;
   const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
+  const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
   const effectiveServiceCharge = selectedCombo
     ? selectedCombo.todaySingleServiceWaived
       ? 0
       : servicePrice
     : comboRedemption
       ? comboRedemption.totalCustomerPayToday
-      : servicePrice;
+      : isComboLive
+        ? upgradePrice
+        : servicePrice;
   const subtotal =
-    booking?.billing?.subtotal ??
     effectiveServiceCharge +
-      (selectedCombo ? selectedCombo.price : 0) +
-      (selectedUnderCombo ? selectedUnderCombo.price : 0) +
-      cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+    (selectedCombo ? selectedCombo.price : 0) +
+    (selectedUnderCombo ? selectedUnderCombo.price : 0) +
+    cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const vatRate = booking?.billing?.vatRate ?? 0.08;
-  const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
+  const vatAmount = Math.round(subtotal * vatRate);
   const totalWithVat = subtotal + vatAmount;
 
   // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ (Khớp 100% legacy database & iOS App cũ)
@@ -334,6 +336,21 @@ export function Screen12CheckoutBilling({
                     </span>
                     <span className="text-[10px] text-sky-700 font-bold bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">
                       Trừ 1 lượt gói
+                    </span>
+                  </>
+                ) : isComboLive ? (
+                  <>
+                    <span className="text-[13px] text-sky-800 font-extrabold tabular-nums block">
+                      {upgradePrice > 0 ? `+${upgradePrice.toLocaleString('vi-VN')} đ` : '0 đ'}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                        upgradePrice > 0
+                          ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                          : 'text-sky-700 bg-sky-50 border-sky-200'
+                      }`}
+                    >
+                      {upgradePrice > 0 ? 'Trừ 1 lượt + Phụ thu' : 'Trừ 1 lượt gói'}
                     </span>
                   </>
                 ) : (

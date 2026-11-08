@@ -208,6 +208,7 @@ export function getWingsMenuDetail(
         durationMin: 50,
         newPrice: 440000,
         refillPrice: 280000,
+        badge: 'MOST POPULAR',
       };
     if (cNum === 90)
       return {
@@ -267,6 +268,7 @@ export function getWingsMenuDetail(
         durationMin: 55,
         newPrice: 440000,
         refillPrice: 280000,
+        badge: 'MOST POPULAR',
       };
     if (cNum === 80)
       return {
@@ -410,6 +412,7 @@ export function getWingsMenuDetail(
         durationMin: 75,
         newPrice: 660000,
         refillPrice: 390000,
+        badge: 'MOST POPULAR',
       };
     }
     if (cNum === 80) {
@@ -421,6 +424,7 @@ export function getWingsMenuDetail(
           durationMin: 85,
           newPrice: 660000,
           refillPrice: 390000,
+          badge: 'BEST SELLER',
         };
       if (is5D)
         return {
@@ -430,6 +434,7 @@ export function getWingsMenuDetail(
           durationMin: 95,
           newPrice: 990000,
           refillPrice: 590000,
+          badge: 'BEST SELLER',
         };
       return {
         materialCode: 'ULTRALIGHT',
@@ -467,7 +472,6 @@ export function getWingsMenuDetail(
         durationMin: 110,
         newPrice: 880000,
         refillPrice: 530000,
-        badge: 'BEST SELLER',
       };
     }
     if (cNum === 120) {
@@ -540,6 +544,7 @@ export function getWingsMenuDetail(
         durationMin: 80,
         newPrice: 990000,
         refillPrice: 590000,
+        badge: 'MOST POPULAR',
       };
     }
     if (cNum === 90) {
@@ -597,7 +602,6 @@ export function getWingsMenuDetail(
         durationMin: 110,
         newPrice: 1440000,
         refillPrice: 860000,
-        badge: 'BEST SELLER',
       };
     }
     if (cNum === 130) {
@@ -690,6 +694,7 @@ export function getWingsMenuDetail(
           durationMin: 50,
           newPrice: 550000,
           refillPrice: 340000,
+          badge: 'MOST POPULAR',
         };
       if (is3X)
         return {
@@ -699,6 +704,7 @@ export function getWingsMenuDetail(
           durationMin: 50,
           newPrice: 660000,
           refillPrice: 390000,
+          badge: 'MOST POPULAR',
         };
       if (is5X)
         return {
@@ -729,6 +735,7 @@ export function getWingsMenuDetail(
           durationMin: 65,
           newPrice: 660000,
           refillPrice: 390000,
+          badge: 'BEST SELLER',
         };
       if (is3X)
         return {
@@ -748,6 +755,7 @@ export function getWingsMenuDetail(
           durationMin: 70,
           newPrice: 1220000,
           refillPrice: 740000,
+          badge: 'BEST SELLER',
         };
       return {
         materialCode: 'HYPERLIGHT',
@@ -756,7 +764,7 @@ export function getWingsMenuDetail(
         durationMin: 70,
         newPrice: 880000,
         refillPrice: 530000,
-        badge: 'BEST SELLER',
+        badge: 'MOST POPULAR',
       };
     }
     if (cNum === 110) {
@@ -794,7 +802,6 @@ export function getWingsMenuDetail(
         durationMin: 90,
         newPrice: 990000,
         refillPrice: 590000,
-        badge: 'BEST SELLER',
       };
     }
     if (cNum === 130) {
@@ -2248,14 +2255,18 @@ export function resolveQuickCheckInComboPreset(
     : 0;
 
   const hasNormalRemaining = normalRemaining > 0;
-  const hasRetainRemaining = isAlwaysFullSet ? remainingSessions > 0 : retainRemaining > 0;
+  const hasRetainRemaining = hasExplicitCounts
+    ? retainRemaining > 0
+    : isAlwaysFullSet
+      ? remainingSessions > 0
+      : retainRemaining > 0;
 
   // Tự động chọn chế độ mặc định:
-  // - Nếu đi <= 25 ngày (Combo) và còn lần Dặm (hoặc Mink/IvyLight): mặc định chọn 'Retain'.
+  // - Nếu đi <= 25 ngày (Combo) và còn lần Dặm: mặc định chọn 'Retain'.
   // - Nếu đi <= 25 ngày nhưng gói đã hết lần Dặm mà chỉ còn lần Nối Mới: tự động chọn 'Normal' (dùng lần Nối Mới).
   // - Nếu đi > 25 ngày: mặc định chọn 'Normal'.
   const expectedServiceType: 'Normal' | 'Retain' = isWithinRetainWindow
-    ? isComboLive && !isAlwaysFullSet && !hasRetainRemaining && hasNormalRemaining
+    ? isComboLive && !hasRetainRemaining && hasNormalRemaining
       ? 'Normal'
       : 'Retain'
     : 'Normal';

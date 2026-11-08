@@ -434,6 +434,7 @@ export async function GET(request: NextRequest) {
         COALESCE(sp.full_name, 'Chưa phân công') AS staff_name,
         sp.avatar AS staff_avatar,
         os.assigned_staff_id,
+        os.booked_staff_id,
         os.check_in_staff_id,
         os.check_out_staff_id,
         COALESCE(checkin_up.full_name, NULL) AS check_in_staff_name,
@@ -447,11 +448,11 @@ export async function GET(request: NextRequest) {
         o.user_contact_id,
         (SELECT id FROM user_contact WHERE user_id = o.user_id AND is_disabled = 0 ORDER BY id DESC LIMIT 1)
       )
-      LEFT JOIN user_profile booker_up ON booker_up.user_id = o.created_staff_id
       LEFT JOIN (
         SELECT order_id, MIN(id) as min_os_id FROM order_service GROUP BY order_id
       ) first_os ON first_os.order_id = o.id
       LEFT JOIN order_service os ON os.id = first_os.min_os_id
+      LEFT JOIN user_profile booker_up ON booker_up.user_id = COALESCE(os.created_staff_id, o.created_staff_id)
       LEFT JOIN service s ON s.id = os.service_id
       LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
       LEFT JOIN user_profile sp ON sp.user_id = os.assigned_staff_id
@@ -825,7 +826,10 @@ export async function GET(request: NextRequest) {
         0
       );
       const comboTotal = selectedCombo ? Number(selectedCombo.price || 0) : 0;
-      const subtotal = servicePrice + comboTotal + productTotal;
+      const upgradePrice = Number(override.upgradePrice || 0);
+      const isClientComboLive = Boolean(comboInfo.isComboLive);
+      const effectiveServiceTotal = selectedCombo ? 0 : isClientComboLive ? upgradePrice : servicePrice;
+      const subtotal = effectiveServiceTotal + comboTotal + productTotal;
       const tipAmount = Number(override.billing?.tipAmount ?? 50000);
 
       // Rule: Ai Check-in nhận 10% Tip, Ai Check-out nhận 10% Tip (Chia 50/50 phần 20% Tip tư vấn), Làm mi nhận 70% Tip
@@ -902,6 +906,22 @@ export async function GET(request: NextRequest) {
         assignedStaffId,
         isUnassignedQueue,
         isNextQueueCustomer: isUnassignedQueue,
+        isBookedInAdvance:
+          !isUnassignedQueue &&
+          assignedStaffId > 0 &&
+          Boolean(
+            (r.booked_staff_id && Number(r.booked_staff_id) > 0 && Number(r.booked_staff_id) === assignedStaffId) ||
+            note.toLowerCase().includes('book') ||
+            note.toLowerCase().includes('chỉ định')
+          ),
+        isTuaAssigned:
+          !isUnassignedQueue &&
+          assignedStaffId > 0 &&
+          !Boolean(
+            (r.booked_staff_id && Number(r.booked_staff_id) > 0 && Number(r.booked_staff_id) === assignedStaffId) ||
+            note.toLowerCase().includes('book') ||
+            note.toLowerCase().includes('chỉ định')
+          ),
         bookingAccessTag: isUnassignedQueue
           ? ('NEXT_QUEUE_CUSTOMER' as const)
           : assignedStaffId === activeStaffId || checkInStaffId === activeStaffId || checkOutStaffId === activeStaffId
@@ -956,6 +976,9 @@ export async function GET(request: NextRequest) {
         },
         progress: override.progress || undefined,
         survey: override.survey || undefined,
+        upgradePrice: Number(override.upgradePrice || 0),
+        cvRotationPoints: override.cvRotationPoints,
+        cvRotationBreakdown: override.cvRotationBreakdown,
         cartProducts,
         cvRewardBreakdown: {
           techTipPercent: 70,
@@ -968,7 +991,7 @@ export async function GET(request: NextRequest) {
         },
         billing: {
           subtotal,
-          serviceTotal: servicePrice,
+          serviceTotal: effectiveServiceTotal,
           comboTotal,
           productTotal,
           paymentMethod: override.billing?.paymentMethod || ('VIETQR' as const),
@@ -1000,6 +1023,11 @@ export async function GET(request: NextRequest) {
             checkInStaffTier: override.checkInStaffTier || 'CVL',
             assignedStaffId: override.assignedStaffId || mockBooking.assignedStaffId,
             assignedStaffName: override.assignedStaffName || mockBooking.assignedStaffName,
+            upgradePrice:
+              override.upgradePrice !== undefined ? Number(override.upgradePrice) : mockBooking.upgradePrice,
+            cvRotationPoints:
+              override.cvRotationPoints !== undefined ? override.cvRotationPoints : mockBooking.cvRotationPoints,
+            cvRotationBreakdown: override.cvRotationBreakdown || mockBooking.cvRotationBreakdown,
           } as any);
         }
       }
@@ -1326,6 +1354,12 @@ export async function POST(request: NextRequest) {
         billing: {
           ...(current.billing || {}),
           ...(body.billing || {}),
+        },
+        progress: {
+          ...(current.progress || {}),
+          completedAt: new Date().toISOString(),
+          timerRunning: false,
+          currentStep: 1,
         },
         completedAt: new Date().toISOString(),
       };

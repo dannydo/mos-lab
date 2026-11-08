@@ -5,6 +5,7 @@ import { Tooltip, Popover, Avatar, theme } from 'antd';
 import {
   Sparkles,
   ImagePlus,
+  Film,
   HardDrive,
   UserRoundPlus,
   AlarmClockPlus,
@@ -918,9 +919,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
 
                   <Tooltip
                     title={
-                      openStickerPopoverKey === 'composer:main:desktop'
-                        ? undefined
-                        : 'Chèn biểu tượng cảm xúc Wings'
+                      openStickerPopoverKey === 'composer:main:desktop' ? undefined : 'Chèn biểu tượng cảm xúc Wings'
                     }
                   >
                     <Popover
@@ -964,6 +963,18 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       style={{ color: token.colorTextSecondary }}
                     >
                       <ImagePlus size={16} />
+                    </button>
+                  </Tooltip>
+
+                  {/* [Film] Đính kèm Video vào khung chat (MOS-CHAT-VIDEO) */}
+                  <Tooltip title="Đính kèm video (MP4, WebM, MOV tối đa 50MB)">
+                    <button
+                      type="button"
+                      aria-label="Đính kèm video"
+                      onClick={() => triggerFilePicker('main')}
+                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors text-amber-500 hover:text-amber-400"
+                    >
+                      <Film size={16} />
                     </button>
                   </Tooltip>
 

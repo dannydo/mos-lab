@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { decodeAndValidateChatFile, sanitizeChatAttachments } from './routes.js';
+import { decodeAndValidateChatFile, sanitizeChatAttachments, saveChatVideoBuffer } from './chat-file.service.js';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
 
 describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
@@ -96,7 +96,7 @@ describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
         {
           name: 'Error',
           message:
-            'Định dạng tệp không được hỗ trợ (hệ thống hỗ trợ PDF, Excel, Word, PowerPoint, TXT, CSV, ZIP và hình ảnh).',
+            'Định dạng tệp không được hỗ trợ (hệ thống hỗ trợ Video MP4/WebM/MOV, PDF, Excel, Word, PowerPoint, TXT, CSV, ZIP và hình ảnh).',
         }
       );
     });
@@ -116,6 +116,80 @@ describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
         },
         (err: Error) => {
           return err.message.includes('Tệp quá lớn');
+        }
+      );
+    });
+
+    it('successfully validates and decodes an MP4 video (MOS-CHAT-VIDEO)', async () => {
+      // MP4 ISO BMFF mock: 4 bytes length + 'ftyp' + 4 bytes brand
+      const mp4Header = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x18]),
+        Buffer.from('ftypmp42', 'ascii'),
+        Buffer.alloc(100),
+      ]);
+      const base64Data = mp4Header.toString('base64');
+
+      const result = await decodeAndValidateChatFile({
+        dataBase64: base64Data,
+        mimeType: 'video/mp4' as any,
+        fileName: 'screen_record_bug_subthread.mp4',
+        isVideo: true,
+      });
+
+      assert.equal(result.ext, 'mp4');
+      assert.equal(result.finalMimeType, 'video/mp4');
+      assert.ok(result.buffer.length > 0);
+    });
+
+    it('successfully validates and decodes a WebM video (MOS-CHAT-VIDEO)', async () => {
+      // WebM EBML ID header: 0x1A, 0x45, 0xDF, 0xA3
+      const webmHeader = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(64)]);
+      const base64Data = webmHeader.toString('base64');
+
+      const result = await decodeAndValidateChatFile({
+        dataBase64: base64Data,
+        mimeType: 'video/webm' as any,
+        fileName: 'demo_huong_dan_subthread.webm',
+        isVideo: true,
+      });
+
+      assert.equal(result.ext, 'webm');
+      assert.equal(result.finalMimeType, 'video/webm');
+      assert.ok(result.buffer.length > 0);
+    });
+
+    it('successfully validates QuickTime MOV video (MOS-CHAT-VIDEO)', async () => {
+      const movHeader = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x14]),
+        Buffer.from('ftypqt  ', 'ascii'),
+        Buffer.alloc(64),
+      ]);
+      const base64Data = movHeader.toString('base64');
+
+      const result = await decodeAndValidateChatFile({
+        dataBase64: base64Data,
+        mimeType: 'video/quicktime' as any,
+        fileName: 'iphone_screen_record.mov',
+      });
+
+      assert.equal(result.ext, 'mov');
+      assert.equal(result.finalMimeType, 'video/quicktime');
+    });
+
+    it('rejects corrupted WebM video lacking EBML header', async () => {
+      const corruptedData = Buffer.from('NOT_A_WEBM_VIDEO_BINARY').toString('base64');
+
+      await assert.rejects(
+        async () => {
+          await decodeAndValidateChatFile({
+            dataBase64: corruptedData,
+            mimeType: 'video/webm' as any,
+            fileName: 'broken.webm',
+          });
+        },
+        {
+          name: 'Error',
+          message: 'Nội dung tệp không phải định dạng WebM hợp lệ.',
         }
       );
     });
@@ -140,6 +214,30 @@ describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
       assert.equal(sanitized[0].name, 'order_kho_thang_10.pdf');
       assert.equal(sanitized[0].sizeBytes, 1048576);
       assert.equal(sanitized[0].fileExt, 'pdf');
+    });
+
+    it('preserves video attachment metadata including durationSec, posterUrl, isVideo (MOS-CHAT-VIDEO)', () => {
+      const raw: MosChatImageAttachment[] = [
+        {
+          id: 'att-video-1',
+          url: '/api/chat/media/12345678-1234-1234-1234-1234567890ab.mp4',
+          name: 'demo_subthread.mp4',
+          mimeType: 'video/mp4',
+          sizeBytes: 15000000,
+          durationSec: 45,
+          posterUrl: '/api/chat/media/abcdef12-3456-7890-abcd-ef1234567890.jpg',
+          isVideo: true,
+          fileExt: 'mp4',
+        },
+      ];
+
+      const sanitized = sanitizeChatAttachments(raw);
+      assert.equal(sanitized.length, 1);
+      assert.equal(sanitized[0].url, '/api/chat/media/12345678-1234-1234-1234-1234567890ab.mp4');
+      assert.equal(sanitized[0].name, 'demo_subthread.mp4');
+      assert.equal(sanitized[0].isVideo, true);
+      assert.equal(sanitized[0].durationSec, 45);
+      assert.equal(sanitized[0].posterUrl, '/api/chat/media/abcdef12-3456-7890-abcd-ef1234567890.jpg');
     });
 
     it('filters out data: URI attachments to protect database from bloat', () => {
@@ -176,6 +274,33 @@ describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
 
       const sanitized = sanitizeChatAttachments(raw);
       assert.equal(sanitized.length, 12);
+    });
+  });
+
+  describe('saveChatVideoBuffer', () => {
+    it('successfully saves valid MP4 video buffer to disk and returns filename and mime', async () => {
+      const dummyVideo = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x18]),
+        Buffer.from('ftypmp42', 'ascii'),
+        Buffer.alloc(100),
+      ]);
+      const res = await saveChatVideoBuffer(dummyVideo, 'test_subthread_clip.mp4', 'video/mp4');
+      assert.equal(res.ext, 'mp4');
+      assert.equal(res.mimeType, 'video/mp4');
+      assert.match(res.fileName, /^[a-f0-9-]{36}\.mp4$/);
+    });
+
+    it('rejects video buffer exceeding 50MB limit', async () => {
+      const hugeBuffer = Buffer.alloc(51 * 1024 * 1024);
+      await assert.rejects(
+        async () => {
+          await saveChatVideoBuffer(hugeBuffer, 'huge.mp4', 'video/mp4');
+        },
+        {
+          name: 'Error',
+          message: 'Video quá lớn (tối đa 50MB).',
+        }
+      );
     });
   });
 });

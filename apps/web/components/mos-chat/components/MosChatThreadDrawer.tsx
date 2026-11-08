@@ -15,6 +15,7 @@ import {
   CornerDownRight,
   Eye,
   FilePenLine,
+  Film,
   HardDrive,
   History,
   ImagePlus,
@@ -54,12 +55,7 @@ import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey 
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
-import {
-  findSourceMessage,
-  scrollToMessageAndFlash,
-  cleanQuotedText,
-  formatQuotePayload,
-} from '../utils/quoteUtils';
+import { findSourceMessage, scrollToMessageAndFlash, cleanQuotedText, formatQuotePayload } from '../utils/quoteUtils';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
 const ThreadReplyInlineEditor: React.FC<{
@@ -1007,7 +1003,9 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     zIndex={1500}
                     destroyOnHidden
                     open={openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`}
-                    onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `thread-root:${activeThreadMessage.id}` : null)}
+                    onOpenChange={(vis) =>
+                      setOpenStickerPopoverKey(vis ? `thread-root:${activeThreadMessage.id}` : null)
+                    }
                     content={
                       openStickerPopoverKey === `thread-root:${activeThreadMessage.id}`
                         ? renderReactionPickerContent(activeThreadMessage.id, activeThreadMessage)
@@ -2558,6 +2556,18 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         style={{ color: token.colorTextSecondary }}
                       >
                         <ImagePlus size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [Film] Đính kèm Video vào luồng (MOS-CHAT-VIDEO) */}
+                    <Tooltip title="Đính kèm video vào luồng (MP4, WebM, MOV tối đa 50MB)">
+                      <button
+                        type="button"
+                        aria-label="Đính kèm video vào luồng"
+                        onClick={() => triggerFilePicker('thread')}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform text-amber-500 hover:text-amber-400"
+                      >
+                        <Film size={15} />
                       </button>
                     </Tooltip>
 

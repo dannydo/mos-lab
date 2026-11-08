@@ -977,11 +977,28 @@ export function resolveTaskPeopleFlow(
   };
 }
 
+export function isVideoAttachment(att?: MosChatImageAttachment | null): boolean {
+  if (!att) return false;
+  if (att.isVideo) return true;
+  if (att.mimeType && att.mimeType.startsWith('video/')) return true;
+  const ext = ((att.name || att.url || '').split('.').pop() || '').toLowerCase();
+  return ['mp4', 'webm', 'mov'].includes(ext);
+}
+
 export function isImageAttachment(att?: MosChatImageAttachment | null): boolean {
   if (!att) return false;
+  if (isVideoAttachment(att)) return false;
   if (att.mimeType && att.mimeType.startsWith('image/')) return true;
   const ext = ((att.name || att.url || '').split('.').pop() || '').toLowerCase();
   return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic', 'heif'].includes(ext);
+}
+
+export function formatVideoDuration(seconds?: number): string {
+  if (!seconds || isNaN(seconds) || seconds <= 0) return '00:00';
+  const total = Math.round(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 export function isPdfAttachment(att?: MosChatImageAttachment | null): boolean {

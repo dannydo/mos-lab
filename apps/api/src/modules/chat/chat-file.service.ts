@@ -7,7 +7,8 @@ import { MosChatImageAttachment, UploadMosChatImageRequest, SafeAny } from '@mos
 
 export const MAX_CHAT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB max per image
 export const MAX_CHAT_FILE_BYTES = 25 * 1024 * 1024; // 25 MB max per file / PDF / document
-export const CHAT_IMAGE_BODY_LIMIT = 35 * 1024 * 1024; // 35 MB body limit for base64 payload
+export const MAX_CHAT_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB max per video (MOS-CHAT-VIDEO)
+export const CHAT_IMAGE_BODY_LIMIT = 75 * 1024 * 1024; // 75 MB body limit for base64 / video payload
 
 export const CHAT_MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -18,6 +19,9 @@ export const CHAT_MIME_EXTENSIONS: Record<string, string> = {
   'image/heif': 'jpg',
   'image/svg+xml': 'svg',
   'image/bmp': 'bmp',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
   'application/pdf': 'pdf',
   'application/msword': 'doc',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
@@ -42,6 +46,9 @@ export const EXT_TO_CHAT_MIME: Record<string, string> = {
   gif: 'image/gif',
   svg: 'image/svg+xml',
   bmp: 'image/bmp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
   pdf: 'application/pdf',
   doc: 'application/msword',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -135,7 +142,7 @@ export async function decodeAndValidateChatFile(input: UploadMosChatImageRequest
   let ext = CHAT_MIME_EXTENSIONS[mimeType] || (fileExtFromFileName in EXT_TO_CHAT_MIME ? fileExtFromFileName : '');
   if (!ext) {
     throw new Error(
-      'Định dạng tệp không được hỗ trợ (hệ thống hỗ trợ PDF, Excel, Word, PowerPoint, TXT, CSV, ZIP và hình ảnh).'
+      'Định dạng tệp không được hỗ trợ (hệ thống hỗ trợ Video MP4/WebM/MOV, PDF, Excel, Word, PowerPoint, TXT, CSV, ZIP và hình ảnh).'
     );
   }
   if (!mimeType || !(mimeType in CHAT_MIME_EXTENSIONS)) {
@@ -145,15 +152,22 @@ export async function decodeAndValidateChatFile(input: UploadMosChatImageRequest
   const encoded = String(input.dataBase64 || '')
     .trim()
     .replace(/^data:[^;]+;base64,/i, '');
-  const maxBytes = mimeType.startsWith('image/') ? MAX_CHAT_IMAGE_BYTES : MAX_CHAT_FILE_BYTES;
+
+  const isVideo = mimeType.startsWith('video/') || ['mp4', 'webm', 'mov'].includes(ext) || Boolean(input.isVideo);
+
+  const maxBytes = isVideo
+    ? MAX_CHAT_VIDEO_BYTES
+    : mimeType.startsWith('image/')
+      ? MAX_CHAT_IMAGE_BYTES
+      : MAX_CHAT_FILE_BYTES;
+  const maxSizeLabel = isVideo ? '50MB' : mimeType.startsWith('image/') ? '8MB' : '25MB';
+
   if (!encoded || encoded.length > Math.ceil(maxBytes * 1.45)) {
-    throw new Error(
-      `Tệp quá lớn (tối đa ${mimeType.startsWith('image/') ? '8MB' : '25MB'}) hoặc dữ liệu tệp không hợp lệ.`
-    );
+    throw new Error(`Tệp quá lớn (tối đa ${maxSizeLabel}) hoặc dữ liệu tệp không hợp lệ.`);
   }
   let buffer = Buffer.from(encoded, 'base64');
   if (buffer.length <= 0 || buffer.length > maxBytes) {
-    throw new Error(`Tệp quá lớn (tối đa ${mimeType.startsWith('image/') ? '8MB' : '25MB'}).`);
+    throw new Error(`Tệp quá lớn (tối đa ${maxSizeLabel}).`);
   }
 
   let finalMimeType = mimeType;
@@ -193,6 +207,24 @@ export async function decodeAndValidateChatFile(input: UploadMosChatImageRequest
     }
     finalMimeType = 'application/pdf';
     ext = 'pdf';
+  } else if (isVideo) {
+    if (buffer.length < 8) {
+      throw new Error('Nội dung tệp video không hợp lệ.');
+    }
+    if (ext === 'webm' || mimeType === 'video/webm') {
+      const isWebm = buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+      if (!isWebm) {
+        throw new Error('Nội dung tệp không phải định dạng WebM hợp lệ.');
+      }
+      finalMimeType = 'video/webm';
+      ext = 'webm';
+    } else if (ext === 'mov' || mimeType === 'video/quicktime') {
+      finalMimeType = 'video/quicktime';
+      ext = 'mov';
+    } else {
+      finalMimeType = 'video/mp4';
+      ext = 'mp4';
+    }
   }
 
   return { buffer, finalMimeType, ext };
@@ -265,6 +297,11 @@ export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChat
       const fallbackMime =
         EXT_TO_CHAT_MIME[ext] ||
         (item.mimeType && item.mimeType in CHAT_MIME_EXTENSIONS ? item.mimeType : 'application/octet-stream');
+      const isVideo =
+        Boolean(item.isVideo) ||
+        ['mp4', 'webm', 'mov'].includes(ext) ||
+        (item.mimeType ? item.mimeType.startsWith('video/') : false);
+
       return {
         id: String(item.id || `att-${crypto.randomUUID().slice(0, 8)}`),
         url: item.url.trim(),
@@ -273,8 +310,40 @@ export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChat
         sizeBytes: Math.max(0, rawSize || 0),
         width: item.width ? Number(item.width) : undefined,
         height: item.height ? Number(item.height) : undefined,
+        durationSec: item.durationSec ? Number(item.durationSec) : undefined,
+        posterUrl: item.posterUrl ? String(item.posterUrl).trim() : undefined,
+        isVideo: isVideo ? true : undefined,
         source: item.source || 'upload',
         fileExt: ext || undefined,
       };
     });
+}
+
+export async function saveChatVideoBuffer(
+  buffer: Buffer,
+  originalFileName: string,
+  rawMimeType?: string
+): Promise<{ fileName: string; mimeType: string; ext: string }> {
+  const fileExtFromFileName = (originalFileName.split('.').pop() || '').toLowerCase();
+  let mimeType = String(rawMimeType || '')
+    .trim()
+    .toLowerCase();
+  if ((!mimeType || mimeType === 'application/octet-stream') && fileExtFromFileName in EXT_TO_CHAT_MIME) {
+    mimeType = EXT_TO_CHAT_MIME[fileExtFromFileName];
+  }
+  const ext = CHAT_MIME_EXTENSIONS[mimeType] || (fileExtFromFileName in EXT_TO_CHAT_MIME ? fileExtFromFileName : '');
+  if (!ext || !['mp4', 'webm', 'mov'].includes(ext)) {
+    throw new Error('Định dạng video không được hỗ trợ (hệ thống hỗ trợ MP4, WebM, QuickTime MOV).');
+  }
+  if (buffer.length <= 0 || buffer.length > MAX_CHAT_VIDEO_BYTES) {
+    throw new Error('Video quá lớn (tối đa 50MB).');
+  }
+
+  const rootDir = mosChatMediaRoot();
+  await mkdir(rootDir, { recursive: true, mode: 0o700 });
+  const fileUuid = crypto.randomUUID();
+  const fileName = `${fileUuid}.${ext}`;
+  const targetPath = resolve(rootDir, fileName);
+  await writeFile(targetPath, buffer, { mode: 0o600 });
+  return { fileName, mimeType: EXT_TO_CHAT_MIME[ext] || mimeType, ext };
 }

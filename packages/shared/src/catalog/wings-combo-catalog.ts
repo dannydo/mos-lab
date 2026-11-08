@@ -5215,7 +5215,7 @@ const VOLUME_FIBER_MAP: Record<
       countPerEye: 90,
       totalFibers: 720,
       fanLabel: '4𝑿 · 90 trụ/mắt (Trụ 4 sợi · 720 sợi)',
-      badge: 'BEST SELLER',
+      badge: 'MOST POPULAR',
     },
     '990': { countPerEye: 110, totalFibers: 880, fanLabel: '4𝑿 · 110 trụ/mắt (Trụ 4 sợi · 880 sợi)' },
     '1330': { countPerEye: 130, totalFibers: 1040, fanLabel: '4𝑿 · 130 trụ/mắt (Trụ 4 sợi · 1040 sợi)' },
@@ -5247,7 +5247,12 @@ const VOLUME_FIBER_MAP: Record<
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   IvyLight_4L: {
-    '990': { countPerEye: 70, totalFibers: 560, fanLabel: '4𝓵 · 70 trụ/mắt (Trụ 4 sợi dẹp · 560 sợi)' },
+    '990': {
+      countPerEye: 70,
+      totalFibers: 560,
+      fanLabel: '4𝓵 · 70 trụ/mắt (Trụ 4 sợi dẹp · 560 sợi)',
+      badge: 'MOST POPULAR',
+    },
     '1220': {
       countPerEye: 90,
       totalFibers: 720,
@@ -5283,7 +5288,12 @@ const VOLUME_FIBER_MAP: Record<
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   UltraLight_4D: {
-    '660': { countPerEye: 60, totalFibers: 480, fanLabel: '4D · 60 fan/mắt (Fan 4 sợi · 480 sợi)' },
+    '660': {
+      countPerEye: 60,
+      totalFibers: 480,
+      fanLabel: '4D · 60 fan/mắt (Fan 4 sợi · 480 sợi)',
+      badge: 'MOST POPULAR',
+    },
     '770': {
       countPerEye: 80,
       totalFibers: 640,
@@ -5294,7 +5304,6 @@ const VOLUME_FIBER_MAP: Record<
       countPerEye: 100,
       totalFibers: 800,
       fanLabel: '4D · 100 fan/mắt (Fan 4 sợi · 800 sợi)',
-      badge: 'BEST SELLER',
     },
     '1110': { countPerEye: 120, totalFibers: 960, fanLabel: '4D · 120 fan/mắt (Fan 4 sợi · 960 sợi)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },

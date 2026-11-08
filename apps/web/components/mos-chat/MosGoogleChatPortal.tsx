@@ -48,6 +48,8 @@ import {
   ChevronRight,
   Minus,
   ImagePlus,
+  Film,
+  Play,
   HardDrive,
   Loader2,
   ZoomIn,
@@ -227,6 +229,9 @@ import {
   getFileExtension,
   formatBackendAiMessage,
 } from './utils/chat-helpers';
+import { isVideoAttachment, formatVideoDuration, isSupportedVideoFile } from './utils/chat-video';
+import { MosChatVideoPlayer } from './components/MosChatVideoPlayer';
+import { uploadSingleChatVideo } from './utils/chat-upload';
 import { useMosChatBridgeListener } from './store/mos-chat-bridge';
 import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from './store/useChatRealtimeSync';
 import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
@@ -3847,6 +3852,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const isSupportedChatFile = (f: File): boolean => {
     if (isImageOrHeicFile(f)) return true;
+    if (isSupportedVideoFile(f)) return true;
     if (
       f.type &&
       (f.type.startsWith('text/') ||
@@ -3859,7 +3865,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       return true;
     }
     const ext = (f.name.split('.').pop() || '').toLowerCase();
-    return ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'json', 'zip', 'rar', '7z'].includes(ext);
+    return [
+      'mp4',
+      'webm',
+      'mov',
+      'pdf',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'ppt',
+      'pptx',
+      'txt',
+      'csv',
+      'json',
+      'zip',
+      'rar',
+      '7z',
+    ].includes(ext);
   };
 
   const handleProcessImageFiles = useCallback(
@@ -3871,14 +3894,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     ) => {
       const candidateFiles = Array.from(files).filter(isSupportedChatFile);
       if (candidateFiles.length === 0) {
-        antdMessage.warning('Định dạng tệp không được hỗ trợ (hỗ trợ PDF, Excel, Word, TXT, ZIP và hình ảnh).');
+        antdMessage.warning(
+          'Định dạng tệp không được hỗ trợ (hỗ trợ Video MP4/WebM/MOV, PDF, Excel, Word, TXT, ZIP và hình ảnh).'
+        );
         return;
       }
 
       setUploadingCount((c) => c + candidateFiles.length);
       for (const file of candidateFiles.slice(0, 10)) {
         try {
-          if (isImageOrHeicFile(file)) {
+          if (isSupportedVideoFile(file)) {
+            // Check file size (50MB)
+            if (file.size > 50 * 1024 * 1024) {
+              antdMessage.error(`Video "${file.name}" vượt quá dung lượng tối đa cho phép (50MB).`);
+              continue;
+            }
+            const uploadedAtt = await uploadSingleChatVideo(file);
+            if (uploadedAtt) {
+              uploadedAtt.source = source;
+              appendAttachmentToTarget(uploadedAtt, scope, convId);
+              antdMessage.success(`Đã đính kèm video "${file.name}"`);
+            }
+          } else if (isImageOrHeicFile(file)) {
             const compressed = await readOrCompressImagePayload(file);
             const uploaded = await apiClient.chat.uploadImage({
               dataBase64: compressed.dataBase64,
@@ -7897,12 +7934,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const renderMessageAttachments = (attachments?: MosChatImageAttachment[], compact = false, isMine = false) => {
     if (!attachments || attachments.length === 0) return null;
-    const images = attachments.filter(isImageAttachment);
-    const files = attachments.filter((att) => !isImageAttachment(att));
+    const videos = attachments.filter(isVideoAttachment);
+    const images = attachments.filter((att) => isImageAttachment(att) && !isVideoAttachment(att));
+    const files = attachments.filter((att) => !isImageAttachment(att) && !isVideoAttachment(att));
     const totalImages = images.length;
 
     return (
-      <div className={`mt-1.5 flex flex-col gap-2 ${isMine ? 'items-end' : 'items-start'}`}>
+      <div className={`mt-1.5 flex flex-col gap-2 w-full ${isMine ? 'items-end' : 'items-start'}`}>
+        {/* Video Attachments (MOS-CHAT-VIDEO: Inline HTML5 Video Player) */}
+        {videos.length > 0 && (
+          <div className={`flex flex-col gap-2 w-full ${isMine ? 'items-end' : 'items-start'}`}>
+            {videos.map((att) => (
+              <MosChatVideoPlayer key={att.id} attachment={att} compact={compact} isMine={isMine} />
+            ))}
+          </div>
+        )}
+
         {/* Document & File Attachments (PDF, Excel, Word, ZIP...) */}
         {files.length > 0 && (
           <div className={`flex flex-wrap gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
@@ -9900,9 +9947,62 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return (
       <div className="flex items-center gap-2 pb-2 overflow-x-auto">
         {items.map((att, idx) => {
-          const isImg = isImageAttachment(att);
+          const isVid = isVideoAttachment(att);
+          const isImg = !isVid && isImageAttachment(att);
           const ext = getFileExtension(att.name || att.url);
           const isPdf = ext.toLowerCase() === 'pdf' || att.mimeType === 'application/pdf';
+
+          if (isVid) {
+            return (
+              <div
+                key={att.id}
+                data-no-chat-autofocus="true"
+                className="relative h-14 min-w-[150px] max-w-[220px] rounded-lg overflow-hidden shrink-0 group/stage border flex items-center gap-2 pr-2"
+                style={{ border: `1px solid ${borderStrong}`, background: surfaceRaised }}
+              >
+                <div className="relative w-14 h-14 bg-black flex items-center justify-center shrink-0 overflow-hidden">
+                  {att.posterUrl ? (
+                    <img src={att.posterUrl} alt={att.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Film size={20} className="text-amber-400" />
+                  )}
+                  <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
+                    <Play size={14} className="fill-white text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="text-[11px] font-semibold truncate" style={{ color: token.colorText }} title={att.name}>
+                    {att.name}
+                  </p>
+                  <div
+                    className="flex items-center gap-1.5 mt-0.5 text-[9.5px]"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <span className="uppercase font-bold text-amber-500">VIDEO</span>
+                    {att.durationSec ? (
+                      <span className="tabular-nums font-medium">{formatVideoDuration(att.durationSec)}</span>
+                    ) : att.sizeBytes > 0 ? (
+                      <span className="tabular-nums">{formatFileSize(att.sizeBytes)}</span>
+                    ) : null}
+                  </div>
+                </div>
+                <Tooltip title="Bỏ video này">
+                  <button
+                    type="button"
+                    aria-label="Bỏ video đính kèm"
+                    data-no-chat-autofocus="true"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeStagedAttachment(att.id, scope, convId);
+                    }}
+                    className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/80 text-white inline-flex items-center justify-center cursor-pointer hover:bg-rose-500 z-10"
+                  >
+                    <X size={10} />
+                  </button>
+                </Tooltip>
+              </div>
+            );
+          }
 
           if (isImg) {
             return (
@@ -10147,11 +10247,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     <>
       {messageContextHolder}
       {notificationContextHolder}
-      {/* Hidden File Input for Local Drive & Google Drive Desktop Upload */}
+      {/* Hidden File Input for Local Drive & Google Drive Desktop Upload (MOS-CHAT-VIDEO: includes video/*) */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar,.7z"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF,video/*,.mp4,.webm,.mov,.MP4,.WEBM,.MOV,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar,.7z"
         multiple
         className="hidden"
         onChange={(e) => {

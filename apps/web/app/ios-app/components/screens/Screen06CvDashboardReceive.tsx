@@ -16,6 +16,7 @@ import {
   RotateCw,
   Clock,
   ChevronLeft,
+  AlertTriangle,
 } from 'lucide-react';
 
 function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
@@ -97,6 +98,12 @@ export function Screen06CvDashboardReceive({
   const displaySatisfaction = (staffStats?.satisfactionRate ?? 100) + '%';
   const displayShifts = (staffStats?.completedShiftsCount ?? 9) + ' ca';
   const displayRating = (staffStats?.rating ?? 5.0).toFixed(1);
+
+  const isComboNewFullSet =
+    Boolean(booking?.comboLiveStatus?.isComboLive) &&
+    (booking?.serviceType === 'Normal' ||
+      Boolean(booking?.attributes?.overrideReason?.includes('gỡ toàn bộ')) ||
+      Boolean(booking?.attributes?.overrideReason?.includes('Nối Mới Combo')));
 
   return (
     <div className="flex-1 flex flex-col bg-black overflow-y-auto select-none font-sans">
@@ -192,6 +199,45 @@ export function Screen06CvDashboardReceive({
               </div>
             </div>
           </div>
+
+          {/* Tech Invariant Banner: Ca Nối Mới Combo bắt buộc gỡ sạch 100% mi cũ */}
+          {isComboNewFullSet && (
+            <div className="bg-amber-950/70 border-2 border-amber-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11.5px] font-black text-amber-300 uppercase tracking-tight">
+                  ⚠️ QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
+                </div>
+                <div className="text-[11px] font-bold text-amber-100/95 leading-snug mt-0.5">
+                  Nhân viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi
+                  cũ khi trừ suất nối mới)!
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upgrade Banner if upgraded from Combo */}
+          {Boolean(booking?.upgradePrice && booking.upgradePrice > 0) && (
+            <div className="bg-emerald-950/70 border-2 border-emerald-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                <Sparkles className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11.5px] font-black text-emerald-300 uppercase tracking-tight flex items-center justify-between">
+                  <span>✨ Ca Nâng Cấp Từ Gói Combo</span>
+                  <span className="text-emerald-400 tabular-nums">
+                    +{(booking.upgradePrice || 0).toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+                <div className="text-[11px] font-bold text-emerald-100/95 leading-snug mt-0.5">
+                  Khách nâng cấp dịch vụ: Thu phụ thu +{(booking.upgradePrice || 0).toLocaleString('vi-VN')} đ khi
+                  Checkout. Điểm thưởng Vòng xoay tính theo dịch vụ thực tế (+{rotationPoints} pts).
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 3. NGUYÊN VẬT LIỆU */}
           <div className="bg-[#242426] rounded-2xl p-3 space-y-2.5 border border-neutral-700/80">
