@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { AlertCircle, Download, ExternalLink, Film, Loader2, Play, RotateCcw } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Download, ExternalLink, Film, Loader2, Maximize2, Play, RotateCcw } from 'lucide-react';
 import { Tooltip } from 'antd';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
 import { useTheme } from '../../../context/ThemeContext';
@@ -31,6 +31,25 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
   const [isBuffering, setIsBuffering] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Aspect ratio detection: Default to portrait as mobile screen recordings are predominantly portrait (9:16)
+  const initialRatio = attachment.width && attachment.height ? attachment.width / attachment.height : null;
+  const [videoRatio, setVideoRatio] = useState<number | null>(initialRatio);
+  const [isPortrait, setIsPortrait] = useState<boolean>(
+    attachment.width && attachment.height ? attachment.height >= attachment.width : true
+  );
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window === 'undefined') return false;
+      return (
+        /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.matchMedia('(max-width: 768px)').matches
+      );
+    };
+    setIsMobile(checkMobile());
+  }, []);
 
   const rawUrl = attachment.url || '';
   const videoUrl = resolveMediaUrl(rawUrl);
@@ -50,17 +69,45 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
 
   const isProcessing = Boolean(attachment.isProcessing);
 
+  const requestFullscreenOnVideo = () => {
+    if (!videoRef.current) return;
+    const v = videoRef.current as any;
+    if (typeof v.webkitEnterFullscreen === 'function') {
+      try {
+        v.webkitEnterFullscreen();
+      } catch (_) {}
+    } else if (typeof v.requestFullscreen === 'function') {
+      try {
+        v.requestFullscreen().catch(() => {});
+      } catch (_) {}
+    } else if (typeof v.webkitRequestFullscreen === 'function') {
+      try {
+        v.webkitRequestFullscreen();
+      } catch (_) {}
+    }
+  };
+
   const handlePlayToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!videoRef.current) return;
+
     if (videoRef.current.paused) {
       setHasError(false);
+
+      // On mobile devices (iOS/Android), auto-bloom into native fullscreen player
+      if (isMobile) {
+        requestFullscreenOnVideo();
+      }
+
       videoRef.current
         .play()
         .then(() => {
           setIsPlaying(true);
           setHasStarted(true);
           setIsBuffering(false);
+          if (isMobile) {
+            requestFullscreenOnVideo();
+          }
         })
         .catch(() => {
           setHasError(true);
@@ -71,6 +118,11 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
       videoRef.current.pause();
       setIsPlaying(false);
     }
+  };
+
+  const handleFullscreenClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    requestFullscreenOnVideo();
   };
 
   const handleRetry = (e: React.MouseEvent) => {
@@ -87,6 +139,9 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
             setIsPlaying(true);
             setHasStarted(true);
             setIsBuffering(false);
+            if (isMobile) {
+              requestFullscreenOnVideo();
+            }
           })
           .catch(() => {
             setHasError(true);
@@ -96,23 +151,40 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
     }, 100);
   };
 
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const v = e.target as HTMLVideoElement;
+    if (v.duration && !isNaN(v.duration)) {
+      setDuration(Math.round(v.duration));
+    }
+    if (v.videoWidth && v.videoHeight) {
+      const ratio = v.videoWidth / v.videoHeight;
+      setVideoRatio(ratio);
+      setIsPortrait(v.videoHeight >= v.videoWidth);
+    }
+  };
+
+  // Dimensions tailored so on desktop the video is at least the size of a real phone screen
+  const desktopWidth = isPortrait ? (compact ? '340px' : '360px') : compact ? '420px' : '480px';
+  const desktopMinWidth = isPortrait ? '320px' : '360px';
+
   return (
     <div
       className={`group/video relative rounded-2xl overflow-hidden border shadow-sm transition-all duration-200 ${
         isMine ? 'ml-auto' : 'mr-auto'
       } ${className}`}
       style={{
-        maxWidth: compact ? '100%' : '440px',
-        width: compact ? '100%' : 'auto',
-        background: isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(248, 250, 252, 0.9)',
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+        maxWidth: isMobile ? '100%' : desktopWidth,
+        minWidth: isMobile ? undefined : desktopMinWidth,
+        width: isMobile ? '100%' : desktopWidth,
+        background: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(248, 250, 252, 0.95)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
       }}
     >
       {/* Top Header Bar with File Name, Size & Quick Actions */}
       <div
         className="flex items-center justify-between gap-2 px-3 py-1.5 border-b select-none text-[11px]"
         style={{
-          background: isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.6)',
+          background: isDark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.75)',
           borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
         }}
       >
@@ -138,6 +210,17 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
               {formatFileSize(attachment.sizeBytes)}
             </span>
           )}
+          <Tooltip title="Xem toàn màn hình">
+            <button
+              type="button"
+              onClick={handleFullscreenClick}
+              className="p-1 rounded-md transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+              style={{ color: isDark ? '#cbd5e1' : '#475569' }}
+              aria-label="Xem toàn màn hình"
+            >
+              <Maximize2 size={13} />
+            </button>
+          </Tooltip>
           <Tooltip title="Tải video về máy">
             <a
               href={videoUrl}
@@ -147,6 +230,7 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="p-1 rounded-md transition-colors hover:bg-black/10 dark:hover:bg-white/10"
               style={{ color: isDark ? '#cbd5e1' : '#475569' }}
+              aria-label="Tải video về máy"
             >
               <Download size={13} />
             </a>
@@ -154,8 +238,15 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
         </div>
       </div>
 
-      {/* Main Video Viewport */}
-      <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+      {/* Main Video Viewport - Portrait 9:16 phone size by default */}
+      <div
+        className="relative w-full bg-black flex items-center justify-center overflow-hidden"
+        style={{
+          aspectRatio: videoRatio ? `${videoRatio}` : isPortrait ? '9 / 16' : '16 / 9',
+          minHeight: isPortrait ? (isMobile ? '340px' : '520px') : '200px',
+          maxHeight: isPortrait ? (isMobile ? '500px' : '620px') : '360px',
+        }}
+      >
         {/* State 1: Video is currently processing on server */}
         {isProcessing ? (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center bg-slate-950/90 text-white">
@@ -219,13 +310,13 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
           </div>
         ) : null}
 
-        {/* The Native HTML5 Video Element */}
+        {/* The Native HTML5 Video Element: playsInline on Desktop, native Fullscreen on Mobile */}
         <video
           key={retryKey}
           ref={videoRef}
           poster={posterUrl}
           controls={hasStarted && !hasError}
-          playsInline
+          playsInline={!isMobile}
           preload="metadata"
           className="w-full h-full object-contain"
           onPlay={() => {
@@ -233,6 +324,9 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
             setHasStarted(true);
             setIsBuffering(false);
             setHasError(false);
+            if (isMobile) {
+              requestFullscreenOnVideo();
+            }
           }}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
@@ -247,12 +341,7 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
           onTimeUpdate={(e) => {
             setCurrentTime((e.target as HTMLVideoElement).currentTime);
           }}
-          onLoadedMetadata={(e) => {
-            const v = e.target as HTMLVideoElement;
-            if (v.duration && !isNaN(v.duration)) {
-              setDuration(Math.round(v.duration));
-            }
-          }}
+          onLoadedMetadata={handleLoadedMetadata}
           onError={() => {
             setHasError(true);
             setIsBuffering(false);
@@ -279,14 +368,17 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
             onClick={handlePlayToggle}
             className="absolute inset-0 bg-black/35 backdrop-blur-[2px] flex flex-col items-center justify-center cursor-pointer transition-opacity group-hover/video:bg-black/20 z-10"
           >
-            <div className="w-12 h-12 rounded-full bg-amber-500/90 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95">
-              <Play size={22} className="ml-1 fill-white" />
+            <div className="w-14 h-14 rounded-full bg-amber-500/90 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95">
+              <Play size={24} className="ml-1 fill-white" />
             </div>
             {duration > 0 && (
-              <span className="mt-2 text-xs font-semibold text-white/90 bg-black/60 px-2 py-0.5 rounded-full tabular-nums shadow">
+              <span className="mt-2.5 text-xs font-semibold text-white/90 bg-black/60 px-2.5 py-0.5 rounded-full tabular-nums shadow">
                 {formatVideoDuration(duration)}
               </span>
             )}
+            <span className="mt-1 text-[11px] text-white/70">
+              {isMobile ? 'Chạm để phát toàn màn hình' : 'Phát video'}
+            </span>
           </div>
         )}
       </div>
@@ -294,16 +386,17 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
       {/* Bottom Duration & Progress Indicator */}
       {duration > 0 && hasStarted && !hasError && (
         <div
-          className="flex items-center justify-between px-3 py-1 text-[10px] tabular-nums select-none"
+          className="flex items-center justify-between px-3 py-1.5 text-[10px] tabular-nums select-none border-t"
           style={{
-            background: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.7)',
+            background: isDark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.75)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
             color: isDark ? '#94a3b8' : '#64748b',
           }}
         >
           <span>
             {formatVideoDuration(currentTime)} / {formatVideoDuration(duration)}
           </span>
-          <span className="text-[9.5px] text-amber-500 font-medium">mOS Video</span>
+          <span className="text-[9.5px] text-amber-500 font-medium">mOS Video • Portrait</span>
         </div>
       )}
     </div>

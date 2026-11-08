@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MosChatVideoPlayer } from '../components/MosChatVideoPlayer';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
@@ -35,6 +35,19 @@ describe('MosChatVideoPlayer', () => {
     expect(mp4Source?.getAttribute('src')).toContain('.mp4');
   });
 
+  it('renders portrait phone-sized layout with fullscreen button on desktop', () => {
+    const { container } = render(<MosChatVideoPlayer attachment={movAttachment} />);
+
+    // Fullscreen button is present in the toolbar
+    const fsButton = screen.getByLabelText('Xem toàn màn hình');
+    expect(fsButton).toBeDefined();
+
+    // The video wrapper maintains portrait 9:16 phone sizing
+    const viewport = container.querySelector('.bg-black');
+    expect(viewport).toBeDefined();
+    expect((viewport as HTMLElement).style.aspectRatio).toBe('9 / 16');
+  });
+
   it('displays processing state clearly when attachment is marked as processing', () => {
     const processingAttachment: MosChatImageAttachment = {
       ...movAttachment,
@@ -62,5 +75,39 @@ describe('MosChatVideoPlayer', () => {
     expect(screen.getByText(/chưa được trình duyệt giải mã trực tiếp/i)).toBeDefined();
     expect(screen.getByText('Tải về máy (MOV)')).toBeDefined();
     expect(screen.getByText('Thử lại')).toBeDefined();
+  });
+
+  it('calls webkitEnterFullscreen on mobile video element when play is triggered', async () => {
+    // Mock userAgent to simulate iPhone
+    const originalUa = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+      configurable: true,
+    });
+
+    const enterFullscreenMock = vi.fn();
+    const playMock = vi.fn().mockResolvedValue(undefined);
+
+    const { container } = render(<MosChatVideoPlayer attachment={movAttachment} />);
+
+    const videoEl = container.querySelector('video') as any;
+    expect(videoEl).toBeDefined();
+    videoEl.webkitEnterFullscreen = enterFullscreenMock;
+    videoEl.play = playMock;
+
+    // Click play overlay button
+    const playOverlay = container.querySelector('.cursor-pointer');
+    if (playOverlay) {
+      fireEvent.click(playOverlay);
+    }
+
+    expect(playMock).toHaveBeenCalled();
+    expect(enterFullscreenMock).toHaveBeenCalled();
+
+    // Restore userAgent
+    Object.defineProperty(navigator, 'userAgent', {
+      value: originalUa,
+      configurable: true,
+    });
   });
 });
