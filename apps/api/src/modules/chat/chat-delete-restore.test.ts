@@ -126,6 +126,8 @@ describe('chat message delete and restore invariants (MOS-BUG-119)', () => {
       id: 'space-core-team',
       type: 'space',
       name: 'Core Team',
+      color: '#1a73e8',
+      unreadCount: 0,
       messages: [
         {
           id: 'msg-parent-1',
@@ -134,6 +136,7 @@ describe('chat message delete and restore invariants (MOS-BUG-119)', () => {
           senderName: 'Nguyễn Quang Khải',
           senderRole: 'STAFF',
           text: 'Root message',
+          timeLabel: '21:00',
           createdAt: new Date('2026-11-08T14:00:00.000Z').toISOString(),
           thread: [
             {
@@ -142,6 +145,7 @@ describe('chat message delete and restore invariants (MOS-BUG-119)', () => {
               senderName: 'Nguyễn Quang Khải',
               senderRole: 'STAFF',
               text: 'Deleted reply',
+              timeLabel: '21:10',
               createdAt: new Date('2026-11-08T14:10:00.000Z').toISOString(),
               isDeleted: true,
               deletedAt: deleteTime.toISOString(),
