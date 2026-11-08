@@ -977,20 +977,31 @@ export function resolveTaskPeopleFlow(
   };
 }
 
+function extractExtension(val?: string | null): string {
+  if (!val) return '';
+  const clean = val.split('?')[0].split('#')[0];
+  const parts = clean.split('.');
+  return parts.length > 1 ? (parts.pop() || '').toLowerCase() : '';
+}
+
 export function isVideoAttachment(att?: MosChatImageAttachment | null): boolean {
   if (!att) return false;
   if (att.isVideo) return true;
   if (att.mimeType && att.mimeType.startsWith('video/')) return true;
-  const ext = ((att.name || att.url || '').split('.').pop() || '').toLowerCase();
-  return ['mp4', 'webm', 'mov'].includes(ext);
+  const nameExt = extractExtension(att.name);
+  const urlExt = extractExtension(att.url);
+  const videoExts = ['mp4', 'webm', 'mov'];
+  return videoExts.includes(nameExt) || videoExts.includes(urlExt);
 }
 
 export function isImageAttachment(att?: MosChatImageAttachment | null): boolean {
   if (!att) return false;
   if (isVideoAttachment(att)) return false;
   if (att.mimeType && att.mimeType.startsWith('image/')) return true;
-  const ext = ((att.name || att.url || '').split('.').pop() || '').toLowerCase();
-  return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic', 'heif'].includes(ext);
+  const nameExt = extractExtension(att.name);
+  const urlExt = extractExtension(att.url);
+  const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic', 'heif'];
+  return imageExts.includes(nameExt) || imageExts.includes(urlExt);
 }
 
 export function formatVideoDuration(seconds?: number): string {

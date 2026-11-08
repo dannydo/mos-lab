@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles, User } from 'lucide-react';
+import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles, User, Film, Play } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import type { MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -13,6 +13,8 @@ import {
   extractMentionedStaff,
   isStaffInConversationMembers,
   isImageAttachment,
+  isVideoAttachment,
+  formatVideoDuration,
   getFileExtension,
 } from '../utils/chat-helpers';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
@@ -305,9 +307,47 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       {hasAttachments && (
         <div className="flex items-center gap-2 mb-2 overflow-x-auto no-scrollbar py-1">
           {attachedImages.map((att, idx) => {
-            const isImg = isImageAttachment(att);
+            const isVid = isVideoAttachment(att);
+            const isImg = !isVid && isImageAttachment(att);
             const ext = getFileExtension(att.name || att.url);
             const isPdf = ext.toLowerCase() === 'pdf' || att.mimeType === 'application/pdf';
+
+            if (isVid) {
+              return (
+                <div
+                  key={att.id || idx}
+                  className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/50 shrink-0 group bg-slate-900 shadow-sm flex items-center justify-center"
+                >
+                  {att.posterUrl ? (
+                    <img src={att.posterUrl} alt={att.name || 'Video'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-slate-950 flex items-center justify-center text-purple-400">
+                      <Film size={22} />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center shadow">
+                      <Play size={10} className="fill-white translate-x-0.5" />
+                    </div>
+                  </div>
+                  {att.durationSec ? (
+                    <span className="absolute bottom-0.5 right-1 px-1 rounded bg-black/75 text-[9px] text-white font-mono leading-tight">
+                      {formatVideoDuration(att.durationSec)}
+                    </span>
+                  ) : null}
+                  {onRemoveAttachment && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveAttachment(att.id)}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                      aria-label={`Xóa video ${idx + 1}`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            }
 
             if (isImg) {
               return (

@@ -30,10 +30,17 @@ import { useMosChat } from '../context/MosChatContext';
 import { parsePureStickerMessage, MosChatStickerVisual, parseStickerReactionKey } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
-import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
+import {
+  isImageAttachment,
+  isVideoAttachment,
+  formatFileSize,
+  getFileExtension,
+  isUserMessageOwner,
+} from '../utils/chat-helpers';
 import { speakText, stopSpeaking } from '../../voice-assistant/speech-utils';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
+import { MosChatVideoPlayer } from '../components/MosChatVideoPlayer';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -179,8 +186,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
     // Find quoted message if replying
     const quotedMessage =
-      message.replyTo ||
-      (message.replyToId ? messages.find((m) => m.id === message.replyToId) : null);
+      message.replyTo || (message.replyToId ? messages.find((m) => m.id === message.replyToId) : null);
 
     // Check pure sticker message
     const stickerItem = parsePureStickerMessage(message.text);
@@ -389,11 +395,25 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {message.attachments &&
               message.attachments.length > 0 &&
               (() => {
-                const imageAttachments = message.attachments.filter(isImageAttachment);
-                const fileAttachments = message.attachments.filter((att) => !isImageAttachment(att));
+                const videoAttachments = message.attachments.filter(isVideoAttachment);
+                const imageAttachments = message.attachments.filter(
+                  (att) => isImageAttachment(att) && !isVideoAttachment(att)
+                );
+                const fileAttachments = message.attachments.filter(
+                  (att) => !isImageAttachment(att) && !isVideoAttachment(att)
+                );
 
                 return (
                   <div className="mt-2 space-y-2">
+                    {/* Inline Video Player */}
+                    {videoAttachments.length > 0 && (
+                      <div className="space-y-2">
+                        {videoAttachments.map((att) => (
+                          <MosChatVideoPlayer key={att.id} attachment={att} compact={true} isMine={isMe} />
+                        ))}
+                      </div>
+                    )}
+
                     {/* File / PDF attachments */}
                     {fileAttachments.length > 0 && (
                       <div className="space-y-1.5">
@@ -655,7 +675,9 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                   ) : (
                     <span>{emoji}</span>
                   )}
-                  <span className={`text-[10px] font-semibold tabular-nums ${isReacted ? 'text-amber-300 font-bold' : 'text-slate-400'}`}>
+                  <span
+                    className={`text-[10px] font-semibold tabular-nums ${isReacted ? 'text-amber-300 font-bold' : 'text-slate-400'}`}
+                  >
                     {count}
                   </span>
                 </button>

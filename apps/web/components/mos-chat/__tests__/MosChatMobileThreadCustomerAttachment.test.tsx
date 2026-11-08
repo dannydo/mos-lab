@@ -128,8 +128,12 @@ describe('MosChatMobileThreadSheet - Customer Card Attachment [MOS-BUG-178]', ()
     expect(screen.getByText(/Booking 12:20 · Thiết Kế Mi Tự Nhiên/)).toBeInTheDocument();
   });
 
-  it('renders attach customer button in toolbar [MOS-BUG-178]', () => {
+  it('renders attach customer button in toolbar action sheet [MOS-BUG-178]', () => {
     render(<MosChatMobileThreadSheet />);
+
+    const actionBtn = screen.getByLabelText('Tác vụ đính kèm');
+    expect(actionBtn).toBeInTheDocument();
+    fireEvent.click(actionBtn);
 
     const attachCustomerBtn = screen.getByRole('button', { name: 'Đính kèm khách hàng' });
     expect(attachCustomerBtn).toBeInTheDocument();
@@ -137,6 +141,9 @@ describe('MosChatMobileThreadSheet - Customer Card Attachment [MOS-BUG-178]', ()
 
   it('opens customer picker modal and stages customer card inside thread [MOS-BUG-178]', async () => {
     render(<MosChatMobileThreadSheet />);
+
+    const actionBtn = screen.getByLabelText('Tác vụ đính kèm');
+    fireEvent.click(actionBtn);
 
     const attachCustomerBtn = screen.getByRole('button', { name: 'Đính kèm khách hàng' });
     fireEvent.click(attachCustomerBtn);
@@ -159,6 +166,9 @@ describe('MosChatMobileThreadSheet - Customer Card Attachment [MOS-BUG-178]', ()
     render(<MosChatMobileThreadSheet />);
 
     // 1. Mở picker và chọn khách
+    const actionBtn = screen.getByLabelText('Tác vụ đính kèm');
+    fireEvent.click(actionBtn);
+
     const attachCustomerBtn = screen.getByRole('button', { name: 'Đính kèm khách hàng' });
     fireEvent.click(attachCustomerBtn);
     const selectBtn = screen.getByTestId('select-customer-btn');

@@ -27,6 +27,10 @@ import {
   Plus,
   Users,
   ChevronRight,
+  Film,
+  Play,
+  FileText,
+  File,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
@@ -63,7 +67,11 @@ import {
   extractMentionedStaff,
   isStaffInConversationMembers,
   isUserMessageOwner,
+  isImageAttachment,
+  getFileExtension,
 } from '../utils/chat-helpers';
+import { isVideoAttachment, formatVideoDuration } from '../utils/chat-video';
+import { MosChatVideoPlayer } from '../components/MosChatVideoPlayer';
 
 export interface MosChatMobileThreadSheetProps {
   onOpenTaskModal?: (params?: {
@@ -109,6 +117,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Auto mark open thread as read
   useEffect(() => {
@@ -517,6 +526,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     } finally {
       setIsUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (videoInputRef.current) videoInputRef.current.value = '';
     }
   };
 
@@ -740,10 +750,18 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
+        accept="image/*,video/*,.mp4,.webm,.mov,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải nhiều ảnh đính kèm trong luồng"
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*,.mp4,.webm,.mov"
+        onChange={handleImageFileChange}
+        className="hidden"
+        aria-label="Tải video đính kèm trong luồng"
       />
 
       {/* Scrollable Replies Feed */}
@@ -845,60 +863,120 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           )}
 
           {/* Parent Message Attachments */}
-          {!activeThreadMsg.isDeleted && activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0 && (
-            <div className="mt-2.5">
-              {activeThreadMsg.attachments.length === 1 ? (
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenGallery(activeThreadMsg.attachments![0].url, activeThreadMsg.attachments![0].id);
-                  }}
-                  className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
-                >
-                  <img
-                    src={resolveMediaUrl(activeThreadMsg.attachments[0].url)}
-                    alt={activeThreadMsg.attachments[0].name || 'Ảnh đính kèm'}
-                    className="max-h-60 w-full object-cover rounded-xl"
-                    loading="lazy"
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
-                  {activeThreadMsg.attachments.slice(0, 4).map((att, idx) => {
-                    const total = activeThreadMsg.attachments!.length;
-                    const isFirstOfThree = total === 3 && idx === 0;
-                    const isFourthInMany = total > 4 && idx === 3;
-                    const remaining = total - 3;
+          {!activeThreadMsg.isDeleted &&
+            activeThreadMsg.attachments &&
+            activeThreadMsg.attachments.length > 0 &&
+            (() => {
+              const isParentFromMe = isUserMessageOwner(activeThreadMsg, currentUser);
+              const parentVideos = activeThreadMsg.attachments.filter(isVideoAttachment);
+              const parentImages = activeThreadMsg.attachments.filter(
+                (att) => isImageAttachment(att) && !isVideoAttachment(att)
+              );
+              const parentFiles = activeThreadMsg.attachments.filter(
+                (att) => !isImageAttachment(att) && !isVideoAttachment(att)
+              );
 
-                    return (
-                      <div
-                        key={att.id || idx}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenGallery(att.url, att.id);
-                        }}
-                        className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
-                          isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
-                        }`}
-                      >
-                        <img
-                          src={resolveMediaUrl(att.url)}
-                          alt={att.name || `Hình ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        {isFourthInMany && (
-                          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
-                            +{remaining}
+              return (
+                <div className="mt-2.5 space-y-2">
+                  {/* Videos */}
+                  {parentVideos.length > 0 && (
+                    <div className="space-y-2">
+                      {parentVideos.map((att) => (
+                        <MosChatVideoPlayer key={att.id} attachment={att} compact={true} isMine={isParentFromMe} />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Single Image */}
+                  {parentImages.length === 1 && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenGallery(parentImages[0].url, parentImages[0].id);
+                      }}
+                      className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                    >
+                      <img
+                        src={resolveMediaUrl(parentImages[0].url)}
+                        alt={parentImages[0].name || 'Ảnh đính kèm'}
+                        className="max-h-60 w-full object-cover rounded-xl"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+
+                  {/* Multiple Images Grid */}
+                  {parentImages.length > 1 && (
+                    <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                      {parentImages.slice(0, 4).map((att, idx) => {
+                        const total = parentImages.length;
+                        const isFirstOfThree = total === 3 && idx === 0;
+                        const isFourthInMany = total > 4 && idx === 3;
+                        const remaining = total - 3;
+
+                        return (
+                          <div
+                            key={att.id || idx}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenGallery(att.url, att.id);
+                            }}
+                            className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                              isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
+                            }`}
+                          >
+                            <img
+                              src={resolveMediaUrl(att.url)}
+                              alt={att.name || `Hình ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            {isFourthInMany && (
+                              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
+                                +{remaining}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Files / Documents */}
+                  {parentFiles.length > 0 && (
+                    <div className="space-y-1.5">
+                      {parentFiles.map((att) => {
+                        const fullUrl = resolveMediaUrl(att.url);
+                        const ext = getFileExtension(att.name || att.url).toLowerCase();
+                        const isPdf = ext === 'pdf' || att.mimeType === 'application/pdf';
+                        return (
+                          <div
+                            key={att.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(fullUrl, '_blank');
+                            }}
+                            className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-700/60 text-slate-100 cursor-pointer active:scale-[0.98] transition-transform"
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+                                isPdf ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+                              }`}
+                            >
+                              {isPdf ? <FileText size={16} /> : <File size={16} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate leading-tight">{att.name}</p>
+                              <span className="text-[10px] text-slate-400 uppercase font-bold">{ext}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })()}
 
           {/* Reaction badges for Parent Message */}
           {!activeThreadMsg.isDeleted &&
@@ -929,7 +1007,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                     >
                       <span>{emoji}</span>
-                      <span className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}>
+                      <span
+                        className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}
+                      >
                         {count}
                       </span>
                     </button>
@@ -953,9 +1033,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
           {/* Interactive Main Task Card embedded in Parent Message */}
           {linkedTask ? (
-            <div
-              className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 hover:border-slate-600 transition-colors shadow-sm"
-            >
+            <div className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 hover:border-slate-600 transition-colors shadow-sm">
               <div
                 className="flex items-start gap-2.5 cursor-pointer"
                 onClick={(e) => {
@@ -1436,60 +1514,116 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       : 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm'
                   }`}
                 >
-                  {/* Image Attachments */}
-                  {reply.attachments && reply.attachments.length > 0 && (
-                    <div className="mb-1.5">
-                      {reply.attachments.length === 1 ? (
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenGallery(reply.attachments![0].url, reply.attachments![0].id);
-                          }}
-                          className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
-                        >
-                          <img
-                            src={resolveMediaUrl(reply.attachments[0].url)}
-                            alt={reply.attachments[0].name || 'Ảnh đính kèm'}
-                            className="max-h-56 w-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
-                          {reply.attachments.slice(0, 4).map((att, idx) => {
-                            const total = reply.attachments!.length;
-                            const isFirstOfThree = total === 3 && idx === 0;
-                            const isFourthInMany = total > 4 && idx === 3;
-                            const remaining = total - 3;
+                  {/* Attachments (Video, Images, Files) */}
+                  {reply.attachments &&
+                    reply.attachments.length > 0 &&
+                    (() => {
+                      const replyVideos = reply.attachments.filter(isVideoAttachment);
+                      const replyImages = reply.attachments.filter(
+                        (att) => isImageAttachment(att) && !isVideoAttachment(att)
+                      );
+                      const replyFiles = reply.attachments.filter(
+                        (att) => !isImageAttachment(att) && !isVideoAttachment(att)
+                      );
 
-                            return (
-                              <div
-                                key={att.id || idx}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenGallery(att.url, att.id);
-                                }}
-                                className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
-                                  isFirstOfThree ? 'col-span-2 h-36' : 'h-24'
-                                }`}
-                              >
-                                <img
-                                  src={resolveMediaUrl(att.url)}
-                                  alt={att.name || `Hình ${idx + 1}`}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                                {isFourthInMany && (
-                                  <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-sm">
-                                    +{remaining}
+                      return (
+                        <div className="mb-1.5 space-y-1.5">
+                          {/* Inline Video Player */}
+                          {replyVideos.length > 0 && (
+                            <div className="space-y-1.5">
+                              {replyVideos.map((att) => (
+                                <MosChatVideoPlayer key={att.id} attachment={att} compact={true} isMine={isMe} />
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Image Gallery */}
+                          {replyImages.length === 1 && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenGallery(replyImages[0].url, replyImages[0].id);
+                              }}
+                              className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                            >
+                              <img
+                                src={resolveMediaUrl(replyImages[0].url)}
+                                alt={replyImages[0].name || 'Ảnh đính kèm'}
+                                className="max-h-56 w-full object-cover"
+                              />
+                            </div>
+                          )}
+                          {replyImages.length > 1 && (
+                            <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                              {replyImages.slice(0, 4).map((att, idx) => {
+                                const total = replyImages.length;
+                                const isFirstOfThree = total === 3 && idx === 0;
+                                const isFourthInMany = total > 4 && idx === 3;
+                                const remaining = total - 3;
+
+                                return (
+                                  <div
+                                    key={att.id || idx}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenGallery(att.url, att.id);
+                                    }}
+                                    className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                                      isFirstOfThree ? 'col-span-2 h-36' : 'h-24'
+                                    }`}
+                                  >
+                                    <img
+                                      src={resolveMediaUrl(att.url)}
+                                      alt={att.name || `Hình ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    {isFourthInMany && (
+                                      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-sm">
+                                        +{remaining}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* File Attachments */}
+                          {replyFiles.length > 0 && (
+                            <div className="space-y-1">
+                              {replyFiles.map((att) => {
+                                const fullUrl = resolveMediaUrl(att.url);
+                                const ext = getFileExtension(att.name || att.url).toLowerCase();
+                                const isPdf = ext === 'pdf' || att.mimeType === 'application/pdf';
+                                return (
+                                  <div
+                                    key={att.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(fullUrl, '_blank');
+                                    }}
+                                    className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-slate-100 cursor-pointer active:scale-[0.98] transition-transform"
+                                  >
+                                    <div
+                                      className={`w-7 h-7 rounded flex items-center justify-center shrink-0 font-bold text-[10px] ${
+                                        isPdf ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+                                      }`}
+                                    >
+                                      {isPdf ? <FileText size={14} /> : <File size={14} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[11px] font-semibold truncate leading-tight">{att.name}</p>
+                                      <span className="text-[9px] text-slate-400 uppercase font-bold">{ext}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
+                      );
+                    })()}
 
                   <div className="select-text">
                     <MosChatRichText content={reply.text} isMe={isMe} isDark={true} />
@@ -1551,7 +1685,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                       >
                         <span>{emoji}</span>
-                        <span className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}>
+                        <span
+                          className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}
+                        >
                           {count}
                         </span>
                       </button>
@@ -1718,26 +1854,100 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           </div>
         )}
 
-        {/* Attached Images Preview */}
+        {/* Attached Files, Videos & Images Preview Strip */}
         {attachedImages.length > 0 && (
           <div className="flex items-center gap-2 mb-2 overflow-x-auto no-scrollbar py-1">
-            {attachedImages.map((att) => (
-              <div
-                key={att.id}
-                className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 bg-slate-800 shadow-sm"
-              >
-                {}
-                <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
-                  className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px]"
-                  aria-label="Xóa ảnh đính kèm"
+            {attachedImages.map((att, idx) => {
+              const isVid = isVideoAttachment(att);
+              const isImg = !isVid && isImageAttachment(att);
+              const ext = getFileExtension(att.name || att.url);
+              const isPdf = ext.toLowerCase() === 'pdf' || att.mimeType === 'application/pdf';
+
+              if (isVid) {
+                return (
+                  <div
+                    key={att.id || idx}
+                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/50 shrink-0 group bg-slate-900 shadow-sm flex items-center justify-center"
+                  >
+                    {att.posterUrl ? (
+                      <img src={att.posterUrl} alt={att.name || 'Video'} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-slate-950 flex items-center justify-center text-purple-400">
+                        <Film size={22} />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center shadow">
+                        <Play size={10} className="fill-white translate-x-0.5" />
+                      </div>
+                    </div>
+                    {att.durationSec ? (
+                      <span className="absolute bottom-0.5 right-1 px-1 rounded bg-black/75 text-[9px] text-white font-mono leading-tight">
+                        {formatVideoDuration(att.durationSec)}
+                      </span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                      aria-label={`Xóa video ${idx + 1}`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                );
+              }
+
+              if (isImg) {
+                return (
+                  <div
+                    key={att.id || idx}
+                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 bg-slate-800 shadow-sm"
+                  >
+                    <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px]"
+                      aria-label="Xóa ảnh đính kèm"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={att.id || idx}
+                  className="relative h-14 min-w-[120px] max-w-[170px] px-2.5 rounded-xl border border-amber-500/40 shrink-0 flex items-center gap-2 bg-slate-800 shadow-sm"
                 >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            ))}
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-[10px] ${
+                      isPdf
+                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    }`}
+                  >
+                    {isPdf ? <FileText size={16} /> : <File size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0 pr-3">
+                    <p className="text-[11px] font-semibold text-slate-100 truncate" title={att.name}>
+                      {att.name}
+                    </p>
+                    <span className="text-[9.5px] text-slate-400 uppercase font-extrabold">{ext}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
+                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                    aria-label={`Xóa tệp ${idx + 1}`}
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              );
+            })}
             {isUploadingImages && (
               <div className="w-14 h-14 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 flex flex-col items-center justify-center shrink-0">
                 <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
@@ -1799,53 +2009,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         )}
 
         {/* Composer Input Bar */}
-        <div className="flex items-end gap-1.5">
+        <div className="flex items-end gap-2">
           {/* [+] Action Sheet Button (Tác vụ đính kèm & Tiện ích) */}
           <button
             type="button"
             onClick={() => setActionSheetOpen(true)}
-            className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5"
+            className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer"
             aria-label="Tác vụ đính kèm"
             title="Tác vụ đính kèm & Tiện ích"
           >
             <Plus className="w-5 h-5 text-amber-400" />
           </button>
 
-          {/* Sticker & Emoji Button */}
-          <button
-            type="button"
-            onClick={() => setStickerPickerOpen(true)}
-            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5"
-            aria-label="Biểu cảm & Nhãn dán"
-          >
-            <Smile className="w-5 h-5" />
-          </button>
-
-          {/* Image Upload Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploadingImages}
-            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5 disabled:opacity-50"
-            aria-label="Đính kèm nhiều ảnh"
-            title="Đính kèm nhiều ảnh"
-          >
-            <ImageIcon className="w-5 h-5" />
-          </button>
-
-          {/* Customer / Booking Attachment Button */}
-          <button
-            type="button"
-            onClick={() => setCustomerPickerOpen(true)}
-            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5"
-            aria-label="Đính kèm khách hàng"
-            title="Đính kèm khách hàng"
-          >
-            <UserCheck className="w-5 h-5 text-amber-400/90" />
-          </button>
-
           {/* Text Area */}
-          <div className="flex-1 bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex items-center gap-1.5 focus-within:border-amber-400/80 transition-colors">
+          <div className="flex-1 min-w-0 min-h-[38px] max-h-[120px] bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex items-center gap-1.5 focus-within:border-amber-400/80 transition-colors">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -1853,7 +2030,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Trả lời trong luồng..."
-              className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
               style={{ outline: 'none', boxShadow: 'none' }}
             />
             {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
@@ -1867,6 +2044,17 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             >
               <CornerDownLeft className="w-4 h-4" />
             </button>
+            {/* Sticker & Emoji Button */}
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setStickerPickerOpen(true)}
+              className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              aria-label="Biểu cảm & Nhãn dán"
+              title="Biểu cảm & Nhãn dán"
+            >
+              <Smile className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Send Button */}
@@ -1876,13 +2064,22 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             disabled={
               (!text.trim() && attachedImages.length === 0 && !stagedCustomerCard) || isSending || isUploadingImages
             }
-            className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
+            className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer ${
+              (text.trim() || attachedImages.length > 0 || stagedCustomerCard) && !isSending && !isUploadingImages
+                ? 'bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/30'
+                : 'bg-slate-800 text-slate-500 border border-slate-700/80 opacity-40 cursor-not-allowed'
+            }`}
             aria-label="Gửi phản hồi luồng"
+            title="Gửi phản hồi luồng"
           >
             {isSending || isUploadingImages ? (
               <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
             ) : (
-              <SendHorizontal className="w-4 h-4 text-slate-950 font-bold" />
+              <SendHorizontal
+                className={`w-4 h-4 font-bold ${
+                  text.trim() || attachedImages.length > 0 || stagedCustomerCard ? 'text-slate-950' : 'text-slate-500'
+                }`}
+              />
             )}
           </button>
         </div>
@@ -1912,9 +2109,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       setActionSheetReply(null);
                     }}
                     className={`text-2xl p-1.5 rounded-xl active:scale-125 transition-all ${
-                      isReacted
-                        ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm'
-                        : 'hover:bg-slate-700/50'
+                      isReacted ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm' : 'hover:bg-slate-700/50'
                     }`}
                     title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                   >
@@ -2172,6 +2367,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         onSelectCustomer={() => setCustomerPickerOpen(true)}
         onSelectFile={() => fileInputRef.current?.click()}
         onSelectImage={() => fileInputRef.current?.click()}
+        onSelectVideo={() => videoInputRef.current?.click()}
         onSelectDrive={() => {
           antdMessage.info('Mở liên kết Google Drive cho luồng');
         }}

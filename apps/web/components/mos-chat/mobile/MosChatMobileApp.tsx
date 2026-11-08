@@ -258,8 +258,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     return opts;
   }, [staffDirectory, currentStaff, currentUser]);
 
-  // Hidden file input for image uploads
+  // Hidden file input for image & video uploads
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Edge Swipe-to-Back gesture (iOS Safari style)
   const edgeTouchStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -562,15 +563,23 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         standalone ? 'h-[100dvh] w-screen fixed inset-0 z-50' : 'h-full w-full'
       }`}
     >
-      {/* Hidden file input supporting multiple files, images & documents */}
+      {/* Hidden file input supporting multiple files, images, videos & documents */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
+        accept="image/*,video/*,.mp4,.webm,.mov,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải nhiều ảnh đính kèm"
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*,.mp4,.webm,.mov"
+        onChange={handleImageFileChange}
+        className="hidden"
+        aria-label="Tải video đính kèm"
       />
 
       {/* Top Header */}
@@ -663,6 +672,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onSelectCustomer={() => setCustomerPickerOpen(true)}
         onSelectFile={() => fileInputRef.current?.click()}
         onSelectImage={() => fileInputRef.current?.click()}
+        onSelectVideo={() => videoInputRef.current?.click()}
         onSelectDrive={() => antdMessage.info('Mở liên kết Google Drive')}
         onSelectTask={() => {
           openCreateTaskModal();

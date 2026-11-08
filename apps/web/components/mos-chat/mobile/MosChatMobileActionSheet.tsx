@@ -1,12 +1,25 @@
 'use client';
 
 import React from 'react';
-import { ImagePlus, HardDrive, CheckSquare, Zap, Smile, Mic, Bot, X, Paperclip, UserRoundPlus } from 'lucide-react';
+import {
+  ImagePlus,
+  Film,
+  HardDrive,
+  CheckSquare,
+  Zap,
+  Smile,
+  Mic,
+  Bot,
+  X,
+  Paperclip,
+  UserRoundPlus,
+} from 'lucide-react';
 
 export interface MosChatMobileActionSheetProps {
   open: boolean;
   onClose: () => void;
   onSelectImage: () => void;
+  onSelectVideo?: () => void;
   onSelectFile?: () => void;
   onSelectCustomer?: () => void;
   onSelectDrive: () => void;
@@ -21,6 +34,7 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
   open,
   onClose,
   onSelectImage,
+  onSelectVideo,
   onSelectFile,
   onSelectCustomer,
   onSelectDrive,
@@ -44,6 +58,27 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
       },
     },
     {
+      id: 'image',
+      label: 'Gửi hình ảnh',
+      icon: <ImagePlus className="w-6 h-6 text-emerald-400" />,
+      bg: 'bg-emerald-500/15 border-emerald-500/30',
+      onClick: () => {
+        onClose();
+        onSelectImage();
+      },
+    },
+    {
+      id: 'video',
+      label: 'Gửi video',
+      icon: <Film className="w-6 h-6 text-purple-400" />,
+      bg: 'bg-purple-500/15 border-purple-500/30',
+      onClick: () => {
+        onClose();
+        if (onSelectVideo) onSelectVideo();
+        else onSelectImage();
+      },
+    },
+    {
       id: 'file',
       label: 'Đính kèm tệp / PDF',
       icon: <Paperclip className="w-6 h-6 text-sky-400" />,
@@ -52,16 +87,6 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
         onClose();
         if (onSelectFile) onSelectFile();
         else onSelectImage();
-      },
-    },
-    {
-      id: 'image',
-      label: 'Gửi hình ảnh',
-      icon: <ImagePlus className="w-6 h-6 text-emerald-400" />,
-      bg: 'bg-emerald-500/15 border-emerald-500/30',
-      onClick: () => {
-        onClose();
-        onSelectImage();
       },
     },
     {
@@ -150,6 +175,7 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
               key={act.id}
               type="button"
               onClick={act.onClick}
+              aria-label={act.id === 'customer' ? 'Đính kèm khách hàng' : act.label}
               className="flex flex-col items-center text-center gap-1.5 active:scale-95 transition-transform"
             >
               <div className={`w-13 h-13 rounded-2xl border flex items-center justify-center shadow-sm ${act.bg}`}>
