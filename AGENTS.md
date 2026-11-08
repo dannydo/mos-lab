@@ -17,6 +17,10 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
   - Chỉ gọi `speak` **1 lần duy nhất** khi kết thúc lượt trả lời trực tiếp cho câu hỏi hoặc yêu cầu của Danny.
   - **Tuyệt đối KHÔNG gọi `speak`** khi chỉ nhận thông báo hệ thống (`<SYSTEM_MESSAGE>`) về việc một background task (như task speak trước đó, compile, build, test, cronjob) vừa chạy xong mà Danny không hề gửi yêu cầu mới.
   - `speak_engine.py` tự động ngắt (`pkill -9 -f "afplay.*antigravity_speech"`) bất kỳ giọng nói nào đang đọc dở trước khi phát audio mới (Barge-in Mutual Exclusion), đảm bảo không bao giờ có 2 luồng âm thanh Hoài My đọc đè lên nhau.
+- **Quy tắc Chống Lặp Âm Thanh & Triệt tiêu Lời Nói Thừa (Anti-Echo & Zero-Redundancy Invariant)**:
+  - **Cấm đọc lại thông tin khi background/bridge đã thông báo**: Khi các tiến trình nền hoặc automation bridge (`ide-task-bridge.ts`, webhook, auto-deploy worker) **đã tự động phát âm thanh** (`speakAsync` khi Danny duyệt commit hoặc deploy thành công), Agent ở câu trả lời tổng kết **TUYỆT ĐỐI KHÔNG gọi lại lệnh `speak` để đọc lặp lại cùng nội dung đó**.
+  - **Mỗi lượt chỉ phát 1 lần duy nhất**: Tuyệt đối không phát sinh 2-3 lệnh `speak` lặp đi lặp lại cùng một câu thông báo khiến Danny phải nghe đi nghe lại.
+  - **Nếu đã có voice từ bridge**: Lượt trả lời của Agent chỉ cần kết luận bằng văn bản, hoặc nếu cần phát âm thanh thì chỉ nói 1 câu trạng thái cực ngắn gọn (ví dụ: "Dạ em đã hoàn tất mọi thứ cho anh rồi ạ"), tuyệt đối không đọc lại nguyên văn diễn biến commit/merge/deploy mà bridge đã vừa đọc.
 - **Kiến trúc & Sổ tay Vận hành Toàn diện**: Xem tài liệu kỹ thuật chi tiết tại [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md) (bản sao tại `~/.gemini/antigravity/docs/VOICE_SYSTEM_ARCHITECTURE.md`) về toàn bộ bản đồ 5 daemon nền, phân quyền macOS Accessibility / BTM, cơ chế mutex phần cứng microphone và các lệnh biên dịch, khởi động lại nhanh.
 
 ---

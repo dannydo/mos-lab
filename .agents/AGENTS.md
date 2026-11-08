@@ -24,6 +24,10 @@
 
 - **Chỉ phát âm thanh khi phản hồi trực tiếp cho câu hỏi của Danny**: Tuyệt đối không phát sinh lệnh `speak` khi chỉ nhận thông báo hệ thống `<SYSTEM_MESSAGE>` về việc background task (như task speak trước đó, compile, build, lint, cronjob) vừa hoàn thành mà Danny không gửi yêu cầu mới.
 - **Cơ chế Triệt tiêu Đè giọng (Barge-in Mutual Exclusion)**: Mọi lệnh `speak` trước khi phát audio bắt buộc phải kiểm tra và hủy mọi tiến trình `afplay.*antigravity_speech` đang chạy dở dang, đảm bảo trong bất kỳ thời điểm nào chỉ có DUY NHẤT 1 giọng nói phát ra loa máy tính.
+- **Quy tắc Chống Lặp Âm Thanh & Triệt tiêu Lời Nói Thừa (Anti-Echo & Zero-Redundancy Invariant)**:
+  - **Cấm đọc lại thông tin khi background/bridge đã thông báo**: Khi các tiến trình nền hoặc automation bridge (`ide-task-bridge.ts`, webhook, auto-deploy worker) **đã tự động phát âm thanh** (`speakAsync` khi Danny duyệt commit hoặc deploy thành công), Agent ở câu trả lời tổng kết **TUYỆT ĐỐI KHÔNG gọi lại lệnh `speak` để đọc lặp lại cùng nội dung đó**.
+  - **Mỗi lượt chỉ phát 1 lần duy nhất**: Tuyệt đối không phát sinh 2-3 lệnh `speak` lặp đi lặp lại cùng một câu thông báo khiến Danny phải nghe đi nghe lại.
+  - **Nếu đã có voice từ bridge**: Lượt trả lời của Agent chỉ cần kết luận bằng văn bản, hoặc nếu cần phát âm thanh thì chỉ nói 1 câu trạng thái cực ngắn gọn (ví dụ: "Dạ em đã hoàn tất mọi thứ cho anh rồi ạ"), tuyệt đối không đọc lại nguyên văn diễn biến commit/merge/deploy mà bridge đã vừa đọc.
 - **Kiến trúc & Sổ tay Vận hành Toàn diện**: Xem tài liệu kỹ thuật chi tiết tại [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md) (bản sao tại `~/.gemini/antigravity/docs/VOICE_SYSTEM_ARCHITECTURE.md`) về toàn bộ bản đồ 5 daemon nền, phân quyền macOS Accessibility / BTM, cơ chế mutex phần cứng microphone và các lệnh biên dịch, khởi động lại nhanh.
 
 ---
