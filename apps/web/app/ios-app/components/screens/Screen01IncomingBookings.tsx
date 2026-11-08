@@ -225,8 +225,8 @@ export function Screen01IncomingBookings({
         </button>
       </div>
 
-      {/* 1.5 Superadmin Scope Switcher Toolbar */}
-      {isAdmin && (
+      {/* 1.5 Superadmin Scope Switcher Toolbar (Chỉ hiển thị khi Admin kiểm thử các vai trò quầy / quản lý CC, STORE, CVLL - Ẩn tuyệt đối khi ở vai trò CV🪶 để bảo mật 100%) */}
+      {isAdmin && role !== 'CVL' && (
         <div className="px-3 py-1.5 bg-[#181611] border-b border-amber-500/20 flex items-center justify-between z-10 flex-shrink-0">
           <div className="flex items-center gap-1.5 text-amber-400 font-extrabold text-[11px]">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />

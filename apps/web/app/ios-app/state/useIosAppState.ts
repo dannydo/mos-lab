@@ -237,20 +237,22 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
   );
   const actor = resolveActorProfile(role, loggedInUser);
 
-  // Invariant:
-  // - CV🪶 (CVL) tài khoản nhân viên thật: Bị khóa cứng ở chế độ MY_CUSTOMERS (bảo mật thông tin khách hàng)
-  // - Admin / Superadmin: Mặc định xem Toàn bộ sảnh (STORE_ALL), có thể chuyển đổi linh hoạt sang MY_CUSTOMERS để kiểm tra góc nhìn CVL
-  const scopeMode: BookingScopeMode = !isAdmin && role === 'CVL' ? 'MY_CUSTOMERS' : scopeModeState;
+  // Invariant (Kinh Thánh mOS Điều răn UI-010):
+  // - CV🪶 (CVL): Luôn luôn bị khóa cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp đầu tua + khách book của mình)
+  //   Tuyệt đối không xem khách của Chuyên Viên khác hoặc các khách chờ phía sau.
+  // - Khi vai trò là CVL (kể cả khi Admin đang kiểm thử ?role=CVL), scope BẮT BUỘC là MY_CUSTOMERS.
+  // - Admin / Superadmin chỉ xem Toàn bộ sảnh (STORE_ALL) khi ở vai trò CC / STORE / Quản lý.
+  const scopeMode: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : scopeModeState;
 
   const setScopeMode = useCallback(
     (nextScope: BookingScopeMode) => {
-      if (!isAdmin && role === 'CVL') {
+      if (role === 'CVL') {
         setScopeModeState('MY_CUSTOMERS');
         return;
       }
       setScopeModeState(nextScope);
     },
-    [isAdmin, role]
+    [role]
   );
 
   const setRole = useCallback(
@@ -273,16 +275,23 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
   const activeServicingBooking = useMemo(() => {
     return (
-      bookings.find(
-        (b) =>
+      bookings.find((b) => {
+        const belongsToActor =
+          !['CVL', 'CVLL', 'CV'].includes(role) ||
+          b.assignedStaffId === actor.staffId ||
+          b.checkInStaffId === actor.staffId ||
+          b.checkOutStaffId === actor.staffId;
+        if (!belongsToActor) return false;
+        return (
           b.status === 'SERVICING' ||
           (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt)
-      ) || null
+        );
+      }) || null
     );
-  }, [bookings]);
+  }, [bookings, role, actor.staffId]);
 
   const visibleBookings = useMemo(() => {
-    const shouldFilterCvl = !isAdmin ? role === 'CVL' || scopeMode === 'MY_CUSTOMERS' : scopeMode === 'MY_CUSTOMERS';
+    const shouldFilterCvl = role === 'CVL' || scopeMode === 'MY_CUSTOMERS';
     const list = shouldFilterCvl ? filterBookingsForCvlScope(bookings, actor.staffId) : bookings;
 
     return list.map((b) => {
@@ -318,9 +327,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
 
   const activeBooking =
     visibleBookings.find((b) => Number(b.id) === Number(activeBookingId)) ||
-    bookings.find((b) => Number(b.id) === Number(activeBookingId)) ||
     visibleBookings[0] ||
-    bookings[0] ||
+    (role !== 'CVL' ? bookings.find((b) => Number(b.id) === Number(activeBookingId)) || bookings[0] : null) ||
     INITIAL_BOOKINGS[0];
 
   const handleResumeServicing = useCallback(
@@ -422,7 +430,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     }) => {
       const seg = options?.segment || bookingSegment;
       const storeId = options?.storeId ?? 6;
-      const effScope: BookingScopeMode = !isAdmin && role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
+      const effScope: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
       const effStaffId = options?.staffId ?? actor.staffId;
       const targetDateStr = options?.date ?? getDateStrForOffset(selectedDateOffset);
       const dateQuery = `&date=${encodeURIComponent(targetDateStr)}`;
@@ -557,14 +565,21 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           // Đồng bộ đa thiết bị tức thì (Real-time Cross-Device Session Sync):
           // Nhận diện ca làm đang SERVICING trên server (từ bất kỳ thiết bị nào: Điện thoại, iPad, Desktop)
           const serverActiveServicing = data.bookings
-            ?.filter(
-              (b: BookingItem) =>
+            ?.filter((b: BookingItem) => {
+              const belongsToActor =
+                !['CVL', 'CVLL', 'CV'].includes(role) ||
+                b.assignedStaffId === actor.staffId ||
+                b.checkInStaffId === actor.staffId ||
+                b.checkOutStaffId === actor.staffId;
+              if (!belongsToActor) return false;
+              return (
                 b.status === 'SERVICING' ||
                 (b.status !== 'INCOMING' &&
                   b.status !== 'DONE' &&
                   Boolean(b.progress?.startedAt) &&
                   !b.progress?.completedAt)
-            )
+              );
+            })
             .sort((a: BookingItem, b: BookingItem) => {
               const timeA = new Date(a.progress?.savedAt || a.progress?.updatedAt || 0).getTime();
               const timeB = new Date(b.progress?.savedAt || b.progress?.updatedAt || 0).getTime();

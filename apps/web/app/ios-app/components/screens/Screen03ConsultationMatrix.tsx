@@ -384,7 +384,36 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     return initialMat.allowedThicknesses.includes(initThick) ? initThick : initialMat.defaultThickness;
   });
 
-  const [selectedLength, setSelectedLength] = useState<string>(booking?.attributes?.length || initialMat.defaultLength);
+  const [selectedLengths, setSelectedLengths] = useState<number[]>(() => {
+    const init = booking?.attributes?.length || initialMat.defaultLength;
+    const matches = init.match(/\d+/g);
+    if (matches && matches.length > 0) {
+      const nums = Array.from(new Set(matches.map((n: string) => parseInt(n, 10)))).sort((a, b) => a - b);
+      return nums.slice(0, 5);
+    }
+    return [10, 11, 12];
+  });
+
+  const selectedLength = useMemo(() => {
+    if (selectedLengths.length === 0) return '10 mm';
+    return `${selectedLengths.join(' - ')} mm`;
+  }, [selectedLengths]);
+
+  const handleToggleLength = (sizeNum: number) => {
+    setSelectedLengths((prev) => {
+      if (prev.includes(sizeNum)) {
+        if (prev.length > 1) {
+          return prev.filter((n) => n !== sizeNum);
+        }
+        return prev;
+      } else {
+        if (prev.length >= 5) {
+          return prev;
+        }
+        return [...prev, sizeNum].sort((a, b) => a - b);
+      }
+    });
+  };
   const [selectedColors, setSelectedColors] = useState<string[]>(() => {
     const raw = booking?.attributes?.color || 'Đen Tuyền (Jet Black)';
     const parts = raw.split(/\s*\+\s*/).filter(Boolean);
@@ -435,17 +464,15 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         currentMaterialSpec.defaultThickness || currentMaterialSpec.allowedThicknesses[0] || '0.10 mm'
       );
     }
-    const validLengths = [
-      ...currentMaterialSpec.allowedLengthMappings.map((m) => m.id),
-      ...currentMaterialSpec.allowedSingleLengths,
-    ];
-    if (!validLengths.includes(selectedLength)) {
-      setSelectedLength(
-        currentMaterialSpec.defaultLength ||
-          currentMaterialSpec.allowedLengthMappings[0]?.id ||
-          currentMaterialSpec.allowedSingleLengths[0] ||
-          '10-12 mm'
-      );
+    if (selectedLengths.length === 0) {
+      const matches = (currentMaterialSpec.defaultLength || '10-12 mm').match(/\d+/g);
+      if (matches && matches.length > 0) {
+        setSelectedLengths(
+          Array.from(new Set(matches.map((n) => parseInt(n, 10))))
+            .sort((a, b) => a - b)
+            .slice(0, 5)
+        );
+      }
     }
     if (!currentMaterialSpec.allowedVolumes.includes(selectedVolume)) {
       setSelectedVolume(currentMaterialSpec.defaultVolume || currentMaterialSpec.allowedVolumes[0] || '1D');
@@ -463,9 +490,15 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     if (!mat.allowedThicknesses.includes(selectedThickness)) {
       setSelectedThickness(mat.defaultThickness);
     }
-    const validLengths = [...mat.allowedLengthMappings.map((m) => m.id), ...mat.allowedSingleLengths];
-    if (!validLengths.includes(selectedLength)) {
-      setSelectedLength(mat.defaultLength);
+    if (selectedLengths.length === 0) {
+      const matches = (mat.defaultLength || '10-12 mm').match(/\d+/g);
+      if (matches && matches.length > 0) {
+        setSelectedLengths(
+          Array.from(new Set(matches.map((n) => parseInt(n, 10))))
+            .sort((a, b) => a - b)
+            .slice(0, 5)
+        );
+      }
     }
     if (!mat.allowedVolumes.includes(selectedVolume)) {
       setSelectedVolume(mat.defaultVolume);
@@ -858,6 +891,34 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     hasUnderMinkCombo,
   ]);
 
+  // Tên dịch vụ bỏ giá tiền 280K/530K/770K (theo yêu cầu gọn gàng của Danny)
+  const cleanServiceName = useMemo(() => {
+    return livePricingAndCvPoints.skuName.replace(/\s*\d+[Kk]\b/g, '').trim();
+  }, [livePricingAndCvPoints.skuName]);
+
+  // Chuỗi tóm tắt thông số cơ bản chuẩn hoá: Classic 1D Doll 70 C0.10 10-11-12
+  const specsSummaryString = useMemo(() => {
+    const rawMat = currentMaterialSpec?.shortLabel || selectedMaterial;
+    // Bỏ tiền tố "New " và hậu tố "\d+D" nếu đã có trong tên chất liệu để tránh bị trùng lặp với selectedVolume (ví dụ New Classic 1D -> Classic)
+    const cleanMat = rawMat
+      .replace(/^New\s+/i, '')
+      .replace(/\s*\d+D\b/i, '')
+      .trim();
+    const cleanCount = (selectedCount || '').replace(/\s*sợi.*$/i, '').trim();
+    const cleanThick = (selectedThickness || '').replace(/[^\d.]/g, '');
+    const cleanLengths = selectedLengths && selectedLengths.length > 0 ? selectedLengths.join('-') : '10-12';
+    return `${cleanMat} ${selectedVolume} ${selectedStyle} ${cleanCount} ${selectedCurl}${cleanThick} ${cleanLengths}`;
+  }, [
+    currentMaterialSpec,
+    selectedMaterial,
+    selectedVolume,
+    selectedStyle,
+    selectedCount,
+    selectedCurl,
+    selectedThickness,
+    selectedLengths,
+  ]);
+
   // Áp dụng khuyến nghị an toàn vào thông số nối mi
   const handleApplyRecommendation = () => {
     setSelectedStyle(recommendation.recommendedDesign);
@@ -865,17 +926,8 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     setSelectedThickness(recommendation.recommendedThickness);
 
     const maxSafe = recommendation.maxSafeMm;
-    const matchedMapping = currentMaterialSpec.allowedLengthMappings.find(
-      (m) => m.singleMmList.includes(String(maxSafe)) || m.singleMmList.includes(String(maxSafe - 1))
-    );
-    if (matchedMapping) {
-      setSelectedLength(matchedMapping.id);
-    } else {
-      const matchedSingle = currentMaterialSpec.allowedSingleLengths.find((l) => l.includes(String(maxSafe)));
-      if (matchedSingle) {
-        setSelectedLength(matchedSingle);
-      }
-    }
+    const safeSizes = [maxSafe - 2, maxSafe - 1, maxSafe].filter((s) => s >= 7 && s <= 15);
+    setSelectedLengths(safeSizes.length > 0 ? safeSizes : [maxSafe]);
     setActiveSubTab('SPECS');
   };
 
@@ -1745,8 +1797,8 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 )}
               </div>
 
-              {/* 3.3 CHIỀU DÀI & PHÂN BỔ THEO CHẤT LIỆU (LENGTH & MAPPING) */}
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2">
+              {/* 3.3 CHIỀU DÀI & BẢNG NÚT SIZE TỰ CHỌN TỐI ĐA 5 SIZE */}
+              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-extrabold text-black uppercase">3.3 Chiều Dài</span>
@@ -1759,45 +1811,43 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       <Info className="w-3 h-3 stroke-[2.5]" />
                     </button>
                   </div>
+                  <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 tabular-nums">
+                    Đã chọn: {selectedLengths.join(' · ')} ({selectedLengths.length}/5 size)
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {currentMaterialSpec.allowedLengthMappings.map((len) => {
-                    const active = selectedLength === len.id;
+                {/* Bảng các nút số size (7, 8, 9, 10, 11, 12, 13, 14, 15) */}
+                <div className="grid grid-cols-5 gap-2">
+                  {[7, 8, 9, 10, 11, 12, 13, 14, 15].map((sizeNum) => {
+                    const active = selectedLengths.includes(sizeNum);
+                    const isExceedSafe = sizeNum > naturalLengthSpec.safeMaxExtensionMm;
                     return (
                       <button
-                        key={len.id}
+                        key={sizeNum}
                         type="button"
-                        onClick={() => setSelectedLength(len.id)}
-                        className={`py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-between ${
+                        onClick={() => handleToggleLength(sizeNum)}
+                        className={`h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative select-none active:scale-95 ${
                           active
-                            ? 'bg-amber-50/90 border-[#FFB400] text-black font-extrabold shadow-xs ring-1 ring-[#FFB400]'
-                            : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
+                            ? 'bg-[#FFB400] border-[#FFB400] text-black font-black shadow-md ring-2 ring-[#FFB400]/40'
+                            : 'bg-[#F9F9FB] border-gray-200 text-gray-800 hover:border-gray-300 font-bold'
                         }`}
                       >
-                        <span className="text-[12.5px] font-bold tabular-nums">{len.label}</span>
-                        {active && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500]" />}
+                        <span className="text-[16px] font-black leading-none tabular-nums">{sizeNum}</span>
+                        {active && <CheckCircle2 className="w-3 h-3 text-black absolute top-1 right-1" />}
+                        {isExceedSafe && !active && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full bg-amber-500 absolute top-1 right-1"
+                            title="Vượt ngưỡng an toàn mi thật"
+                          />
+                        )}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Dải số đơn từng mm được phép của Chất liệu đang chọn */}
-                <div className="pt-1.5 border-t border-gray-100">
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                    {currentMaterialSpec.allowedSingleLengths.map((mm) => (
-                      <button
-                        key={mm}
-                        type="button"
-                        onClick={() => setSelectedLength(mm)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
-                          selectedLength === mm ? 'bg-black text-[#FFB400]' : 'bg-[#F2F2F7] text-gray-700'
-                        }`}
-                      >
-                        {mm}
-                      </button>
-                    ))}
-                  </div>
+                <div className="text-[10px] text-gray-500 flex items-center justify-between px-0.5">
+                  <span>Chạm để chọn/bỏ chọn (Tối đa 5 size)</span>
+                  <span className="font-mono font-bold text-gray-700">{selectedLengths.join(' - ')}</span>
                 </div>
 
                 {/* Cảnh báo chiều dài vượt ngưỡng an toàn so với mi thật */}
@@ -2532,110 +2582,57 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           </div>
         </div>
 
-        {/* Live Matrix Summary Chips (Theo đúng thứ tự 1. Chất liệu -> 2. Thiết kế -> 3. Độ cong, Dày, Dài) */}
-        <div className="bg-neutral-900 rounded-2xl p-3 text-white shadow-sm space-y-2">
-          <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider flex items-center justify-between">
-            <span>TÓM TẮT QUY TRÌNH 3 BƯỚC & ĐỊNH GIÁ:</span>
-            <span className="text-gray-400 font-normal">CV🪶 {actorName}</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5 text-[11px] font-medium">
-            <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-              0. Mi thật:{' '}
-              <strong>
-                {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
-                {naturalLengthLabel} · {naturalThicknessLabel}
-              </strong>
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              1. Chất liệu: <strong>{currentMaterialSpec.shortLabel}</strong>
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
-              2. Thiết kế: <strong className="text-amber-400">{selectedStyle}</strong>
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
-              3. Cong: <strong className="text-amber-400">{selectedCurl}</strong> · Dày:{' '}
-              <strong className="text-amber-400">{selectedThickness}</strong> · Dài:{' '}
-              <strong className="text-amber-400">{selectedLength}</strong>
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
-              Volume: <strong className="text-emerald-400">{selectedVolume}</strong>
-            </span>
-            {hasUnderMink && (
-              <span className="px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40">
-                + Mi Dưới ({underMinkServiceType === 'Retain' ? 'Dặm' : 'Mới'}):{' '}
-                <strong className="text-purple-300">
-                  Cong {underMinkCurl} · {underMinkLength} · {underMinkCount} (
-                  {livePricingAndCvPoints.isUnderMinkComboDeducted
-                    ? 'Trừ gói Mi Dưới · 0đ'
-                    : underMinkServiceType === 'Retain'
-                      ? '+250K'
-                      : '+390K'}
-                  )
-                </strong>
-              </span>
-            )}
-            {isOverridden && (
-              <span className="px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/50">
-                ⚠️ Override: <strong className="text-rose-100">{overrideReason}</strong>
-              </span>
-            )}
-          </div>
-
-          {/* Khay Nguyên Vật Liệu Cần Chuẩn Bị (Cho CV & CV🪶 chuẩn bị trước khi nối) */}
-          <div className="bg-black/40 rounded-xl p-2 border border-white/10 space-y-1 text-[10.5px]">
-            <div className="text-[9.5px] font-black text-amber-400 uppercase tracking-wider">
-              📦 KHAY NGUYÊN VẬT LIỆU CẦN CHUẨN BỊ:
-            </div>
-            <div className="flex items-center justify-between text-neutral-200">
-              <span className="text-neutral-400 font-semibold">Mi Trên:</span>
-              <span className="font-bold text-white">
-                {currentMaterialSpec.shortLabel} · {selectedVolume} ({selectedCount}) · Cong {selectedCurl} · Dày{' '}
-                {selectedThickness} · {selectedLength}
-              </span>
-            </div>
-            {hasUnderMink && (
-              <div className="flex items-center justify-between text-purple-200 pt-0.5 border-t border-white/5">
-                <span className="text-purple-300 font-semibold">Khay 2 (Mi Dưới):</span>
-                <span className="font-bold text-purple-200">
-                  Under 1D · Cong {underMinkCurl} · 0.10mm · {underMinkLength} · {underMinkCount}
-                </span>
+        {/* BÁO GIÁ DỊCH VỤ GỌN GÀNG & DỄ HIỂU (BỎ GIÁ TRONG TÊN + TÓM TẮT THÔNG SỐ CƠ BẢN) */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-neutral-100 space-y-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Báo giá dịch vụ</div>
+              <div className="text-[14.5px] font-black text-gray-900 leading-snug mt-0.5">{cleanServiceName}</div>
+              {/* Tóm tắt thông số cơ bản chuẩn: Classic 1D Doll 70 C0.10 10-11-12 */}
+              <div className="text-[11.5px] font-bold text-[#D97706] bg-amber-50/90 px-2 py-0.5 rounded-lg border border-amber-200/80 inline-block mt-1.5 font-mono tracking-tight shadow-2xs">
+                {specsSummaryString}
               </div>
-            )}
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-[18px] font-black text-[#D97706] tabular-nums leading-none">
+                {livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ
+              </div>
+              <div className="text-[10px] font-bold text-gray-400 mt-1 tabular-nums">
+                +8% VAT: {livePricingAndCvPoints.totalPriceWithVat.toLocaleString('vi-VN')} đ
+              </div>
+            </div>
           </div>
 
-          {/* Dòng mapping SKU Giá Tiền & Huy Hiệu Điểm Vòng Xoay CV */}
-          <div className="pt-2 border-t border-neutral-800 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between flex-wrap gap-1.5">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[12px] font-bold text-white">{livePricingAndCvPoints.skuName}</span>
-                <span className="text-[13px] font-black text-[#FFB400] tabular-nums">
-                  {livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ
-                  <span className="text-[10px] font-medium text-amber-200/90 ml-1">
-                    (+8% VAT: {livePricingAndCvPoints.totalPriceWithVat.toLocaleString('vi-VN')} đ)
+          {(livePricingAndCvPoints.upgradePrice > 0 || hasUnderMink) && (
+            <div className="pt-2 border-t border-gray-100 space-y-1 text-[11px]">
+              {livePricingAndCvPoints.upgradePrice > 0 && (
+                <div className="flex items-center justify-between text-gray-600">
+                  <span>Phụ thu nâng cấp:</span>
+                  <span className="font-bold text-emerald-700 tabular-nums">
+                    +{livePricingAndCvPoints.upgradePrice.toLocaleString('vi-VN')} đ
                   </span>
-                </span>
-                {livePricingAndCvPoints.upgradePrice > 0 && (
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 tabular-nums">
-                    Phụ thu nâng cấp: +{livePricingAndCvPoints.upgradePrice.toLocaleString('vi-VN')}đ (+8% VAT = +
-                    {livePricingAndCvPoints.upgradePriceWithVat.toLocaleString('vi-VN')}đ)
+                </div>
+              )}
+              {hasUnderMink && (
+                <div className="flex items-center justify-between text-gray-600">
+                  <span>+ Mi Dưới ({underMinkServiceType === 'Retain' ? 'Dặm' : 'Mới'}):</span>
+                  <span className="font-bold text-purple-700 tabular-nums">
+                    {livePricingAndCvPoints.isUnderMinkComboDeducted
+                      ? 'Trừ gói Combo (0 đ)'
+                      : underMinkServiceType === 'Retain'
+                        ? '+250.000 đ'
+                        : '+390.000 đ'}
                   </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1">
-                <span
-                  className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-600/30 text-blue-200 border border-blue-400/40 shadow-xs tabular-nums"
-                  title={livePricingAndCvPoints.breakdownLabel}
-                >
-                  {livePricingAndCvPoints.summaryLabel}
-                </span>
-              </div>
+                </div>
+              )}
             </div>
+          )}
 
-            <div className="text-[10px] text-gray-400 flex items-center justify-between pt-0.5">
-              <span>{livePricingAndCvPoints.breakdownLabel}</span>
-              <span className="text-[#FFB400]/80">Mapping tự động theo Ma trận SKU Wings</span>
-            </div>
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
+            <span className="text-gray-500 font-medium">Vòng xoay:</span>
+            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold tabular-nums text-[11px]">
+              +{livePricingAndCvPoints.totalPoints} pts
+            </span>
           </div>
         </div>
 

@@ -694,12 +694,12 @@ export function filterBookingsForCvlScope(bookings: BookingItem[], activeStaffId
       b.status === 'SERVICING' ||
       (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt);
 
-    const isMyBookedCustomer =
-      !b.isUnassignedQueue &&
-      ((b.assignedStaffId && b.assignedStaffId === activeStaffId) ||
-        (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
-        (b.checkOutStaffId && b.checkOutStaffId === activeStaffId) ||
-        isServicing);
+    const isStaffAssigned =
+      (b.assignedStaffId && b.assignedStaffId === activeStaffId) ||
+      (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
+      (b.checkOutStaffId && b.checkOutStaffId === activeStaffId);
+
+    const isMyBookedCustomer = !b.isUnassignedQueue && Boolean(isStaffAssigned);
 
     if (isMyBookedCustomer) {
       result.push({

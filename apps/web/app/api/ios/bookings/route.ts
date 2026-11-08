@@ -353,20 +353,25 @@ export async function GET(request: NextRequest) {
       }
     })();
     const requestedDate = searchParams.get('date') || todayVn;
+    const requestedRole = (searchParams.get('role') || '').toUpperCase();
     const isAdmin = authCheck.user?.careerTier === 'ADMIN';
-    const canViewFullPhone = isAdmin || canViewUnmaskedCustomerPhone(searchParams.get('role'));
-    const effectiveRole = isAdmin
-      ? (searchParams.get('role') || 'CVL').toUpperCase()
-      : authCheck.user?.careerTier || 'CVL';
-    const rawScope = (searchParams.get('scope') || (isAdmin ? 'STORE_ALL' : 'MY_CUSTOMERS')).toUpperCase();
-    // Invariant:
-    // - CV🪶 (CVL) tài khoản nhân viên thật: Bị khoá cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp + khách book của mình)
-    // - Admin / Superadmin: Mặc định xem TOÀN BỘ KHÁCH CỦA SẢNH (STORE_ALL), chỉ lọc MY_CUSTOMERS nếu query param truyền rõ ràng scope=MY_CUSTOMERS
-    const scope = !isAdmin && effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : rawScope;
+    const effectiveRole =
+      requestedRole || (authCheck.user?.careerTier !== 'ADMIN' ? authCheck.user?.careerTier : undefined) || 'CVL';
+    const canViewFullPhone = isAdmin && effectiveRole !== 'CVL' ? true : canViewUnmaskedCustomerPhone(effectiveRole);
+
+    // Invariant (Kinh Thánh mOS Điều răn UI-010):
+    // - CV🪶 (CVL): Luôn luôn bị khóa cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp đầu tua + khách book của mình)
+    //   Tuyệt đối không xem khách của Chuyên Viên khác hoặc các khách chờ phía sau.
+    // - Khi vai trò là CVL (kể cả khi Admin đang kiểm thử ?role=CVL), scope BẮT BUỘC là MY_CUSTOMERS.
+    const rawScope = (
+      searchParams.get('scope') || (effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : isAdmin ? 'STORE_ALL' : 'MY_CUSTOMERS')
+    ).toUpperCase();
+    const scope = effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : rawScope;
+
     const activeStaffId =
-      authCheck.user?.careerTier === 'CVL'
-        ? authCheck.user?.legacyStaffId || 46272
-        : Number(searchParams.get('staffId')) || authCheck.user?.legacyStaffId || 46272;
+      Number(searchParams.get('staffId')) ||
+      (authCheck.user?.careerTier === 'CVL' ? authCheck.user?.legacyStaffId : undefined) ||
+      (effectiveRole === 'CVL' ? 46272 : authCheck.user?.legacyStaffId || 46272);
     const limit = Math.min(Number(searchParams.get('limit')) || 40, 100);
 
     const pool = getLegacyPool();
@@ -744,28 +749,18 @@ export async function GET(request: NextRequest) {
       const isNew = Number(r.is_new) || 0;
       const customerId = Number(r.user_id) || 0;
 
-      // For operational clarity:
-      // - Keep index === 0 (or any DB row without assigned_staff_id when first encountered) as the 1 next unassigned customer at the salon lobby (Đầu tua), unless overridden.
-      // - Assign subsequent unassigned demo rows across Thảo Ly (46272, CV🪶), Tuyết Nhi (25337, 🪶CV🪶), and Phương Nhi (49076, CV).
-      const isFirstIncomingQueue =
-        index === 0 && !override.assignedStaffId && (status === 'INCOMING' || status === 'CHECKED_IN');
+      // Chuẩn hóa phân công chuyên viên:
+      // - Nếu có override thì lấy theo override.
+      // - Nếu đơn hàng trong DB chưa có assigned_staff_id (null hoặc 0), đây là khách chưa phân công tại sảnh (isUnassignedQueue = true).
+      // - Tuyệt đối không tự ý gán bừa demo staff cho khách chưa phân công.
       const isDbUnassigned = !r.assigned_staff_id || Number(r.assigned_staff_id) === 0;
-      const isUnassignedQueue = !override.assignedStaffId && (isFirstIncomingQueue || (isDbUnassigned && index === 0));
+      const isUnassignedQueue = !override.assignedStaffId && isDbUnassigned;
 
-      const defaultDemoStaff =
-        index % 3 === 1
-          ? { id: 46272, name: 'Thảo Ly', tier: 'CVL' as const }
-          : index % 3 === 2
-            ? { id: 25337, name: 'Tuyết Nhi ❤️', tier: 'CVLL' as const }
-            : { id: 49076, name: 'Phương Nhi', tier: 'CV' as const };
-
-      const assignedStaffId = isUnassignedQueue
-        ? 0
-        : Number(override.assignedStaffId ?? r.assigned_staff_id ?? defaultDemoStaff.id);
+      const assignedStaffId = isUnassignedQueue ? 0 : Number(override.assignedStaffId ?? r.assigned_staff_id ?? 0);
       const assignedStaffName = isUnassignedQueue
         ? 'Chờ phân công (Đầu tua)'
         : override.assignedStaffName ||
-          (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : defaultDemoStaff.name);
+          (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : 'Chuyên Viên');
 
       const checkInStaffId = override.checkInStaffId ?? (r.check_in_staff_id ? Number(r.check_in_staff_id) : undefined);
       const checkInStaffName = override.checkInStaffName ?? r.check_in_staff_name ?? undefined;
@@ -1010,15 +1005,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filter by scope:
-    // - CV🪶 (CVL) or MY_CUSTOMERS (khi không phải Admin): Strictly ONLY see (a) 1 next upcoming unassigned customer at salon lobby + (b) own booked/assigned customers.
-    //   Strictly NEVER see customers booked/assigned to other Chuyên Viên!
-    // - Superadmin / Admin: Mặc định xem TOÀN BỘ KHÁCH CỦA SẢNH (STORE_ALL) để giám sát và vận hành!
-    //   Chỉ khi Admin chủ động lọc theo góc nhìn CVL (scope === 'MY_CUSTOMERS') thì mới thu hẹp.
+    // Filter by scope (Kinh Thánh mOS Điều răn UI-010):
+    // - CV🪶 (CVL) hoặc khi scope === 'MY_CUSTOMERS':
+    //   Chỉ duy nhất xem:
+    //   (1) Khách hàng book đích danh cho chính chuyên viên này (assignedStaffId === activeStaffId hoặc checkIn/checkOut bởi activeStaffId)
+    //   (2) ĐÚNG 1 khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua) (isUnassignedQueue và INCOMING / CHECKED_IN).
+    //   Tuyệt đối KHÔNG hiển thị khách của chuyên viên khác hoặc các khách hàng chưa phân công phía sau!
+    // - Khi vai trò là CVL, bảo mật này luôn áp dụng tuyệt đối (kể cả khi Admin kiểm thử ?role=CVL).
     let nextUnassignedIncluded = false;
-    const shouldApplyCvlPrivacyScope = !isAdmin
-      ? effectiveRole === 'CVL' || scope === 'MY_CUSTOMERS'
-      : scope === 'MY_CUSTOMERS';
+    const shouldApplyCvlPrivacyScope = effectiveRole === 'CVL' || scope === 'MY_CUSTOMERS';
     const effectiveList = shouldApplyCvlPrivacyScope
       ? allMappedBookings.filter((b) => {
           const isOwnCustomer =
