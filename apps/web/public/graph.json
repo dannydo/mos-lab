@@ -44897,7 +44897,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 150359,
+        "sizeBytes": 150358,
         "lineCount": 3010,
         "ext": ".tsx"
       }
@@ -44910,7 +44910,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43927,
+        "sizeBytes": 43926,
         "lineCount": 1109,
         "ext": ".tsx"
       }
@@ -44923,7 +44923,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32722,
+        "sizeBytes": 32720,
         "lineCount": 866,
         "ext": ".tsx"
       }
@@ -48953,7 +48953,7 @@
       "filePath": "apps/web/lib/format-utils.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3295,
+        "sizeBytes": 3294,
         "lineCount": 100,
         "ext": ".ts"
       }

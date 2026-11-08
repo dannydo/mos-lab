@@ -32,7 +32,7 @@ import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeri
 import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 export const formatStoreCode = (store?: string | null): string => {
-  if (!store) return 'PXL';
+  if (!store) return 'DT';
   const s = String(store).toUpperCase().trim();
   if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
   if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
@@ -255,7 +255,7 @@ export default function CvXoayTab({
       const existing = map.get(name) || {
         techName: name,
         avatar: item.avatar,
-        store: item.store || 'PXL',
+        store: item.store || 'DT',
         techLevel: item.techLevel || 1,
         totalServices: 0,
         totalPoints: 0,

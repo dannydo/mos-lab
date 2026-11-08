@@ -50,7 +50,7 @@ import PeriodComparison from '../../../../components/ui/PeriodComparison';
 const { Text } = Typography;
 
 export const formatStoreCode = (store?: string | null): string => {
-  if (!store) return 'PXL';
+  if (!store) return 'DT';
   const s = String(store).toUpperCase().trim();
   if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
   if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';

@@ -46,7 +46,7 @@ export function formatCompactVND(value: number | null | undefined): string {
  * Returns the compact branch code used in dense operational tables.
  */
 export function formatStoreCode(store?: string | null): string {
-  if (!store) return 'PXL';
+  if (!store) return 'DT';
   const normalized = String(store).toUpperCase().trim();
   if (normalized.includes('ESTELLA') || normalized === 'EP') return 'EP';
   if (normalized.includes('THAM') || normalized.includes('DE') || normalized === 'DT') return 'DT';
@@ -95,5 +95,3 @@ export function parseVndInput(value?: string | number | null): string | number {
 }
 
 export { formatRelativeTime } from './date-utils';
-
-
