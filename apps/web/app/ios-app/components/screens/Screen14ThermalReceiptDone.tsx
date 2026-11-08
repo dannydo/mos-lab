@@ -216,7 +216,7 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
           {/* Tiền Tip */}
           {tipAmount > 0 && (
             <div className="flex justify-between items-center text-emerald-800 font-semibold bg-emerald-50/60 px-2 py-1 rounded-lg border border-emerald-200">
-              <span>💖 Tiền Tip khách thưởng</span>
+              <span>♥ Tiền Tip khách thưởng</span>
               <span className="tabular-nums font-bold">+{tipAmount.toLocaleString('vi-VN')} đ</span>
             </div>
           )}

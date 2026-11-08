@@ -478,7 +478,7 @@ export function Screen12CheckoutBilling({
               </div>
               {tipAmount > 0 && (
                 <div className="flex items-center justify-between text-emerald-700 font-semibold">
-                  <span>💖 Tiền tip chuyên viên:</span>
+                  <span>♥ Tiền tip chuyên viên:</span>
                   <span className="font-extrabold tabular-nums">+{tipAmount.toLocaleString('vi-VN')} đ</span>
                 </div>
               )}

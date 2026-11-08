@@ -339,6 +339,55 @@ function getBookingCompletionInfo(
   };
 }
 
+/**
+ * Định dạng số tiền siêu gọn chuẩn Wings:
+ * 770.000 -> 770K, 7.700.000 -> 7.700K, 200.000 -> 200K, 0 -> 0đ
+ */
+function formatShortMoney(amount: number): string {
+  if (!amount || amount === 0) return '0đ';
+  const k = Math.round(amount / 1000);
+  return `${k.toLocaleString('vi-VN')}K`;
+}
+
+/**
+ * Trích xuất 3 tầng thông tin chuẩn cho Cột Phải của ca ĐÃ XONG (DONE):
+ * 1. Thời gian: 09:00 · 55p
+ * 2. Tiền (Quan trọng nhất): 🔴 -200K (nếu nợ) | 📦 7.700K (nếu bán Combo) | +770K (nếu thu dịch vụ/phụ thu) | 0đ (nếu trừ combo)
+ * 3. Điểm CV🪶 & Tip: ↻ +41 pts (kèm ♥ 50K nếu có tip)
+ */
+function getDoneBookingSummary(b: BookingItem) {
+  // 1. Giờ book và số phút làm thực tế
+  const rawTime = b.time12h || b.timeSlot || '09:00';
+  const bookingTimeStr = rawTime.replace(/\s*(am|pm)/i, '').trim();
+  const rawElapsed = b.progress?.elapsedSeconds ? Math.round(b.progress.elapsedSeconds / 60) : 0;
+  const durationMinutes = rawElapsed >= 20 && rawElapsed <= 150 ? rawElapsed : b.serviceDuration || 60;
+  const timeAndDurationStr = `${bookingTimeStr} · ${durationMinutes}p`;
+
+  // 2. Dòng TIỀN (Chỉ số quan trọng nhất)
+  const debtAmount = Number(b.debtAmount || b.billing?.debtAmount || 0);
+  const hasDebt = debtAmount > 0;
+
+  const soldComboPrice = Number(b.selectedCombo?.price || (b.billing as any)?.soldComboPrice || 0);
+  const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
+  const upgradeOrPaidAmount = Number(
+    b.upgradePrice && b.upgradePrice > 0 ? b.upgradePrice : isComboLive ? 0 : b.servicePrice
+  );
+
+  // 3. Điểm CV🪶 & Tip
+  const cvPoints = Number(b.cvRotationPoints || 41);
+  const tipAmount = Number(b.billing?.tipAmount || 0);
+
+  return {
+    timeAndDurationStr,
+    hasDebt,
+    debtAmount,
+    soldComboPrice,
+    upgradeOrPaidAmount,
+    cvPoints,
+    tipAmount,
+  };
+}
+
 export function Screen01IncomingBookings({
   bookings,
   bookingSegment,
@@ -610,6 +659,8 @@ export function Screen01IncomingBookings({
             const isServicingActive = b.status === 'SERVICING' || bookingSegment === 'SERVICING';
             const countdown = formatArrivalCountdownInMins(b.time12h || b.timeSlot, dateOffset, now);
             const completionInfo = getBookingCompletionInfo(b, now);
+            const isDone = bookingSegment === 'DONE' || b.status === 'DONE';
+            const doneSummary = isDone ? getDoneBookingSummary(b) : null;
 
             const isCurrentActiveServicing = Boolean(activeServicingBooking && b.id === activeServicingBooking.id);
             const isOtherCustomerLocked = Boolean(
@@ -808,50 +859,84 @@ export function Screen01IncomingBookings({
                   </div>
                 </div>
 
-                {/* 3.3 Right Column: Giờ hẹn (hoặc giờ hoàn tất khi đang làm) + Countdown (in mins) */}
-                <div className="w-[85px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch">
-                  <span className="text-amber-400 text-[13.5px] font-black tabular-nums leading-tight">
-                    {isServicingActive ? completionInfo.completionTimeStr : b.time12h || b.timeSlot}
-                  </span>
-                  <div
-                    className={`mt-1 text-[12.5px] font-extrabold tabular-nums tracking-tight leading-tight ${
-                      isServicingActive ? completionInfo.colorClass : countdown.colorClass
-                    }`}
-                    title={
-                      isServicingActive
-                        ? completionInfo.diffMins >= 0
-                          ? `Dự kiến hoàn tất trong ${completionInfo.diffMins} phút`
-                          : `Đã quá giờ hoàn tất dự kiến ${Math.abs(completionInfo.diffMins)} phút`
-                        : countdown.diffMins !== null
-                          ? countdown.diffMins >= 0
-                            ? `Khách sẽ đến trong ${countdown.diffMins} phút`
-                            : `Khách trễ ${Math.abs(countdown.diffMins)} phút`
-                          : undefined
-                    }
-                  >
-                    {isServicingActive ? completionInfo.countdownText : countdown.text}
-                  </div>
+                {/* 3.3 Right Column */}
+                {isDone && doneSummary ? (
+                  <div className="w-[104px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch space-y-1">
+                    {/* TẦNG 1: THỜI GIAN (09:00 · 55p) */}
+                    <div className="text-neutral-400 text-[11px] font-bold tabular-nums tracking-tight leading-none">
+                      {doneSummary.timeAndDurationStr}
+                    </div>
 
-                  {/* Nút Admin: Hoàn tác đưa khách hàng về Chờ đón (chỉ hiện khi Admin đang ở tab SERVICING) */}
-                  {b.status === 'SERVICING' && isAdmin && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRevertConfirmModal({
-                          isOpen: true,
-                          bookingId: b.id,
-                          customerName: cleanCustomerName,
-                        });
-                      }}
-                      className="mt-1.5 w-full py-1 px-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[9.5px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
-                      title="Quyền Admin: Trả khách hàng này về danh sách Chờ đón"
+                    {/* TẦNG 2: TIỀN (Quan trọng nhất: 🔴 -200K / 📦 7.700K / +770K / 0đ) */}
+                    <div className="flex items-center gap-1 leading-none flex-wrap">
+                      {doneSummary.hasDebt ? (
+                        <span className="text-rose-500 font-black text-[12.5px] tabular-nums tracking-tight animate-pulse">
+                          🔴 -{formatShortMoney(doneSummary.debtAmount)}
+                        </span>
+                      ) : doneSummary.soldComboPrice > 0 ? (
+                        <span className="text-purple-400 font-black text-[12.5px] tabular-nums tracking-tight">
+                          📦 {formatShortMoney(doneSummary.soldComboPrice)}
+                        </span>
+                      ) : doneSummary.upgradeOrPaidAmount > 0 ? (
+                        <span className="text-emerald-400 font-black text-[12.5px] tabular-nums tracking-tight">
+                          +{formatShortMoney(doneSummary.upgradeOrPaidAmount)}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-400 font-bold text-[12px] tabular-nums">0đ</span>
+                      )}
+                    </div>
+
+                    {/* TẦNG 3: ĐIỂM CV🪶 & TIP (↻ +41 pts · ♥ 50K) */}
+                    <div className="text-[10px] font-bold text-amber-400 tabular-nums tracking-tight leading-none whitespace-nowrap">
+                      ↻ +{doneSummary.cvPoints}
+                      {doneSummary.tipAmount > 0 ? `p · ♥ ${formatShortMoney(doneSummary.tipAmount)}` : ' pts'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-[85px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch">
+                    <span className="text-amber-400 text-[13.5px] font-black tabular-nums leading-tight">
+                      {isServicingActive ? completionInfo.completionTimeStr : b.time12h || b.timeSlot}
+                    </span>
+                    <div
+                      className={`mt-1 text-[12.5px] font-extrabold tabular-nums tracking-tight leading-tight ${
+                        isServicingActive ? completionInfo.colorClass : countdown.colorClass
+                      }`}
+                      title={
+                        isServicingActive
+                          ? completionInfo.diffMins >= 0
+                            ? `Dự kiến hoàn tất trong ${completionInfo.diffMins} phút`
+                            : `Đã quá giờ hoàn tất dự kiến ${Math.abs(completionInfo.diffMins)} phút`
+                          : countdown.diffMins !== null
+                            ? countdown.diffMins >= 0
+                              ? `Khách sẽ đến trong ${countdown.diffMins} phút`
+                              : `Khách trễ ${Math.abs(countdown.diffMins)} phút`
+                            : undefined
+                      }
                     >
-                      <RotateCcw className="w-2.5 h-2.5 shrink-0" />
-                      <span>Về Chờ đón</span>
-                    </button>
-                  )}
-                </div>
+                      {isServicingActive ? completionInfo.countdownText : countdown.text}
+                    </div>
+
+                    {/* Nút Admin: Hoàn tác đưa khách hàng về Chờ đón (chỉ hiện khi Admin đang ở tab SERVICING) */}
+                    {b.status === 'SERVICING' && isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRevertConfirmModal({
+                            isOpen: true,
+                            bookingId: b.id,
+                            customerName: cleanCustomerName,
+                          });
+                        }}
+                        className="mt-1.5 w-full py-1 px-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[9.5px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
+                        title="Quyền Admin: Trả khách hàng này về danh sách Chờ đón"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5 shrink-0" />
+                        <span>Về Chờ đón</span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

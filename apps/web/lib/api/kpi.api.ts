@@ -38,6 +38,7 @@ import type {
   CsTipQueryParams,
   CsTipResponse,
   CvConfigResponse,
+  CvDisciplineResponse,
   CvPaystubResponse,
   CvSpeedDetail,
   CvSpeedMatrix,
@@ -231,6 +232,14 @@ export const kpiApi = {
       dateTo?: string;
     }): Promise<CvWorkLogDetailResponse> => {
       const response = await api.get('/kpi/cv-paystub/work-logs', { params });
+      return response.data;
+    },
+    getCvDiscipline: async (params?: {
+      dateFrom?: string;
+      dateTo?: string;
+      store?: string;
+    }): Promise<CvDisciplineResponse> => {
+      const response = await api.get('/kpi/cv-discipline', { params });
       return response.data;
     },
     getCvConfig: async (): Promise<CvConfigResponse> => {

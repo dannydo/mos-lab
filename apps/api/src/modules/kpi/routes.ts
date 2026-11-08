@@ -9,6 +9,7 @@ import { registerCvRoutes } from './routes/cv.routes.js';
 import { registerCvTipRoutes } from './routes/cv-tip.routes.js';
 import { registerCvPaystubRoutes } from './routes/cv-paystub.routes.js';
 import { registerCvSpeedRoutes } from './routes/cv-speed.routes.js';
+import { registerCvDisciplineRoutes } from './routes/cv-discipline.routes.js';
 import { registerBkRoutes } from './routes/bk.routes.js';
 import { registerTelesaleTargetRoutes } from './routes/telesale-target.routes.js';
 import { registerFinancialGoalsRoutes } from './routes/financial-goals.routes.js';
@@ -215,6 +216,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   await registerCvTipRoutes(fastify);
   await registerCvPaystubRoutes(fastify);
   await registerCvSpeedRoutes(fastify);
+  await registerCvDisciplineRoutes(fastify);
   await registerBkRoutes(fastify);
   await registerTelesaleTargetRoutes(fastify);
   await registerFinancialGoalsRoutes(fastify);

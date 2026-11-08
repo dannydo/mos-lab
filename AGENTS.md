@@ -208,6 +208,7 @@ mos-lab/
 - **Xử lý tiền lẻ < 20K (Small Change)**: Khoản tiền tip dưới 20.000đ được coi là tiền thừa khách làm biếng lấy. **Vẫn cộng đủ tiền vào bảng lương/thu nhập nhân viên** (CV 70%, CC 20%, CS 3%), nhưng **tuyệt đối KHÔNG tính là lượt tip** (không tăng `totalTippedVisits`, không tính vào `% Tip Rate`).
 - **Bộ lọc 4 trạng thái**: Bảng chi tiết hỗ trợ 4 chế độ lọc: Tất cả (`ALL`) | Có Tip $\ge$ 20K (`TIPPED`) | Tiền lẻ < 20K (`SMALL_CHANGE`) | Không Tip 0đ (`NO_TIP`).
 - **Công thức CC Tip (20%)**: CC nhận 20% tổng tiền tip khách cho (lưu trong `staff_tip` với `tip_percentage = 20`).
+- **Biểu tượng Chuẩn Của Tip Toàn Hệ Thống (Trái tim ♥)**: Toàn bộ hệ thống (danh sách ca làm, màn hình thanh toán, hóa đơn nhiệt, bảng kê chi tiết, mobile app, web dashboard) bắt buộc sử dụng ký hiệu trái tim **`♥`** (Heart) làm biểu tượng chính thức cho tiền tip, đại diện cho tình cảm tin yêu và lòng tri ân của khách hàng gửi tới Chuyên Viên (ví dụ: `♥ 50K`, `♥ Tiền tip chuyên viên`).
 - **CC In != CC Out**: Khi nhân viên CC In khác CC Out, khoản Thưởng CC Tip (20%) bắt buộc chia **50/50** cho cả 2 CC (mỗi CC nhận 10% tip share, `tip_percentage = 10`).
 - **Chỉ đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order_state = 'Completed'`.
 - **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` khi tính `SUM(st.tip_amount)`, hãy query trực tiếp từ `staff_tip` JOIN `order`.

@@ -3,7 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Tabs, Tooltip, theme, Typography, Space } from 'antd';
-import { WalletOutlined, DashboardOutlined, MoneyCollectOutlined, SyncOutlined } from '@ant-design/icons';
+import {
+  WalletOutlined,
+  DashboardOutlined,
+  MoneyCollectOutlined,
+  SyncOutlined,
+  SafetyCertificateOutlined,
+} from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
@@ -18,6 +24,7 @@ const { Title, Text } = Typography;
 const CvXoayTab = dynamic(() => import('./components/CvXoayTab'), { ssr: false });
 const CvTipTab = dynamic(() => import('./components/CvTipTab'), { ssr: false });
 const CvThuNhapTab = dynamic(() => import('./components/CvThuNhapTab'), { ssr: false });
+const CvKyLuatTab = dynamic(() => import('./components/CvKyLuatTab'), { ssr: false });
 const CvSpeedTab = dynamic(() => import('./components/cv-speed/CvSpeedTab').then((m) => ({ default: m.CvSpeedTab })), {
   ssr: false,
 });
@@ -98,7 +105,7 @@ export default function CvReportPage() {
       const savedTab = localStorage.getItem('cv_active_tab');
       const initialTab = tabParam || savedTab;
 
-      if (initialTab && ['xoay', 'tip', 'thunhap', 'speed'].includes(initialTab)) {
+      if (initialTab && ['xoay', 'tip', 'thunhap', 'speed', 'kyluat'].includes(initialTab)) {
         return initialTab;
       }
     }
@@ -284,6 +291,18 @@ export default function CvReportPage() {
                 </CvTabLabel>
               ),
               children: activeTab === 'speed' ? <CvSpeedTab /> : null,
+            },
+            {
+              key: 'kyluat',
+              label: (
+                <CvTabLabel title="Kỷ luật CV" icon={<SafetyCertificateOutlined />}>
+                  Kỷ Luật
+                </CvTabLabel>
+              ),
+              children:
+                activeTab === 'kyluat' ? (
+                  <CvKyLuatTab dateRange={dateRange} selectedStore={selectedStore} comparisonMode={viewMode} />
+                ) : null,
             },
           ]}
         />

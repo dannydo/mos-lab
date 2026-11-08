@@ -229,6 +229,7 @@ export interface BookingItem {
     packageKey?: string;
   };
   diamondBalance?: number; // Số dư ví Kim Cương của khách (1 💎 = 1.000 VNĐ)
+  debtAmount?: number; // Số tiền khách còn thiếu / công nợ (Ví dụ: 200.000đ -> 🔴 -200K)
   branchCode?: string; // Mã chi nhánh (ví dụ: 'DT' - Đề Thám)
   lastVisitDate?: string; // Ngày ghé gần nhất (DD/MM/YYYY)
   lashHistory?: LashHistoryItem[];
@@ -390,6 +391,7 @@ export interface BookingItem {
       voucherCode?: string;
     };
     grandTotal: number;
+    debtAmount?: number; // Số tiền khách nợ / thiếu
     completedAt?: string;
   };
 }

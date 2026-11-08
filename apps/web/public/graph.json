@@ -8346,7 +8346,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1763
+        "line": 1765
       }
     },
     {
@@ -8360,7 +8360,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1922
+        "line": 1924
       }
     },
     {
@@ -8374,7 +8374,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1927
+        "line": 1929
       }
     },
     {
@@ -8388,7 +8388,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1932
+        "line": 1934
       }
     },
     {
@@ -8402,7 +8402,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2086
+        "line": 2088
       }
     },
     {
@@ -8416,7 +8416,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2227
+        "line": 2229
       }
     },
     {
@@ -8430,7 +8430,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2282
+        "line": 2284
       }
     },
     {
@@ -8444,7 +8444,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2442
+        "line": 2444
       }
     },
     {
@@ -8458,7 +8458,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2532
+        "line": 2534
       }
     },
     {
@@ -8472,7 +8472,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2580
+        "line": 2582
       }
     },
     {
@@ -8486,7 +8486,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2665
+        "line": 2667
       }
     },
     {
@@ -8500,7 +8500,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2743
+        "line": 2745
       }
     },
     {
@@ -8514,7 +8514,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2828
+        "line": 2830
       }
     },
     {
@@ -8528,7 +8528,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2940
+        "line": 2942
       }
     },
     {
@@ -8542,7 +8542,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3248
+        "line": 3250
       }
     },
     {
@@ -8556,7 +8556,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3590
+        "line": 3592
       }
     },
     {
@@ -8570,7 +8570,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3639
+        "line": 3641
       }
     },
     {
@@ -8584,7 +8584,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3834
+        "line": 3836
       }
     },
     {
@@ -8598,7 +8598,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3918
+        "line": 3920
       }
     },
     {
@@ -8612,7 +8612,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3978
+        "line": 3980
       }
     },
     {
@@ -8626,7 +8626,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4022
+        "line": 4024
       }
     },
     {
@@ -8640,7 +8640,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4067
+        "line": 4069
       }
     },
     {
@@ -8654,7 +8654,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4173
+        "line": 4175
       }
     },
     {
@@ -8668,7 +8668,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4248
+        "line": 4250
       }
     },
     {
@@ -8682,7 +8682,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4354
+        "line": 4356
       }
     },
     {
@@ -8696,7 +8696,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4470
+        "line": 4472
       }
     },
     {
@@ -8710,7 +8710,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4572
+        "line": 4574
       }
     },
     {
@@ -8724,7 +8724,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4643
+        "line": 4645
       }
     },
     {
@@ -8738,7 +8738,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4666
+        "line": 4668
       }
     },
     {
@@ -8752,7 +8752,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4847
+        "line": 4849
       }
     },
     {
@@ -8766,7 +8766,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5024
+        "line": 5026
       }
     },
     {
@@ -8780,7 +8780,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5119
+        "line": 5121
       }
     },
     {
@@ -8794,7 +8794,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5132
+        "line": 5134
       }
     },
     {
@@ -8808,7 +8808,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5195
+        "line": 5197
       }
     },
     {
@@ -8822,7 +8822,7 @@
         "path": "/api/chat/messages/search",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5260
+        "line": 5262
       }
     },
     {
@@ -11024,6 +11024,20 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/cv-discipline",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/cv-discipline",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/cv-discipline",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 14
+      }
+    },
+    {
       "id": "route:GET:/api/kpi/cv-seniority-config",
       "type": "FastifyRoute",
       "label": "GET /api/kpi/cv-seniority-config",
@@ -11524,7 +11538,7 @@
         "path": "/api/kpi/export-booker-salary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 242
+        "line": 244
       }
     },
     {
@@ -11538,7 +11552,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 608
+        "line": 610
       }
     },
     {
@@ -11552,7 +11566,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 614
+        "line": 616
       }
     },
     {
@@ -11566,7 +11580,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 655
+        "line": 657
       }
     },
     {
@@ -11580,7 +11594,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 674
+        "line": 676
       }
     },
     {
@@ -11594,7 +11608,7 @@
         "path": "/api/kpi/summary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 712
+        "line": 714
       }
     },
     {
@@ -11608,7 +11622,7 @@
         "path": "/api/kpi/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 872
+        "line": 874
       }
     },
     {
@@ -11622,7 +11636,7 @@
         "path": "/api/kpi/booker-appointments",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1176
+        "line": 1178
       }
     },
     {
@@ -11636,7 +11650,7 @@
         "path": "/api/kpi/trends",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1494
+        "line": 1496
       }
     },
     {
@@ -24157,6 +24171,66 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SlotMatrixMap",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvDisciplineViolationType",
+      "type": "SharedType",
+      "label": "CvDisciplineViolationType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv-discipline.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvDisciplineViolationType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvDisciplineIncident",
+      "type": "SharedType",
+      "label": "CvDisciplineIncident",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv-discipline.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvDisciplineIncident",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvDisciplineStaffRecord",
+      "type": "SharedType",
+      "label": "CvDisciplineStaffRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv-discipline.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvDisciplineStaffRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvDisciplineSummary",
+      "type": "SharedType",
+      "label": "CvDisciplineSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv-discipline.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvDisciplineSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvDisciplineResponse",
+      "type": "SharedType",
+      "label": "CvDisciplineResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv-discipline.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvDisciplineResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -37582,8 +37656,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 212721,
-        "lineCount": 5458,
+        "sizeBytes": 212740,
+        "lineCount": 5460,
         "ext": ".ts"
       }
     },
@@ -38667,6 +38741,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/routes/cv-discipline.routes.test.ts",
+      "type": "File",
+      "label": "cv-discipline.routes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-discipline.routes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6993,
+        "lineCount": 207,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
+      "type": "File",
+      "label": "cv-discipline.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 19952,
+        "lineCount": 512,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "type": "File",
       "label": "cv-paystub.routes.ts",
@@ -38791,8 +38891,8 @@
       "filePath": "apps/api/src/modules/kpi/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 60317,
-        "lineCount": 1619,
+        "sizeBytes": 60441,
+        "lineCount": 1621,
         "ext": ".ts"
       }
     },
@@ -44764,6 +44864,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx",
+      "type": "File",
+      "label": "CvDisciplineDetailDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12350,
+        "lineCount": 314,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx",
+      "type": "File",
+      "label": "CvKyLuatTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 23264,
+        "lineCount": 587,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "type": "File",
       "label": "CvThuNhapTab.tsx",
@@ -44888,8 +45014,8 @@
       "filePath": "apps/web/app/dashboard/cv/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10497,
-        "lineCount": 294,
+        "sizeBytes": 11151,
+        "lineCount": 311,
         "ext": ".tsx"
       }
     },
@@ -47527,8 +47653,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 54063,
-        "lineCount": 1166,
+        "sizeBytes": 58367,
+        "lineCount": 1253,
         "ext": ".tsx"
       }
     },
@@ -47696,7 +47822,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 66452,
+        "sizeBytes": 66451,
         "lineCount": 1293,
         "ext": ".tsx"
       }
@@ -47722,7 +47848,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19145,
+        "sizeBytes": 19144,
         "lineCount": 389,
         "ext": ".tsx"
       }
@@ -48021,8 +48147,8 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23810,
-        "lineCount": 778,
+        "sizeBytes": 23979,
+        "lineCount": 780,
         "ext": ".ts"
       }
     },
@@ -48489,8 +48615,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21338,
-        "lineCount": 547,
+        "sizeBytes": 21621,
+        "lineCount": 556,
         "ext": ".ts"
       }
     },
@@ -48944,8 +49070,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 152078,
-        "lineCount": 2004,
+        "sizeBytes": 152593,
+        "lineCount": 2005,
         "ext": ".ts"
       }
     },
@@ -49009,8 +49135,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3179,
-        "lineCount": 85,
+        "sizeBytes": 3221,
+        "lineCount": 86,
         "ext": ".ts"
       }
     },
@@ -49388,6 +49514,19 @@
       "metadata": {
         "sizeBytes": 22784,
         "lineCount": 858,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/cv-discipline.ts",
+      "type": "File",
+      "label": "cv-discipline.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/cv-discipline.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1535,
+        "lineCount": 55,
         "ext": ".ts"
       }
     },
@@ -55105,6 +55244,13 @@
     {
       "id": "edge:route:GET:/api/kpi/cs-tip:ws:apps/api",
       "source": "route:GET:/api/kpi/cs-tip",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/cv-discipline:ws:apps/api",
+      "source": "route:GET:/api/kpi/cv-discipline",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -62441,6 +62587,41 @@
     {
       "id": "edge:type:@mos-lab/shared:SlotMatrixMap:ws:packages/shared",
       "source": "type:@mos-lab/shared:SlotMatrixMap",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvDisciplineViolationType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvDisciplineViolationType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvDisciplineIncident:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvDisciplineIncident",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvDisciplineStaffRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvDisciplineStaffRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvDisciplineSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvDisciplineSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvDisciplineResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvDisciplineResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -72708,6 +72889,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cv-discipline.routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/routes/cv-discipline.routes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cv-discipline.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "target": "ws:packages/shared",
@@ -74537,6 +74732,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cv/components/CvConfigDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/CvConfigDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -77926,6 +78135,13 @@
       "id": "edge:file:apps/api/src/modules/kpi/routes/cc.routes.ts:prisma:crm:CrmTeam",
       "source": "file:apps/api/src/modules/kpi/routes/cc.routes.ts",
       "target": "prisma:crm:CrmTeam",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cv-discipline.routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
+      "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -84881,6 +85097,13 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cv-discipline",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/cv-discipline",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cv-seniority-config",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/cv-seniority-config",
@@ -90481,6 +90704,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cv-discipline",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/cv-discipline",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cv-seniority-config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/cv-seniority-config",
@@ -95734,6 +95964,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cs-tip",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/cs-tip",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cv-discipline",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/cv-discipline",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -104432,6 +104669,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cv-discipline",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/cv-discipline",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cv-seniority-config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/cv-seniority-config",
@@ -105931,31 +106175,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3845,
-    "totalEdges": 7993,
+    "totalNodes": 3856,
+    "totalEdges": 8008,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
-      "FastifyRoute": 751,
+      "FastifyRoute": 752,
       "Component": 65,
-      "SharedType": 1388,
+      "SharedType": 1393,
       "DesignToken": 12,
       "UIComponent": 348,
-      "File": 1096
+      "File": 1101
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1582,
-      "HANDLES_ROUTE": 751,
+      "EXPORTS": 1587,
+      "HANDLES_ROUTE": 752,
       "RENDERS": 413,
       "USES_TOKEN": 350,
-      "IMPORTS": 612,
-      "QUERIES_MODEL": 426,
-      "API_CALL": 3859
+      "IMPORTS": 616,
+      "QUERIES_MODEL": 427,
+      "API_CALL": 3863
     },
-    "fastifyRouteCount": 756,
+    "fastifyRouteCount": 757,
     "prismaModelCount": 182,
     "nextPageCount": 65,
-    "sharedTypeCount": 1388
+    "sharedTypeCount": 1393
   },
   "routes": [
     {
@@ -109812,6 +110056,13 @@
       "method": "GET",
       "path": "/api/kpi/cs-tip",
       "filePath": "apps/api/src/modules/kpi/routes/cs-tip.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/cv-discipline",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-discipline.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"
     },
