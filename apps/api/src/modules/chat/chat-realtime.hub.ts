@@ -195,7 +195,8 @@ export function computeDeltaFromSnapshot(
       const latestReplyMs = (msg.thread || []).reduce((max, r) => {
         const rCreated = r.createdAt ? new Date(r.createdAt).getTime() : 0;
         const rEdited = r.editedAt ? new Date(r.editedAt).getTime() : 0;
-        return Math.max(max, rCreated, rEdited);
+        const rDeleted = r.deletedAt ? new Date(r.deletedAt).getTime() : 0;
+        return Math.max(max, rCreated, rEdited, rDeleted);
       }, 0);
 
       const effectiveMsgMs = Math.max(

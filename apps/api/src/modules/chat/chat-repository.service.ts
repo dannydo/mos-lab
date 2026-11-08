@@ -885,6 +885,7 @@ export async function loadOrMigrateRelationalChatData(
     for (const row of dbMessages) {
       const meta = (row.metadataJson || {}) as SafeAny;
       if (row.parentMessageId) {
+        const isDeleted = Boolean(row.isDeleted || meta.isDeleted);
         const reply: MosChatThreadReply = {
           ...meta,
           id: row.id,
@@ -896,13 +897,19 @@ export async function loadOrMigrateRelationalChatData(
           text: row.text,
           timeLabel: row.timeLabel,
           createdAt: meta.createdAt || row.createdAt.toISOString(),
-          isDeleted: Boolean(row.isDeleted),
+          isDeleted,
+          deletedAt: meta.deletedAt ?? (isDeleted && row.updatedAt ? row.updatedAt.toISOString() : undefined),
+          deletedBy: meta.deletedBy,
+          deletedByName: meta.deletedByName,
+          originalText: meta.originalText,
+          editHistory: meta.editHistory,
           missionId: row.missionId ?? meta.missionId ?? null,
         };
         const list = repliesByParentId.get(row.parentMessageId) || [];
         list.push(reply);
         repliesByParentId.set(row.parentMessageId, list);
       } else {
+        const isDeleted = Boolean(row.isDeleted || meta.isDeleted);
         const msg: MosChatMessage = {
           ...meta,
           id: row.id,
@@ -916,7 +923,12 @@ export async function loadOrMigrateRelationalChatData(
           timeLabel: row.timeLabel,
           createdAt: meta.createdAt || row.createdAt.toISOString(),
           pinned: Boolean(row.pinned),
-          isDeleted: Boolean(row.isDeleted),
+          isDeleted,
+          deletedAt: meta.deletedAt ?? (isDeleted && row.updatedAt ? row.updatedAt.toISOString() : undefined),
+          deletedBy: meta.deletedBy,
+          deletedByName: meta.deletedByName,
+          originalText: meta.originalText,
+          editHistory: meta.editHistory,
           taskId: row.taskId ?? meta.taskId ?? null,
           missionId: row.missionId ?? meta.missionId ?? null,
           missionKey: row.missionKey ?? meta.missionKey ?? null,

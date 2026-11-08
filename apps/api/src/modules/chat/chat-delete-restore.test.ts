@@ -116,4 +116,144 @@ describe('chat message delete and restore invariants (MOS-BUG-119)', () => {
     assert.equal(reply.isDeleted, false);
     assert.equal(reply.text, 'Câu trả lời trong luồng');
   });
+
+  it('MOS-BUG-208: computeDeltaFromSnapshot includes parent message when a thread reply is deleted', async () => {
+    const { computeDeltaFromSnapshot } = await import('./chat-realtime.hub.js');
+    const deleteTime = new Date('2026-11-08T15:00:00.000Z');
+    const syncSince = new Date('2026-11-08T14:59:00.000Z').toISOString();
+
+    const conv: MosChatConversation = {
+      id: 'space-core-team',
+      type: 'space',
+      name: 'Core Team',
+      messages: [
+        {
+          id: 'msg-parent-1',
+          conversationId: 'space-core-team',
+          senderId: 6,
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'STAFF',
+          text: 'Root message',
+          createdAt: new Date('2026-11-08T14:00:00.000Z').toISOString(),
+          thread: [
+            {
+              id: 'th-deleted-reply',
+              senderId: 6,
+              senderName: 'Nguyễn Quang Khải',
+              senderRole: 'STAFF',
+              text: 'Deleted reply',
+              createdAt: new Date('2026-11-08T14:10:00.000Z').toISOString(),
+              isDeleted: true,
+              deletedAt: deleteTime.toISOString(),
+              deletedBy: 6,
+              deletedByName: 'Nguyễn Quang Khải',
+              originalText: 'Deleted reply',
+            },
+          ],
+        },
+      ],
+      updatedAt: deleteTime.toISOString(),
+    };
+
+    const delta = computeDeltaFromSnapshot(
+      {
+        conversations: [conv],
+        tasks: [],
+      },
+      syncSince
+    );
+
+    assert.equal(delta.updatedMessages.length, 1);
+    assert.equal(delta.updatedMessages[0].id, 'msg-parent-1');
+    assert.equal(delta.updatedMessages[0].thread?.[0]?.isDeleted, true);
+  });
+
+  it('MOS-BUG-208: loadOrMigrateRelationalChatData preserves isDeleted when row.isDeleted is true or meta.isDeleted is true', async () => {
+    const { loadOrMigrateRelationalChatData } = await import('./chat-repository.service.js');
+    const deleteIso = '2026-11-08T15:00:00.000Z';
+
+    const mockFastify = {
+      prisma: {
+        crm: {
+          $executeRawUnsafe: async () => 1,
+          crmChatConversation: {
+            count: async () => 1,
+            findMany: async () => [
+              {
+                id: 'space-core-team',
+                type: 'space',
+                name: 'Core Team',
+                updatedAt: new Date(deleteIso),
+                payloadJson: {},
+              },
+            ],
+          },
+          crmChatMessage: {
+            findMany: async () => [
+              {
+                id: 'msg-root-1',
+                conversationId: 'space-core-team',
+                parentMessageId: null,
+                senderId: '6',
+                senderName: 'Nguyễn Quang Khải',
+                senderRole: 'STAFF',
+                text: 'Root',
+                timeLabel: '21:00',
+                pinned: false,
+                isDeleted: false,
+                createdAt: new Date('2026-11-08T14:00:00.000Z'),
+                metadataJson: {},
+              },
+              {
+                id: 'th-reply-deleted',
+                conversationId: 'space-core-team',
+                parentMessageId: 'msg-root-1',
+                senderId: '6',
+                senderName: 'Nguyễn Quang Khải',
+                senderRole: 'STAFF',
+                text: '- [ ] d',
+                timeLabel: '21:56',
+                pinned: false,
+                isDeleted: true,
+                createdAt: new Date('2026-11-08T14:10:00.000Z'),
+                updatedAt: new Date(deleteIso),
+                metadataJson: {
+                  isDeleted: true,
+                  deletedAt: deleteIso,
+                  deletedBy: 6,
+                  deletedByName: 'Nguyễn Quang Khải',
+                  originalText: '- [ ] d',
+                },
+              },
+            ],
+          },
+          crmChatTask: {
+            findMany: async () => [],
+          },
+          crmChatUserPref: {
+            findMany: async () => [],
+          },
+        },
+      },
+      log: {
+        warn: () => {},
+        error: () => {},
+      },
+    };
+
+    const res = await loadOrMigrateRelationalChatData(mockFastify as any, {
+      conversations: [],
+      tasks: [],
+      accessConfig: {} as any,
+      userPrefsByUserKey: {},
+    });
+
+    const root = res.conversations[0]?.messages?.[0];
+    assert.ok(root, 'Root message must exist');
+    const reply = root?.thread?.[0];
+    assert.ok(reply, 'Reply must exist in thread');
+    assert.equal(reply?.isDeleted, true, 'Reply must remain soft-deleted');
+    assert.equal(reply?.deletedByName, 'Nguyễn Quang Khải');
+    assert.equal(reply?.originalText, '- [ ] d');
+  });
 });

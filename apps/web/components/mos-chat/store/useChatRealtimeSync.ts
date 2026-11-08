@@ -63,6 +63,72 @@ export function sanitizeMovedThreadDuplicates(messages: MosChatMessage[]): MosCh
   return nextMessages;
 }
 
+export function mergeThreadReplies(
+  existingReplies: MosChatThreadReply[] = [],
+  incomingReplies: MosChatThreadReply[] = []
+): MosChatThreadReply[] {
+  if (!incomingReplies || incomingReplies.length === 0) {
+    return existingReplies || [];
+  }
+  if (!existingReplies || existingReplies.length === 0) {
+    return incomingReplies;
+  }
+
+  const replyMap = new Map<string, MosChatThreadReply>();
+  for (const r of existingReplies) {
+    replyMap.set(r.id, r);
+  }
+
+  for (const inc of incomingReplies) {
+    const prev = replyMap.get(inc.id);
+    if (!prev) {
+      replyMap.set(inc.id, inc);
+    } else {
+      const prevDeleted = Boolean(prev.isDeleted);
+      const incDeleted = Boolean(inc.isDeleted);
+      const isRestored = !incDeleted && inc.editHistory?.some((e) => e.editorName?.includes('Đã khôi phục'));
+      const finalDeleted = incDeleted || (prevDeleted && !isRestored);
+
+      replyMap.set(inc.id, {
+        ...prev,
+        ...inc,
+        isDeleted: finalDeleted,
+        deletedAt: finalDeleted ? inc.deletedAt || prev.deletedAt : null,
+        deletedBy: finalDeleted ? inc.deletedBy || prev.deletedBy : null,
+        deletedByName: finalDeleted ? inc.deletedByName || prev.deletedByName : null,
+        originalText: inc.originalText ?? prev.originalText,
+      });
+    }
+  }
+
+  return Array.from(replyMap.values()).sort(
+    (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  );
+}
+
+export function mergeSingleChatMessage(
+  existing: MosChatMessage | undefined,
+  incoming: MosChatMessage
+): MosChatMessage {
+  if (!existing) return incoming;
+  const mergedThread = mergeThreadReplies(existing.thread, incoming.thread);
+  const prevDeleted = Boolean(existing.isDeleted);
+  const incDeleted = Boolean(incoming.isDeleted);
+  const isRestored = !incDeleted && incoming.editHistory?.some((e) => e.editorName?.includes('Đã khôi phục'));
+  const finalDeleted = incDeleted || (prevDeleted && !isRestored);
+
+  return {
+    ...existing,
+    ...incoming,
+    isDeleted: finalDeleted,
+    deletedAt: finalDeleted ? incoming.deletedAt || existing.deletedAt : null,
+    deletedBy: finalDeleted ? incoming.deletedBy || existing.deletedBy : null,
+    deletedByName: finalDeleted ? incoming.deletedByName || existing.deletedByName : null,
+    originalText: incoming.originalText ?? existing.originalText,
+    thread: mergedThread,
+  };
+}
+
 export function mergeDeltaConversations(
   prevConversations: MosChatConversation[],
   deltaConversations: MosChatConversation[],
@@ -125,12 +191,12 @@ export function mergeDeltaConversations(
 
     for (const m of incomingConvMsgs) {
       const existing = msgMap.get(m.id);
-      msgMap.set(m.id, existing ? { ...existing, ...m } : m);
+      msgMap.set(m.id, mergeSingleChatMessage(existing, m));
     }
 
     for (const m of incomingMsgs) {
       const existing = msgMap.get(m.id);
-      msgMap.set(m.id, existing ? { ...existing, ...m } : m);
+      msgMap.set(m.id, mergeSingleChatMessage(existing, m));
     }
 
     const mergedMessages = sanitizeMovedThreadDuplicates(
@@ -229,6 +295,77 @@ export function applyRealtimeEventToConversations(
             thread: exists
               ? thread.map((r) => (r.id === newReply.id ? { ...r, ...newReply } : r))
               : [...thread, newReply],
+          };
+        }),
+      };
+    });
+  }
+
+  if (event.type === 'MESSAGE_DELETED') {
+    const messageId = (payload.messageId as string) || (payload.message as MosChatMessage)?.id;
+    const replyId = payload.replyId as string | undefined;
+    const target = payload.target as (MosChatMessage | MosChatThreadReply) | undefined;
+    const incomingMsg = payload.message as MosChatMessage | undefined;
+
+    return prevConversations.map((conv) => {
+      if (conv.id !== convId) return conv;
+      return {
+        ...conv,
+        updatedAt: event.timestamp,
+        messages: (conv.messages || []).map((m) => {
+          if (m.id !== messageId) return m;
+          if (replyId) {
+            const updatedThread = (m.thread || []).map((r) => {
+              if (r.id !== replyId) return r;
+              return {
+                ...r,
+                ...(target || {}),
+                isDeleted: true,
+                deletedAt: (target as MosChatThreadReply)?.deletedAt || event.timestamp,
+              };
+            });
+            return {
+              ...m,
+              thread: updatedThread,
+            };
+          }
+          return {
+            ...m,
+            ...(incomingMsg || target || {}),
+            isDeleted: true,
+            deletedAt: (incomingMsg || target)?.deletedAt || event.timestamp,
+          };
+        }),
+      };
+    });
+  }
+
+  if (event.type === 'MESSAGE_UPDATED') {
+    const messageId = (payload.messageId as string) || (payload.message as MosChatMessage)?.id;
+    const replyId = payload.replyId as string | undefined;
+    const target = payload.target as (MosChatMessage | MosChatThreadReply) | undefined;
+    const incomingMsg = payload.message as MosChatMessage | undefined;
+
+    return prevConversations.map((conv) => {
+      if (conv.id !== convId) return conv;
+      return {
+        ...conv,
+        updatedAt: event.timestamp,
+        messages: (conv.messages || []).map((m) => {
+          if (m.id !== messageId) return m;
+          if (replyId && target) {
+            const updatedThread = (m.thread || []).map((r) => {
+              if (r.id !== replyId) return r;
+              return { ...r, ...target };
+            });
+            return {
+              ...m,
+              thread: updatedThread,
+            };
+          }
+          return {
+            ...m,
+            ...(incomingMsg || target || {}),
           };
         }),
       };
