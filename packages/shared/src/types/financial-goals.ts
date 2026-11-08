@@ -47,6 +47,7 @@ export interface FinancialGoalsOverview {
   workDaysRemaining: number;
   periodStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
   pacingRatio: number;
+  includeVat?: boolean;
   kpiMain: FinancialGoalItem;
   kpiSub: {
     combo: FinancialGoalItem;

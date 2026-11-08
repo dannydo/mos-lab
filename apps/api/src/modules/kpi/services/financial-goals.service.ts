@@ -87,7 +87,11 @@ export class FinancialGoalsService {
     return cleanConfig;
   }
 
-  static async getOverview(fastify: FastifyInstance, rawMonth?: string): Promise<FinancialGoalsOverview> {
+  static async getOverview(
+    fastify: FastifyInstance,
+    rawMonth?: string,
+    includeVat: boolean = true
+  ): Promise<FinancialGoalsOverview> {
     // 1. Determine valid target month in Vietnam Timezone
     const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
     const currentYear = vnNow.getFullYear();
@@ -219,9 +223,15 @@ export class FinancialGoalsService {
     let actualProduct = 0;
 
     for (const o of rawOrders) {
-      const comboRev = combosMap[o.orderId] || 0;
-      const productRev = productsMap[o.orderId] || 0;
-      const orderTotal = Number(o.total_price || 0);
+      let comboRev = combosMap[o.orderId] || 0;
+      let productRev = productsMap[o.orderId] || 0;
+      let orderTotal = Number(o.total_price || 0);
+
+      if (!includeVat) {
+        orderTotal = Math.round(orderTotal / 1.08);
+        comboRev = Math.round(comboRev / 1.08);
+        productRev = Math.round(productRev / 1.08);
+      }
 
       let finalRevCombo = comboRev;
       let finalRevProduct = productRev;
@@ -360,6 +370,7 @@ export class FinancialGoalsService {
       workDaysRemaining,
       periodStatus,
       pacingRatio,
+      includeVat,
       kpiMain,
       kpiSub,
       dailyBreakdown,

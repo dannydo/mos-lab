@@ -17,6 +17,7 @@ import {
 import dayjs from 'dayjs';
 import { FinancialGoalsOverview } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
+import { ToolbarToggle } from '../../../components/ui';
 import { FinancialGoalOverviewCards } from './components/FinancialGoalOverviewCards';
 import { FinancialGoalDailyTable } from './components/FinancialGoalDailyTable';
 import { FinancialGoalConfigModal } from './components/FinancialGoalConfigModal';
@@ -41,6 +42,20 @@ function FinancialGoalsContent() {
   const [error, setError] = useState<string | null>(null);
   const [configModalOpen, setConfigModalOpen] = useState<boolean>(false);
 
+  // Include VAT state (Default: true, synced with localStorage and URL query)
+  const [includeVat, setIncludeVat] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const vatParam = urlParams.get('vat') || urlParams.get('includeVat');
+      if (vatParam !== null) {
+        return vatParam !== 'false' && vatParam !== '0';
+      }
+      const saved = localStorage.getItem('financial_goals_include_vat');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+
   // Sync with URL query parameter
   useEffect(() => {
     if (urlMonth && urlMonth !== selectedMonth && /^\d{4}-\d{2}$/.test(urlMonth)) {
@@ -64,12 +79,12 @@ function FinancialGoalsContent() {
     loadAvailableMonths();
   }, [loadAvailableMonths]);
 
-  // Fetch overview data for month
+  // Fetch overview data for month and VAT state
   const fetchOverview = useCallback(
-    async (monthToFetch = selectedMonth, isSilent = false) => {
+    async (monthToFetch = selectedMonth, isSilent = false, vatToFetch = includeVat) => {
       if (!isSilent) setRefreshing(true);
       try {
-        const data = await apiClient.financialGoals.getOverview(monthToFetch);
+        const data = await apiClient.financialGoals.getOverview(monthToFetch, vatToFetch);
         setOverview(data);
         setError(null);
       } catch (err: unknown) {
@@ -80,18 +95,34 @@ function FinancialGoalsContent() {
         setRefreshing(false);
       }
     },
-    [selectedMonth]
+    [selectedMonth, includeVat]
   );
 
   useEffect(() => {
-    fetchOverview(selectedMonth);
-  }, [selectedMonth, fetchOverview]);
+    fetchOverview(selectedMonth, false, includeVat);
+  }, [selectedMonth, includeVat, fetchOverview]);
+
+  // VAT toggle handler
+  const handleToggleVat = (checked: boolean) => {
+    setIncludeVat(checked);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('financial_goals_include_vat', String(checked));
+      const url = new URL(window.location.href);
+      if (!checked) {
+        url.searchParams.set('vat', 'false');
+      } else {
+        url.searchParams.delete('vat');
+      }
+      router.replace(url.pathname + url.search);
+    }
+  };
 
   // Month change navigation
   const handleMonthChange = (newMonth: string) => {
     if (!newMonth || newMonth === selectedMonth) return;
     setSelectedMonth(newMonth);
-    router.push(`/dashboard/financial-goals?month=${newMonth}`);
+    const vatSuffix = !includeVat ? '&vat=false' : '';
+    router.push(`/dashboard/financial-goals?month=${newMonth}${vatSuffix}`);
   };
 
   const handlePrevMonth = () => {
@@ -191,11 +222,43 @@ function FinancialGoalsContent() {
             </Tooltip>
           </div>
 
+          {/* VAT Toggle */}
+          <div
+            className={`inline-flex items-center px-2.5 py-1 rounded-xl border text-xs font-mono transition-colors ${
+              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200 shadow-xs'
+            }`}
+          >
+            <ToolbarToggle
+              label={
+                <span className="flex items-center gap-1.5 font-bold">
+                  <span>VAT 8%</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
+                      includeVat
+                        ? isDark
+                          ? 'bg-amber-950/80 text-amber-300 border-amber-800/60'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                        : isDark
+                          ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}
+                  >
+                    {includeVat ? 'Bật' : 'Bỏ VAT'}
+                  </span>
+                </span>
+              }
+              aria-label="Bật hoặc bỏ thuế VAT 8%"
+              checked={includeVat}
+              onChange={handleToggleVat}
+              className="text-amber-500 dark:text-amber-300"
+            />
+          </div>
+
           {/* Refresh Button */}
           <Tooltip title="Làm mới số liệu thực tế">
             <Button
               icon={<RotateCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-amber-500' : ''}`} />}
-              onClick={() => fetchOverview(selectedMonth)}
+              onClick={() => fetchOverview(selectedMonth, false, includeVat)}
               loading={refreshing}
             >
               Làm mới
@@ -240,6 +303,7 @@ function FinancialGoalsContent() {
           {/* Main & Component Overview Cards */}
           <FinancialGoalOverviewCards
             overview={overview}
+            includeVat={includeVat}
             onOpenConfig={() => setConfigModalOpen(true)}
           />
 
@@ -247,6 +311,7 @@ function FinancialGoalsContent() {
           <FinancialGoalDailyTable
             data={overview.dailyBreakdown || []}
             month={overview.month}
+            includeVat={includeVat}
           />
         </div>
       ) : null}

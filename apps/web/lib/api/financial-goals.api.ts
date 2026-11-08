@@ -3,9 +3,9 @@ import { api } from './base';
 
 export const financialGoalsApi = {
   financialGoals: {
-    getOverview: async (month?: string): Promise<FinancialGoalsOverview> => {
+    getOverview: async (month?: string, includeVat?: boolean): Promise<FinancialGoalsOverview> => {
       const response = await api.get<{ success: boolean; data: FinancialGoalsOverview }>('/kpi/financial-goals', {
-        params: { month },
+        params: { month, includeVat },
       });
       return response.data.data;
     },

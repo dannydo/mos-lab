@@ -14,10 +14,17 @@ export async function registerFinancialGoalsRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const { month } = request.query as { month?: string };
+    const { month, includeVat: rawIncludeVat } = request.query as {
+      month?: string;
+      includeVat?: string | boolean;
+    };
+    const includeVat =
+      rawIncludeVat === undefined
+        ? true
+        : rawIncludeVat !== 'false' && rawIncludeVat !== '0' && rawIncludeVat !== false;
 
     try {
-      const data = await FinancialGoalsService.getOverview(fastify, month);
+      const data = await FinancialGoalsService.getOverview(fastify, month, includeVat);
       return reply.send({ success: true, data });
     } catch (err: SafeAny) {
       fastify.log.error(`Failed to get financial goals overview: ${err.message}`);

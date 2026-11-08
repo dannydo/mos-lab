@@ -12,6 +12,7 @@ const mockOverview: FinancialGoalsOverview = {
   periodStatus: 'IN_PROGRESS',
   pacingRatio: 0.5,
   isConfigured: true,
+  includeVat: true,
   config: {
     month: '2026-11',
     totalRevenueTarget: 850_000_000,
@@ -92,6 +93,7 @@ describe('FinancialGoalOverviewCards', () => {
     expect(screen.getByText('450.000.000đ')).toBeDefined();
     expect(screen.getByText(/\/ 850.000.000đ/i)).toBeDefined();
     expect(screen.getAllByText('52.9%').length).toBeGreaterThan(0);
+    expect(screen.getByText('Đã gồm 8% VAT')).toBeDefined();
   });
 
   it('renders all three component KPI cards', () => {
@@ -105,5 +107,11 @@ describe('FinancialGoalOverviewCards', () => {
 
     expect(screen.getByText('Doanh Thu Sản Phẩm')).toBeDefined();
     expect(screen.getByText('30.000.000đ')).toBeDefined();
+  });
+
+  it('renders without VAT badge when includeVat is false', () => {
+    render(<FinancialGoalOverviewCards overview={mockOverview} includeVat={false} />);
+
+    expect(screen.getByText('Chưa VAT (Đã bỏ thuế)')).toBeDefined();
   });
 });

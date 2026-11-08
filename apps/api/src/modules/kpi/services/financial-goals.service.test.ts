@@ -104,9 +104,10 @@ describe('FinancialGoalsService', () => {
       },
     } as unknown as FastifyInstance;
 
-    const overview = await FinancialGoalsService.getOverview(mockFastify, '2026-11');
+    const overview = await FinancialGoalsService.getOverview(mockFastify, '2026-11', true);
     assert.equal(overview.month, '2026-11');
     assert.equal(overview.daysInMonth, 30);
+    assert.equal(overview.includeVat, true);
     assert.equal(overview.kpiMain.actual, 1_500_000); // 1M + 500k
     assert.equal(overview.kpiSub.combo.actual, 600_000);
     assert.equal(overview.kpiSub.product.actual, 100_000);
@@ -117,5 +118,13 @@ describe('FinancialGoalsService', () => {
     assert.ok(day5);
     assert.equal(day5.totalRevenue, 1_500_000);
     assert.equal(day5.orderCount, 2);
+
+    // Test with includeVat = false (Bỏ thuế VAT)
+    const overviewWithoutVat = await FinancialGoalsService.getOverview(mockFastify, '2026-11', false);
+    assert.equal(overviewWithoutVat.includeVat, false);
+    // 1_000_000 / 1.08 = 925926, 500_000 / 1.08 = 462963 => 1_388_889
+    assert.equal(overviewWithoutVat.kpiMain.actual, Math.round(1_000_000 / 1.08) + Math.round(500_000 / 1.08));
+    assert.equal(overviewWithoutVat.kpiSub.combo.actual, Math.round(600_000 / 1.08));
+    assert.equal(overviewWithoutVat.kpiSub.product.actual, Math.round(100_000 / 1.08));
   });
 });

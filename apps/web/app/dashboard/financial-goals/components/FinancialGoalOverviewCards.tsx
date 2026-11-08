@@ -22,6 +22,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 
 interface FinancialGoalOverviewCardsProps {
   overview: FinancialGoalsOverview;
+  includeVat?: boolean;
   onOpenConfig?: () => void;
 }
 
@@ -41,10 +42,15 @@ const formatShortCurrency = (amount: number): string => {
   return `${amount.toLocaleString('vi-VN')}đ`;
 };
 
-export const FinancialGoalOverviewCards: React.FC<FinancialGoalOverviewCardsProps> = ({ overview }) => {
+export const FinancialGoalOverviewCards: React.FC<FinancialGoalOverviewCardsProps> = ({
+  overview,
+  includeVat: propsIncludeVat,
+}) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const isDark = themeMode === 'dark';
+
+  const isVatActive = propsIncludeVat !== undefined ? propsIncludeVat : overview.includeVat !== false;
 
   const { month, daysInMonth, workDaysElapsed, workDaysRemaining, periodStatus, pacingRatio, kpiMain, kpiSub } =
     overview;
@@ -164,13 +170,28 @@ export const FinancialGoalOverviewCards: React.FC<FinancialGoalOverviewCardsProp
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <span
-                  className={`text-xs uppercase font-mono font-bold tracking-wider ${
-                    isDark ? 'text-amber-400' : 'text-amber-800'
-                  }`}
-                >
-                  KPI CHÍNH HỆ THỐNG WINGS LASHES
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-xs uppercase font-mono font-bold tracking-wider ${
+                      isDark ? 'text-amber-400' : 'text-amber-800'
+                    }`}
+                  >
+                    KPI CHÍNH HỆ THỐNG WINGS LASHES
+                  </span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold uppercase border ${
+                      isVatActive
+                        ? isDark
+                          ? 'bg-amber-950/60 text-amber-300 border-amber-700/50'
+                          : 'bg-amber-50 text-amber-800 border-amber-300'
+                        : isDark
+                          ? 'bg-cyan-950/60 text-cyan-300 border-cyan-700/50'
+                          : 'bg-cyan-50 text-cyan-800 border-cyan-300'
+                    }`}
+                  >
+                    {isVatActive ? 'Đã gồm 8% VAT' : 'Chưa VAT (Đã bỏ thuế)'}
+                  </span>
+                </div>
                 <h2
                   className={`text-xl md:text-2xl font-black tracking-tight ${
                     isDark ? 'text-white' : 'text-slate-900'

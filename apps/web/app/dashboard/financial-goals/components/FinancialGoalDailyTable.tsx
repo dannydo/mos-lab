@@ -10,9 +10,14 @@ import { useTheme } from '../../../../context/ThemeContext';
 interface FinancialGoalDailyTableProps {
   data: FinancialGoalDayBreakdown[];
   month: string;
+  includeVat?: boolean;
 }
 
-export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = ({ data, month }) => {
+export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = ({
+  data,
+  month,
+  includeVat = true,
+}) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
@@ -164,6 +169,19 @@ export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = (
           <h3 className={`text-sm font-bold tracking-tight ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
             Tiến Độ Doanh Thu Từng Ngày (Tháng {month})
           </h3>
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold uppercase border ${
+              includeVat
+                ? isDark
+                  ? 'bg-amber-950/60 text-amber-300 border-amber-700/50'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
+                : isDark
+                  ? 'bg-cyan-950/60 text-cyan-300 border-cyan-700/50'
+                  : 'bg-cyan-50 text-cyan-800 border-cyan-300'
+            }`}
+          >
+            {includeVat ? 'Đã gồm 8% VAT' : 'Chưa VAT'}
+          </span>
         </div>
         <span className={`text-xs font-mono ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
           {data.length} ngày trong kỳ
