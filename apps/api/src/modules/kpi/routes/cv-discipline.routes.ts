@@ -144,6 +144,7 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
             sa.item_id as targetId,
             sa.note as activityNote,
             DATE_FORMAT(sa.date_created, '%Y-%m-%d %H:%i:%s') as dateCreated,
+            TIME_FORMAT(sa.date_created, '%H:%i:%s') as activityTime,
             DATE_FORMAT(COALESCE(sws.date, sdo.from_date, sa.date_created), '%Y-%m-%d') as incidentDate,
             TIME_FORMAT(sws.start_time, '%H:%i') as shiftStart,
             TIME_FORMAT(sws.end_time, '%H:%i') as shiftEnd,
@@ -248,6 +249,8 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
           scheduledTime = `${act.shiftStart} - ${act.shiftEnd}`;
         }
 
+        const saTime = act.activityTime || (act.dateCreated ? act.dateCreated.split(' ')[1] : null);
+
         if (ruleTitleLower.includes('đi trễ')) {
           type = 'LATE';
           diffMinutes = Math.abs(Number(act.checkInDiff || 0));
@@ -256,12 +259,18 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
             const startM = toMinutes(act.shiftStart);
             if (inM > startM) diffMinutes = inM - startM;
           }
-          if (diffMinutes === 0 && ruleTitleLower.includes('30 phút')) {
-            diffMinutes = 30;
+
+          const saDiff = saTime && act.shiftStart ? Math.max(0, toMinutes(saTime) - toMinutes(act.shiftStart)) : 0;
+          if (diffMinutes === 0 && saDiff > 0) {
+            diffMinutes = saDiff;
+            title = `Đi trễ ${diffMinutes} phút`;
+            actualTime = `Check-in app: ${saTime} (Sổ sách: ${act.checkInTime || '09:00:00'})`;
+            description = `Vào ca trên app lúc ${saTime} (lịch vào ca: ${act.shiftStart || '09:00'}). Hệ thống tự động trừ -${finedBananas} chuối vì trễ ${diffMinutes} phút; giờ chấm công sau đó được chỉnh về ${act.checkInTime || '09:00:00'}.`;
+          } else {
+            title = diffMinutes > 0 ? `Đi trễ ${diffMinutes} phút` : act.ruleTitle;
+            actualTime = act.checkInTime ? `Check-in: ${act.checkInTime}` : 'Trễ ca';
+            description = `Vào ca lúc ${act.checkInTime || 'chưa ghi nhận'} (lịch vào ca: ${act.shiftStart || '09:00'})`;
           }
-          title = diffMinutes > 0 ? `Đi trễ ${diffMinutes} phút` : act.ruleTitle;
-          actualTime = act.checkInTime ? `Check-in: ${act.checkInTime}` : 'Trễ ca';
-          description = `Vào ca lúc ${act.checkInTime || 'chưa ghi nhận'} (lịch vào ca: ${act.shiftStart || '09:00'})`;
         } else if (ruleTitleLower.includes('về sớm')) {
           type = 'EARLY';
           diffMinutes = Math.abs(Number(act.checkOutDiff || 0));
@@ -270,9 +279,18 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
             const endM = toMinutes(act.shiftEnd);
             if (endM > outM) diffMinutes = endM - outM;
           }
-          title = diffMinutes > 0 ? `Về sớm ${diffMinutes} phút` : act.ruleTitle;
-          actualTime = act.checkOutTime ? `Check-out: ${act.checkOutTime}` : 'Về sớm';
-          description = `Ra ca lúc ${act.checkOutTime || 'chưa ghi nhận'} (lịch kết thúc: ${act.shiftEnd || '18:00'})`;
+
+          const saEarlyDiff = saTime && act.shiftEnd ? Math.max(0, toMinutes(act.shiftEnd) - toMinutes(saTime)) : 0;
+          if (diffMinutes === 0 && saEarlyDiff > 0) {
+            diffMinutes = saEarlyDiff;
+            title = `Về sớm ${diffMinutes} phút`;
+            actualTime = `Check-out app: ${saTime} (Sổ sách: ${act.checkOutTime || act.shiftEnd})`;
+            description = `Ra ca trên app lúc ${saTime} (lịch kết thúc: ${act.shiftEnd}). Hệ thống phạt -${finedBananas} chuối vì về sớm ${diffMinutes} phút; giờ chấm công sau đó được chỉnh về ${act.checkOutTime || act.shiftEnd}.`;
+          } else {
+            title = diffMinutes > 0 ? `Về sớm ${diffMinutes} phút` : act.ruleTitle;
+            actualTime = act.checkOutTime ? `Check-out: ${act.checkOutTime}` : 'Về sớm';
+            description = `Ra ca lúc ${act.checkOutTime || 'chưa ghi nhận'} (lịch kết thúc: ${act.shiftEnd || '18:00'})`;
+          }
         } else if (
           ruleTitleLower.includes('nghỉ') ||
           ruleTitleLower.includes('off') ||
