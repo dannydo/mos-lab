@@ -319,11 +319,90 @@ export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChat
     });
 }
 
+export interface SavedChatVideoResult {
+  fileName: string;
+  mimeType: string;
+  ext: string;
+  posterFileName?: string;
+  mp4FileName?: string;
+}
+
+export async function processVideoMedia(
+  targetPath: string,
+  fileUuid: string,
+  ext: string
+): Promise<{ posterFileName?: string; mp4FileName?: string }> {
+  const rootDir = mosChatMediaRoot();
+  const posterFileName = `${fileUuid}.jpg`;
+  const posterPath = resolve(rootDir, posterFileName);
+  let generatedPoster = false;
+
+  // 1. Extract poster thumbnail at 0.5s with ffmpeg
+  try {
+    await execFileAsync(
+      'ffmpeg',
+      ['-ss', '00:00:00.500', '-i', targetPath, '-vframes', '1', '-q:v', '2', '-y', posterPath],
+      { timeout: 15000 }
+    );
+    generatedPoster = true;
+  } catch {
+    // If ffmpeg thumbnail fails, continue
+  }
+
+  // 2. If video is MOV or WebM, remux or transcode to MP4 with +faststart for universal browser playback
+  let mp4FileName: string | undefined;
+  if (ext === 'mov' || ext === 'webm') {
+    const candidateMp4FileName = `${fileUuid}.mp4`;
+    const mp4Path = resolve(rootDir, candidateMp4FileName);
+    try {
+      // First try copy stream (50ms execution time)
+      await execFileAsync(
+        'ffmpeg',
+        ['-i', targetPath, '-c:v', 'copy', '-c:a', 'copy', '-movflags', '+faststart', '-y', mp4Path],
+        { timeout: 25000 }
+      );
+      mp4FileName = candidateMp4FileName;
+    } catch {
+      // Fallback: full transcode
+      try {
+        await execFileAsync(
+          'ffmpeg',
+          [
+            '-i',
+            targetPath,
+            '-c:v',
+            'libx264',
+            '-preset',
+            'veryfast',
+            '-crf',
+            '23',
+            '-c:a',
+            'aac',
+            '-movflags',
+            '+faststart',
+            '-y',
+            mp4Path,
+          ],
+          { timeout: 45000 }
+        );
+        mp4FileName = candidateMp4FileName;
+      } catch {
+        // Transcode failed, keep original
+      }
+    }
+  }
+
+  return {
+    posterFileName: generatedPoster ? posterFileName : undefined,
+    mp4FileName,
+  };
+}
+
 export async function saveChatVideoBuffer(
   buffer: Buffer,
   originalFileName: string,
   rawMimeType?: string
-): Promise<{ fileName: string; mimeType: string; ext: string }> {
+): Promise<SavedChatVideoResult> {
   const fileExtFromFileName = (originalFileName.split('.').pop() || '').toLowerCase();
   let mimeType = String(rawMimeType || '')
     .trim()
@@ -345,5 +424,15 @@ export async function saveChatVideoBuffer(
   const fileName = `${fileUuid}.${ext}`;
   const targetPath = resolve(rootDir, fileName);
   await writeFile(targetPath, buffer, { mode: 0o600 });
-  return { fileName, mimeType: EXT_TO_CHAT_MIME[ext] || mimeType, ext };
+
+  // Automatically extract poster frame & generate stream-friendly MP4 with faststart
+  const { posterFileName, mp4FileName } = await processVideoMedia(targetPath, fileUuid, ext);
+
+  return {
+    fileName,
+    mimeType: EXT_TO_CHAT_MIME[ext] || mimeType,
+    ext,
+    posterFileName,
+    mp4FileName,
+  };
 }

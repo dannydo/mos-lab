@@ -82,6 +82,7 @@ const nextConfig: NextConfig = {
       },
       { source: '/api/pilot/media/:filename', destination: `${productionApiOrigin}/api/pilot/media/:filename` },
       { source: '/api/staff/media/:path*', destination: `${productionApiOrigin}/api/staff/media/:path*` },
+      { source: '/api/chat/media/:path*', destination: `${productionApiOrigin}/api/chat/media/:path*` },
     ];
   },
   async headers() {

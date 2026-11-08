@@ -54,4 +54,23 @@ describe('api-base-url & resolveMediaUrl', () => {
     const relativeUrl = '/api/pilot/media/test.jpg';
     expect(resolveMediaUrl(relativeUrl)).toBe('http://localhost:4001/api/pilot/media/test.jpg');
   });
+
+  it('resolves relative paths to production origin when running on masteros.app domain without env', () => {
+    delete process.env.NEXT_PUBLIC_API_URL;
+    const originalLocation = window.location;
+    try {
+      Object.defineProperty(window, 'location', {
+        value: { hostname: 'lab.masteros.app' },
+        writable: true,
+      });
+
+      const relativeMedia = '/api/chat/media/video-123.mp4';
+      expect(resolveMediaUrl(relativeMedia)).toBe('https://api.lab.masteros.app/api/chat/media/video-123.mp4');
+    } finally {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      });
+    }
+  });
 });

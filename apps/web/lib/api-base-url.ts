@@ -40,5 +40,13 @@ export function resolveMediaUrl(url: string | null | undefined): string {
     }
   }
 
+  // When running on production frontend (e.g. lab.masteros.app) where apiBase is '/api',
+  // resolve media files directly to the production API origin so video streaming,
+  // audio, and images load with proper HTTP 206 byte-ranges without proxy overhead.
+  if (typeof window !== 'undefined' && window.location.hostname.includes('masteros.app')) {
+    const origin = 'https://api.lab.masteros.app';
+    return `${origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  }
+
   return trimmed;
 }

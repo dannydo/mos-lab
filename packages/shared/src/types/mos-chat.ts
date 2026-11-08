@@ -39,6 +39,8 @@ export interface MosChatImageAttachment {
   isVideo?: boolean;
   source?: 'clipboard' | 'drive' | 'upload';
   fileExt?: string;
+  isProcessing?: boolean;
+  processingStatus?: string;
 }
 
 export type MosChatAttachment = MosChatImageAttachment;

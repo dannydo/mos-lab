@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Download, Film, Maximize2, Play, Volume2, VolumeX } from 'lucide-react';
+import { AlertCircle, Download, ExternalLink, Film, Loader2, Play, RotateCcw } from 'lucide-react';
 import { Tooltip } from 'antd';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
 import { useTheme } from '../../../context/ThemeContext';
+import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { formatFileSize, formatVideoDuration } from '../utils/chat-helpers';
 
 export interface MosChatVideoPlayerProps {
@@ -24,43 +25,75 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
   const isDark = themeMode === 'dark';
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(attachment.durationSec || 0);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
-  const videoUrl = attachment.url;
+  const rawUrl = attachment.url || '';
+  const videoUrl = resolveMediaUrl(rawUrl);
   const fileName = attachment.name || 'video.mp4';
   const ext = (attachment.fileExt || fileName.split('.').pop() || 'mp4').toUpperCase();
+
+  // If this is a QuickTime MOV, derive alternative MP4 stream URL if available
+  const mp4FallbackUrl =
+    rawUrl.endsWith('.mov') || rawUrl.endsWith('.MOV') ? resolveMediaUrl(rawUrl.replace(/\.mov$/i, '.mp4')) : null;
+
+  // Resolve poster thumbnail if provided, or check if an automated JPEG frame exists
+  const posterUrl = attachment.posterUrl
+    ? resolveMediaUrl(attachment.posterUrl)
+    : rawUrl.endsWith('.mov') || rawUrl.endsWith('.MOV') || rawUrl.endsWith('.mp4')
+      ? resolveMediaUrl(rawUrl.replace(/\.(mov|mp4)$/i, '.jpg'))
+      : undefined;
+
+  const isProcessing = Boolean(attachment.isProcessing);
 
   const handlePlayToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
-      videoRef.current.play().catch(() => {});
-      setIsPlaying(true);
-      setHasStarted(true);
+      setHasError(false);
+      videoRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          setHasStarted(true);
+          setIsBuffering(false);
+        })
+        .catch(() => {
+          setHasError(true);
+          setIsPlaying(false);
+          setIsBuffering(false);
+        });
     } else {
       videoRef.current.pause();
       setIsPlaying(false);
     }
   };
 
-  const handleMuteToggle = (e: React.MouseEvent) => {
+  const handleRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!videoRef.current) return;
-    videoRef.current.muted = !videoRef.current.muted;
-    setIsMuted(videoRef.current.muted);
-  };
-
-  const handleFullscreen = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!videoRef.current) return;
-    if (videoRef.current.requestFullscreen) {
-      videoRef.current.requestFullscreen().catch(() => {});
-    } else if ((videoRef.current as any).webkitEnterFullscreen) {
-      (videoRef.current as any).webkitEnterFullscreen();
-    }
+    setHasError(false);
+    setIsBuffering(true);
+    setRetryKey((prev) => prev + 1);
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.load();
+        videoRef.current
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+            setHasStarted(true);
+            setIsBuffering(false);
+          })
+          .catch(() => {
+            setHasError(true);
+            setIsBuffering(false);
+          });
+      }
+    }, 100);
   };
 
   return (
@@ -123,20 +156,94 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
 
       {/* Main Video Viewport */}
       <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+        {/* State 1: Video is currently processing on server */}
+        {isProcessing ? (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center bg-slate-950/90 text-white">
+            <Loader2 size={28} className="text-amber-400 animate-spin mb-2" />
+            <span className="text-xs font-semibold text-amber-300">Đang xử lý video...</span>
+            <p className="text-[11px] text-slate-300 mt-1 max-w-[280px] leading-relaxed">
+              {attachment.processingStatus ||
+                'Hệ thống đang tối ưu hóa định dạng và tạo bộ đệm phát trực tiếp. Vui lòng đợi trong giây lát.'}
+            </p>
+            <a
+              href={videoUrl}
+              download={fileName}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
+            >
+              <Download size={12} />
+              <span>Tải tệp gốc về máy</span>
+            </a>
+          </div>
+        ) : hasError ? (
+          /* State 2: Video playback failed or format not directly decodable in this browser */
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center bg-slate-950/95 text-white">
+            <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2">
+              <AlertCircle size={20} />
+            </div>
+            <span className="text-xs font-semibold text-amber-200">Không thể phát trực tiếp trên trình duyệt</span>
+            <p className="text-[11px] text-slate-300 mt-1 max-w-[300px] leading-relaxed">
+              Định dạng <span className="font-semibold text-amber-300">{ext}</span> ({fileName}) chưa được trình duyệt
+              giải mã trực tiếp hoặc đang hoàn tất xử lý. Bạn có thể tải video về máy để xem ngay lập tức.
+            </p>
+            <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
+              <a
+                href={videoUrl}
+                download={fileName}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all shadow hover:shadow-md"
+              >
+                <Download size={13} />
+                <span>Tải về máy ({ext})</span>
+              </a>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
+              >
+                <RotateCcw size={12} />
+                <span>Thử lại</span>
+              </button>
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                title="Mở trong tab mới"
+              >
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          </div>
+        ) : null}
+
+        {/* The Native HTML5 Video Element */}
         <video
+          key={retryKey}
           ref={videoRef}
-          src={videoUrl}
-          poster={attachment.posterUrl}
-          controls
+          poster={posterUrl}
+          controls={hasStarted && !hasError}
           playsInline
           preload="metadata"
           className="w-full h-full object-contain"
           onPlay={() => {
             setIsPlaying(true);
             setHasStarted(true);
+            setIsBuffering(false);
+            setHasError(false);
           }}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
+          onWaiting={() => setIsBuffering(true)}
+          onPlaying={() => {
+            setIsBuffering(false);
+            setHasError(false);
+          }}
+          onCanPlay={() => {
+            setIsBuffering(false);
+          }}
           onTimeUpdate={(e) => {
             setCurrentTime((e.target as HTMLVideoElement).currentTime);
           }}
@@ -146,13 +253,31 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
               setDuration(Math.round(v.duration));
             }
           }}
-        />
+          onError={() => {
+            setHasError(true);
+            setIsBuffering(false);
+          }}
+        >
+          {mp4FallbackUrl && <source src={mp4FallbackUrl} type="video/mp4" />}
+          <source src={videoUrl} type={attachment.mimeType || (ext === 'MOV' ? 'video/quicktime' : 'video/mp4')} />
+          Trình duyệt của bạn không hỗ trợ thẻ video.
+        </video>
 
-        {/* Big Center Play Overlay Button before playing */}
-        {!hasStarted && (
+        {/* Buffering Spinner during playback */}
+        {hasStarted && isBuffering && !hasError && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-10">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 text-white text-xs shadow-lg">
+              <Loader2 size={14} className="animate-spin text-amber-400" />
+              <span>Đang nạp bộ đệm...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Big Center Play Overlay Button before first play */}
+        {!hasStarted && !isProcessing && !hasError && (
           <div
             onClick={handlePlayToggle}
-            className="absolute inset-0 bg-black/30 backdrop-blur-[2px] flex flex-col items-center justify-center cursor-pointer transition-opacity group-hover/video:bg-black/20"
+            className="absolute inset-0 bg-black/35 backdrop-blur-[2px] flex flex-col items-center justify-center cursor-pointer transition-opacity group-hover/video:bg-black/20 z-10"
           >
             <div className="w-12 h-12 rounded-full bg-amber-500/90 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95">
               <Play size={22} className="ml-1 fill-white" />
@@ -167,7 +292,7 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
       </div>
 
       {/* Bottom Duration & Progress Indicator */}
-      {duration > 0 && hasStarted && (
+      {duration > 0 && hasStarted && !hasError && (
         <div
           className="flex items-center justify-between px-3 py-1 text-[10px] tabular-nums select-none"
           style={{

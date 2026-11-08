@@ -1712,7 +1712,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const originalFileName = data.filename || `video-${Date.now()}.mp4`;
         const mimeType = data.mimetype;
 
-        const { fileName, mimeType: finalMime, ext } = await saveChatVideoBuffer(buffer, originalFileName, mimeType);
+        const {
+          fileName,
+          mimeType: finalMime,
+          ext,
+          posterFileName,
+          mp4FileName,
+        } = await saveChatVideoBuffer(buffer, originalFileName, mimeType);
 
         const fields = (data.fields || {}) as Record<string, SafeAny>;
         const durationSecRaw = fields?.durationSec
@@ -1721,6 +1727,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const widthRaw = fields?.width ? Number(fields.width?.value || fields.width) : undefined;
         const heightRaw = fields?.height ? Number(fields.height?.value || fields.height) : undefined;
         const posterUrlRaw = fields?.posterUrl ? String(fields.posterUrl?.value || fields.posterUrl).trim() : undefined;
+        const posterUrl = posterUrlRaw || (posterFileName ? `/api/chat/media/${posterFileName}` : undefined);
 
         const fileUuid = fileName.split('.')[0];
         const safeName = originalFileName.slice(0, 150);
@@ -1734,7 +1741,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           width: widthRaw && !isNaN(widthRaw) ? widthRaw : undefined,
           height: heightRaw && !isNaN(heightRaw) ? heightRaw : undefined,
           durationSec: durationSecRaw && !isNaN(durationSecRaw) ? durationSecRaw : undefined,
-          posterUrl: posterUrlRaw || undefined,
+          posterUrl,
           isVideo: true,
           source: 'upload',
           fileExt: ext,
@@ -1767,14 +1774,47 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (!(ext in EXT_TO_CHAT_MIME)) {
         return reply.status(404).send({ error: 'Not Found', message: 'Định dạng tệp không được hỗ trợ.' });
       }
-      const mimeType = EXT_TO_CHAT_MIME[ext] || 'application/octet-stream';
+      let resolvedFileName = normalized;
+      let resolvedExt = ext;
       const rootDir = mosChatMediaRoot();
-      const targetPath = resolve(rootDir, normalized);
+      let targetPath = resolve(rootDir, resolvedFileName);
       if (!targetPath.startsWith(`${rootDir}${sep}`)) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
       }
 
-      const fileStat = await stat(targetPath);
+      let fileStat;
+      try {
+        fileStat = await stat(targetPath);
+      } catch {
+        // Automatic fallback: If .mp4 was requested but only .mov exists, or vice versa
+        if (ext === 'mp4') {
+          const fallbackMov = `${match[1]}.mov`;
+          const fallbackPath = resolve(rootDir, fallbackMov);
+          try {
+            fileStat = await stat(fallbackPath);
+            targetPath = fallbackPath;
+            resolvedFileName = fallbackMov;
+            resolvedExt = 'mov';
+          } catch {
+            return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
+          }
+        } else if (ext === 'mov') {
+          const fallbackMp4 = `${match[1]}.mp4`;
+          const fallbackPath = resolve(rootDir, fallbackMp4);
+          try {
+            fileStat = await stat(fallbackPath);
+            targetPath = fallbackPath;
+            resolvedFileName = fallbackMp4;
+            resolvedExt = 'mp4';
+          } catch {
+            return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
+          }
+        } else {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
+        }
+      }
+
+      const mimeType = EXT_TO_CHAT_MIME[resolvedExt] || 'application/octet-stream';
       const totalSize = fileStat.size;
       const rangeHeader = request.headers.range;
 
