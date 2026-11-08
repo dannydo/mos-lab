@@ -20,7 +20,8 @@ function normalizeStoreCode(key: string | null | undefined, fallback: string = '
   const upper = key.toUpperCase();
   if (upper.includes('THAM') || upper.includes('DT') || upper === 'DE-THAM') return 'DT';
   if (upper.includes('ESTELLA') || upper.includes('EP') || upper === 'ESTELLA-PLACE') return 'EP';
-  if (upper.includes('PXL') || upper.includes('PHAN')) return 'PXL';
+  // PXL salon has been closed for 2 months. Active operations and fallbacks map to DT.
+  if (upper.includes('PXL') || upper.includes('PHAN')) return 'DT';
   return fallback;
 }
 
@@ -126,8 +127,8 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
       const validStaffIds = filteredStaffProfiles.map((s) => Number(s.userId));
       const validStaffListStr = validStaffIds.join(',');
 
-      // 3. Parallel queries for CRM staff metadata, real staff_activity penalties, and banana penalty ledger transactions
-      const [crmStaffs, activityRows, penaltyTransactions] = await Promise.all([
+      // 3. Parallel queries for CRM staff metadata, real staff_activity penalties, and banana penalty/refund ledger transactions
+      const [crmStaffs, activityRows, penaltyTransactions, refundTransactions] = await Promise.all([
         fastify.prisma.crm.crmStaff.findMany({
           where: { legacyStaffId: { in: validStaffIds } },
           select: { id: true, legacyStaffId: true, role: true, avatarUrl: true, displayName: true },
@@ -191,12 +192,52 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
             AND ubt.date_created <= '${endPart} 23:59:59'
           ORDER BY ubt.date_created DESC
         `),
+        // Banana refund/reversal transactions (currency_id = 3, amount > 0)
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT 
+            ubt.id as ubtId,
+            ubt.user_id as userId,
+            ubt.parent_id as parentId,
+            ubt.amount,
+            ubt.tracking_key as trackingKey,
+            DATE_FORMAT(ubt.date_created, '%Y-%m-%d %H:%i:%s') as dateCreated
+          FROM \`user_balance_transaction\` ubt
+          WHERE ubt.user_id IN (${validStaffListStr})
+            AND ubt.currency_id = 3
+            AND ubt.amount > 0
+            AND (ubt.parent_id IS NOT NULL OR ubt.template_id = 102 OR ubt.tracking_key LIKE '%user_balance_transaction_id%')
+          ORDER BY ubt.date_created ASC
+        `),
       ]);
 
       // Maps for fast lookups
       const crmStaffMap = new Map<number, SafeAny>();
       crmStaffs.forEach((cs) => {
         if (cs.legacyStaffId) crmStaffMap.set(Number(cs.legacyStaffId), cs);
+      });
+
+      // Map fine transaction IDs to their refunds (parent_id or tracking_key)
+      const refundByFineIdMap = new Map<string, { amount: number; date: string }>();
+      refundTransactions.forEach((ref) => {
+        let fineId: string | null = null;
+        if (ref.parentId) {
+          fineId = String(ref.parentId);
+        } else if (ref.trackingKey && ref.trackingKey.includes('user_balance_transaction_id')) {
+          try {
+            const parsed = JSON.parse(ref.trackingKey);
+            fineId = String(parsed.user_balance_transaction_id || '');
+          } catch {
+            const m = String(ref.trackingKey).match(/"user_balance_transaction_id":"?(\d+)"?/);
+            if (m) fineId = m[1];
+          }
+        }
+        if (fineId) {
+          const current = refundByFineIdMap.get(fineId)?.amount || 0;
+          refundByFineIdMap.set(fineId, {
+            amount: current + Number(ref.amount),
+            date: ref.dateCreated,
+          });
+        }
       });
 
       // Group incidents by staff
@@ -306,6 +347,18 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
           description = act.activityNote || act.ruleTitle;
         }
 
+        const fineIdStr = fineUbt ? String(fineUbt.ubtId) : null;
+        const refundInfo = fineIdStr ? refundByFineIdMap.get(fineIdStr) : null;
+        const refundBananas = refundInfo ? Math.round(refundInfo.amount) : 0;
+        const isForgiven = refundBananas >= finedBananas && finedBananas > 0;
+        const effectiveFineBananas = isForgiven ? 0 : Math.max(0, finedBananas - refundBananas);
+
+        if (isForgiven) {
+          description = description
+            ? `${description} · Đã hoàn trả +${refundBananas} chuối vào ví (Được miễn phạt / Sự cố)`
+            : `Đã hoàn trả +${refundBananas} chuối vào ví (Được miễn phạt / Sự cố)`;
+        }
+
         staffIncidentMap.get(uId)!.push({
           id: `sa-${act.activityId}`,
           date: act.incidentDate,
@@ -316,10 +369,13 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
           actualTime,
           diffMinutes,
           store: incidentStore,
-          isFined: true,
-          finedBananas,
+          isFined: !isForgiven,
+          finedBananas: effectiveFineBananas,
           fineTransactionId: fineUbt?.ubtId || null,
           fineDate: fineUbt?.dateCreated || act.dateCreated,
+          isForgiven,
+          refundBananas: isForgiven ? refundBananas : undefined,
+          refundDate: isForgiven ? refundInfo?.date : undefined,
         });
       });
 
@@ -337,20 +393,33 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
         const finedBananas = Math.abs(Number(ubt.amount));
         const staffProfile = filteredStaffProfiles.find((p) => Number(p.userId) === uId);
 
+        const refundInfo = refundByFineIdMap.get(ubtIdStr);
+        const refundBananas = refundInfo ? Math.round(refundInfo.amount) : 0;
+        const isForgiven = refundBananas >= finedBananas && finedBananas > 0;
+        const effectiveFineBananas = isForgiven ? 0 : Math.max(0, finedBananas - refundBananas);
+
+        let description = ubt.description || 'Trừ chuối kỷ luật';
+        if (isForgiven) {
+          description = `${description} · Đã hoàn trả +${refundBananas} chuối vào ví (Được miễn phạt / Sự cố)`;
+        }
+
         staffIncidentMap.get(uId)!.push({
           id: `fine-${ubt.ubtId}`,
           date: ubt.dateStr,
           type: 'OTHER',
           title: ubt.description || 'Phạt trừ ví chuối',
-          description: ubt.description || 'Trừ chuối kỷ luật',
+          description,
           scheduledTime: null,
           actualTime: null,
           diffMinutes: null,
           store: staffProfile?.store || 'DT',
-          isFined: true,
-          finedBananas,
+          isFined: !isForgiven,
+          finedBananas: effectiveFineBananas,
           fineTransactionId: ubt.ubtId,
           fineDate: ubt.dateCreated,
+          isForgiven,
+          refundBananas: isForgiven ? refundBananas : undefined,
+          refundDate: isForgiven ? refundInfo?.date : undefined,
         });
       });
 
@@ -382,6 +451,9 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
         let staffFinedBananas = 0;
 
         violations.forEach((v) => {
+          // If the infraction is forgiven (ticket approved, penalty refunded), do NOT count towards disciplinary KPI
+          if (v.isForgiven) return;
+
           if (v.type === 'LATE') {
             lateCount++;
             lateMinutes += v.diffMinutes || 0;
@@ -397,8 +469,8 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
           staffFinedBananas += v.finedBananas || 0;
         });
 
-        const totalViolations = violations.length;
-        if (totalViolations > 0) totalStaffWithViolations++;
+        const activeViolationsCount = violations.filter((v) => !v.isForgiven).length;
+        if (activeViolationsCount > 0) totalStaffWithViolations++;
 
         totalLateRecords += lateCount;
         totalLateMinutes += lateMinutes;
@@ -422,7 +494,7 @@ export async function registerCvDisciplineRoutes(fastify: FastifyInstance): Prom
           urgentOffCount,
           otherPenaltyCount,
           finedBananaAmount: staffFinedBananas,
-          totalViolations,
+          totalViolations: activeViolationsCount,
           violations,
         };
       });

@@ -316,3 +316,135 @@ test('CV Discipline API ignores false early checkout and returns 0 violations if
   assert.equal(staff.finedBananaAmount, 0);
   assert.equal(staff.violations.length, 0);
 });
+
+test('CV Discipline API automatically forgives incidents refunded by management tickets', async () => {
+  let routeHandler: (request: SafeAny, reply: SafeAny) => Promise<SafeAny> = async () => {};
+
+  const mockFastify = {
+    get: (_path: string, _opts: SafeAny, handler: SafeAny) => {
+      routeHandler = handler;
+    },
+    prisma: {
+      crm: {
+        crmConfig: { findUnique: async () => null },
+        crmTeam: {
+          findUnique: async () => ({
+            id: 1,
+            code: 'CV',
+            members: [{ legacyStaffId: 51154, isActive: true }],
+          }),
+        },
+        crmStaff: {
+          findMany: async (args: SafeAny) => {
+            if (args?.where?.employmentStatus) return [];
+            return [{ id: 50, legacyStaffId: 51154, role: 'CV', avatarUrl: null, displayName: 'Ly Trần' }];
+          },
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('SELECT user_id FROM user_profile')) return [{ user_id: 51154 }];
+          if (sql.includes('FROM `user_profile` up')) {
+            return [{ userId: 51154, fullName: 'Ly Trần', avatar: null, rawStoreKey: 'de-tham' }];
+          }
+          if (sql.includes('FROM `staff_activity` sa')) {
+            return [
+              {
+                activityId: 41363,
+                userId: 51154,
+                ruleId: 141,
+                ruleTitle: 'CV - Đi trễ hơn 30 phút',
+                bananaAmount: -500,
+                targetType: 'staff_working_shift',
+                targetId: 260098,
+                activityNote: 'Power outage incident',
+                dateCreated: '2026-10-07 10:37:21',
+                activityTime: '10:37:21',
+                incidentDate: '2026-10-07',
+                shiftStart: '09:00',
+                shiftEnd: '20:00',
+                checkInTime: '09:00:00',
+                checkOutTime: '20:00:00',
+                checkInDiff: 0,
+                checkOutDiff: 0,
+                rawStoreKey: 'de-tham',
+                dayOffNote: null,
+                dayOffReason: null,
+              },
+            ];
+          }
+          // Banana penalty
+          if (sql.includes('AND ubt.amount < 0')) {
+            return [
+              {
+                ubtId: 736512,
+                userId: 51154,
+                itemId: 260098,
+                itemType: 'staff_working_shift',
+                amount: -500,
+                balance: 1000,
+                description: 'CV - Đi trễ hơn 30 phút',
+                trackingKey:
+                  '{"staff_working_shift_id":"260098","staff_activity_id":"41363","staff_activity_rule_id":141}',
+                dateCreated: '2026-10-07 10:37:21',
+                dateStr: '2026-10-07',
+              },
+            ];
+          }
+          // Banana refund
+          if (sql.includes('AND ubt.amount > 0')) {
+            return [
+              {
+                ubtId: 736785,
+                userId: 51154,
+                parentId: 736512,
+                amount: 500,
+                trackingKey: '{"user_ticket_id":"35674","user_balance_transaction_id":"736512"}',
+                dateCreated: '2026-10-09 14:42:56',
+              },
+            ];
+          }
+          return [];
+        },
+      },
+    },
+    log: { error: () => {}, warn: () => {} },
+  } as unknown as FastifyInstance;
+
+  await registerCvDisciplineRoutes(mockFastify);
+
+  let sentPayload: SafeAny = null;
+  const mockReply = {
+    send: (payload: SafeAny) => {
+      sentPayload = payload;
+      return mockReply;
+    },
+    status: () => mockReply,
+  };
+
+  await routeHandler({ query: { dateFrom: '2026-10-01', dateTo: '2026-10-31' } }, mockReply);
+
+  assert.ok(sentPayload);
+  // Summary counts should be 0 because the penalty was refunded
+  assert.equal(sentPayload.summary.totalLateRecords, 0);
+  assert.equal(sentPayload.summary.totalLateMinutes, 0);
+  assert.equal(sentPayload.summary.totalFinedBananas, 0);
+  assert.equal(sentPayload.summary.totalStaffWithViolations, 0);
+
+  const staff = sentPayload.data.find((s: SafeAny) => s.legacyUserId === 51154);
+  assert.ok(staff);
+  assert.equal(staff.lateCount, 0);
+  assert.equal(staff.lateMinutes, 0);
+  assert.equal(staff.finedBananaAmount, 0);
+  assert.equal(staff.totalViolations, 0);
+
+  // In violations array (Drawer history), the incident still exists and is marked isForgiven
+  assert.equal(staff.violations.length, 1);
+  const v = staff.violations[0];
+  assert.equal(v.isForgiven, true);
+  assert.equal(v.isFined, false);
+  assert.equal(v.finedBananas, 0);
+  assert.equal(v.refundBananas, 500);
+  assert.equal(v.refundDate, '2026-10-09 14:42:56');
+  assert.ok(v.description.includes('Đã hoàn trả +500 chuối vào ví'));
+});

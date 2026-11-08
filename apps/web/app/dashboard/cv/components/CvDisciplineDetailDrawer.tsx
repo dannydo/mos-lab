@@ -57,6 +57,7 @@ export default function CvDisciplineDetailDrawer({
     let urgentOff = 0;
     let other = 0;
     staff.violations.forEach((v) => {
+      if (v.isForgiven) return;
       if (v.type === 'LATE') late++;
       else if (v.type === 'EARLY') early++;
       else if (v.type === 'URGENT_OFF') urgentOff++;
@@ -227,7 +228,11 @@ export default function CvDisciplineDetailDrawer({
                   className="p-3.5 rounded-2xl border transition-all hover:shadow-md"
                   style={{
                     background: token.colorBgContainer,
-                    borderColor: item.isFined ? 'rgba(239, 68, 68, 0.3)' : token.colorBorderSecondary,
+                    borderColor: item.isForgiven
+                      ? 'rgba(16, 185, 129, 0.4)'
+                      : item.isFined
+                        ? 'rgba(239, 68, 68, 0.3)'
+                        : token.colorBorderSecondary,
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -246,7 +251,12 @@ export default function CvDisciplineDetailDrawer({
 
                     {/* Banana Fine Badge */}
                     <div className="shrink-0 text-right">
-                      {item.isFined ? (
+                      {item.isForgiven ? (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
+                          <CheckCircleOutlined className="text-[11px]" />
+                          <span>Đã miễn phạt (+{item.refundBananas || 0} 🍌)</span>
+                        </div>
+                      ) : item.isFined ? (
                         <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 tabular-nums">
                           <span>🍌</span>
                           <span>Đã phạt -{item.finedBananas}</span>
@@ -283,7 +293,13 @@ export default function CvDisciplineDetailDrawer({
                         {item.description}
                       </div>
                     )}
-                    {item.isFined && item.fineDate && (
+                    {item.isForgiven && item.refundDate && (
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center justify-between pt-1">
+                        <span>Thời điểm hoàn trả chuối:</span>
+                        <span className="font-mono">{dayjs(item.refundDate).format('HH:mm:ss DD/MM/YYYY')}</span>
+                      </div>
+                    )}
+                    {!item.isForgiven && item.isFined && item.fineDate && (
                       <div className="text-[10px] text-rose-500/80 flex items-center justify-between pt-1">
                         <span>Thời điểm trừ chuối:</span>
                         <span className="font-mono">{dayjs(item.fineDate).format('HH:mm:ss DD/MM/YYYY')}</span>

@@ -14,6 +14,9 @@ export interface CvDisciplineIncident {
   finedBananas: number; // Positive number representing the fine amount in bananas
   fineTransactionId?: string | number | null;
   fineDate?: string | null;
+  isForgiven?: boolean;
+  refundBananas?: number;
+  refundDate?: string | null;
 }
 
 export interface CvDisciplineStaffRecord {
