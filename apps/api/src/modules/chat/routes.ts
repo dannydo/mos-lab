@@ -1104,15 +1104,27 @@ async function saveConversations(
           await deleteChatMessagesFromRelationalDb(fastify, hint.deletedMessageIds);
         }
         if (hint?.touchedReply) {
+          const relationalOps: Promise<void>[] = [
+            upsertSingleThreadReplyToRelationalDb(
+              fastify,
+              hint.touchedReply.conversationId,
+              hint.touchedReply.parentMessageId,
+              hint.touchedReply.reply
+            ),
+          ];
           if (hint.touchedConversation) {
-            await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
+            relationalOps.push(upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation));
           }
-          await upsertSingleThreadReplyToRelationalDb(
-            fastify,
-            hint.touchedReply.conversationId,
-            hint.touchedReply.parentMessageId,
-            hint.touchedReply.reply
-          );
+          if (hint.touchedMessage) {
+            relationalOps.push(
+              upsertSingleMessageToRelationalDb(
+                fastify,
+                hint.touchedConversation ? hint.touchedConversation.id : hint.touchedReply.conversationId,
+                hint.touchedMessage
+              )
+            );
+          }
+          await Promise.all(relationalOps);
           return;
         }
         if (hint?.touchedMessage && hint.touchedConversation) {
@@ -2658,7 +2670,28 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       await saveConversations(fastify, conversations, {
         touchedConversation: conv,
         touchedMessage: msg,
+        touchedReply: replyId
+          ? {
+              conversationId: conv.id,
+              parentMessageId: msg.id,
+              reply: targetItem as MosChatThreadReply,
+            }
+          : undefined,
       });
+
+      chatRealtimeHub.publish({
+        type: 'MESSAGE_UPDATED',
+        conversationId: conv.id,
+        actorStaffId: user.id,
+        payload: {
+          conversationId: conv.id,
+          messageId: msg.id,
+          replyId,
+          target: targetItem,
+          message: msg,
+        },
+      });
+
       return { success: true, message: msg, target: targetItem };
     }
   );
@@ -2736,7 +2769,28 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       await saveConversations(fastify, conversations, {
         touchedConversation: conv,
         touchedMessage: msg,
+        touchedReply: replyId
+          ? {
+              conversationId: conv.id,
+              parentMessageId: msg.id,
+              reply: targetItem as MosChatThreadReply,
+            }
+          : undefined,
       });
+
+      chatRealtimeHub.publish({
+        type: 'MESSAGE_DELETED',
+        conversationId: conv.id,
+        actorStaffId: user.id,
+        payload: {
+          conversationId: conv.id,
+          messageId: msg.id,
+          replyId,
+          target: targetItem,
+          message: msg,
+        },
+      });
+
       return { success: true, message: msg, target: targetItem };
     }
   );
@@ -2821,7 +2875,29 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       await saveConversations(fastify, conversations, {
         touchedConversation: conv,
         touchedMessage: msg,
+        touchedReply: replyId
+          ? {
+              conversationId: conv.id,
+              parentMessageId: msg.id,
+              reply: targetItem as MosChatThreadReply,
+            }
+          : undefined,
       });
+
+      chatRealtimeHub.publish({
+        type: 'MESSAGE_UPDATED',
+        conversationId: conv.id,
+        actorStaffId: user.id,
+        payload: {
+          conversationId: conv.id,
+          messageId: msg.id,
+          replyId,
+          target: targetItem,
+          message: msg,
+          restored: true,
+        },
+      });
+
       return { success: true, message: msg, target: targetItem };
     }
   );
