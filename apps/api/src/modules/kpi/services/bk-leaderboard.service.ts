@@ -430,16 +430,18 @@ export class BkLeaderboardService {
 
       // Done Khách Mới: Khách hoàn tất Check-in và Check-out, mỗi khách tính 1 lần duy nhất trên toàn hệ thống Wings,
       // ghi nhận cho nhân viên tạo lịch hẹn hợp lệ dẫn đến Done, tính theo tháng Check-out.
+      // Tối ưu hóa: Khởi đầu từ report_order và giới hạn chặt chẽ actual_booking_date_start để tận dụng idx_actual_booking_date_start
       const newCustomerSql = `
         SELECT 
           o.id as orderId,
           o.created_staff_id as bookerId,
           o.user_id as customerId
-        FROM \`order\` o
-        JOIN report_order ro ON ro.order_id = o.id
+        FROM report_order ro
+        JOIN \`order\` o ON o.id = ro.order_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         WHERE o.order_state = 'Completed'
-          AND ro.actual_booking_date_start IS NOT NULL
+          AND ro.actual_booking_date_start >= '${startDateTimeStr}' - INTERVAL 1 DAY
+          AND ro.actual_booking_date_start <= '${endDateTimeStr}'
           AND ro.actual_booking_date_end >= '${startDateTimeStr}'
           AND ro.actual_booking_date_end <= '${endDateTimeStr}'
           AND o.created_staff_id IN (${candidateIdsStr})
@@ -663,6 +665,7 @@ export class BkLeaderboardService {
       storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
     }
 
+    // Tối ưu hóa: Thay thế derived table OR bằng UNION ALL để MariaDB tận dụng range indexes
     const sql = `
       SELECT 
         up.user_id as bookerId,
@@ -679,15 +682,27 @@ export class BkLeaderboardService {
           o2.created_staff_id,
           o2.total_price,
           o2.order_state,
-          COALESCE(ro.actual_booking_date_start, o2.booking_date_start) as final_date
+          ro.actual_booking_date_start as final_date
+        FROM report_order ro
+        JOIN \`order\` o2 ON o2.id = ro.order_id
+        WHERE o2.created_staff_id IN (${bkIdsStr})
+          AND o2.order_state IN ('Completed', 'CheckOut')
+          AND ro.actual_booking_date_start >= '${startPart} 00:00:00' 
+          AND ro.actual_booking_date_start <= '${endPart} 23:59:59'
+        UNION ALL
+        SELECT 
+          o2.id,
+          o2.created_staff_id,
+          o2.total_price,
+          o2.order_state,
+          o2.booking_date_start as final_date
         FROM \`order\` o2
         LEFT JOIN report_order ro ON o2.id = ro.order_id
         WHERE o2.created_staff_id IN (${bkIdsStr})
           AND o2.order_state IN ('Completed', 'CheckOut')
-          AND (
-            (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
-            OR (ro.actual_booking_date_start IS NULL AND o2.booking_date_start >= '${startPart} 00:00:00' AND o2.booking_date_start <= '${endPart} 23:59:59')
-          )
+          AND o2.booking_date_start >= '${startPart} 00:00:00' 
+          AND o2.booking_date_start <= '${endPart} 23:59:59'
+          AND ro.actual_booking_date_start IS NULL
       ) o ON o.created_staff_id = up.user_id 
         AND o.final_date >= '${startPart} 00:00:00' 
         AND o.final_date <= '${endPart} 23:59:59'

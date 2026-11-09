@@ -541,19 +541,37 @@ async function executeComputeBkOrderCheckins(
 
   const bkIdsStr = targetBkIds.join(',');
 
+  // Tối ưu hóa: Thay thế OR condition giữa report_order và order bằng UNION ALL để MariaDB tận dụng range indexes
   const sql = `
     SELECT 
       o.id as orderId,
       o.created_staff_id as bookerId,
       o.user_id as userId,
-      COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDateStart,
+      ro.actual_booking_date_start as bookingDateStart,
+      o.date_created as dateCreated,
+      COALESCE(o.total_price, 0) as totalPrice
+    FROM report_order ro
+    JOIN \`order\` o ON o.id = ro.order_id
+    LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+    WHERE ro.actual_booking_date_start >= '${startPart} 00:00:00' 
+      AND ro.actual_booking_date_start <= '${endPart} 23:59:59'
+      AND o.order_state IN ('Completed', 'CheckOut')
+      AND o.created_staff_id IN (${bkIdsStr})
+      ${storeFilter}
+    UNION ALL
+    SELECT 
+      o.id as orderId,
+      o.created_staff_id as bookerId,
+      o.user_id as userId,
+      o.booking_date_start as bookingDateStart,
       o.date_created as dateCreated,
       COALESCE(o.total_price, 0) as totalPrice
     FROM \`order\` o
-    LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
     LEFT JOIN report_order ro ON o.id = ro.order_id
-    WHERE ((ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
-        OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'))
+    LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+    WHERE o.booking_date_start >= '${startPart} 00:00:00' 
+      AND o.booking_date_start <= '${endPart} 23:59:59'
+      AND ro.actual_booking_date_start IS NULL
       AND o.order_state IN ('Completed', 'CheckOut')
       AND o.created_staff_id IN (${bkIdsStr})
       ${storeFilter}
