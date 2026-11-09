@@ -3306,6 +3306,7 @@ model CrmBkGame {
   winnerCriteria     String    @default("TOP_1") @map("winner_criteria") @db.VarChar(50)
   announcedResults   String?   @map("announced_results") @db.LongText
   doneBonusConfig    String?   @map("done_bonus_config") @db.LongText
+  teamKpiConfig      String?   @map("team_kpi_config") @db.LongText
   createdByStaffId   Int       @map("created_by_staff_id")
   createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)

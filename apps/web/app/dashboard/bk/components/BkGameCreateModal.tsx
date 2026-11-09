@@ -9,12 +9,13 @@ import {
   Radio,
   Segmented,
   Select,
+  TimePicker,
   Tooltip,
   Typography,
   message,
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
-import { Trophy, Users, Award, ShieldAlert, Sparkles, Filter, Trash2, Plus, Info } from 'lucide-react';
+import { Trophy, Users, Award, ShieldAlert, Sparkles, Filter, Trash2, Plus, Info, Target } from 'lucide-react';
 import type {
   BkGame,
   BkGameCreateInput,
@@ -234,6 +235,10 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
     allowedBookingChannels?: string[];
     dateRange: [Dayjs, Dayjs];
     targetScore?: number;
+    teamKpiDailyTarget?: number;
+    teamKpiTimeWindow?: [Dayjs, Dayjs];
+    teamKpiRewardPerDay?: number;
+    teamKpiPenaltyPerDay?: number;
     entryFee?: number;
     rewardPool?: number;
     rewardDescription?: string;
@@ -277,6 +282,29 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
             staffIds: values.team2Members || [],
           },
         ];
+      } else if (values.gameType === 'TEAM_KPI') {
+        payload.participantIds = values.participantIds;
+        const timeWindow = values.teamKpiTimeWindow;
+        const dailyTarget = values.teamKpiDailyTarget || 30;
+        const rewardPerDay = values.teamKpiRewardPerDay ?? 50000;
+        const penaltyPerDay = values.teamKpiPenaltyPerDay ?? 25000;
+        const timeWindowStart = timeWindow && timeWindow[0] ? timeWindow[0].format('HH:mm') : '08:00';
+        const timeWindowEnd = timeWindow && timeWindow[1] ? timeWindow[1].format('HH:mm') : '17:00';
+
+        payload.teamKpiConfig = {
+          dailyTarget,
+          rewardPerDay,
+          penaltyPerDay,
+          timeWindowStart,
+          timeWindowEnd,
+        };
+        payload.targetScore = dailyTarget;
+        payload.rewardDescription =
+          values.rewardDescription ||
+          `Đạt KPI: Team thưởng +${rewardPerDay.toLocaleString('vi-VN')}đ/ngày (Khung giờ: ${timeWindowStart}–${timeWindowEnd})`;
+        payload.penaltyDescription =
+          values.penaltyDescription ||
+          `Không đạt: Team phạt -${penaltyPerDay.toLocaleString('vi-VN')}đ/ngày`;
       } else {
         payload.participantIds = values.participantIds;
       }
@@ -528,6 +556,10 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
           metricType: 'BOOKINGS',
           dateRange: [dayjs().startOf('day'), dayjs().endOf('day')],
           targetScore: 50,
+          teamKpiDailyTarget: 30,
+          teamKpiRewardPerDay: 50000,
+          teamKpiPenaltyPerDay: 25000,
+          teamKpiTimeWindow: [dayjs('08:00', 'HH:mm'), dayjs('17:00', 'HH:mm')],
           entryFee: 50000,
           rewardPool: 500000,
           rewardDescription: 'Nhất nhận toàn bộ quỹ cược + 500k thưởng công ty',
@@ -571,6 +603,15 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
                   </div>
                 ),
                 value: 'TEAM',
+              },
+              {
+                label: (
+                  <div className="flex items-center justify-center gap-2 py-1">
+                    <AppIcon icon={Target} size="sm" className="text-purple-500" />
+                    <span>Team KPI – Thử thách tập thể</span>
+                  </div>
+                ),
+                value: 'TEAM_KPI',
               },
             ]}
           />
@@ -723,47 +764,134 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Form.Item name="entryFee" label={<span className="font-medium">Mức cược tham gia (VNĐ/người)</span>}>
-            <InputNumber
-              min={0}
-              step={10000}
-              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              className="w-full"
-              size="large"
-              placeholder="0 nếu không cược"
-            />
-          </Form.Item>
+        {gameType === 'TEAM_KPI' && (
+          <div className="p-4 rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/40 dark:bg-purple-950/20 space-y-4 my-2">
+            <div className="flex items-center gap-2">
+              <AppIcon icon={Target} size="md" className="text-purple-600 dark:text-purple-400 shrink-0" />
+              <div>
+                <Typography.Text strong className="text-sm text-purple-900 dark:text-purple-200 block">
+                  Cấu hình Thể thức Team KPI (Thử thách tập thể)
+                </Typography.Text>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  Toàn Team Booking cùng thực hiện một KPI chung, không thi đua cá nhân hay chia đội đối đầu. Thưởng/phạt ghi nhận một lần cho toàn Team.
+                </div>
+              </div>
+            </div>
 
-          <Form.Item name="rewardPool" label={<span className="font-medium">Thưởng công ty tài trợ (VNĐ)</span>}>
-            <InputNumber
-              min={0}
-              step={50000}
-              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              className="w-full"
-              size="large"
-              placeholder="Tiền thưởng thêm từ Manager"
-            />
-          </Form.Item>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                name="teamKpiDailyTarget"
+                label={<span className="font-medium text-slate-700 dark:text-slate-300">Mục tiêu KPI (Booking/ngày)</span>}
+                rules={[{ required: true, message: 'Nhập mục tiêu KPI theo ngày' }]}
+                extra="Số lượng booking tối thiểu cần đạt mỗi ngày"
+              >
+                <InputNumber
+                  min={1}
+                  className="w-full"
+                  size="large"
+                  placeholder="Ví dụ: 30"
+                  addonAfter="Booking/ngày"
+                />
+              </Form.Item>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Form.Item name="rewardDescription" label={<span className="font-medium">Mô tả giải thưởng</span>}>
-            <Input placeholder="Ví dụ: Top 1 nhận toàn bộ quỹ..." />
-          </Form.Item>
+              <Form.Item
+                name="teamKpiTimeWindow"
+                label={<span className="font-medium text-slate-700 dark:text-slate-300">Khung giờ áp dụng trong ngày</span>}
+                rules={[{ required: true, message: 'Chọn khung giờ tính điểm' }]}
+                extra="Chỉ tính các booking tạo trong khung giờ này (theo thời điểm tạo đơn)"
+              >
+                <TimePicker.RangePicker
+                  format="HH:mm"
+                  className="w-full"
+                  size="large"
+                  placeholder={['Từ 08:00', 'Đến 17:00']}
+                />
+              </Form.Item>
+            </div>
 
-          <Form.Item
-            name="penaltyDescription"
-            label={
-              <span className="font-medium flex items-center gap-1.5 text-rose-500">
-                <AppIcon icon={ShieldAlert} size="sm" />
-                <span>Hình phạt vui</span>
-              </span>
-            }
-          >
-            <Input placeholder="Ví dụ: Bao trà sữa, Hát 1 bài..." />
-          </Form.Item>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                name="teamKpiRewardPerDay"
+                label={<span className="font-medium text-emerald-600 dark:text-emerald-400">Mức thưởng khi Đạt KPI (+VNĐ/ngày)</span>}
+                rules={[{ required: true, message: 'Nhập mức thưởng' }]}
+                extra="Thưởng ghi nhận vào quỹ chung của Team khi đạt chỉ tiêu ngày"
+              >
+                <InputNumber
+                  min={0}
+                  step={10000}
+                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  className="w-full"
+                  size="large"
+                  placeholder="Ví dụ: 50,000"
+                  addonAfter="VNĐ"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="teamKpiPenaltyPerDay"
+                label={<span className="font-medium text-rose-500">Mức phạt khi Không Đạt KPI (-VNĐ/ngày)</span>}
+                rules={[{ required: true, message: 'Nhập mức phạt' }]}
+                extra="Phạt ghi nhận vào quỹ chung của Team khi không đạt chỉ tiêu ngày"
+              >
+                <InputNumber
+                  min={0}
+                  step={10000}
+                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  className="w-full"
+                  size="large"
+                  placeholder="Ví dụ: 25,000"
+                  addonAfter="VNĐ"
+                />
+              </Form.Item>
+            </div>
+          </div>
+        )}
+
+        {gameType !== 'TEAM_KPI' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item name="entryFee" label={<span className="font-medium">Mức cược tham gia (VNĐ/người)</span>}>
+              <InputNumber
+                min={0}
+                step={10000}
+                formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                className="w-full"
+                size="large"
+                placeholder="0 nếu không cược"
+              />
+            </Form.Item>
+
+            <Form.Item name="rewardPool" label={<span className="font-medium">Thưởng công ty tài trợ (VNĐ)</span>}>
+              <InputNumber
+                min={0}
+                step={50000}
+                formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                className="w-full"
+                size="large"
+                placeholder="Tiền thưởng thêm từ Manager"
+              />
+            </Form.Item>
+          </div>
+        )}
+
+        {gameType !== 'TEAM_KPI' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item name="rewardDescription" label={<span className="font-medium">Mô tả giải thưởng</span>}>
+              <Input placeholder="Ví dụ: Top 1 nhận toàn bộ quỹ..." />
+            </Form.Item>
+
+            <Form.Item
+              name="penaltyDescription"
+              label={
+                <span className="font-medium flex items-center gap-1.5 text-rose-500">
+                  <AppIcon icon={ShieldAlert} size="sm" />
+                  <span>Hình phạt vui</span>
+                </span>
+              }
+            >
+              <Input placeholder="Ví dụ: Bao trà sữa, Hát 1 bài..." />
+            </Form.Item>
+          </div>
+        )}
 
         {/* Cấu hình Thưởng Bonus / Done theo Dịch vụ */}
         <div className="my-2">
@@ -777,7 +905,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
               <AppIcon icon={Filter} size="sm" className="text-emerald-600" />
               <span>1. Bộ lọc Vai trò / Bộ phận</span>
             </div>
-            {gameType === 'INDIVIDUAL' && (
+            {(gameType === 'INDIVIDUAL' || gameType === 'TEAM_KPI') && (
               <div className="flex items-center gap-1.5 text-xs">
                 <Button
                   size="small"
@@ -813,12 +941,17 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
           />
         </div>
 
-        {gameType === 'INDIVIDUAL' ? (
+        {gameType === 'INDIVIDUAL' || gameType === 'TEAM_KPI' ? (
           <Form.Item
             name="participantIds"
             label={
               <div className="flex items-center justify-between w-full">
-                <span className="font-medium">2. Danh sách nhân viên tham gia ({selectedParticipantIds.length})</span>
+                <span className="font-medium">
+                  {gameType === 'TEAM_KPI'
+                    ? '2. Thành viên Team Booking tham gia'
+                    : '2. Danh sách nhân viên tham gia'}{' '}
+                  ({selectedParticipantIds.length})
+                </span>
                 <span className="text-xs text-slate-400 font-normal">
                   Hiển thị {filteredStaffList.length} / {allStaffList.length} nhân sự
                 </span>
