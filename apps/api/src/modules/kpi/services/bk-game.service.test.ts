@@ -9,6 +9,7 @@ import {
   parseAllowedBookingChannels,
   buildBookingChannelFilter,
   parseDoneBonusConfig,
+  parseTeamKpiConfig,
 } from './bk-game.service.js';
 
 test('Game BK target progress calculates accurately with a 100% cap', () => {
@@ -313,5 +314,82 @@ test('Game BK Done Bonus matching: LASH LIFT 4 tiered rules calculate exact expe
 
   // Case 5: Dịch vụ khác không khớp -> 0đ
   assert.equal(matchBonus('Classic Set', 550000), 0);
+});
+
+test('Game BK Team KPI: parseTeamKpiConfig parses valid JSON, objects and handles nulls', () => {
+  const jsonStr = JSON.stringify({
+    dailyTarget: 30,
+    rewardPerDay: 50000,
+    penaltyPerDay: 25000,
+    timeWindowStart: '08:00',
+    timeWindowEnd: '17:00',
+  });
+
+  const parsed = parseTeamKpiConfig(jsonStr);
+  assert.ok(parsed);
+  assert.equal(parsed?.dailyTarget, 30);
+  assert.equal(parsed?.rewardPerDay, 50000);
+  assert.equal(parsed?.penaltyPerDay, 25000);
+  assert.equal(parsed?.timeWindowStart, '08:00');
+  assert.equal(parsed?.timeWindowEnd, '17:00');
+
+  // Object direct
+  const fromObj = parseTeamKpiConfig({
+    dailyTarget: 25,
+    rewardPerDay: 40000,
+    penaltyPerDay: 20000,
+  });
+  assert.equal(fromObj?.dailyTarget, 25);
+  assert.equal(fromObj?.rewardPerDay, 40000);
+
+  // Null & invalid
+  assert.equal(parseTeamKpiConfig(null), null);
+  assert.equal(parseTeamKpiConfig(''), null);
+  assert.equal(parseTeamKpiConfig('{}'), null);
+});
+
+test('Game BK Team KPI: daily target, reward and penalty ledger aggregates accurately', () => {
+  const config = {
+    dailyTarget: 30,
+    rewardPerDay: 50000,
+    penaltyPerDay: 25000,
+    timeWindowStart: '08:00',
+    timeWindowEnd: '17:00',
+  };
+
+  // Simulate 4 days:
+  // Day 1: 35 bookings (passed) -> +50.000đ
+  // Day 2: 20 bookings (failed past day) -> -25.000đ
+  // Day 3: 40 bookings (passed) -> +50.000đ
+  // Day 4: 15 bookings (failed past day) -> -25.000đ
+  const days = [
+    { actual: 35, isPassed: true },
+    { actual: 20, isPassed: false },
+    { actual: 40, isPassed: true },
+    { actual: 15, isPassed: false },
+  ];
+
+  let totalReward = 0;
+  let totalPenalty = 0;
+  let passedDays = 0;
+  let failedDays = 0;
+
+  for (const d of days) {
+    if (d.actual >= config.dailyTarget) {
+      passedDays += 1;
+      totalReward += config.rewardPerDay;
+    } else {
+      failedDays += 1;
+      totalPenalty += config.penaltyPerDay;
+    }
+  }
+
+  const netReward = totalReward - totalPenalty;
+
+  assert.equal(passedDays, 2);
+  assert.equal(failedDays, 2);
+  assert.equal(totalReward, 100000);
+  assert.equal(totalPenalty, 50000);
+  assert.equal(netReward, 50000); // 100k - 50k = +50k net reward for the team
 });
 

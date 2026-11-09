@@ -1,4 +1,4 @@
-export type BkGameType = 'INDIVIDUAL' | 'TEAM';
+export type BkGameType = 'INDIVIDUAL' | 'TEAM' | 'TEAM_KPI';
 
 export type BkGameMetricType = 'BOOKINGS' | 'CALLS' | 'PICKUPS' | 'DONE' | 'COMPOSITE';
 
@@ -82,6 +82,51 @@ export interface BkGameDoneBonusesSummary {
   staffBonuses: BkGameDoneBonusStaffSummary[];
 }
 
+export interface BkGameTeamKpiConfig {
+  dailyTarget: number;
+  rewardPerDay: number;
+  penaltyPerDay: number;
+  timeWindowStart?: string | null;
+  timeWindowEnd?: string | null;
+}
+
+export interface BkGameTeamKpiDailyContributor {
+  staffId: number;
+  staffName: string;
+  count: number;
+}
+
+export interface BkGameTeamKpiDailyResult {
+  date: string;
+  dateLabel: string;
+  target: number;
+  actual: number;
+  isPassed: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+  netReward: number;
+  rewardAmount: number;
+  penaltyAmount: number;
+  timeWindow?: string | null;
+  contributors?: BkGameTeamKpiDailyContributor[];
+}
+
+export interface BkGameTeamKpiSummary {
+  config: BkGameTeamKpiConfig;
+  totalDays: number;
+  passedDays: number;
+  failedDays: number;
+  remainingDays: number;
+  totalBookings: number;
+  todayBookings: number;
+  todayTarget: number;
+  todayPassed: boolean;
+  totalReward: number;
+  totalPenalty: number;
+  netReward: number;
+  dailyResults: BkGameTeamKpiDailyResult[];
+}
+
 export interface BkGame {
   id: number;
   title: string;
@@ -100,6 +145,7 @@ export interface BkGame {
   announcedResults?: string | null;
   allowedBookingChannels?: string[] | null;
   doneBonusConfig?: BkGameDoneBonusRule[] | null;
+  teamKpiConfig?: BkGameTeamKpiConfig | null;
   createdByStaffId: number;
   createdAt: string;
   updatedAt: string;
@@ -114,6 +160,7 @@ export interface BkGameCreateInput {
   metricType: BkGameMetricType;
   allowedBookingChannels?: string[];
   doneBonusConfig?: BkGameDoneBonusRule[] | null;
+  teamKpiConfig?: BkGameTeamKpiConfig | null;
   targetScore?: number;
   startDate: string;
   endDate: string;
@@ -132,6 +179,7 @@ export interface BkGameUpdateInput {
   targetScore?: number;
   allowedBookingChannels?: string[] | null;
   doneBonusConfig?: BkGameDoneBonusRule[] | null;
+  teamKpiConfig?: BkGameTeamKpiConfig | null;
   rewardPool?: number;
   rewardDescription?: string;
   penaltyDescription?: string;
@@ -155,6 +203,7 @@ export interface BkGameDetailResponse {
   teams?: BkGameTeam[];
   doneBonuses?: BkGameDoneBonusRecord[];
   doneBonusesSummary?: BkGameDoneBonusesSummary;
+  teamKpiSummary?: BkGameTeamKpiSummary | null;
   stats: {
     totalParticipants: number;
     totalTeams: number;

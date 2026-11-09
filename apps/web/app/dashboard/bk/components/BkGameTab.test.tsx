@@ -141,4 +141,120 @@ describe('BkGameTab', () => {
       })
     );
   });
+
+  it('renders Team KPI arena and daily breakdown when active game is TEAM_KPI', async () => {
+    const mockTeamKpiGame = {
+      id: 55,
+      title: 'Chiến Dịch Săn Booking 30 Đơn/Ngày',
+      gameType: 'TEAM_KPI',
+      metricType: 'BOOKINGS',
+      status: 'ACTIVE',
+      startDate: '2026-09-01T00:00:00Z',
+      endDate: '2026-09-05T23:59:59Z',
+      targetScore: 30,
+      rewardPool: 250000,
+      entryFee: 0,
+      teamKpiConfig: {
+        dailyTarget: 30,
+        rewardPerDay: 50000,
+        penaltyPerDay: 25000,
+        timeWindowStart: '08:00',
+        timeWindowEnd: '17:00',
+      },
+    };
+
+    apiMocks.getGames.mockResolvedValue({ games: [mockTeamKpiGame] });
+    apiMocks.getGameDetail.mockResolvedValue({
+      game: mockTeamKpiGame,
+      scoringRule: {
+        metricType: 'BOOKINGS',
+        label: 'Booking tạo mới',
+        formula: '1 Booking tạo mới hợp lệ = 1 Điểm',
+        unit: 'booking',
+        description: 'Đếm số lượng booking mới được tạo ra trong thời gian diễn ra cuộc thi.',
+        dataSource: 'CRM Booking (crm.order)',
+      },
+      leaderboard: [
+        {
+          id: 1,
+          gameId: 55,
+          staffId: 50670,
+          staffName: 'Thùy Dương',
+          score: 18,
+          rank: 1,
+          status: 'ACTIVE',
+        },
+        {
+          id: 2,
+          gameId: 55,
+          staffId: 52316,
+          staffName: 'Hồng Nhung',
+          score: 14,
+          rank: 2,
+          status: 'ACTIVE',
+        },
+      ],
+      stats: { totalScore: 32, activeParticipants: 2, averageScore: 16, timeRemainingSeconds: 3600 },
+      teamKpiSummary: {
+        config: {
+          dailyTarget: 30,
+          rewardPerDay: 50000,
+          penaltyPerDay: 25000,
+          timeWindowStart: '08:00',
+          timeWindowEnd: '17:00',
+        },
+        totalDays: 5,
+        passedDays: 2,
+        failedDays: 1,
+        remainingDays: 2,
+        totalBookings: 65,
+        todayBookings: 32,
+        todayTarget: 30,
+        todayPassed: true,
+        totalReward: 100000,
+        totalPenalty: 25000,
+        netReward: 75000,
+        dailyResults: [
+          {
+            date: '2026-09-01',
+            dateLabel: 'Thứ Ba, 01/09',
+            target: 30,
+            actual: 33,
+            isPassed: true,
+            isToday: false,
+            isFuture: false,
+            netReward: 50000,
+            rewardAmount: 50000,
+            penaltyAmount: 0,
+            timeWindow: '08:00 - 17:00',
+            contributors: [{ staffId: 50670, staffName: 'Thùy Dương', count: 20 }],
+          },
+          {
+            date: '2026-09-02',
+            dateLabel: 'Thứ Tư, 02/09',
+            target: 30,
+            actual: 32,
+            isPassed: true,
+            isToday: true,
+            isFuture: false,
+            netReward: 50000,
+            rewardAmount: 50000,
+            penaltyAmount: 0,
+            timeWindow: '08:00 - 17:00',
+            contributors: [{ staffId: 50670, staffName: 'Thùy Dương', count: 18 }],
+          },
+        ],
+      },
+    });
+
+    render(<BkGameTab dateRange={[dayjs('2026-09-05'), dayjs('2026-09-05')]} comparisonMode="day" />);
+
+    expect(await screen.findByText('Chiến Dịch Săn Booking 30 Đơn/Ngày')).toBeInTheDocument();
+    expect(screen.getByText('Team KPI – Thử Thách Tập Thể')).toBeInTheDocument();
+    expect(screen.getByText('Tiến Độ KPI Theo Ngày')).toBeInTheDocument();
+    expect(screen.getByText('Đóng Góp Thành Viên')).toBeInTheDocument();
+    expect(screen.getByText('HÔM NAY ĐẠT')).toBeInTheDocument();
+    expect(screen.getAllByText('+75.000 đ').length).toBeGreaterThan(0);
+    expect(screen.getByText('Thứ Ba, 01/09')).toBeInTheDocument();
+  });
 });

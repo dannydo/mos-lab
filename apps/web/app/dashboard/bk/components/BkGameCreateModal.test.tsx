@@ -185,4 +185,52 @@ describe('BkGameCreateModal', () => {
       expect(callArg.allowedBookingChannels).toEqual(['GB']);
     });
   });
+
+  it('supports selecting Team KPI contest format and submits teamKpiConfig', async () => {
+    apiMocks.createGame.mockResolvedValue({
+      id: 100,
+      title: 'Thử Thách Tập Thể Săn Booking',
+      gameType: 'TEAM_KPI',
+    });
+
+    render(<BkGameCreateModal open={true} onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hiển thị 4 \/ 4 nhân sự/)).toBeInTheDocument();
+    });
+
+    // Select TEAM_KPI in Segmented
+    const teamKpiOption = screen.getByText(/Team KPI – Thử thách tập thể/i);
+    const itemContainer = teamKpiOption.closest('.ant-segmented-item') || teamKpiOption;
+    fireEvent.click(itemContainer);
+
+    // Verify Team KPI configuration inputs are rendered
+    await waitFor(() => {
+      expect(screen.getByText(/Cấu hình Thể thức Team KPI/i)).toBeInTheDocument();
+      expect(screen.getByText(/Khung giờ áp dụng/i)).toBeInTheDocument();
+      expect(screen.getByText(/Mức thưởng khi ĐẠT/i)).toBeInTheDocument();
+      expect(screen.getByText(/Mức phạt khi KHÔNG ĐẠT/i)).toBeInTheDocument();
+    });
+
+    // Fill title
+    const titleInput = screen.getByPlaceholderText(/Ví dụ: Chiến Dịch Săn Booking/i);
+    fireEvent.change(titleInput, { target: { value: 'Thử Thách Tập Thể Săn Booking' } });
+
+    // Submit form
+    const submitBtn = screen.getByRole('button', { name: /Khởi Tạo Game/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiMocks.createGame).toHaveBeenCalledTimes(1);
+      const callArg = apiMocks.createGame.mock.calls[0][0];
+      expect(callArg.title).toBe('Thử Thách Tập Thể Săn Booking');
+      expect(callArg.gameType).toBe('TEAM_KPI');
+      expect(callArg.teamKpiConfig).toBeDefined();
+      expect(callArg.teamKpiConfig.dailyTarget).toBe(30);
+      expect(callArg.teamKpiConfig.rewardPerDay).toBe(50000);
+      expect(callArg.teamKpiConfig.penaltyPerDay).toBe(25000);
+      expect(callArg.teamKpiConfig.timeWindowStart).toBe('08:00');
+      expect(callArg.teamKpiConfig.timeWindowEnd).toBe('17:00');
+    });
+  });
 });
