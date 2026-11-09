@@ -796,6 +796,14 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
             className="[&_.ant-statistic-content-value]:text-emerald-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
             prefix={<UserOutlined className="mr-2 text-emerald-500" />}
           />
+          <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
+            <span>Tỷ trọng / Tổng Done:</span>
+            <span className="tabular-nums font-semibold text-emerald-400">
+              {summary.totalDone > 0
+                ? `${((((summary.totalSingleDone ?? summary.totalDone) || 0) / summary.totalDone) * 100).toFixed(1)}%`
+                : '0%'}
+            </span>
+          </div>
           <PeriodComparison
             comparison={previousPeriod?.comparison}
             currentValue={summary.totalSingleDone ?? summary.totalDone}
@@ -862,6 +870,12 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
                 : '0%'}
             </span>
           </div>
+          <PeriodComparison
+            comparison={previousPeriod?.comparison}
+            currentValue={summary.totalComboLiveDone ?? 0}
+            previousValue={previousSummary?.totalComboLiveDone ?? 0}
+            formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
+          />
           {renderForecastSubtext(projectedComboLiveDone, 'lượt')}
         </Card>
 
@@ -893,11 +907,26 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
           {(summary.comboRevenue || 0) > 0 && (
             <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1">
               <span>Doanh thu:</span>
-              <span className="tabular-nums font-medium text-purple-300">
-                {formatCompactVND(summary.comboRevenue || 0)}
-              </span>
+              <Tooltip
+                title={`Doanh thu bán Combo trong kỳ: ${formatCurrency(summary.comboRevenue || 0)}${previousSummary?.comboRevenue !== undefined ? ` (Kỳ trước: ${formatCurrency(previousSummary.comboRevenue || 0)})` : ''}`}
+              >
+                <span className="tabular-nums font-medium text-purple-300 cursor-help">
+                  {formatCompactVND(summary.comboRevenue || 0)}
+                  {previousSummary?.comboRevenue !== undefined && (
+                    <span className="text-slate-500 font-normal ml-1">
+                      (Kỳ tr: {formatCompactVND(previousSummary.comboRevenue || 0)})
+                    </span>
+                  )}
+                </span>
+              </Tooltip>
             </div>
           )}
+          <PeriodComparison
+            comparison={previousPeriod?.comparison}
+            currentValue={summary.totalComboSold ?? 0}
+            previousValue={previousSummary?.totalComboSold ?? 0}
+            formatter={(value) => `${value.toLocaleString('vi-VN')} gói`}
+          />
         </Card>
 
         {/* Card 5: ∑ Thưởng Done & Check-in */}
