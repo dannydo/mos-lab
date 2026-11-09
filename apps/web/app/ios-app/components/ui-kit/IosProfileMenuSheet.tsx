@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { ActiveActorProfile, IosUserRole } from '../../state/useIosAppState';
-import { CvFeather2Badge } from './CvFeatherLabels';
-import { Wallet, MessageSquare, Award, Lock, ChevronRight, X, Sparkles, Shield, Layers } from 'lucide-react';
+import { CvFeather2Badge, CvFeather1Badge } from './CvFeatherLabels';
+import { Wallet, MessageSquare, Award, Lock, ChevronRight, X, Sparkles, Shield, Layers, LogOut } from 'lucide-react';
 
 interface IosProfileMenuSheetProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface IosProfileMenuSheetProps {
   onOpenPaystub?: () => void;
   onOpenChat?: () => void;
   onOpenCareer?: () => void;
+  onLogout?: () => void;
 }
 
 export function IosProfileMenuSheet({
@@ -27,12 +28,29 @@ export function IosProfileMenuSheet({
   onOpenPaystub,
   onOpenChat,
   onOpenCareer,
+  onLogout,
 }: IosProfileMenuSheetProps) {
   if (!isOpen) return null;
 
   const actorName = actor?.name || 'Thảo Ly';
   const isCvl = role === 'CVL';
   const isCvll = role === 'CVLL';
+
+  const handleLogout = () => {
+    onClose();
+    if (onLogout) {
+      onLogout();
+    } else if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('mos_token');
+      window.localStorage.removeItem('mos_user');
+      window.localStorage.removeItem('mos_omicall_auto_init');
+      window.localStorage.removeItem('mos_original_token');
+      window.localStorage.removeItem('mos_original_user');
+      window.localStorage.removeItem('mos_original_omicall_auto_init');
+      window.localStorage.removeItem('mos_impersonation_audit_id');
+      window.location.replace('/login');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center px-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none">
@@ -60,7 +78,15 @@ export function IosProfileMenuSheet({
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-[15px] text-white tracking-tight">{actorName}</span>
                   <span className="bg-amber-400/20 text-amber-400 border border-amber-400/30 text-[10px] font-black px-2 py-0.5 rounded-full inline-flex items-center">
-                    {isCvll ? <CvFeather2Badge /> : isCvl ? 'CV🪶 Tự Chủ' : role}
+                    {isCvll ? (
+                      <CvFeather2Badge />
+                    ) : isCvl ? (
+                      <span className="inline-flex items-center gap-1">
+                        <CvFeather1Badge /> Tự Chủ
+                      </span>
+                    ) : (
+                      role
+                    )}
                   </span>
                 </div>
                 <div className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
@@ -113,7 +139,7 @@ export function IosProfileMenuSheet({
                           : 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
                       }`}
                     >
-                      {r === 'CVL' ? 'CV🪶' : r === 'CVLL' ? <CvFeather2Badge /> : 'CC Sảnh'}
+                      {r === 'CVL' ? <CvFeather1Badge /> : r === 'CVLL' ? <CvFeather2Badge /> : 'CC Sảnh'}
                     </button>
                   );
                 })}
@@ -191,21 +217,53 @@ export function IosProfileMenuSheet({
                 </div>
                 <div>
                   <div className="text-xs font-bold text-white">Lộ trình thăng tiến</div>
-                  <div className="text-[10.5px] text-neutral-400">Tiêu chuẩn cấp bậc CV 🪶 và CC</div>
+                  <div className="text-[10.5px] text-neutral-400 flex items-center gap-1">
+                    <span>Tiêu chuẩn cấp bậc CV</span>
+                    <CvFeather1Badge />
+                    <span>và CC</span>
+                  </div>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-neutral-500" />
             </button>
+
+            {/* Đăng xuất tài khoản (Logout) */}
+            <button
+              onClick={handleLogout}
+              className="w-full p-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer border border-rose-500/20 text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                  <LogOut className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-rose-400">Đăng xuất tài khoản (Logout)</div>
+                  <div className="text-[10.5px] text-neutral-400">Thoát phiên làm việc &amp; về màn hình Đăng nhập</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-rose-400/50 group-hover:text-rose-400 transition-colors" />
+            </button>
           </div>
         </div>
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="w-full py-3.5 rounded-2xl bg-[#1C1C1E] text-amber-400 font-bold text-sm active:bg-neutral-800 transition-colors shadow-lg cursor-pointer text-center"
-        >
-          Đóng (Close)
-        </button>
+        {/* Actions Bottom Bar: Đăng xuất & Đóng */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="py-3.5 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold text-sm border border-rose-500/30 active:scale-[0.98] transition-all shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Đăng xuất</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="py-3.5 rounded-2xl bg-[#1C1C1E] text-amber-400 font-bold text-sm active:bg-neutral-800 transition-colors shadow-lg cursor-pointer text-center"
+          >
+            Đóng (Close)
+          </button>
+        </div>
       </div>
     </div>
   );

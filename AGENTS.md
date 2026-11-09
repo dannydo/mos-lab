@@ -61,6 +61,7 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
      - `Chuyên Viên Kỹ Thuật`: Danh xưng trang trọng cho cấp bậc `CV`.
      - `Thiên Thần`: Danh xưng thân thương, trìu mến dành cho tập thể nhân sự tại Wings.
      - `Nghệ Nhân Mi`: Danh xưng dành cho các cấp bậc tay nghề tinh hoa (Artisan / Master Lash Artisan).
+   - **Quy Chuẩn Hiển Thị Vector Feather (UI Vector Feather Invariant)**: Ký tự Unicode Feather `🪶` (U+1FAB6) trên font Apple Color Emoji của macOS/iOS bị render thành màu nâu sọc vằn, ở kích cỡ nhỏ (10-14px) nhìn giống ổ bánh mì baguette (`🥖`) hoặc điếu thuốc, làm tổn hại đến sự sang trọng, thanh thoát của thương hiệu Wings. Do đó, trên toàn bộ giao diện Web và iOS App, **BẮT BUỘC sử dụng component vector `<CvFeather1Badge />` và `<CvFeather2Badge />`** (kèm `<FeatherSvg />` từ `lucide-react`) với màu vàng kim (`text-amber-400` / `#FFB400` hoặc `#F59E0B`) và đường nét vector sắc sảo, tuyệt đối không render chuỗi ký tự emoji thô `'🪶'` trên UI người dùng.
    - **Ngoại Lệ Kỹ Thuật Duy Nhất**: Chỉ duy nhất chuỗi SQL query `ugl.user_group_name LIKE '%Thợ%'` trong legacy database query (để khớp tên nhóm người dùng lịch sử trong MySQL cũ) được phép tồn tại ngầm dưới backend và tuyệt đối không bao giờ được lộ ra ngoài UI.
 9. **Zero-Trust Admin-Only Default for New Features & `/ios-app` `CV🪶` Customer Privacy Invariant (Kinh Thánh mOS Điều răn UI-010)**:
    - **Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới (4-Layer Zero-Trust)**: Khi bất kỳ tính năng, màn hình (`/dashboard/*`), mục menu hay API mới nào được thiết kế và đưa vào mOS, mặc định **chỉ duy nhất `admin` / `super_admin`** được phép truy cập. Tất cả các vai trò khác đều bị khóa mặc định ở cả 4 lớp: (1) Sidebar (`sidebar.config.tsx`) ẩn mọi mục chưa đăng ký mở quyền; (2) Route Guard (`DashboardLayout` + `isNonAdminAllowedDashboardPath`) chặn gõ URL trực tiếp; (3) Backend API Guard (`resolveMenuKeysForApiPath` -> `__ADMIN_ONLY_DEFAULT__`) trả về `403 Forbidden`; (4) Chỉ mở cho vai trò khác khi có chỉ đạo tường minh từ Danny.
@@ -212,14 +213,21 @@ mos-lab/
 - **Xử lý tiền lẻ < 20K (Small Change)**: Khoản tiền tip dưới 20.000đ được coi là tiền thừa khách làm biếng lấy. **Vẫn cộng đủ tiền vào bảng lương/thu nhập nhân viên** (CV 70%, CC 20%, CS 3%), nhưng **tuyệt đối KHÔNG tính là lượt tip** (không tăng `totalTippedVisits`, không tính vào `% Tip Rate`).
 - **Bộ lọc 4 trạng thái**: Bảng chi tiết hỗ trợ 4 chế độ lọc: Tất cả (`ALL`) | Có Tip $\ge$ 20K (`TIPPED`) | Tiền lẻ < 20K (`SMALL_CHANGE`) | Không Tip 0đ (`NO_TIP`).
 - **Công thức CC Tip (20%)**: CC nhận 20% tổng tiền tip khách cho (lưu trong `staff_tip` với `tip_percentage = 20`).
-- **Biểu tượng Chuẩn Của Tip Toàn Hệ Thống (Trái tim ♥)**: Toàn bộ hệ thống (danh sách ca làm, màn hình thanh toán, hóa đơn nhiệt, bảng kê chi tiết, mobile app, web dashboard) bắt buộc sử dụng ký hiệu trái tim **`♥`** (Heart) làm biểu tượng chính thức cho tiền tip, đại diện cho tình cảm tin yêu và lòng tri ân của khách hàng gửi tới Chuyên Viên (ví dụ: `♥ 50K`, `♥ Tiền tip chuyên viên`).
+- **Biểu tượng Chuẩn Của Tip Toàn Hệ Thống (Trái tim ♥)**: Toàn bộ hệ thống (danh sách ca làm, màn hình thanh toán, hóa đơn nhiệt, bảng kê chi tiết, mobile app, web dashboard) bắt buộc sử dụng ký hiệu trái tim **`♥`** (Heart) làm biểu tượng chính thức cho tiền tip, đại diện cho tình cảm tin yêu và lòng tri ấn của khách hàng gửi tới Chuyên Viên (ví dụ: `♥ 50K`, `♥ Tiền tip chuyên viên`).
 - **CC In != CC Out**: Khi nhân viên CC In khác CC Out, khoản Thưởng CC Tip (20%) bắt buộc chia **50/50** cho cả 2 CC (mỗi CC nhận 10% tip share, `tip_percentage = 10`).
 - **Chỉ đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order_state = 'Completed'`.
 - **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` khi tính `SUM(st.tip_amount)`, hãy query trực tiếp từ `staff_tip` JOIN `order`.
 - **Active CC Config**: Tất cả các tab báo cáo CC bắt buộc phải lọc theo danh sách ID tư vấn viên đang hoạt động trong `crmConfig` với key `ACTIVE_CC_STAFF_CONFIG`.
 - **Tổng Thu Nhập Live Paystub**: `Tổng Thu Nhập Tạm Tính` = `Lương Giờ` + `Thưởng CC Xoay` + `Thưởng Combo & SP` + `Thưởng Minigame` + `Thưởng CC Tip (20%)`.
 
-### 8. External API References & `wingslashes` Source Code Inspection
+### 8. Quy Chuẩn Thuế VAT 8% Tại Checkout (Kinh Thánh mOS Điều Răn VAT-001)
+
+- **Mọi khoản thu đều chịu 8% VAT (Trừ Tip)**: Toàn bộ dịch vụ lẻ (Single Service), phí phụ thu nâng cấp dịch vụ từ gói combo (Upgrade Price), gói combo mua mới và sản phẩm bán kèm (dưỡng mi, serum) đều bắt buộc chịu 8% thuế VAT chuẩn hóa đơn.
+- **Công thức Grand Total**: `Grand Total = Tạm tính (Subtotal) + 8% VAT (Math.round(subtotal * 0.08)) + Tiền Tip (♥) - Cấn trừ Kim Cương (💎)`.
+- **Miễn trừ VAT tuyệt đối cho Tiền Tip**: Tiền Tip của khách trao tặng nhân sự tuyệt đối không chịu thuế VAT, chuyển đủ 100% vào cơ cấu phân bổ thưởng nhân sự (CV 70%, In/Out 20%, Quỹ 10%).
+- **Hóa đơn nhiệt minh bạch**: Mọi hóa đơn in nhiệt xuất cho khách (Screen 14) bắt buộc in rõ dòng `Thuế VAT (8%)` ngay sau phần Tạm tính và trước Tiền Tip.
+
+### 9. External API References & `wingslashes` Source Code Inspection
 
 - Mỗi khi người dùng cung cấp đường dẫn API (ví dụ: `https://api.wingslashes.com/...` hoặc `https://api.orb/...`), **không gọi trực tiếp endpoint ngoài**.
 - **Chủ động tra cứu source code `wingslashes` nội bộ**: Truy cập và kiểm tra mã nguồn/repository `wingslashes` trên hệ thống local để đối chiếu câu lệnh SQL, công thức tính toán và logic dữ liệu chính xác của API đó.

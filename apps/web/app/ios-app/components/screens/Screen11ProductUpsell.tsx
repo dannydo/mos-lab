@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { CvFeather2Badge, CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import {
   Sparkles,
   CheckCircle2,
@@ -158,9 +158,31 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const [selectedNewComboId, setSelectedNewComboId] = useState<string>(defaultNewComboSelection);
   const [deductTodayIntoCombo, setDeductTodayIntoCombo] = useState<boolean>(true);
 
+  // Sync khi đổi booking hoặc khi category/volume thay đổi nhưng cố gắng giữ nguyên tier tương ứng
+  const prevBookingIdRef = React.useRef(booking?.id);
   React.useEffect(() => {
-    setSelectedNewComboId(defaultNewComboSelection);
-  }, [defaultNewComboSelection]);
+    if (prevBookingIdRef.current !== booking?.id) {
+      prevBookingIdRef.current = booking?.id;
+      setSelectedNewComboId(defaultNewComboSelection);
+      return;
+    }
+
+    // Khi đổi dòng mi / độ dày, cố gắng giữ đúng ruleName tương ứng nếu người dùng đã chủ động chọn gói
+    setSelectedNewComboId((currentId) => {
+      if (!currentId || currentId === 'NONE') return isExistingComboLive ? 'NONE' : defaultNewComboSelection;
+      const exact = matchedPackages.find((p) => p.id === currentId && !p.isLocked);
+      if (exact) return exact.id;
+
+      // Tìm gói có cùng ruleName trong danh sách mới
+      const prevRule = currentId.replace(/^[^_]+_/, '');
+      const ruleMatch = matchedPackages.find(
+        (p) => !p.isLocked && (p.id.endsWith(prevRule) || p.ruleName === prevRule)
+      );
+      if (ruleMatch) return ruleMatch.id;
+
+      return defaultNewComboSelection;
+    });
+  }, [booking?.id, defaultNewComboSelection, isExistingComboLive, matchedPackages]);
 
   const currentCategory = useMemo(() => getWingsComboCategory(activeCategoryId), [activeCategoryId]);
   const selectedSerumTier = SERUM_TIERS_CVL.find((t) => t.id === selectedSerumTierId) || SERUM_TIERS_CVL[0];
@@ -173,7 +195,8 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const serviceName = booking?.serviceName || 'New Flawless Mink 770';
   const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const actorName = actor?.name || 'Thảo Ly';
-  const actorTierBadge = actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? 'CV🪶' : 'CC';
+  const actorTierBadge =
+    actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? <CvFeather1Badge /> : 'CC';
 
   // 4. Tính hạch toán khi MUA GÓI MỚI (Trừ luôn buổi đầu vào gói nếu khách chưa có combo)
   const purchaseAccounting = useMemo(
@@ -503,14 +526,23 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           </div>
         )}
 
-        {/* Section 1: CÂY DƯỠNG MI YEPPEUM KOREA (THANG THƯỞNG CV🪶) */}
+        {/* Section 1: CÂY DƯỠNG MI YEPPEUM KOREA (THANG THƯỞNG CV) */}
         <div>
           <div className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
             <span>{isExistingComboLive ? '3. DƯỠNG MI YEPPEUM KOREA' : '2. DƯỠNG MI YEPPEUM KOREA'}</span>
             <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
-              {yeppeumCount > 0
-                ? `+${Math.round(serumBonus / 1000)}🪶`
-                : `+${Math.round(selectedSerumTier.cvBonus / 1000)}🪶/cây`}
+              {yeppeumCount > 0 ? (
+                <span className="inline-flex items-center gap-0.5">
+                  +{Math.round(serumBonus / 1000)}
+                  <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-0.5">
+                  +{Math.round(selectedSerumTier.cvBonus / 1000)}
+                  <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                  /cây
+                </span>
+              )}
             </span>
           </div>
 
@@ -566,8 +598,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0 ml-1">
-                  <span className="text-[11px] font-black text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200 tabular-nums">
-                    +{Math.round(selectedSerumTier.cvBonus / 1000)}🪶
+                  <span className="inline-flex items-center gap-0.5 text-[11px] font-black text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200 tabular-nums">
+                    +{Math.round(selectedSerumTier.cvBonus / 1000)}
+                    <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
                   </span>
                 </div>
               </button>
@@ -592,8 +625,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             </span>
             <div className="flex items-center gap-1.5">
               {showNewComboSection && newComboBonus > 0 && (
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
-                  +{Math.round(newComboBonus / 1000)}🪶
+                <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] tabular-nums">
+                  +{Math.round(newComboBonus / 1000)}
+                  <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
                 </span>
               )}
               {isExistingComboLive && showNewComboSection && (
@@ -652,7 +686,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                         <span className="text-emerald-400">Nâng cấp gói</span>
                       </>
                     ) : (
-                      <span>🎯 Dịch vụ hôm nay</span>
+                      <>
+                        <Sparkles className="w-3 h-3 text-[#FFB400]" />
+                        <span>Dịch vụ hôm nay</span>
+                      </>
                     )}
                   </div>
                   <div className="text-[13px] font-black text-white leading-snug">
@@ -772,74 +809,81 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               )}
 
               {/* Quick Volume Pills for Current Category — Density Only & No Scrollbar */}
-              {currentCategory.unitPrices.length > 0 && (
-                <div className="flex items-center gap-1.5">
+              {currentCategory.unitPrices.filter((u) => !u.isUnderLash).length > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar">
                   <div
                     className="w-7 h-7 rounded-lg bg-[#F2F2F7] text-neutral-600 flex items-center justify-center shrink-0"
                     title="Số trụ/sợi mi trên mắt"
                   >
-                    <Eye className="w-4 h-4 text-neutral-700" />
+                    <Eye className="w-3.5 h-3.5 text-neutral-700" />
                   </div>
                   <div
                     className="flex-1 flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
-                    {currentCategory.unitPrices.map((u) => {
-                      const volKey: number | 'under' = u.isUnderLash ? 'under' : Number(u.volume);
-                      const active = activeVolume === volKey;
-                      const meta = getVolumeFiberMeta(currentCategory.id, volKey);
-                      const label = u.isUnderLash ? 'Mi Dưới' : `${meta.countPerEye} ${meta.unitWord}`;
-                      return (
-                        <button
-                          key={String(u.volume)}
-                          type="button"
-                          onClick={() => setActiveVolume(volKey)}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-black shrink-0 border transition-all cursor-pointer ${
-                            active
-                              ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
-                              : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
+                    {currentCategory.unitPrices
+                      .filter((u) => !u.isUnderLash)
+                      .map((u) => {
+                        const volKey = Number(u.volume);
+                        const active = activeVolume === volKey;
+                        const meta = getVolumeFiberMeta(currentCategory.id, volKey);
+                        const label = `${meta.countPerEye} ${meta.unitWord}`;
+                        const compactPrice = `${Math.round(u.newPrice / 1000)}K`;
+                        return (
+                          <button
+                            key={String(u.volume)}
+                            type="button"
+                            onClick={() => setActiveVolume(volKey)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-black shrink-0 border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              active
+                                ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400] shadow-xs'
+                                : 'bg-[#F2F2F7] text-neutral-700 border-transparent hover:bg-neutral-200'
+                            }`}
+                          >
+                            <span>{label}</span>
+                            <span
+                              className={`text-[9.5px] font-bold tabular-nums ${active ? 'text-amber-200' : 'text-neutral-500'}`}
+                            >
+                              {compactPrice}
+                            </span>
+                          </button>
+                        );
+                      })}
                   </div>
                 </div>
               )}
 
               {/* Thanh trạng thái chọn mua thêm gói đối với khách đã có combo */}
               {isExistingComboLive && (
-                <div className="p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 text-[12px] bg-neutral-50 border-neutral-200">
+                <div className="px-3 py-2 rounded-xl border transition-all flex items-center justify-between gap-2 text-[12px] bg-neutral-50/90 border-neutral-200">
                   {selectedNewComboPkg ? (
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold text-[12.5px]">
-                        <span>✓ Đang chọn mua thêm:</span>
-                        <span className="truncate">{selectedNewComboPkg.displayName}</span>
+                    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-emerald-800 font-black text-[12px] flex items-center gap-1 truncate">
+                          <span>✓ {selectedNewComboPkg.displayName}</span>
+                        </div>
+                        <div className="text-[10.5px] text-neutral-500 tabular-nums inline-flex items-center gap-1">
+                          <span>+{selectedNewComboPkg.totalSessions} buổi ví</span>
+                          <span>·</span>
+                          <span className="inline-flex items-center gap-0.5 text-emerald-700 font-bold">
+                            +{Math.round(selectedNewComboPkg.cvBonus / 1000)}
+                            <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                        {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ · Cộng đủ{' '}
-                        {selectedNewComboPkg.totalSessions} buổi vào ví (+
-                        {Math.round(selectedNewComboPkg.cvBonus / 1000)}🪶 thưởng)
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedNewComboId('NONE')}
+                        className="shrink-0 px-2 py-0.5 rounded-lg bg-white border border-rose-200 text-rose-600 font-bold text-[10.5px] hover:bg-rose-50 active:scale-95 cursor-pointer shadow-2xs"
+                      >
+                        ✕ Bỏ chọn
+                      </button>
                     </div>
                   ) : (
-                    <div className="flex-1 min-w-0 text-neutral-600 text-[11.5px]">
-                      <span className="font-semibold text-neutral-800">⚪ Chưa chọn mua thêm gói mới.</span>
-                      <span className="text-neutral-500 block text-[10.5px]">
-                        Bấm vào một gói bên dưới nếu khách muốn mua thêm/gối đầu.
-                      </span>
+                    <div className="flex-1 min-w-0 text-neutral-500 text-[11px] flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span>Chọn một gói bên dưới nếu khách muốn mua thêm</span>
                     </div>
-                  )}
-
-                  {selectedNewComboPkg && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedNewComboId('NONE')}
-                      className="shrink-0 px-2.5 py-1 rounded-lg bg-white border border-rose-300 text-rose-700 font-bold text-[11px] hover:bg-rose-50 active:scale-95 cursor-pointer shadow-2xs"
-                    >
-                      ✕ Bỏ chọn
-                    </button>
                   )}
                 </div>
               )}
@@ -887,8 +931,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                       </div>
                       <div className="flex justify-between items-center pt-1 border-t border-gray-100">
                         <span className="text-neutral-600">Thưởng chốt cho {actorName}:</span>
-                        <strong className="text-emerald-700 font-black tabular-nums">
-                          +{Math.round(selectedNewComboPkg.cvBonus / 1000)}🪶
+                        <strong className="text-emerald-700 font-black tabular-nums inline-flex items-center gap-0.5">
+                          +{Math.round(selectedNewComboPkg.cvBonus / 1000)}
+                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
                         </strong>
                       </div>
                     </div>
@@ -1141,7 +1186,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                 <span>2B. MUA THÊM GÓI ❖ MI DƯỚI (MUA CÙNG LÚC)</span>
               </span>
               {underComboBonus > 0 && (
-                <span className="text-emerald-700 font-bold">+{Math.round(underComboBonus / 1000)}🪶</span>
+                <span className="text-emerald-700 font-bold inline-flex items-center gap-0.5">
+                  +{Math.round(underComboBonus / 1000)}
+                  <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                </span>
               )}
             </div>
 
@@ -1175,7 +1223,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                   customerAvatar={booking?.customerAvatar}
                   selectedPackageId={selectedUnderComboId !== 'NONE' ? selectedUnderComboId : null}
                   onSelectPackage={(pkg) => {
-                    setSelectedUnderComboId(pkg.id);
+                    setSelectedUnderComboId((prev) => (prev === pkg.id ? 'NONE' : pkg.id));
                   }}
                   onSelectLocked={() => {
                     setIsLockedWelcomeModalOpen(true);
@@ -1263,8 +1311,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
               Thưởng chốt đơn:
             </span>
-            <span className="text-emerald-700 font-black tabular-nums text-[13px]">
-              +{Math.round((newComboBonus + underComboBonus + serumBonus) / 1000)}🪶
+            <span className="text-emerald-700 font-black tabular-nums text-[13px] inline-flex items-center gap-0.5">
+              +{Math.round((newComboBonus + underComboBonus + serumBonus) / 1000)}
+              <FeatherSvg className="w-3 h-3 text-amber-500" />
             </span>
           </div>
         </div>
@@ -1289,10 +1338,26 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         welcomeEligibility={welcomeEligibility}
         selectedPackageId={selectedNewComboPkg?.id || null}
         todaySingleServicePrice={servicePrice}
+        initialSelectedUpperPkg={selectedNewComboPkg}
+        initialSelectedUnderPkg={selectedUnderComboPkg}
         onSelectPackage={(pkg) => {
           setActiveCategoryId(pkg.categoryId);
           setActiveVolume(pkg.volume);
           setSelectedNewComboId(pkg.id);
+        }}
+        onApplyPackages={({ upperPkg, underPkg }) => {
+          if (upperPkg) {
+            setActiveCategoryId(upperPkg.categoryId);
+            setActiveVolume(upperPkg.volume);
+            setSelectedNewComboId(upperPkg.id);
+          } else {
+            setSelectedNewComboId('NONE');
+          }
+          if (underPkg) {
+            setSelectedUnderComboId(underPkg.id);
+          } else {
+            setSelectedUnderComboId('NONE');
+          }
         }}
       />
 
@@ -1361,7 +1426,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
 
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className="inline-flex items-center gap-0.5 text-[12px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg tabular-nums">
-                        +{Math.round(t.cvBonus / 1000)}🪶/cây
+                        +{Math.round(t.cvBonus / 1000)}
+                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                        /cây
                       </span>
                       {isSelected ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -1402,8 +1469,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
               </div>
               <div>
                 <h3 className="text-[16px] font-black text-neutral-900">Đặc Quyền Gói Welcome (2 Tặng 1)</h3>
-                <p className="text-[11.5px] font-bold text-amber-700 mt-0.5">
-                  🔒 Chỉ áp dụng trong ngày đầu tiên ghé salon
+                <p className="text-[11.5px] font-bold text-amber-700 mt-0.5 inline-flex items-center justify-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Chỉ áp dụng trong ngày đầu tiên ghé salon</span>
                 </p>
               </div>
             </div>
@@ -1421,7 +1489,11 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
             </div>
 
             <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-200 text-[11.5px] text-emerald-900 leading-snug">
-              <span className="font-extrabold text-emerald-800 block mb-0.5">💡 Gợi ý tư vấn cho CV🪶:</span>
+              <span className="font-extrabold text-emerald-800 flex items-center gap-1 mb-0.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Gợi ý tư vấn cho CV:</span>
+                <FeatherSvg className="w-3 h-3 text-amber-500" />
+              </span>
               Hướng dẫn chị chốt gói <strong>4 tặng 1</strong> (+22%) hoặc <strong>7 tặng 3</strong> (tiết kiệm đến 41%)
               để nhận trọn vẹn đặc quyền và số buổi tối đa nhé!
             </div>

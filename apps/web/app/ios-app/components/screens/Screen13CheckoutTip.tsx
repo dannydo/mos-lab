@@ -33,6 +33,9 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
   const comboBonus = booking?.selectedCombo?.bonus || 0;
   const serumBonus = (booking?.cartProducts || []).reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
   const subtotal = booking?.billing?.subtotal || 1650000;
+  const vatRate = booking?.billing?.vatRate ?? 0.08;
+  const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
+  const grandTotalWithVatAndTip = subtotal + vatAmount + tip;
 
   return (
     <div className="flex-1 flex flex-col justify-end bg-black/85 select-none overflow-y-auto">
@@ -147,9 +150,12 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
 
         {/* Total Grand Bill */}
         <div className="flex items-center justify-between px-1">
-          <span className="text-[13px] font-semibold text-gray-600">Tổng thanh toán sau tip:</span>
+          <div>
+            <span className="text-[13px] font-semibold text-gray-700 block">Tổng thanh toán sau tip:</span>
+            <span className="text-[10px] text-gray-500 font-medium">Đã bao gồm 8% thuế VAT</span>
+          </div>
           <span className="text-[19px] font-black text-black tabular-nums">
-            {(subtotal + tip).toLocaleString('vi-VN')} đ
+            {grandTotalWithVatAndTip.toLocaleString('vi-VN')} đ
           </span>
         </div>
 

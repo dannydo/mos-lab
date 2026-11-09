@@ -5,6 +5,7 @@ import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
@@ -67,7 +68,7 @@ export function Screen12CheckoutBilling({
   };
 
   const customerName = booking?.customerName || 'Chị Trúc';
-  const customerPhone = booking?.customerPhone || '0933.779.207';
+  const customerPhone = (booking?.customerPhone || '0933.779.207').replace(/\*+\s*/g, '').trim();
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
   const checkInStaff = booking?.checkInStaffName || actor?.name || 'Thảo Ly';
   const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
@@ -215,7 +216,7 @@ export function Screen12CheckoutBilling({
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
       <IosNavigationBar
-        title="Check Out / Thanh Toán"
+        title="Thanh Toán"
         onBack={onBack}
         backTitle={booking?.orderNumber || 'Order'}
         rightAction={
@@ -229,45 +230,42 @@ export function Screen12CheckoutBilling({
       />
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
-        {/* Customer & 3-Staff Attribution Header Card */}
-        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[15px] font-bold text-black">
-                {customerName} · <span className="tabular-nums">{customerPhone}</span>
+        {/* Customer & Specialist iOS Minimal Card */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-2xs border border-neutral-200/80 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-[15px] font-black text-neutral-900 tracking-tight truncate">
+                {customerName} · <span className="tabular-nums font-bold text-neutral-600">{customerPhone}</span>
               </div>
-              <div className="text-[11px] text-gray-500 mt-0.5 font-medium">
-                Chuyên viên làm mi: <strong className="text-black">{assignedStaff}</strong>
+              <div className="text-[11.5px] text-neutral-500 mt-0.5 font-semibold flex items-center gap-1 flex-wrap">
+                <span>
+                  Chuyên viên: <strong className="text-neutral-900">{assignedStaff}</strong>
+                </span>
+                <CvFeather1Badge />
+                {(checkInStaff !== assignedStaff || checkOutStaff !== assignedStaff) && (
+                  <span className="text-neutral-400 text-[10.5px] font-normal">
+                    (In: {checkInStaff} · Out: {checkOutStaff})
+                  </span>
+                )}
               </div>
             </div>
-            <span className="bg-[#22C55E] text-white font-extrabold text-[11px] px-2.5 py-1 rounded-full shadow-xs">
+            <span className="bg-emerald-500 text-white font-black text-[10.5px] px-2.5 py-1 rounded-full shadow-2xs shrink-0 tracking-tight">
               Đã Check-out
             </span>
           </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100 text-[11px]">
-            <div className="bg-amber-50 rounded-xl px-2.5 py-1.5 border border-amber-200">
-              <span className="text-gray-500 block text-[10px]">Người Check-in:</span>
-              <span className="font-bold text-black">{checkInStaff} (CV🪶)</span>
-            </div>
-            <div className="bg-emerald-50 rounded-xl px-2.5 py-1.5 border border-emerald-200">
-              <span className="text-gray-500 block text-[10px]">Người Check-out:</span>
-              <span className="font-bold text-emerald-800">{checkOutStaff} (CV🪶)</span>
-            </div>
-          </div>
         </div>
 
-        {/* Section 1: Chi Tiết Hóa Đơn */}
+        {/* Section 1: Chi Tiết Hóa Đơn Chuẩn Apple Receipt */}
         <div>
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
-            CHI TIẾT HÓA ĐƠN
+          <div className="text-[11px] font-black text-neutral-400 uppercase tracking-wider px-1 mb-1.5">
+            Chi Tiết Hóa Đơn
           </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden divide-y divide-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xs border border-neutral-200/80 overflow-hidden divide-y divide-neutral-100">
             {/* Item 1: Service */}
-            <div className="p-3.5 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[13px] font-bold text-black">1. {serviceName}</span>
+            <div className="p-3.5 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[13px] font-extrabold text-neutral-900 tracking-tight">{serviceName}</span>
                   {onEditService && (
                     <button
                       type="button"
@@ -280,226 +278,210 @@ export function Screen12CheckoutBilling({
                     </button>
                   )}
                 </div>
-                <div className="text-[11px] text-gray-500 mt-0.5">
-                  Chuyên viên làm mi: {assignedStaff}
-                  {booking?.attributes?.style && ` · ${booking.attributes.style}`}
+                <div className="text-[11px] text-neutral-500 font-medium">
+                  {assignedStaff}
+                  {booking?.attributes?.style ? ` · Dáng ${booking.attributes.style}` : ''}
                 </div>
                 {selectedCombo ? (
                   selectedCombo.todaySingleServiceWaived ? (
-                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                      ✓ Trừ vào Buổi 1 của gói mới mua (Miễn thu lẻ {servicePrice.toLocaleString('vi-VN')}đ)
+                    <div className="pt-0.5">
+                      <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                        Trừ Buổi 1 (Miễn phí ca này)
+                      </span>
                     </div>
                   ) : (
-                    <div className="text-[11px] text-indigo-700 font-semibold mt-0.5">
-                      ✓ Khách trả lẻ ca này · Giữ trọn vẹn số buổi gói mới mua
+                    <div className="pt-0.5">
+                      <span className="inline-flex items-center text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">
+                        Trả lẻ ca này · Giữ trọn số buổi gói
+                      </span>
                     </div>
                   )
                 ) : comboRedemption ? (
-                  <div className="text-[11px] text-sky-700 font-semibold mt-0.5">
-                    <div>✓ {comboRedemption.explanation}</div>
-                    <div className="tabular-nums">
-                      Ví còn:{' '}
-                      <span className="font-black text-sky-950">
-                        ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
-                      </span>
-                    </div>
+                  <div className="pt-0.5 flex items-center gap-1.5 flex-wrap text-[10px]">
+                    <span className="font-bold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded">
+                      Trừ 1 lượt gói ({comboRedemption.comboName || 'Gói cũ'})
+                    </span>
+                    <span className="text-neutral-400 font-semibold tabular-nums">
+                      Ví còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
+                    </span>
                   </div>
                 ) : (
                   upgradePrice > 0 && (
-                    <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
-                      Gốc: {originalBookedPrice.toLocaleString('vi-VN')}đ + Nâng cấp: +
-                      {upgradePrice.toLocaleString('vi-VN')}đ
+                    <div className="pt-0.5">
+                      <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded tabular-nums">
+                        Nâng cấp (+{upgradePrice.toLocaleString('vi-VN')}đ)
+                      </span>
                     </div>
                   )
                 )}
               </div>
-              <div className="text-right">
+
+              {/* Price: Zero-Drop 'đ' invariant */}
+              <div className="text-right shrink-0">
                 {selectedCombo ? (
                   selectedCombo.todaySingleServiceWaived ? (
-                    <>
-                      <span className="text-[13px] text-emerald-700 font-extrabold tabular-nums block">0 đ</span>
-                      <span className="text-[10px] text-gray-400 line-through tabular-nums block">
-                        {servicePrice.toLocaleString('vi-VN')} đ
+                    <div className="space-y-0.5">
+                      <span className="text-[13px] text-emerald-700 font-black tabular-nums whitespace-nowrap block">
+                        0đ
                       </span>
-                    </>
+                      <span className="text-[10px] text-neutral-400 line-through tabular-nums whitespace-nowrap block">
+                        {servicePrice.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
                   ) : (
-                    <span className="text-[13px] text-gray-900 font-black tabular-nums block">
-                      {servicePrice.toLocaleString('vi-VN')} đ
+                    <span className="text-[13px] text-neutral-900 font-black tabular-nums whitespace-nowrap block">
+                      {servicePrice.toLocaleString('vi-VN')}đ
                     </span>
                   )
                 ) : comboRedemption ? (
-                  <>
-                    <span className="text-[13px] text-sky-800 font-extrabold tabular-nums block">
+                  <div className="space-y-0.5">
+                    <span className="text-[13px] text-sky-800 font-black tabular-nums whitespace-nowrap block">
                       {comboRedemption.totalCustomerPayToday > 0
-                        ? `+${comboRedemption.totalCustomerPayToday.toLocaleString('vi-VN')} đ`
-                        : '0 đ'}
+                        ? `+${comboRedemption.totalCustomerPayToday.toLocaleString('vi-VN')}đ`
+                        : '0đ'}
                     </span>
-                    <span className="text-[10px] text-sky-700 font-bold bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">
-                      Trừ 1 lượt gói
+                    <span className="text-[10px] text-sky-700 font-bold bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 whitespace-nowrap inline-block">
+                      Trừ 1 lượt
                     </span>
-                  </>
+                  </div>
                 ) : isComboLive ? (
-                  <>
-                    <span className="text-[13px] text-sky-800 font-extrabold tabular-nums block">
-                      {upgradePrice > 0 ? `+${upgradePrice.toLocaleString('vi-VN')} đ` : '0 đ'}
+                  <div className="space-y-0.5">
+                    <span className="text-[13px] text-sky-800 font-black tabular-nums whitespace-nowrap block">
+                      {upgradePrice > 0 ? `+${upgradePrice.toLocaleString('vi-VN')}đ` : '0đ'}
                     </span>
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap inline-block ${
                         upgradePrice > 0
                           ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
                           : 'text-sky-700 bg-sky-50 border-sky-200'
                       }`}
                     >
-                      {upgradePrice > 0 ? 'Trừ 1 lượt + Phụ thu' : 'Trừ 1 lượt gói'}
+                      {upgradePrice > 0 ? 'Phụ thu' : 'Trừ lượt'}
                     </span>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <span className="text-[13px] text-gray-800 font-bold tabular-nums block">
-                      {servicePrice.toLocaleString('vi-VN')} đ
-                    </span>
-                    {upgradePrice > 0 && (
-                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                        Đã nâng cấp
-                      </span>
-                    )}
-                  </>
+                  <span className="text-[13px] text-neutral-900 font-black tabular-nums whitespace-nowrap block">
+                    {servicePrice.toLocaleString('vi-VN')}đ
+                  </span>
                 )}
               </div>
             </div>
 
             {/* Item 2: Combo if selected */}
             {selectedCombo && (
-              <div className="p-3.5 flex items-center justify-between bg-amber-50/40">
-                <div className="space-y-0.5">
+              <div className="p-3.5 flex items-start justify-between gap-3 bg-amber-50/30">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[13px] font-bold text-black">2. {selectedCombo.name}</span>
-                    {comboRedemption ? (
-                      <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
-                        ✦ Gói Mua Thêm
-                      </span>
-                    ) : selectedCombo.isUpTierUpgrade ? (
-                      <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
-                        ⭐ Nâng Cấp Gói
-                      </span>
-                    ) : null}
+                    <span className="text-[13px] font-black text-neutral-900 tracking-tight">{selectedCombo.name}</span>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                    <span className="text-emerald-700 font-bold">
-                      Thưởng chốt: +{Math.round(selectedCombo.bonus / 1000)}🪶
+                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-neutral-500 font-medium">
+                    <span>
+                      {selectedCombo.sessions || selectedCombo.remainingAfterToday?.totalRemaining || 10} buổi
                     </span>
-                    {selectedCombo.remainingAfterToday && (
-                      <>
-                        <span className="text-gray-300">•</span>
-                        <span className="text-indigo-800 font-semibold tabular-nums">
-                          Ví gói mới: ✦{' '}
-                          {selectedCombo.remainingAfterToday.paidNew + selectedCombo.remainingAfterToday.bonusNew} · ↻{' '}
-                          {selectedCombo.remainingAfterToday.paidRefill + selectedCombo.remainingAfterToday.bonusRefill}{' '}
-                          (Đủ {selectedCombo.remainingAfterToday.totalRemaining} buổi)
-                        </span>
-                      </>
-                    )}
+                    <span className="text-neutral-300">•</span>
+                    <span className="text-emerald-700 font-bold inline-flex items-center gap-0.5">
+                      Thưởng chốt: +{Math.round(selectedCombo.bonus / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </span>
                   </div>
                 </div>
-                <span className="text-[13px] text-gray-800 font-bold tabular-nums shrink-0 ml-2">
-                  {selectedCombo.price.toLocaleString('vi-VN')} đ
+                <span className="text-[13px] text-neutral-900 font-black tabular-nums whitespace-nowrap shrink-0">
+                  {selectedCombo.price.toLocaleString('vi-VN')}đ
                 </span>
               </div>
             )}
 
             {/* Item 2B: Under Lash Combo if selected */}
             {selectedUnderCombo && (
-              <div className="p-3.5 flex items-center justify-between bg-emerald-50/40">
-                <div className="space-y-0.5">
+              <div className="p-3.5 flex items-start justify-between gap-3 bg-purple-50/30">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[13px] font-bold text-black">
-                      {selectedCombo ? '3. ' : '2. '}
+                    <span className="text-[13px] font-black text-neutral-900 tracking-tight">
                       {selectedUnderCombo.name}
                     </span>
-                    <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
-                      ✦ Combo Mi Dưới
-                    </span>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                    <span className="text-emerald-700 font-bold">
-                      Thưởng chốt: +{Math.round(selectedUnderCombo.bonus / 1000)}🪶
+                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-neutral-500 font-medium">
+                    <span>{selectedUnderCombo.sessions || 10} buổi (Mi Dưới)</span>
+                    <span className="text-neutral-300">•</span>
+                    <span className="text-emerald-700 font-bold inline-flex items-center gap-0.5">
+                      Thưởng chốt: +{Math.round(selectedUnderCombo.bonus / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
                     </span>
-                    {selectedUnderCombo.remainingAfterToday && (
-                      <>
-                        <span className="text-gray-300">•</span>
-                        <span className="text-emerald-900 font-semibold tabular-nums">
-                          Ví còn: {selectedUnderCombo.remainingAfterToday.totalRemaining}/{selectedUnderCombo.sessions}{' '}
-                          buổi
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
-                <span className="text-[13px] text-gray-800 font-bold tabular-nums shrink-0 ml-2">
-                  {selectedUnderCombo.price.toLocaleString('vi-VN')} đ
+                <span className="text-[13px] text-neutral-900 font-black tabular-nums whitespace-nowrap shrink-0">
+                  {selectedUnderCombo.price.toLocaleString('vi-VN')}đ
                 </span>
               </div>
             )}
 
             {/* Item 3: Products */}
-            {cartProducts.map((p, idx) => {
-              const baseIndex = 1 + (selectedCombo ? 1 : 0) + (selectedUnderCombo ? 1 : 0);
-              return (
-                <div key={idx} className="p-3.5 flex items-center justify-between">
-                  <div>
-                    <div className="text-[13px] font-bold text-black">
-                      {baseIndex + idx + 1}. {p.productName}
-                    </div>
-                    <div className="text-[11px] text-gray-500 font-medium mt-0.5">
-                      SL: {p.quantity} · Thưởng chốt: +{Math.round(((p.cvBonus || 100000) * p.quantity) / 1000)}🪶
-                    </div>
+            {cartProducts.map((p, idx) => (
+              <div key={idx} className="p-3.5 flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="text-[13px] font-bold text-neutral-900 truncate">{p.productName}</div>
+                  <div className="text-[11px] text-neutral-500 font-medium inline-flex items-center gap-1">
+                    <span>SL: {p.quantity}</span>
+                    <span className="text-neutral-300">•</span>
+                    <span className="text-emerald-700 font-bold inline-flex items-center gap-0.5">
+                      Thưởng: +{Math.round(((p.cvBonus || 100000) * p.quantity) / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </span>
                   </div>
-                  <span className="text-[13px] text-gray-800 font-bold tabular-nums">
-                    {(p.price * p.quantity).toLocaleString('vi-VN')} đ
-                  </span>
                 </div>
-              );
-            })}
+                <span className="text-[13px] text-neutral-900 font-black tabular-nums whitespace-nowrap shrink-0">
+                  {(p.price * p.quantity).toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+            ))}
 
             {/* Subtotal & VAT Rows */}
-            <div className="p-3 bg-white space-y-1.5 border-t border-gray-100 text-[12px]">
-              <div className="flex items-center justify-between text-gray-600 font-medium">
+            <div className="p-3.5 bg-neutral-50/50 space-y-1.5 border-t border-neutral-100 text-[12px]">
+              <div className="flex items-center justify-between text-neutral-500 font-medium">
                 <span>Tạm tính dịch vụ & SP:</span>
-                <span className="text-gray-900 font-bold tabular-nums">{subtotal.toLocaleString('vi-VN')} đ</span>
+                <span className="text-neutral-900 font-bold tabular-nums whitespace-nowrap shrink-0">
+                  {subtotal.toLocaleString('vi-VN')}đ
+                </span>
               </div>
-              <div className="flex items-center justify-between text-gray-600 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <span>Thuế VAT (8%):</span>
-                  <span className="text-[9.5px] text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                    Chuẩn hóa đơn Wings
-                  </span>
-                </div>
-                <span className="text-gray-900 font-bold tabular-nums">+{vatAmount.toLocaleString('vi-VN')} đ</span>
+              <div className="flex items-center justify-between text-neutral-500 font-medium">
+                <span>Thuế VAT (8%):</span>
+                <span className="text-neutral-900 font-bold tabular-nums whitespace-nowrap shrink-0">
+                  +{vatAmount.toLocaleString('vi-VN')}đ
+                </span>
               </div>
               {tipAmount > 0 && (
                 <div className="flex items-center justify-between text-emerald-700 font-semibold">
-                  <span>♥ Tiền tip chuyên viên:</span>
-                  <span className="font-extrabold tabular-nums">+{tipAmount.toLocaleString('vi-VN')} đ</span>
+                  <span className="flex items-center gap-1">
+                    <span>♥</span>
+                    <span>Tiền tip chuyên viên:</span>
+                  </span>
+                  <span className="font-black tabular-nums whitespace-nowrap shrink-0">
+                    +{tipAmount.toLocaleString('vi-VN')}đ
+                  </span>
                 </div>
               )}
               {effectiveDiamondUsed > 0 && (
-                <div className="flex items-center justify-between text-cyan-800 font-bold bg-cyan-50/80 px-2 py-1.5 rounded-xl border border-cyan-200">
+                <div className="flex items-center justify-between text-cyan-800 font-bold bg-cyan-50/80 px-2.5 py-1.5 rounded-xl border border-cyan-200">
                   <div className="flex items-center gap-1.5">
                     <span>💎 Thanh toán Kim Cương:</span>
                     <span className="text-[10px] font-black text-cyan-800 bg-white px-1.5 py-0.5 rounded border border-cyan-300 tabular-nums">
                       {effectiveDiamondUsed} 💎
                     </span>
                   </div>
-                  <span className="font-black tabular-nums">-{diamondDiscountAmount.toLocaleString('vi-VN')} đ</span>
+                  <span className="font-black tabular-nums whitespace-nowrap shrink-0">
+                    -{diamondDiscountAmount.toLocaleString('vi-VN')}đ
+                  </span>
                 </div>
               )}
             </div>
 
             {/* Total Row */}
-            <div className="p-3.5 bg-[#FFFBEB] flex items-center justify-between border-t border-amber-200">
+            <div className="p-3.5 bg-[#FFFBEB] flex items-center justify-between border-t border-amber-200/80">
               <div>
-                <span className="text-[13px] font-extrabold text-black block">TỔNG TIỀN THANH TOÁN</span>
-                <span className="text-[10px] text-gray-500 font-medium">
+                <span className="text-[13px] font-black text-neutral-900 tracking-tight block">
+                  TỔNG TIỀN THANH TOÁN
+                </span>
+                <span className="text-[10.5px] text-neutral-500 font-medium">
                   {effectiveDiamondUsed > 0
                     ? `Đã cấn trừ ${effectiveDiamondUsed} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ)`
                     : tipAmount > 0
@@ -507,21 +489,23 @@ export function Screen12CheckoutBilling({
                       : 'Đã bao gồm 8% thuế VAT'}
                 </span>
               </div>
-              <span className="text-[19px] font-black text-[#FF9500] tabular-nums">
-                {finalGrandTotal.toLocaleString('vi-VN')} đ
+              <span className="text-[20px] font-black text-[#FF9500] tabular-nums whitespace-nowrap shrink-0 tracking-tight">
+                {finalGrandTotal.toLocaleString('vi-VN')}đ
               </span>
             </div>
 
             {/* CV Rotation Points Recording Banner */}
             {booking?.cvRotationPoints && (
-              <div className="p-3 bg-blue-50/80 border-t border-blue-100 flex items-center justify-between text-[12px]">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-blue-950">◔ Ghi nhận Vòng Xoay CV:</span>
-                  <span className="text-[11px] text-blue-700 font-medium">
-                    {booking.cvRotationBreakdown || 'Điểm thưởng cá nhân'}
+              <div className="px-3.5 py-2.5 bg-blue-50/60 border-t border-blue-100 flex items-center justify-between text-[11.5px]">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                  <span className="font-black text-blue-950 shrink-0">◔ Vòng xoay CV:</span>
+                  <span className="text-[11px] text-blue-700 font-medium truncate">
+                    {booking.cvRotationBreakdown || 'Điểm thưởng ca'}
                   </span>
                 </div>
-                <span className="font-black text-blue-800 tabular-nums">+{booking.cvRotationPoints} pts</span>
+                <span className="font-black text-blue-800 tabular-nums whitespace-nowrap shrink-0 bg-blue-100/70 border border-blue-200 px-2 py-0.5 rounded-full text-[10.5px]">
+                  +{booking.cvRotationPoints} pts
+                </span>
               </div>
             )}
           </div>
@@ -563,7 +547,7 @@ export function Screen12CheckoutBilling({
                           : 'bg-[#F2F2F7] hover:bg-gray-200 text-gray-700'
                       }`}
                     >
-                      {isSelected ? `✓ ${p.label}` : p.label}
+                      {p.label}
                     </button>
                   );
                 })}
@@ -606,10 +590,7 @@ export function Screen12CheckoutBilling({
                             : 'bg-amber-50/70 hover:bg-amber-100/70 text-amber-950 border-amber-200/80'
                         }`}
                       >
-                        <div className="text-[12px] font-black tabular-nums">
-                          {isSelected && '✓ '}
-                          {opt.label}
-                        </div>
+                        <div className="text-[12px] font-black tabular-nums">{opt.label}</div>
                         <div
                           className={`text-[10px] tabular-nums font-semibold ${
                             isSelected ? 'text-black' : 'text-amber-700'
@@ -755,7 +736,7 @@ export function Screen12CheckoutBilling({
                               : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-100'
                         }`}
                       >
-                        {isSelected && preset > 0 ? `✓ ${preset} 💎` : `${preset} 💎`}
+                        {preset} 💎
                       </button>
                     );
                   })}
@@ -773,7 +754,7 @@ export function Screen12CheckoutBilling({
                     }`}
                   >
                     {effectiveDiamondUsed === maxDiamondCanUse && maxDiamondCanUse > 0
-                      ? `✓ Hết ${maxDiamondCanUse} 💎`
+                      ? `Hết (${maxDiamondCanUse} 💎)`
                       : `Dùng hết (${maxDiamondCanUse} 💎)`}
                   </button>
                 </div>
@@ -819,11 +800,11 @@ export function Screen12CheckoutBilling({
 
         {/* Section 2: Hình Thức Thanh Toán */}
         <div>
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1.5">
-            HÌNH THỨC THANH TOÁN
+          <div className="text-[11px] font-black text-neutral-400 uppercase tracking-wider px-1 mb-1.5">
+            Hình Thức Thanh Toán
           </div>
           {finalGrandTotal === 0 ? (
-            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-center space-y-1 shadow-sm">
+            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-center space-y-1 shadow-2xs">
               <div className="text-emerald-800 font-black text-[14px] flex items-center justify-center gap-1.5">
                 <span>✓</span> ĐÃ THANH TOÁN 100% BẰNG VÍ KIM CƯƠNG
               </div>
@@ -833,7 +814,7 @@ export function Screen12CheckoutBilling({
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden divide-y divide-gray-100">
+            <div className="bg-white rounded-2xl shadow-2xs border border-neutral-200/80 overflow-hidden divide-y divide-neutral-100">
               {(
                 [
                   { id: 'VIETQR', label: 'Chuyển khoản QR (Bank)' },
@@ -847,17 +828,21 @@ export function Screen12CheckoutBilling({
                     key={m.id}
                     onClick={() => setSelectedMethod(m.id)}
                     className={`p-3.5 flex items-center justify-between cursor-pointer transition-colors ${
-                      active ? 'bg-[#F0FDF4]' : ''
+                      active ? 'bg-emerald-50/60' : 'hover:bg-neutral-50'
                     }`}
                   >
-                    <span className={`text-[14px] font-medium ${active ? 'text-[#15803D] font-bold' : 'text-black'}`}>
+                    <span
+                      className={`text-[13.5px] ${active ? 'text-emerald-800 font-black' : 'text-neutral-900 font-bold'}`}
+                    >
                       {active && '✓ '}
                       {m.label}
                     </span>
                     <span
-                      className={`text-[14px] tabular-nums ${active ? 'text-[#15803D] font-bold' : 'text-gray-400'}`}
+                      className={`text-[13.5px] tabular-nums whitespace-nowrap shrink-0 ${
+                        active ? 'text-emerald-800 font-black' : 'text-neutral-400 font-semibold'
+                      }`}
                     >
-                      {active ? `${finalGrandTotal.toLocaleString('vi-VN')} đ` : '0 đ'}
+                      {active ? `${finalGrandTotal.toLocaleString('vi-VN')}đ` : '0đ'}
                     </span>
                   </div>
                 );
@@ -870,7 +855,7 @@ export function Screen12CheckoutBilling({
         <div className="pt-1">
           <button
             onClick={handleProceed}
-            className={`w-full py-3.5 px-4 rounded-2xl font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide ${
+            className={`w-full py-3.5 px-4 rounded-2xl font-black text-[15px] shadow-sm active:scale-98 transition-transform text-center tracking-tight cursor-pointer ${
               finalGrandTotal === 0
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
                 : selectedMethod === 'VIETQR'
@@ -879,12 +864,12 @@ export function Screen12CheckoutBilling({
             }`}
           >
             {finalGrandTotal === 0
-              ? `XÁC NHẬN CHỐT ĐƠN (TRỪ ${effectiveDiamondUsed} 💎 · 0 Đ)`
+              ? `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed} 💎 · 0đ)`
               : selectedMethod === 'VIETQR'
-                ? `MỞ MÃ QR THANH TOÁN · ${finalGrandTotal.toLocaleString('vi-VN')} đ`
+                ? `Mở Mã QR Thanh Toán · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
                 : selectedMethod === 'POS'
-                  ? `XÁC NHẬN QUẸT THẺ (POS) · ${finalGrandTotal.toLocaleString('vi-VN')} đ`
-                  : `XÁC NHẬN THU TIỀN MẶT · ${finalGrandTotal.toLocaleString('vi-VN')} đ`}
+                  ? `Xác Nhận Quẹt Thẻ (POS) · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
+                  : `Xác Nhận Thu Tiền Mặt · ${finalGrandTotal.toLocaleString('vi-VN')}đ`}
           </button>
         </div>
       </div>

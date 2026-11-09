@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { CvFeather2Badge, CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
 import {
   Sparkles,
@@ -31,8 +31,19 @@ import {
   Layers,
   Crown,
   X,
+  ChevronRight,
 } from 'lucide-react';
-import { isSuperAdminRole, isCanonicalSuperAdminIdentity } from '@mos-lab/shared';
+import {
+  isSuperAdminRole,
+  isCanonicalSuperAdminIdentity,
+  checkWelcomeComboEligibility,
+  matchComboCategoryAndVolumeFromBooking,
+  WingsComboCategoryId,
+  MatchedComboPackageOption,
+  getComboPackagesForCategoryAndVolume,
+  getUnderLashComboPackages,
+} from '@mos-lab/shared';
+import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
 import { LASH_CURL_LIST } from './LashCurlData';
 import { LashCurlIllustration } from './LashCurlIllustration';
 import { LashCurlZoomModal } from './LashCurlZoomModal';
@@ -110,7 +121,7 @@ interface Screen03ConsultationMatrixProps {
       medicalProblem?: string;
       notes?: string;
     },
-    selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null,
+    selectedCombo?: BookingItem['selectedCombo'] | null,
     skuPricing?: {
       skuName?: string;
       skuPrice?: number;
@@ -119,7 +130,8 @@ interface Screen03ConsultationMatrixProps {
       cvBreakdown?: string;
       serviceType?: string;
     } | null,
-    targetBookingId?: number
+    targetBookingId?: number,
+    selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null
   ) => void;
 }
 
@@ -467,6 +479,142 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     onConfirm: () => void;
   } | null>(null);
   const [hasConfirmedUpgrade, setHasConfirmedUpgrade] = useState<boolean>(false);
+
+  // ---------------------------------------------------------------------------
+  // TÙY CHỌN MUA THÊM GÓI COMBO BẤT KỲ (MI TRÊN & MI DƯỚI)
+  // ---------------------------------------------------------------------------
+  const welcomeEligibility = useMemo(
+    () =>
+      checkWelcomeComboEligibility({
+        customerVisits: booking?.customerVisits ?? 1,
+        lashHistoryDates: (booking?.lashHistory || []).map((h) => h.date),
+      }),
+    [booking?.customerVisits, booking?.lashHistory]
+  );
+
+  const autoMatchedCombo = useMemo(
+    () =>
+      matchComboCategoryAndVolumeFromBooking({
+        serviceName: booking?.serviceName,
+        servicePrice: booking?.servicePrice,
+        material: selectedMaterial || booking?.attributes?.material,
+        volume: selectedVolume || booking?.attributes?.volume,
+        count: selectedCount || booking?.attributes?.count,
+        comboName: booking?.comboLiveStatus?.comboName,
+        serviceKey: booking?.comboLiveStatus?.serviceKey,
+      }),
+    [
+      booking?.serviceName,
+      booking?.servicePrice,
+      selectedMaterial,
+      selectedVolume,
+      selectedCount,
+      booking?.attributes?.material,
+      booking?.attributes?.volume,
+      booking?.attributes?.count,
+      booking?.comboLiveStatus?.comboName,
+      booking?.comboLiveStatus?.serviceKey,
+    ]
+  );
+
+  const [isComboCatalogModalOpen, setIsComboCatalogModalOpen] = useState<boolean>(false);
+  const [comboCatalogTarget, setComboCatalogTarget] = useState<'upper' | 'under'>('upper');
+  const [selectedNewComboPkg, setSelectedNewComboPkg] = useState<MatchedComboPackageOption | null>(null);
+  const [selectedUnderComboPkg, setSelectedUnderComboPkg] = useState<MatchedComboPackageOption | null>(null);
+
+  const quickUpperPackages = useMemo(() => {
+    return getComboPackagesForCategoryAndVolume({
+      categoryId: autoMatchedCombo.categoryId,
+      volume: autoMatchedCombo.volume,
+      welcomeEligibility,
+      includeVvipPass: false,
+    }).filter((p) => !p.isLocked);
+  }, [autoMatchedCombo.categoryId, autoMatchedCombo.volume, welcomeEligibility]);
+
+  const quickUnderPackages = useMemo(() => {
+    return getUnderLashComboPackages(welcomeEligibility).filter((p) => !p.isLocked);
+  }, [welcomeEligibility]);
+
+  const handleOpenComboModal = (target: 'upper' | 'under') => {
+    setComboCatalogTarget(target);
+    setIsComboCatalogModalOpen(true);
+  };
+
+  const handleSelectComboPackage = (pkg: MatchedComboPackageOption) => {
+    if (pkg.volume === 'under') {
+      setSelectedUnderComboPkg(pkg);
+      setHasUnderMink(true);
+    } else {
+      setSelectedNewComboPkg(pkg);
+    }
+  };
+
+  const comboPurchaseTotal = (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0);
+
+  const selectedComboObject: NonNullable<BookingItem['selectedCombo']> | null = useMemo(() => {
+    if (!selectedNewComboPkg) return null;
+    return {
+      id: selectedNewComboPkg.id,
+      name: selectedNewComboPkg.displayName,
+      price: selectedNewComboPkg.comboPrice,
+      bonus: selectedNewComboPkg.cvBonus,
+      sessions: selectedNewComboPkg.totalSessions,
+      ruleName: selectedNewComboPkg.ruleName,
+      categoryId: selectedNewComboPkg.categoryId,
+      categoryName: selectedNewComboPkg.categoryName,
+      volume: selectedNewComboPkg.volume,
+      paidNewCount: selectedNewComboPkg.comboNewCount,
+      paidRefillCount: selectedNewComboPkg.comboRefillCount,
+      bonusNewCount: selectedNewComboPkg.bonusNewCount,
+      bonusRefillCount: selectedNewComboPkg.bonusRefillCount,
+      validityMonths: selectedNewComboPkg.validityMonths,
+      retailTotal: selectedNewComboPkg.retailTotal,
+      savingsAmount: selectedNewComboPkg.savingsAmount,
+      avgPerSessionPrice: selectedNewComboPkg.avgPerSessionPrice,
+      todaySingleServiceWaived: isComboLive ? false : true,
+      isUpTierUpgrade: false,
+      originalServiceCategory: selectedNewComboPkg.categoryId,
+      recognizedRevenueToday: isComboLive ? 0 : booking?.servicePrice || 770000,
+      deferredRevenueBalance: selectedNewComboPkg.comboPrice,
+      remainingAfterToday: {
+        paidNew: selectedNewComboPkg.comboNewCount,
+        paidRefill: selectedNewComboPkg.comboRefillCount,
+        bonusNew: selectedNewComboPkg.bonusNewCount,
+        bonusRefill: selectedNewComboPkg.bonusRefillCount,
+        totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
+        totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
+        totalRemaining: selectedNewComboPkg.totalSessions,
+      },
+    };
+  }, [selectedNewComboPkg, isComboLive, booking?.servicePrice]);
+
+  const selectedUnderComboObject: NonNullable<BookingItem['selectedUnderCombo']> | null = useMemo(() => {
+    if (!selectedUnderComboPkg) return null;
+    return {
+      id: selectedUnderComboPkg.id,
+      name: selectedUnderComboPkg.displayName,
+      price: selectedUnderComboPkg.comboPrice,
+      bonus: selectedUnderComboPkg.cvBonus,
+      sessions: selectedUnderComboPkg.totalSessions,
+      ruleName: selectedUnderComboPkg.ruleName,
+      validityMonths: selectedUnderComboPkg.validityMonths,
+      retailTotal: selectedUnderComboPkg.retailTotal,
+      savingsAmount: selectedUnderComboPkg.savingsAmount,
+      avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
+      todaySingleServiceWaived: true,
+      recognizedRevenueToday: 0,
+      deferredRevenueBalance: selectedUnderComboPkg.comboPrice,
+      remainingAfterToday: {
+        paidNew: selectedUnderComboPkg.comboNewCount,
+        paidRefill: selectedUnderComboPkg.comboRefillCount,
+        bonusNew: selectedUnderComboPkg.bonusNewCount,
+        bonusRefill: selectedUnderComboPkg.bonusRefillCount,
+        totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
+        totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
+        totalRemaining: selectedUnderComboPkg.totalSessions,
+      },
+    };
+  }, [selectedUnderComboPkg]);
 
   // Tự động đồng bộ đúng dịch vụ Gói Combo & Chu kỳ 25 ngày mỗi khi mở hồ sơ khách
   useEffect(() => {
@@ -1239,7 +1387,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         medicalProblem: selectedMedicalProblem,
         notes: finalNotes,
       },
-      null,
+      selectedComboObject,
       {
         skuName: livePricingAndCvPoints.skuName,
         skuPrice: livePricingAndCvPoints.skuPrice,
@@ -1248,7 +1396,8 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         cvBreakdown: livePricingAndCvPoints.breakdownLabel,
         serviceType,
       },
-      booking?.id
+      booking?.id,
+      selectedUnderComboObject
     );
   };
 
@@ -1274,11 +1423,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   };
 
   const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
-  const customerPhone = booking?.customerPhone || '0933.779.207';
+  const rawCustomerPhone = booking?.customerPhone || '0933.779.207';
+  const customerPhone = rawCustomerPhone.replace(/\*+\s*/g, '').trim();
   const serviceName = booking?.serviceName || 'New Flawless Mink';
   const servicePrice = booking?.servicePrice ? booking.servicePrice.toLocaleString('vi-VN') : '770.000';
   const actorName = actor?.name || 'Thảo Ly';
-  const actorTierBadge = actor?.tier === 'CVLL' ? <CvFeather2Badge /> : 'CV🪶';
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-hidden select-none">
@@ -1294,9 +1443,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
       />
 
       <div className="flex-1 px-3.5 py-2.5 space-y-3 overflow-y-auto pb-8">
-        {/* 1. Customer & Consultation Header Card */}
+        {/* 1. Customer & Consultation Header Card (Bỏ pill CVL tư vấn, bỏ **** giữ phone) */}
         <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 flex items-center justify-between">
-          <div className="min-w-0 pr-2">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 truncate">
               <span className="text-[14px] font-bold text-black truncate">{customerName}</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 text-gray-700 font-bold tabular-nums">
@@ -1318,9 +1467,6 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               ({servicePrice} đ) · In: <strong className="text-emerald-600">{actorName}</strong>
             </div>
           </div>
-          <span className="bg-[#FFB400] text-black font-extrabold text-[11px] px-2.5 py-1 rounded-full shadow-xs shrink-0">
-            {actorTierBadge} Tư Vấn
-          </span>
         </div>
 
         {/* Cảnh Báo Khách Mới Hoặc Tóm Tắt Mi Thật */}
@@ -1747,7 +1893,10 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       </div>
                     )}
                     <div className="flex items-center justify-between text-neutral-400 text-[10.5px] pt-1 border-t border-white/10">
-                      <span>↻ CV🪶:</span>
+                      <span className="inline-flex items-center gap-1">
+                        <span>↻</span>
+                        <CvFeather1Badge />:
+                      </span>
                       <span className="font-bold text-amber-300 tabular-nums">
                         +{livePricingAndCvPoints.totalPoints} pts
                       </span>
@@ -1774,17 +1923,164 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
               )}
 
+              {/* NÚT MUA THÊM GÓI COMBO — iOS Inset Grouped Cell */}
+              {!selectedNewComboPkg && !selectedUnderComboPkg && (
+                <div className="pt-2 border-t border-neutral-100">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenComboModal('upper')}
+                    className="w-full p-3 rounded-2xl bg-white border border-neutral-200/90 hover:border-amber-300 flex items-center justify-between transition-all cursor-pointer active:scale-98 shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      </div>
+                      <span className="text-[13px] font-black text-neutral-800">Gói Combo</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[12px] text-neutral-400 font-bold group-hover:text-amber-700 transition-colors">
+                      <span>Chọn gói</span>
+                      <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-amber-700" />
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {/* KHỐI COMBO ĐÃ CHỌN — iOS Inset Grouped Card */}
+              {(selectedNewComboPkg || selectedUnderComboPkg) && (
+                <div className="rounded-2xl bg-white border border-neutral-200/90 shadow-2xs overflow-hidden">
+                  {/* Card Header */}
+                  <div className="px-3.5 py-2.5 bg-neutral-50/80 border-b border-neutral-150 flex items-center justify-between">
+                    <span className="text-[10.5px] font-black text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span>Combo Đã Chọn</span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full tabular-nums">
+                        +{comboPurchaseTotal.toLocaleString('vi-VN')}đ
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenComboModal('upper')}
+                        className="text-[11px] font-bold text-amber-600 hover:text-amber-800 flex items-center gap-0.5 cursor-pointer active:opacity-75 transition-opacity"
+                      >
+                        <span>Đổi</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div className="divide-y divide-neutral-100 text-[12px]">
+                    {selectedNewComboPkg && (
+                      <div className="p-3 space-y-1">
+                        {/* Hàng 1: Tên gói Combo & Giá + Xóa */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-extrabold text-neutral-900 text-[13px] tracking-tight truncate">
+                            Combo {selectedNewComboPkg.ruleName}
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0 font-variant-numeric tabular-nums">
+                            <span className="font-black text-neutral-900 text-[13px]">
+                              {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedNewComboPkg(null)}
+                              className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-rose-100 text-neutral-400 hover:text-rose-600 flex items-center justify-center text-[10px] font-black transition-colors cursor-pointer"
+                              title="Bỏ chọn gói Mi Trên"
+                              aria-label="Xóa gói Mi Trên"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Hàng 2: Tên dòng mi & thông số */}
+                        <div className="text-[12px] font-bold text-neutral-600 truncate">
+                          {selectedNewComboPkg.categoryName}{' '}
+                          {selectedNewComboPkg.volume !== 'under' ? selectedNewComboPkg.volume : 'Mi Dưới 390'}
+                        </div>
+
+                        {/* Hàng 3: Chi tiết số buổi & suất */}
+                        <div className="text-[10.5px] text-neutral-400 font-semibold tabular-nums">
+                          ✦ {selectedNewComboPkg.comboNewCount + selectedNewComboPkg.bonusNewCount} Mới · ↻{' '}
+                          {selectedNewComboPkg.comboRefillCount + selectedNewComboPkg.bonusRefillCount} Dặm (
+                          {selectedNewComboPkg.totalSessions} buổi)
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedUnderComboPkg && (
+                      <div className="p-3 space-y-1">
+                        {/* Hàng 1: Tên gói Combo & Giá + Xóa */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-extrabold text-neutral-900 text-[13px] tracking-tight truncate">
+                            Combo {selectedUnderComboPkg.ruleName} · Mi Dưới
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0 font-variant-numeric tabular-nums">
+                            <span className="font-black text-neutral-900 text-[13px]">
+                              {selectedUnderComboPkg.comboPrice.toLocaleString('vi-VN')}đ
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedUnderComboPkg(null)}
+                              className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-rose-100 text-neutral-400 hover:text-rose-600 flex items-center justify-center text-[10px] font-black transition-colors cursor-pointer"
+                              title="Bỏ chọn gói Mi Dưới"
+                              aria-label="Xóa gói Mi Dưới"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Hàng 2: Tên dòng mi & thông số */}
+                        <div className="text-[12px] font-bold text-neutral-600 truncate">
+                          {selectedUnderComboPkg.categoryName} · Mi Dưới 390
+                        </div>
+
+                        {/* Hàng 3: Chi tiết số buổi & suất */}
+                        <div className="text-[10.5px] text-neutral-400 font-semibold tabular-nums">
+                          ✦ {selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.bonusNewCount} Mới · ↻{' '}
+                          {selectedUnderComboPkg.comboRefillCount + selectedUnderComboPkg.bonusRefillCount} Dặm (
+                          {selectedUnderComboPkg.totalSessions} buổi)
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bottom Row: Thưởng Chuyên Viên */}
+                    {(selectedNewComboPkg?.cvBonus || 0) + (selectedUnderComboPkg?.cvBonus || 0) > 0 && (
+                      <div className="px-3 py-2 bg-neutral-50/50 flex items-center justify-between text-[11px]">
+                        <span className="text-neutral-500 font-medium">Thưởng chuyên viên:</span>
+                        <span className="inline-flex items-center gap-0.5 text-emerald-700 font-black bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full tabular-nums">
+                          +
+                          {Math.round(
+                            ((selectedNewComboPkg?.cvBonus || 0) + (selectedUnderComboPkg?.cvBonus || 0)) / 1000
+                          )}
+                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {isComboLive && (
                 <button
                   type="button"
                   onClick={handleSubmit}
                   className={`w-full py-2.5 px-3 rounded-xl font-extrabold text-[12px] flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer ${
-                    totalUpgradeAmount > 0
+                    totalUpgradeAmount > 0 || comboPurchaseTotal > 0
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-900/30'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
                 >
-                  {totalUpgradeAmount > 0 ? (
+                  {comboPurchaseTotal > 0 ? (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 fill-current shrink-0" />
+                      <span>
+                        Nhận Ca & Mua Combo (+{(totalUpgradeAmount + comboPurchaseTotal).toLocaleString('vi-VN')} đ)
+                      </span>
+                    </>
+                  ) : totalUpgradeAmount > 0 ? (
                     <>
                       <Sparkles className="w-3.5 h-3.5 fill-current shrink-0" />
                       <span>Nhận Ca & Nâng Cấp (+{totalUpgradeAmount.toLocaleString('vi-VN')} đ)</span>
@@ -1795,6 +2091,17 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       <span>Nhận Ca (Trừ 1 suất combo · 0đ)</span>
                     </>
                   )}
+                </button>
+              )}
+
+              {!isComboLive && comboPurchaseTotal > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="w-full py-2.5 px-3 rounded-xl font-extrabold text-[12px] flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black shadow-amber-900/30"
+                >
+                  <Sparkles className="w-3.5 h-3.5 fill-current shrink-0" />
+                  <span>Nhận Ca & Mua Combo (+{comboPurchaseTotal.toLocaleString('vi-VN')} đ)</span>
                 </button>
               )}
             </div>
@@ -3038,7 +3345,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             onClick={handleSubmit}
             className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[14px] shadow-md active:scale-98 transition-transform text-center cursor-pointer"
           >
-            LƯU TƯ VẤN & BẮT ĐẦU LÀM MI
+            {comboPurchaseTotal > 0
+              ? `LƯU TƯ VẤN & MUA COMBO (+${comboPurchaseTotal.toLocaleString('vi-VN')} Đ)`
+              : 'LƯU TƯ VẤN & BẮT ĐẦU LÀM MI'}
           </button>
         </div>
       </div>
@@ -3119,8 +3428,10 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             </div>
 
             <div className="space-y-1.5 pt-1">
-              <div className="text-[10.5px] font-extrabold text-neutral-800 uppercase tracking-wide">
-                Chọn lý do CV🪶 Override (Bắt buộc ghi nhận):
+              <div className="text-[10.5px] font-extrabold text-neutral-800 uppercase tracking-wide flex items-center gap-1">
+                <span>Chọn lý do</span>
+                <CvFeather1Badge />
+                <span>Override (Bắt buộc ghi nhận):</span>
               </div>
               <div className="space-y-1.5">
                 {pendingOverride.reasons.map((reason) => {
@@ -3287,6 +3598,27 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           </div>
         </div>
       )}
+
+      {/* Modal Bảng Giá 13 Dòng Mi Combo & Bàn Tư Vấn (Mi Trên & Mi Dưới) */}
+      <ComboCatalogConsultModal
+        open={isComboCatalogModalOpen}
+        onClose={() => setIsComboCatalogModalOpen(false)}
+        initialCategoryId={comboCatalogTarget === 'under' ? 'Classic_Volume' : autoMatchedCombo.categoryId}
+        initialVolume={comboCatalogTarget === 'under' ? 'under' : autoMatchedCombo.volume}
+        welcomeEligibility={welcomeEligibility}
+        selectedPackageId={comboCatalogTarget === 'under' ? selectedUnderComboPkg?.id : selectedNewComboPkg?.id}
+        initialSelectedUpperPkg={selectedNewComboPkg}
+        initialSelectedUnderPkg={selectedUnderComboPkg}
+        todaySingleServicePrice={booking?.servicePrice || 770000}
+        onSelectPackage={handleSelectComboPackage}
+        onApplyPackages={({ upperPkg, underPkg }) => {
+          setSelectedNewComboPkg(upperPkg);
+          setSelectedUnderComboPkg(underPkg);
+          if (underPkg) {
+            setHasUnderMink(true);
+          }
+        }}
+      />
     </div>
   );
 }

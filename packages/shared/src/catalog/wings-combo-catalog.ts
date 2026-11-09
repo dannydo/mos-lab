@@ -6381,10 +6381,13 @@ export function resolveValidVolumeForCategory(
 export function getUnderLashComboPackages(
   welcomeEligibility?: WelcomeComboEligibilityResult
 ): MatchedComboPackageOption[] {
-  return getComboPackagesForCategoryAndVolume({
-    categoryId: 'Classic_Volume',
+  const pkgs = getComboPackagesForCategoryAndVolume({
+    categoryId: 'FlawlessMink',
     volume: 'under',
     welcomeEligibility,
     includeVvipPass: false,
   });
+  // Chuẩn hóa 4 tier tiêu chuẩn Wings (2+1, 4+1, 7+3, 10+6)
+  const standardRuleNames = ['2 tặng 1', '4 tặng 1', '7 tặng 3', '10 tặng 6'];
+  return pkgs.filter((p) => standardRuleNames.includes(p.ruleName));
 }

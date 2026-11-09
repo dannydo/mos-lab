@@ -81,8 +81,13 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
     };
   }
   if (role === 'CVL') {
-    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 46272 : 46272;
-    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Thảo Ly';
+    const isThaoLy =
+      isActualCvUser &&
+      (Number(loggedInUser?.legacyStaffId) === 46272 || loggedInUser?.displayName?.toLowerCase()?.includes('thảo ly'));
+    const defaultStaffId = isThaoLy ? 46272 : 13783;
+    const defaultName = isThaoLy ? 'Thảo Ly' : 'Khanh Cao';
+    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || defaultStaffId : defaultStaffId;
+    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : defaultName;
     return {
       staffId,
       name,
@@ -113,9 +118,14 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
   };
 }
 
-export function useIosAppState(initialStep: number = 1, enabled: boolean = true, initialRole: IosUserRole = 'CVL') {
+export function useIosAppState(
+  initialStep: number = 1,
+  enabled: boolean = true,
+  initialRole: IosUserRole = 'CVL',
+  initialBookingId?: number
+) {
   const [bookings, setBookings] = useState<BookingItem[]>(INITIAL_BOOKINGS);
-  const [activeBookingId, setActiveBookingId] = useState<number>(336695);
+  const [activeBookingId, setActiveBookingId] = useState<number>(initialBookingId || 336695);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
   const [consultationReturnStep, setConsultationReturnStep] = useState<number | null>(null);
 
@@ -304,7 +314,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
     return list.map((b) => {
       const tab = resolveCustomerBookingTab(b, activeServicingBooking?.id);
       const canViewFull = isAdmin || canViewUnmaskedCustomerPhone(role);
-      const maskedPhone = !canViewFull ? maskPhoneNumber(b.customerPhone) : b.customerPhone;
+      const rawMasked = !canViewFull ? maskPhoneNumber(b.customerPhone) : b.customerPhone;
+      const maskedPhone = rawMasked ? rawMasked.replace(/\*+\s*/g, '').trim() : '';
 
       if (tab === 'DONE' && b.status !== 'DONE') {
         return {
@@ -888,13 +899,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       medicalProblem?: string;
       notes?: string;
     },
-    selectedCombo?: {
-      id: string;
-      name: string;
-      price: number;
-      bonus: number;
-      sessions: number;
-    } | null,
+    selectedCombo?: BookingItem['selectedCombo'] | null,
     skuPricing?: {
       skuName?: string;
       skuPrice?: number;
@@ -903,7 +908,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       cvBreakdown?: string;
       serviceType?: string;
     } | null,
-    targetBookingId?: number
+    targetBookingId?: number,
+    selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null
   ) => {
     const targetId = targetBookingId !== undefined ? Number(targetBookingId) : activeBookingId;
     setActiveBookingId(targetId);
@@ -927,6 +933,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       prev.map((b) => {
         if (Number(b.id) !== targetId) return b;
         const nextCombo = selectedCombo !== undefined ? selectedCombo : b.selectedCombo || null;
+        const nextUnderCombo = selectedUnderCombo !== undefined ? selectedUnderCombo : b.selectedUnderCombo || null;
         const nextServiceName =
           skuPricing?.skuName ||
           (b.serviceName && !b.serviceName.toLowerCase().includes('any') ? b.serviceName : 'New Hyperlight 550');
@@ -939,7 +946,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
         const originalBookedServicePrice = b.originalBookedServicePrice || b.servicePrice;
 
         const isClientComboLive = Boolean(b.comboLiveStatus?.isComboLive);
-        const comboPrice = nextCombo ? nextCombo.price : 0;
+        const comboPrice = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
         const effectiveServiceTotal = nextCombo ? 0 : isClientComboLive ? nextUpgradePrice : nextServicePrice;
         const productTotal = (b.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
         const subtotal = effectiveServiceTotal + comboPrice + productTotal;
@@ -960,6 +967,7 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
           cvRotationPoints: skuPricing?.cvPoints ?? b.cvRotationPoints,
           cvRotationBreakdown: skuPricing?.cvBreakdown ?? b.cvRotationBreakdown,
           selectedCombo: nextCombo,
+          selectedUnderCombo: nextUnderCombo,
           checkInStaffId: b.checkInStaffId || actor.staffId,
           checkInStaffName: b.checkInStaffName || actor.name,
           checkInStaffTier: b.checkInStaffTier || actor.tier,
@@ -989,6 +997,8 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       bookingId: targetId,
       attributes,
       selectedCombo: selectedCombo !== undefined ? selectedCombo : targetBooking.selectedCombo || null,
+      selectedUnderCombo:
+        selectedUnderCombo !== undefined ? selectedUnderCombo : targetBooking.selectedUnderCombo || null,
       skuPricing,
       nextStatus: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
     });
@@ -1379,13 +1389,30 @@ export function useIosAppState(initialStep: number = 1, enabled: boolean = true,
       const checkOutShare = Math.round(tipAmount * 0.1);
       const ccShare = checkInShare + checkOutShare;
 
+      const fallbackEffectiveService = prev.selectedCombo
+        ? prev.selectedCombo.todaySingleServiceWaived
+          ? 0
+          : prev.servicePrice
+        : prev.comboRedemption
+          ? prev.comboRedemption.totalCustomerPayToday
+          : prev.upgradePrice && prev.upgradePrice > 0
+            ? prev.upgradePrice
+            : prev.comboLiveStatus?.isComboLive
+              ? 0
+              : prev.servicePrice;
+      const fallbackProductTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
+      const fallbackComboTotal =
+        (prev.selectedCombo ? prev.selectedCombo.price : 0) +
+        (prev.selectedUnderCombo ? prev.selectedUnderCombo.price : 0);
+      const fallbackSubtotal = fallbackEffectiveService + fallbackComboTotal + fallbackProductTotal;
+
       const currentBilling = prev.billing || {
-        subtotal: prev.servicePrice,
+        subtotal: fallbackSubtotal,
         vatRate: 0.08,
-        vatAmount: Math.round(prev.servicePrice * 0.08),
-        serviceTotal: prev.servicePrice,
-        comboTotal: 0,
-        productTotal: 0,
+        vatAmount: Math.round(fallbackSubtotal * 0.08),
+        serviceTotal: fallbackEffectiveService,
+        comboTotal: fallbackComboTotal,
+        productTotal: fallbackProductTotal,
         paymentMethod: method,
         transferProofPhoto: undefined as string | undefined,
         zaloConsent: undefined as NonNullable<BookingItem['billing']>['zaloConsent'],

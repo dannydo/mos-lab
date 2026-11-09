@@ -1,27 +1,68 @@
 import React from 'react';
+import { Feather } from 'lucide-react';
 
 /**
- * Hiển thị nhãn 🪶CV🪶 với lông trái được lật đối xứng ngang (-scale-x-100)
- * để tạo sự cân xứng tuyệt đối, thẩm mỹ theo chỉ đạo Danny.
+ * Biểu tượng lông vũ Vector thanh thoát chuẩn Wings
+ * Thay thế hoàn toàn emoji Unicode U+1FAB6 (bị hiển thị thành ổ bánh mì / baguette trên macOS / iOS)
  */
-export function CvFeather2Badge({ className = '' }: { className?: string }) {
+export function FeatherSvg({
+  className = 'w-3 h-3 text-amber-400',
+  flip = false,
+  strokeWidth = 2.4,
+}: {
+  className?: string;
+  flip?: boolean;
+  strokeWidth?: number;
+}) {
   return (
-    <span className={`inline-flex items-center justify-center ${className}`}>
-      <span className="inline-block -scale-x-100 transform select-none">🪶</span>
-      <span>CV</span>
-      <span className="inline-block select-none">🪶</span>
+    <Feather
+      className={`inline-block shrink-0 select-none ${flip ? '-scale-x-100' : ''} ${className}`}
+      strokeWidth={strokeWidth}
+    />
+  );
+}
+
+/**
+ * Hiển thị nhãn 🪶CV🪶 với 2 lông vũ hai bên cân xứng tuyệt đối
+ */
+export function CvFeather2Badge({
+  className = '',
+  featherClass = 'w-3 h-3 text-amber-400',
+  textClass = '',
+}: {
+  className?: string;
+  featherClass?: string;
+  textClass?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center gap-0.5 align-middle select-none font-black ${className}`}
+    >
+      <FeatherSvg className={featherClass} flip />
+      <span className={textClass}>CV</span>
+      <FeatherSvg className={featherClass} />
     </span>
   );
 }
 
 /**
- * Hiển thị nhãn CV🪶
+ * Hiển thị nhãn CV🪶 với 1 lông vũ vector bên phải
  */
-export function CvFeather1Badge({ className = '' }: { className?: string }) {
+export function CvFeather1Badge({
+  className = '',
+  featherClass = 'w-3 h-3 text-amber-400',
+  textClass = '',
+}: {
+  className?: string;
+  featherClass?: string;
+  textClass?: string;
+}) {
   return (
-    <span className={`inline-flex items-center justify-center ${className}`}>
-      <span>CV</span>
-      <span className="inline-block select-none">🪶</span>
+    <span
+      className={`inline-flex items-center justify-center gap-0.5 align-middle select-none font-black ${className}`}
+    >
+      <span className={textClass}>CV</span>
+      <FeatherSvg className={featherClass} />
     </span>
   );
 }

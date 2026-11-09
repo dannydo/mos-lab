@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 
 interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
@@ -15,7 +16,7 @@ interface Screen14ThermalReceiptDoneProps {
 
 export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBack }: Screen14ThermalReceiptDoneProps) {
   const customerName = booking?.customerName || 'Chị Trúc';
-  const customerPhone = booking?.customerPhone || '0933.779.207';
+  const customerPhone = (booking?.customerPhone || '0933.779.207').replace(/\*+\s*/g, '').trim();
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
   const checkInStaff = booking?.checkInStaffName || assignedStaff;
   const checkOutStaff = booking?.checkOutStaffName || assignedStaff;
@@ -31,18 +32,21 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
     ? 0
     : comboRedemption
       ? comboRedemption.totalCustomerPayToday
-      : servicePrice;
+      : booking?.upgradePrice && booking.upgradePrice > 0
+        ? booking.upgradePrice
+        : servicePrice;
+  const vatRate = booking?.billing?.vatRate ?? 0.08;
+  const subtotal =
+    booking?.billing?.subtotal !== undefined
+      ? booking.billing.subtotal
+      : effectiveServiceCharge +
+        (selectedCombo ? selectedCombo.price : 0) +
+        cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
   const grandTotal =
     booking?.billing?.grandTotal !== undefined
       ? booking.billing.grandTotal
-      : Math.max(
-          0,
-          effectiveServiceCharge +
-            (selectedCombo ? selectedCombo.price : 0) +
-            cartProducts.reduce((s, p) => s + p.price * p.quantity, 0) +
-            tipAmount -
-            diamondDiscountAmount
-        );
+      : Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount);
 
   const comboBonus = selectedCombo?.bonus || 0;
   const serumBonus = cartProducts.reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
@@ -68,10 +72,16 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
             <span>Quay lại</span>
           </button>
         )}
-        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight">
-          {booking?.status === 'DONE'
-            ? 'Chi Tiết Hóa Đơn & Ghi Nhận Thưởng'
-            : `Hoàn Tất Ca Làm & Ghi Nhận Thưởng ${isCheckoutStaffCc ? 'CC' : 'CV🪶'}`}
+        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight flex items-center justify-center gap-1">
+          {booking?.status === 'DONE' ? (
+            'Chi Tiết Hóa Đơn & Ghi Nhận Thưởng'
+          ) : isCheckoutStaffCc ? (
+            'Hoàn Tất Ca Làm & Ghi Nhận Thưởng CC'
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              Hoàn Tất Ca Làm & Ghi Nhận Thưởng <CvFeather1Badge />
+            </span>
+          )}
         </h1>
       </div>
 
@@ -109,7 +119,9 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
           </div>
           <div className="flex items-center justify-between">
             <span>Chuyên Viên làm mi:</span>
-            <strong className="font-bold text-black">{assignedStaff} (CV🪶)</strong>
+            <strong className="font-bold text-black inline-flex items-center gap-1">
+              {assignedStaff} (<CvFeather1Badge />)
+            </strong>
           </div>
           <div className="flex items-center justify-between border-t border-gray-200 pt-1 text-[10.5px]">
             <span>
@@ -212,6 +224,19 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
               </span>
             </div>
           ))}
+
+          {/* Thuế VAT (8%) chuẩn hóa đơn Wings */}
+          {vatAmount > 0 && (
+            <div className="flex justify-between items-center text-gray-700 font-semibold pt-1 border-t border-gray-100">
+              <span className="flex items-center gap-1">
+                <span>Thuế VAT ({(vatRate * 100).toFixed(0)}%)</span>
+                <span className="text-[9px] text-amber-800 bg-amber-50 px-1 py-0.5 rounded border border-amber-200">
+                  Chuẩn hóa đơn Wings
+                </span>
+              </span>
+              <span className="tabular-nums font-bold text-black">+{vatAmount.toLocaleString('vi-VN')} đ</span>
+            </div>
+          )}
 
           {/* Tiền Tip */}
           {tipAmount > 0 && (
@@ -334,7 +359,15 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
           return (
             <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 space-y-1.5 text-[11px]">
               <div className="flex items-center justify-between font-black text-emerald-950 text-[12px]">
-                <span>{isCheckoutStaffCc ? 'Quyền Lợi CC khi checkout' : 'Quyền Lợi CV🪶'}</span>
+                <span>
+                  {isCheckoutStaffCc ? (
+                    'Quyền Lợi CC khi checkout'
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      Quyền Lợi <CvFeather1Badge />
+                    </span>
+                  )}
+                </span>
                 <span
                   className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#16A34A] text-white text-[11px] font-black shadow-xs"
                   title="Done!"
@@ -350,20 +383,35 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
                 {comboBonus > 0 && (
                   <div className="flex justify-between">
                     <span>• Thưởng chốt Gói Combo:</span>
-                    <span className="font-bold tabular-nums">+{Math.round(comboBonus / 1000)}🪶</span>
+                    <span className="font-bold tabular-nums inline-flex items-center gap-0.5">
+                      +{Math.round(comboBonus / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </span>
                   </div>
                 )}
                 {serumBonus > 0 && (
                   <div className="flex justify-between">
                     <span>• Thưởng bán Dưỡng mi Yeppeum:</span>
-                    <span className="font-bold tabular-nums">+{Math.round(serumBonus / 1000)}🪶</span>
+                    <span className="font-bold tabular-nums inline-flex items-center gap-0.5">
+                      +{Math.round(serumBonus / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </span>
                   </div>
                 )}
               </div>
               <div className="pt-1.5 border-t border-emerald-300/80 flex justify-between items-center font-black text-emerald-950 text-[12px]">
                 <span>TỔNG THƯỞNG:</span>
-                <span className="tabular-nums text-[13px] text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300">
-                  {comboBonus + serumBonus > 0 ? `+${Math.round((comboBonus + serumBonus) / 1000)}🪶` : '0🪶'}
+                <span className="tabular-nums text-[13px] text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300 inline-flex items-center gap-0.5">
+                  {comboBonus + serumBonus > 0 ? (
+                    <>
+                      +{Math.round((comboBonus + serumBonus) / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </>
+                  ) : (
+                    <>
+                      0<FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </>
+                  )}
                 </span>
               </div>
             </div>
@@ -373,8 +421,10 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
 
       {/* Bottom Action Area */}
       <div className="pt-3 space-y-2">
-        <div className="text-center text-[12px] font-bold text-[#22C55E]">
-          ✓ Đã ghi nhận check_in_staff_id & check_out_staff_id = {checkOutStaff} ({isCheckoutStaffCc ? 'CC' : 'CV🪶'})
+        <div className="text-center text-[12px] font-bold text-[#22C55E] flex items-center justify-center gap-1">
+          <span>✓ Đã ghi nhận check_in_staff_id & check_out_staff_id = {checkOutStaff} (</span>
+          {isCheckoutStaffCc ? 'CC' : <CvFeather1Badge />}
+          <span>)</span>
         </div>
         <button
           onClick={booking?.status === 'DONE' ? onBack || onFinishOrder : onFinishOrder}

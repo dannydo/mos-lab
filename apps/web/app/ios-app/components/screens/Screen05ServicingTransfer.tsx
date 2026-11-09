@@ -11,7 +11,7 @@ interface Screen05ServicingTransferProps {
 
 export function Screen05ServicingTransfer({ booking, onTransferToCv }: Screen05ServicingTransferProps) {
   const customerName = booking?.customerName || 'Quyên';
-  const customerPhone = booking?.customerPhone || '0937.554.430';
+  const customerPhone = (booking?.customerPhone || '0937.554.430').replace(/\*+\s*/g, '').trim();
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
   const assignedBed = booking?.assignedBed || 'GIƯỜNG 03';
 

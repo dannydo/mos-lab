@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, ZoomIn, Check, Sparkles, User, ShieldCheck } from 'lucide-react';
 import { LashHistoryItem, LashHistoryPhoto } from '../../state/mockData';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 
 interface Screen02LashHistorySheetProps {
   item: LashHistoryItem | null;
@@ -220,8 +221,8 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                         />
                       )}
                     </div>
-                    <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-amber-400 text-amber-300 text-[7.5px] font-black leading-none">
-                      CV🪶
+                    <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-amber-400 text-amber-300 text-[7.5px] font-black leading-none inline-flex items-center">
+                      <CvFeather1Badge />
                     </span>
                   </div>
                   <span className="text-[11px] font-extrabold truncate w-full px-0.5 text-amber-300">
@@ -247,8 +248,8 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                         />
                       )}
                     </div>
-                    <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-purple-400 text-purple-300 text-[7.5px] font-black leading-none">
-                      CV🪶
+                    <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-neutral-900 border border-purple-400 text-purple-300 text-[7.5px] font-black leading-none inline-flex items-center">
+                      <CvFeather1Badge />
                     </span>
                   </div>
                   <span className="text-[11px] font-extrabold truncate w-full px-0.5 text-purple-300">
@@ -278,8 +279,8 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                     </div>
                     {/* Badge if CVL */}
                     {(staff.checkOutBy?.tier === 'CVL' || staff.checkOutBy?.role?.includes('CV')) && (
-                      <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-emerald-400 text-emerald-300 text-[7.5px] font-black px-1 py-0.2 rounded-full leading-tight">
-                        CV🪶
+                      <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-emerald-400 text-emerald-300 text-[7.5px] font-black px-1 py-0.2 rounded-full leading-tight inline-flex items-center">
+                        <CvFeather1Badge />
                       </span>
                     )}
                     {(staff.checkOutBy?.tier === 'CC' || staff.checkOutBy?.role === 'CC') && (
@@ -292,11 +293,15 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                     {staff.checkOutBy?.name || 'Thảo Ly'}
                   </span>
                   <span className="text-[9px] text-emerald-400 font-bold">
-                    {staff.checkOutBy?.tier === 'CVL' || staff.checkOutBy?.role?.includes('CV')
-                      ? 'CV🪶 Tự chốt'
-                      : staff.checkOutBy?.role === 'CC'
-                        ? 'CC Sảnh'
-                        : 'Checkout'}
+                    {staff.checkOutBy?.tier === 'CVL' || staff.checkOutBy?.role?.includes('CV') ? (
+                      <span className="inline-flex items-center gap-0.5">
+                        <CvFeather1Badge /> Tự chốt
+                      </span>
+                    ) : staff.checkOutBy?.role === 'CC' ? (
+                      'CC Sảnh'
+                    ) : (
+                      'Checkout'
+                    )}
                   </span>
                 </div>
               </div>

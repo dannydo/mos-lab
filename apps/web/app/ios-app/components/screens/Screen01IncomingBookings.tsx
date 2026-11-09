@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BookingItem, resolveStaffAvatarUrl, resolveCustomerBookingTab } from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
-import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
 import {
   resolveDisplayServiceName,
@@ -519,7 +519,9 @@ export function Screen01IncomingBookings({
           className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 hover:border-amber-400/50 active:scale-95 transition-all cursor-pointer shadow-xs"
           title="Mở hồ sơ & chuyển vai trò"
         >
-          <span className="text-[10.5px] font-black text-amber-400">{isCvll ? <CvFeather2Badge /> : 'CV🪶'}</span>
+          <span className="text-[10.5px] font-black text-amber-400">
+            {isCvll ? <CvFeather2Badge /> : <CvFeather1Badge />}
+          </span>
           <div className="w-6 h-6 rounded-full overflow-hidden border border-amber-400/80 bg-neutral-800 shrink-0">
             <img
               src={actor?.avatar || 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png'}

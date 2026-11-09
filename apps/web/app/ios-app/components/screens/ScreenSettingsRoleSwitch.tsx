@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosUserRole } from '../ui-kit/IosTabBar';
-import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { thermalPrinterService, PrinterConnectionType } from '../../services/thermalPrinterService';
 import {
   UserCheck,
@@ -39,7 +39,12 @@ export function ScreenSettingsRoleSwitch({
   const roles: Array<{ id: IosUserRole; name: React.ReactNode; desc: string; icon: any }> = [
     {
       id: 'CVL',
-      name: 'CV🪶 · Chuyên Viên Tự Chủ (Thảo Ly)',
+      name: (
+        <span className="inline-flex items-center gap-1">
+          <CvFeather1Badge />
+          <span>· Chuyên Viên Tự Chủ (Thảo Ly)</span>
+        </span>
+      ),
       desc: 'Chỉ xem 1 khách kế tiếp (Đầu tua) & khách book của mình, tự Check-in, Tư vấn gói Combo, bán Dưỡng mi & tự Checkout (Hưởng 90% Tip + Thưởng bậc thang CV🪶)',
       icon: Sparkles,
     },
@@ -232,7 +237,9 @@ export function ScreenSettingsRoleSwitch({
         {/* App Info Section */}
         <div>
           <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
-            <span>Quy Chế Ghi Nhận Thưởng CV🪶 &amp;</span>
+            <span>Quy Chế Ghi Nhận Thưởng</span>
+            <CvFeather1Badge />
+            <span>&amp;</span>
             <CvFeather2Badge />
             <span>(Điều Răn CV-002 &amp; TIP-001)</span>
           </h3>
@@ -257,7 +264,11 @@ export function ScreenSettingsRoleSwitch({
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-purple-500" />
-                <span className="font-medium text-[#1C1C1E]">Thang thưởng CV🪶 (Khác CC)</span>
+                <span className="font-medium text-[#1C1C1E] flex items-center gap-1">
+                  <span>Thang thưởng</span>
+                  <CvFeather1Badge />
+                  <span>(Khác CC)</span>
+                </span>
               </div>
               <span className="font-semibold text-[#1C1C1E]">Combo 50K–200K · Serum 1K–100K</span>
             </div>

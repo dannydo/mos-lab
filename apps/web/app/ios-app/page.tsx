@@ -35,11 +35,13 @@ function IosAppInner() {
   const searchParams = useSearchParams();
   const stepStr = searchParams.get('step');
   const roleParam = searchParams.get('role')?.toUpperCase() as IosUserRole | undefined;
+  const bookingIdStr = searchParams.get('bookingId');
   const initialStep = stepStr ? parseInt(stepStr, 10) : 1;
+  const initialBookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : undefined;
   const initialRole: IosUserRole =
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
 
-  const state = useIosAppState(initialStep, authorized, initialRole);
+  const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -414,6 +416,19 @@ function IosAppInner() {
             const win = window.open(careerUrl, '_blank');
             if (!win || win.closed || typeof win.closed === 'undefined') {
               window.location.href = careerUrl;
+            }
+          }}
+          onLogout={() => {
+            setIsProfileSheetOpen(false);
+            if (typeof window !== 'undefined') {
+              window.localStorage.removeItem('mos_token');
+              window.localStorage.removeItem('mos_user');
+              window.localStorage.removeItem('mos_omicall_auto_init');
+              window.localStorage.removeItem('mos_original_token');
+              window.localStorage.removeItem('mos_original_user');
+              window.localStorage.removeItem('mos_original_omicall_auto_init');
+              window.localStorage.removeItem('mos_impersonation_audit_id');
+              window.location.replace('/login');
             }
           }}
         />

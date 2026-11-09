@@ -68,6 +68,7 @@
      - `Chuyên Viên Kỹ Thuật`: Danh xưng trang trọng cho cấp bậc `CV`.
      - `Thiên Thần`: Danh xưng thân thương, trìu mến dành cho tập thể nhân sự tại Wings.
      - `Nghệ Nhân Mi`: Danh xưng dành cho các cấp bậc tay nghề tinh hoa (Artisan / Master Lash Artisan).
+   - **Quy Chuẩn Hiển Thị Vector Feather (UI Vector Feather Invariant)**: Ký tự Unicode Feather `🪶` (U+1FAB6) trên font Apple Color Emoji của macOS/iOS bị render thành màu nâu sọc vằn, ở kích cỡ nhỏ (10-14px) nhìn giống ổ bánh mì baguette (`🥖`) hoặc điếu thuốc, làm tổn hại đến sự sang trọng, thanh thoát của thương hiệu Wings. Do đó, trên toàn bộ giao diện Web và iOS App, **BẮT BUỘC sử dụng component vector `<CvFeather1Badge />` và `<CvFeather2Badge />`** (kèm `<FeatherSvg />` từ `lucide-react`) với màu vàng kim (`text-amber-400` / `#FFB400` hoặc `#F59E0B`) và đường nét vector sắc sảo, tuyệt đối không render chuỗi ký tự emoji thô `'🪶'` trên UI người dùng.
    - **Ngoại Lệ Kỹ Thuật Duy Nhất**: Chỉ duy nhất chuỗi SQL query `ugl.user_group_name LIKE '%Thợ%'` trong legacy database query (để khớp tên nhóm người dùng lịch sử trong MySQL cũ) được phép tồn tại ngầm dưới backend và tuyệt đối không bao giờ được lộ ra ngoài UI.
 9. **Zero-Trust Admin-Only Default for New Features & `/ios-app` `CV🪶` Customer Privacy Invariant (Kinh Thánh mOS Điều răn UI-010)**:
    - **Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới (4-Layer Zero-Trust)**: Khi bất kỳ tính năng, màn hình (`/dashboard/*`), mục menu hay API mới nào được thiết kế và đưa vào mOS, mặc định **chỉ duy nhất `admin` / `super_admin`** được phép truy cập. Tất cả các vai trò khác đều bị khóa mặc định ở cả 4 lớp: (1) Sidebar (`sidebar.config.tsx`) ẩn mọi mục chưa đăng ký mở quyền; (2) Route Guard (`DashboardLayout` + `isNonAdminAllowedDashboardPath`) chặn gõ URL trực tiếp; (3) Backend API Guard (`resolveMenuKeysForApiPath` -> `__ADMIN_ONLY_DEFAULT__`) trả về `403 Forbidden`; (4) Chỉ mở cho vai trò khác khi có chỉ đạo tường minh từ Danny.
@@ -318,7 +319,14 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - **Chỉ đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order.order_state = 'Completed'` trong khoảng thời gian được lọc.
 - **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` trực tiếp khi tính `SUM(st.tip_amount)`, tránh hiện tượng đơn hàng có nhiều dịch vụ làm nhân bản tổng tiền tip. Hãy query trực tiếp từ `staff_tip` JOIN `order` theo `st.user_id` hoặc `st.id`.
 
-## 5. CC Daily Sales Bonus Calculation Pipeline (Immutable — Finalized 2026-08-05)
+## 5. Quy Chuẩn Thuế VAT 8% Tại Checkout (Kinh Thánh mOS Điều Răn VAT-001)
+
+- **Mọi khoản thu đều chịu 8% VAT (Trừ Tip)**: Toàn bộ dịch vụ lẻ (Single Service), phí phụ thu nâng cấp dịch vụ từ gói combo (Upgrade Price), gói combo mua mới và sản phẩm bán kèm (dưỡng mi, serum) đều bắt buộc chịu 8% thuế VAT chuẩn hóa đơn.
+- **Công thức Grand Total**: `Grand Total = Tạm tính (Subtotal) + 8% VAT (Math.round(subtotal * 0.08)) + Tiền Tip (♥) - Cấn trừ Kim Cương (💎)`.
+- **Miễn trừ VAT tuyệt đối cho Tiền Tip**: Tiền Tip của khách trao tặng nhân sự tuyệt đối không chịu thuế VAT, chuyển đủ 100% vào cơ cấu phân bổ thưởng nhân sự (CV 70%, In/Out 20%, Quỹ 10%).
+- **Hóa đơn nhiệt minh bạch**: Mọi hóa đơn in nhiệt xuất cho khách (Screen 14) bắt buộc in rõ dòng `Thuế VAT (8%)` ngay sau phần Tạm tính và trước Tiền Tip.
+
+## 6. CC Daily Sales Bonus Calculation Pipeline (Immutable — Finalized 2026-08-05)
 
 - **4 Danh Mục Doanh Số**: (1) Combo Bán Mới (`order_service_combo`), (2) Sản Phẩm Bán Lẻ (`order_product`), (3) Thu Nợ Cũ (`user_debt_payment`), và (4) Nâng Cấp Gói Combo (`order_service.upgrade_price > 0`).
 - **CC Chủ Đơn**: `COALESCE(check_out_staff_id, check_in_staff_id)` — ưu tiên CC OUT.

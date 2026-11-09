@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { User, Phone, Eye, Sparkles } from 'lucide-react';
+import { User, Phone, Eye, Sparkles, Lock, Gift, Zap, ShoppingCart, ZoomIn, Copy, Check } from 'lucide-react';
+import { FeatherSvg } from './CvFeatherLabels';
 import type { MatchedComboPackageOption, WingsComboRulePrice } from '@mos-lab/shared';
 
 export interface WingsTierOption {
@@ -12,6 +13,7 @@ export interface WingsTierOption {
   isActive: boolean;
   isLocked: boolean;
   onSelect: () => void;
+  onSelectLocked?: () => void;
 }
 
 export interface WingsComboCardProps {
@@ -311,7 +313,7 @@ function GoldLaurelWreathBadge({
         {validityMonths} MONTHS
       </div>
 
-      {/* Shortened CV Bonus Badge under Laurel Wreath: 150🪶 */}
+      {/* Shortened CV Bonus Badge under Laurel Wreath: 150 Feather */}
       {typeof cvBonus === 'number' && cvBonus > 0 && (
         <div
           style={{
@@ -331,7 +333,10 @@ function GoldLaurelWreathBadge({
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          <span>+{Math.round(cvBonus / 1000)}🪶</span>
+          <span className="inline-flex items-center gap-0.5">
+            +{Math.round(cvBonus / 1000)}
+            <FeatherSvg className="w-2.5 h-2.5 text-emerald-300" />
+          </span>
         </div>
       )}
     </div>
@@ -379,6 +384,10 @@ export function WingsComboCard({
   const bgStyle = getCardBackgroundStyle(pkg.categoryId, pkg.theme);
   const brandSubtitle = formatCardBrandSubtitle(pkg.categoryId, pkg.categoryName);
   const displayPrice = includeVat ? pkg.comboPriceWithVat : pkg.comboPrice;
+  const displayRetailTotal = includeVat ? Math.round(pkg.retailTotal * 1.08) : pkg.retailTotal;
+  const displayAvgPerSession = includeVat
+    ? Math.round(pkg.comboPriceWithVat / (pkg.totalSessions || 1))
+    : pkg.avgPerSessionPrice;
 
   // Build volume matrix columns from allVolumePrices (or fallback to current volume)
   const volumePrices: WingsComboRulePrice[] = React.useMemo(() => {
@@ -403,12 +412,12 @@ export function WingsComboCard({
   // Format COMBO X NEW Y REFILL & BONUS Z REFILL header
   const paidSessionLabel =
     pkg.packageKind === 'vvip_pass'
-      ? 'COMBO 20 LẦN NỐI MỚI VIP'
-      : `COMBO ${pkg.comboNewCount} NEW${pkg.comboRefillCount > 0 ? ` ${pkg.comboRefillCount} REFILL` : ''}`;
+      ? '20 Lần Nối VIP'
+      : `${pkg.comboNewCount} New${pkg.comboRefillCount > 0 ? ` · ${pkg.comboRefillCount} Refill` : ''}`;
 
   const bonusParts: string[] = [];
-  if (pkg.bonusNewCount > 0) bonusParts.push(`${pkg.bonusNewCount} NEW`);
-  if (pkg.bonusRefillCount > 0) bonusParts.push(`${pkg.bonusRefillCount} REFILL`);
+  if (pkg.bonusNewCount > 0) bonusParts.push(`${pkg.bonusNewCount} New`);
+  if (pkg.bonusRefillCount > 0) bonusParts.push(`${pkg.bonusRefillCount} Refill`);
 
   const formatCompactBonusValue = (val: number) => {
     if (val >= 1000000) {
@@ -422,20 +431,20 @@ export function WingsComboCard({
   };
 
   const bonusValStr =
-    pkg.bonusRetailValue && pkg.bonusRetailValue > 0
-      ? ` (Trị giá ${formatCompactBonusValue(pkg.bonusRetailValue)})`
-      : '';
+    pkg.bonusRetailValue && pkg.bonusRetailValue > 0 ? ` (${formatCompactBonusValue(pkg.bonusRetailValue)})` : '';
 
   const bonusSessionLabel =
     pkg.packageKind === 'vvip_pass'
-      ? 'CHIA SẺ NGƯỜI THÂN'
+      ? 'Dùng chung người thân'
       : bonusParts.length > 0
-        ? `BONUS ${bonusParts.join(' ')}${bonusValStr}`
+        ? `${bonusParts.join(' · ')}${bonusValStr}`
         : '';
 
   return (
     <div
       onClick={() => {
+        // Nếu dùng allTiers (dạng gom 1 card nhiều gói), việc chọn do từng dòng gói xử lý riêng
+        if (allTiers && allTiers.length > 0) return;
         if (pkg.isLocked) {
           if (onSelectLocked) onSelectLocked();
           return;
@@ -446,7 +455,16 @@ export function WingsComboCard({
         position: 'relative',
         borderRadius: 16,
         overflow: 'hidden',
-        cursor: pkg.isLocked ? (onSelectLocked ? 'pointer' : 'not-allowed') : onSelect ? 'pointer' : 'default',
+        cursor:
+          allTiers && allTiers.length > 0
+            ? 'default'
+            : pkg.isLocked
+              ? onSelectLocked
+                ? 'pointer'
+                : 'not-allowed'
+              : onSelect
+                ? 'pointer'
+                : 'default',
         opacity: pkg.isLocked ? 0.68 : 1,
         border: selected ? '2.5px solid #F5C451' : '1.5px solid rgba(212, 175, 55, 0.42)',
         boxShadow: selected
@@ -550,7 +568,13 @@ export function WingsComboCard({
             textTransform: 'uppercase',
           }}
         >
-          {pkg.isLocked ? '🔒 NGÀY ĐẦU' : 'WELCOME'}
+          {pkg.isLocked ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <Lock style={{ width: 9, height: 9 }} /> NGÀY ĐẦU
+            </span>
+          ) : (
+            'WELCOME'
+          )}
         </div>
       )}
 
@@ -764,7 +788,7 @@ export function WingsComboCard({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {customerPhone || '0938.204.567'}
+                  {(customerPhone || '0938.204.567').replace(/\*+\s*/g, '').trim()}
                 </div>
               </div>
 
@@ -818,7 +842,7 @@ export function WingsComboCard({
             </div>
           </div>
 
-          {/* Right Column: Gold Laurel Wreath + Ribbon + Shortened 150🪶 Badge */}
+          {/* Right Column: Gold Laurel Wreath + Ribbon + Shortened Bonus Badge */}
           <GoldLaurelWreathBadge
             discountPct={pkg.discountPct}
             ribbonLabel={pkg.packageKind === 'vvip_pass' ? '20 LẦN VIP' : pkg.ruleName}
@@ -828,250 +852,232 @@ export function WingsComboCard({
           />
         </div>
 
-        {/* Elegant Section Divider: Separating Customer Profile & Combo Details */}
+        {/* Subtle Luxury Divider */}
         <div
           style={{
-            margin: compact ? '12px 0 10px' : '14px 0 12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
+            margin: compact ? '8px 0 6px' : '10px 0 8px',
+            height: 1,
+            background:
+              'linear-gradient(90deg, rgba(243, 206, 104, 0.08) 0%, rgba(243, 206, 104, 0.45) 50%, rgba(243, 206, 104, 0.08) 100%)',
           }}
-        >
-          <div
-            style={{
-              flex: 1,
-              height: 1,
-              background: 'linear-gradient(90deg, rgba(243, 206, 104, 0.45) 0%, rgba(243, 206, 104, 0.08) 100%)',
-            }}
-          />
-          <div
-            style={{
-              fontSize: 9,
-              fontWeight: 800,
-              letterSpacing: '0.12em',
-              color: 'rgba(255, 230, 160, 0.85)',
-              textTransform: 'uppercase',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4.5,
-              userSelect: 'none',
-            }}
-          >
-            <Sparkles style={{ width: 9.5, height: 9.5, color: '#F3CE68' }} />
-            <span>ĐẶC QUYỀN GÓI COMBO</span>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              height: 1,
-              background: 'linear-gradient(90deg, rgba(243, 206, 104, 0.08) 0%, rgba(243, 206, 104, 0.45) 100%)',
-            }}
-          />
-        </div>
+        />
 
-        {/* Session Formula Bar: COMBO X NEW Y REFILL  |  BONUS Z REFILL */}
+        {/* Session Formula Bar: ✦ X New · Y Refill  |  Gift Z Refill */}
         <div
           style={{
-            marginTop: compact ? 6 : 7,
+            marginTop: compact ? 4 : 6,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: 4,
-            padding: '3px 8px',
-            borderRadius: 7,
-            background: 'rgba(0, 0, 0, 0.34)',
+            padding: '3.5px 8px',
+            borderRadius: 8,
+            background: 'rgba(0, 0, 0, 0.36)',
             border: '1px solid rgba(243, 206, 104, 0.22)',
+            fontVariantNumeric: 'tabular-nums',
           }}
         >
           <div
             style={{
-              fontSize: compact ? 10 : 11,
+              fontSize: compact ? 10.5 : 11.5,
               fontWeight: 800,
               color: '#FFFFFF',
-              letterSpacing: '0.03em',
+              letterSpacing: '0.01em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4.5,
             }}
           >
-            {paidSessionLabel}
+            <span style={{ color: '#FFE27A' }}>✦</span>
+            <span>{paidSessionLabel}</span>
           </div>
           {bonusSessionLabel && (
             <div
               style={{
-                fontSize: compact ? 10 : 11,
+                fontSize: compact ? 10.5 : 11.5,
                 fontWeight: 900,
-                color: '#FFE27A',
-                letterSpacing: '0.03em',
+                color: '#6EE7B7',
+                letterSpacing: '0.01em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
               }}
             >
-              ✦ {bonusSessionLabel}
+              <Gift style={{ width: 11, height: 11, color: '#6EE7B7' }} />
+              <span>{bonusSessionLabel}</span>
             </div>
           )}
         </div>
 
         {/* Volume Price Matrix Strip OR Tier List */}
-        {pkg.packageKind !== 'vvip_pass' ? (
-          allTiers && allTiers.length > 0 ? (
-            /* Vertical Tier Selector — thay thế bảng 390/770/880 */
-            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {allTiers.map((tier, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    if (!tier.isLocked) tier.onSelect();
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    border: tier.isActive ? '1.5px solid #FFE27A' : '1px solid rgba(255,255,255,0.12)',
-                    background: tier.isActive
-                      ? 'linear-gradient(180deg, rgba(245,196,81,0.22) 0%, rgba(212,155,39,0.12) 100%)'
-                      : tier.isLocked
-                        ? 'rgba(0,0,0,0.18)'
-                        : 'rgba(0,0,0,0.28)',
-                    opacity: tier.isLocked ? 0.5 : 1,
-                    cursor: tier.isLocked ? 'not-allowed' : 'pointer',
-                    fontVariantNumeric: 'tabular-nums',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {tier.isLocked && <span style={{ fontSize: 10 }}>🔒</span>}
-                    <span
-                      style={{
-                        fontSize: compact ? 11 : 12,
-                        fontWeight: 800,
-                        color: tier.isActive ? '#FFE27A' : tier.isLocked ? '#888' : '#E2E8F0',
-                      }}
-                    >
-                      {tier.label}
-                    </span>
-                    {tier.discountPct && tier.discountPct > 0 && (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 700,
-                          color: tier.isActive ? '#1A1102' : '#F59E0B',
-                          background: tier.isActive ? '#FFE27A' : 'rgba(245,158,11,0.18)',
-                          padding: '1px 5px',
-                          borderRadius: 4,
-                        }}
-                      >
-                        +{tier.discountPct}%
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div
-                      style={{
-                        fontSize: compact ? 11.5 : 12.5,
-                        fontWeight: 900,
-                        color: tier.isActive ? '#FFE27A' : '#F3CE68',
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {formatCompactVnd(tier.comboPrice)}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 9,
-                        color: 'rgba(255,255,255,0.5)',
-                        marginTop: 1,
-                      }}
-                    >
-                      TB ~{formatCompactVnd(tier.avgPerSessionPrice)}/lần
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                marginTop: 6,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${Math.min(volumePrices.length, 6)}, minmax(0, 1fr))`,
-                gap: 3.5,
-                alignItems: 'stretch',
-              }}
-            >
-              {' '}
-              {volumePrices.slice(0, 6).map((vp) => {
-                const isCurrentVol =
-                  pkg.volume === 'under'
-                    ? Boolean(vp.isUnderLash || vp.volume === 'under')
-                    : !vp.isUnderLash && Number(vp.volume) === Number(pkg.volume);
-                const vpComboPrice = includeVat ? Math.round(vp.comboPrice * 1.08) : vp.comboPrice;
-                const vpRetail = vp.retailTotal || vp.comboPrice;
-
-                return (
-                  <div
-                    key={vp.isUnderLash ? 'under' : String(vp.volume)}
+        {allTiers && allTiers.length > 0 ? (
+          /* Vertical Tier Selector — gom toàn bộ các gói thành danh sách chọn bên trong card */
+          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {allTiers.map((tier, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (tier.isLocked) {
+                    tier.onSelectLocked?.();
+                  } else {
+                    tier.onSelect();
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '6.5px 10px',
+                  borderRadius: 9,
+                  border: tier.isActive ? '1.5px solid #FFE27A' : '1px solid rgba(255,255,255,0.12)',
+                  background: tier.isActive
+                    ? 'linear-gradient(180deg, rgba(245,196,81,0.22) 0%, rgba(212,155,39,0.12) 100%)'
+                    : tier.isLocked
+                      ? 'rgba(0,0,0,0.18)'
+                      : 'rgba(0,0,0,0.28)',
+                  opacity: tier.isLocked ? 0.45 : 1,
+                  cursor: tier.isLocked ? (tier.onSelectLocked ? 'pointer' : 'not-allowed') : 'pointer',
+                  fontVariantNumeric: 'tabular-nums',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {tier.isLocked && <Lock style={{ width: 11, height: 11, color: '#F59E0B' }} />}
+                  <span
                     style={{
-                      padding: '4px 2px',
-                      borderRadius: 7,
-                      textAlign: 'center',
-                      background: isCurrentVol
-                        ? 'linear-gradient(180deg, rgba(245, 196, 81, 0.28) 0%, rgba(212, 155, 39, 0.16) 100%)'
-                        : 'rgba(0, 0, 0, 0.28)',
-                      border: isCurrentVol ? '1.5px solid #FFE27A' : '1px solid rgba(255, 255, 255, 0.1)',
-                      boxShadow: isCurrentVol ? '0 0 8px rgba(245, 196, 81, 0.25)' : 'none',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontVariantNumeric: 'tabular-nums',
+                      fontSize: compact ? 12 : 13,
+                      fontWeight: 900,
+                      letterSpacing: '0.02em',
+                      color: tier.isActive ? '#FFE27A' : tier.isLocked ? '#888' : '#FFFFFF',
                     }}
                   >
-                    {/* Volume Code Row */}
-                    <div
+                    {tier.label}
+                  </span>
+                  {tier.discountPct && tier.discountPct > 0 && (
+                    <span
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        fontSize: compact ? 9.5 : 10,
+                        fontSize: 9,
                         fontWeight: 800,
-                        color: isCurrentVol ? '#FFE27A' : '#E2E8F0',
+                        color: tier.isActive ? '#1A1102' : '#F59E0B',
+                        background: tier.isActive ? '#FFE27A' : 'rgba(245,158,11,0.18)',
+                        padding: '1px 5px',
+                        borderRadius: 4,
                       }}
                     >
-                      <LashVolumeIcon active={isCurrentVol} />
-                      <span>{vp.isUnderLash ? '390' : vp.volume}</span>
-                    </div>
-
-                    {/* Crossed-out Retail Price */}
-                    <div
-                      style={{
-                        fontSize: compact ? 8.5 : 9,
-                        fontWeight: 600,
-                        color: 'rgba(226, 232, 240, 0.62)',
-                        textDecoration: 'line-through',
-                        lineHeight: 1.15,
-                        marginTop: 1.5,
-                      }}
-                    >
-                      {formatCompactVnd(vpRetail)}
-                    </div>
-
-                    {/* Gold Combo Price */}
-                    <div
-                      style={{
-                        fontSize: compact ? 10.5 : 11.5,
-                        fontWeight: 900,
-                        color: isCurrentVol ? '#FFE27A' : '#F3CE68',
-                        lineHeight: 1.15,
-                        marginTop: 1,
-                      }}
-                    >
-                      {formatCompactVnd(vpComboPrice)}
-                    </div>
+                      +{tier.discountPct}%
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, fontVariantNumeric: 'tabular-nums' }}>
+                  <div
+                    style={{
+                      fontSize: compact ? 12.5 : 13.5,
+                      fontWeight: 900,
+                      color: tier.isActive ? '#FFE27A' : '#F3CE68',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {formatCompactVnd(tier.comboPrice)}
                   </div>
-                );
-              })}
-            </div>
-          )
+                  <div
+                    style={{
+                      fontSize: 9.5,
+                      color: 'rgba(255,255,255,0.45)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    ~{formatCompactVnd(tier.avgPerSessionPrice)}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : pkg.packageKind !== 'vvip_pass' ? (
+          <div
+            style={{
+              marginTop: 6,
+              display: 'grid',
+              gridTemplateColumns: `repeat(${Math.min(volumePrices.length, 6)}, minmax(0, 1fr))`,
+              gap: 3.5,
+              alignItems: 'stretch',
+            }}
+          >
+            {' '}
+            {volumePrices.slice(0, 6).map((vp) => {
+              const isCurrentVol =
+                pkg.volume === 'under'
+                  ? Boolean(vp.isUnderLash || vp.volume === 'under')
+                  : !vp.isUnderLash && Number(vp.volume) === Number(pkg.volume);
+              const vpComboPrice = includeVat ? Math.round(vp.comboPrice * 1.08) : vp.comboPrice;
+              const vpRetail = vp.retailTotal || vp.comboPrice;
+
+              return (
+                <div
+                  key={vp.isUnderLash ? 'under' : String(vp.volume)}
+                  style={{
+                    padding: '4px 2px',
+                    borderRadius: 7,
+                    textAlign: 'center',
+                    background: isCurrentVol
+                      ? 'linear-gradient(180deg, rgba(245, 196, 81, 0.28) 0%, rgba(212, 155, 39, 0.16) 100%)'
+                      : 'rgba(0, 0, 0, 0.28)',
+                    border: isCurrentVol ? '1.5px solid #FFE27A' : '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: isCurrentVol ? '0 0 8px rgba(245, 196, 81, 0.25)' : 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {/* Volume Code Row */}
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      fontSize: compact ? 9.5 : 10,
+                      fontWeight: 800,
+                      color: isCurrentVol ? '#FFE27A' : '#E2E8F0',
+                    }}
+                  >
+                    <LashVolumeIcon active={isCurrentVol} />
+                    <span>{vp.isUnderLash ? '390' : vp.volume}</span>
+                  </div>
+
+                  {/* Crossed-out Retail Price */}
+                  <div
+                    style={{
+                      fontSize: compact ? 8.5 : 9,
+                      fontWeight: 600,
+                      color: 'rgba(226, 232, 240, 0.62)',
+                      textDecoration: 'line-through',
+                      lineHeight: 1.15,
+                      marginTop: 1.5,
+                    }}
+                  >
+                    {formatCompactVnd(vpRetail)}
+                  </div>
+
+                  {/* Gold Combo Price */}
+                  <div
+                    style={{
+                      fontSize: compact ? 10.5 : 11.5,
+                      fontWeight: 900,
+                      color: isCurrentVol ? '#FFE27A' : '#F3CE68',
+                      lineHeight: 1.15,
+                      marginTop: 1,
+                    }}
+                  >
+                    {formatCompactVnd(vpComboPrice)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <div
             style={{
@@ -1125,10 +1131,9 @@ export function WingsComboCard({
             {/* Left: Exact Matched Price & Gaming Stat / Loot Breakdown */}
             <div style={{ fontVariantNumeric: 'tabular-nums', flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.75)' }}>Giá gói:</span>
                 <span
                   style={{
-                    fontSize: compact ? 14.5 : 16,
+                    fontSize: compact ? 15 : 16.5,
                     fontWeight: 900,
                     color: '#FFE27A',
                     textShadow: '0 1px 3px rgba(0,0,0,0.65)',
@@ -1136,14 +1141,30 @@ export function WingsComboCard({
                 >
                   {displayPrice.toLocaleString('vi-VN')}đ
                 </span>
+                {includeVat && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 800,
+                      color: '#34D399',
+                      background: 'rgba(52, 211, 153, 0.16)',
+                      border: '1px solid rgba(52, 211, 153, 0.4)',
+                      borderRadius: 4,
+                      padding: '1px 5px',
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    Đã gồm 8% VAT
+                  </span>
+                )}
                 <span
                   style={{
                     fontSize: 10.5,
-                    color: 'rgba(255,255,255,0.55)',
+                    color: 'rgba(255,255,255,0.45)',
                     textDecoration: 'line-through',
                   }}
                 >
-                  {pkg.retailTotal.toLocaleString('vi-VN')}đ
+                  {displayRetailTotal.toLocaleString('vi-VN')}đ
                 </span>
                 {/* Average Stat Chip */}
                 <span
@@ -1156,9 +1177,13 @@ export function WingsComboCard({
                     fontSize: 9.5,
                     fontWeight: 800,
                     letterSpacing: '0.02em',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
                   }}
                 >
-                  ⚡ TB ~{pkg.avgPerSessionPrice.toLocaleString('vi-VN')}đ/lần
+                  <Zap style={{ width: 10, height: 10 }} />
+                  <span>~{formatCompactVnd(displayAvgPerSession)}/lần</span>
                 </span>
               </div>
               {/* Loot Breakdown: Paid parts & Bonus loot without (0đ) */}
@@ -1174,7 +1199,17 @@ export function WingsComboCard({
               >
                 {pkg.readableContent.includes(' · ') ? (
                   <>
-                    <span style={{ color: 'rgba(255, 246, 214, 0.9)' }}>🛒 {pkg.readableContent.split(' · ')[0]}</span>
+                    <span
+                      style={{
+                        color: 'rgba(255, 246, 214, 0.9)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3.5,
+                      }}
+                    >
+                      <ShoppingCart style={{ width: 10.5, height: 10.5, color: '#FFE27A' }} />
+                      <span>{pkg.readableContent.split(' · ')[0]}</span>
+                    </span>
                     <span style={{ color: 'rgba(243, 206, 104, 0.4)' }}>•</span>
                     <span
                       style={{
@@ -1184,13 +1219,27 @@ export function WingsComboCard({
                         border: '1px solid rgba(16, 185, 129, 0.32)',
                         borderRadius: 5,
                         padding: '0.5px 5px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3,
                       }}
                     >
-                      🎁 {pkg.readableContent.split(' · ')[1]}
+                      <Gift style={{ width: 10, height: 10, color: '#6EE7B7' }} />
+                      <span>{pkg.readableContent.split(' · ')[1]}</span>
                     </span>
                   </>
                 ) : (
-                  <span style={{ color: 'rgba(255, 246, 214, 0.88)' }}>✨ {pkg.readableContent}</span>
+                  <span
+                    style={{
+                      color: 'rgba(255, 246, 214, 0.88)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3.5,
+                    }}
+                  >
+                    <Sparkles style={{ width: 10.5, height: 10.5, color: '#FFE27A' }} />
+                    <span>{pkg.readableContent}</span>
+                  </span>
                 )}
               </div>
             </div>
@@ -1214,9 +1263,13 @@ export function WingsComboCard({
                       fontSize: 10.5,
                       fontWeight: 700,
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
                     }}
                   >
-                    🔍 Thẻ gốc
+                    <ZoomIn style={{ width: 11, height: 11 }} />
+                    <span>Thẻ gốc</span>
                   </button>
                 )}
 
@@ -1236,9 +1289,22 @@ export function WingsComboCard({
                       fontSize: 10.5,
                       fontWeight: 700,
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
                     }}
                   >
-                    {copiedQuote ? '✓ Đã chép' : '📋 Báo giá'}
+                    {copiedQuote ? (
+                      <>
+                        <Check style={{ width: 11, height: 11 }} />
+                        <span>Đã chép</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy style={{ width: 11, height: 11 }} />
+                        <span>Báo giá</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>

@@ -2,34 +2,22 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  WINGS_COMBO_CATEGORIES,
   WingsComboCategoryId,
   MatchedComboPackageOption,
   WelcomeComboEligibilityResult,
   getWingsComboCategory,
   getVolumeFiberMeta,
   getComboPackagesForCategoryAndVolume,
+  getUnderLashComboPackages,
   calculateComboPurchaseAccounting,
-  formatComboConsultationQuote,
+  getLashFamilyInfo,
+  resolveValidVolumeForCategory,
 } from '@mos-lab/shared';
-import {
-  X,
-  Sparkles,
-  Lock,
-  CheckCircle2,
-  Copy,
-  Check,
-  ZoomIn,
-  Scale,
-  Calculator,
-  Calendar,
-  Gift,
-  ShieldCheck,
-} from 'lucide-react';
-import { WingsComboCard } from '../ui-kit/WingsComboCard';
+import { X, Sparkles, Eye, Lock, Info, Leaf, Zap, Crown, Check } from 'lucide-react';
+import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import { WingsUnifiedComboCard } from '../ui-kit/WingsUnifiedComboCard';
 
-interface ComboCatalogConsultModalProps {
+export interface ComboCatalogConsultModalProps {
   open: boolean;
   onClose: () => void;
   initialCategoryId?: WingsComboCategoryId;
@@ -37,7 +25,68 @@ interface ComboCatalogConsultModalProps {
   welcomeEligibility: WelcomeComboEligibilityResult;
   selectedPackageId?: string | null;
   todaySingleServicePrice?: number;
-  onSelectPackage: (pkg: MatchedComboPackageOption) => void;
+  onSelectPackage?: (pkg: MatchedComboPackageOption) => void;
+  initialSelectedUpperPkg?: MatchedComboPackageOption | null;
+  initialSelectedUnderPkg?: MatchedComboPackageOption | null;
+  onApplyPackages?: (payload: {
+    upperPkg: MatchedComboPackageOption | null;
+    underPkg: MatchedComboPackageOption | null;
+  }) => void;
+}
+
+// 5 Họ Mi lớn của Wings
+const LASH_FAMILIES: Array<{
+  familyKey: string;
+  name: string;
+  renderIcon: (active: boolean) => React.ReactNode;
+  defaultCategory: WingsComboCategoryId;
+  categories: WingsComboCategoryId[];
+}> = [
+  {
+    familyKey: 'IvyLight',
+    name: 'IvyLight',
+    renderIcon: (active) => <Leaf className={`w-3.5 h-3.5 ${active ? 'text-emerald-600' : 'text-neutral-500'}`} />,
+    defaultCategory: 'IvyLight_4L',
+    categories: ['IvyLight_3L', 'IvyLight_4L', 'IvyLight_5L'],
+  },
+  {
+    familyKey: 'HyperLight',
+    name: 'HyperLight',
+    renderIcon: (active) => <Zap className={`w-3.5 h-3.5 ${active ? 'text-amber-500' : 'text-neutral-500'}`} />,
+    defaultCategory: 'HyperLight_4X',
+    categories: ['HyperLight_2X', 'HyperLight_3X', 'HyperLight_4X', 'HyperLight_5X'],
+  },
+  {
+    familyKey: 'UltraLight',
+    name: 'UltraLight',
+    renderIcon: (active) => <FeatherSvg className={`w-3.5 h-3.5 ${active ? 'text-amber-500' : 'text-neutral-500'}`} />,
+    defaultCategory: 'UltraLight_4D',
+    categories: ['UltraLight_3D', 'UltraLight_4D', 'UltraLight_5D'],
+  },
+  {
+    familyKey: 'Flawless',
+    name: 'Flawless',
+    renderIcon: (active) => <Sparkles className={`w-3.5 h-3.5 ${active ? 'text-amber-500' : 'text-neutral-500'}`} />,
+    defaultCategory: 'FlawlessMink',
+    categories: ['FlawlessMink', 'Classic_Volume'],
+  },
+  {
+    familyKey: 'VVIP',
+    name: 'VVIP',
+    renderIcon: (active) => <Crown className={`w-3.5 h-3.5 ${active ? 'text-amber-500' : 'text-neutral-500'}`} />,
+    defaultCategory: 'VVIP',
+    categories: ['VVIP'],
+  },
+];
+
+function formatCompactVnd(amount: number): string {
+  if (!amount || amount <= 0) return '0đ';
+  if (amount >= 1_000_000) {
+    const millions = amount / 1_000_000;
+    const formatted = millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2).replace(/\.?0+$/, '');
+    return `${formatted}M`;
+  }
+  return `${Math.round(amount / 1_000)}K`;
 }
 
 export function ComboCatalogConsultModal({
@@ -49,25 +98,54 @@ export function ComboCatalogConsultModal({
   selectedPackageId,
   todaySingleServicePrice,
   onSelectPackage,
+  initialSelectedUpperPkg,
+  initialSelectedUnderPkg,
+  onApplyPackages,
 }: ComboCatalogConsultModalProps) {
-  const [activeCategoryId, setActiveCategoryId] = useState<WingsComboCategoryId>(initialCategoryId);
+  const [activeCategoryId, setActiveCategoryId] = useState<WingsComboCategoryId>(
+    initialVolume === 'under' ? 'FlawlessMink' : initialCategoryId
+  );
   const [activeVolume, setActiveVolume] = useState<number | 'under'>(initialVolume);
+  const [savedUpperCategory, setSavedUpperCategory] = useState<WingsComboCategoryId>(
+    initialCategoryId === 'VVIP' ? 'FlawlessMink' : initialCategoryId
+  );
   const [includeVat, setIncludeVat] = useState<boolean>(false);
-  const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [zoomedCard, setZoomedCard] = useState<{ title: string; imageUrl: string } | null>(null);
+  const [lockedModalOpen, setLockedModalOpen] = useState<boolean>(false);
+  const [tempSelectedUpper, setTempSelectedUpper] = useState<MatchedComboPackageOption | null>(
+    initialSelectedUpperPkg || null
+  );
+  const [tempSelectedUnder, setTempSelectedUnder] = useState<MatchedComboPackageOption | null>(
+    initialSelectedUnderPkg || null
+  );
 
-  // Sync when modal opens with new initial props
+  // Sync khi modal mở
   React.useEffect(() => {
     if (open) {
-      setActiveCategoryId(initialCategoryId);
+      const initCat = initialVolume === 'under' ? 'FlawlessMink' : initialCategoryId;
+      setActiveCategoryId(initCat);
+      if (initialVolume !== 'under') {
+        setSavedUpperCategory(initialCategoryId);
+      }
       setActiveVolume(initialVolume);
+      setTempSelectedUpper(initialSelectedUpperPkg || null);
+      setTempSelectedUnder(initialSelectedUnderPkg || null);
     }
-  }, [open, initialCategoryId, initialVolume]);
+  }, [open, initialCategoryId, initialVolume, initialSelectedUpperPkg, initialSelectedUnderPkg]);
 
   const currentCategory = useMemo(() => getWingsComboCategory(activeCategoryId), [activeCategoryId]);
 
-  // Ensure activeVolume is valid for currentCategory
+  // Nhận diện Họ Mi hiện tại
+  const currentFamily = useMemo(
+    () => LASH_FAMILIES.find((f) => f.categories.includes(activeCategoryId)) || LASH_FAMILIES[0],
+    [activeCategoryId]
+  );
+
+  const familySiblings = useMemo(() => {
+    const info = getLashFamilyInfo(activeCategoryId);
+    return info.siblings || [];
+  }, [activeCategoryId]);
+
+  // Đảm bảo volume hợp lệ cho category đang chọn
   const effectiveVolume = useMemo<number | 'under'>(() => {
     if (currentCategory.id === 'VVIP') return activeVolume;
     const exists = currentCategory.unitPrices.some((u) =>
@@ -80,296 +158,329 @@ export function ComboCatalogConsultModal({
 
   const packages = useMemo(
     () =>
-      getComboPackagesForCategoryAndVolume({
-        categoryId: activeCategoryId,
-        volume: effectiveVolume,
-        welcomeEligibility,
-        includeVvipPass: activeCategoryId !== 'VVIP',
-      }),
+      effectiveVolume === 'under'
+        ? getUnderLashComboPackages(welcomeEligibility)
+        : getComboPackagesForCategoryAndVolume({
+            categoryId: activeCategoryId,
+            volume: effectiveVolume,
+            welcomeEligibility,
+            includeVvipPass: activeCategoryId !== 'VVIP',
+          }),
     [activeCategoryId, effectiveVolume, welcomeEligibility]
   );
 
-  // Build lookup of all compared packages across categories
-  const comparedPackages = useMemo(() => {
-    const list: MatchedComboPackageOption[] = [];
-    for (const cid of compareIds) {
-      const [catId, , volSlug] = cid.split(':');
-      const vol = volSlug === 'under_390' ? 'under' : Number(volSlug) || effectiveVolume;
-      const catPkgs = getComboPackagesForCategoryAndVolume({
-        categoryId: catId || activeCategoryId,
-        volume: vol,
-        welcomeEligibility,
-        includeVvipPass: true,
-      });
-      const found = catPkgs.find((p) => p.id === cid);
-      if (found) list.push(found);
-    }
-    return list;
-  }, [compareIds, activeCategoryId, effectiveVolume, welcomeEligibility]);
-
   if (!open) return null;
 
-  const toggleCompare = (pkgId: string) => {
-    setCompareIds((prev) => {
-      if (prev.includes(pkgId)) return prev.filter((id) => id !== pkgId);
-      if (prev.length >= 3) return [...prev.slice(1), pkgId];
-      return [...prev, pkgId];
-    });
+  const handleSelectFamily = (familyKey: string) => {
+    const fam = LASH_FAMILIES.find((f) => f.familyKey === familyKey);
+    if (!fam) return;
+    const targetCat = fam.categories.includes(activeCategoryId) ? activeCategoryId : fam.defaultCategory;
+    setActiveCategoryId(targetCat);
+    const validVol = resolveValidVolumeForCategory(targetCat, effectiveVolume);
+    setActiveVolume(validVol);
   };
 
-  const handleCopyQuote = async (pkg: MatchedComboPackageOption) => {
-    const text = formatComboConsultationQuote(pkg, includeVat);
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Fallback ignored
+  const handleSelectSibling = (targetCatId: WingsComboCategoryId) => {
+    setActiveCategoryId(targetCatId);
+    const validVol = resolveValidVolumeForCategory(targetCatId, effectiveVolume);
+    setActiveVolume(validVol);
+  };
+
+  const isUnderTab = effectiveVolume === 'under';
+  const currentSelectedPkgId = isUnderTab
+    ? tempSelectedUnder?.id || null
+    : tempSelectedUpper?.id || selectedPackageId || null;
+
+  const selectedPkgsList = [tempSelectedUpper, tempSelectedUnder].filter(Boolean) as MatchedComboPackageOption[];
+  const totalSelectedCount = selectedPkgsList.length;
+  const totalSelectedPrice = selectedPkgsList.reduce((acc, p) => {
+    const price = includeVat ? p.comboPriceWithVat : p.comboPrice;
+    return acc + price;
+  }, 0);
+
+  const handleApply = () => {
+    if (onApplyPackages) {
+      onApplyPackages({
+        upperPkg: tempSelectedUpper,
+        underPkg: tempSelectedUnder,
+      });
+    } else if (onSelectPackage) {
+      if (tempSelectedUpper) onSelectPackage(tempSelectedUpper);
+      else if (tempSelectedUnder) onSelectPackage(tempSelectedUnder);
     }
-    setCopiedId(pkg.id);
-    setTimeout(() => setCopiedId(null), 2000);
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#F2F2F7] select-none overflow-hidden">
-      {/* Header */}
-      <div className="bg-[#1C1C1E] text-white px-4 pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-3 flex items-center justify-between border-b border-white/10 shrink-0">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-[#FFB400]" />
-            <h2 className="text-[15px] font-black tracking-tight text-white">Bàn Tư Vấn & Bảng Giá 13 Dòng Mi Combo</h2>
-          </div>
-          <p className="text-[11px] text-neutral-400 mt-0.5">
-            Chuẩn hóa 100% bảng giá Wings · Tự động hạch toán & trừ buổi đầu vào gói
-          </p>
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#F2F2F7] select-none overflow-hidden animate-in fade-in duration-200">
+      {/* iOS Minimal Navigation Bar */}
+      <div className="bg-[#1C1C1E] text-white px-4 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2.5 flex items-center justify-between border-b border-white/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-[#FFB400]" />
+          <h2 className="text-[16px] font-black tracking-tight text-white">Bảng Giá Combo</h2>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-95 cursor-pointer"
-          aria-label="Đóng"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIncludeVat((v) => !v)}
+            className={`text-[10.5px] font-black px-2.5 py-1 rounded-full border transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+              includeVat
+                ? 'bg-[#FFB400] text-black border-[#FFB400] shadow-xs'
+                : 'bg-white/10 text-neutral-300 border-white/15 hover:bg-white/20'
+            }`}
+            title="Bật/tắt hiển thị giá đã bao gồm 8% thuế VAT"
+          >
+            {includeVat && <Check className="w-3 h-3 text-black stroke-[3]" />}
+            <span>{includeVat ? 'VAT 8% (Đã gồm)' : '+8% VAT'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-90 transition-transform cursor-pointer"
+            aria-label="Đóng"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Main Scrollable Area */}
-      <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-3 pb-24">
-        {/* Welcome Package Eligibility Banner */}
-        <div
-          className={`rounded-2xl p-3 border flex items-start gap-2.5 ${
-            welcomeEligibility.eligible ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
-          }`}
-        >
-          {welcomeEligibility.eligible ? (
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-          ) : (
-            <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          )}
-          <div className="flex-1 min-w-0">
-            <div
-              className={`text-[11px] font-extrabold uppercase tracking-wide ${
-                welcomeEligibility.eligible ? 'text-emerald-800' : 'text-amber-900'
-              }`}
-            >
-              {welcomeEligibility.badgeText}
-            </div>
-            <div className="text-[11px] text-gray-700 mt-0.5 leading-snug">{welcomeEligibility.reason}</div>
-          </div>
-        </div>
-
-        {/* Step 1: 13 Lash Categories Horizontal/Grid Selector */}
-        <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-200 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
-              1. Chọn Dòng Mi (13 Dòng Chuẩn Wings)
+      <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-2.5 pb-20 no-scrollbar">
+        {/* 1. iOS Segmented Control: Mi Trên vs Mi Dưới */}
+        <div className="bg-[#E5E5EA] p-0.5 rounded-xl grid grid-cols-2 gap-1 text-[12px] font-bold">
+          <button
+            type="button"
+            onClick={() => {
+              if (effectiveVolume === 'under') {
+                const targetCat =
+                  savedUpperCategory && savedUpperCategory !== 'VVIP' ? savedUpperCategory : 'FlawlessMink';
+                setActiveCategoryId(targetCat);
+                const catObj = getWingsComboCategory(targetCat);
+                const firstNormal = catObj.unitPrices.find((u) => !u.isUnderLash && typeof u.volume === 'number');
+                setActiveVolume(firstNormal ? Number(firstNormal.volume) : 770);
+              }
+            }}
+            className={`py-1.5 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              effectiveVolume !== 'under'
+                ? 'bg-white text-black shadow-xs font-black'
+                : 'text-neutral-500 hover:text-black'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5" />
+              <span>Mi Trên</span>
             </span>
-            <button
-              type="button"
-              onClick={() => setIncludeVat((v) => !v)}
-              className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                includeVat
-                  ? 'bg-[#1C1C1E] text-[#FFB400] border-[#FFB400]'
-                  : 'bg-gray-100 text-gray-700 border-gray-200'
-              }`}
-            >
-              {includeVat ? '✓ Giá đã gồm 8% VAT' : 'Giá chưa VAT (Bấm bật +8% VAT)'}
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {WINGS_COMBO_CATEGORIES.map((cat) => {
-              const active = cat.id === activeCategoryId;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setActiveCategoryId(cat.id)}
-                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    active
-                      ? 'bg-[#1C1C1E] text-[#FFB400] shadow-xs ring-1 ring-[#FFB400]'
-                      : 'bg-[#F2F2F7] text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
-          </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (effectiveVolume !== 'under') {
+                setSavedUpperCategory(activeCategoryId);
+                setActiveCategoryId('FlawlessMink');
+                setActiveVolume('under');
+              }
+            }}
+            className={`py-1.5 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              effectiveVolume === 'under'
+                ? 'bg-white text-purple-700 shadow-xs font-black'
+                : 'text-neutral-500 hover:text-black'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Mi Dưới</span>
+            </span>
+          </button>
         </div>
 
-        {/* Step 2: Volume / Fiber Count Selector */}
-        {currentCategory.unitPrices.length > 0 && (
-          <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
-                2. Chọn Mã Số Sợi / Trụ ({currentCategory.name})
-              </span>
-              <span className="text-[10px] font-semibold text-gray-500">{currentCategory.segment}</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {currentCategory.unitPrices.map((u) => {
-                const volKey: number | 'under' = u.isUnderLash ? 'under' : Number(u.volume);
-                const active = effectiveVolume === volKey;
-                const meta = getVolumeFiberMeta(currentCategory.id, volKey);
+        {/* 2. Bộ chọn 5 Họ Mi lớn (Segmented Tabs chuẩn iOS) */}
+        {effectiveVolume !== 'under' && (
+          <div className="bg-white rounded-2xl p-2.5 shadow-2xs border border-neutral-200/80 space-y-2">
+            {/* Top row: 5 họ mi chính */}
+            <div className="grid grid-cols-5 gap-1 bg-[#F2F2F7] p-1 rounded-xl">
+              {LASH_FAMILIES.map((fam) => {
+                const active = fam.familyKey === currentFamily.familyKey;
                 return (
                   <button
-                    key={String(u.volume)}
+                    key={fam.familyKey}
                     type="button"
-                    onClick={() => setActiveVolume(volKey)}
-                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      active ? 'bg-amber-50 border-[#FF9500] shadow-xs' : 'bg-[#F9F9FB] border-gray-200'
+                    onClick={() => handleSelectFamily(fam.familyKey)}
+                    className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                      active
+                        ? 'bg-white text-black shadow-xs font-black'
+                        : 'text-neutral-500 hover:text-neutral-800 font-bold'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[12px] font-extrabold text-black">
-                        {u.isUnderLash ? 'Mi Dưới 390' : `Mã ${u.volume}`}
-                      </span>
-                      {meta.badge && (
-                        <span className="text-[9px] font-black bg-[#FFB400] text-black px-1.5 py-0.5 rounded-full">
-                          {meta.badge}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-gray-600 font-medium mt-0.5 truncate">{meta.fanLabel}</div>
-                    <div className="text-[10px] text-emerald-700 font-bold mt-0.5 tabular-nums">
-                      Lẻ: {u.newPrice.toLocaleString('vi-VN')}đ
-                      {u.refillPrice ? ` · Dặm: ${u.refillPrice.toLocaleString('vi-VN')}đ` : ''}
-                    </div>
+                    <div className="mb-0.5">{fam.renderIcon(active)}</div>
+                    <span className="text-[10px] tracking-tight truncate max-w-full">{fam.name}</span>
                   </button>
                 );
               })}
             </div>
+
+            {/* Sub-tier row: các cấp độ thuộc họ (3ℓ, 4ℓ, 5ℓ / 2X, 3X, 4X...) */}
+            {familySiblings.length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
+                {familySiblings.map((sib) => {
+                  const active = activeCategoryId === sib.categoryId;
+                  return (
+                    <button
+                      key={sib.categoryId}
+                      type="button"
+                      onClick={() => handleSelectSibling(sib.categoryId as WingsComboCategoryId)}
+                      className={`flex-1 min-w-[70px] py-1 px-2 rounded-lg text-center text-[11px] font-black transition-all cursor-pointer ${
+                        active
+                          ? 'bg-[#1C1C1E] text-[#FFB400] shadow-2xs'
+                          : 'bg-[#F2F2F7] text-neutral-600 hover:bg-neutral-200'
+                      }`}
+                    >
+                      {sib.shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Comparison Drawer/Card if any package is in compareIds */}
-        {comparedPackages.length > 0 && (
-          <div className="bg-[#1C1C1E] text-white rounded-2xl p-3 shadow-md border border-[#FFB400]/60 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-[#FFB400] uppercase tracking-wider flex items-center gap-1.5">
-                <Scale className="w-3.5 h-3.5" />
-                Bàn Cân So Sánh Trực Tiếp ({comparedPackages.length}/3 Gói)
+        {/* 3. Bộ chọn Độ Dày (Số sợi / Trụ) — Thanh ngang 1 dòng Segmented Pill (Ẩn khi chọn Mi Dưới) */}
+        {effectiveVolume !== 'under' && currentCategory.unitPrices.filter((u) => !u.isUnderLash).length > 0 && (
+          <div className="bg-white rounded-2xl p-2.5 shadow-2xs border border-neutral-200/80">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <span className="text-[11px] font-extrabold text-neutral-500 uppercase px-1 shrink-0 flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" />
+                <span>Độ dày:</span>
               </span>
-              <button
-                type="button"
-                onClick={() => setCompareIds([])}
-                className="text-[10px] text-neutral-400 hover:text-white underline cursor-pointer"
-              >
-                Xóa so sánh
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {comparedPackages.map((cp) => {
-                const displayPrice = includeVat ? cp.comboPriceWithVat : cp.comboPrice;
-                const accounting = calculateComboPurchaseAccounting(cp, todaySingleServicePrice);
-                return (
-                  <div
-                    key={cp.id}
-                    className="bg-white/10 rounded-xl p-2.5 border border-white/15 flex flex-col justify-between space-y-1.5"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-1">
-                        <span className="text-[12px] font-black text-[#FFB400] leading-tight">{cp.displayName}</span>
-                        <button
-                          type="button"
-                          onClick={() => toggleCompare(cp.id)}
-                          className="text-neutral-400 hover:text-white text-[11px]"
+              <div className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar">
+                {currentCategory.unitPrices
+                  .filter((u) => !u.isUnderLash)
+                  .map((u) => {
+                    const volKey: number = Number(u.volume);
+                    const active = effectiveVolume === volKey;
+                    const meta = getVolumeFiberMeta(currentCategory.id, volKey);
+                    const label = `${meta.countPerEye} ${meta.unitWord}`;
+                    const rawPrice = u.newPrice;
+                    const effectivePrice = includeVat ? Math.round(rawPrice * 1.08) : rawPrice;
+                    const compactPrice = formatCompactVnd(effectivePrice);
+                    return (
+                      <button
+                        key={String(u.volume)}
+                        type="button"
+                        onClick={() => setActiveVolume(volKey)}
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-black shrink-0 transition-all cursor-pointer flex items-center gap-1.5 ${
+                          active
+                            ? 'bg-[#1C1C1E] text-[#FFB400] shadow-xs'
+                            : 'bg-[#F2F2F7] text-neutral-700 hover:bg-neutral-200'
+                        }`}
+                      >
+                        <span>{label}</span>
+                        <span
+                          className={`text-[9.5px] font-bold tabular-nums ${
+                            active ? 'text-amber-200' : 'text-neutral-500'
+                          }`}
                         >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="text-[10px] text-neutral-300 mt-0.5">{cp.readableContent}</div>
-                    </div>
-                    <div className="space-y-0.5 text-[10px] border-t border-white/10 pt-1.5 tabular-nums">
-                      <div className="flex justify-between">
-                        <span className="text-neutral-400">Giá gói:</span>
-                        <span className="font-black text-white">{displayPrice.toLocaleString('vi-VN')}đ</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-400">Tiết kiệm:</span>
-                        <span className="font-bold text-emerald-400">
-                          -{cp.savingsAmount.toLocaleString('vi-VN')}đ (+{cp.discountPct}%)
+                          {compactPrice}
                         </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-400">TB mỗi lần:</span>
-                        <span className="font-bold text-amber-300">
-                          ~{cp.avgPerSessionPrice.toLocaleString('vi-VN')}đ/lần
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-400">Trừ hôm nay:</span>
-                        <span className="font-bold text-sky-300">
-                          Còn {accounting.remainingWalletAfterToday.totalRemaining}/{cp.totalSessions} lần
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Step 3: Package Cards List — 1 Unified Card với Tier Selector */}
-        <div className="space-y-2.5">
-          <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1">
-            3. Chọn Gói Ưu Đãi ({packages.length} Gói)
-          </div>
-
+        {/* 4. Thẻ Gói Combo Unified Card */}
+        <div>
           <WingsUnifiedComboCard
             packages={packages}
-            selectedPackageId={selectedPackageId}
+            selectedPackageId={currentSelectedPkgId}
+            includeVat={includeVat}
             onSelectPackage={(pkg) => {
-              onSelectPackage(pkg);
-              onClose();
+              if (pkg.volume === 'under') {
+                setTempSelectedUnder((prev) => (prev?.id === pkg.id ? null : pkg));
+              } else {
+                setTempSelectedUpper((prev) => (prev?.id === pkg.id ? null : pkg));
+              }
             }}
             onSelectLocked={() => {
-              // ComboCatalogConsultModal không có locked modal riêng — hiện lock reason qua WingsComboCard
+              setLockedModalOpen(true);
             }}
           />
         </div>
       </div>
 
-      {/* Fullscreen Card Artwork Zoom Modal */}
-      {zoomedCard && (
+      {/* Floating Bottom Action Bar */}
+      <div className="sticky bottom-0 bg-[#1C1C1E]/95 backdrop-blur-md border-t border-white/10 px-4 py-3 flex items-center justify-between z-30 shrink-0 shadow-2xl">
+        <div className="flex flex-col font-variant-numeric tabular-nums min-w-0 pr-2">
+          <div className="text-[11px] font-bold text-neutral-400 truncate flex items-center gap-1.5">
+            {totalSelectedCount > 0 ? (
+              <>
+                <span>
+                  Đã chọn <strong className="text-white">{totalSelectedCount}</strong> gói:
+                </span>
+                {tempSelectedUpper && (
+                  <span className="inline-flex items-center gap-0.5 text-amber-300 font-extrabold text-[10.5px]">
+                    <Eye className="w-3 h-3 text-amber-400" />
+                    <span>Trên</span>
+                  </span>
+                )}
+                {tempSelectedUnder && (
+                  <span className="inline-flex items-center gap-0.5 text-purple-300 font-extrabold text-[10.5px]">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <span>Dưới</span>
+                  </span>
+                )}
+              </>
+            ) : (
+              <span>Chưa chọn gói nào</span>
+            )}
+          </div>
+          <div className="text-[16px] font-black text-[#FFB400] leading-tight mt-0.5 flex items-baseline gap-1.5">
+            <span>{totalSelectedPrice.toLocaleString('vi-VN')}đ</span>
+            {includeVat && <span className="text-[9.5px] font-bold text-emerald-400">(Đã gồm 8% VAT)</span>}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleApply}
+            className="px-5 py-2.5 rounded-full bg-[#FFB400] text-black text-[13px] font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
+          >
+            <Check className="w-4 h-4 stroke-[2.5]" />
+            <span>Áp Dụng</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Modal giải thích gói Welcome 2 tặng 1 bị khóa (khi click vào icon Lock) */}
+      {lockedModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
-          onClick={() => setZoomedCard(null)}
+          className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setLockedModalOpen(false)}
         >
-          <div className="w-full max-w-md flex items-center justify-between text-white mb-3">
-            <span className="text-[14px] font-bold">{zoomedCard.title}</span>
+          <div
+            className="bg-white rounded-2xl p-4 max-w-sm w-full space-y-3 shadow-xl animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 text-amber-800">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                <Lock className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="font-extrabold text-[14px]">Khóa Gói Welcome 2 Tặng 1</div>
+            </div>
+            <p className="text-[12px] text-neutral-600 leading-relaxed">
+              {welcomeEligibility.reason ||
+                'Gói Welcome (2 tặng 1) là đặc quyền chỉ dành riêng cho khách hàng mua trong lần ghé đầu tiên.'}
+            </p>
             <button
               type="button"
-              onClick={() => setZoomedCard(null)}
-              className="px-3 py-1 rounded-full bg-white/15 text-[12px] font-bold"
+              onClick={() => setLockedModalOpen(false)}
+              className="w-full py-2.5 rounded-xl bg-neutral-900 text-white font-bold text-[12px] active:scale-98 transition-transform cursor-pointer"
             >
-              Đóng ✕
+              Đã hiểu
             </button>
           </div>
-          <img
-            src={zoomedCard.imageUrl}
-            alt={zoomedCard.title}
-            className="max-w-full max-h-[80vh] rounded-2xl object-contain shadow-2xl"
-          />
         </div>
       )}
     </div>

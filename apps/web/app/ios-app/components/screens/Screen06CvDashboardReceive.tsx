@@ -47,7 +47,11 @@ export function Screen06CvDashboardReceive({
   onBack,
   staffStats,
 }: Screen06CvDashboardReceiveProps) {
-  const staffAvatar = resolveStaffAvatarUrl(booking.assignedStaffAvatar, booking.assignedStaffId || 46272, 'Thảo Ly');
+  const staffAvatar = resolveStaffAvatarUrl(
+    booking.assignedStaffAvatar,
+    booking.assignedStaffId || 13783,
+    booking.assignedStaffName || 'Khanh Cao'
+  );
   const bookerAvatar = resolveStaffAvatarUrl(booking.bookerAvatar, undefined, booking.bookerName || 'CC');
   const customerAvatar =
     booking.customerAvatar || 'https://cdn.wingslashes.com/uploads/user/avatar/48400/original/48400.jpg';
@@ -182,7 +186,9 @@ export function Screen06CvDashboardReceive({
                   Lần {booking.customerVisits || 7}
                 </span>
               </div>
-              <div className="text-[11.5px] text-neutral-400 font-mono mt-0.2">{booking.customerPhone}</div>
+              <div className="text-[11.5px] text-neutral-400 font-mono mt-0.2">
+                {(booking.customerPhone || '').replace(/\*+\s*/g, '').trim()}
+              </div>
 
               {/* Service Target & Price */}
               <div className="mt-1 text-[13px] font-black text-amber-300 leading-tight">{displayServiceName}</div>

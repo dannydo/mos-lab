@@ -2,10 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
-import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl } from '../../state/mockData';
+import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
 import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
 import {
   Check,
@@ -110,7 +110,7 @@ export function Screen02CheckInProfile({
   onQuickCheckIn,
 }: Screen02CheckInProfileProps) {
   const customerName = (booking?.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
-  const customerPhone = booking?.customerPhone || '0901.xxx.xxx';
+  const customerPhone = (booking?.customerPhone || '0901.xxx.xxx').replace(/\*+\s*/g, '').trim();
   const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = booking?.servicePrice ? `${booking.servicePrice.toLocaleString('vi-VN')} đ` : '550.000 đ';
   const bookingTime = booking?.time12h || booking?.timeSlot || '09:00 am';
@@ -120,27 +120,39 @@ export function Screen02CheckInProfile({
   const customerNote = booking?.customerNote || 'Không có ghi chú đặc biệt';
   const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
   const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
-  const actorName = actor?.name || 'Thảo Ly';
-  const actorTierLabel = actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? 'CV🪶' : 'CC';
+  const actorName = actor?.name || 'Khanh Cao';
+  const actorTierLabel =
+    actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? <CvFeather1Badge /> : 'CC';
 
-  // Thảo Ly (CVL): Checkin by và Lashed by là 1 người tự chủ đón tiếp & làm mi cho khách
+  // CVL (Khanh Cao / Thảo Ly): Checkin by và Lashed by là 1 người tự chủ đón tiếp & làm mi cho khách
   const isCvlStaff =
+    assignedStaff.toLowerCase().includes('khanh') ||
     assignedStaff.toLowerCase().includes('thảo ly') ||
+    booking?.assignedStaffId === 13783 ||
     booking?.assignedStaffId === 46272 ||
     actor?.tier === 'CVL' ||
+    actorName.toLowerCase().includes('khanh') ||
     actorName.toLowerCase().includes('thảo ly');
+
+  const defaultCvlAvatar =
+    actor?.avatar ||
+    KNOWN_STAFF_AVATARS[String(actor?.staffId || 13783)] ||
+    'https://cdn.wingslashes.com/uploads/user/avatar/400/thumbnail/15400.png';
 
   const checkInStaffName = isCvlStaff ? assignedStaff : booking?.checkInStaffName || actorName;
   const checkInStaffAvatar =
     resolveStaffAvatarUrl(
       isCvlStaff ? booking?.checkInStaffAvatar || booking?.assignedStaffAvatar : booking?.checkInStaffAvatar,
-      isCvlStaff ? booking?.assignedStaffId || 46272 : booking?.checkInStaffId,
+      isCvlStaff ? booking?.assignedStaffId || actor?.staffId || 13783 : booking?.checkInStaffId,
       checkInStaffName
-    ) || (isCvlStaff ? 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png' : undefined);
+    ) || (isCvlStaff ? defaultCvlAvatar : undefined);
 
   const assignedStaffAvatar =
-    resolveStaffAvatarUrl(booking?.assignedStaffAvatar, booking?.assignedStaffId || 46272, assignedStaff) ||
-    (isCvlStaff ? 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png' : undefined);
+    resolveStaffAvatarUrl(
+      booking?.assignedStaffAvatar,
+      booking?.assignedStaffId || actor?.staffId || 13783,
+      assignedStaff
+    ) || (isCvlStaff ? defaultCvlAvatar : undefined);
 
   // Quy tắc màu viền avatar (Avatar Ring Color Invariant theo chỉ đạo Danny):
   // -> vòng xanh quanh ngoài avatar -> not combo live
@@ -1317,8 +1329,10 @@ export function Screen02CheckInProfile({
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-[10.5px] font-extrabold text-neutral-700 uppercase">
-                Chọn lý do CV🪶 Override (Bắt buộc ghi nhận):
+              <div className="text-[10.5px] font-extrabold text-neutral-700 uppercase flex items-center gap-1">
+                <span>Chọn lý do</span>
+                <CvFeather1Badge />
+                <span>Override (Bắt buộc ghi nhận):</span>
               </div>
               <div className="space-y-1.5">
                 {pendingOverride.reasons.map((r) => {

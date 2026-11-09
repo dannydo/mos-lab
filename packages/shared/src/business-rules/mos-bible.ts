@@ -471,6 +471,32 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'VAT-001',
+    book: 'REWARDS',
+    title: 'Mọi khoản thu tại checkout đều chịu 8% VAT, trừ tiền Tip',
+    summary:
+      'Tất cả dịch vụ lẻ, phụ thu nâng cấp combo, gói combo mới và sản phẩm bán kèm tại Wings đều bắt buộc cộng 8% thuế VAT chuẩn hóa đơn; duy nhất tiền Tip của khách gửi tặng nhân sự tuyệt đối không chịu thuế VAT.',
+    commandments: [
+      'Toàn bộ dịch vụ lẻ (Single Service), phí phụ thu nâng cấp dịch vụ từ gói combo (Upgrade Price), gói combo mua mới và sản phẩm bán kèm (dưỡng mi, serum) đều bắt buộc chịu 8% thuế VAT (Nghị định 72/2024/NĐ-CP).',
+      'Công thức tính thuế VAT chuẩn: vatAmount = Math.round(subtotal * 0.08) với subtotal = Tổng dịch vụ/phụ thu + Tổng gói combo + Tổng sản phẩm.',
+      'Duy nhất Tiền Tip (tipAmount) của khách hàng trao tặng cho Chuyên Viên và nhân sự phục vụ TUYỆT ĐỐI KHÔNG chịu thuế VAT. Tiền tip được chuyển trọn vẹn 100% vào cơ cấu phân bổ thưởng nhân sự (CV 70%, In/Out 20%, Quỹ 10%).',
+      'Tổng tiền thanh toán cuối cùng (Grand Total) bắt buộc tuân thủ công thức: Grand Total = Tạm tính (Subtotal) + Thuế VAT (8%) + Tiền Tip (♥) - Cấn trừ Ví Kim Cương (💎).',
+      'Tất cả hóa đơn in nhiệt xuất cho khách hàng (Thermal Receipt Screen 14) bắt buộc phải in minh bạch dòng Thuế VAT (8%) ngay sau phần Tạm tính và trước Tiền Tip.',
+    ],
+    rationale:
+      'Đảm bảo tuân thủ 100% quy định thuế GTGT hiện hành của nhà nước, minh bạch tài chính cho khách hàng trên hóa đơn điện tử/hóa đơn in nhiệt, đồng thời bảo vệ trọn vẹn quyền lợi tiền tip của nhân sự.',
+    tags: ['VAT', '8%', 'CHECKOUT', 'BILLING', 'RECEIPT', 'TAX', 'TIP_EXEMPT'],
+    routeScopes: ['/ios-app', '/dashboard/revenue', '/dashboard/finance'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-08',
+    sources: [
+      { label: 'Quy tắc VAT 8% Checkout', reference: 'Kinh Thánh mOS Điều răn VAT-001' },
+      { label: 'Nghị định 72/2024/NĐ-CP', reference: 'Chính sách giảm thuế GTGT 8%' },
+      { label: 'Hóa đơn in nhiệt Wings', reference: 'Screen12CheckoutBilling.tsx & Screen14ThermalReceiptDone.tsx' },
+    ],
+  },
+  {
     id: 'CC-003',
     book: 'REWARDS',
     title: 'CC có thưởng ngày, không có thưởng doanh số tháng',
@@ -540,6 +566,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Quy tắc Combo Mi Dưới (LashesUnder) trong Tỷ lệ chốt Combo: Gói combo mi dưới khi Chuyên Viên chốt được VẪN ĐƯỢC TÍNH VÀO TỬ SỐ của tỷ lệ chốt combo (tăng thành tích bán hàng và hưởng thưởng combo). Tuy nhiên, khách hàng chỉ sở hữu gói combo mi dưới thì KHÔNG BỊ TÍNH là Combo Live; ca làm phục vụ khách này vẫn được tính vào mẫu số Not Combo Live (khách tiềm năng) để Chuyên Viên có cơ hội tư vấn tiếp gói combo mi chính.',
       'Quy tắc Tự Tư Vấn & Tự Checkout trên /ios-app (Phân quyền CV🪶 & 🪶CV🪶): CV🪶 (1 lông · CVL) được xem danh sách khách hàng của chính mình (assigned_staff_id = mình) trên /ios-app, tự xem hồ sơ khách (lịch sử mi, số dư gói Combo Live vs Not Combo Live), tự bấm Check-in, Tư vấn chọn dịch vụ / bán gói Combo mới, Khảo sát hài lòng (HI), thêm Dưỡng mi Yeppeum và bấm Chốt Check-out mà không cần nhờ CC. 🪶CV🪶 (2 lông · CVLL) ngoài khách của mình còn được xem danh sách khách trong tiệm để hỗ trợ Check-in / Tư vấn / Check-out chéo giùm cho CV khác.',
       'Quy tắc Chia Tip 50/50 Check-in & Check-out và Ghi Nhận Thưởng Theo Người Checkout (Ai Checkout Người Đó Được Nhận): Phần 20% Tip tư vấn giữ nguyên quy tắc chia 50/50: người bấm Check-in (check_in_staff_id) nhận 10% Tip và người bấm Check-out (check_out_staff_id) nhận 10% Tip (cộng với 70% Tip làm mi của assigned_staff_id = 90% Tip khi CV🪶 tự làm trọn gói). Đơn hàng có bán gói Combo (order_service_combo) hoặc sản phẩm Dưỡng mi (order_product) được ghi nhận thưởng cho người thực hiện Check-out (check_out_staff_id); khi người Check-out là CV🪶 hoặc 🪶CV🪶, tiền thưởng được tính theo bảng thưởng tiền tươi bậc thang của CV🪶 trong CAREER_PROGRESSION_RULES (khác với công thức % hoa hồng của CC).',
+      'Quy chuẩn Hiển thị Lông Vũ Vector trên Giao diện (UI Vector Feather Invariant): Ký tự Unicode Feather 🪶 (U+1FAB6) trên font Apple Color Emoji của macOS/iOS bị render thành màu nâu sọc vằn, ở kích cỡ nhỏ (10-14px) nhìn giống ổ bánh mì baguette (🥖) hoặc điếu thuốc, làm tổn hại đến sự sang trọng, thanh thoát của thương hiệu Wings. Do đó, trên toàn bộ giao diện Web và iOS App, BẮT BUỘC sử dụng component vector <CvFeather1Badge /> và <CvFeather2Badge /> (kèm <FeatherSvg /> từ lucide-react) với màu vàng kim (text-amber-400 / #FFB400 hoặc #F59E0B) và đường nét vector sắc sảo, tuyệt đối không render chuỗi ký tự emoji thô 🪶 trên UI người dùng.',
     ],
     rationale:
       'Gắn kết quyền lợi tài chính đột phá với năng lực trực tiếp bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
