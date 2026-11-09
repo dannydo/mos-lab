@@ -6,6 +6,7 @@ const apiMocks = vi.hoisted(() => ({
   mine: vi.fn(),
   markNotificationsRead: vi.fn(),
   review: vi.fn(),
+  cancel: vi.fn(),
   comment: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ vi.mock('../../lib/api-client', () => ({
       mine: apiMocks.mine,
       markNotificationsRead: apiMocks.markNotificationsRead,
       review: apiMocks.review,
+      cancel: apiMocks.cancel,
       comment: apiMocks.comment,
     },
   },
@@ -258,5 +260,51 @@ describe('useMyBugReports', () => {
       await p1!;
       await p2!;
     });
+  });
+
+  it('optimistically updates ticket state to CANCELLED on cancel call', async () => {
+    const item = makeMockBugItem({ id: 197, status: 'NEW' });
+    const initialResponse: MyBugReportsResponse = {
+      data: [item],
+      notifications: [],
+      unreadCount: 0,
+      actionRequiredCount: 0,
+    };
+    const updatedResponse: MyBugReportsResponse = {
+      data: [
+        makeMockBugItem({
+          id: 197,
+          status: 'CANCELLED',
+          canReview: false,
+          canReopenUnchanged: false,
+          canCancel: false,
+          reporterExperience: {
+            state: 'NOT_PROCEEDING',
+            label: 'Đã huỷ',
+            summary: 'Bạn đã huỷ yêu cầu: Báo nhầm không phải lỗi',
+            nextAction: { label: 'Yêu cầu đã huỷ', detail: '' },
+            updates: [],
+          },
+        }),
+      ],
+      notifications: [],
+      unreadCount: 0,
+      actionRequiredCount: 0,
+    };
+    apiMocks.mine.mockResolvedValueOnce(initialResponse).mockResolvedValueOnce(updatedResponse);
+    apiMocks.cancel.mockResolvedValue({ success: true });
+
+    const { result } = renderHook(() => useMyBugReports(true));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.cancel(197, 'Báo nhầm không phải lỗi');
+    });
+
+    expect(apiMocks.cancel).toHaveBeenCalledWith(197, { reason: 'Báo nhầm không phải lỗi' });
+    expect(result.current.data[0]?.status).toBe('CANCELLED');
+    expect(result.current.data[0]?.reporterExperience.state).toBe('NOT_PROCEEDING');
+    expect(result.current.data[0]?.reporterExperience.label).toBe('Đã huỷ');
+    expect(result.current.data[0]?.reporterExperience.summary).toContain('Báo nhầm không phải lỗi');
   });
 });

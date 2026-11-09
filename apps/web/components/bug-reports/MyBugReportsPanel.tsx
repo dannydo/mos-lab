@@ -13,6 +13,7 @@ import {
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import {
+  Ban,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -32,6 +33,7 @@ import { AppIcon, StatePanel, StatusTag, RichTextViewer } from '../ui';
 import { BugReportConversation } from './BugReportConversation';
 import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
 import { BugReportRejectionModal } from './BugReportRejectionModal';
+import { BugReportCancelModal } from './BugReportCancelModal';
 
 const { Text } = Typography;
 
@@ -189,6 +191,7 @@ interface MyBugReportsPanelProps {
   onSelect: (key: string) => void;
   onRefresh: () => Promise<void>;
   onReview: (id: number, request: ReviewBugReportRequest) => Promise<unknown>;
+  onCancel?: (id: number, reason?: string) => Promise<unknown>;
   onComment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   onClose?: () => void;
 }
@@ -203,12 +206,15 @@ export function MyBugReportsPanel({
   onSelect,
   onRefresh,
   onReview,
+  onCancel,
   onComment,
   onClose,
 }: MyBugReportsPanelProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
   const [saving, setSaving] = React.useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = React.useState(false);
+  const [cancelling, setCancelling] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [technicalHistoryOpen, setTechnicalHistoryOpen] = React.useState(false);
   // Mobile navigation: 'list' shows the ticket list, 'detail' shows the selected ticket detail
@@ -278,6 +284,26 @@ export function MyBugReportsPanel({
     }
   };
 
+  const submitCancel = async (reason: string) => {
+    if (cancelling || !onCancel) return;
+    const selected = reports.find((item) => item.key === selectedKey) ?? reports[0];
+    if (!selected) return;
+    setCancelling(true);
+    try {
+      await onCancel(selected.id, reason);
+      messageApi.success('Đã huỷ yêu cầu thành công.');
+      setCancelModalOpen(false);
+    } catch (caught) {
+      const responseMessage =
+        caught && typeof caught === 'object' && 'response' in caught
+          ? (caught as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(responseMessage || (caught instanceof Error ? caught.message : 'Không thể huỷ yêu cầu.'));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading && !reports.length) return <StatePanel kind="loading" title="Đang tải yêu cầu của bạn…" />;
   if (error && !reports.length)
     return (
@@ -316,6 +342,13 @@ export function MyBugReportsPanel({
   }));
   const recentUpdates = selected?.reporterExperience.updates.slice(0, 2) ?? [];
   const selectedEvidence = selected?.evidenceAttachments ?? [];
+  const canCancelSelected = Boolean(
+    onCancel &&
+      selected &&
+      (selected.canCancel ??
+        (!['COMPLETED', 'NOT_PROCEEDING'].includes(selected.reporterExperience.state) &&
+          !['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(selected.status)))
+  );
 
   return (
     <div className="space-y-3">
@@ -505,11 +538,24 @@ export function MyBugReportsPanel({
                         {requestTypeLabel(selected)}
                       </Text>
                     </span>
-                    <StatusTag
-                      status={REPORTER_STATE_TONES[selected.reporterExperience.state]}
-                      icon={<AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="sm" />}
-                      label={selected.reporterExperience.label}
-                    />
+                    <div className="flex items-center gap-2">
+                      <StatusTag
+                        status={REPORTER_STATE_TONES[selected.reporterExperience.state]}
+                        icon={<AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="sm" />}
+                        label={selected.reporterExperience.label}
+                      />
+                      {canCancelSelected ? (
+                        <Button
+                          size="small"
+                          danger
+                          type="text"
+                          icon={<AppIcon icon={Ban} size="sm" />}
+                          onClick={() => setCancelModalOpen(true)}
+                        >
+                          Huỷ yêu cầu
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                   <Text strong className="mt-1.5 block text-lg leading-snug">
                     {selected.title}
@@ -686,6 +732,25 @@ export function MyBugReportsPanel({
                     </div>
                   </div>
                 ) : null}
+                {canCancelSelected && !selected.canReview && (
+                  <div
+                    className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3"
+                    style={{ borderColor: selectedVisual.border }}
+                  >
+                    <Text type="secondary" className="text-xs">
+                      Nếu yêu cầu này bị báo nhầm hoặc không còn cần thiết, bạn có thể huỷ yêu cầu.
+                    </Text>
+                    <Button
+                      danger
+                      loading={cancelling}
+                      disabled={cancelling}
+                      icon={<AppIcon icon={Ban} size="sm" />}
+                      onClick={() => setCancelModalOpen(true)}
+                    >
+                      Huỷ yêu cầu
+                    </Button>
+                  </div>
+                )}
               </section>
 
               {canViewTechnicalHistory ? (
@@ -742,6 +807,17 @@ export function MyBugReportsPanel({
               attachments: data.attachments,
             });
           }}
+        />
+      ) : null}
+
+      {selected ? (
+        <BugReportCancelModal
+          open={cancelModalOpen}
+          reportKey={selected.key}
+          reportTitle={selected.title}
+          submitting={cancelling}
+          onCancel={() => setCancelModalOpen(false)}
+          onSubmit={submitCancel}
         />
       ) : null}
     </div>

@@ -16,6 +16,8 @@ import type {
   BugReportDetail,
   BugReportListQuery,
   BugReportListResponse,
+  CancelBugReportRequest,
+  CancelBugReportResponse,
   ConfirmCloseBugReportRequest,
   ConfirmCloseBugReportResponse,
   CreateBugReportCommentRequest,
@@ -106,6 +108,11 @@ export const bugReportsApi = {
     },
     review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
       const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
+      return response.data;
+    },
+    cancel: async (id: number, data?: CancelBugReportRequest): Promise<CancelBugReportResponse> => {
+      const response = await api.post<CancelBugReportResponse>(`/bug-reports/${id}/cancel`, data ?? {});
       invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },

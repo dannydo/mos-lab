@@ -29,6 +29,7 @@ import {
   type RecordInboxIdeTaskReceiptRequest,
   type RecordInboxIdeCommitReceiptRequest,
   type BugReportListQuery,
+  type CancelBugReportRequest,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
   type CreateBugReportRequest,
@@ -703,6 +704,38 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.post('/bug-reports/:id/cancel', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      const data = await BugReportService.cancel(
+        fastify,
+        request.user.id,
+        id,
+        canManageBugInbox(request.user),
+        request.body as CancelBugReportRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã huỷ yêu cầu thành công.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Cancel bug report failed');
+    }
+  });
+
+  fastify.patch('/bug-reports/:id/cancel', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      const data = await BugReportService.cancel(
+        fastify,
+        request.user.id,
+        id,
+        canManageBugInbox(request.user),
+        request.body as CancelBugReportRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã huỷ yêu cầu thành công.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Cancel bug report failed');
+    }
+  });
 
   fastify.post(
     '/bug-reports/:id/comments',

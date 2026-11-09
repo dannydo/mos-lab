@@ -175,6 +175,46 @@ export function useMyBugReports(enabled: boolean) {
     [unreadCount]
   );
 
+  const cancel = React.useCallback(
+    async (id: number, reason?: string) => {
+      const nowIso = new Date().toISOString();
+      setData((current) =>
+        current.map((item) => {
+          if (item.id !== id) return item;
+          return {
+            ...item,
+            status: 'CANCELLED',
+            canReview: false,
+            canReopenUnchanged: false,
+            canCancel: false,
+            reporterExperience: {
+              ...item.reporterExperience,
+              state: 'NOT_PROCEEDING',
+              label: 'Đã huỷ',
+              summary: reason ? `Bạn đã huỷ yêu cầu: ${reason}` : 'Bạn đã huỷ yêu cầu này.',
+              nextAction: {
+                label: 'Yêu cầu đã huỷ',
+                detail: 'Bạn có thể gửi một yêu cầu mới khi cần.',
+              },
+              updates: [
+                ...item.reporterExperience.updates,
+                { label: 'Đã huỷ yêu cầu', occurredAt: nowIso },
+              ],
+            },
+          };
+        })
+      );
+      try {
+        await apiClient.bugReports.cancel(id, { reason });
+        await refresh({ force: true });
+      } catch (error) {
+        await refresh({ force: true });
+        throw error;
+      }
+    },
+    [refresh]
+  );
+
   return {
     data,
     notifications,
@@ -184,6 +224,7 @@ export function useMyBugReports(enabled: boolean) {
     error,
     refresh,
     review,
+    cancel,
     comment,
     markNotificationsRead,
     addOptimisticReport,
