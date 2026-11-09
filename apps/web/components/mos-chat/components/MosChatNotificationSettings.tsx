@@ -2,15 +2,27 @@
 
 import React, { useMemo } from 'react';
 import { Modal, Radio, theme, Tooltip, Input } from 'antd';
-import { Bell, BellOff, BellRing, AtSign, Volume2, VolumeX, Search, ChevronRight } from 'lucide-react';
+import {
+  Bell,
+  BellOff,
+  BellRing,
+  AtSign,
+  Volume2,
+  VolumeX,
+  Search,
+  ChevronRight,
+  Smartphone,
+  Sparkles,
+} from 'lucide-react';
 import type {
   MosChatConversation,
   MosChatUserSidebarPrefs,
   MosChatNotificationMode,
   MosChatChannelNotificationOverride,
 } from '@mos-lab/shared';
+import { useMosChatWebPush } from '../utils/useMosChatWebPush';
 
-type SafeAny = any;  
+type SafeAny = any;
 
 interface NotificationSettingsModalProps {
   open: boolean;
@@ -71,6 +83,7 @@ export const MosChatNotificationSettingsModal: React.FC<NotificationSettingsModa
   const { token } = theme.useToken();
   const isDark = themeMode === 'dark';
   const [searchText, setSearchText] = React.useState('');
+  const webPush = useMosChatWebPush({ enabled: open });
 
   const globalMode: MosChatNotificationMode = userPrefs.notificationMode || 'ALL';
 
@@ -121,6 +134,81 @@ export const MosChatNotificationSettingsModal: React.FC<NotificationSettingsModa
       }}
       closable={{ 'aria-label': 'Đóng', placement: 'end' } as SafeAny}
     >
+      {/* ─── Section 0: Web Push Lock-Screen Call Ringing (iOS PWA & Desktop) ─── */}
+      <div className="px-6 pb-4 mb-4 border-b" style={{ borderColor }}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className="w-8 h-8 rounded-lg inline-flex items-center justify-center shrink-0"
+              style={{
+                background: webPush.isSubscribed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                color: webPush.isSubscribed ? '#10b981' : '#f59e0b',
+              }}
+            >
+              <Smartphone size={16} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-bold" style={{ color: token.colorText }}>
+                Chuông báo Cuộc gọi khi Khóa máy (iOS / Desktop Push)
+              </div>
+              <div className="text-[11px]" style={{ color: token.colorTextSecondary }}>
+                {webPush.isSubscribed
+                  ? `Đã bật (${webPush.subscribedCount} thiết bị đăng ký)`
+                  : 'Bật để iPhone/máy tính đổ chuông cuộc gọi ngay cả khi khóa màn hình'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {webPush.isSubscribed ? (
+              <>
+                <button
+                  type="button"
+                  disabled={webPush.testCountdown > 0}
+                  onClick={() => void webPush.sendDelayedTestPush(4)}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer inline-flex items-center gap-1 tabular-nums"
+                  style={{
+                    background: 'rgba(14, 165, 233, 0.15)',
+                    border: '1px solid rgba(14, 165, 233, 0.35)',
+                    color: '#38bdf8',
+                  }}
+                >
+                  <Sparkles size={12} />
+                  <span>{webPush.testCountdown > 0 ? `Khóa máy (${webPush.testCountdown}s)` : 'Test 4s'}</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={webPush.isLoading}
+                  onClick={() => void webPush.disablePushNotifications()}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer"
+                  style={{
+                    background: cardBg,
+                    border: `1px solid ${borderColor}`,
+                    color: token.colorTextSecondary,
+                  }}
+                >
+                  Tắt
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                disabled={webPush.isLoading}
+                onClick={() => void webPush.enablePushNotifications()}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer"
+                style={{
+                  background: '#10b981',
+                  color: '#052e16',
+                  border: 'none',
+                }}
+              >
+                {webPush.isLoading ? 'Đang bật...' : 'Bật ngay'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ─── Section 1: Global Default Mode ─── */}
       <div className="px-6 pb-4">
         <div className="text-[13px] font-bold mb-3" style={{ color: token.colorText }}>

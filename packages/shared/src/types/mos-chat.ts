@@ -1156,3 +1156,59 @@ export interface ListActiveMosChatVoiceCallsResponse {
   activeCalls: MosChatVoiceCallSession[];
   pendingSignals?: MosChatVoiceCallSignalEnvelope[];
 }
+
+// ================= WEB PUSH NOTIFICATIONS (iOS PWA & DESKTOP LOCK-SCREEN) =================
+
+export interface MosChatPushSubscriptionKeys {
+  p256dh: string;
+  auth: string;
+}
+
+export interface MosChatPushSubscriptionPayload {
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: MosChatPushSubscriptionKeys;
+  userAgent?: string;
+  deviceLabel?: string;
+}
+
+export interface MosChatPushConfigResponse {
+  success: boolean;
+  vapidPublicKey: string;
+  subscribedCount: number;
+}
+
+export interface SubscribeMosChatPushRequest {
+  subscription: MosChatPushSubscriptionPayload;
+}
+
+export interface SubscribeMosChatPushResponse {
+  success: boolean;
+  subscribedCount: number;
+}
+
+export interface UnsubscribeMosChatPushRequest {
+  endpoint: string;
+}
+
+export interface UnsubscribeMosChatPushResponse {
+  success: boolean;
+  subscribedCount: number;
+}
+
+export interface MosChatWebPushNotificationPayload {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  renotify?: boolean;
+  requireInteraction?: boolean;
+  vibrate?: number[];
+  data?: {
+    type: 'VOICE_CALL_INCOMING' | 'VOICE_CALL_MISSED' | 'CHAT_BUZZ' | 'CHAT_TEST';
+    callId?: string;
+    conversationId?: string;
+    url?: string;
+  };
+}

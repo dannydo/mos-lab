@@ -47,6 +47,8 @@ import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
 import type { MosChatImageAttachment, MosChatCustomerCard, MosChatSearchResultItem } from '@mos-lab/shared';
 import { useMosChatVoiceCall } from '../utils/useMosChatVoiceCall';
 import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
+import { useMosChatWebPush } from '../utils/useMosChatWebPush';
+import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -133,6 +135,15 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
   // Mobile Message Search Sheet state
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  const [pushModalOpen, setPushModalOpen] = useState(false);
+
+  const webPush = useMosChatWebPush({
+    enabled: Boolean(currentUser?.id),
+    onSelectConversationFromPush: (convId) => {
+      setActiveConvId(convId);
+      setMobileView('room');
+    },
+  });
 
   const standaloneVoiceCall = useMosChatVoiceCall({
     currentStaffId: currentUser?.id ?? null,
@@ -605,6 +616,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
         onOpenTaskModal={() => openTaskModalForThread()}
         onOpenSearch={() => setSearchSheetOpen(true)}
+        onOpenPushSettings={() => setPushModalOpen(true)}
+        isPushSubscribed={webPush.isSubscribed}
         onCallRoom={handleCallCurrentRoom}
       />
 
@@ -980,6 +993,24 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onClose={() => setSearchSheetOpen(false)}
         activeConversation={activeConversation}
         onSelectMessage={handleSelectSearchResult}
+      />
+
+      {/* Lock-Screen Call Notification (Web Push PWA) Modal */}
+      <MosChatPushNotificationModal
+        open={pushModalOpen}
+        onClose={() => setPushModalOpen(false)}
+        isSupported={webPush.isSupported}
+        isIos={webPush.isIos}
+        isStandalonePwa={webPush.isStandalonePwa}
+        needsIosHomeScreen={webPush.needsIosHomeScreen}
+        permission={webPush.permission}
+        isSubscribed={webPush.isSubscribed}
+        subscribedCount={webPush.subscribedCount}
+        isLoading={webPush.isLoading}
+        testCountdown={webPush.testCountdown}
+        onEnablePush={() => void webPush.enablePushNotifications()}
+        onDisablePush={() => void webPush.disablePushNotifications()}
+        onSendTestPush={() => void webPush.sendDelayedTestPush(4)}
       />
 
       {standalone && (

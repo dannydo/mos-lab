@@ -43,6 +43,7 @@ import type {
   MosChatSearchResultItem,
   EndMosChatVoiceCallResponse,
   ListActiveMosChatVoiceCallsResponse,
+  MosChatPushConfigResponse,
   MosChatVoiceCallSession,
   MuteMosChatVoiceCallRequest,
   RespondMosChatVoiceCallRequest,
@@ -50,6 +51,10 @@ import type {
   SignalMosChatVoiceCallRequest,
   StartMosChatVoiceCallRequest,
   StartMosChatVoiceCallResponse,
+  SubscribeMosChatPushRequest,
+  SubscribeMosChatPushResponse,
+  UnsubscribeMosChatPushRequest,
+  UnsubscribeMosChatPushResponse,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
   UpdateMosChatNicknameRequest,
@@ -403,6 +408,22 @@ export const chatApi = {
     endCall: async (callId: string): Promise<EndMosChatVoiceCallResponse> => {
       const res = await api.post(`/chat/calls/${encodeURIComponent(callId)}/end`, {});
       invalidateApiGetCache(['/chat/calls/active', '/chat/bootstrap']);
+      return res.data;
+    },
+    getPushConfig: async (): Promise<MosChatPushConfigResponse> => {
+      const res = await api.get('/chat/push/config');
+      return res.data;
+    },
+    subscribePush: async (payload: SubscribeMosChatPushRequest): Promise<SubscribeMosChatPushResponse> => {
+      const res = await api.post('/chat/push/subscribe', payload);
+      return res.data;
+    },
+    unsubscribePush: async (payload: UnsubscribeMosChatPushRequest): Promise<UnsubscribeMosChatPushResponse> => {
+      const res = await api.post('/chat/push/unsubscribe', payload);
+      return res.data;
+    },
+    sendTestPush: async (): Promise<{ success: boolean; sent: number; failed: number }> => {
+      const res = await api.post('/chat/push/test', {});
       return res.data;
     },
   },

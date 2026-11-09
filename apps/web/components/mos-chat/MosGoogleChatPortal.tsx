@@ -260,6 +260,7 @@ import {
 import { MosChatReminderAlert } from './components/MosChatReminderAlert';
 import { MosChatTaskInlineChecklist } from './components/MosChatTaskInlineChecklist';
 import { useMosChatVoiceCall } from './utils/useMosChatVoiceCall';
+import { useMosChatWebPush } from './utils/useMosChatWebPush';
 import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from './components/MosChatVoiceCallWidget';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
 import dynamic from 'next/dynamic';
@@ -2272,6 +2273,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           };
         })
       );
+    },
+  });
+
+  useMosChatWebPush({
+    enabled: Boolean(currentUser?.id),
+    onSelectConversationFromPush: (convId) => {
+      ensurePortalOpen();
+      setActiveConvId(convId);
+      setActiveSubtab('chat');
     },
   });
 

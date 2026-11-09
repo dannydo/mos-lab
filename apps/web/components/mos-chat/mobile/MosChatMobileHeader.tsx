@@ -15,6 +15,8 @@ import {
   UserPlus,
   Pin,
   RefreshCw,
+  Bell,
+  BellRing,
 } from 'lucide-react';
 import { Dropdown, Modal } from 'antd';
 import type { MenuProps } from 'antd';
@@ -30,6 +32,8 @@ export interface MosChatMobileHeaderProps {
   onOpenTaskModal?: () => void;
   onOpenMembersModal?: () => void;
   onOpenSearch?: () => void;
+  onOpenPushSettings?: () => void;
+  isPushSubscribed?: boolean;
 }
 
 export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
@@ -38,6 +42,8 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   onOpenTaskModal,
   onOpenMembersModal,
   onOpenSearch,
+  onOpenPushSettings,
+  isPushSubscribed = false,
 }) => {
   const {
     currentUser,
@@ -130,6 +136,24 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenPushSettings && (
+              <button
+                type="button"
+                onClick={onOpenPushSettings}
+                className={`relative p-2 rounded-full border active:scale-95 transition-transform ${
+                  isPushSubscribed
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                    : 'bg-slate-800/80 border-slate-700/60 text-amber-400'
+                }`}
+                aria-label="Chuông báo cuộc gọi khi khóa máy"
+                title="Bật chuông báo cuộc gọi khi khóa màn hình iPhone"
+              >
+                {isPushSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                {!isPushSubscribed && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                )}
+              </button>
+            )}
             {onOpenSearch && (
               <button
                 type="button"
@@ -417,12 +441,30 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               )}
             </button>
 
+            {/* Push Notification / Lock-Screen Ringing */}
+            {onOpenPushSettings && (
+              <button
+                type="button"
+                onClick={onOpenPushSettings}
+                className={`relative p-2 rounded-full transition-colors active:scale-95 ${
+                  isPushSubscribed ? 'text-emerald-400 hover:bg-slate-800' : 'text-amber-400 hover:bg-slate-800'
+                }`}
+                aria-label="Chuông báo cuộc gọi khi khóa máy"
+                title="Bật chuông báo cuộc gọi khi khóa màn hình iPhone"
+              >
+                {isPushSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                {!isPushSubscribed && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                )}
+              </button>
+            )}
+
             {/* Quick Phone Call */}
             <button
               type="button"
               onClick={onCallRoom}
               className="p-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95"
-              aria-label="Gọi thoại OmiCall"
+              aria-label="Gọi thoại nội bộ mOS"
             >
               <Phone className="w-4 h-4 text-emerald-400" />
             </button>

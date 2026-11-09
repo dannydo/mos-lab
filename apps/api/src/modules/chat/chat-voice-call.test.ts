@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { chatRealtimeHub } from './chat-realtime.hub.js';
 import {
@@ -7,6 +8,7 @@ import {
   chatVoiceCallManager,
   generateLiveKitJwtToken,
 } from './chat-voice-call.service.js';
+import { createVapidJwtToken, encryptWebPushAes128Gcm, generateVapidKeyPair } from './chat-web-push.service.js';
 
 describe('mOS Chat Voice Call Service & WebRTC/LiveKit Signaling', () => {
   beforeEach(() => {
@@ -161,5 +163,66 @@ describe('mOS Chat Voice Call Service & WebRTC/LiveKit Signaling', () => {
     assert.equal(decodedPayload.sub, '1');
     assert.equal(decodedPayload.video.room, 'mos-call-room-1');
     assert.equal(decodedPayload.video.roomJoin, true);
+  });
+
+  it('generates valid VAPID ES256 JWT and encrypts/decrypts RFC 8291 aes128gcm Web Push payload for iOS PWA', () => {
+    const vapid = generateVapidKeyPair();
+    assert.equal(Buffer.from(vapid.publicKey, 'base64url').length, 65);
+
+    const jwt = createVapidJwtToken({
+      endpoint: 'https://web.push.apple.com/Q123456789',
+      privateJwk: vapid.privateJwk,
+    });
+    const jwtParts = jwt.split('.');
+    assert.equal(jwtParts.length, 3);
+    const claims = JSON.parse(Buffer.from(jwtParts[1], 'base64url').toString('utf8'));
+    assert.equal(claims.aud, 'https://web.push.apple.com');
+
+    // Simulate iPhone Safari PWA client subscription keys
+    const clientEcdh = crypto.createECDH('prime256v1');
+    clientEcdh.generateKeys();
+    const clientPublic = clientEcdh.getPublicKey();
+    const clientAuth = crypto.randomBytes(16);
+
+    const payloadJson = JSON.stringify({
+      title: '📞 Cuộc gọi đến từ Danny Do',
+      body: 'Chạm để mở mOS Chat và nghe máy ngay',
+    });
+
+    const encryptedPacket = encryptWebPushAes128Gcm({
+      payloadJson,
+      p256dh: clientPublic.toString('base64url'),
+      auth: clientAuth.toString('base64url'),
+    });
+
+    // Parse RFC 8188 header (86 bytes) and decrypt as the iPhone client would
+    const salt = encryptedPacket.subarray(0, 16);
+    const rs = encryptedPacket.readUInt32BE(16);
+    const idlen = encryptedPacket.readUInt8(20);
+    assert.equal(rs, 4096);
+    assert.equal(idlen, 65);
+    const serverEphemeralPub = encryptedPacket.subarray(21, 21 + idlen);
+    const ciphertextWithTag = encryptedPacket.subarray(21 + idlen);
+
+    const sharedSecret = clientEcdh.computeSecret(serverEphemeralPub);
+    const keyInfo = Buffer.concat([Buffer.from('WebPush: info\0', 'ascii'), clientPublic, serverEphemeralPub]);
+    const ikm = Buffer.from(crypto.hkdfSync('sha256', sharedSecret, clientAuth, keyInfo, 32));
+    const cek = Buffer.from(
+      crypto.hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: aes128gcm\0', 'ascii'), 16)
+    );
+    const nonce = Buffer.from(
+      crypto.hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: nonce\0', 'ascii'), 12)
+    );
+
+    const authTag = ciphertextWithTag.subarray(ciphertextWithTag.length - 16);
+    const ciphertext = ciphertextWithTag.subarray(0, ciphertextWithTag.length - 16);
+    const decipher = crypto.createDecipheriv('aes-128-gcm', cek, nonce);
+    decipher.setAuthTag(authTag);
+    const decryptedRecord = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+
+    // Last byte must be RFC 8188 final record delimiter 0x02
+    assert.equal(decryptedRecord[decryptedRecord.length - 1], 0x02);
+    const decryptedText = decryptedRecord.subarray(0, decryptedRecord.length - 1).toString('utf8');
+    assert.equal(decryptedText, payloadJson);
   });
 });

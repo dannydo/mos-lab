@@ -61,6 +61,8 @@ import {
   RespondMosChatVoiceCallRequest,
   SignalMosChatVoiceCallRequest,
   StartMosChatVoiceCallRequest,
+  SubscribeMosChatPushRequest,
+  UnsubscribeMosChatPushRequest,
   removeVietnameseTones,
   resolveBestSourceMessageForTaskChecklist,
   sortChecklistItemsByDeadline,
@@ -76,6 +78,13 @@ import {
   chatVoiceCallManager,
   VoiceCallActorInfo,
 } from './chat-voice-call.service.js';
+import {
+  getOrCreateVapidKeys,
+  getStaffPushSubscriptionCount,
+  registerStaffPushSubscription,
+  sendWebPushToStaffIds,
+  unregisterStaffPushSubscription,
+} from './chat-web-push.service.js';
 import {
   deduplicateMovedMessagesInConversation,
   deleteChatMessagesFromRelationalDb,
@@ -3013,6 +3022,29 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       conv.updatedAt = now.toISOString();
       await saveConversations(fastify, conversations);
 
+      const buzzTargets = new Set<string>();
+      if (conv.participantStaffId != null) buzzTargets.add(String(conv.participantStaffId));
+      for (const mId of conv.memberIds || []) buzzTargets.add(String(mId));
+      buzzTargets.delete(String(myStaffId || user.id || ''));
+      if (buzzTargets.size > 0) {
+        const preview = String(targetItem.text || 'Tin nhắn khẩn cấp').slice(0, 90);
+        void sendWebPushToStaffIds(fastify, Array.from(buzzTargets), {
+          title: `⚡ BUZZ khẩn từ ${senderName}`,
+          body: note ? `${note} — "${preview}"` : preview,
+          icon: '/apple-touch-icon.png',
+          badge: '/icon-192.png',
+          tag: `mos-chat-buzz-${messageId}`,
+          renotify: true,
+          requireInteraction: true,
+          vibrate: [250, 120, 250, 120, 350],
+          data: {
+            type: 'CHAT_BUZZ',
+            conversationId: conv.id,
+            url: `/chat?convId=${encodeURIComponent(conv.id)}&msgId=${encodeURIComponent(messageId)}`,
+          },
+        });
+      }
+
       const formattedConv = formatConversationForUser(conv, user, staffDirectory);
       const formattedMsg = formattedConv.messages.find((m) => m.id === messageId) || msg;
 
@@ -5738,8 +5770,56 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           targetStaffIds: targetIds,
           onRingTimeout: async (timedOutCall) => {
             await appendCallLogMessageToConversation(timedOutCall);
+            const recipients = timedOutCall.targetStaffIds.filter(
+              (id) => id !== timedOutCall.initiatorId && !timedOutCall.declinedStaffIds.includes(id)
+            );
+            if (recipients.length > 0) {
+              void sendWebPushToStaffIds(fastify, recipients, {
+                title: `📵 Cuộc gọi nhỡ từ ${timedOutCall.initiatorName}`,
+                body:
+                  timedOutCall.conversationType === 'dm'
+                    ? 'Chạm để mở mOS Chat và gọi lại'
+                    : `Trong nhóm ${timedOutCall.conversationName}`,
+                icon: '/apple-touch-icon.png',
+                badge: '/icon-192.png',
+                tag: `mos-voice-call-${timedOutCall.callId}`,
+                renotify: true,
+                requireInteraction: false,
+                data: {
+                  type: 'VOICE_CALL_MISSED',
+                  callId: timedOutCall.callId,
+                  conversationId: timedOutCall.conversationId,
+                  url: `/chat?convId=${encodeURIComponent(timedOutCall.conversationId)}`,
+                },
+              });
+            }
           },
         });
+
+        if (!started.joinedExisting) {
+          const recipients = started.call.targetStaffIds.filter((id) => id !== actor.staffId);
+          if (recipients.length > 0) {
+            void sendWebPushToStaffIds(fastify, recipients, {
+              title:
+                conv.type === 'dm'
+                  ? `📞 Cuộc gọi đến từ ${actor.name}`
+                  : `🎙️ ${actor.name} đang gọi nhóm (${started.call.conversationName})`,
+              body: 'Chạm để mở mOS Chat và nghe máy ngay',
+              icon: '/apple-touch-icon.png',
+              badge: '/icon-192.png',
+              tag: `mos-voice-call-${started.call.callId}`,
+              renotify: true,
+              requireInteraction: true,
+              vibrate: [300, 150, 300, 150, 300, 150, 400],
+              data: {
+                type: 'VOICE_CALL_INCOMING',
+                callId: started.call.callId,
+                conversationId: conv.id,
+                url: `/chat?convId=${encodeURIComponent(conv.id)}`,
+              },
+            });
+          }
+        }
 
         return {
           success: true,
@@ -5937,6 +6017,138 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(500).send({
           error: 'Internal Server Error',
           message: 'Không thể kết thúc cuộc gọi.',
+        });
+      }
+    }
+  );
+
+  // GET /api/chat/push/config
+  fastify.get(
+    '/chat/push/config',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const staffId = String(user?.id ?? '0');
+        const [vapid, subscribedCount] = await Promise.all([
+          getOrCreateVapidKeys(fastify),
+          getStaffPushSubscriptionCount(fastify, staffId),
+        ]);
+        return {
+          success: true,
+          vapidPublicKey: vapid.publicKey,
+          subscribedCount,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('GET /chat/push/config error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể tải cấu hình Web Push.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/push/subscribe
+  fastify.post<{ Body: SubscribeMosChatPushRequest }>(
+    '/chat/push/subscribe',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const staffId = String(user?.id ?? '0');
+        const sub = request.body?.subscription;
+        if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Thiếu thông tin đăng ký Web Push (endpoint, keys.p256dh, keys.auth).',
+          });
+        }
+        const subscribedCount = await registerStaffPushSubscription(fastify, staffId, sub);
+        return {
+          success: true,
+          subscribedCount,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('POST /chat/push/subscribe error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể đăng ký nhận thông báo cuộc gọi.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/push/unsubscribe
+  fastify.post<{ Body: UnsubscribeMosChatPushRequest }>(
+    '/chat/push/unsubscribe',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const staffId = String(user?.id ?? '0');
+        const endpoint = String(request.body?.endpoint || '').trim();
+        if (!endpoint) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Thiếu endpoint cần hủy đăng ký.',
+          });
+        }
+        const subscribedCount = await unregisterStaffPushSubscription(fastify, staffId, endpoint);
+        return {
+          success: true,
+          subscribedCount,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('POST /chat/push/unsubscribe error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể hủy đăng ký thông báo cuộc gọi.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/push/test
+  fastify.post(
+    '/chat/push/test',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const staffId = String(user?.id ?? '0');
+        const result = await sendWebPushToStaffIds(fastify, [staffId], {
+          title: '📞 Cuộc gọi thử nghiệm từ mOS Chat',
+          body: 'Thông báo cuộc gọi khi khóa màn hình iPhone đã hoạt động hoàn hảo!',
+          icon: '/apple-touch-icon.png',
+          badge: '/icon-192.png',
+          tag: `mos-voice-test-${Date.now()}`,
+          renotify: true,
+          requireInteraction: true,
+          vibrate: [300, 150, 300, 150, 300],
+          data: {
+            type: 'CHAT_TEST',
+            url: '/chat',
+          },
+        });
+        return {
+          success: true,
+          sent: result.sent,
+          failed: result.failed,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('POST /chat/push/test error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể gửi thông báo thử nghiệm.',
         });
       }
     }
