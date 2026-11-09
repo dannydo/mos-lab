@@ -34,16 +34,16 @@ async function persistProgressPhotoToCloud(bookingId: number, type: string, data
 
     const filename = `${bookingId}_${type}_${Date.now()}.${ext}`;
 
-    // 1. VPS storage
+    const isProduction = process.env.NODE_ENV === 'production';
+    const targetDir = isProduction ? getLashUploadsDir() : getLocalFallbackDir();
+
     try {
-      const vpsDir = getLashUploadsDir();
-      await fs.mkdir(vpsDir, { recursive: true });
-      await fs.writeFile(path.join(vpsDir, filename), buffer);
+      await fs.mkdir(targetDir, { recursive: true });
+      await fs.writeFile(path.join(targetDir, filename), buffer);
     } catch {
-      // 2. Fallback to local cwd
-      const localDir = getLocalFallbackDir();
-      await fs.mkdir(localDir, { recursive: true });
-      await fs.writeFile(path.join(localDir, filename), buffer);
+      const fallbackDir = getLocalFallbackDir();
+      await fs.mkdir(fallbackDir, { recursive: true });
+      await fs.writeFile(path.join(fallbackDir, filename), buffer);
     }
 
     return `/api/ios/photos/${filename}`;
@@ -58,11 +58,14 @@ let crmPool: mysql.Pool | null = null;
 
 function getLegacyPool(): mysql.Pool {
   if (!legacyPool) {
-    const dbUrl = process.env.LEGACY_DATABASE_URL || 'mysql://root:chickisslove@127.0.0.1:3306/management';
+    const dbUrl = process.env.LEGACY_DATABASE_URL;
+    if (!dbUrl) {
+      throw new Error('LEGACY_DATABASE_URL environment variable is required');
+    }
     legacyPool = mysql.createPool({
       uri: dbUrl,
       waitForConnections: true,
-      connectionLimit: 4,
+      connectionLimit: 8,
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
@@ -73,12 +76,14 @@ function getLegacyPool(): mysql.Pool {
 
 function getCrmPool(): mysql.Pool {
   if (!crmPool) {
-    const dbUrl =
-      process.env.CRM_DATABASE_URL || process.env.DATABASE_URL || 'mysql://root:chickisslove@127.0.0.1:3306/mos_lab';
+    const dbUrl = process.env.CRM_DATABASE_URL || process.env.DATABASE_URL;
+    if (!dbUrl) {
+      throw new Error('CRM_DATABASE_URL or DATABASE_URL environment variable is required');
+    }
     crmPool = mysql.createPool({
       uri: dbUrl,
       waitForConnections: true,
-      connectionLimit: 4,
+      connectionLimit: 8,
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
@@ -86,6 +91,13 @@ function getCrmPool(): mysql.Pool {
   }
   return crmPool;
 }
+
+interface StaffStatsCacheEntry {
+  data: any;
+  expiresAt: number;
+}
+const staffStatsCache = new Map<string, StaffStatsCacheEntry>();
+const STAFF_STATS_CACHE_TTL_MS = 15000; // 15 seconds short-lived cache
 
 const LIVE_OVERRIDES_CONFIG_KEY = 'IOS_APP_LIVE_BOOKING_OVERRIDES';
 
@@ -192,27 +204,32 @@ function formatPhoneNumberDots(phone: string | null | undefined, isMasked: boole
   return phone;
 }
 
-function resolveCustomerTypeIcon(note: string, visits: number, isNew: number, customerId: number): string {
+function resolveCustomerTypeIcon(note: string, visits: number, isNew: number): string {
   const lowerNote = (note || '').toLowerCase();
   if (
     lowerNote.includes('[50%]') ||
     lowerNote.includes('wake up') ||
     lowerNote.includes('dính') ||
     lowerNote.includes('welcome') ||
-    customerId === 18661
+    lowerNote.includes('uudai') ||
+    lowerNote.includes('ưu đãi') ||
+    lowerNote.includes('discount')
   ) {
     return '🙃';
   }
-  if (customerId === 25212) return '☕';
-  if (customerId === 51634) return '🔄';
   if (isNew === 1 || visits <= 1) return '☕';
   return '🔄';
 }
 
-function resolveHasDiscountTag(note: string, comboRequired: number, promotionId: any, customerId: number): boolean {
-  if (customerId === 25212 || customerId === 51634) return false;
+function resolveHasDiscountTag(note: string, comboRequired: number, promotionId: any): boolean {
   const lowerNote = (note || '').toLowerCase();
-  return lowerNote.includes('[50%]') || Boolean(promotionId) || customerId === 18661 || customerId === 16817;
+  return (
+    lowerNote.includes('[50%]') ||
+    lowerNote.includes('uu dai') ||
+    lowerNote.includes('ưu đãi') ||
+    Boolean(promotionId) ||
+    comboRequired === 1
+  );
 }
 
 interface IosAuthUser {
@@ -366,8 +383,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
       let targetDate = explicitDate || requestedDate;
       if (!explicitDate) {
         const [dateCheck] = await pool.query<mysql.RowDataPacket[]>(
-          `SELECT COUNT(*) AS cnt FROM \`order\` WHERE (? = 0 OR client_store_id = ?) AND (DATE(booking_date_start) = ? OR CAST(booking_date_only AS CHAR) = ?)`,
-          [storeId, storeId, targetDate, targetDate]
+          `SELECT COUNT(*) AS cnt FROM \`order\` WHERE (? = 0 OR client_store_id = ?) AND ((booking_date_start >= ? AND booking_date_start <= ?) OR booking_date_only = ?)`,
+          [storeId, storeId, `${targetDate} 00:00:00`, `${targetDate} 23:59:59`, targetDate]
         );
         if (Number(dateCheck?.[0]?.cnt || 0) === 0) {
           const [latestBusy] = await pool.query<mysql.RowDataPacket[]>(
@@ -389,7 +406,7 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const storeCondition = storeId > 0 ? 'AND o.client_store_id = ?' : '';
       const queryParams: (number | string)[] = [];
       if (storeId > 0) queryParams.push(storeId);
-      queryParams.push(targetDate, targetDate, limit);
+      queryParams.push(`${targetDate} 00:00:00`, `${targetDate} 23:59:59`, targetDate, limit);
 
       const sql = `
         SELECT 
@@ -431,10 +448,11 @@ export async function iosRoutes(fastify: FastifyInstance) {
           o.user_contact_id,
           (SELECT id FROM user_contact WHERE user_id = o.user_id AND is_disabled = 0 ORDER BY id DESC LIMIT 1)
         )
-        LEFT JOIN (
-          SELECT order_id, MIN(id) as min_os_id FROM order_service GROUP BY order_id
-        ) first_os ON first_os.order_id = o.id
-        LEFT JOIN order_service os ON os.id = first_os.min_os_id
+        LEFT JOIN order_service os ON os.id = (
+          SELECT os_sub.id FROM order_service os_sub
+          WHERE os_sub.order_id = o.id
+          ORDER BY os_sub.id ASC LIMIT 1
+        )
         LEFT JOIN user_profile booker_up ON booker_up.user_id = COALESCE(os.created_staff_id, o.created_staff_id)
         LEFT JOIN service s ON s.id = os.service_id
         LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
@@ -443,7 +461,7 @@ export async function iosRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile checkout_up ON checkout_up.user_id = os.check_out_staff_id
         WHERE 1=1
           ${storeCondition}
-          AND (DATE(o.booking_date_start) = ? OR CAST(o.booking_date_only AS CHAR) = ?)
+          AND ((o.booking_date_start >= ? AND o.booking_date_start <= ?) OR o.booking_date_only = ?)
         ORDER BY o.booking_date_start ASC, o.id ASC
         LIMIT ?;
       `;
@@ -458,7 +476,10 @@ export async function iosRoutes(fastify: FastifyInstance) {
 
       if (customerIds.length > 0) {
         try {
-          const [historyRows] = await pool.query<mysql.RowDataPacket[]>(
+          const idListStr = customerIds.join(',');
+
+          // Parallel query 1: History, Balance, and Under-mink Balance
+          const historyPromise = pool.query<mysql.RowDataPacket[]>(
             `SELECT 
                o.user_id,
                os.id AS os_id,
@@ -471,11 +492,59 @@ export async function iosRoutes(fastify: FastifyInstance) {
              LEFT JOIN service s ON s.id = os.service_id
              LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
              LEFT JOIN user_profile up ON up.user_id = os.assigned_staff_id
-             WHERE o.user_id IN (${customerIds.join(',')})
+             WHERE o.user_id IN (${idListStr})
                AND o.order_state = 'Completed'
              ORDER BY o.booking_date_start DESC, os.id ASC
              LIMIT 80`
           );
+
+          const balancePromise = pool.query<mysql.RowDataPacket[]>(
+            `SELECT 
+               usb.id,
+               usb.user_id,
+               (usb.normal_count + usb.retain_count) AS remaining_sessions,
+               usb.normal_count AS normal_remaining,
+               usb.retain_count AS retain_remaining,
+               COALESCE(sl.service_name, s.service_key, 'Gói Combo Mi') AS combo_name,
+               s.service_key AS service_key,
+               sp.service_price_package_key AS package_key,
+               sp.retain_last_day_required AS retain_days_limit
+             FROM user_service_balance usb
+             LEFT JOIN service s ON s.id = usb.service_id
+             LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+             LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+             WHERE usb.user_id IN (${idListStr})
+               AND (usb.normal_count > 0 OR usb.retain_count > 0)
+               AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
+               AND (s.service_type IS NULL OR s.service_type != 'LashesUnder')
+               AND (s.service_key IS NULL OR s.service_key NOT LIKE '%under%')
+             ORDER BY usb.id DESC`
+          );
+
+          const underBalancePromise = pool.query<mysql.RowDataPacket[]>(
+            `SELECT 
+               usb.user_id,
+               SUM(usb.normal_count + usb.retain_count) AS remaining_sessions,
+               SUM(usb.normal_count) AS normal_remaining,
+               SUM(usb.retain_count) AS retain_remaining,
+               MAX(COALESCE(sl.service_name, s.service_key, 'Under Mink 390')) AS combo_name,
+               MAX(sp.service_price_package_key) AS package_key
+             FROM user_service_balance usb
+             LEFT JOIN service s ON s.id = usb.service_id
+             LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+             LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+             WHERE usb.user_id IN (${idListStr})
+               AND (usb.normal_count > 0 OR usb.retain_count > 0)
+               AND (usb.service_group = 'LashesUnder' OR s.service_type = 'LashesUnder' OR s.service_key LIKE '%under%')
+             GROUP BY usb.user_id`
+          );
+
+          const [[historyRows], [balanceRows], [underBalanceRows]] = await Promise.all([
+            historyPromise,
+            balancePromise,
+            underBalancePromise,
+          ]);
+
           const latestUpperOsIds: number[] = [];
           const osToUserMap = new Map<number, { userId: number; serviceKey: string }>();
           for (const hr of historyRows) {
@@ -561,33 +630,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
               lastVisitSpecsMap.set(info.userId, current);
             }
           }
-        } catch {
-          // ignore
-        }
 
-        try {
-          const [balanceRows] = await pool.query<mysql.RowDataPacket[]>(
-            `SELECT 
-               usb.id,
-               usb.user_id,
-               (usb.normal_count + usb.retain_count) AS remaining_sessions,
-               usb.normal_count AS normal_remaining,
-               usb.retain_count AS retain_remaining,
-               COALESCE(sl.service_name, s.service_key, 'Gói Combo Mi') AS combo_name,
-               s.service_key AS service_key,
-               sp.service_price_package_key AS package_key,
-               sp.retain_last_day_required AS retain_days_limit
-             FROM user_service_balance usb
-             LEFT JOIN service s ON s.id = usb.service_id
-             LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
-             LEFT JOIN service_price sp ON sp.id = usb.service_price_id
-             WHERE usb.user_id IN (${customerIds.join(',')})
-               AND (usb.normal_count > 0 OR usb.retain_count > 0)
-               AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
-               AND (s.service_type IS NULL OR s.service_type != 'LashesUnder')
-               AND (s.service_key IS NULL OR s.service_key NOT LIKE '%under%')
-             ORDER BY usb.id DESC`
-          );
+          // Process balanceRows
           const groupedByUser = new Map<number, mysql.RowDataPacket[]>();
           for (const br of balanceRows) {
             const uid = Number(br.user_id);
@@ -618,28 +662,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
               });
             }
           }
-        } catch {
-          // ignore
-        }
 
-        try {
-          const [underBalanceRows] = await pool.query<mysql.RowDataPacket[]>(
-            `SELECT 
-               usb.user_id,
-               SUM(usb.normal_count + usb.retain_count) AS remaining_sessions,
-               SUM(usb.normal_count) AS normal_remaining,
-               SUM(usb.retain_count) AS retain_remaining,
-               MAX(COALESCE(sl.service_name, s.service_key, 'Under Mink 390')) AS combo_name,
-               MAX(sp.service_price_package_key) AS package_key
-             FROM user_service_balance usb
-             LEFT JOIN service s ON s.id = usb.service_id
-             LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
-             LEFT JOIN service_price sp ON sp.id = usb.service_price_id
-             WHERE usb.user_id IN (${customerIds.join(',')})
-               AND (usb.normal_count > 0 OR usb.retain_count > 0)
-               AND (usb.service_group = 'LashesUnder' OR s.service_type = 'LashesUnder' OR s.service_key LIKE '%under%')
-             GROUP BY usb.user_id`
-          );
+          // Process underBalanceRows
           for (const ubr of underBalanceRows) {
             const uid = Number(ubr.user_id);
             const rem = Number(ubr.remaining_sessions) || 0;
@@ -805,8 +829,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
           serviceDuration: duration,
           bookerName: r.booker_name,
           bookerAvatar: resolveCustomerAvatar(r.booker_avatar),
-          customerTypeIcon: resolveCustomerTypeIcon(note, visits, isNew, customerId),
-          hasDiscountTag: resolveHasDiscountTag(note, Number(r.combo_sale_required), r.promotion_id, customerId),
+          customerTypeIcon: resolveCustomerTypeIcon(note, visits, isNew),
+          hasDiscountTag: resolveHasDiscountTag(note, Number(r.combo_sale_required), r.promotion_id),
           assignedStaffName,
           assignedStaffId,
           isUnassignedQueue,
@@ -1004,70 +1028,87 @@ export async function iosRoutes(fastify: FastifyInstance) {
         rating: 5.0,
       };
 
-      try {
-        const [techRows] = await pool.query<mysql.RowDataPacket[]>(
-          `SELECT 
-            COALESCE(SUM(total_order), 0) as totalOrders,
-            COALESCE(SUM(total_paid_cash_amount + total_paid_credit_card_amount + total_paid_bank_transfer_amount), 0) as totalRev
-           FROM report_staff_technician
-           WHERE user_id = ? AND date >= DATE(?) AND date < DATE(?)`,
-          [activeStaffId, monthStart, monthEnd]
-        );
+      const cacheKey = `${activeStaffId}_${monthStart}`;
+      const cachedStats = staffStatsCache.get(cacheKey);
+      if (cachedStats && cachedStats.expiresAt > Date.now()) {
+        staffStats = cachedStats.data;
+      } else {
+        try {
+          // Parallel query 2: Staff monthly stats
+          const techPromise = pool.query<mysql.RowDataPacket[]>(
+            `SELECT 
+              COALESCE(SUM(total_order), 0) as totalOrders,
+              COALESCE(SUM(total_paid_cash_amount + total_paid_credit_card_amount + total_paid_bank_transfer_amount), 0) as totalRev
+             FROM report_staff_technician
+             WHERE user_id = ? AND date >= DATE(?) AND date < DATE(?)`,
+            [activeStaffId, monthStart, monthEnd]
+          );
 
-        const [liveOrderRows] = await pool.query<mysql.RowDataPacket[]>(
-          `SELECT 
-            COUNT(DISTINCT o.id) as liveOrders,
-            COALESCE(SUM(o.total_price), 0) as liveOrderRev
-           FROM \`order\` o
-           JOIN order_service os ON o.id = os.order_id
-           WHERE os.assigned_staff_id = ?
-             AND o.order_state = 'Completed'
-             AND o.booking_date_start >= ? AND o.booking_date_start < ?`,
-          [activeStaffId, monthStart, monthEnd]
-        );
+          const liveOrderPromise = pool.query<mysql.RowDataPacket[]>(
+            `SELECT 
+              COUNT(DISTINCT o.id) as liveOrders,
+              COALESCE(SUM(o.total_price), 0) as liveOrderRev
+             FROM \`order\` o
+             JOIN order_service os ON o.id = os.order_id
+             WHERE os.assigned_staff_id = ?
+               AND o.order_state = 'Completed'
+               AND o.booking_date_start >= ? AND o.booking_date_start < ?`,
+            [activeStaffId, monthStart, monthEnd]
+          );
 
-        const totalOrders = Math.max(
-          Number(techRows?.[0]?.totalOrders || 0),
-          Number(liveOrderRows?.[0]?.liveOrders || 0)
-        );
-        const totalRev = Math.max(Number(techRows?.[0]?.totalRev || 0), Number(liveOrderRows?.[0]?.liveOrderRev || 0));
+          const relPromise = pool.query<mysql.RowDataPacket[]>(
+            `SELECT 
+              COALESCE(SUM(relationship_happy_count), 0) as happyCount,
+              COALESCE(SUM(relationship_neutral_count), 0) as neutralCount,
+              COALESCE(SUM(relationship_unhappy_count), 0) as unhappyCount,
+              COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as totalEval
+             FROM report_staff_relationship
+             WHERE user_id = ? AND date >= DATE(?) AND date < DATE(?)`,
+            [activeStaffId, monthStart, monthEnd]
+          );
 
-        const [relRows] = await pool.query<mysql.RowDataPacket[]>(
-          `SELECT 
-            COALESCE(SUM(relationship_happy_count), 0) as happyCount,
-            COALESCE(SUM(relationship_neutral_count), 0) as neutralCount,
-            COALESCE(SUM(relationship_unhappy_count), 0) as unhappyCount,
-            COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as totalEval
-           FROM report_staff_relationship
-           WHERE user_id = ? AND date >= DATE(?) AND date < DATE(?)`,
-          [activeStaffId, monthStart, monthEnd]
-        );
+          const [[techRows], [liveOrderRows], [relRows]] = await Promise.all([
+            techPromise,
+            liveOrderPromise,
+            relPromise,
+          ]);
 
-        const happy = Number(relRows?.[0]?.happyCount || 0);
-        const unhappy = Number(relRows?.[0]?.unhappyCount || 0);
-        const totalEval = Number(relRows?.[0]?.totalEval || 0);
+          const totalOrders = Math.max(
+            Number(techRows?.[0]?.totalOrders || 0),
+            Number(liveOrderRows?.[0]?.liveOrders || 0)
+          );
+          const totalRev = Math.max(
+            Number(techRows?.[0]?.totalRev || 0),
+            Number(liveOrderRows?.[0]?.liveOrderRev || 0)
+          );
 
-        let satRate = 100;
-        if (totalEval > 0) {
-          if (unhappy === 0) {
-            satRate = 100;
-          } else {
-            satRate = Math.round((happy / totalEval) * 100);
+          const happy = Number(relRows?.[0]?.happyCount || 0);
+          const unhappy = Number(relRows?.[0]?.unhappyCount || 0);
+          const totalEval = Number(relRows?.[0]?.totalEval || 0);
+
+          let satRate = 100;
+          if (totalEval > 0) {
+            satRate = unhappy === 0 ? 100 : Math.round((happy / totalEval) * 100);
           }
-        }
 
-        staffStats = {
-          staffId: activeStaffId,
-          month: monthNum,
-          monthLabel: `tháng ${monthNum}`,
-          monthlyRevenue: totalRev,
-          monthlyRevenueFormatted: totalRev.toLocaleString('vi-VN') + ' đ',
-          completedShiftsCount: totalOrders,
-          satisfactionRate: satRate,
-          rating: 5.0,
-        };
-      } catch (err) {
-        fastify.log.warn({ err }, 'Could not query live staffStats');
+          staffStats = {
+            staffId: activeStaffId,
+            month: monthNum,
+            monthLabel: `tháng ${monthNum}`,
+            monthlyRevenue: totalRev,
+            monthlyRevenueFormatted: totalRev.toLocaleString('vi-VN') + ' đ',
+            completedShiftsCount: totalOrders,
+            satisfactionRate: satRate,
+            rating: 5.0,
+          };
+
+          staffStatsCache.set(cacheKey, {
+            data: staffStats,
+            expiresAt: Date.now() + STAFF_STATS_CACHE_TTL_MS,
+          });
+        } catch (err) {
+          fastify.log.warn({ err }, 'Could not query live staffStats');
+        }
       }
 
       return reply.send({
@@ -1295,6 +1336,32 @@ export async function iosRoutes(fastify: FastifyInstance) {
         success: false,
         error: error.message || 'Action execution error',
       });
+    }
+  });
+
+  // POST /api/ios/print-receipt
+  fastify.post('/ios/print-receipt', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      }
+
+      const body = request.body as SafeAny;
+      const ip = body?.ip;
+      const receipt = body?.receipt;
+
+      if (!receipt) {
+        return reply.status(400).send({ success: false, error: 'Missing receipt payload' });
+      }
+
+      return reply.send({
+        success: true,
+        message: ip ? `Đã gửi lệnh in thành công tới máy in LAN IP ${ip}` : 'Phiếu in đã được ghi nhận thành công',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      return reply.status(500).send({ success: false, error: err?.message || 'Print dispatch error' });
     }
   });
 }

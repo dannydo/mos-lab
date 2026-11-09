@@ -1541,6 +1541,8 @@ export class CcKpiService {
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
       JOIN \`user_profile\` up ON up.user_id = st.user_id
       WHERE o.order_state = 'Completed'
+        AND st.date_created_only >= DATE('${startStr}') - INTERVAL 2 DAY
+        AND st.date_created_only <= DATE('${endStr}') + INTERVAL 2 DAY
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
         AND ${buildCashTipCurrencyPredicate()}

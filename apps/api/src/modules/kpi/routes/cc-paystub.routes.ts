@@ -295,8 +295,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           COUNT(DISTINCT CASE WHEN st.tip_amount >= 4000 THEN st.id ELSE NULL END) as tipped_visits_count
         FROM \`staff_tip\` st
         WHERE st.user_id IN (${validStaffListStr})
-          AND DATE(st.date_created) >= '${startPart}'
-          AND DATE(st.date_created) <= '${endPart}'
+          AND st.date_created_only >= '${startPart}'
+          AND st.date_created_only <= '${endPart}'
           AND st.is_academy = 0
           AND st.tip_currency_id IN (1, 2)
         GROUP BY st.user_id
@@ -1186,6 +1186,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             AND o.order_state = 'Completed'
             AND st.is_academy = 0
             AND st.tip_currency_id IN (1, 2)
+            AND st.date_created_only >= '${startPart}' - INTERVAL 2 DAY
+            AND st.date_created_only <= '${endPart}' + INTERVAL 2 DAY
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
         `),
