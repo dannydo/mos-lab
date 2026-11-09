@@ -27,6 +27,7 @@ import {
   Check,
   ArrowDown,
   Copy,
+  Phone,
 } from 'lucide-react';
 import { Tooltip, Popover, Dropdown } from 'antd';
 import dayjs from 'dayjs';
@@ -49,7 +50,7 @@ import {
 } from '../utils/quoteUtils';
 import { copyMessageToClipboard } from '../utils/chat-helpers';
 import { syncTextareaHeightSmart } from './MosChatComposer';
-import { isSpaceEmoji } from '../constants/chat-constants';
+import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -137,6 +138,7 @@ export interface MosChatDockedWindowsProps {
   setDockActiveTabs?: React.Dispatch<React.SetStateAction<Record<string, 'chat' | 'tasks'>>>;
   dockActiveThreadMsgIds?: Record<string, string | null>;
   setDockActiveThreadMsgIds?: React.Dispatch<React.SetStateAction<Record<string, string | null>>>;
+  onStartVoiceCall?: (convId: string) => void;
 }
 
 export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.memo(
@@ -197,6 +199,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
     setDockActiveTabs: externalSetActiveTabs,
     dockActiveThreadMsgIds: externalThreadMsgIds,
     setDockActiveThreadMsgIds: externalSetThreadMsgIds,
+    onStartVoiceCall,
   }) => {
     // Local state fallbacks if not controlled by parent
     const [internalDimensions, setInternalDimensions] = useState<Record<string, MosChatDockDimension>>({});
@@ -540,6 +543,19 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
 
                 {/* Right: iOS Action Controls */}
                 <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {onStartVoiceCall && cid !== AI_COPILOT_CONV_ID && (
+                    <Tooltip title={conv.type === 'space' ? 'Họp thoại nhanh (Voice Huddle)' : 'Gọi thoại nội bộ'}>
+                      <button
+                        type="button"
+                        aria-label="Gọi thoại nội bộ"
+                        onClick={() => onStartVoiceCall(cid)}
+                        className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors hover:bg-emerald-500/15 text-emerald-400"
+                      >
+                        <Phone size={12} />
+                      </button>
+                    </Tooltip>
+                  )}
+
                   {/* Preset Switcher (Compact / Standard / ProMax) */}
                   <Tooltip
                     title={`Đổi kích thước iPhone (Hiện tại: ${currentPreset.toUpperCase()} - ${currentWidth}×${currentHeight}px)`}

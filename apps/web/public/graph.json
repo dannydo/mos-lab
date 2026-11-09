@@ -2437,7 +2437,7 @@
         "dbSource": "crm",
         "modelName": "CrmBkGame",
         "tableName": "crm_bk_games",
-        "fieldCount": 23,
+        "fieldCount": 24,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -5938,7 +5938,7 @@
         "path": "/api/ide-task-bridge/provisioning/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 238
+        "line": 239
       }
     },
     {
@@ -5952,7 +5952,7 @@
         "path": "/api/ag-task-bridge/provisioning/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 263
+        "line": 264
       }
     },
     {
@@ -5966,7 +5966,7 @@
         "path": "/api/ag-task-bridge/deploy/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 278
+        "line": 279
       }
     },
     {
@@ -5980,7 +5980,7 @@
         "path": "/api/ag-task-bridge/reports/:reportId/release-preview",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 313
+        "line": 314
       }
     },
     {
@@ -5994,7 +5994,7 @@
         "path": "/api/ide-task-bridge/provisioning/:jobId/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 326
+        "line": 327
       }
     },
     {
@@ -6008,7 +6008,7 @@
         "path": "/api/ide-task-bridge/provisioning/:jobId/defer",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 344
+        "line": 345
       }
     },
     {
@@ -6022,7 +6022,7 @@
         "path": "/api/ide-task-bridge/:id/bind",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 362
+        "line": 363
       }
     },
     {
@@ -6036,7 +6036,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/handoff",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 375
+        "line": 376
       }
     },
     {
@@ -6050,7 +6050,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/release-preview",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 390
+        "line": 391
       }
     },
     {
@@ -6064,7 +6064,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 414
+        "line": 415
       }
     },
     {
@@ -6078,7 +6078,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 430
+        "line": 431
       }
     },
     {
@@ -6092,7 +6092,7 @@
         "path": "/api/request-classifier/stream",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 447
+        "line": 448
       }
     },
     {
@@ -6106,7 +6106,7 @@
         "path": "/api/bug-reports/:id/implementation-schema-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 461
+        "line": 462
       }
     },
     {
@@ -6120,7 +6120,7 @@
         "path": "/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 490
+        "line": 491
       }
     },
     {
@@ -6134,7 +6134,7 @@
         "path": "/api/bug-reports/:id/implementation-build-lock-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 522
+        "line": 523
       }
     },
     {
@@ -6148,7 +6148,7 @@
         "path": "/api/request-classifications",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 551
+        "line": 552
       }
     },
     {
@@ -6162,7 +6162,7 @@
         "path": "/api/request-classifications/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 569
+        "line": 570
       }
     },
     {
@@ -6176,7 +6176,7 @@
         "path": "/api/request-conversations",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 578
+        "line": 579
       }
     },
     {
@@ -6190,7 +6190,7 @@
         "path": "/api/request-conversations/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 591
+        "line": 592
       }
     },
     {
@@ -6204,7 +6204,7 @@
         "path": "/api/request-conversations/:id/replies",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 604
+        "line": 605
       }
     },
     {
@@ -6218,7 +6218,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 619
+        "line": 620
       }
     },
     {
@@ -6232,7 +6232,7 @@
         "path": "/api/bug-reports/mine",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 642
+        "line": 643
       }
     },
     {
@@ -6246,7 +6246,7 @@
         "path": "/api/bug-reports/notifications/read",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 668
+        "line": 669
       }
     },
     {
@@ -6260,7 +6260,35 @@
         "path": "/api/bug-reports/:id/review",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 682
+        "line": 683
+      }
+    },
+    {
+      "id": "route:POST:/api/bug-reports/:id/cancel",
+      "type": "FastifyRoute",
+      "label": "POST /api/bug-reports/:id/cancel",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/bug-reports/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/bug-reports/:id/cancel",
+        "module": "bug-reports",
+        "handler": "inlineHandler",
+        "line": 708
+      }
+    },
+    {
+      "id": "route:PATCH:/api/bug-reports/:id/cancel",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/bug-reports/:id/cancel",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/bug-reports/routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/bug-reports/:id/cancel",
+        "module": "bug-reports",
+        "handler": "inlineHandler",
+        "line": 724
       }
     },
     {
@@ -6274,7 +6302,7 @@
         "path": "/api/bug-reports/:id/comments",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 707
+        "line": 740
       }
     },
     {
@@ -6288,7 +6316,7 @@
         "path": "/api/bug-reports/:id/retry-clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 738
+        "line": 771
       }
     },
     {
@@ -6302,7 +6330,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 754
+        "line": 787
       }
     },
     {
@@ -6316,7 +6344,7 @@
         "path": "/api/bug-reports/worker-health",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 762
+        "line": 795
       }
     },
     {
@@ -6330,7 +6358,7 @@
         "path": "/api/bug-reports/timing/dashboard",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 785
+        "line": 818
       }
     },
     {
@@ -6344,7 +6372,7 @@
         "path": "/api/bug-reports/:id/timing",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 799
+        "line": 832
       }
     },
     {
@@ -6358,7 +6386,7 @@
         "path": "/api/bug-reports/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 813
+        "line": 846
       }
     },
     {
@@ -6372,7 +6400,7 @@
         "path": "/api/bug-reports/:id/triage",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 822
+        "line": 855
       }
     },
     {
@@ -6386,7 +6414,7 @@
         "path": "/api/bug-reports/:id/implementation-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 832
+        "line": 865
       }
     },
     {
@@ -6400,7 +6428,7 @@
         "path": "/api/bug-reports/:id/implementation-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 878
+        "line": 911
       }
     },
     {
@@ -6414,7 +6442,7 @@
         "path": "/api/bug-reports/:id/ide-implementation-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 902
+        "line": 935
       }
     },
     {
@@ -6428,7 +6456,7 @@
         "path": "/api/bug-reports/:id/ide-handoff-cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 928
+        "line": 961
       }
     },
     {
@@ -6442,7 +6470,7 @@
         "path": "/api/bug-reports/:id/ide-commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 942
+        "line": 975
       }
     },
     {
@@ -6456,7 +6484,7 @@
         "path": "/api/bug-reports/:id/implementation-worker-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 968
+        "line": 1001
       }
     },
     {
@@ -6470,7 +6498,7 @@
         "path": "/api/bug-reports/:id/implementation-commit-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 997
+        "line": 1030
       }
     },
     {
@@ -6484,7 +6512,7 @@
         "path": "/api/bug-reports/:id/implementation-deploy-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1022
+        "line": 1055
       }
     },
     {
@@ -6498,7 +6526,7 @@
         "path": "/api/bug-reports/:id/implementation-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1047
+        "line": 1080
       }
     },
     {
@@ -6512,7 +6540,7 @@
         "path": "/api/bug-reports/:id/plan-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1071
+        "line": 1104
       }
     },
     {
@@ -6526,7 +6554,7 @@
         "path": "/api/ide-release-checkpoints/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1095
+        "line": 1128
       }
     },
     {
@@ -6540,7 +6568,7 @@
         "path": "/api/bug-reports/:id/implementation-acceptance",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1109
+        "line": 1142
       }
     },
     {
@@ -6554,7 +6582,7 @@
         "path": "/api/bug-reports/:id/confirm-close",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1127
+        "line": 1160
       }
     },
     {
@@ -6568,7 +6596,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1146
+        "line": 1179
       }
     },
     {
@@ -6582,7 +6610,7 @@
         "path": "/api/agent/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1164
+        "line": 1197
       }
     },
     {
@@ -6596,7 +6624,7 @@
         "path": "/api/agent/bug-reports/:key",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1172
+        "line": 1205
       }
     },
     {
@@ -6610,7 +6638,7 @@
         "path": "/api/agent/bug-reports/:key/clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1181
+        "line": 1214
       }
     },
     {
@@ -6624,7 +6652,7 @@
         "path": "/api/agent/bug-reports/:key/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1200
+        "line": 1233
       }
     },
     {
@@ -6638,7 +6666,7 @@
         "path": "/api/agent/bug-reports/:key/fixed",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1214
+        "line": 1247
       }
     },
     {
@@ -6652,7 +6680,7 @@
         "path": "/api/agent/bug-reports/:key/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1224
+        "line": 1257
       }
     },
     {
@@ -6666,7 +6694,7 @@
         "path": "/api/request-classifier/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1242
+        "line": 1275
       }
     },
     {
@@ -6680,7 +6708,7 @@
         "path": "/api/request-classifier/health/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1254
+        "line": 1287
       }
     },
     {
@@ -6694,7 +6722,7 @@
         "path": "/api/request-classifier/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1267
+        "line": 1300
       }
     },
     {
@@ -6708,7 +6736,7 @@
         "path": "/api/request-classifier/conversations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1277
+        "line": 1310
       }
     },
     {
@@ -6722,7 +6750,7 @@
         "path": "/api/request-classifier/conversations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1290
+        "line": 1323
       }
     },
     {
@@ -6736,7 +6764,7 @@
         "path": "/api/request-classifier/conversations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1310
+        "line": 1343
       }
     },
     {
@@ -6750,7 +6778,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1329
+        "line": 1362
       }
     },
     {
@@ -6764,7 +6792,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1342
+        "line": 1375
       }
     },
     {
@@ -6778,7 +6806,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1371
+        "line": 1404
       }
     },
     {
@@ -6792,7 +6820,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1391
+        "line": 1424
       }
     },
     {
@@ -6806,7 +6834,7 @@
         "path": "/api/request-classifier/inbox-plans/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1409
+        "line": 1442
       }
     },
     {
@@ -6820,7 +6848,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1422
+        "line": 1455
       }
     },
     {
@@ -6834,7 +6862,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1446
+        "line": 1479
       }
     },
     {
@@ -6848,7 +6876,7 @@
         "path": "/api/request-classifier/inbox-implementations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1464
+        "line": 1497
       }
     },
     {
@@ -6862,7 +6890,7 @@
         "path": "/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1482
+        "line": 1515
       }
     },
     {
@@ -6876,7 +6904,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1493
+        "line": 1526
       }
     },
     {
@@ -6890,7 +6918,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/start",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1509
+        "line": 1542
       }
     },
     {
@@ -6904,7 +6932,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/renew",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1529
+        "line": 1562
       }
     },
     {
@@ -6918,7 +6946,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1552
+        "line": 1585
       }
     },
     {
@@ -6932,7 +6960,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/commit-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1583
+        "line": 1616
       }
     },
     {
@@ -6946,7 +6974,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/deploy-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1601
+        "line": 1634
       }
     },
     {
@@ -6960,7 +6988,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1618
+        "line": 1651
       }
     },
     {
@@ -6974,7 +7002,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/continue",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1649
+        "line": 1682
       }
     },
     {
@@ -6988,7 +7016,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1678
+        "line": 1711
       }
     },
     {
@@ -7002,7 +7030,7 @@
         "path": "/api/request-classifier/jobs/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1698
+        "line": 1731
       }
     },
     {
@@ -7016,7 +7044,7 @@
         "path": "/api/request-classifier/jobs/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1721
+        "line": 1754
       }
     },
     {
@@ -7030,7 +7058,7 @@
         "path": "/api/request-classifier/jobs/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1741
+        "line": 1774
       }
     },
     {
@@ -8234,7 +8262,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1350
+        "line": 1361
       }
     },
     {
@@ -8248,7 +8276,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1435
+        "line": 1446
       }
     },
     {
@@ -8262,7 +8290,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1492
+        "line": 1503
       }
     },
     {
@@ -8276,7 +8304,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1567
+        "line": 1578
       }
     },
     {
@@ -8290,7 +8318,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1593
+        "line": 1604
       }
     },
     {
@@ -8304,7 +8332,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1688
+        "line": 1699
       }
     },
     {
@@ -8318,7 +8346,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1698
+        "line": 1709
       }
     },
     {
@@ -8332,7 +8360,7 @@
         "path": "/api/chat/upload-video",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1708
+        "line": 1719
       }
     },
     {
@@ -8346,7 +8374,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1777
+        "line": 1788
       }
     },
     {
@@ -8360,7 +8388,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1936
+        "line": 1947
       }
     },
     {
@@ -8374,7 +8402,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1941
+        "line": 1952
       }
     },
     {
@@ -8388,7 +8416,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1946
+        "line": 1957
       }
     },
     {
@@ -8402,7 +8430,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2100
+        "line": 2111
       }
     },
     {
@@ -8416,7 +8444,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2241
+        "line": 2252
       }
     },
     {
@@ -8430,7 +8458,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2296
+        "line": 2307
       }
     },
     {
@@ -8444,7 +8472,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2456
+        "line": 2467
       }
     },
     {
@@ -8458,7 +8486,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2546
+        "line": 2557
       }
     },
     {
@@ -8472,7 +8500,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2594
+        "line": 2605
       }
     },
     {
@@ -8486,7 +8514,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2700
+        "line": 2711
       }
     },
     {
@@ -8500,7 +8528,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2799
+        "line": 2810
       }
     },
     {
@@ -8514,7 +8542,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2906
+        "line": 2917
       }
     },
     {
@@ -8528,7 +8556,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3018
+        "line": 3029
       }
     },
     {
@@ -8542,7 +8570,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3326
+        "line": 3337
       }
     },
     {
@@ -8556,7 +8584,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3668
+        "line": 3679
       }
     },
     {
@@ -8570,7 +8598,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3717
+        "line": 3728
       }
     },
     {
@@ -8584,7 +8612,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3912
+        "line": 3923
       }
     },
     {
@@ -8598,7 +8626,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3996
+        "line": 4007
       }
     },
     {
@@ -8612,7 +8640,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4056
+        "line": 4067
       }
     },
     {
@@ -8626,7 +8654,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4100
+        "line": 4111
       }
     },
     {
@@ -8640,7 +8668,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4145
+        "line": 4156
       }
     },
     {
@@ -8654,7 +8682,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4251
+        "line": 4262
       }
     },
     {
@@ -8668,7 +8696,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4326
+        "line": 4337
       }
     },
     {
@@ -8682,7 +8710,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4432
+        "line": 4443
       }
     },
     {
@@ -8696,7 +8724,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4548
+        "line": 4559
       }
     },
     {
@@ -8710,7 +8738,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4650
+        "line": 4661
       }
     },
     {
@@ -8724,7 +8752,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4721
+        "line": 4732
       }
     },
     {
@@ -8738,7 +8766,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4744
+        "line": 4755
       }
     },
     {
@@ -8752,7 +8780,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4925
+        "line": 4936
       }
     },
     {
@@ -8766,7 +8794,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5102
+        "line": 5113
       }
     },
     {
@@ -8780,7 +8808,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5197
+        "line": 5208
       }
     },
     {
@@ -8794,7 +8822,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5210
+        "line": 5221
       }
     },
     {
@@ -8808,7 +8836,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5273
+        "line": 5284
       }
     },
     {
@@ -8822,7 +8850,21 @@
         "path": "/api/chat/messages/search",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5338
+        "line": 5349
+      }
+    },
+    {
+      "id": "route:GET:/api/chat/calls/active",
+      "type": "FastifyRoute",
+      "label": "GET /api/chat/calls/active",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/chat/calls/active",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 5639
       }
     },
     {
@@ -10531,6 +10573,62 @@
         "module": "holiday-work",
         "handler": "preHandler",
         "line": 322
+      }
+    },
+    {
+      "id": "route:GET:/api/ios/photos/:filename",
+      "type": "FastifyRoute",
+      "label": "GET /api/ios/photos/:filename",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ios/photos/:filename",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 290
+      }
+    },
+    {
+      "id": "route:GET:/api/ios/bookings",
+      "type": "FastifyRoute",
+      "label": "GET /api/ios/bookings",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ios/bookings",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 324
+      }
+    },
+    {
+      "id": "route:POST:/api/ios/bookings",
+      "type": "FastifyRoute",
+      "label": "POST /api/ios/bookings",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/ios/bookings",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 1137
+      }
+    },
+    {
+      "id": "route:POST:/api/ios/print-receipt",
+      "type": "FastifyRoute",
+      "label": "POST /api/ios/print-receipt",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/ios/print-receipt",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 1339
       }
     },
     {
@@ -18391,6 +18489,54 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:BkGameTeamKpiConfig",
+      "type": "SharedType",
+      "label": "BkGameTeamKpiConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamKpiConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamKpiDailyContributor",
+      "type": "SharedType",
+      "label": "BkGameTeamKpiDailyContributor",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamKpiDailyContributor",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamKpiDailyResult",
+      "type": "SharedType",
+      "label": "BkGameTeamKpiDailyResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamKpiDailyResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamKpiSummary",
+      "type": "SharedType",
+      "label": "BkGameTeamKpiSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamKpiSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:BkGame",
       "type": "SharedType",
       "label": "BkGame",
@@ -20415,6 +20561,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ReviewBugReportRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CancelBugReportRequest",
+      "type": "SharedType",
+      "label": "CancelBugReportRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bug-report.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CancelBugReportRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CancelBugReportResponse",
+      "type": "SharedType",
+      "label": "CancelBugReportResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bug-report.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CancelBugReportResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -28159,6 +28329,174 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallStatus",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallParticipant",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallParticipant",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallParticipant",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallLog",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallLog",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallSession",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallSession",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallSession",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallSignalType",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallSignalType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallSignalType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StartMosChatVoiceCallRequest",
+      "type": "SharedType",
+      "label": "StartMosChatVoiceCallRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StartMosChatVoiceCallRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StartMosChatVoiceCallResponse",
+      "type": "SharedType",
+      "label": "StartMosChatVoiceCallResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StartMosChatVoiceCallResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:RespondMosChatVoiceCallRequest",
+      "type": "SharedType",
+      "label": "RespondMosChatVoiceCallRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "RespondMosChatVoiceCallRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:RespondMosChatVoiceCallResponse",
+      "type": "SharedType",
+      "label": "RespondMosChatVoiceCallResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "RespondMosChatVoiceCallResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SignalMosChatVoiceCallRequest",
+      "type": "SharedType",
+      "label": "SignalMosChatVoiceCallRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SignalMosChatVoiceCallRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallSignalEnvelope",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallSignalEnvelope",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MuteMosChatVoiceCallRequest",
+      "type": "SharedType",
+      "label": "MuteMosChatVoiceCallRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MuteMosChatVoiceCallRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:EndMosChatVoiceCallResponse",
+      "type": "SharedType",
+      "label": "EndMosChatVoiceCallResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "EndMosChatVoiceCallResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListActiveMosChatVoiceCallsResponse",
+      "type": "SharedType",
+      "label": "ListActiveMosChatVoiceCallsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListActiveMosChatVoiceCallsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:NotificationCategory",
       "type": "SharedType",
       "label": "NotificationCategory",
@@ -32203,6 +32541,30 @@
       }
     },
     {
+      "id": "uicomp:BugReportCancelModal.test",
+      "type": "UIComponent",
+      "label": "<BugReportCancelModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/BugReportCancelModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BugReportCancelModal.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:BugReportCancelModal",
+      "type": "UIComponent",
+      "label": "<BugReportCancelModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/BugReportCancelModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BugReportCancelModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:BugReportConversation",
       "type": "UIComponent",
       "label": "<BugReportConversation />",
@@ -33763,6 +34125,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatVoiceCallWidget.test",
+      "type": "UIComponent",
+      "label": "<MosChatVoiceCallWidget.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatVoiceCallWidget.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatVoiceCallWidget.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosGoogleChatPortal.test",
       "type": "UIComponent",
       "label": "<MosGoogleChatPortal.test />",
@@ -33999,6 +34373,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatVideoPlayer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatVoiceCallWidget",
+      "type": "UIComponent",
+      "label": "<MosChatVoiceCallWidget />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatVoiceCallWidget.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatVoiceCallWidget",
         "isPrimitive": false
       }
     },
@@ -34399,6 +34785,18 @@
       }
     },
     {
+      "id": "uicomp:chat-call-audio",
+      "type": "UIComponent",
+      "label": "<chat-call-audio />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/chat-call-audio.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-call-audio",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:chat-helpers.test",
       "type": "UIComponent",
       "label": "<chat-helpers.test />",
@@ -34479,6 +34877,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "quoteUtils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMosChatVoiceCall",
+      "type": "UIComponent",
+      "label": "<useMosChatVoiceCall />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/useMosChatVoiceCall.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMosChatVoiceCall",
         "isPrimitive": false
       }
     },
@@ -35887,8 +36297,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14737237,
-        "lineCount": 324572,
+        "sizeBytes": 14739162,
+        "lineCount": 324612,
         "ext": ".ts"
       }
     },
@@ -36706,8 +37116,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28798,
-        "lineCount": 905,
+        "sizeBytes": 33281,
+        "lineCount": 1054,
         "ext": ".ts"
       }
     },
@@ -36719,8 +37129,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 128500,
-        "lineCount": 3068,
+        "sizeBytes": 132531,
+        "lineCount": 3171,
         "ext": ".ts"
       }
     },
@@ -36810,7 +37220,7 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-follow-up.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22365,
+        "sizeBytes": 22404,
         "lineCount": 552,
         "ext": ".ts"
       }
@@ -37083,8 +37493,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 71795,
-        "lineCount": 1756,
+        "sizeBytes": 73033,
+        "lineCount": 1789,
         "ext": ".ts"
       }
     },
@@ -37525,8 +37935,8 @@
       "filePath": "apps/api/src/modules/chat/chat-realtime.hub.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8071,
-        "lineCount": 257,
+        "sizeBytes": 8413,
+        "lineCount": 266,
         "ext": ".ts"
       }
     },
@@ -37635,6 +38045,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-voice-call.service.ts",
+      "type": "File",
+      "label": "chat-voice-call.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-voice-call.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17874,
+        "lineCount": 544,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-voice-call.test.ts",
+      "type": "File",
+      "label": "chat-voice-call.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-voice-call.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5603,
+        "lineCount": 166,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-workflow.service.test.ts",
       "type": "File",
       "label": "chat-workflow.service.test.ts",
@@ -37668,8 +38104,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 214789,
-        "lineCount": 5536,
+        "sizeBytes": 228285,
+        "lineCount": 5947,
         "ext": ".ts"
       }
     },
@@ -38662,6 +39098,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/mock-data.ts",
+      "type": "File",
+      "label": "mock-data.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/mock-data.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6363,
+        "lineCount": 220,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/routes.test.ts",
+      "type": "File",
+      "label": "routes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/routes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6662,
+        "lineCount": 168,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 56878,
+        "lineCount": 1364,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/routes/bk.routes.ts",
       "type": "File",
       "label": "bk.routes.ts",
@@ -38942,8 +39417,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11142,
-        "lineCount": 318,
+        "sizeBytes": 13353,
+        "lineCount": 396,
         "ext": ".ts"
       }
     },
@@ -38955,8 +39430,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34551,
-        "lineCount": 952,
+        "sizeBytes": 42638,
+        "lineCount": 1199,
         "ext": ".ts"
       }
     },
@@ -38981,8 +39456,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 33381,
-        "lineCount": 851,
+        "sizeBytes": 34083,
+        "lineCount": 866,
         "ext": ".ts"
       }
     },
@@ -39007,8 +39482,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62859,
-        "lineCount": 1814,
+        "sizeBytes": 63470,
+        "lineCount": 1832,
         "ext": ".ts"
       }
     },
@@ -41659,8 +42134,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17421,
-        "lineCount": 435,
+        "sizeBytes": 17532,
+        "lineCount": 437,
         "ext": ".ts"
       }
     },
@@ -41867,8 +42342,8 @@
       "filePath": "apps/web/app/api/ios/bookings/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 59658,
-        "lineCount": 1420,
+        "sizeBytes": 2159,
+        "lineCount": 75,
         "ext": ".ts"
       }
     },
@@ -41880,8 +42355,8 @@
       "filePath": "apps/web/app/api/ios/photos/[filename]/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1734,
-        "lineCount": 54,
+        "sizeBytes": 1320,
+        "lineCount": 40,
         "ext": ".ts"
       }
     },
@@ -43219,8 +43694,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 48381,
-        "lineCount": 1145,
+        "sizeBytes": 50038,
+        "lineCount": 1174,
         "ext": ".tsx"
       }
     },
@@ -43232,8 +43707,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6606,
-        "lineCount": 189,
+        "sizeBytes": 8729,
+        "lineCount": 237,
         "ext": ".tsx"
       }
     },
@@ -43245,8 +43720,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38840,
-        "lineCount": 944,
+        "sizeBytes": 45098,
+        "lineCount": 1077,
         "ext": ".tsx"
       }
     },
@@ -43271,8 +43746,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameEditModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8714,
-        "lineCount": 216,
+        "sizeBytes": 14105,
+        "lineCount": 326,
         "ext": ".tsx"
       }
     },
@@ -43297,8 +43772,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4816,
-        "lineCount": 145,
+        "sizeBytes": 8580,
+        "lineCount": 261,
         "ext": ".tsx"
       }
     },
@@ -43310,8 +43785,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 49829,
-        "lineCount": 1050,
+        "sizeBytes": 69874,
+        "lineCount": 1368,
         "ext": ".tsx"
       }
     },
@@ -43466,8 +43941,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/bug-report-presenters.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14887,
-        "lineCount": 426,
+        "sizeBytes": 15025,
+        "lineCount": 429,
         "ext": ".tsx"
       }
     },
@@ -43505,7 +43980,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37378,
+        "sizeBytes": 37391,
         "lineCount": 825,
         "ext": ".tsx"
       }
@@ -47522,7 +47997,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/EyeShapeCompareModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23172,
+        "sizeBytes": 23181,
         "lineCount": 516,
         "ext": ".tsx"
       }
@@ -47535,7 +48010,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashConsultationInfoModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16975,
+        "sizeBytes": 16985,
         "lineCount": 316,
         "ext": ".tsx"
       }
@@ -47613,7 +48088,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashDesignZoomModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22570,
+        "sizeBytes": 22583,
         "lineCount": 509,
         "ext": ".tsx"
       }
@@ -47639,8 +48114,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashMaterialConstraintMatrix.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78564,
-        "lineCount": 2333,
+        "sizeBytes": 78578,
+        "lineCount": 2334,
         "ext": ".ts"
       }
     },
@@ -47665,8 +48140,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 60283,
-        "lineCount": 1304,
+        "sizeBytes": 60244,
+        "lineCount": 1307,
         "ext": ".tsx"
       }
     },
@@ -47678,8 +48153,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 83546,
-        "lineCount": 1628,
+        "sizeBytes": 84041,
+        "lineCount": 1638,
         "ext": ".tsx"
       }
     },
@@ -47691,7 +48166,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02LashHistorySheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22211,
+        "sizeBytes": 22303,
         "lineCount": 436,
         "ext": ".tsx"
       }
@@ -47704,8 +48179,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 186023,
-        "lineCount": 3625,
+        "sizeBytes": 186280,
+        "lineCount": 3628,
         "ext": ".tsx"
       }
     },
@@ -47743,8 +48218,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24678,
-        "lineCount": 454,
+        "sizeBytes": 32924,
+        "lineCount": 615,
         "ext": ".tsx"
       }
     },
@@ -47756,8 +48231,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14739,
-        "lineCount": 328,
+        "sizeBytes": 15075,
+        "lineCount": 329,
         "ext": ".tsx"
       }
     },
@@ -47769,7 +48244,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07bLashProgressCleaned.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14952,
+        "sizeBytes": 15286,
         "lineCount": 321,
         "ext": ".tsx"
       }
@@ -47821,7 +48296,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 83041,
+        "sizeBytes": 83144,
         "lineCount": 1556,
         "ext": ".tsx"
       }
@@ -48133,8 +48608,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18316,
-        "lineCount": 473,
+        "sizeBytes": 20565,
+        "lineCount": 537,
         "ext": ".tsx"
       }
     },
@@ -48152,6 +48627,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/state/__tests__/useIosBillingCheckout.test.ts",
+      "type": "File",
+      "label": "useIosBillingCheckout.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/__tests__/useIosBillingCheckout.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2651,
+        "lineCount": 63,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/state/mockData.ts",
       "type": "File",
       "label": "mockData.ts",
@@ -48159,7 +48647,7 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30446,
+        "sizeBytes": 30372,
         "lineCount": 993,
         "ext": ".ts"
       }
@@ -48172,8 +48660,8 @@
       "filePath": "apps/web/app/ios-app/state/offlineSync.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14115,
-        "lineCount": 422,
+        "sizeBytes": 14221,
+        "lineCount": 425,
         "ext": ".ts"
       }
     },
@@ -48185,8 +48673,34 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62606,
-        "lineCount": 1654,
+        "sizeBytes": 51287,
+        "lineCount": 1358,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/state/useIosBillingCheckout.ts",
+      "type": "File",
+      "label": "useIosBillingCheckout.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/useIosBillingCheckout.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13960,
+        "lineCount": 377,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/state/useIosBookingList.ts",
+      "type": "File",
+      "label": "useIosBookingList.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/useIosBookingList.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10295,
+        "lineCount": 296,
         "ext": ".ts"
       }
     },
@@ -48497,8 +49011,8 @@
       "filePath": "apps/web/lib/api/bug-reports.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13751,
-        "lineCount": 319,
+        "sizeBytes": 14113,
+        "lineCount": 326,
         "ext": ".ts"
       }
     },
@@ -48562,8 +49076,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14855,
-        "lineCount": 368,
+        "sizeBytes": 16704,
+        "lineCount": 410,
         "ext": ".ts"
       }
     },
@@ -49062,19 +49576,6 @@
       }
     },
     {
-      "id": "file:apps/web/lib/wings-ios-api.ts",
-      "type": "File",
-      "label": "wings-ios-api.ts",
-      "category": "Source File",
-      "filePath": "apps/web/lib/wings-ios-api.ts",
-      "packageName": "@mos-lab/web",
-      "metadata": {
-        "sizeBytes": 6296,
-        "lineCount": 228,
-        "ext": ".ts"
-      }
-    },
-    {
       "id": "file:packages/shared/src/business-rules/mos-bible.ts",
       "type": "File",
       "label": "mos-bible.ts",
@@ -49316,8 +49817,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9027,
-        "lineCount": 292,
+        "sizeBytes": 10222,
+        "lineCount": 341,
         "ext": ".ts"
       }
     },
@@ -49355,8 +49856,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 46536,
-        "lineCount": 1450,
+        "sizeBytes": 46755,
+        "lineCount": 1462,
         "ext": ".ts"
       }
     },
@@ -49732,8 +50233,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 27987,
-        "lineCount": 1046,
+        "sizeBytes": 30813,
+        "lineCount": 1159,
         "ext": ".ts"
       }
     },
@@ -52881,6 +53382,20 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:POST:/api/bug-reports/:id/cancel:ws:apps/api",
+      "source": "route:POST:/api/bug-reports/:id/cancel",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PATCH:/api/bug-reports/:id/cancel:ws:apps/api",
+      "source": "route:PATCH:/api/bug-reports/:id/cancel",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:POST:/api/bug-reports/:id/comments:ws:apps/api",
       "source": "route:POST:/api/bug-reports/:id/comments",
       "target": "ws:apps/api",
@@ -54162,6 +54677,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/chat/calls/active:ws:apps/api",
+      "source": "route:GET:/api/chat/calls/active",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/cs/happy-calls:ws:apps/api",
       "source": "route:GET:/api/cs/happy-calls",
       "target": "ws:apps/api",
@@ -55011,6 +55533,34 @@
     {
       "id": "edge:route:POST:/api/holiday-work/performance-events/:eventId/review:ws:apps/api",
       "source": "route:POST:/api/holiday-work/performance-events/:eventId/review",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/ios/photos/:filename:ws:apps/api",
+      "source": "route:GET:/api/ios/photos/:filename",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/ios/bookings:ws:apps/api",
+      "source": "route:GET:/api/ios/bookings",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/ios/bookings:ws:apps/api",
+      "source": "route:POST:/api/ios/bookings",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/ios/print-receipt:ws:apps/api",
+      "source": "route:POST:/api/ios/print-receipt",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -59230,6 +59780,34 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamKpiConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamKpiConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamKpiDailyContributor:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamKpiDailyContributor",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamKpiDailyResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamKpiDailyResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamKpiSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamKpiSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:BkGame:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkGame",
       "target": "ws:packages/shared",
@@ -60408,6 +60986,20 @@
     {
       "id": "edge:type:@mos-lab/shared:ReviewBugReportRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:ReviewBugReportRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CancelBugReportRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CancelBugReportRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CancelBugReportResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CancelBugReportResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -64928,6 +65520,104 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallParticipant:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallParticipant",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallSession:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallSession",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallSignalType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallSignalType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:StartMosChatVoiceCallRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StartMosChatVoiceCallRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:StartMosChatVoiceCallResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StartMosChatVoiceCallResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RespondMosChatVoiceCallRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RespondMosChatVoiceCallRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RespondMosChatVoiceCallResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RespondMosChatVoiceCallResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SignalMosChatVoiceCallRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SignalMosChatVoiceCallRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MuteMosChatVoiceCallRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MuteMosChatVoiceCallRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:EndMosChatVoiceCallResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:EndMosChatVoiceCallResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ListActiveMosChatVoiceCallsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ListActiveMosChatVoiceCallsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:NotificationCategory:ws:packages/shared",
       "source": "type:@mos-lab/shared:NotificationCategory",
       "target": "ws:packages/shared",
@@ -67630,6 +68320,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:BugReportCancelModal.test:ws:apps/web",
+      "source": "uicomp:BugReportCancelModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BugReportCancelModal.test:token:color:primary",
+      "source": "uicomp:BugReportCancelModal.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:BugReportCancelModal:ws:apps/web",
+      "source": "uicomp:BugReportCancelModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BugReportCancelModal:token:color:primary",
+      "source": "uicomp:BugReportCancelModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:BugReportConversation:ws:apps/web",
       "source": "uicomp:BugReportConversation",
       "target": "ws:apps/web",
@@ -69450,6 +70168,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatVoiceCallWidget.test:ws:apps/web",
+      "source": "uicomp:MosChatVoiceCallWidget.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatVoiceCallWidget.test:token:color:primary",
+      "source": "uicomp:MosChatVoiceCallWidget.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosGoogleChatPortal.test:ws:apps/web",
       "source": "uicomp:MosGoogleChatPortal.test",
       "target": "ws:apps/web",
@@ -69725,6 +70457,20 @@
     {
       "id": "edge:uicomp:MosChatVideoPlayer:token:color:primary",
       "source": "uicomp:MosChatVideoPlayer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatVoiceCallWidget:ws:apps/web",
+      "source": "uicomp:MosChatVoiceCallWidget",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatVoiceCallWidget:token:color:primary",
+      "source": "uicomp:MosChatVoiceCallWidget",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -70192,6 +70938,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:chat-call-audio:ws:apps/web",
+      "source": "uicomp:chat-call-audio",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-call-audio:token:color:primary",
+      "source": "uicomp:chat-call-audio",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:chat-helpers.test:ws:apps/web",
       "source": "uicomp:chat-helpers.test",
       "target": "ws:apps/web",
@@ -70285,6 +71045,20 @@
     {
       "id": "edge:uicomp:quoteUtils:token:color:primary",
       "source": "uicomp:quoteUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMosChatVoiceCall:ws:apps/web",
+      "source": "uicomp:useMosChatVoiceCall",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMosChatVoiceCall:token:color:primary",
+      "source": "uicomp:useMosChatVoiceCall",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -72495,6 +73269,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-voice-call.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-voice-call.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-workflow.service.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-workflow.service.test.ts",
       "target": "ws:packages/shared",
@@ -72861,6 +73642,20 @@
     {
       "id": "edge:file:apps/api/src/modules/holiday-work/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/holiday-work/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/routes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -73617,13 +74412,6 @@
     {
       "id": "edge:file:apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx:ws:packages/shared",
       "source": "file:apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/web/app/api/ios/bookings/route.ts:ws:packages/shared",
-      "source": "file:apps/web/app/api/ios/bookings/route.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -78112,6 +78900,13 @@
       "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayAuditLog",
       "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
       "target": "prisma:crm:CrmHolidayAuditLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/ios/routes.ts",
+      "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -83849,6 +84644,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/ios/photos/:filename",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/bk/games",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/kpi/bk/games",
@@ -86516,6 +87318,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/ios/photos/:filename",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/kpi/bk/games",
@@ -88350,6 +89159,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/bug-reports/:id/cancel",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/bug-reports/:id/cancel",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/bug-reports/:id/cancel",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/bug-reports/:id/cancel",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/bug-reports/:id/comments",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/bug-reports/:id/comments",
@@ -89631,6 +90454,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/chat/calls/active",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/chat/calls/active",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/cs/happy-calls",
@@ -90481,6 +91311,34 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/holiday-work/performance-events/:eventId/review",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/holiday-work/performance-events/:eventId/review",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ios/photos/:filename",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ios/bookings",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ios/bookings",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ios/print-receipt",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/ios/print-receipt",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -93614,6 +94472,20 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/bug-reports/:id/cancel",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/bug-reports/:id/cancel",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/bug-reports/:id/cancel",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/bug-reports/:id/cancel",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/bug-reports/:id/comments",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/bug-reports/:id/comments",
@@ -94895,6 +95767,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/chat/calls/active",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/chat/calls/active",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/cs/happy-calls",
@@ -95745,6 +96624,34 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/holiday-work/performance-events/:eventId/review",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/holiday-work/performance-events/:eventId/review",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ios/photos/:filename",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ios/bookings",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ios/bookings",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ios/print-receipt",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/ios/print-receipt",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -100572,6 +101479,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/ios/photos/:filename",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/bk/games",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/kpi/bk/games",
@@ -102315,6 +103229,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/bug-reports/:id/cancel",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/bug-reports/:id/cancel",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/bug-reports/:id/cancel",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/bug-reports/:id/cancel",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/bug-reports/:id/comments",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/bug-reports/:id/comments",
@@ -103596,6 +104524,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/chat/calls/active",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/chat/calls/active",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/cs/happy-calls",
@@ -104446,6 +105381,34 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/holiday-work/performance-events/:eventId/review",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/holiday-work/performance-events/:eventId/review",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ios/photos/:filename",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ios/bookings",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ios/bookings",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ios/print-receipt",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/ios/print-receipt",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -106201,31 +107164,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3857,
-    "totalEdges": 8010,
+    "totalNodes": 3897,
+    "totalEdges": 8076,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
-      "FastifyRoute": 752,
+      "FastifyRoute": 759,
       "Component": 65,
-      "SharedType": 1393,
+      "SharedType": 1413,
       "DesignToken": 12,
-      "UIComponent": 349,
-      "File": 1101
+      "UIComponent": 355,
+      "File": 1108
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1587,
-      "HANDLES_ROUTE": 752,
-      "RENDERS": 414,
-      "USES_TOKEN": 351,
-      "IMPORTS": 616,
-      "QUERIES_MODEL": 427,
-      "API_CALL": 3863
+      "EXPORTS": 1607,
+      "HANDLES_ROUTE": 759,
+      "RENDERS": 420,
+      "USES_TOKEN": 357,
+      "IMPORTS": 618,
+      "QUERIES_MODEL": 428,
+      "API_CALL": 3887
     },
-    "fastifyRouteCount": 757,
+    "fastifyRouteCount": 764,
     "prismaModelCount": 182,
     "nextPageCount": 65,
-    "sharedTypeCount": 1393
+    "sharedTypeCount": 1413
   },
   "routes": [
     {
@@ -107707,6 +108670,20 @@
     },
     {
       "method": "POST",
+      "path": "/api/bug-reports/:id/cancel",
+      "filePath": "apps/api/src/modules/bug-reports/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "bug-reports"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/bug-reports/:id/cancel",
+      "filePath": "apps/api/src/modules/bug-reports/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "bug-reports"
+    },
+    {
+      "method": "POST",
       "path": "/api/bug-reports/:id/comments",
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "handler": "inlineHandler",
@@ -108988,6 +109965,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/chat/calls/active",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "GET",
       "path": "/api/cs/happy-calls",
       "filePath": "apps/api/src/modules/cs/routes.ts",
       "handler": "inlineHandler",
@@ -109839,6 +110823,34 @@
       "filePath": "apps/api/src/modules/holiday-work/routes.ts",
       "handler": "preHandler",
       "moduleName": "holiday-work"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ios/photos/:filename",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ios/bookings",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ios/bookings",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ios/print-receipt",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
     },
     {
       "method": "GET",
@@ -112730,7 +113742,7 @@
       "dbSource": "crm",
       "modelName": "CrmBkGame",
       "tableName": "crm_bk_games",
-      "fieldCount": 23,
+      "fieldCount": 24,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

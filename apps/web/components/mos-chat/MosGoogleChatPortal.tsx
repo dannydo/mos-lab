@@ -125,6 +125,7 @@ import {
   FileArchive,
   File,
   Download,
+  Phone,
 } from 'lucide-react';
 import {
   MosChatRichEditorModal,
@@ -258,6 +259,8 @@ import {
 } from './components/MosChatDockedWindows';
 import { MosChatReminderAlert } from './components/MosChatReminderAlert';
 import { MosChatTaskInlineChecklist } from './components/MosChatTaskInlineChecklist';
+import { useMosChatVoiceCall } from './utils/useMosChatVoiceCall';
+import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from './components/MosChatVoiceCallWidget';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
 import dynamic from 'next/dynamic';
 import { ErrorBoundary } from '../ErrorBoundary';
@@ -2250,6 +2253,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (delta.updatedTasks.length > 0 || delta.updatedMissions.length > 0) {
         setTasks((prev) => mergeDeltaTasks(prev, delta.updatedTasks, delta.updatedMissions));
       }
+    },
+  });
+
+  const voiceCall = useMosChatVoiceCall({
+    currentStaffId: currentUser?.id ?? null,
+    enabled: Boolean(currentUser?.id),
+    onCallSystemMessageCreated: (sysMsg) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== sysMsg.conversationId) return c;
+          const exists = (c.messages || []).some((m) => m.id === sysMsg.id);
+          if (exists) return c;
+          return {
+            ...c,
+            updatedAt: sysMsg.createdAt,
+            messages: [...(c.messages || []), sysMsg],
+          };
+        })
+      );
     },
   });
 
@@ -10414,7 +10436,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               initialConvId={activeConvId}
               onUnreadCountChange={onUnreadCountChange}
             >
-              <MosChatMobileApp standalone={false} />
+              <MosChatMobileApp
+                standalone={false}
+                onStartVoiceCall={(cid) => void voiceCall.startOrJoinVoiceCall(cid)}
+              />
             </MosChatProvider>
           </div>
         ) : (
@@ -10711,6 +10736,40 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                 {/* ── Header Right: Essential Icons + ⋯ More Overflow ── */}
                 <div className="flex items-center gap-0.5">
+                  {/* Voice Call Button (1-1 Direct Call or Space Huddle) */}
+                  {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
+                    <Tooltip
+                      title={
+                        activeConversation.type === 'space'
+                          ? 'Họp thoại nhanh (Voice Huddle)'
+                          : 'Gọi thoại nội bộ (Opus HD)'
+                      }
+                    >
+                      <button
+                        type="button"
+                        data-testid="mos-chat-header-call-btn"
+                        aria-label="Gọi thoại nội bộ"
+                        onClick={() => void voiceCall.startOrJoinVoiceCall(activeConversation.id)}
+                        disabled={voiceCall.isConnecting}
+                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
+                        style={{
+                          background:
+                            voiceCall.currentCall?.conversationId === activeConversation.id
+                              ? 'rgba(16, 185, 129, 0.2)'
+                              : 'transparent',
+                          border: `1px solid ${
+                            voiceCall.currentCall?.conversationId === activeConversation.id
+                              ? 'rgba(16, 185, 129, 0.45)'
+                              : borderColor
+                          }`,
+                          color: '#10b981',
+                        }}
+                      >
+                        <Phone size={14} />
+                      </button>
+                    </Tooltip>
+                  )}
+
                   {/* Search Message Button (Command Palette ⌘K) */}
                   <Tooltip title="Tìm kiếm tin nhắn (⌘K)">
                     <button
@@ -11082,6 +11141,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }
                   }}
                 >
+                  <MosChatActiveCallRoomBanner
+                    call={voiceCall.getActiveCallForConversation(activeConversation?.id)}
+                    currentCallId={voiceCall.currentCall?.callId}
+                    isDark={isDark}
+                    onJoinCall={(cid) => void voiceCall.startOrJoinVoiceCall(cid)}
+                  />
                   <MosChatMessageFeed
                     isMobile={isMobile}
                     activeConversation={activeConversation}
@@ -11475,6 +11540,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setDockActiveTabs={setDockActiveTabs}
         dockActiveThreadMsgIds={dockActiveThreadMsgIds}
         setDockActiveThreadMsgIds={setDockActiveThreadMsgIds}
+        onStartVoiceCall={(cid) => void voiceCall.startOrJoinVoiceCall(cid)}
+      />
+
+      {/* ================= VOICE CALL FLOATING WIDGET & INCOMING CALL BANNER ================= */}
+      <MosChatVoiceCallWidget
+        currentCall={voiceCall.currentCall}
+        incomingCall={voiceCall.incomingCall}
+        isMuted={voiceCall.isMuted}
+        isSpeakerMuted={voiceCall.isSpeakerMuted}
+        durationSec={voiceCall.durationSec}
+        speakingStaffIds={voiceCall.speakingStaffIds}
+        audioWarning={voiceCall.audioWarning}
+        isConnecting={voiceCall.isConnecting}
+        isDark={isDark}
+        onAcceptIncoming={(callId) => void voiceCall.acceptIncomingCall(callId)}
+        onDeclineIncoming={(callId) => void voiceCall.declineIncomingCall(callId)}
+        onToggleMute={() => void voiceCall.toggleMute()}
+        onToggleSpeakerMute={voiceCall.toggleSpeakerMute}
+        onEndCall={() => void voiceCall.endCurrentCall()}
       />
 
       {/* ================= LIVE REMINDER ALERT TOAST POPUP ================= */}

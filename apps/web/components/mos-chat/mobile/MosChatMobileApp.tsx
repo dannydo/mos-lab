@@ -45,12 +45,15 @@ import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
 import type { MosChatImageAttachment, MosChatCustomerCard, MosChatSearchResultItem } from '@mos-lab/shared';
+import { useMosChatVoiceCall } from '../utils/useMosChatVoiceCall';
+import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
+  onStartVoiceCall?: (conversationId: string) => void;
 }
 
-export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone = false }) => {
+export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone = false, onStartVoiceCall }) => {
   const {
     currentUser,
     activeConversation,
@@ -130,6 +133,20 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
   // Mobile Message Search Sheet state
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+
+  const standaloneVoiceCall = useMosChatVoiceCall({
+    currentStaffId: currentUser?.id ?? null,
+    enabled: Boolean(standalone && currentUser?.id),
+  });
+
+  const handleCallCurrentRoom = () => {
+    if (!activeConversation?.id || activeConversation.id === AI_COPILOT_CONV_ID) return;
+    if (onStartVoiceCall) {
+      onStartVoiceCall(activeConversation.id);
+    } else {
+      void standaloneVoiceCall.startOrJoinVoiceCall(activeConversation.id);
+    }
+  };
 
   const handleSelectSearchResult = (item: MosChatSearchResultItem) => {
     setSearchSheetOpen(false);
@@ -588,6 +605,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
         onOpenTaskModal={() => openTaskModalForThread()}
         onOpenSearch={() => setSearchSheetOpen(true)}
+        onCallRoom={handleCallCurrentRoom}
       />
 
       {/* Dynamic Screen View */}
@@ -595,6 +613,14 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
       {mobileView === 'room' && (
         <>
+          {standalone && (
+            <MosChatActiveCallRoomBanner
+              call={standaloneVoiceCall.getActiveCallForConversation(activeConversation?.id)}
+              currentCallId={standaloneVoiceCall.currentCall?.callId}
+              isDark={true}
+              onJoinCall={(cid) => void standaloneVoiceCall.startOrJoinVoiceCall(cid)}
+            />
+          )}
           {activeSubtab === 'chat' && (
             <>
               <MosChatMobileStream
@@ -955,6 +981,25 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         activeConversation={activeConversation}
         onSelectMessage={handleSelectSearchResult}
       />
+
+      {standalone && (
+        <MosChatVoiceCallWidget
+          currentCall={standaloneVoiceCall.currentCall}
+          incomingCall={standaloneVoiceCall.incomingCall}
+          isMuted={standaloneVoiceCall.isMuted}
+          isSpeakerMuted={standaloneVoiceCall.isSpeakerMuted}
+          durationSec={standaloneVoiceCall.durationSec}
+          speakingStaffIds={standaloneVoiceCall.speakingStaffIds}
+          audioWarning={standaloneVoiceCall.audioWarning}
+          isConnecting={standaloneVoiceCall.isConnecting}
+          isDark={true}
+          onAcceptIncoming={(callId) => void standaloneVoiceCall.acceptIncomingCall(callId)}
+          onDeclineIncoming={(callId) => void standaloneVoiceCall.declineIncomingCall(callId)}
+          onToggleMute={() => void standaloneVoiceCall.toggleMute()}
+          onToggleSpeakerMute={standaloneVoiceCall.toggleSpeakerMute}
+          onEndCall={() => void standaloneVoiceCall.endCurrentCall()}
+        />
+      )}
     </div>
   );
 };

@@ -213,6 +213,7 @@ export interface MosChatThreadReply {
   buzzCount?: number;
   latestBuzz?: MosChatBuzzEvent | null;
   buzzHistory?: MosChatBuzzEvent[];
+  callLog?: MosChatVoiceCallLog | null;
 }
 
 export interface MosChatQuotedMessage {
@@ -284,6 +285,7 @@ export interface MosChatMessage {
   buzzCount?: number;
   latestBuzz?: MosChatBuzzEvent | null;
   buzzHistory?: MosChatBuzzEvent[];
+  callLog?: MosChatVoiceCallLog | null;
 }
 
 export interface MosChatTaskChecklistItem {
@@ -997,6 +999,8 @@ export type MosChatRealtimeEventType =
   | 'TASK_UPDATED'
   | 'MISSION_UPDATED'
   | 'CONVERSATION_UPDATED'
+  | 'CALL_STATE_CHANGED'
+  | 'CALL_SIGNAL'
   | 'HEARTBEAT';
 
 export interface MosChatRealtimeEvent {
@@ -1042,4 +1046,113 @@ export interface SearchMosChatMessagesResponse {
   query: string;
   totalMatches: number;
   items: MosChatSearchResultItem[];
+}
+
+// ================= VOICE CALL (1-1 DIRECT CALL & SPACE VOICE HUDDLE) =================
+
+export type MosChatVoiceCallStatus = 'RINGING' | 'ACTIVE' | 'ENDED' | 'DECLINED' | 'MISSED';
+
+export interface MosChatVoiceCallParticipant {
+  staffId: string;
+  name: string;
+  role?: string;
+  avatar?: string | null;
+  roleColor?: string | null;
+  isMuted: boolean;
+  isSpeaking?: boolean;
+  joinedAt: string;
+}
+
+export interface MosChatVoiceCallLog {
+  callId: string;
+  conversationId: string;
+  conversationType: 'dm' | 'space';
+  status: MosChatVoiceCallStatus;
+  initiatorId: string;
+  initiatorName: string;
+  durationSec: number;
+  participantNames: string[];
+  startedAt: string;
+  endedAt: string;
+}
+
+export interface MosChatVoiceCallSession {
+  callId: string;
+  conversationId: string;
+  conversationName: string;
+  conversationType: 'dm' | 'space';
+  status: MosChatVoiceCallStatus;
+  initiatorId: string;
+  initiatorName: string;
+  initiatorRole?: string;
+  initiatorAvatar?: string | null;
+  targetStaffIds: string[];
+  participants: MosChatVoiceCallParticipant[];
+  declinedStaffIds: string[];
+  startedAt: string;
+  connectedAt?: string | null;
+  endedAt?: string | null;
+  durationSec?: number;
+  livekitUrl?: string | null;
+  livekitRoomName?: string | null;
+}
+
+export type MosChatVoiceCallSignalType = 'offer' | 'answer' | 'ice-candidate' | 'renegotiate';
+
+export interface StartMosChatVoiceCallRequest {
+  conversationId: string;
+}
+
+export interface StartMosChatVoiceCallResponse {
+  success: boolean;
+  call: MosChatVoiceCallSession;
+  joinedExisting?: boolean;
+  livekitToken?: string | null;
+}
+
+export interface RespondMosChatVoiceCallRequest {
+  action: 'ACCEPT' | 'DECLINE';
+}
+
+export interface RespondMosChatVoiceCallResponse {
+  success: boolean;
+  call: MosChatVoiceCallSession;
+  livekitToken?: string | null;
+  systemMessage?: MosChatMessage | null;
+}
+
+export interface SignalMosChatVoiceCallRequest {
+  targetStaffId: string;
+  signalType: MosChatVoiceCallSignalType;
+  sdp?: unknown;
+  candidate?: unknown;
+}
+
+export interface MosChatVoiceCallSignalEnvelope {
+  id: string;
+  callId: string;
+  conversationId: string;
+  fromStaffId: string;
+  fromName: string;
+  targetStaffId: string;
+  signalType: MosChatVoiceCallSignalType;
+  sdp?: unknown;
+  candidate?: unknown;
+  timestamp: string;
+}
+
+export interface MuteMosChatVoiceCallRequest {
+  isMuted: boolean;
+}
+
+export interface EndMosChatVoiceCallResponse {
+  success: boolean;
+  call: MosChatVoiceCallSession;
+  systemMessage?: MosChatMessage | null;
+}
+
+export interface ListActiveMosChatVoiceCallsResponse {
+  success: boolean;
+  activeCalls: MosChatVoiceCallSession[];
+  pendingSignals?: MosChatVoiceCallSignalEnvelope[];
 }

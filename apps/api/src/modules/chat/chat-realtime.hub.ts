@@ -68,6 +68,7 @@ class ChatRealtimeHub {
     type: MosChatRealtimeEventType;
     conversationId?: string | null;
     actorStaffId?: number | string | null;
+    targetStaffIds?: Array<number | string>;
     payload: Record<string, unknown>;
   }): MosChatRealtimeEvent {
     const event: MosChatRealtimeEvent = {
@@ -84,7 +85,15 @@ class ChatRealtimeHub {
       this.eventBuffer.splice(0, this.eventBuffer.length - MAX_EVENT_BUFFER_SIZE);
     }
 
+    const targetSet =
+      Array.isArray(input.targetStaffIds) && input.targetStaffIds.length > 0
+        ? new Set(input.targetStaffIds.map((id) => String(id)))
+        : null;
+
     for (const [clientId, client] of this.clients.entries()) {
+      if (targetSet && client.staffId != null && !targetSet.has(String(client.staffId))) {
+        continue;
+      }
       const ok = this.writeSseFrame(client.reply, event);
       if (!ok) {
         this.clients.delete(clientId);

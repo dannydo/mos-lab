@@ -41,6 +41,15 @@ import type {
   SearchMosChatMessagesQuery,
   SearchMosChatMessagesResponse,
   MosChatSearchResultItem,
+  EndMosChatVoiceCallResponse,
+  ListActiveMosChatVoiceCallsResponse,
+  MosChatVoiceCallSession,
+  MuteMosChatVoiceCallRequest,
+  RespondMosChatVoiceCallRequest,
+  RespondMosChatVoiceCallResponse,
+  SignalMosChatVoiceCallRequest,
+  StartMosChatVoiceCallRequest,
+  StartMosChatVoiceCallResponse,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
   UpdateMosChatNicknameRequest,
@@ -362,6 +371,39 @@ export const chatApi = {
         500,
         options
       );
+    },
+    listActiveCalls: async (): Promise<ListActiveMosChatVoiceCallsResponse> => {
+      const res = await api.get('/chat/calls/active');
+      return res.data;
+    },
+    startCall: async (payload: StartMosChatVoiceCallRequest): Promise<StartMosChatVoiceCallResponse> => {
+      const res = await api.post('/chat/calls/start', payload);
+      invalidateApiGetCache(['/chat/calls/active']);
+      return res.data;
+    },
+    respondCall: async (
+      callId: string,
+      payload: RespondMosChatVoiceCallRequest
+    ): Promise<RespondMosChatVoiceCallResponse> => {
+      const res = await api.post(`/chat/calls/${encodeURIComponent(callId)}/respond`, payload);
+      invalidateApiGetCache(['/chat/calls/active', '/chat/bootstrap']);
+      return res.data;
+    },
+    signalCall: async (callId: string, payload: SignalMosChatVoiceCallRequest): Promise<{ success: boolean }> => {
+      const res = await api.post(`/chat/calls/${encodeURIComponent(callId)}/signal`, payload);
+      return res.data;
+    },
+    muteCall: async (
+      callId: string,
+      payload: MuteMosChatVoiceCallRequest
+    ): Promise<{ success: boolean; call: MosChatVoiceCallSession }> => {
+      const res = await api.post(`/chat/calls/${encodeURIComponent(callId)}/mute`, payload);
+      return res.data;
+    },
+    endCall: async (callId: string): Promise<EndMosChatVoiceCallResponse> => {
+      const res = await api.post(`/chat/calls/${encodeURIComponent(callId)}/end`, {});
+      invalidateApiGetCache(['/chat/calls/active', '/chat/bootstrap']);
+      return res.data;
     },
   },
 };
