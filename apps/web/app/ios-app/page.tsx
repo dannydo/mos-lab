@@ -159,9 +159,19 @@ function IosAppInner() {
               const idNum = Number(id);
               state.setActiveBookingId(idNum);
               const target = state.bookings.find((b) => Number(b.id) === idNum);
-              if (target?.status === 'DONE') {
+              if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
                 state.setCurrentStep(15);
+              } else if (target?.status === 'SERVICING') {
+                const step = target.progress?.currentStep;
+                if (step && step >= 3 && step <= 14) {
+                  state.setCurrentStep(step);
+                } else {
+                  state.setCurrentStep(6);
+                }
+              } else if (target?.status === 'CHECKED_IN') {
+                state.setCurrentStep(3);
               } else {
+                // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
                 state.setCurrentStep(2);
               }
             }}
@@ -320,9 +330,19 @@ function IosAppInner() {
               const idNum = Number(id);
               state.setActiveBookingId(idNum);
               const target = state.bookings.find((b) => Number(b.id) === idNum);
-              if (target?.status === 'DONE') {
+              if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
                 state.setCurrentStep(15);
+              } else if (target?.status === 'SERVICING') {
+                const step = target.progress?.currentStep;
+                if (step && step >= 3 && step <= 14) {
+                  state.setCurrentStep(step);
+                } else {
+                  state.setCurrentStep(6);
+                }
+              } else if (target?.status === 'CHECKED_IN') {
+                state.setCurrentStep(3);
               } else {
+                // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
                 state.setCurrentStep(2);
               }
             }}

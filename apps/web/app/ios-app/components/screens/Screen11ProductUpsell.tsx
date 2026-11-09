@@ -194,6 +194,11 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   const servicePrice = booking?.servicePrice || 770000;
   const serviceName = booking?.serviceName || 'New Flawless Mink 770';
   const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
+  const customerPhone = booking?.customerPhone || '';
+  const customerVisits = booking?.customerVisits ?? 1;
+  const isNewClient = customerVisits <= 1;
+  const assignedStaffName = booking?.assignedStaffName || actor?.name || 'Phương Nhi';
+  const assignedStaffTier = booking?.assignedStaffTier || actor?.tier || 'CVL';
   const actorName = actor?.name || 'Thảo Ly';
   const actorTierBadge =
     actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? <CvFeather1Badge /> : 'CC';
@@ -438,6 +443,39 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
+        {/* 0. Customer & Lash Service Identity Card (Nhận diện khách hàng & Ca phục vụ) */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-2xs border border-neutral-200/80 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-[15px] font-black text-neutral-900 tracking-tight truncate">{customerName}</span>
+                {customerPhone && (
+                  <span className="text-[11.5px] font-bold text-neutral-500 tabular-nums">· {customerPhone}</span>
+                )}
+              </div>
+              <div className="text-[11.5px] text-neutral-500 mt-0.5 font-medium flex items-center gap-1.5 flex-wrap">
+                <span>
+                  Dịch vụ: <strong className="text-neutral-900 font-bold">{serviceName}</strong>
+                </span>
+                <span>·</span>
+                <span>
+                  CV: <strong className="text-neutral-800 font-bold">{assignedStaffName}</strong>
+                </span>
+                {assignedStaffTier === 'CVLL' ? <CvFeather2Badge /> : <CvFeather1Badge />}
+              </div>
+            </div>
+            <span
+              className={`text-[10px] px-2.5 py-1 rounded-full font-black shrink-0 tracking-tight leading-none inline-flex items-center justify-center ${
+                isNewClient
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              {isNewClient ? 'KHÁCH MỚI' : `LẦN ${customerVisits}`}
+            </span>
+          </div>
+        </div>
+
         {/* Section 1A: CA HÔM NAY · TRỪ VÀO GÓI COMBO ĐANG CÓ (Chỉ hiện khi khách có combo đang chạy) */}
         {isExistingComboLive && redemptionAccounting && (
           <div>

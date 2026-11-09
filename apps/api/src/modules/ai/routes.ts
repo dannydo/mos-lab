@@ -7,7 +7,8 @@ import {
   appendBotMessageToChatConversation,
   appendBotThreadReplyToChatConversation,
 } from '../chat/chat-repository.service.js';
-import type {
+import { isDannyOrSuperAdminUser } from '../chat/chat-access.service.js';
+import {
   AiAssistantChatRequest,
   CreateAiSessionRequest,
   SafeAny,
@@ -15,6 +16,7 @@ import type {
   AvatarScoreResponse,
   AvatarNudgeRequest,
   AvatarNudgeResponse,
+  isAdminOrSuperAdminRole,
 } from '@mos-lab/shared';
 
 const SYSTEM_PROMPT = `Bạn là mOS Voice Copilot — Trợ lý điều hành AI bằng giọng nói của hệ thống mOS Lab (chuỗi salon Wings Lashes).
@@ -216,6 +218,15 @@ export async function aiRoutes(fastify: FastifyInstance) {
     '/ai/chat/message',
     { preHandler: [requireAuth] },
     async (request, reply) => {
+      const user = request.user;
+      const isAdmin = isDannyOrSuperAdminUser(user) || isAdminOrSuperAdminRole(user?.role);
+      if (!isAdmin) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ Admin mới được phép trò chuyện với mOS AI (MAI).',
+        });
+      }
+
       const staffId = request.user.id;
       const { message, sessionId, scope, context } = request.body || {};
 

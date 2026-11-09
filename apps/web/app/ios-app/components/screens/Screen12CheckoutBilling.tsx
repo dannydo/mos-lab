@@ -6,6 +6,7 @@ import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
+import { Heart } from 'lucide-react';
 
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
@@ -451,8 +452,8 @@ export function Screen12CheckoutBilling({
               </div>
               {tipAmount > 0 && (
                 <div className="flex items-center justify-between text-emerald-700 font-semibold">
-                  <span className="flex items-center gap-1">
-                    <span>♥</span>
+                  <span className="flex items-center gap-1.5">
+                    <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 shrink-0" />
                     <span>Tiền tip chuyên viên:</span>
                   </span>
                   <span className="font-black tabular-nums whitespace-nowrap shrink-0">

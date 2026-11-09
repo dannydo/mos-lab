@@ -961,19 +961,37 @@ export async function GET(request: NextRequest) {
           },
         ],
         selectedCombo,
-        attributes: override.attributes || {
-          material:
-            lastVisitSpecsMap.get(customerId)?.material ||
-            (effectiveServiceName.toLowerCase().includes('hyperlight') ? 'HyperLight' : 'Flawless Mink'),
-          style: lastVisitSpecsMap.get(customerId)?.style || 'Doll',
-          volume: lastVisitSpecsMap.get(customerId)?.volume || '2X',
-          count: lastVisitSpecsMap.get(customerId)?.count || '70 fan',
-          color: lastVisitSpecsMap.get(customerId)?.color,
-          curl: 'CC',
-          length: '10-12 mm',
-          thickness: '0.07 mm',
-          notes: note || 'Khách thích tự nhiên nhẹ nhàng, nối êm không cay mắt',
-        },
+        attributes:
+          override.attributes ||
+          (() => {
+            const svcLower = effectiveServiceName.toLowerCase();
+            const isHyper = svcLower.includes('hyperlight');
+            const isClassic = svcLower.includes('classic');
+            const isIvy = svcLower.includes('ivylight');
+            const isUltra = svcLower.includes('ultralight');
+            const defaultMat = isHyper
+              ? 'HyperLight'
+              : isClassic
+                ? 'New Classic'
+                : isIvy
+                  ? 'Ivylight'
+                  : isUltra
+                    ? 'UltraLight'
+                    : 'Flawless Mink';
+            const defaultVol = isHyper ? '2X' : isIvy ? '4L' : isUltra ? '4D' : '1D';
+            const defaultCount = isHyper ? '70 fan' : isIvy ? '90 nhịp' : '90 sợi';
+            return {
+              material: lastVisitSpecsMap.get(customerId)?.material || defaultMat,
+              style: lastVisitSpecsMap.get(customerId)?.style || 'Natural',
+              volume: lastVisitSpecsMap.get(customerId)?.volume || defaultVol,
+              count: lastVisitSpecsMap.get(customerId)?.count || defaultCount,
+              color: lastVisitSpecsMap.get(customerId)?.color,
+              curl: 'C',
+              length: '10-12 mm',
+              thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
+              notes: note || 'Khách thích tự nhiên nhẹ nhàng, nối êm không cay mắt',
+            };
+          })(),
         progress: override.progress || undefined,
         survey: override.survey || undefined,
         upgradePrice: Number(override.upgradePrice || 0),

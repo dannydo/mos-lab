@@ -5672,7 +5672,7 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 251
+        "line": 262
       }
     },
     {
@@ -5686,7 +5686,7 @@
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 346
+        "line": 357
       }
     },
     {
@@ -5700,7 +5700,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 485
+        "line": 496
       }
     },
     {
@@ -36446,8 +36446,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11186,
-        "lineCount": 289,
+        "sizeBytes": 11863,
+        "lineCount": 315,
         "ext": ".ts"
       }
     },
@@ -36459,8 +36459,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35017,
-        "lineCount": 672,
+        "sizeBytes": 35440,
+        "lineCount": 683,
         "ext": ".ts"
       }
     },
@@ -41867,8 +41867,8 @@
       "filePath": "apps/web/app/api/ios/bookings/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 58918,
-        "lineCount": 1404,
+        "sizeBytes": 59658,
+        "lineCount": 1420,
         "ext": ".ts"
       }
     },
@@ -45689,7 +45689,7 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 73358,
+        "sizeBytes": 73357,
         "lineCount": 1849,
         "ext": ".tsx"
       }
@@ -47509,8 +47509,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ComboCatalogConsultModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21090,
-        "lineCount": 505,
+        "sizeBytes": 20995,
+        "lineCount": 489,
         "ext": ".tsx"
       }
     },
@@ -47639,8 +47639,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/LashMaterialConstraintMatrix.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78178,
-        "lineCount": 2323,
+        "sizeBytes": 78564,
+        "lineCount": 2333,
         "ext": ".ts"
       }
     },
@@ -47665,8 +47665,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 58339,
-        "lineCount": 1251,
+        "sizeBytes": 60283,
+        "lineCount": 1304,
         "ext": ".tsx"
       }
     },
@@ -47678,8 +47678,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 82228,
-        "lineCount": 1602,
+        "sizeBytes": 83546,
+        "lineCount": 1628,
         "ext": ".tsx"
       }
     },
@@ -47704,8 +47704,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 185957,
-        "lineCount": 3623,
+        "sizeBytes": 186023,
+        "lineCount": 3625,
         "ext": ".tsx"
       }
     },
@@ -47821,8 +47821,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 80523,
-        "lineCount": 1500,
+        "sizeBytes": 83041,
+        "lineCount": 1556,
         "ext": ".tsx"
       }
     },
@@ -47834,8 +47834,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 66193,
-        "lineCount": 1280,
+        "sizeBytes": 66242,
+        "lineCount": 1279,
         "ext": ".tsx"
       }
     },
@@ -47860,8 +47860,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21272,
-        "lineCount": 429,
+        "sizeBytes": 21812,
+        "lineCount": 445,
         "ext": ".tsx"
       }
     },
@@ -47912,7 +47912,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenSettingsRoleSwitch.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11402,
+        "sizeBytes": 11394,
         "lineCount": 281,
         "ext": ".tsx"
       }
@@ -47951,8 +47951,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CvFeatherLabels.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1694,
-        "lineCount": 65,
+        "sizeBytes": 1716,
+        "lineCount": 69,
         "ext": ".tsx"
       }
     },
@@ -48029,8 +48029,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/IosProfileMenuSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12175,
-        "lineCount": 263,
+        "sizeBytes": 12357,
+        "lineCount": 271,
         "ext": ".tsx"
       }
     },
@@ -48094,8 +48094,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 46531,
-        "lineCount": 1295,
+        "sizeBytes": 46980,
+        "lineCount": 1318,
         "ext": ".tsx"
       }
     },
@@ -48133,8 +48133,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17206,
-        "lineCount": 453,
+        "sizeBytes": 18316,
+        "lineCount": 473,
         "ext": ".tsx"
       }
     },
@@ -48159,8 +48159,8 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28919,
-        "lineCount": 937,
+        "sizeBytes": 30446,
+        "lineCount": 993,
         "ext": ".ts"
       }
     },
@@ -48185,8 +48185,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62322,
-        "lineCount": 1638,
+        "sizeBytes": 62606,
+        "lineCount": 1654,
         "ext": ".ts"
       }
     },

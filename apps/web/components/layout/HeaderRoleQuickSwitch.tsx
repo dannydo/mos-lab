@@ -255,7 +255,16 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
       ];
     }
 
-    return [];
+    return [
+      {
+        key: 'chat',
+        label: 'mOS Chat',
+        shortLabel: 'Chat',
+        href: '/chat',
+        icon: MessageSquare,
+        badgeCount: unreadChatCount,
+      },
+    ];
   }, [roleGroup, consultRoleParam, unreadChatCount]);
 
   const isItemActive = (item: QuickSwitchItem) => {
@@ -340,9 +349,9 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
     );
   }
 
-  // 2. 'sub-header': Sleek mobile quick-switch bar right below the main Header for CV🪶, 🪶CV🪶, CC, and CV
+  // 2. 'sub-header': Sleek mobile quick-switch bar right below the main Header for all staff roles
   if (variant === 'sub-header') {
-    if (!isMobileTier || (roleGroup !== 'CV_FEATHER' && roleGroup !== 'CC' && roleGroup !== 'CV_STANDARD')) {
+    if (!isMobileTier || items.length === 0) {
       return null;
     }
     const isDark = themeMode === 'dark';

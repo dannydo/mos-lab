@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Heart, Gem } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
@@ -241,7 +241,10 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
           {/* Tiền Tip */}
           {tipAmount > 0 && (
             <div className="flex justify-between items-center text-emerald-800 font-semibold bg-emerald-50/60 px-2 py-1 rounded-lg border border-emerald-200">
-              <span>♥ Tiền Tip khách thưởng</span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 shrink-0" />
+                <span>Tiền Tip khách thưởng</span>
+              </span>
               <span className="tabular-nums font-bold">+{tipAmount.toLocaleString('vi-VN')} đ</span>
             </div>
           )}
@@ -249,7 +252,10 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
           {/* Cấn trừ Kim Cương */}
           {diamondUsed > 0 && (
             <div className="flex justify-between items-center text-cyan-900 font-bold bg-cyan-50 px-2 py-1 rounded-lg border border-cyan-200">
-              <span>💎 Cấn trừ Ví Kim Cương ({diamondUsed} 💎)</span>
+              <span className="flex items-center gap-1">
+                <Gem className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
+                <span>Cấn trừ Ví Kim Cương ({diamondUsed} 💎)</span>
+              </span>
               <span className="tabular-nums font-black text-cyan-800">
                 -{diamondDiscountAmount.toLocaleString('vi-VN')} đ
               </span>

@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BookingItem, resolveStaffAvatarUrl, resolveCustomerBookingTab } from '../../state/mockData';
+import {
+  BookingItem,
+  resolveStaffAvatarUrl,
+  resolveCustomerBookingTab,
+  resolveServicingSubStatus,
+} from '../../state/mockData';
 import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
@@ -10,7 +15,22 @@ import {
   parseDaysSinceLastVisit,
   resolveCustomerTypeMeta,
 } from './LashMaterialConstraintMatrix';
-import { RefreshCw, ChevronLeft, ChevronRight, RotateCcw, X, Info } from 'lucide-react';
+import {
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  X,
+  Info,
+  Package,
+  Heart,
+  Lock,
+  Calendar,
+  FileText,
+  Eye,
+  Users,
+  Sparkles,
+} from 'lucide-react';
 
 interface SegmentCounts {
   incoming: number;
@@ -259,13 +279,24 @@ function parseBookingTime(timeStr?: string, baseDate: Date = new Date()): Date {
   return d;
 }
 
-function formatTime12hFromDate(date: Date): string {
-  let hours = date.getHours();
+function formatTime24hFromDate(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+  return `${hours}:${minutes}`;
+}
+
+function formatTime24h(timeStr?: string): string {
+  if (!timeStr) return '';
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(am|pm))?/i);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const period = match[3]?.toLowerCase();
+    if (period === 'pm' && hours < 12) hours += 12;
+    if (period === 'am' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+  }
+  return timeStr.replace(/\s*(am|pm)/gi, '').trim();
 }
 
 /**
@@ -293,7 +324,7 @@ function getBookingCompletionInfo(
 
   // 2. Thời điểm hoàn tất dự kiến
   const completionDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
-  const completionTimeStr = formatTime12hFromDate(completionDate);
+  const completionTimeStr = formatTime24hFromDate(completionDate);
 
   // 3. Đếm ngược số phút còn lại để hoàn tất
   let remainingMins: number;
@@ -358,7 +389,7 @@ function formatShortMoney(amount: number): string {
 function getDoneBookingSummary(b: BookingItem) {
   // 1. Giờ book và số phút làm thực tế
   const rawTime = b.time12h || b.timeSlot || '09:00';
-  const bookingTimeStr = rawTime.replace(/\s*(am|pm)/i, '').trim();
+  const bookingTimeStr = formatTime24h(rawTime);
   const rawElapsed = b.progress?.elapsedSeconds ? Math.round(b.progress.elapsedSeconds / 60) : 0;
   const durationMinutes = rawElapsed >= 20 && rawElapsed <= 150 ? rawElapsed : b.serviceDuration || 60;
   const timeAndDurationStr = `${bookingTimeStr} · ${durationMinutes}p`;
@@ -627,8 +658,8 @@ export function Screen01IncomingBookings({
       <div className="flex-1 bg-black overflow-y-auto px-3 py-1 space-y-2.5 pb-20">
         {filteredBookings.length === 0 ? (
           <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-amber-400 text-base font-bold">
-              🗓️
+            <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-amber-400">
+              <Calendar className="w-6 h-6 stroke-[1.8]" />
             </div>
             <p className="text-neutral-400 font-medium">
               {dateOffset !== 0
@@ -701,6 +732,8 @@ export function Screen01IncomingBookings({
               : isOtherCustomerLocked
                 ? 'bg-[#18181A] opacity-60 border-neutral-800/80 cursor-not-allowed'
                 : 'bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 hover:border-neutral-700';
+
+            const servicingSubStatus = resolveServicingSubStatus(b);
 
             return (
               <div
@@ -829,7 +862,8 @@ export function Screen01IncomingBookings({
 
                     {isOtherCustomerLocked && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700 text-[10px] font-bold leading-none">
-                        🔒 Chưa thể check-in
+                        <Lock className="w-2.5 h-2.5 stroke-[2.2] shrink-0" />
+                        <span>Chưa thể check-in</span>
                       </span>
                     )}
 
@@ -869,15 +903,17 @@ export function Screen01IncomingBookings({
                       {doneSummary.timeAndDurationStr}
                     </div>
 
-                    {/* TẦNG 2: TIỀN (Quan trọng nhất: 🔴 -200K / 📦 7.700K / +770K / 0đ) */}
+                    {/* TẦNG 2: TIỀN (Quan trọng nhất: Nợ / Combo / Phụ thu / 0đ) */}
                     <div className="flex items-center gap-1 leading-none flex-wrap">
                       {doneSummary.hasDebt ? (
-                        <span className="text-rose-500 font-black text-[12.5px] tabular-nums tracking-tight animate-pulse">
-                          🔴 -{formatShortMoney(doneSummary.debtAmount)}
+                        <span className="text-rose-500 font-black text-[12.5px] tabular-nums tracking-tight animate-pulse inline-flex items-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 inline-block mr-1" />-
+                          {formatShortMoney(doneSummary.debtAmount)}
                         </span>
                       ) : doneSummary.soldComboPrice > 0 ? (
-                        <span className="text-purple-400 font-black text-[12.5px] tabular-nums tracking-tight">
-                          📦 {formatShortMoney(doneSummary.soldComboPrice)}
+                        <span className="text-purple-400 font-black text-[12.5px] tabular-nums tracking-tight inline-flex items-center">
+                          <Package className="w-3.5 h-3.5 stroke-[2.2] text-purple-400 shrink-0 mr-1" />
+                          {formatShortMoney(doneSummary.soldComboPrice)}
                         </span>
                       ) : doneSummary.upgradeOrPaidAmount > 0 ? (
                         <span className="text-emerald-400 font-black text-[12.5px] tabular-nums tracking-tight">
@@ -888,35 +924,49 @@ export function Screen01IncomingBookings({
                       )}
                     </div>
 
-                    {/* TẦNG 3: ĐIỂM CV🪶 & TIP (↻ +41 pts · ♥ 50K) */}
-                    <div className="text-[10px] font-bold text-amber-400 tabular-nums tracking-tight leading-none whitespace-nowrap">
-                      ↻ +{doneSummary.cvPoints}
-                      {doneSummary.tipAmount > 0 ? `p · ♥ ${formatShortMoney(doneSummary.tipAmount)}` : ' pts'}
+                    {/* TẦNG 3: ĐIỂM CV🪶 & TIP (↻ +41 pts · Heart 50K) */}
+                    <div className="text-[10px] font-bold text-amber-400 tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center">
+                      <span>↻ +{doneSummary.cvPoints}</span>
+                      {doneSummary.tipAmount > 0 ? (
+                        <span className="inline-flex items-center ml-0.5">
+                          p · <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400 shrink-0 mx-0.5" />
+                          {formatShortMoney(doneSummary.tipAmount)}
+                        </span>
+                      ) : (
+                        ' pts'
+                      )}
                     </div>
                   </div>
                 ) : (
-                  <div className="w-[85px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch">
-                    <span className="text-amber-400 text-[13.5px] font-black tabular-nums leading-tight">
-                      {isServicingActive ? completionInfo.completionTimeStr : b.time12h || b.timeSlot}
+                  <div className="w-[88px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch">
+                    {/* HÀNG 1: THỜI GIAN 24H (Bỏ AM/PM để rộng chỗ) */}
+                    <span className="text-amber-400 text-[14px] font-black tabular-nums leading-tight">
+                      {isServicingActive ? completionInfo.completionTimeStr : formatTime24h(b.time12h || b.timeSlot)}
                     </span>
-                    <div
-                      className={`mt-1 text-[12.5px] font-extrabold tabular-nums tracking-tight leading-tight ${
-                        isServicingActive ? completionInfo.colorClass : countdown.colorClass
-                      }`}
-                      title={
-                        isServicingActive
-                          ? completionInfo.diffMins >= 0
-                            ? `Dự kiến hoàn tất trong ${completionInfo.diffMins} phút`
-                            : `Đã quá giờ hoàn tất dự kiến ${Math.abs(completionInfo.diffMins)} phút`
-                          : countdown.diffMins !== null
+
+                    {/* HÀNG 2: BADGE TRẠNG THÁI (Checkout, Lashing, Cleaning,...) HOẶC COUNTDOWN KHI Ở CHỜ ĐÓN */}
+                    {bookingSegment === 'SERVICING' ? (
+                      <div className="mt-1">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border tracking-tight leading-none ${servicingSubStatus.colorClass}`}
+                        >
+                          {servicingSubStatus.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        className={`mt-1 text-[12px] font-extrabold tabular-nums tracking-tight leading-tight ${countdown.colorClass}`}
+                        title={
+                          countdown.diffMins !== null
                             ? countdown.diffMins >= 0
                               ? `Khách sẽ đến trong ${countdown.diffMins} phút`
                               : `Khách trễ ${Math.abs(countdown.diffMins)} phút`
                             : undefined
-                      }
-                    >
-                      {isServicingActive ? completionInfo.countdownText : countdown.text}
-                    </div>
+                        }
+                      >
+                        {countdown.text}
+                      </div>
+                    )}
 
                     {/* Nút Admin: Hoàn tác đưa khách hàng về Chờ đón (chỉ hiện khi Admin đang ở tab SERVICING) */}
                     {b.status === 'SERVICING' && isAdmin && (
@@ -949,8 +999,8 @@ export function Screen01IncomingBookings({
       {lockedCustomerModal?.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-[340px] bg-[#1C1C1E] border border-neutral-700 rounded-3xl p-5 shadow-2xl text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-amber-400/20 border-2 border-amber-400/70 flex items-center justify-center mx-auto text-amber-400 text-2xl shadow-inner">
-              🔒
+            <div className="w-14 h-14 rounded-full bg-amber-400/20 border-2 border-amber-400/70 flex items-center justify-center mx-auto text-amber-400 shadow-inner">
+              <Lock className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div className="space-y-1.5">
               <h3 className="text-white font-extrabold text-[16px] tracking-tight">Đang Trong Ca Phục Vụ!</h3>
@@ -1086,7 +1136,8 @@ export function Screen01IncomingBookings({
               <div className="rounded-2xl bg-[#252528] border border-amber-400/30 p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                    <span>📝</span> GHI CHÚ ĐẦY ĐỦ
+                    <FileText className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+                    <span>GHI CHÚ ĐẦY ĐỦ</span>
                   </span>
                   <span className="text-[10px] text-neutral-400">Booker & CSKH</span>
                 </div>
@@ -1102,7 +1153,8 @@ export function Screen01IncomingBookings({
                   <div className="rounded-2xl bg-[#252528] border border-neutral-800 p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-black uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-                        <span>👁️</span> THÔNG SỐ NỐI MI DỰ KIẾN
+                        <Eye className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+                        <span>THÔNG SỐ NỐI MI DỰ KIẾN</span>
                       </span>
                       <span className="text-[11.5px] font-black text-amber-400 tabular-nums">{specs.price}</span>
                     </div>
@@ -1140,7 +1192,8 @@ export function Screen01IncomingBookings({
               {/* Section 3: Nhân sự phụ trách */}
               <div className="rounded-2xl bg-[#252528] border border-neutral-800 p-3.5 space-y-2">
                 <span className="text-[11px] font-black uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-                  <span>👥</span> NHÂN SỰ PHỤ TRÁCH
+                  <Users className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+                  <span>NHÂN SỰ PHỤ TRÁCH</span>
                 </span>
                 <div className="grid grid-cols-2 gap-2 text-[11.5px]">
                   {/* Booker */}
@@ -1208,7 +1261,8 @@ export function Screen01IncomingBookings({
                 <div className="rounded-2xl bg-[#252528] border border-amber-400/30 p-3.5 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                      <span>✨</span> GÓI COMBO LIVE
+                      <Sparkles className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+                      <span>GÓI COMBO LIVE</span>
                     </span>
                     <span className="text-[11px] font-black text-amber-400">
                       Còn {selectedCustomerDetail.comboLiveStatus.remainingSessions} buổi

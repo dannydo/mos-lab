@@ -228,7 +228,7 @@ export function Screen02CheckInProfile({
     // -> Khách được đi Nối Mới thoải mái: Cảnh báo trừ lần mới không hoàn phí, và nhân viên BẮT BUỘC gỡ sạch mi cũ nối mới 100%!
     if (targetType === 'Normal' && isComboLive && preset.hasNormalRemaining) {
       setPendingComboNewConfirmation({
-        title: '✨ Xác Nhận Nối Mới (Gói Combo)',
+        title: 'Xác Nhận Nối Mới (Gói Combo)',
         remainingSessions: preset.normalRemaining,
         onConfirm: () => {
           setQuickServiceType('Normal');
@@ -259,7 +259,7 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `⚠️ Gói Combo Đã Hết Lần Nối Mới (Còn ${preset.retainRemaining} Lần Dặm)`,
+        title: `Gói Combo Đã Hết Lần Nối Mới (Còn ${preset.retainRemaining} Lần Dặm)`,
         message: `Trong gói "${booking?.comboLiveStatus?.comboName}" của khách đã hết lần Nối Mới (0 lần Mới · còn ${preset.retainRemaining} lần Dặm). Vui lòng xác nhận phương án khi khách muốn Nối Mới:`,
         reasons,
         onConfirm: (reason: string) => {
@@ -280,7 +280,7 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `⚠️ Gói Combo Đã Hết Lần Dặm (Còn ${preset.normalRemaining} Lần Nối Mới)`,
+        title: `Gói Combo Đã Hết Lần Dặm (Còn ${preset.normalRemaining} Lần Nối Mới)`,
         message: `Trong gói của khách đã hết lần Dặm (còn ${preset.normalRemaining} lần Nối Mới · 0 lần Dặm). Vui lòng chọn phương án xử lý:`,
         reasons,
         onConfirm: (reason: string) => {
@@ -306,7 +306,7 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `⚠️ Cảnh Báo Override: Đã Quá ${preset.retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Single'})`,
+        title: `Cảnh Báo Override: Đã Quá ${preset.retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Single'})`,
         message: isComboLive
           ? `Khách Gói Combo ghé ${daysText}. Theo quy định khách mua Combo đi trong 25 ngày luôn được tính Dặm, sau 25 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính DẶM.`
           : `Khách lẻ (Single) ghé ${daysText}. Theo quy định khách Single đi trong 21 ngày có Giá Dặm vô điều kiện, sau 21 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính GIÁ DẶM.`,
@@ -330,7 +330,7 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `⚠️ Cảnh Báo Override: Đi Trong ${preset.retainDaysLimit} Ngày (Single)`,
+        title: `Cảnh Báo Override: Đi Trong ${preset.retainDaysLimit} Ngày (Single)`,
         message: `Khách lẻ (Single) ghé lần cuối ngày ${preset.lastVisitDate} (${preset.daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách Single đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
         reasons,
         onConfirm: (reason: string) => {
@@ -351,7 +351,7 @@ export function Screen02CheckInProfile({
 
   const activePointsBreakdown = useMemo(() => {
     if (isComboLive) {
-      return calculateLashPricingAndCvPoints({
+      const breakdown = calculateLashPricingAndCvPoints({
         materialId: preset.materialId,
         countStr: preset.count,
         volumeStr: preset.volume,
@@ -363,6 +363,13 @@ export function Screen02CheckInProfile({
         underMinkServiceType: quickUnderServiceType,
         hasUnderMinkCombo: preset.hasUnderMinkCombo,
       });
+      // BẤT BIẾN NGHIỆP VỤ GÓI COMBO (Wings Invariant):
+      // Khách hàng có Gói Combo Live và đang chọn trừ suất gói (Nối Mới hoặc Dặm) với đúng form/dòng mi của gói:
+      // Dịch vụ mi trên ĐÃ ĐƯỢC BAO HÀM 100% TRONG GÓI! Tuyệt đối upgradePrice = 0đ (không tự nâng cấp thu phụ thu)!
+      return {
+        ...breakdown,
+        upgradePrice: 0,
+      };
     }
     const initialServiceType =
       booking?.serviceType || (booking?.serviceName?.toLowerCase().includes('dặm') ? 'Retain' : 'Normal');
@@ -420,7 +427,7 @@ export function Screen02CheckInProfile({
       {
         skuName: activePointsBreakdown.skuName,
         skuPrice: activePointsBreakdown.skuPrice,
-        upgradePrice: activePointsBreakdown.upgradePrice,
+        upgradePrice: isComboLive ? 0 : activePointsBreakdown.upgradePrice,
         cvPoints: activePointsBreakdown.totalPoints,
         cvBreakdown: activePointsBreakdown.breakdownLabel,
         serviceType: quickServiceType,
@@ -440,7 +447,7 @@ export function Screen02CheckInProfile({
             onClick={isComboLive && onQuickCheckIn ? handleExecuteQuickCheckIn : () => onCheckIn(booking?.id)}
             className="text-[#FFB400] font-bold text-sm py-1 px-1 active:opacity-60 cursor-pointer"
           >
-            Check In
+            {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING' ? 'Tiếp tục' : 'Check In'}
           </button>
         }
       />
@@ -663,7 +670,10 @@ export function Screen02CheckInProfile({
             {/* Banner Override nếu có */}
             {isOverridden && (
               <div className="px-2.5 py-1 rounded-lg bg-rose-950/40 border border-rose-500/50 flex items-center justify-between gap-2 text-[10px] text-rose-300 font-semibold">
-                <span className="truncate">⚠️ {overrideReason}</span>
+                <span className="truncate flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                  <span>{overrideReason}</span>
+                </span>
                 <button
                   type="button"
                   onClick={() => {
@@ -683,7 +693,7 @@ export function Screen02CheckInProfile({
               <div className="px-2.5 py-1.5 rounded-xl bg-amber-950/50 border border-amber-500/60 flex items-start gap-2 text-[10.5px] text-amber-200 font-bold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                 <span className="leading-snug">
-                  ✨ Trừ 1 suất Nối Mới Combo · ⚠️ Nhân viên bắt buộc gỡ toàn bộ mi cũ &amp; nối mới 100%
+                  Trừ 1 suất Nối Mới Combo · Nhân viên bắt buộc gỡ toàn bộ mi cũ & nối mới 100%
                 </span>
               </div>
             )}
@@ -1006,11 +1016,12 @@ export function Screen02CheckInProfile({
         {customerNote && (
           <div>
             <div className="text-[10.5px] font-bold text-neutral-400 uppercase tracking-wider px-1 mb-1">
-              DẶN DÒ &amp; LƯU Ý KỸ THUẬT
+              DẶN DÒ & LƯU Ý KỸ THUẬT
             </div>
             <div className="bg-[#2C1515] border border-red-500/40 rounded-2xl p-3 shadow-xs">
-              <p className="text-[12px] text-red-300 font-medium leading-relaxed whitespace-pre-line">
-                ⚠️ {customerNote}
+              <p className="text-[12px] text-red-300 font-medium leading-relaxed whitespace-pre-line flex items-start gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span>{customerNote}</span>
               </p>
             </div>
           </div>
@@ -1028,7 +1039,7 @@ export function Screen02CheckInProfile({
                   MI THẬT · KHÁCH MỚI
                 </div>
                 <div className="text-[11px] text-neutral-400 font-medium truncate">
-                  Đo độ dài, độ dày sợi &amp; dáng mí ở bước tiếp theo
+                  Đo độ dài, độ dày sợi & dáng mí ở bước tiếp theo
                 </div>
               </div>
             </div>
@@ -1088,7 +1099,7 @@ export function Screen02CheckInProfile({
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
               LỊCH SỬ LÀM MI GẦN NHẤT
             </span>
-            <span className="text-[10px] text-amber-400 font-bold">Chạm để xem chi tiết &amp; 3 ảnh ↗</span>
+            <span className="text-[10px] text-amber-400 font-bold">Chạm để xem chi tiết & 3 ảnh ↗</span>
           </div>
           <div className="bg-[#1C1C1E] rounded-2xl shadow-sm border border-neutral-800 overflow-hidden divide-y divide-neutral-800 text-white">
             {(booking?.lashHistory && booking.lashHistory.length > 0
@@ -1255,9 +1266,12 @@ export function Screen02CheckInProfile({
       <div className="bg-black/95 backdrop-blur-xl border-t border-neutral-800 px-3.5 py-2.5 flex flex-col gap-2 z-30 shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
         {isCheckInLocked ? (
           <div className="w-full space-y-2">
-            <div className="bg-amber-500/15 border border-amber-400/40 rounded-xl px-3 py-2 text-center text-[11.5px] text-amber-300 font-medium">
-              🔒 Đang phục vụ <strong>{activeServicingCustomerName || 'khách khác'}</strong>. Vui lòng hoàn thành
-              checkout trước khi check-in khách này.
+            <div className="bg-amber-500/15 border border-amber-400/40 rounded-xl px-3 py-2 text-center text-[11.5px] text-amber-300 font-medium flex items-center justify-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+              <span>
+                Đang phục vụ <strong>{activeServicingCustomerName || 'khách khác'}</strong>. Vui lòng hoàn thành
+                checkout trước khi check-in khách này.
+              </span>
             </div>
             {onResumeServicing ? (
               <button
@@ -1285,7 +1299,7 @@ export function Screen02CheckInProfile({
               className="flex-1 py-3 px-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[13px] flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-transform cursor-pointer"
             >
               <Zap className="w-4 h-4 fill-current" />
-              <span>Nhận ca &amp; Giữ form cũ</span>
+              <span>Nhận ca & Giữ form cũ</span>
             </button>
             <button
               type="button"
@@ -1299,14 +1313,14 @@ export function Screen02CheckInProfile({
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => onCheckIn(booking?.id)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-500 text-black font-black text-[13.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[14px] flex items-center justify-center shadow-md active:scale-98 transition-transform cursor-pointer tracking-tight"
           >
-            <Check className="w-4.5 h-4.5 stroke-[3]" />
             <span>
               {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING'
-                ? `✏️ Sửa Tư Vấn &amp; Đổi Dịch Vụ`
-                : `Check-in &amp; Bắt Đầu Tư Vấn`}
+                ? 'Sửa Tư Vấn & Đổi Dịch Vụ'
+                : 'Check-in & Bắt Đầu Tư Vấn'}
             </span>
           </button>
         )}
@@ -1373,9 +1387,10 @@ export function Screen02CheckInProfile({
               <button
                 type="button"
                 onClick={() => pendingOverride.onConfirm(selectedOverrideReasonDraft || pendingOverride.reasons[0])}
-                className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-black shadow-md cursor-pointer"
+                className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-black shadow-md cursor-pointer flex items-center justify-center gap-1.5"
               >
-                ⚠️ Xác nhận Override
+                <AlertTriangle className="w-4 h-4 stroke-[2.2]" />
+                <span>Xác nhận Override</span>
               </button>
             </div>
           </div>
@@ -1410,7 +1425,8 @@ export function Screen02CheckInProfile({
               {/* Card 1: Khách hàng */}
               <div className="bg-black/50 border border-white/10 rounded-2xl p-3 space-y-1">
                 <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>✨</span> DÀNH CHO KHÁCH HÀNG
+                  <Sparkles className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+                  <span>DÀNH CHO KHÁCH HÀNG</span>
                 </div>
                 <p className="text-neutral-200 leading-relaxed font-medium">
                   Khách được đi <strong className="text-amber-300">Nối Mới thoải mái</strong>. Hệ thống sẽ{' '}
@@ -1422,7 +1438,8 @@ export function Screen02CheckInProfile({
               {/* Card 2: Quy chuẩn bắt buộc cho Nhân viên */}
               <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 space-y-1">
                 <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>⚠️</span> QUY CHUẨN KỸ THUẬT (BẮT BUỘC)
+                  <AlertTriangle className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
+                  <span>QUY CHUẨN KỸ THUẬT (BẮT BUỘC)</span>
                 </div>
                 <p className="text-amber-100/90 leading-relaxed font-bold">
                   Nhân viên{' '}
@@ -1449,7 +1466,7 @@ export function Screen02CheckInProfile({
                 onClick={() => pendingComboNewConfirmation.onConfirm()}
                 className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black text-[12px] font-black shadow-lg cursor-pointer transition-all flex items-center justify-center gap-1.5"
               >
-                <span>✓</span>
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Xác nhận Nối Mới</span>
               </button>
             </div>
@@ -1527,9 +1544,12 @@ export function Screen02CheckInProfile({
                 </div>
               )}
 
-              <div className="text-[10px] text-blue-900 font-medium leading-relaxed pt-0.5">
-                💡 Khi khách nối cả <strong>Mi Trên + Mi Dưới</strong>, Chuyên Viên được nhận đủ{' '}
-                <strong>2 Bộ Mi độc lập</strong> vào tổng số bộ trong tháng để tính thưởng lũy tiến bậc hai.
+              <div className="text-[10px] text-blue-900 font-medium leading-relaxed pt-0.5 flex items-start gap-1">
+                <Info className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                <span>
+                  Khi khách nối cả <strong>Mi Trên + Mi Dưới</strong>, Chuyên Viên được nhận đủ{' '}
+                  <strong>2 Bộ Mi độc lập</strong> vào tổng số bộ trong tháng để tính thưởng lũy tiến bậc hai.
+                </span>
               </div>
             </div>
 

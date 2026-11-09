@@ -239,9 +239,9 @@ export function ScreenSettingsRoleSwitch({
           <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
             <span>Quy Chế Ghi Nhận Thưởng</span>
             <CvFeather1Badge />
-            <span>&amp;</span>
+            <span>&</span>
             <CvFeather2Badge />
-            <span>(Điều Răn CV-002 &amp; TIP-001)</span>
+            <span>(Điều Răn CV-002 & TIP-001)</span>
           </h3>
 
           <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs text-xs">

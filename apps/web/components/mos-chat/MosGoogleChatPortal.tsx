@@ -636,10 +636,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [currentUser?.id, currentUser?.username, currentUser?.email, currentUser?.role]);
 
   const [accessConfig, setAccessConfig] = useState<MosChatAccessConfig>({
-    allowAllStaff: false,
-    allowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_CC', 'TEAM_TELESALES'],
-    allowedStaffIds: [],
-    aiCopilotAllowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_TELESALES'],
+    allowAllStaff: true,
+    allowedGroupKeys: [
+      'TEAM_ADMIN_MANAGER',
+      'TEAM_CC',
+      'TEAM_TELESALES',
+      'TEAM_ACADEMY',
+      'TEAM_CV',
+      'TEAM_CS_CONTROL',
+      'TEAM_QA_QC',
+      'TEAM_INTERNAL',
+    ],
+    allowedStaffIds: [73],
+    aiCopilotAllowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
     aiCopilotAllowedStaffIds: [],
   });
   const [serverCanAccessChat, setServerCanAccessChat] = useState<boolean | null>(null);
@@ -960,7 +969,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const isStaffMemberAllowedInAi = useCallback(
     (
       member: MosChatStaffMember,
-      cfg: MosChatAccessConfig = accessConfig
+      _cfg: MosChatAccessConfig = accessConfig
     ): {
       allowed: boolean;
       reason: 'admin' | 'individual' | 'group' | 'none';
@@ -975,16 +984,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (unameLower === 'danny' || roleLower === 'super_admin' || roleLower === 'admin') {
         return { allowed: true, reason: 'admin', matchedGroups: [] };
       }
-      const isIndividual = member.id > 0 && (cfg.aiCopilotAllowedStaffIds || []).includes(member.id);
-      const matchedGroups = SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter(
-        (g) => (cfg.aiCopilotAllowedGroupKeys || []).includes(g.key) && matchesStaffGroup(member, g.key)
-      );
-      if (isIndividual) {
-        return { allowed: true, reason: 'individual', matchedGroups };
-      }
-      if (matchedGroups.length > 0) {
-        return { allowed: true, reason: 'group', matchedGroups };
-      }
       return { allowed: false, reason: 'none', matchedGroups: [] };
     },
     [accessConfig]
@@ -992,9 +991,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const canUserAccessChat = useMemo(() => {
     if (isDannyAccount) return true;
+    if (accessConfig.allowAllStaff) return true;
     if (serverCanAccessChat !== null) return serverCanAccessChat;
     return isStaffMemberAllowedInChat(currentUserStaffMember, accessConfig).allowed;
-  }, [isDannyAccount, serverCanAccessChat, isStaffMemberAllowedInChat, currentUserStaffMember, accessConfig]);
+  }, [
+    isDannyAccount,
+    accessConfig.allowAllStaff,
+    serverCanAccessChat,
+    isStaffMemberAllowedInChat,
+    currentUserStaffMember,
+    accessConfig,
+  ]);
 
   useEffect(() => {
     onAccessChange?.(canUserAccessChat);
@@ -1002,24 +1009,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const canUseAiCopilot = useMemo(() => {
     if (isDannyAccount) return true;
-    if (isStaffMemberAllowedInAi(currentUserStaffMember, accessConfig).allowed) return true;
-    const r = String(currentUser?.role || '')
-      .trim()
-      .toLowerCase();
-    if (!r) return false;
-    if (allowedAiGroups.includes(r)) return true;
-    if (r === 'booker' && allowedAiGroups.includes('telesales')) return true;
-    if (r === 'consultant' && allowedAiGroups.includes('cc')) return true;
-    if (r === 'oc' && allowedAiGroups.includes('manager')) return true;
-    if ((r === 'ktv' || r === 'technician') && allowedAiGroups.includes('cv')) return true;
-    return false;
+    const roleLower = String(currentUser?.role || currentUserStaffMember?.role || '')
+      .toLowerCase()
+      .trim();
+    const unameLower = String(currentUser?.username || currentUserStaffMember?.username || '')
+      .toLowerCase()
+      .trim();
+    return unameLower === 'danny' || roleLower === 'super_admin' || roleLower === 'admin';
   }, [
     isDannyAccount,
-    isStaffMemberAllowedInAi,
-    currentUserStaffMember,
-    accessConfig,
     currentUser?.role,
-    allowedAiGroups,
+    currentUser?.username,
+    currentUserStaffMember?.role,
+    currentUserStaffMember?.username,
   ]);
 
   // 1-second timer while AI is thinking

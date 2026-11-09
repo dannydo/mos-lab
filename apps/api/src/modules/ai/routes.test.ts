@@ -214,7 +214,7 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
       id: staffId,
       username: `user_${staffId}`,
       displayName: `User ${staffId}`,
-      role: 'telesales',
+      role: 'admin',
     };
   });
 
@@ -285,4 +285,30 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
   });
   assert.equal(delRes.statusCode, 200);
   assert.equal(JSON.parse(delRes.body).success, true);
+});
+
+test('AI Chat rejects non-admin users with 403 Forbidden', async () => {
+  const app = Fastify();
+  app.decorateRequest('jwtVerify', async function () {
+    this.user = {
+      id: 999,
+      username: 'normal_staff',
+      displayName: 'Normal Staff',
+      role: 'telesales',
+    };
+  });
+  await app.register(aiRoutes);
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/ai/chat/message',
+    payload: {
+      message: 'Xin chào @MAI',
+    },
+  });
+
+  assert.equal(res.statusCode, 403);
+  const data = JSON.parse(res.body);
+  assert.equal(data.error, 'Forbidden');
+  assert.match(data.message, /Chỉ Admin mới được phép trò chuyện với mOS AI/);
 });

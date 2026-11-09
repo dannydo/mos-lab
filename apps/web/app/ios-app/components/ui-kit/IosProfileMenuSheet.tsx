@@ -238,7 +238,7 @@ export function IosProfileMenuSheet({
                 </div>
                 <div>
                   <div className="text-xs font-bold text-rose-400">Đăng xuất tài khoản (Logout)</div>
-                  <div className="text-[10.5px] text-neutral-400">Thoát phiên làm việc &amp; về màn hình Đăng nhập</div>
+                  <div className="text-[10.5px] text-neutral-400">Thoát phiên làm việc & về màn hình Đăng nhập</div>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-rose-400/50 group-hover:text-rose-400 transition-colors" />

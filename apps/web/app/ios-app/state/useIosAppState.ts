@@ -860,11 +860,16 @@ export function useIosAppState(
             checkInStaffId: actor.staffId,
             checkInStaffName: actor.name,
             checkInStaffTier: actor.tier,
+            progress: {
+              ...(b.progress || { elapsedSeconds: 0, timerRunning: false }),
+              currentStep: 3,
+            },
           };
         }
         return b;
       })
     );
+    setBookingSegment('SERVICING');
     void postAction('CHECK_IN', { bookingId: targetId });
     setCurrentStep(3); // Go to Consultation Matrix + Combo Selection
   };

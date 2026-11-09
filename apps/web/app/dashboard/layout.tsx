@@ -163,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
   const [mosChatUnreadCount, setMosChatUnreadCount] = useState(0);
   const [mosChatTaskCount, setMosChatTaskCount] = useState(0);
-  const [canAccessMosChat, setCanAccessMosChat] = useState(false);
+  const [canAccessMosChat, setCanAccessMosChat] = useState(true);
   const effectiveCanAccessMosChat = isAdminOrSuperAdminRole(user?.role) || canAccessMosChat;
 
   const [chatDisplayMode, setChatDisplayMode] = useState<'embedded' | 'tab'>(() => {

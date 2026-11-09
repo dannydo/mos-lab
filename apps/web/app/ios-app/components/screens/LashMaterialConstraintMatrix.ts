@@ -1835,6 +1835,10 @@ export interface AutoResolvedComboServiceSpec {
   volume: string;
   count: string;
   matchedKPrice?: number;
+  style?: string;
+  curl?: string;
+  thickness?: string;
+  length?: string;
 }
 
 /**
@@ -2185,17 +2189,24 @@ export function resolveQuickCheckInComboPreset(
   };
 
   const mat = resolveMaterialSpec(resolved.materialId, catalog);
-  const rawVolume = booking?.attributes?.volume || resolved.volume;
+  const hasHistoryOrCombo = isComboLive || Boolean(historyUpperEntry);
+
+  const rawVolume =
+    (hasHistoryOrCombo
+      ? resolved.volume || booking?.attributes?.volume
+      : booking?.attributes?.volume || resolved.volume) || mat.defaultVolume;
   const volume = mat.allowedVolumes.includes(rawVolume)
     ? rawVolume
-    : mat.allowedVolumes.includes(resolved.volume)
+    : resolved.volume && mat.allowedVolumes.includes(resolved.volume)
       ? resolved.volume
       : mat.defaultVolume;
 
-  const rawCount = booking?.attributes?.count || resolved.count;
+  const rawCount =
+    (hasHistoryOrCombo ? resolved.count || booking?.attributes?.count : booking?.attributes?.count || resolved.count) ||
+    mat.defaultCount;
   const count = mat.allowedCounts.includes(rawCount)
     ? rawCount
-    : mat.allowedCounts.includes(resolved.count)
+    : resolved.count && mat.allowedCounts.includes(resolved.count)
       ? resolved.count
       : mat.defaultCount;
 

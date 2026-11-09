@@ -195,6 +195,7 @@ export interface BookingItem {
   assignedStaffName?: string;
   assignedStaffId?: number;
   assignedStaffAvatar?: string;
+  assignedStaffTier?: string;
   checkInStaffId?: number;
   checkInStaffName?: string;
   checkInStaffTier?: string;
@@ -911,8 +912,6 @@ export function resolveCustomerBookingTab(
   if (b.status === 'CANCELLED') return 'CANCEL';
 
   // Bất biến Danny: "khi tính tiền xong thì bắt buộc phải đưa khách hàng qua đã xong"
-  // Khách hàng ĐÃ XONG (DONE) khi status === 'DONE' HOẶC đã có billing.completedAt (đã chốt tính tiền)
-  // HOẶC có progress.completedAt nhưng status KHÔNG PHẢI là SERVICING.
   const isDone =
     b.status === 'DONE' ||
     Boolean(b.billing?.completedAt) ||
@@ -920,6 +919,11 @@ export function resolveCustomerBookingTab(
 
   if (isDone) {
     return 'DONE';
+  }
+
+  // Yêu cầu Danny: "nếu đã checkin rồi thì phải bắt buộc phải chuyển qua tab đang làm"
+  if (b.status === 'CHECKED_IN') {
+    return 'SERVICING';
   }
 
   const isServicing =
@@ -931,4 +935,58 @@ export function resolveCustomerBookingTab(
   if (isServicing) return 'SERVICING';
 
   return 'INCOMING';
+}
+
+export type ServicingSubStatus = {
+  key: 'CHECKIN' | 'CLEANING' | 'LASHING' | 'SURVEY' | 'CHECKOUT';
+  label: string;
+  colorClass: string;
+  targetStep: number;
+};
+
+/**
+ * Trích xuất trạng thái chi tiết của ca làm trong tab "Đang làm" (SERVICING):
+ * checkin, cleaning, lashing, survey, checkout (hiển thị tiếng Anh chuẩn ngành mi)
+ */
+export function resolveServicingSubStatus(b: BookingItem): ServicingSubStatus {
+  const step = b.progress?.currentStep ?? (b.status === 'CHECKED_IN' ? 3 : 6);
+
+  if (step >= 12 || Boolean(b.billing?.completedAt)) {
+    return {
+      key: 'CHECKOUT',
+      label: 'Checkout',
+      colorClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      targetStep: 12,
+    };
+  }
+  if (step >= 10) {
+    return {
+      key: 'SURVEY',
+      label: 'Survey',
+      colorClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      targetStep: 10,
+    };
+  }
+  if (step >= 9 || b.progress?.timerRunning || (b.progress?.elapsedSeconds && b.progress.elapsedSeconds > 0)) {
+    return {
+      key: 'LASHING',
+      label: 'Lashing',
+      colorClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      targetStep: 9,
+    };
+  }
+  if (step >= 7) {
+    return {
+      key: 'CLEANING',
+      label: 'Cleaning',
+      colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      targetStep: 8,
+    };
+  }
+  return {
+    key: 'CHECKIN',
+    label: 'Check-in',
+    colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    targetStep: 3,
+  };
 }
