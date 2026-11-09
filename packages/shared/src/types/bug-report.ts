@@ -35,6 +35,7 @@ export const BUG_REPORT_STATUSES = [
   'CLOSED',
   'REJECTED',
   'DUPLICATE',
+  'CANCELLED',
 ] as const;
 
 export type BugReportStatus = (typeof BUG_REPORT_STATUSES)[number];
@@ -939,6 +940,7 @@ export interface MyBugReportItem extends BugReportSummary {
   canReview: boolean;
   /** The reporter can resume a reopen without retyping evidence mOS already has. */
   canReopenUnchanged: boolean;
+  canCancel?: boolean;
 }
 
 export interface BugReportNotification {
@@ -1182,6 +1184,16 @@ export interface ReviewBugReportRequest {
   /** One-tap reporter feedback: the defect remains as originally reported, or full detailed feedback. */
   reopenIntent?: 'UNCHANGED' | 'DETAILS';
   attachments?: CreateBugReportAttachmentRequest[];
+}
+
+export interface CancelBugReportRequest {
+  reason?: string | null;
+}
+
+export interface CancelBugReportResponse {
+  success: boolean;
+  data: BugReportDetail;
+  message: string;
 }
 
 export interface CreateBugReportCommentRequest {

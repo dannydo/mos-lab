@@ -209,7 +209,7 @@ export class InboxFollowUpService {
         report: {
           is: {
             clarificationStatus: 'PENDING_AGENT',
-            status: { notIn: ['CLOSED', 'REJECTED', 'DUPLICATE'] },
+            status: { notIn: ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'] },
           },
         },
       },
@@ -297,7 +297,7 @@ export class InboxFollowUpService {
         report: {
           is: {
             clarificationStatus: 'PENDING_AGENT',
-            status: { notIn: ['CLOSED', 'REJECTED', 'DUPLICATE'] },
+            status: { notIn: ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'] },
           },
         },
       },
@@ -341,7 +341,7 @@ export class InboxFollowUpService {
         resolution: true,
       },
     });
-    if (!report || ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(report.status)) return false;
+    if (!report || ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(report.status)) return false;
     if (eventKind === 'CREATED' && report.audits.length) return false; // READY guided summary needs no duplicate review.
     const reopenAudit =
       eventKind === 'REPORTER_REOPENED'

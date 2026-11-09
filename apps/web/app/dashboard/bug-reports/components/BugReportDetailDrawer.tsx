@@ -287,7 +287,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   Yêu cầu sửa lại plan
                 </Button>
               )}
-              {canTriage && !approvalReceived && !['CLOSED', 'REJECTED'].includes(detail.status) && (
+              {canTriage && !approvalReceived && !['CLOSED', 'REJECTED', 'CANCELLED'].includes(detail.status) && (
                 <Popconfirm
                   classNames={{ root: styles.confirmationPopup }}
                   title="Yêu cầu AG làm rõ lại ticket?"

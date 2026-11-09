@@ -113,6 +113,7 @@ export const STATUS_LABELS: Record<BugReportStatus, string> = {
   CLOSED: 'Đã đóng',
   REJECTED: 'Từ chối',
   DUPLICATE: 'Trùng lặp',
+  CANCELLED: 'Đã huỷ',
 };
 
 const STATUS_TONES: Record<BugReportStatus, Parameters<typeof StatusTag>[0]['status']> = {
@@ -123,6 +124,7 @@ const STATUS_TONES: Record<BugReportStatus, Parameters<typeof StatusTag>[0]['sta
   CLOSED: 'default',
   REJECTED: 'error',
   DUPLICATE: 'purple',
+  CANCELLED: 'default',
 };
 
 const PRIORITY_TONES: Record<BugPriority, Parameters<typeof StatusTag>[0]['status']> = {
@@ -133,13 +135,14 @@ const PRIORITY_TONES: Record<BugPriority, Parameters<typeof StatusTag>[0]['statu
 };
 
 export const TRANSITIONS: Record<BugReportStatus, BugReportStatus[]> = {
-  NEW: ['NEW', 'APPROVED', 'REJECTED', 'DUPLICATE'],
-  APPROVED: ['APPROVED', 'IN_PROGRESS', 'REJECTED', 'DUPLICATE'],
-  IN_PROGRESS: ['IN_PROGRESS', 'APPROVED', 'FIXED'],
-  FIXED: ['FIXED', 'IN_PROGRESS', 'CLOSED'],
+  NEW: ['NEW', 'APPROVED', 'REJECTED', 'DUPLICATE', 'CANCELLED'],
+  APPROVED: ['APPROVED', 'IN_PROGRESS', 'REJECTED', 'DUPLICATE', 'CANCELLED'],
+  IN_PROGRESS: ['IN_PROGRESS', 'APPROVED', 'FIXED', 'CANCELLED'],
+  FIXED: ['FIXED', 'IN_PROGRESS', 'CLOSED', 'CANCELLED'],
   CLOSED: ['CLOSED', 'IN_PROGRESS'],
   REJECTED: ['REJECTED', 'NEW'],
   DUPLICATE: ['DUPLICATE', 'NEW'],
+  CANCELLED: ['CANCELLED', 'NEW'],
 };
 
 export function formatDate(value: string | null): string {

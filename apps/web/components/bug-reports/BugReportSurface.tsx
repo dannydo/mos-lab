@@ -829,6 +829,7 @@ export function BugReportSurface() {
             onSelect={setSelectedReportKey}
             onRefresh={myBugs.refresh}
             onReview={myBugs.review}
+            onCancel={myBugs.cancel}
             onComment={myBugs.comment}
             onClose={closeReporter}
           />

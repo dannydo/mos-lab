@@ -393,6 +393,31 @@ test('projects a plain-language reporter view without exposing operating gates',
     }).label,
     'Cần bạn trả lời'
   );
+  assert.deepEqual(
+    bugReportReporterExperience({
+      status: 'CANCELLED',
+      clarificationStatus: 'READY',
+      createdAt,
+      approvedAt: null,
+      startedAt: null,
+      resolvedAt: null,
+      closedAt: updatedAt,
+      updatedAt,
+    }),
+    {
+      state: 'NOT_PROCEEDING',
+      label: 'Đã huỷ',
+      summary: 'Bạn đã huỷ yêu cầu này.',
+      nextAction: {
+        label: 'Yêu cầu đã huỷ',
+        detail: 'Bạn có thể gửi một yêu cầu mới khi cần.',
+      },
+      updates: [
+        { label: 'Đã huỷ yêu cầu', occurredAt: updatedAt.toISOString() },
+        { label: 'Đã nhận yêu cầu của bạn', occurredAt: createdAt.toISOString() },
+      ],
+    }
+  );
 });
 
 test('allows fix progress only after clarity, approval, and priority are present', () => {
@@ -672,7 +697,7 @@ test('derives one canonical next owner and action for every workflow gate', () =
 test('maps next-owner filters to the same workflow gates used by projections', () => {
   assert.deepEqual(bugReportNextActorWhere('DANNY'), { status: 'NEW', clarificationStatus: 'READY' });
   assert.deepEqual(bugReportNextActorWhere('NONE'), {
-    status: { in: ['CLOSED', 'REJECTED', 'DUPLICATE'] },
+    status: { in: ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'] },
   });
   assert.deepEqual(bugReportNextActorWhere('ALL'), {});
   assert.ok('OR' in bugReportNextActorWhere('REPORTER'));
@@ -901,4 +926,128 @@ test('normalizes Vietnamese issue text into reusable knowledge tokens', () => {
     'khach',
     'hang',
   ]);
+});
+
+test('BugReportService.cancel cancels active report and records comment and audit', async () => {
+  const existingReport = {
+    id: 42,
+    reporterStaffId: 101,
+    status: 'NEW',
+    priority: null,
+    requestType: 'BUG',
+    title: 'Báo lỗi nhầm',
+    description: 'Chi tiết báo lỗi',
+    sourcePath: '/dashboard/bk',
+    contextJson: '{}',
+    requestMetadataJson: null,
+    businessContext: null,
+    triageNote: null,
+    clarificationStatus: 'READY',
+    clarificationSummary: null,
+    clarifiedAt: null,
+    duplicateOfId: null,
+    approvedByStaffId: null,
+    approvedAt: null,
+    startedAt: null,
+    resolvedAt: null,
+    closedAt: null,
+    createdAt: new Date('2026-10-01T00:00:00Z'),
+    updatedAt: new Date('2026-10-01T00:00:00Z'),
+    audits: [],
+  };
+
+  let currentReport = { ...existingReport };
+  let updatedReportData: unknown = null;
+  let createdCommentData: unknown = null;
+  let createdAuditData: unknown = null;
+
+  const tx = {
+    crmBugReport: {
+      update: async ({ data }: { data: unknown }) => {
+        updatedReportData = data;
+        currentReport = { ...currentReport, ...(data as object) };
+        return currentReport;
+      },
+    },
+    crmInboxImplementationJob: {
+      updateMany: async () => ({ count: 0 }),
+    },
+    crmBugReportComment: {
+      create: async ({ data }: { data: unknown }) => {
+        createdCommentData = data;
+        return { id: 1, ...(data as object) };
+      },
+    },
+    crmBugReportAudit: {
+      create: async ({ data }: { data: unknown }) => {
+        createdAuditData = data;
+        return { id: 1, ...(data as object) };
+      },
+    },
+    crmBugReportNotification: {
+      updateMany: async () => ({ count: 0 }),
+    },
+  };
+
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: {
+          findUnique: async () => ({
+            ...currentReport,
+            reporter: { id: 101, displayName: 'Reporter', role: 'telesales', avatarUrl: null },
+            approver: null,
+            duplicateOf: null,
+            resolution: null,
+            attachments: [],
+            comments: [],
+            audits: [],
+            inboxPlanJobs: [],
+            inboxImplementationJobs: [],
+          }),
+        },
+        $transaction: async (cb: (tx: unknown) => Promise<unknown>) => cb(tx),
+      },
+    },
+    cache: {
+      invalidatePattern: () => {},
+    },
+  };
+
+  // 1. Reporter successfully cancels their own report
+  const result = await BugReportService.cancel(fastify as never, 101, 42, false, {
+    reason: 'Lỗi báo lên không đúng',
+  });
+  assert.equal(result.status, 'CANCELLED');
+  assert.equal((updatedReportData as { status: string }).status, 'CANCELLED');
+  assert.equal((createdAuditData as { action: string }).action, 'REPORTER_CANCELLED');
+  assert.match((createdCommentData as { body: string }).body, /Lỗi báo lên không đúng/);
+
+  // 2. Unauthorized non-owner cannot cancel
+  await assert.rejects(
+    async () => BugReportService.cancel(fastify as never, 999, 42, false),
+    /Chỉ người báo hoặc quản trị viên/
+  );
+
+  // 3. Admin can override and cancel an active report
+  currentReport.status = 'NEW';
+  await BugReportService.cancel(fastify as never, 999, 42, true, { reason: 'Admin cancel' });
+
+  // 4. Settled report cannot be cancelled again
+  const settledFastify = {
+    ...fastify,
+    prisma: {
+      ...fastify.prisma,
+      crm: {
+        ...fastify.prisma.crm,
+        crmBugReport: {
+          findUnique: async () => ({ ...existingReport, status: 'CLOSED' }),
+        },
+      },
+    },
+  };
+  await assert.rejects(
+    async () => BugReportService.cancel(settledFastify as never, 101, 42, false),
+    /Yêu cầu này đã kết thúc, không thể huỷ/
+  );
 });

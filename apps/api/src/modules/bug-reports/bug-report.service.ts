@@ -41,6 +41,7 @@ import {
   type BugReportResolution,
   type BugReportStatus,
   type BugReportSummary,
+  type CancelBugReportRequest,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportAttachmentRequest,
   type CreateBugReportCommentRequest,
@@ -77,16 +78,18 @@ const STATUS_SORT: Record<BugReportStatus, number> = {
   CLOSED: 9,
   REJECTED: 9,
   DUPLICATE: 9,
+  CANCELLED: 9,
 };
 const PRIORITY_SORT: Record<BugPriority, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 const ALLOWED_TRANSITIONS: Record<BugReportStatus, ReadonlySet<BugReportStatus>> = {
-  NEW: new Set(['NEW', 'APPROVED', 'REJECTED', 'DUPLICATE']),
-  APPROVED: new Set(['APPROVED', 'IN_PROGRESS', 'REJECTED', 'DUPLICATE']),
-  IN_PROGRESS: new Set(['IN_PROGRESS', 'APPROVED', 'FIXED']),
-  FIXED: new Set(['FIXED', 'IN_PROGRESS', 'CLOSED']),
+  NEW: new Set(['NEW', 'APPROVED', 'REJECTED', 'DUPLICATE', 'CANCELLED']),
+  APPROVED: new Set(['APPROVED', 'IN_PROGRESS', 'REJECTED', 'DUPLICATE', 'CANCELLED']),
+  IN_PROGRESS: new Set(['IN_PROGRESS', 'APPROVED', 'FIXED', 'CANCELLED']),
+  FIXED: new Set(['FIXED', 'IN_PROGRESS', 'CLOSED', 'CANCELLED']),
   CLOSED: new Set(['CLOSED', 'IN_PROGRESS']),
   REJECTED: new Set(['REJECTED', 'NEW']),
   DUPLICATE: new Set(['DUPLICATE', 'NEW']),
+  CANCELLED: new Set(['CANCELLED', 'NEW']),
 };
 const SENSITIVE_QUERY_KEY = /token|secret|password|pass|authorization|api.?key|phone|email|search|query|name/i;
 
@@ -131,7 +134,7 @@ export function bugReportNextActorWhere(nextActor: unknown): Prisma.CrmBugReport
       ],
     };
   }
-  if (nextActor === 'NONE') return { status: { in: ['CLOSED', 'REJECTED', 'DUPLICATE'] } };
+  if (nextActor === 'NONE') return { status: { in: ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'] } };
   return {};
 }
 
@@ -870,7 +873,7 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
 export function bugReportAgentProgress(source: AgentProgressSource): BugReportAgentProgress {
   const latest = latestAgentActivity(source);
   if (source.status === 'CLOSED') return progressResult('COMPLETED', source, null, source.closedAt);
-  if (source.status === 'REJECTED' || source.status === 'DUPLICATE') {
+  if (source.status === 'REJECTED' || source.status === 'DUPLICATE' || source.status === 'CANCELLED') {
     return progressResult('STOPPED', source, null, source.closedAt);
   }
   if (source.status === 'FIXED') {
@@ -975,7 +978,7 @@ function nextAction(
 
 /** Keep every consumer aligned on the single person or system responsible for moving a ticket forward. */
 export function bugReportNextAction(source: AgentProgressSource): BugReportNextAction {
-  if (['CLOSED', 'REJECTED', 'DUPLICATE'].includes(source.status)) {
+  if (['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(source.status)) {
     return nextAction(
       'NONE',
       'NONE',
@@ -1381,6 +1384,12 @@ export function bugReportReporterExperience(input: {
       label: 'Kết quả đã sẵn sàng để bạn kiểm tra',
       occurredAt: (input.resolvedAt ?? input.updatedAt).toISOString(),
     });
+  } else if (input.status === 'CANCELLED') {
+    state = 'NOT_PROCEEDING';
+    label = 'Đã huỷ';
+    summary = 'Bạn đã huỷ yêu cầu này.';
+    nextAction = { label: 'Yêu cầu đã huỷ', detail: 'Bạn có thể gửi một yêu cầu mới khi cần.' };
+    updates.push({ label: 'Đã huỷ yêu cầu', occurredAt: (input.closedAt ?? input.updatedAt).toISOString() });
   } else if (input.status === 'REJECTED' || input.status === 'DUPLICATE') {
     state = 'NOT_PROCEEDING';
     label = 'Không tiếp tục';
@@ -1586,6 +1595,7 @@ function myReportDto(row: MyReportWithRelations | ReportWithRelations): MyBugRep
       (row.status === 'NEW' &&
         row.clarificationStatus === 'WAITING_REPORTER' &&
         row.audits.some((audit) => audit.action === 'REPORTER_REOPENED' && Boolean(audit.note?.trim()))),
+    canCancel: !['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(row.status),
   };
 }
 
@@ -2216,7 +2226,7 @@ export class BugReportService {
     input: CreateBugReportCommentRequest
   ) {
     const existing = await this.reportForUser(fastify, actorStaffId, id, canOverride);
-    if (['CLOSED', 'REJECTED', 'DUPLICATE'].includes(existing.status)) {
+    if (['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(existing.status)) {
       throw new BugReportError('Ticket đã kết thúc nên hội thoại đang ở chế độ chỉ đọc.', 409, 'BUG_COMMENT_LOCKED');
     }
     const body = clipped(input?.body, 2000);
@@ -2426,6 +2436,99 @@ export class BugReportService {
     return this.detail(fastify, completed.row.id);
   }
 
+  static async cancel(
+    fastify: FastifyInstance,
+    actorStaffId: number,
+    id: number,
+    canOverride: boolean,
+    input?: CancelBugReportRequest
+  ): Promise<BugReportDetail> {
+    const existing = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id },
+      include: { audits: true },
+    });
+    if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    if (existing.reporterStaffId !== actorStaffId && !canOverride) {
+      throw new BugReportError('Chỉ người báo hoặc quản trị viên mới có thể huỷ yêu cầu này.', 403, 'FORBIDDEN');
+    }
+    if (['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(existing.status)) {
+      throw new BugReportError('Yêu cầu này đã kết thúc, không thể huỷ.', 409, 'BUG_ALREADY_SETTLED');
+    }
+
+    const reason = clipped(input?.reason, 2000) || null;
+    const now = new Date();
+    const cancelNote = reason ? `[Đã huỷ]: ${reason}` : '[Đã huỷ]';
+    const effectiveTriageNote = existing.triageNote
+      ? `${existing.triageNote}\n${cancelNote}`
+      : cancelNote;
+
+    const completed = await fastify.prisma.crm.$transaction(async (tx) => {
+      const row = await tx.crmBugReport.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          statusSort: STATUS_SORT.CANCELLED,
+          closedAt: now,
+          triageNote: effectiveTriageNote,
+        },
+      });
+
+      // Terminate any active or pending implementation jobs
+      await tx.crmInboxImplementationJob.updateMany({
+        where: {
+          reportId: id,
+          status: { in: ['PENDING', 'LEASED', 'RUNNING', 'AWAITING_COMMIT_REVIEW', 'AWAITING_DEPLOY_REVIEW'] },
+        },
+        data: {
+          status: 'FAILED',
+          executionPhase: 'IDE_HANDOFF_CANCELLED',
+          failureCode: 'IDE_HANDOFF_CANCELLED',
+          summary: reason ? `Người báo đã huỷ yêu cầu: ${reason}` : 'Người báo đã huỷ yêu cầu.',
+          completedAt: now,
+        },
+      });
+
+      // Add a comment to document the cancellation in the subthread
+      const commentBody = reason
+        ? `Người báo đã huỷ yêu cầu này: ${reason}`
+        : 'Người báo đã huỷ yêu cầu này vì thông tin báo lên chưa đúng hoặc không còn cần thiết.';
+      await tx.crmBugReportComment.create({
+        data: {
+          reportId: id,
+          authorStaffId: actorStaffId,
+          authorType: 'STAFF',
+          kind: 'COMMENT',
+          body: commentBody,
+        },
+      });
+
+      // Add audit entry
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId: id,
+          actorStaffId,
+          action: 'REPORTER_CANCELLED',
+          note: reason ?? 'Người báo đã huỷ yêu cầu.',
+          beforeJson: serialize(stateSnapshot(existing)),
+          afterJson: serialize(stateSnapshot(row)),
+        },
+      });
+
+      // Dismiss pending notifications
+      await tx.crmBugReportNotification.updateMany({
+        where: { reportId: id, readAt: null },
+        data: { readAt: now },
+      });
+
+      return row;
+    });
+
+    fastify.cache?.invalidatePattern('^bug-reports:mine:');
+    fastify.cache?.invalidatePattern('^bug-reports:');
+
+    return this.detail(fastify, completed.id);
+  }
+
   static async triage(fastify: FastifyInstance, actorStaffId: number, id: number, input: TriageBugReportRequest) {
     const status = input?.status;
     if (!BUG_REPORT_STATUSES.includes(status)) throw new BugReportError('Trạng thái ticket không hợp lệ.');
@@ -2487,7 +2590,7 @@ export class BugReportService {
           startedAt:
             status === 'IN_PROGRESS' ? (existing.startedAt ?? now) : status === 'NEW' ? null : existing.startedAt,
           resolvedAt: status === 'FIXED' ? now : status === 'IN_PROGRESS' ? null : existing.resolvedAt,
-          closedAt: ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(status)
+          closedAt: ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(status)
             ? now
             : status === 'NEW' || status === 'IN_PROGRESS'
               ? null
@@ -2673,7 +2776,7 @@ export class BugReportService {
   ): Promise<BugReportDetail> {
     const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
     if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
-    if (['CLOSED', 'REJECTED', 'DUPLICATE'].includes(existing.status)) {
+    if (['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(existing.status)) {
       throw new BugReportError('Ticket đã đóng, không thể làm rõ lại.', 400);
     }
     const now = new Date();
