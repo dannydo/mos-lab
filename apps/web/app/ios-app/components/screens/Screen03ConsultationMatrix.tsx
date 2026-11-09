@@ -1597,9 +1597,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] font-semibold text-neutral-600 truncate mt-0.5">
-                      {selectedStyle} · Cong {selectedCurl} · {selectedThickness.replace(/\s+/g, '')} ·{' '}
-                      {selectedLength.replace(/\s+/g, '')}
+                    <div className="text-[11px] font-semibold text-neutral-600 truncate mt-0.5 tabular-nums">
+                      {selectedStyle.replace(/sexy\s*\/?\s*cat|cat\s*\/?\s*sexy/gi, 'Natural')} ·{' '}
+                      {selectedCurl.replace(/^Cong\s+/i, '')} ·{' '}
+                      {selectedThickness.replace(/\s*mm/gi, '').replace(/\s+/g, '')} ·{' '}
+                      {selectedLength.replace(/\s*mm/gi, '').replace(/\s+/g, '')}
                     </div>
                   </div>
 
@@ -2662,7 +2664,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           <div className="flex items-center justify-between text-[10px] text-gray-500 mt-1.5 pt-1 border-t border-gray-100/80">
                             <span>{detail ? `${detail.totalFibers} sợi / 2 mắt` : cnt}</span>
                             <span className="font-semibold text-gray-700">
-                              {detail ? `⏱️ ${detail.durationMin} phút` : ''}
+                              {detail ? `~${detail.durationMin} phút` : ''}
                             </span>
                           </div>
                         </button>
@@ -2745,7 +2747,8 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       <ArrowDownRight className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       <span className="text-[12px] font-black text-purple-950 truncate">+Mi Dưới Under</span>
                       <span className="text-[11px] font-semibold text-purple-800/80 tabular-nums">
-                        Cong {underMinkCurl} · {underMinkLength} · {underMinkCount}
+                        {underMinkCurl.replace(/^Cong\s+/i, '')} · {underMinkLength.replace(/\s*mm/gi, '')} ·{' '}
+                        {underMinkCount}
                       </span>
                     </div>
                     <div className="text-[12px] font-black text-purple-700 shrink-0 tabular-nums">

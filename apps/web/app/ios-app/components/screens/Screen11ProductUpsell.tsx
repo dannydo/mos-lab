@@ -748,7 +748,11 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
                     </span>
                     {(booking?.attributes?.curl || booking?.attributes?.thickness || booking?.attributes?.length) && (
                       <span className="text-neutral-400 text-[10px] font-medium">
-                        {[booking?.attributes?.curl, booking?.attributes?.thickness, booking?.attributes?.length]
+                        {[
+                          booking?.attributes?.curl?.replace(/^Cong\s+/i, ''),
+                          booking?.attributes?.thickness?.replace(/\s*mm/gi, ''),
+                          booking?.attributes?.length?.replace(/\s*mm/gi, ''),
+                        ]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>

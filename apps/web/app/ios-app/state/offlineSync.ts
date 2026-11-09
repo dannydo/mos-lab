@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveApiBaseUrl } from '~/lib/api-base-url';
+
 export interface OfflineAction {
   id: string;
   action: string;
@@ -386,7 +388,8 @@ export async function syncPendingActions(actorInfo?: {
 
   for (const item of actions) {
     try {
-      const res = await fetch('/api/ios/bookings', {
+      const apiBase = resolveApiBaseUrl();
+      const res = await fetch(`${apiBase}/ios/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

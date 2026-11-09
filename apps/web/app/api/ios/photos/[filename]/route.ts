@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
-function getLashUploadsDir(): string {
-  const cwd = process.cwd();
-  if (cwd.endsWith('apps/web')) {
-    return path.resolve(cwd, 'public/uploads/lash-progress');
-  }
-  return path.resolve(cwd, 'apps/web/public/uploads/lash-progress');
+function getApiBaseUrl(): string {
+  const envUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.API_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://api.lab.masteros.app/api' : 'http://localhost:4001/api');
+  return envUrl.replace(/\/$/, '');
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ filename: string }> }) {
@@ -17,30 +15,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return new NextResponse('Invalid filename', { status: 400 });
     }
 
-    const primaryDir = getLashUploadsDir();
-    const primaryPath = path.join(primaryDir, filename);
+    const apiBase = getApiBaseUrl();
+    const targetUrl = `${apiBase}/ios/photos/${encodeURIComponent(filename)}`;
 
-    let fileBuffer: Buffer | null = null;
-    try {
-      fileBuffer = await fs.readFile(primaryPath);
-    } catch {
-      // Check VPS mirror directory
-      try {
-        const vpsPath = path.join('/home/web/mos-data/lash-progress', filename);
-        fileBuffer = await fs.readFile(vpsPath);
-      } catch {
-        fileBuffer = null;
-      }
+    const res = await fetch(targetUrl);
+    if (!res.ok) {
+      return new NextResponse('File not found', { status: res.status });
     }
 
-    if (!fileBuffer) {
-      return new NextResponse('File not found', { status: 404 });
-    }
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    const buffer = await res.arrayBuffer();
 
-    const ext = path.extname(filename).toLowerCase().replace('.', '');
-    const contentType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
@@ -48,6 +34,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (err: any) {
-    return new NextResponse(err.message || 'Internal error', { status: 500 });
+    return new NextResponse('Error fetching photo', { status: 500 });
   }
 }

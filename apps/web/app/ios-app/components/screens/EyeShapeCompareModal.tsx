@@ -65,7 +65,7 @@ export const EYE_SHAPES_EXTENDED_DETAILS: EyeShapeDetailedInfo[] = [
     dangerRisk:
       'Hầu như không có rủi ro về mặt tạo hình, chỉ cần tuân thủ quy tắc tải trọng an toàn (+2mm so với mi thật).',
     technicianTip:
-      'Tự do sáng tạo mọi form mi: Natural thanh lịch, Wing mắt mèo sexy, Doll búp bê, hoặc Kim-K thời thượng.',
+      'Tự do sáng tạo mọi form mi: Natural thanh lịch, Wing đuôi dài thanh thoát, Doll búp bê, hoặc Kim-K thời thượng.',
   },
   {
     ...NATURAL_EYE_SHAPES[4],

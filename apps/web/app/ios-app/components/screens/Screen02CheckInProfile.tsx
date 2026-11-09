@@ -9,6 +9,7 @@ import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
 import {
   Check,
+  Edit3,
   Sparkles,
   ShieldCheck,
   Eye,
@@ -549,9 +550,11 @@ export function Screen02CheckInProfile({
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] font-semibold text-neutral-300 truncate mt-0.5">
-                    {preset.style} · Cong {preset.curl} · {preset.thickness.replace(/\s+/g, '')} ·{' '}
-                    {preset.length.replace(/\s+/g, '')}
+                  <div className="text-[11px] font-semibold text-neutral-300 truncate mt-0.5 tabular-nums">
+                    {preset.style.replace(/sexy\s*\/?\s*cat|cat\s*\/?\s*sexy/gi, 'Natural')} ·{' '}
+                    {preset.curl.replace(/^Cong\s+/i, '')} ·{' '}
+                    {preset.thickness.replace(/\s*mm/gi, '').replace(/\s+/g, '')} ·{' '}
+                    {preset.length.replace(/\s*mm/gi, '').replace(/\s+/g, '')}
                   </div>
                 </div>
 
@@ -787,8 +790,8 @@ export function Screen02CheckInProfile({
                     <span>{getStaffInitials(checkInStaffName)}</span>
                   )}
                 </div>
-                <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-[#FFB400] text-[#FFB400] text-[8px] font-black px-1 py-0.2 rounded-full leading-tight">
-                  {isCvlStaff ? 'CV🪶' : actorTierLabel}
+                <span className="absolute -bottom-1 -right-1 bg-[#2C2C2E] border border-[#FFB400] text-[#FFB400] text-[8px] font-black px-1 py-0.2 rounded-full leading-tight inline-flex items-center">
+                  {isCvlStaff ? <CvFeather1Badge featherClass="w-2 h-2 text-[#FFB400]" /> : actorTierLabel}
                 </span>
               </div>
               <span className="text-[11px] font-bold text-[#FFB400] truncate w-full mt-1">
@@ -1315,13 +1318,19 @@ export function Screen02CheckInProfile({
           <button
             type="button"
             onClick={() => onCheckIn(booking?.id)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[14px] flex items-center justify-center shadow-md active:scale-98 transition-transform cursor-pointer tracking-tight"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer tracking-tight"
           >
-            <span>
-              {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING'
-                ? 'Sửa Tư Vấn & Đổi Dịch Vụ'
-                : 'Check-in & Bắt Đầu Tư Vấn'}
-            </span>
+            {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING' ? (
+              <>
+                <Edit3 className="w-4 h-4 stroke-[2.5]" />
+                <span>Sửa Tư Vấn & Đổi Dịch Vụ</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4.5 h-4.5 stroke-[3]" />
+                <span>Check-in & Bắt Đầu Tư Vấn</span>
+              </>
+            )}
           </button>
         )}
       </div>

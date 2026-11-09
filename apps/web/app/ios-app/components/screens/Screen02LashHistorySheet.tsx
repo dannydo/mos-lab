@@ -325,21 +325,21 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
               <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase block">Độ cong</span>
                 <span className="text-[13px] font-black text-blue-600 block truncate mt-0.5">
-                  Cong {attrs.curl || 'C'}
+                  {(attrs.curl || 'C').replace(/^Cong\s+/i, '')}
                 </span>
               </div>
               {/* Độ dài */}
               <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase block">Độ dài</span>
-                <span className="text-[13px] font-black text-neutral-900 block truncate mt-0.5">
-                  {attrs.length || '10-12 mm'}
+                <span className="text-[13px] font-black text-neutral-900 block truncate mt-0.5 tabular-nums">
+                  {(attrs.length || '10-12').replace(/\s*mm/gi, '')}
                 </span>
               </div>
               {/* Độ dày */}
               <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase block">Độ dày</span>
-                <span className="text-[12.5px] font-black text-emerald-700 block truncate mt-0.5">
-                  {attrs.thickness || '0.10 mm'}
+                <span className="text-[12.5px] font-black text-emerald-700 block truncate mt-0.5 tabular-nums">
+                  {(attrs.thickness || '0.10').replace(/\s*mm/gi, '')}
                 </span>
               </div>
               {/* Số sợi / Fan */}

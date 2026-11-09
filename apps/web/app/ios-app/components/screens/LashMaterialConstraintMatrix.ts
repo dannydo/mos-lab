@@ -38,10 +38,10 @@ export const ALL_LASH_DESIGNS: LashDesignOption[] = [
   },
   {
     id: 'Wing',
-    name: 'Wing (Mắt mèo Sexy)',
+    name: 'Wing (Đuôi dài thanh thoát)',
     shortName: 'Wing',
     desc: 'Tăng dần chiều dài về phía đuôi mắt',
-    eyeEffect: 'Kéo dài đuôi mắt sắc sảo, quyến rũ',
+    eyeEffect: 'Kéo dài đuôi mắt sắc sảo, thanh thoát',
     image: '/lashes/designs/lash-design-wing.jpg',
   },
   {

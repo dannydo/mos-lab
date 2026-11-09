@@ -383,8 +383,8 @@ function formatShortMoney(amount: number): string {
 /**
  * Trích xuất 3 tầng thông tin chuẩn cho Cột Phải của ca ĐÃ XONG (DONE):
  * 1. Thời gian: 09:00 · 55p
- * 2. Tiền (Quan trọng nhất): 🔴 -200K (nếu nợ) | 📦 7.700K (nếu bán Combo) | +770K (nếu thu dịch vụ/phụ thu) | 0đ (nếu trừ combo)
- * 3. Điểm CV🪶 & Tip: ↻ +41 pts (kèm ♥ 50K nếu có tip)
+ * 2. Tiền (Quan trọng nhất): -200K (nếu nợ) | Package 7.700K (nếu bán Combo) | +770K (nếu thu dịch vụ/phụ thu) | 0đ (nếu trừ combo)
+ * 3. Điểm CV🪶 & Tip: ↻ +41 pts (kèm Heart 50K nếu có tip)
  */
 function getDoneBookingSummary(b: BookingItem) {
   // 1. Giờ book và số phút làm thực tế

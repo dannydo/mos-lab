@@ -29,6 +29,7 @@ import {
   setActiveServicingStep,
   clearLocalProgressSnapshot,
 } from './offlineSync';
+import { resolveApiBaseUrl } from '~/lib/api-base-url';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -402,7 +403,8 @@ export function useIosAppState(
           : process.env.NODE_ENV !== 'production'
             ? 'Bearer mock-token-for-dev'
             : undefined;
-        const res = await fetch('/api/ios/bookings', {
+        const apiBase = resolveApiBaseUrl();
+        const res = await fetch(`${apiBase}/ios/bookings`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -480,8 +482,9 @@ export function useIosAppState(
           : process.env.NODE_ENV !== 'production'
             ? 'Bearer mock-token-for-dev'
             : undefined;
+        const apiBase = resolveApiBaseUrl();
         const res = await fetch(
-          `/api/ios/bookings?storeId=${storeId}&segment=${seg}&scope=${effScope}&role=${role}&staffId=${effStaffId}${dateQuery}&limit=40`,
+          `${apiBase}/ios/bookings?storeId=${storeId}&segment=${seg}&scope=${effScope}&role=${role}&staffId=${effStaffId}${dateQuery}&limit=40`,
           {
             cache: 'no-store',
             headers: effectiveAuth ? { Authorization: effectiveAuth } : undefined,
@@ -1049,17 +1052,20 @@ export function useIosAppState(
   };
 
   // Step 6 -> Step 7: CV starts task (Preparation - chiếu theo iOS gốc, đồng hồ tự động chạy ngay)
-  const handleCvStartTask = () => {
+  const handleCvStartTask = (durationMinutes?: number) => {
     const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
+    const effectiveDuration = durationMinutes || activeBooking.serviceDuration || 60;
     const progressPatch = {
       ...(activeBooking.progress || { elapsedSeconds: 0 }),
       startedAt,
       timerRunning: true,
       currentStep: 7,
+      targetDurationMinutes: effectiveDuration,
     };
     updateActiveBooking((prev) => ({
       ...prev,
       status: 'SERVICING',
+      serviceDuration: effectiveDuration,
       progress: progressPatch,
     }));
     setActiveServicingBookingId(activeBooking.id);

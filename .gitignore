@@ -69,3 +69,4 @@ __pycache__/
 # Local browser and performance audit artifacts
 /.playwright-cli/
 /output/
+.mos-next-build-locks/

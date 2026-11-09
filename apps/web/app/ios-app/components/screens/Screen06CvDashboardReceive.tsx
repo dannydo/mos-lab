@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
-import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import {
   Sparkles,
   Eye,
@@ -17,6 +18,10 @@ import {
   Clock,
   ChevronLeft,
   AlertTriangle,
+  Minus,
+  Plus,
+  Check,
+  Lock,
 } from 'lucide-react';
 
 function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
@@ -34,7 +39,7 @@ function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
 
 interface Screen06CvDashboardReceiveProps {
   booking: BookingItem;
-  onStartTask: () => void;
+  onStartTask: (durationMinutes?: number) => void;
   onEditService?: () => void;
   onBack?: () => void;
   staffStats?: StaffMonthlyStats | null;
@@ -62,21 +67,44 @@ export function Screen06CvDashboardReceive({
   // Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn Any - Lashes
   const displayServiceName = resolveDisplayServiceName(booking);
 
-  // Thời lượng ước tính cam kết lúc tư vấn (phút)
-  const estimatedDurationMin = useMemo(() => {
-    if (booking.serviceDuration) return booking.serviceDuration;
-    let baseMin = 65; // Mặc định 65 phút
+  // 1. Tính toán thời gian gợi ý theo Ma Trận Kỹ Thuật (Lash Material Constraint Matrix)
+  const suggestedDurationMin = useMemo(() => {
+    const material = booking.attributes?.material || displayServiceName || '';
+    const count = booking.attributes?.count || '';
+    const volume = booking.attributes?.volume || '';
+    const menuDetail = getWingsMenuDetail(material, count, volume);
+    if (menuDetail?.durationMin) {
+      let dur = menuDetail.durationMin;
+      if (booking.attributes?.hasUnderMink) dur += 25;
+      return dur;
+    }
+
+    // Fallback thông minh theo tên dịch vụ
+    let base = 60;
     const sName = (displayServiceName || '').toLowerCase();
     if (sName.includes('dặm') || sName.includes('refill')) {
-      baseMin = 50;
+      base = 45;
     }
     if (booking.attributes?.hasUnderMink || sName.includes('mi dưới')) {
-      baseMin += 25; // Mi dưới dặm thêm 25 phút
+      base += 25;
     }
-    return baseMin;
+    return base;
   }, [booking, displayServiceName]);
 
-  // Giờ dự kiến hoàn thành ca làm (tính từ giờ bắt đầu hẹn + thời lượng ước tính)
+  // State thời gian CV🪶 chọn cam kết: khởi tạo null để BẮT BUỘC CV🪶 phải chủ động bấm chạm chọn
+  const [selectedDurationMin, setSelectedDurationMin] = useState<number | null>(null);
+
+  // Thời lượng hiệu lực dùng để tính giờ xong
+  const activeDurationMin = selectedDurationMin || suggestedDurationMin;
+
+  // Danh sách các pill thời gian thông minh (luôn bao gồm số phút gợi ý từ ma trận)
+  const quickPillOptions = useMemo(() => {
+    const defaultPills = [45, 60, 75, 90, 105];
+    const set = new Set([...defaultPills, suggestedDurationMin]);
+    return Array.from(set).sort((a, b) => a - b);
+  }, [suggestedDurationMin]);
+
+  // Giờ dự kiến hoàn thành ca làm (tính từ giờ bắt đầu hẹn + thời lượng)
   const estimatedFinishTime = useMemo(() => {
     let startHours = 10;
     let startMinutes = 30;
@@ -89,11 +117,11 @@ export function Screen06CvDashboardReceive({
         startHours += 12;
       }
     }
-    const totalMinutes = startHours * 60 + startMinutes + estimatedDurationMin;
+    const totalMinutes = startHours * 60 + startMinutes + activeDurationMin;
     const finishH = Math.floor(totalMinutes / 60) % 24;
     const finishM = totalMinutes % 60;
     return `${String(finishH).padStart(2, '0')}:${String(finishM).padStart(2, '0')}`;
-  }, [booking, estimatedDurationMin]);
+  }, [booking, activeDurationMin]);
 
   // Dynamic live KPI stats for active technician (100% real numbers from database)
   const currentMonth = staffStats?.month || new Date().getMonth() + 1;
@@ -110,7 +138,7 @@ export function Screen06CvDashboardReceive({
       Boolean(booking?.attributes?.overrideReason?.includes('Nối Mới Combo')));
 
   return (
-    <div className="flex-1 flex flex-col bg-black overflow-y-auto select-none font-sans">
+    <div className="flex-1 flex flex-col bg-black overflow-hidden select-none font-sans">
       {/* 1. Sleek Native iOS Navigation Bar (Replaces bulky avatar & NOW header) */}
       <div className="h-12 px-3.5 bg-black border-b border-neutral-900 flex items-center justify-between z-20 sticky top-0 flex-shrink-0">
         {/* Left: Back to Lobby Button */}
@@ -137,12 +165,18 @@ export function Screen06CvDashboardReceive({
         {/* Right: Estimated Duration & Completion Target */}
         <div className="flex items-center justify-end min-w-[70px]">
           <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border border-amber-500/50 text-amber-400 shadow-xs cursor-default select-none"
-            title={`Thời lượng cam kết lúc tư vấn: ~${estimatedDurationMin} phút · Dự kiến hoàn thành lúc ${estimatedFinishTime}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border shadow-xs transition-all select-none ${
+              selectedDurationMin ? 'border-emerald-500/70 text-emerald-400' : 'border-amber-500/50 text-amber-400'
+            }`}
+            title={
+              selectedDurationMin
+                ? `Thời lượng cam kết: ~${selectedDurationMin} phút · Dự kiến hoàn thành lúc ${estimatedFinishTime}`
+                : `Thời lượng gợi ý ma trận: ~${suggestedDurationMin} phút (Chưa chọn cam kết)`
+            }
           >
-            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-[12px] font-black tabular-nums tracking-tight">~{estimatedDurationMin}p</span>
-            <span className="text-[9.5px] text-neutral-400 font-semibold border-l border-neutral-700/80 pl-1.5 tabular-nums">
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span className="text-[12px] font-black tabular-nums tracking-tight">~{activeDurationMin}p</span>
+            <span className="text-[9.5px] text-neutral-300 font-semibold border-l border-neutral-700/80 pl-1.5 tabular-nums">
               Xong {estimatedFinishTime}
             </span>
           </div>
@@ -150,7 +184,7 @@ export function Screen06CvDashboardReceive({
       </div>
 
       {/* 2. Main Content Body */}
-      <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
+      <div className="p-4 pb-28 space-y-3.5 flex-1 overflow-y-auto">
         {/* Active Quest Card (Bordered in Gold Laser) */}
         <div className="relative bg-[#1C1C1E] border border-amber-500/80 rounded-3xl p-4 space-y-3.5 shadow-2xl overflow-hidden">
           {/* Laser Glow top bar */}
@@ -159,7 +193,7 @@ export function Screen06CvDashboardReceive({
           {/* Top Quest Bar: Title */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[11px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm">
-              <span>⚔️</span>
+              <Sparkles className="w-3.5 h-3.5 fill-black stroke-black shrink-0" />
               <span>NHIỆM VỤ TIẾP NHẬN</span>
             </span>
           </div>
@@ -213,8 +247,9 @@ export function Screen06CvDashboardReceive({
                 <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div className="min-w-0">
-                <div className="text-[11.5px] font-black text-amber-300 uppercase tracking-tight">
-                  ⚠️ QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
+                <div className="text-[11.5px] font-black text-amber-300 uppercase tracking-tight flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-300 inline shrink-0" />
+                  <span>QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)</span>
                 </div>
                 <div className="text-[11px] font-bold text-amber-100/95 leading-snug mt-0.5">
                   Nhân viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi
@@ -232,7 +267,10 @@ export function Screen06CvDashboardReceive({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-[11.5px] font-black text-emerald-300 uppercase tracking-tight flex items-center justify-between">
-                  <span>✨ Ca Nâng Cấp Từ Gói Combo</span>
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 inline shrink-0" />
+                    <span>Ca Nâng Cấp Từ Gói Combo</span>
+                  </span>
                   <span className="text-emerald-400 tabular-nums">
                     +{(booking.upgradePrice || 0).toLocaleString('vi-VN')} đ
                   </span>
@@ -403,7 +441,8 @@ export function Screen06CvDashboardReceive({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9.5px] font-black uppercase text-amber-400 flex items-center gap-1">
-                  <span>💬</span> DẶN DÒ TỪ {booking.bookerName || 'CC'}
+                  <MessageSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>DẶN DÒ TỪ {booking.bookerName || 'CC'}</span>
                 </span>
                 <p className="text-[11.5px] text-amber-100/90 font-medium leading-snug mt-0.5">
                   {booking.customerNote || '31/10 c book Thảo Ly'}
@@ -426,14 +465,136 @@ export function Screen06CvDashboardReceive({
             )}
           </div>
 
-          {/* 4. Big CTA Button: Start Quest */}
-          <button
-            onClick={onStartTask}
-            className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[14.5px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
+          {/* 3.5 BẮT BUỘC: KHỐI DỰ ĐOÁN THỜI GIAN HOÀN THÀNH CA (CV🪶 CAM KẾT) */}
+          <div
+            className={`rounded-2xl p-3.5 space-y-2.5 transition-all ${
+              selectedDurationMin
+                ? 'bg-[#1C1C1E] border border-emerald-500/50 shadow-md'
+                : 'bg-[#1C1C1E] border-2 border-amber-500/80 shadow-lg shadow-amber-500/10'
+            }`}
           >
-            <Play className="w-4 h-4 fill-black stroke-black" />
-            <span>MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM</span>
-          </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-[11.5px] font-black uppercase text-amber-400 tracking-tight">
+                  Thời Gian Dự Đoán Hoàn Thành
+                </span>
+              </div>
+              <span
+                className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full border leading-none ${
+                  selectedDurationMin
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
+                }`}
+              >
+                {selectedDurationMin ? `Đã chọn: ${selectedDurationMin}p` : 'Bắt buộc chọn'}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-neutral-400 leading-snug">
+              Chuẩn kỹ thuật theo ma trận:{' '}
+              <strong className="text-amber-300 font-bold">~{suggestedDurationMin} phút</strong>.{' '}
+              <CvFeather1Badge featherClass="w-2.5 h-2.5 text-amber-400" />{' '}
+              <span className={selectedDurationMin ? 'text-neutral-400' : 'text-amber-200 font-bold'}>
+                bấm chọn 1 mức phút phía dưới để mở khóa bắt đầu:
+              </span>
+            </p>
+
+            {/* Quick Pills & Stepper */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              {quickPillOptions.map((mins) => {
+                const isSelected = selectedDurationMin === mins;
+                const isSuggested = mins === suggestedDurationMin;
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setSelectedDurationMin(mins)}
+                    className={`relative px-2.5 py-1.5 rounded-xl text-[11.5px] font-bold tabular-nums transition-all active:scale-95 cursor-pointer flex items-center gap-1 border ${
+                      isSelected
+                        ? 'bg-[#FFB400] text-black border-[#FFB400] shadow-sm font-black ring-2 ring-amber-400/50'
+                        : isSuggested
+                          ? 'bg-[#252528] text-amber-300 border-amber-500/70 hover:border-amber-400'
+                          : 'bg-[#141416] text-neutral-300 border-neutral-700/80 hover:border-neutral-500'
+                    }`}
+                  >
+                    <span>{mins}p</span>
+                    {isSuggested && (
+                      <span
+                        className={`text-[8.5px] px-1 py-0.2 rounded font-black leading-none ${
+                          isSelected ? 'bg-black text-[#FFB400]' : 'bg-amber-400/20 text-amber-400'
+                        }`}
+                      >
+                        Gợi ý
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Stepper Buttons: -5p and +5p */}
+              <div className="inline-flex items-center rounded-xl bg-[#141416] border border-neutral-700/80 overflow-hidden ml-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = selectedDurationMin ?? suggestedDurationMin;
+                    setSelectedDurationMin(Math.max(30, current - 5));
+                  }}
+                  className="px-2 py-1.5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
+                  title="Giảm 5 phút"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-2 text-[11.5px] font-extrabold text-amber-400 tabular-nums">
+                  {selectedDurationMin ? `${selectedDurationMin}p` : `${suggestedDurationMin}p`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = selectedDurationMin ?? suggestedDurationMin;
+                    setSelectedDurationMin(Math.min(180, current + 5));
+                  }}
+                  className="px-2 py-1.5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
+                  title="Tăng 5 phút"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Estimated Finish Time Banner */}
+            <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-neutral-800">
+              <span className="text-neutral-400">Dự kiến xong lúc:</span>
+              <span className="font-extrabold text-white tabular-nums">
+                {selectedDurationMin ? (
+                  <span className="text-emerald-400">{estimatedFinishTime} (Cam kết)</span>
+                ) : (
+                  <span className="text-neutral-400">{estimatedFinishTime} (Ước tính)</span>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* 4. Big CTA Button: Start Quest (BẮT BUỘC CHỌN MỚI ĐƯỢC NHẤN NÚT) */}
+          {selectedDurationMin ? (
+            <button
+              type="button"
+              onClick={() => onStartTask(selectedDurationMin)}
+              className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[14px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-black stroke-black" />
+              <span>MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM (~{selectedDurationMin}p)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="w-full py-4 px-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 text-neutral-500 font-bold text-[12.5px] tracking-wider flex items-center justify-center gap-2 cursor-not-allowed opacity-60 uppercase select-none"
+            >
+              <Lock className="w-4 h-4 text-neutral-500" />
+              <span>BẮT BUỘC CHỌN THỜI GIAN TRƯỚC KHI BẮT ĐẦU</span>
+            </button>
+          )}
         </div>
 
         {/* 5. Stats Summary Card (Footer KPI) */}

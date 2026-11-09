@@ -11,7 +11,7 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
-import { EyeOff, Camera, Sparkles, CheckCircle2, CloudUpload, CloudCheck, CloudOff } from 'lucide-react';
+import { EyeOff, Camera, Sparkles, CheckCircle2, CloudUpload, CloudCheck, CloudOff, ClipboardList } from 'lucide-react';
 
 interface Screen07bLashProgressCleanedProps {
   booking?: BookingItem;
@@ -115,19 +115,18 @@ export function Screen07bLashProgressCleaned({
   const displayServiceName = resolveDisplayServiceName(booking);
   const lashSpecDetail = useMemo(() => {
     const parts: string[] = [];
-    if (booking?.attributes?.style) parts.push(booking.attributes.style);
-    if (booking?.attributes?.curl) parts.push(booking.attributes.curl);
+    const rawStyle = (booking?.attributes?.style || '')
+      .replace(/sexy\s*\/?\s*cat|cat\s*\/?\s*sexy/gi, 'Natural')
+      .trim();
+    if (rawStyle) parts.push(rawStyle);
+    if (booking?.attributes?.curl) {
+      parts.push(booking.attributes.curl.replace(/^Cong\s+/i, '').trim());
+    }
     if (booking?.attributes?.length) {
-      parts.push(
-        booking.attributes.length.includes('mm') ? booking.attributes.length : `${booking.attributes.length} mm`
-      );
+      parts.push(booking.attributes.length.replace(/\s*mm/gi, '').trim());
     }
     if (booking?.attributes?.thickness) {
-      parts.push(
-        booking.attributes.thickness.includes('mm')
-          ? booking.attributes.thickness
-          : `${booking.attributes.thickness} mm`
-      );
+      parts.push(booking.attributes.thickness.replace(/\s*mm/gi, '').trim());
     }
     return parts.length > 0 ? parts.join(' · ') : '';
   }, [booking]);
@@ -194,7 +193,8 @@ export function Screen07bLashProgressCleaned({
           <div className="bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
-                📋 NGUYÊN VẬT LIỆU
+                <ClipboardList className="w-3.5 h-3.5 stroke-[2.2] text-amber-600 shrink-0" />
+                <span>NGUYÊN VẬT LIỆU</span>
               </span>
               <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                 {booking.attributes?.material || 'UltraLight'} · {booking.attributes?.volume || '4D'} ·{' '}
@@ -202,28 +202,28 @@ export function Screen07bLashProgressCleaned({
               </span>
             </div>
             <div className="grid grid-cols-4 gap-1.5">
-              <div className="bg-neutral-50 border border-neutral-200 rounded-xl py-1.5 px-1 text-center">
+              <div className="bg-neutral-50 border border-neutral-200 rounded-xl py-1.5 px-1 text-center min-w-0">
                 <span className="text-[8.5px] font-bold text-neutral-500 uppercase block">Dáng</span>
-                <span className="text-[11px] font-black text-neutral-800 block mt-0.5">
-                  {booking.attributes?.style || 'Doll'}
+                <span className="text-[11px] font-black text-neutral-800 block mt-0.5 truncate">
+                  {(booking.attributes?.style || 'Natural').replace(/sexy\s*\/?\s*cat|cat\s*\/?\s*sexy/gi, 'Natural')}
                 </span>
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl py-1.5 px-1 text-center">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl py-1.5 px-1 text-center min-w-0">
                 <span className="text-[8.5px] font-bold text-blue-500 uppercase block">Cong</span>
-                <span className="text-[11px] font-black text-blue-700 block mt-0.5">
-                  Cong {booking.attributes?.curl || 'C'}
+                <span className="text-[11px] font-black text-blue-700 block mt-0.5 truncate">
+                  {(booking.attributes?.curl || 'CC').replace(/^Cong\s+/i, '')}
                 </span>
               </div>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl py-1.5 px-1 text-center">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl py-1.5 px-1 text-center min-w-0">
                 <span className="text-[8.5px] font-bold text-emerald-600 uppercase block">Độ dài</span>
-                <span className="text-[11px] font-black text-emerald-700 block mt-0.5">
-                  {booking.attributes?.length || '10-12 mm'}
+                <span className="text-[11px] font-black text-emerald-700 block mt-0.5 tabular-nums truncate">
+                  {(booking.attributes?.length || '10-12').replace(/\s*mm/gi, '')}
                 </span>
               </div>
-              <div className="bg-purple-50 border border-purple-200 rounded-xl py-1.5 px-1 text-center">
+              <div className="bg-purple-50 border border-purple-200 rounded-xl py-1.5 px-1 text-center min-w-0">
                 <span className="text-[8.5px] font-bold text-purple-500 uppercase block">Độ dày</span>
-                <span className="text-[11px] font-black text-purple-700 block mt-0.5">
-                  {booking.attributes?.thickness || '0.07 mm'}
+                <span className="text-[11px] font-black text-purple-700 block mt-0.5 tabular-nums truncate">
+                  {(booking.attributes?.thickness || '0.07').replace(/\s*mm/gi, '')}
                 </span>
               </div>
             </div>

@@ -178,10 +178,10 @@ export const LashConsultationInfoModal: React.FC<LashConsultationInfoModalProps>
                     3
                   </span>
                   <div>
-                    <strong className="text-white font-bold text-[12px]">Wing (Mắt Mèo Sexy)</strong>
+                    <strong className="text-white font-bold text-[12px]">Wing (Đuôi Dài Thanh Thoát)</strong>
                     <p className="text-neutral-400 text-[11px] mt-0.5">
-                      Dài dần về phía đuôi mắt. Hợp: Mắt tròn, hai mắt gần nhau, khách thích phong cách sắc sảo quyến
-                      rũ.
+                      Dài dần về phía đuôi mắt. Hợp: Mắt tròn, hai mắt gần nhau, khách thích phong cách sắc sảo thanh
+                      thoát.
                     </p>
                   </div>
                 </div>
