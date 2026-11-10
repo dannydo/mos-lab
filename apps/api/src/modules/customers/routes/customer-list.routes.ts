@@ -70,7 +70,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       campaignId,
       campaignFilterMode,
     } = request.query as {
-      bucket?: BucketType | 'ALL' | 'NEW_LOCA';
+      bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
       page?: string;
       limit?: string;
@@ -149,8 +149,15 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       const needsAssignmentTimeSort = isAssignmentTimeSort(sortParam);
 
       // Determine what joins and select fields we need in the inner query to optimize performance
-      // When bucket is COMBO_LIVE, allowedUserIds is already precomputed, avoiding expensive full-table grouping
-      const needServiceBalance = bucket && bucket !== 'ALL' && bucket !== 'COMBO_LIVE';
+      // When bucket is COMBO_LIVE or NOT_COMBO_LIVE, allowedUserIds / excludedUserIds are precomputed, avoiding expensive full-table grouping.
+      // SINGLE and COMBO_DEAD use direct indexed EXISTS/NOT EXISTS checks on user_service_balance.
+      const needServiceBalance =
+        hsd30 === 'true' ||
+        lsd1 === 'true' ||
+        sortParam === 'purchaseDate_desc' ||
+        sortParam === 'purchaseDate_asc' ||
+        sortParam === 'comboPurchaseDate_desc' ||
+        sortParam === 'comboPurchaseDate_asc';
 
       const needSpentFilter =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
@@ -181,6 +188,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       // Pre-compute allowedUserIds before constructing innerJoins to push down predicates
       let allowedUserIds: number[] | null = null;
       let excludedUserIds: number[] | null = null;
+      let excludedNotComboLiveIds: number[] | null = null;
       // A NEW_LOCA request needs this set both while narrowing pre-filters and while
       // building the final SQL predicate. Resolve it once to avoid repeating its UNION query.
       let newLocaUserIdsForRequest: number[] | null = null;
@@ -457,6 +465,45 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           }
         } else {
           allowedUserIds = elsaUserIds;
+        }
+      } else if (bucket === 'NOT_COMBO_LIVE') {
+        const usbScopeFilter =
+          allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : '';
+        const [comboLiveRows, elsaRows] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
+            `SELECT DISTINCT user_id
+             FROM user_service_balance
+             WHERE (normal_count > 0 OR retain_count > 0)
+               AND (service_group IS NULL OR service_group != 'LashesUnder')
+               AND (date_expired IS NULL OR date_expired > NOW())
+               ${usbScopeFilter}`
+          ),
+          fastify.prisma.crm.$queryRawUnsafe<{ legacy_user_id: number }[]>(
+            `SELECT DISTINCT legacy_user_id
+             FROM crm_customer_elsa_reservations
+             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())`
+          ),
+        ]);
+        const excludedUserIdsSet = new Set([
+          ...comboLiveRows.map((r) => Number(r.user_id)),
+          ...elsaRows.map((r) => Number(r.legacy_user_id)),
+        ]);
+
+        if (allowedUserIds !== null) {
+          allowedUserIds = allowedUserIds.filter((id) => !excludedUserIdsSet.has(id));
+          if (allowedUserIds.length === 0) {
+            return {
+              data: [],
+              pagination: {
+                total: 0,
+                page: pageNum,
+                limit: limitNum,
+                pages: 0,
+              },
+            };
+          }
+        } else {
+          excludedNotComboLiveIds = Array.from(excludedUserIdsSet);
         }
       }
 
@@ -770,11 +817,11 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerParams.push(...params);
       }
 
-      // 2. Filter by Bucket (Optimized using usb_agg joins)
+      // 2. Filter by Bucket (Optimized using indexed lookups and fast excluded IDs)
       const bStr = bucket as string;
       if (bStr && bStr !== 'ALL') {
         if (bStr === 'SINGLE') {
-          innerWhereClauses.push('usb_agg.user_id IS NULL');
+          innerWhereClauses.push('NOT EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)');
           innerWhereClauses.push(`u.id NOT IN (
             SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
@@ -788,17 +835,36 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             )`);
           }
         } else if (bStr === 'COMBO_DEAD') {
-          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
-          innerWhereClauses.push(`u.id NOT IN (
-            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-          )`);
+          innerWhereClauses.push('EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)');
+          if (excludedNotComboLiveIds && excludedNotComboLiveIds.length > 0) {
+            innerWhereClauses.push(`u.id NOT IN (${excludedNotComboLiveIds.join(',')})`);
+          } else {
+            innerWhereClauses.push(`u.id NOT IN (
+              SELECT DISTINCT user_id FROM user_service_balance
+              WHERE (normal_count > 0 OR retain_count > 0)
+                AND (service_group IS NULL OR service_group != 'LashesUnder')
+                AND (date_expired IS NULL OR date_expired > NOW())
+            )`);
+            innerWhereClauses.push(`u.id NOT IN (
+              SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+              WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+            )`);
+          }
         } else if (bStr === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
-          innerWhereClauses.push(`u.id NOT IN (
-            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-          )`);
+          if (excludedNotComboLiveIds && excludedNotComboLiveIds.length > 0) {
+            innerWhereClauses.push(`u.id NOT IN (${excludedNotComboLiveIds.join(',')})`);
+          } else {
+            innerWhereClauses.push(`u.id NOT IN (
+              SELECT DISTINCT user_id FROM user_service_balance
+              WHERE (normal_count > 0 OR retain_count > 0)
+                AND (service_group IS NULL OR service_group != 'LashesUnder')
+                AND (date_expired IS NULL OR date_expired > NOW())
+            )`);
+            innerWhereClauses.push(`u.id NOT IN (
+              SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+              WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+            )`);
+          }
           innerWhereClauses.push(`EXISTS (
             SELECT 1 FROM user_contact uc_v
             WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
@@ -1849,7 +1915,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
     const limitNum = parseInt(limit, 10) || 20;
 
     try {
-      const needServiceBalance = bucket && bucket !== 'ALL';
+      const needServiceBalance = bucket === 'COMBO_LIVE';
       const needSpent =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
       const needVisits =
@@ -2085,7 +2151,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       if (bucket && bucket !== 'ALL') {
         if (bucket === 'SINGLE') {
-          innerWhereClauses.push('usb_agg.user_id IS NULL');
+          innerWhereClauses.push('NOT EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)');
           innerWhereClauses.push(`u.id NOT IN (
             SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
@@ -2097,13 +2163,24 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
           )`);
         } else if (bucket === 'COMBO_DEAD') {
-          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+          innerWhereClauses.push('EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT DISTINCT user_id FROM user_service_balance
+            WHERE (normal_count > 0 OR retain_count > 0)
+              AND (service_group IS NULL OR service_group != 'LashesUnder')
+              AND (date_expired IS NULL OR date_expired > NOW())
+          )`);
           innerWhereClauses.push(`u.id NOT IN (
             SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
           )`);
         } else if (bucket === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT DISTINCT user_id FROM user_service_balance
+            WHERE (normal_count > 0 OR retain_count > 0)
+              AND (service_group IS NULL OR service_group != 'LashesUnder')
+              AND (date_expired IS NULL OR date_expired > NOW())
+          )`);
           innerWhereClauses.push(`u.id NOT IN (
             SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
