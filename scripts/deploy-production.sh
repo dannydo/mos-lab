@@ -53,6 +53,7 @@ pnpm --filter @mos-lab/api legacy:indexes:phase4
 pnpm --filter @mos-lab/api legacy:indexes:phase5
 pnpm --filter @mos-lab/api legacy:indexes:phase6
 pnpm --filter @mos-lab/api legacy:indexes:phase7
+pnpm --filter @mos-lab/api legacy:indexes:phase8
 
 echo '[VPS] Planning production data migrations...'
 pnpm --filter @mos-lab/api data-migrations:plan -- --commit="${DEPLOY_COMMIT}"

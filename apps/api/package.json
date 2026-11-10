@@ -25,6 +25,7 @@
     "legacy:indexes:phase5": "tsx src/scripts/apply-legacy-query-perf-phase5-indexes.ts",
     "legacy:indexes:phase6": "tsx src/scripts/apply-legacy-query-perf-phase6-indexes.ts",
     "legacy:indexes:phase7": "tsx src/scripts/apply-legacy-query-perf-phase7-indexes.ts",
+    "legacy:indexes:phase8": "tsx src/scripts/apply-legacy-query-perf-phase8-indexes.ts",
     "legacy:indexes:customers": "tsx src/scripts/apply-customer-query-perf-indexes.ts",
     "lint": "eslint src/ --max-warnings=-1",
     "typecheck": "pnpm prisma:generate && tsc --noEmit",
