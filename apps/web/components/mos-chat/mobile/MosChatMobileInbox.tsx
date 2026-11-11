@@ -19,7 +19,7 @@ import { Modal } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useMosChat } from '../context/MosChatContext';
-import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
+import { removeVietnameseTones, type MosChatConversation, type MosChatStaffMember } from '@mos-lab/shared';
 import { formatChatPreviewWithStickers } from '../mos-chat-stickers';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { MosChatAvatar } from '../MosChatAvatar';
@@ -36,7 +36,11 @@ const formatStaffRole = (role?: string) => {
   return role;
 };
 
-export const MosChatMobileInbox: React.FC = () => {
+export interface MosChatMobileInboxProps {
+  onOpenSearchSheet?: (initialQuery?: string) => void;
+}
+
+export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSearchSheet }) => {
   const {
     conversations,
     activeConvId,
@@ -64,13 +68,13 @@ export const MosChatMobileInbox: React.FC = () => {
   // Filter conversations
   const filteredConversations = useMemo(() => {
     const list = conversations.filter((c) => {
-      // Search filter
+      // Search filter with Vietnamese tone insensitivity
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchName = c.name.toLowerCase().includes(q);
-        const matchSubtitle = c.subtitle?.toLowerCase().includes(q);
+        const normQ = removeVietnameseTones(searchQuery.toLowerCase().trim());
+        const matchName = removeVietnameseTones(c.name.toLowerCase()).includes(normQ);
+        const matchSubtitle = c.subtitle ? removeVietnameseTones(c.subtitle.toLowerCase()).includes(normQ) : false;
         const lastMsg = c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].text : '';
-        const matchLast = lastMsg.toLowerCase().includes(q);
+        const matchLast = removeVietnameseTones(lastMsg.toLowerCase()).includes(normQ);
         if (!matchName && !matchSubtitle && !matchLast) return false;
       }
 
@@ -99,13 +103,13 @@ export const MosChatMobileInbox: React.FC = () => {
   // Colleagues matching main search query
   const matchedStaffFromSearch = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase().trim();
+    const normQ = removeVietnameseTones(searchQuery.toLowerCase().trim());
     const myId = Number(currentUser?.id) || 0;
     return (staffDirectory || []).filter((s) => {
       if (Number(s.id) === myId) return false;
-      const name = (s.displayName || s.username || '').toLowerCase();
-      const role = (s.role || '').toLowerCase();
-      return name.includes(q) || role.includes(q);
+      const name = removeVietnameseTones((s.displayName || s.username || '').toLowerCase());
+      const role = removeVietnameseTones((s.role || '').toLowerCase());
+      return name.includes(normQ) || role.includes(normQ);
     });
   }, [staffDirectory, searchQuery, currentUser]);
 
@@ -124,12 +128,12 @@ export const MosChatMobileInbox: React.FC = () => {
         if (modalDeptFilter === 'ADMIN' && !r.includes('admin') && !r.includes('quản lý')) return false;
       }
 
-      // Filter by search query
+      // Filter by search query with Vietnamese tone insensitivity
       if (modalSearchQuery.trim()) {
-        const q = modalSearchQuery.toLowerCase().trim();
-        const name = (s.displayName || s.username || '').toLowerCase();
-        const role = (s.role || '').toLowerCase();
-        return name.includes(q) || role.includes(q);
+        const normQ = removeVietnameseTones(modalSearchQuery.toLowerCase().trim());
+        const name = removeVietnameseTones((s.displayName || s.username || '').toLowerCase());
+        const role = removeVietnameseTones((s.role || '').toLowerCase());
+        return name.includes(normQ) || role.includes(normQ);
       }
 
       return true;
@@ -341,11 +345,24 @@ export const MosChatMobileInbox: React.FC = () => {
       {/* Search Input Bar + New DM Button */}
       <div className="px-4 pt-2.5 pb-2 flex items-center gap-2">
         <div className="relative flex-1 flex items-center bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-2 text-sm text-white focus-within:border-amber-400/80 transition-colors">
-          <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2" />
+          <button
+            type="button"
+            onClick={() => onOpenSearchSheet?.(searchQuery.trim())}
+            className="p-0.5 text-slate-400 hover:text-amber-400 active:scale-95 transition-transform cursor-pointer mr-2 shrink-0"
+            aria-label="Tìm kiếm tin nhắn sâu"
+            title="Tìm kiếm tin nhắn sâu"
+          >
+            <Search className="w-4 h-4 text-amber-400" />
+          </button>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim()) {
+                onOpenSearchSheet?.(searchQuery.trim());
+              }
+            }}
             placeholder="Tìm kiếm đồng nghiệp, kênh, tin nhắn..."
             className="w-full bg-transparent border-none outline-none text-xs text-white placeholder-slate-400"
           />
@@ -353,7 +370,7 @@ export const MosChatMobileInbox: React.FC = () => {
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="p-0.5 text-slate-400 hover:text-white"
+              className="p-0.5 text-slate-400 hover:text-white cursor-pointer"
               aria-label="Xóa tìm kiếm"
             >
               <X className="w-3.5 h-3.5" />
@@ -363,13 +380,34 @@ export const MosChatMobileInbox: React.FC = () => {
         <button
           type="button"
           onClick={() => setNewDmModalOpen(true)}
-          className="w-9 h-9 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center font-bold active:scale-95 transition-transform shrink-0 shadow-sm shadow-amber-500/20"
+          className="w-9 h-9 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center font-bold active:scale-95 transition-transform shrink-0 shadow-sm shadow-amber-500/20 cursor-pointer"
           title="Tin nhắn mới / Danh bạ"
           aria-label="Soạn tin nhắn DM mới"
         >
           <UserPlus className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Deep Message Search Banner when typing */}
+      {searchQuery.trim() && (
+        <div className="px-4 pb-2">
+          <button
+            type="button"
+            onClick={() => onOpenSearchSheet?.(searchQuery.trim())}
+            className="w-full px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 active:scale-[0.98] transition-all cursor-pointer shadow-sm shadow-amber-500/10 text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Search className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="truncate">
+                Tìm <strong className="text-amber-200">&ldquo;{searchQuery.trim()}&rdquo;</strong> trong toàn bộ tin nhắn...
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full shrink-0 ml-2">
+              Tìm sâu ➔
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Filter Chips - Tin Trực Tiếp placed adjacent to Tất cả for instant mobile reach */}
       <div className="px-4 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-800/60">

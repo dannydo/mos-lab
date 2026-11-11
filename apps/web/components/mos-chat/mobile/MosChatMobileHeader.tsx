@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Bell,
   BellRing,
+  X,
 } from 'lucide-react';
 import { Dropdown, Modal } from 'antd';
 import type { MenuProps } from 'antd';
@@ -34,6 +35,7 @@ export interface MosChatMobileHeaderProps {
   onOpenSearch?: () => void;
   onOpenPushSettings?: () => void;
   isPushSubscribed?: boolean;
+  onClose?: () => void;
 }
 
 export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
@@ -44,6 +46,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   onOpenSearch,
   onOpenPushSettings,
   isPushSubscribed = false,
+  onClose,
 }) => {
   const {
     currentUser,
@@ -185,6 +188,17 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 </span>
               </button>
             </Dropdown>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 active:scale-95 transition-transform cursor-pointer"
+                aria-label="Đóng Chat"
+                title="Đóng Chat"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -448,7 +462,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   aria-label="Xem tin nhắn đã ghim"
                 >
                   <Pin className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="flex-1">Tin nhắn đã ghim</span>
+                  <span className="flex-1">Xem tin nhắn đã ghim</span>
                   {pinnedMessages.length > 0 && (
                     <span className="inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 tabular-nums">
                       {pinnedMessages.length}
@@ -525,8 +539,34 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                     </span>
                   </button>
                 )}
+
+                {onClose && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoreMenuOpen(false);
+                      onClose();
+                    }}
+                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium text-rose-300 transition-colors cursor-pointer border-t border-slate-800/80 mt-1 pt-2.5"
+                    aria-label="Đóng Chat"
+                  >
+                    <X className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="flex-1">Đóng mOS Chat</span>
+                  </button>
+                )}
               </div>
             </>
+          )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 active:scale-95 transition-transform cursor-pointer"
+              aria-label="Đóng Chat"
+              title="Đóng Chat"
+            >
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>

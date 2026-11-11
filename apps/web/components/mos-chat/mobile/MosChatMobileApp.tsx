@@ -53,9 +53,14 @@ import { MosChatPushNotificationModal } from '../components/MosChatPushNotificat
 export interface MosChatMobileAppProps {
   standalone?: boolean;
   onStartVoiceCall?: (conversationId: string) => void;
+  onClose?: () => void;
 }
 
-export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone = false, onStartVoiceCall }) => {
+export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
+  standalone = false,
+  onStartVoiceCall,
+  onClose,
+}) => {
   const {
     currentUser,
     activeConversation,
@@ -135,6 +140,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
   // Mobile Message Search Sheet state
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [pushModalOpen, setPushModalOpen] = useState(false);
 
   const webPush = useMosChatWebPush({
@@ -161,18 +167,32 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
   const handleSelectSearchResult = (item: MosChatSearchResultItem) => {
     setSearchSheetOpen(false);
-    const targetConv = conversations.find((c) => c.id === item.conversationId);
-    if (targetConv) {
-      setActiveConvId(targetConv.id);
-      setMobileView('room');
-    }
+    setActiveConvId(item.conversationId);
+    setMobileView('room');
+
     if (item.isThreadReply && item.parentMessageId) {
+      const targetConv = conversations.find((c) => c.id === item.conversationId);
       const parent = targetConv?.messages?.find((m) => m.id === item.parentMessageId);
       if (parent) {
         setActiveThreadMsg(parent);
         setMobileView('thread');
       }
     }
+
+    // Scroll & highlight selected message smoothly
+    setTimeout(() => {
+      const targetElId = item.isThreadReply
+        ? `thread-reply-${item.id}`
+        : `mobile-msg-${item.id}`;
+      const el = document.getElementById(targetElId) || document.getElementById(`msg-${item.id}`);
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('bg-amber-500/25', 'transition-all', 'duration-500');
+        setTimeout(() => {
+          el.classList.remove('bg-amber-500/25');
+        }, 2500);
+      }
+    }, 350);
   };
 
   const handleOpenStreamGallery = (msg: MosChatMessage, attIdx: number) => {
@@ -615,14 +635,25 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onOpenSettings={() => setSpaceConfigModalOpen(true)}
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
         onOpenTaskModal={() => openTaskModalForThread()}
-        onOpenSearch={() => setSearchSheetOpen(true)}
+        onOpenSearch={() => {
+          setSearchInitialQuery('');
+          setSearchSheetOpen(true);
+        }}
         onOpenPushSettings={() => setPushModalOpen(true)}
         isPushSubscribed={webPush.isSubscribed}
         onCallRoom={handleCallCurrentRoom}
+        onClose={onClose}
       />
 
       {/* Dynamic Screen View */}
-      {mobileView === 'inbox' && <MosChatMobileInbox />}
+      {mobileView === 'inbox' && (
+        <MosChatMobileInbox
+          onOpenSearchSheet={(q) => {
+            setSearchInitialQuery(q || '');
+            setSearchSheetOpen(true);
+          }}
+        />
+      )}
 
       {mobileView === 'room' && (
         <>
@@ -993,6 +1024,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onClose={() => setSearchSheetOpen(false)}
         activeConversation={activeConversation}
         onSelectMessage={handleSelectSearchResult}
+        initialQuery={searchInitialQuery}
       />
 
       {/* Lock-Screen Call Notification (Web Push PWA) Modal */}

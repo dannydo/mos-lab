@@ -5,6 +5,7 @@ import { ArrowLeft, Search, X, CornerDownRight, Hash, Paperclip, Loader2, Messag
 import { useTheme } from '../../../context/ThemeContext';
 import { chatApi } from '../../../lib/api/chat.api';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import type { MosChatConversation, MosChatSearchResultItem, SearchMosChatMessagesQuery } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 
@@ -13,6 +14,7 @@ export interface MosChatMobileSearchSheetProps {
   onClose: () => void;
   activeConversation?: MosChatConversation | null;
   onSelectMessage: (item: MosChatSearchResultItem) => void;
+  initialQuery?: string;
 }
 
 type FilterScope = 'ALL' | 'CURRENT_CONV' | 'THREAD_ONLY' | 'HAS_ATTACHMENT';
@@ -22,29 +24,18 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
   onClose,
   activeConversation,
   onSelectMessage,
+  initialQuery,
 }) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery || '');
   const [filterScope, setFilterScope] = useState<FilterScope>('ALL');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<MosChatSearchResultItem[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    } else {
-      setQuery('');
-      setResults([]);
-      setFilterScope('ALL');
-    }
-  }, [open]);
 
   const executeSearch = useCallback(
     async (keyword: string, scope: FilterScope) => {
@@ -81,6 +72,22 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
     [activeConversation]
   );
 
+  useEffect(() => {
+    if (open) {
+      if (initialQuery) {
+        setQuery(initialQuery);
+        void executeSearch(initialQuery, 'ALL');
+      }
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    } else {
+      setQuery('');
+      setResults([]);
+      setFilterScope('ALL');
+    }
+  }, [open, initialQuery, executeSearch]);
+
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
@@ -111,7 +118,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: isDark ? '#121212' : '#ffffff' }}>
+    <div className="fixed inset-0 z-[1600] flex flex-col" style={{ backgroundColor: isDark ? '#121212' : '#ffffff' }}>
       {/* Top Mobile Bar with Back button & Input */}
       <div
         className="flex items-center gap-2 px-3 py-2.5 border-b"
@@ -124,7 +131,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
           type="button"
           aria-label="Quay lại"
           onClick={onClose}
-          className="p-1.5 rounded-full text-slate-400 active:bg-slate-500/20"
+          className="p-1.5 rounded-full text-slate-400 active:bg-slate-500/20 cursor-pointer"
         >
           <ArrowLeft size={20} />
         </button>
@@ -148,7 +155,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
                 setResults([]);
                 inputRef.current?.focus();
               }}
-              className="p-1 text-slate-400"
+              className="p-1 text-slate-400 cursor-pointer"
             >
               <X size={15} />
             </button>
@@ -164,7 +171,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
         <button
           type="button"
           onClick={() => handleScopeChange('ALL')}
-          className={`px-3 py-1 rounded-full font-semibold shrink-0 transition-colors ${
+          className={`px-3 py-1 rounded-full font-semibold shrink-0 transition-colors cursor-pointer ${
             filterScope === 'ALL'
               ? 'bg-amber-500 text-white'
               : isDark
@@ -175,11 +182,11 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
           Tất cả
         </button>
 
-        {activeConversation && (
+        {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
           <button
             type="button"
             onClick={() => handleScopeChange('CURRENT_CONV')}
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold shrink-0 transition-colors ${
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold shrink-0 transition-colors cursor-pointer ${
               filterScope === 'CURRENT_CONV'
                 ? 'bg-amber-500 text-white'
                 : isDark

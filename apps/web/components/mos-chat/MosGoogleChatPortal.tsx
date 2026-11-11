@@ -10430,17 +10430,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
         {isMobile ? (
           <div className="w-full h-full flex flex-col relative bg-slate-950">
-            {/* Top Close Bar on mobile overlay */}
-            <div className="absolute top-[max(env(safe-area-inset-top),14px)] right-3 z-50">
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 rounded-full bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80 active:scale-95 shadow-md"
-                aria-label="Đóng Chat"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
             <MosChatProvider
               currentUser={currentUser}
               initialConvId={activeConvId}
@@ -10448,6 +10437,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             >
               <MosChatMobileApp
                 standalone={false}
+                onClose={onClose}
                 onStartVoiceCall={(cid) => void voiceCall.startOrJoinVoiceCall(cid)}
               />
             </MosChatProvider>

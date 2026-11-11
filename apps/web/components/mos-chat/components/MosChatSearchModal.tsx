@@ -17,6 +17,7 @@ import {
 import { useTheme } from '../../../context/ThemeContext';
 import { chatApi } from '../../../lib/api/chat.api';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import type { MosChatConversation, MosChatSearchResultItem, SearchMosChatMessagesQuery } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 
@@ -189,6 +190,7 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
       footer={null}
       destroyOnClose
       centered
+      zIndex={1500}
       width={680}
       styles={{
         content: {
@@ -262,7 +264,7 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
             Tất cả
           </button>
 
-          {activeConversation && (
+          {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
             <button
               type="button"
               onClick={() => handleScopeChange('CURRENT_CONV')}
