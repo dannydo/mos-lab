@@ -30,9 +30,51 @@ import {
   clearLocalProgressSnapshot,
 } from './offlineSync';
 import { resolveApiBaseUrl } from '~/lib/api-base-url';
+import {
+  useIosBillingCheckout,
+  calculateCvComboTierBonus,
+  calculateCvSerumTierBonus,
+  resolveEffectiveServiceTotal,
+  calculateActorTipBreakdown,
+} from './useIosBillingCheckout';
+
+export {
+  calculateCvComboTierBonus,
+  calculateCvSerumTierBonus,
+  resolveEffectiveServiceTotal,
+  calculateActorTipBreakdown,
+};
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
+
+export interface IosBranchConfig {
+  id: number;
+  code: string;
+  name: string;
+  shortName: string;
+  address: string;
+  receiptName: string;
+}
+
+export const IOS_AVAILABLE_BRANCHES: IosBranchConfig[] = [
+  {
+    id: 6,
+    code: 'DT',
+    name: 'Chi nhánh Đề Thám',
+    shortName: 'Đề Thám',
+    address: '159A Đề Thám, P. Cô Giang, Q.1, TP.HCM',
+    receiptName: 'CN ĐỀ THÁM',
+  },
+  {
+    id: 16,
+    code: 'EP',
+    name: 'Chi nhánh Estella Place',
+    shortName: 'Estella Place',
+    address: 'Tầng 3 Estella Place, 88 Song Hành, An Phú, TP. Thủ Đức',
+    receiptName: 'CN ESTELLA PLACE',
+  },
+];
 
 export interface SegmentCounts {
   incoming: number;
@@ -58,6 +100,9 @@ export interface ActiveActorProfile {
   tier: 'CVL' | 'CVLL' | 'CV' | 'CC' | 'ADMIN';
   badgeLabel: string;
   avatar?: string;
+  storeId?: number;
+  branchCode?: string;
+  branchName?: string;
 }
 
 export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): ActiveActorProfile {
@@ -70,15 +115,22 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
     userRole === 'cv_plus_plus' ||
     userRole === 'technician';
 
+  // Chi nhánh gốc của tài khoản người dùng đăng nhập (nếu có)
+  const userAssignedStoreId = Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0);
+
   if (role === 'CVLL') {
     const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 25337 : 25337;
     const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️';
+    const storeId = userAssignedStoreId || 6;
     return {
       staffId,
       name,
       tier: 'CVLL',
-      badgeLabel: '🪶CV🪶 · Chuyên Viên Tự Chủ Cấp Cao',
+      badgeLabel: 'CVLL · Chuyên Viên Tự Chủ Cấp Cao',
       avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+      storeId,
+      branchCode: storeId === 16 ? 'EP' : 'DT',
+      branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
   if (role === 'CVL') {
@@ -89,33 +141,45 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
     const defaultName = isThaoLy ? 'Thảo Ly' : 'Khanh Cao';
     const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || defaultStaffId : defaultStaffId;
     const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : defaultName;
+    const storeId = userAssignedStoreId || 6; // Khanh Cao & Thảo Ly thuộc Chi nhánh Đề Thám (DT - 6)
     return {
       staffId,
       name,
       tier: 'CVL',
-      badgeLabel: 'CV🪶 · Chuyên Viên Tự Chủ',
+      badgeLabel: 'CVL · Chuyên Viên Tự Chủ',
       avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+      storeId,
+      branchCode: storeId === 16 ? 'EP' : 'DT',
+      branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
   if (role === 'CV') {
     const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 49076 : 49076;
     const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Phương Nhi';
+    const storeId = userAssignedStoreId || 6;
     return {
       staffId,
       name,
       tier: 'CV',
       badgeLabel: 'CV · Chuyên Viên Kỹ Thuật',
       avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+      storeId,
+      branchCode: storeId === 16 ? 'EP' : 'DT',
+      branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
   const staffId = 37790;
   const name = 'Diễm Hương';
+  const storeId = userAssignedStoreId || 6;
   return {
     staffId,
     name,
     tier: 'CC',
     badgeLabel: 'CC · Tư Vấn Viên',
     avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+    storeId,
+    branchCode: storeId === 16 ? 'EP' : 'DT',
+    branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
   };
 }
 
@@ -176,6 +240,9 @@ export function useIosAppState(
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [isLiveDb, setIsLiveDb] = useState<boolean>(false);
 
+  // Quản lý chi nhánh được chọn (mặc định Đề Thám storeId=6, hoặc Estella Place storeId=16)
+  const [selectedStoreId, setSelectedStoreIdState] = useState<number>(6);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -187,6 +254,14 @@ export function useIosAppState(
         const lockedRole = resolveLockedIosRoleForUser(parsed?.role, initialRole);
         setRoleState(lockedRole);
         setScopeModeState(userIsAdmin ? 'STORE_ALL' : lockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
+
+        // Khôi phục chi nhánh Admin đã chọn gần nhất từ localStorage
+        if (userIsAdmin) {
+          const savedStore = window.localStorage.getItem('mos_ios_selected_store_id');
+          if (savedStore && (Number(savedStore) === 6 || Number(savedStore) === 16)) {
+            setSelectedStoreIdState(Number(savedStore));
+          }
+        }
       }
     } catch {
       // ignore
@@ -237,17 +312,26 @@ export function useIosAppState(
   }, []);
 
   const isAdmin = Boolean(
-    (loggedInUser && isAdminOrSuperAdminRole(loggedInUser?.role)) ||
-    (typeof window !== 'undefined' &&
-      (window.location.search.includes('admin=1') || window.location.search.includes('role=admin')))
+    loggedInUser
+      ? isAdminOrSuperAdminRole(loggedInUser?.role)
+      : typeof window !== 'undefined' &&
+          process.env.NODE_ENV !== 'production' &&
+          (window.location.search.includes('admin=1') || window.location.search.includes('role=admin'))
   );
 
-  const canSwitchRole = Boolean(
-    isAdmin ||
-    (typeof window !== 'undefined' &&
-      (window.location.search.includes('admin=1') || window.location.search.includes('role=admin')))
-  );
+  const canSwitchRole = Boolean(isAdmin);
   const actor = resolveActorProfile(role, loggedInUser);
+
+  // Invariant (UI-010 & Chuyên Viên Salon Anchor):
+  // - Chuyên Viên (CV/CVL/CVLL) luôn luôn thuộc về chi nhánh gốc của mình (Khanh Cao, Thảo Ly -> Đề Thám storeId=6).
+  // - Kể cả khi Admin kiểm thử chuyển sang vai trò CVL, chi nhánh hiển thị và query BẮT BUỘC là chi nhánh của Chuyên Viên đó.
+  // - Chỉ Admin/Quản lý ở vai trò không phải Chuyên Viên (CC/STORE/ADMIN) mới được phép xem/đổi chi nhánh đã chọn.
+  const isTechnicianRole = role === 'CVL' || role === 'CVLL' || role === 'CV';
+  const effectiveStoreId = isTechnicianRole ? actor.storeId || 6 : selectedStoreId;
+
+  const currentBranch = useMemo(() => {
+    return IOS_AVAILABLE_BRANCHES.find((b) => b.id === effectiveStoreId) || IOS_AVAILABLE_BRANCHES[0];
+  }, [effectiveStoreId]);
 
   // Invariant (Kinh Thánh mOS Điều răn UI-010):
   // - CV🪶 (CVL): Luôn luôn bị khóa cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp đầu tua + khách book của mình)
@@ -357,14 +441,20 @@ export function useIosAppState(
   const activeBooking =
     visibleBookings.find((b) => Number(b.id) === Number(activeBookingId)) ||
     bookings.find((b) => Number(b.id) === Number(activeBookingId)) ||
+    (activeServicingBooking ? bookings.find((b) => Number(b.id) === Number(activeServicingBooking.id)) : null) ||
     visibleBookings[0] ||
     bookings[0] ||
     INITIAL_BOOKINGS[0];
 
   const handleResumeServicing = useCallback(
     async (bookingId?: number) => {
-      const targetId = bookingId || activeServicingBooking?.id || activeBookingId;
-      const targetBooking = bookings.find((b) => b.id === targetId);
+      const targetId =
+        bookingId !== undefined
+          ? Number(bookingId)
+          : activeServicingBooking?.id
+            ? Number(activeServicingBooking.id)
+            : Number(activeBookingId);
+      const targetBooking = bookings.find((b) => Number(b.id) === targetId);
       if (!targetBooking) return;
       setActiveBookingId(targetBooking.id);
       const cached =
@@ -374,7 +464,7 @@ export function useIosAppState(
         cached?.currentStep ||
         (await getActiveServicingStepAsync()) ||
         getActiveServicingStep() ||
-        7;
+        6;
       setActiveTab('task');
       setCurrentStep(targetStep);
     },
@@ -468,7 +558,7 @@ export function useIosAppState(
       date?: string;
     }) => {
       const seg = options?.segment || bookingSegment;
-      const storeId = options?.storeId ?? 6;
+      const storeId = options?.storeId ?? effectiveStoreId;
       const effScope: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
       const effStaffId = options?.staffId ?? actor.staffId;
       const targetDateStr = options?.date ?? getDateStrForOffset(selectedDateOffset);
@@ -514,6 +604,8 @@ export function useIosAppState(
                   status: 'INCOMING' as const,
                   progress: undefined,
                   selectedCombo: existing?.selectedCombo || incoming.selectedCombo,
+                  selectedUnderCombo: existing?.selectedUnderCombo || incoming.selectedUnderCombo,
+                  comboRedemption: existing?.comboRedemption || incoming.comboRedemption,
                 };
               }
 
@@ -545,6 +637,8 @@ export function useIosAppState(
                   serviceType: existing?.serviceType || incoming.serviceType,
                   attributes: { ...(incoming.attributes || {}), ...(existing?.attributes || {}) },
                   selectedCombo: existing?.selectedCombo || incoming.selectedCombo,
+                  selectedUnderCombo: existing?.selectedUnderCombo || incoming.selectedUnderCombo,
+                  comboRedemption: existing?.comboRedemption || incoming.comboRedemption,
                   cartProducts: existing?.cartProducts || incoming.cartProducts,
                   billing: existing?.billing || incoming.billing,
                   survey: existing?.survey || incoming.survey,
@@ -591,7 +685,13 @@ export function useIosAppState(
                         ...(existing.progress || {}),
                       }
                     : undefined,
-                  selectedCombo: existing.selectedCombo || incoming.selectedCombo,
+                  selectedCombo: existing.selectedCombo !== undefined ? existing.selectedCombo : incoming.selectedCombo,
+                  selectedUnderCombo:
+                    existing.selectedUnderCombo !== undefined
+                      ? existing.selectedUnderCombo
+                      : incoming.selectedUnderCombo,
+                  comboRedemption:
+                    existing.comboRedemption !== undefined ? existing.comboRedemption : incoming.comboRedemption,
                   cartProducts: existing.cartProducts || incoming.cartProducts,
                   billing: existing.billing || incoming.billing,
                   survey: existing.survey || incoming.survey,
@@ -730,7 +830,21 @@ export function useIosAppState(
         setIsRefreshing(false);
       }
     },
-    [bookingSegment, scopeMode, role, actor.staffId, selectedDateOffset, getDateStrForOffset]
+    [bookingSegment, scopeMode, role, actor.staffId, selectedDateOffset, getDateStrForOffset, effectiveStoreId]
+  );
+
+  const setSelectedStoreId = useCallback(
+    (newStoreId: number) => {
+      if (isTechnicianRole) return;
+      setSelectedStoreIdState(newStoreId);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('mos_ios_selected_store_id', String(newStoreId));
+      }
+      // Khi Admin đổi chi nhánh: Tự động chuyển xem Toàn Bộ Sảnh (STORE_ALL) của chi nhánh đó
+      setScopeModeState('STORE_ALL');
+      void refreshDb({ storeId: newStoreId, scope: 'STORE_ALL' });
+    },
+    [refreshDb, isTechnicianRole]
   );
 
   const handleDateOffsetChange = useCallback(
@@ -857,12 +971,24 @@ export function useIosAppState(
     setBookings((prev) =>
       prev.map((b) => {
         if (Number(b.id) === targetId) {
+          const shouldAutoAssignToActor = role === 'CVL';
           return {
             ...b,
             status: 'CHECKED_IN',
             checkInStaffId: actor.staffId,
             checkInStaffName: actor.name,
             checkInStaffTier: actor.tier,
+            checkInStaffAvatar: actor.avatar,
+            assignedStaffId: b.assignedStaffId || (shouldAutoAssignToActor ? actor.staffId : 0),
+            assignedStaffName:
+              b.assignedStaffName && b.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+                ? b.assignedStaffName
+                : shouldAutoAssignToActor
+                  ? actor.name
+                  : b.assignedStaffName || 'Chờ phân công (Đầu tua)',
+            assignedStaffAvatar: b.assignedStaffAvatar || (shouldAutoAssignToActor ? actor.avatar : undefined),
+            isUnassignedQueue: shouldAutoAssignToActor ? false : b.isUnassignedQueue,
+            isNextQueueCustomer: shouldAutoAssignToActor ? false : b.isNextQueueCustomer,
             progress: {
               ...(b.progress || { elapsedSeconds: 0, timerRunning: false }),
               currentStep: 3,
@@ -917,7 +1043,8 @@ export function useIosAppState(
       serviceType?: string;
     } | null,
     targetBookingId?: number,
-    selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null
+    selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null,
+    assignmentMode?: 'SELF_SERVICE' | 'ASSIGN_OTHER'
   ) => {
     const targetId = targetBookingId !== undefined ? Number(targetBookingId) : activeBookingId;
     setActiveBookingId(targetId);
@@ -926,7 +1053,10 @@ export function useIosAppState(
     const targetBooking = bookings.find((b) => Number(b.id) === targetId) || activeBooking;
     const isSelfAssignedCv =
       role === 'CVL' ||
-      (role === 'CVLL' && (!targetBooking.assignedStaffId || targetBooking.assignedStaffId === actor.staffId));
+      (role === 'CVLL' &&
+        (assignmentMode
+          ? assignmentMode === 'SELF_SERVICE'
+          : !targetBooking.assignedStaffId || targetBooking.assignedStaffId === actor.staffId));
 
     if (isSelfAssignedCv) {
       setActiveServicingBookingId(targetId);
@@ -955,13 +1085,32 @@ export function useIosAppState(
 
         const isClientComboLive = Boolean(b.comboLiveStatus?.isComboLive);
         const comboPrice = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
-        const effectiveServiceTotal = nextCombo ? 0 : isClientComboLive ? nextUpgradePrice : nextServicePrice;
+        const effectiveServiceTotal = resolveEffectiveServiceTotal({
+          servicePrice: nextServicePrice,
+          upgradePrice: nextUpgradePrice,
+          isComboLive: isClientComboLive,
+          selectedCombo: nextCombo,
+          comboRedemption: b.comboRedemption,
+        });
         const productTotal = (b.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
         const subtotal = effectiveServiceTotal + comboPrice + productTotal;
         const vatRate = 0.08;
         const vatAmount = Math.round(subtotal * vatRate);
-        const tipAmount = b.billing?.tipAmount ?? 50000;
+        const tipAmount = b.billing?.tipAmount ?? 0;
         const grandTotal = subtotal + vatAmount + tipAmount;
+
+        const nextAssignedStaffId = isSelfAssignedCv
+          ? b.assignedStaffId || actor.staffId
+          : b.assignedStaffId && b.assignedStaffId !== actor.staffId
+            ? b.assignedStaffId
+            : 0;
+        const nextAssignedStaffName = isSelfAssignedCv
+          ? b.assignedStaffName && b.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+            ? b.assignedStaffName
+            : actor.name
+          : b.assignedStaffName && b.assignedStaffName !== actor.name
+            ? b.assignedStaffName
+            : 'Chờ phân công (Đầu tua)';
 
         return {
           ...b,
@@ -979,9 +1128,13 @@ export function useIosAppState(
           checkInStaffId: b.checkInStaffId || actor.staffId,
           checkInStaffName: b.checkInStaffName || actor.name,
           checkInStaffTier: b.checkInStaffTier || actor.tier,
-          assignedStaffId: b.assignedStaffId || actor.staffId,
-          assignedStaffName: b.assignedStaffName || actor.name,
-          status: isSelfAssignedCv ? 'SERVICING' : b.status,
+          checkInStaffAvatar: b.checkInStaffAvatar || actor.avatar,
+          assignedStaffId: nextAssignedStaffId,
+          assignedStaffName: nextAssignedStaffName,
+          assignedStaffAvatar: isSelfAssignedCv ? b.assignedStaffAvatar || actor.avatar : b.assignedStaffAvatar,
+          isUnassignedQueue: !isSelfAssignedCv && nextAssignedStaffId === 0,
+          isNextQueueCustomer: !isSelfAssignedCv && nextAssignedStaffId === 0,
+          status: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
           billing: {
             subtotal,
             vatRate,
@@ -1008,6 +1161,7 @@ export function useIosAppState(
       selectedUnderCombo:
         selectedUnderCombo !== undefined ? selectedUnderCombo : targetBooking.selectedUnderCombo || null,
       skuPricing,
+      assignmentMode: isSelfAssignedCv ? 'SELF_SERVICE' : 'ASSIGN_OTHER',
       nextStatus: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
     });
 
@@ -1019,11 +1173,11 @@ export function useIosAppState(
     }
 
     if (isSelfAssignedCv) {
-      // CV🪶 tự tư vấn khách của mình -> vào thẳng màn hình Nhận ca / Chụp ảnh tiến trình mi, không cần qua CC chia ca!
+      // CV🪶 hoặc 🪶CV🪶 tự nhận làm mi -> vào thẳng màn hình Nhận ca / Chụp ảnh tiến trình mi, không cần qua CC chia ca!
       setBookingSegment('SERVICING');
       setCurrentStep(6);
     } else {
-      // 🪶CV🪶 tư vấn chéo hộ CV khác hoặc CC -> sang bước xác nhận CV làm mi
+      // 🪶CV🪶 tư vấn chéo hộ CV khác hoặc CC -> sang bước xác nhận CV làm mi (Step 4)
       setCurrentStep(4);
     }
   };
@@ -1081,7 +1235,11 @@ export function useIosAppState(
 
   // Tự động lưu ảnh ngay khi chụp (ghi đè nếu chụp lại) mà không bắt buộc phải bấm nút chuyển bước:
   // Lưu local tức thời vào RAM & IndexedDB, sau đó tự động đẩy lên Cloud
-  const handleAutoSavePhoto = async (type: 'before' | 'cleaned' | 'after', photoUrl: string) => {
+  const handleAutoSavePhoto = async (
+    type: 'before' | 'cleaned' | 'after',
+    photoUrl: string,
+    extraMeta?: { retainLashes?: { left: number; right: number } }
+  ) => {
     const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
     const progressPatch: any = {
       ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
@@ -1096,6 +1254,21 @@ export function useIosAppState(
       progressPatch.cleanedPhotoUrl = photoUrl;
       progressPatch.cleanedPhotoSavedAt = new Date().toISOString();
       progressPatch.currentStep = 8;
+      if (extraMeta?.retainLashes) {
+        progressPatch.retainLashCountLeft = extraMeta.retainLashes.left;
+        progressPatch.retainLashCountRight = extraMeta.retainLashes.right;
+        progressPatch.retainLashes = extraMeta.retainLashes;
+        progressPatch.retainAttributeValues = {
+          '17': {
+            attribute_option_value: String(extraMeta.retainLashes.left),
+            attribute_key: 'extension-lash-count-left',
+          },
+          '18': {
+            attribute_option_value: String(extraMeta.retainLashes.right),
+            attribute_key: 'extension-lash-count-right',
+          },
+        };
+      }
     } else if (type === 'after') {
       progressPatch.afterPhotoUrl = photoUrl;
       progressPatch.afterPhotoSavedAt = new Date().toISOString();
@@ -1149,15 +1322,30 @@ export function useIosAppState(
   };
 
   // Step 8 -> Step 9: Save Cleaned Photo (Vệ sinh nhắm) & Chuyển sang Bấm Giờ Phục Vụ
-  const handleSaveCleanedPhoto = (photoUrl: string) => {
+  const handleSaveCleanedPhoto = (photoUrl: string, retainLashes?: { left: number; right: number }) => {
     const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
-    const progressPatch = {
+    const progressPatch: any = {
       ...(activeBooking.progress || { elapsedSeconds: 0, timerRunning: true }),
       cleanedPhotoUrl: photoUrl,
       timerRunning: true,
       startedAt,
       currentStep: 9,
     };
+    if (retainLashes) {
+      progressPatch.retainLashCountLeft = retainLashes.left;
+      progressPatch.retainLashCountRight = retainLashes.right;
+      progressPatch.retainLashes = retainLashes;
+      progressPatch.retainAttributeValues = {
+        '17': {
+          attribute_option_value: String(retainLashes.left),
+          attribute_key: 'extension-lash-count-left',
+        },
+        '18': {
+          attribute_option_value: String(retainLashes.right),
+          attribute_key: 'extension-lash-count-right',
+        },
+      };
+    }
     updateActiveBooking((prev) => ({
       ...prev,
       status: 'SERVICING',
@@ -1278,329 +1466,15 @@ export function useIosAppState(
     setCurrentStep(12); // Go directly to Product Upsell & Combo Checkout as CV🪶 / 🪶CV🪶!
   };
 
-  // Step 12 -> Step 13: Save Product Upsell (Yeppeum) & Optional Combo + Lock in check_out_staff_id = actor!
-  const handleGoToBilling = (upsellPayload?: {
-    cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
-    selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
-    selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
-    comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
-  }) => {
-    updateActiveBooking((prev) => {
-      const nextProducts =
-        upsellPayload?.cartProducts !== undefined
-          ? upsellPayload.cartProducts
-          : prev.cartProducts && prev.cartProducts.length > 0
-            ? prev.cartProducts
-            : [
-                {
-                  productId: 36,
-                  productName: 'Cây dưỡng mi Yeppeum 6ml (Giá gốc)',
-                  price: SERUM_TIERS_CVL[0].price,
-                  quantity: 1,
-                  cvBonus: SERUM_TIERS_CVL[0].cvBonus,
-                },
-              ];
-      const nextCombo =
-        upsellPayload?.selectedCombo !== undefined ? upsellPayload.selectedCombo : prev.selectedCombo || null;
-      const nextUnderCombo =
-        upsellPayload?.selectedUnderCombo !== undefined
-          ? upsellPayload.selectedUnderCombo
-          : prev.selectedUnderCombo || null;
-      const nextRedemption =
-        upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
-      const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
-      const comboTotal = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
-
-      // Khi mua gói mới:
-      // - Nếu trừ vào gói (todaySingleServiceWaived = true) -> phí lẻ buổi hôm nay = 0đ
-      // - Nếu trả lẻ riêng (todaySingleServiceWaived = false) -> phí lẻ = prev.servicePrice
-      // Khi trừ gói đang có: phí lẻ = phụ thu quy đổi/nâng cấp (nếu có) hoặc 0đ
-      const effectiveServiceTotal = nextCombo
-        ? nextCombo.todaySingleServiceWaived
-          ? 0
-          : prev.servicePrice
-        : nextRedemption
-          ? nextRedemption.totalCustomerPayToday
-          : prev.servicePrice;
-      const subtotal = effectiveServiceTotal + comboTotal + productTotal;
-      const tipAmount = prev.billing?.tipAmount ?? 50000;
-
-      const comboBonusAmount = (nextCombo ? nextCombo.bonus : 0) + (nextUnderCombo ? nextUnderCombo.bonus : 0);
-      const serumBonusAmount = nextProducts.reduce((sum, p) => sum + (p.cvBonus || 0) * p.quantity, 0);
-
-      void postAction('SAVE_UPSELL_AND_CHECKOUT', {
-        cartProducts: nextProducts,
-        selectedCombo: nextCombo,
-        selectedUnderCombo: nextUnderCombo,
-        comboRedemption: nextRedemption,
-      });
-
-      return {
-        ...prev,
-        checkOutStaffId: actor.staffId,
-        checkOutStaffName: actor.name,
-        checkOutStaffTier: actor.tier,
-        cartProducts: nextProducts,
-        selectedCombo: nextCombo,
-        selectedUnderCombo: nextUnderCombo,
-        comboRedemption: nextRedemption,
-        cvRewardBreakdown: {
-          techTipPercent: 70,
-          checkInTipPercent: 10,
-          checkOutTipPercent: 10,
-          cvTotalTipPercent:
-            (prev.assignedStaffId === actor.staffId ? 70 : 0) +
-            ((prev.checkInStaffId || actor.staffId) === actor.staffId ? 10 : 0) +
-            10,
-          comboBonusAmount,
-          serumBonusAmount,
-          totalOrderBonusForCheckoutStaff: comboBonusAmount + serumBonusAmount,
-        },
-        billing: {
-          subtotal,
-          vatRate: 0.08,
-          vatAmount: Math.round(subtotal * 0.08),
-          serviceTotal: effectiveServiceTotal,
-          comboTotal,
-          productTotal,
-          paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
-          tipAmount,
-          tipCvShare: Math.round(tipAmount * 0.7),
-          tipCheckInShare: Math.round(tipAmount * 0.1),
-          tipCheckOutShare: Math.round(tipAmount * 0.1),
-          tipCcShare: Math.round(tipAmount * 0.2),
-          grandTotal: subtotal + Math.round(subtotal * 0.08) + tipAmount,
-        },
-      };
-    });
-    setCurrentStep(13);
-  };
-
-  // Step 13: Choose Payment Method & Confirm Tip Directly & Diamond Wallet (One-Stop Checkout)
-  // Quy tắc Danny: Khi tính tiền xong thì BẮT BUỘC phải đưa khách hàng qua tab Đã xong (DONE)!
-  const handleChoosePaymentMethod = (
-    method: 'CASH' | 'POS' | 'VIETQR',
-    chosenTip?: number,
-    chosenDiamond?: number,
-    proofPhoto?: string,
-    zaloConsent?: {
-      agreed: boolean;
-      phone: string;
-      sentAt?: string;
-      voucherCode?: string;
-    }
-  ) => {
-    const completedAt = new Date().toISOString();
-    let calculatedBilling: any = null;
-
-    updateActiveBooking((prev) => {
-      const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 50000);
-      const cvShare = Math.round(tipAmount * 0.7);
-      const checkInShare = Math.round(tipAmount * 0.1);
-      const checkOutShare = Math.round(tipAmount * 0.1);
-      const ccShare = checkInShare + checkOutShare;
-
-      const fallbackEffectiveService = prev.selectedCombo
-        ? prev.selectedCombo.todaySingleServiceWaived
-          ? 0
-          : prev.servicePrice
-        : prev.comboRedemption
-          ? prev.comboRedemption.totalCustomerPayToday
-          : prev.upgradePrice && prev.upgradePrice > 0
-            ? prev.upgradePrice
-            : prev.comboLiveStatus?.isComboLive
-              ? 0
-              : prev.servicePrice;
-      const fallbackProductTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
-      const fallbackComboTotal =
-        (prev.selectedCombo ? prev.selectedCombo.price : 0) +
-        (prev.selectedUnderCombo ? prev.selectedUnderCombo.price : 0);
-      const fallbackSubtotal = fallbackEffectiveService + fallbackComboTotal + fallbackProductTotal;
-
-      const currentBilling = prev.billing || {
-        subtotal: fallbackSubtotal,
-        vatRate: 0.08,
-        vatAmount: Math.round(fallbackSubtotal * 0.08),
-        serviceTotal: fallbackEffectiveService,
-        comboTotal: fallbackComboTotal,
-        productTotal: fallbackProductTotal,
-        paymentMethod: method,
-        transferProofPhoto: undefined as string | undefined,
-        zaloConsent: undefined as NonNullable<BookingItem['billing']>['zaloConsent'],
-      };
-      const subtotal = currentBilling.subtotal;
-      const vatRate = currentBilling.vatRate ?? 0.08;
-      const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
-      const totalBeforeDiamond = subtotal + vatAmount + tipAmount;
-
-      // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ
-      const DIAMOND_RATE = 1000;
-      const currentDiamondBalance = prev.diamondBalance ?? 350;
-      const diamondUsed = Math.min(
-        chosenDiamond ?? 0,
-        currentDiamondBalance,
-        Math.floor(totalBeforeDiamond / DIAMOND_RATE)
-      );
-      const diamondDiscountAmount = diamondUsed * DIAMOND_RATE;
-      const grandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
-      const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
-
-      const nextBilling = {
-        ...currentBilling,
-        paymentMethod: method,
-        vatRate,
-        vatAmount,
-        tipAmount,
-        tipCvShare: cvShare,
-        tipCheckInShare: checkInShare,
-        tipCheckOutShare: checkOutShare,
-        tipCcShare: ccShare,
-        diamondUsed,
-        diamondDiscountAmount,
-        transferProofPhoto: proofPhoto || currentBilling.transferProofPhoto,
-        zaloConsent: zaloConsent || currentBilling.zaloConsent,
-        grandTotal,
-        completedAt,
-      };
-
-      calculatedBilling = nextBilling;
-
-      return {
-        ...prev,
-        status: 'DONE',
-        diamondBalance: remainingDiamondBalance,
-        checkOutStaffId: prev.checkOutStaffId || actor.staffId,
-        checkOutStaffName: prev.checkOutStaffName || actor.name,
-        checkOutStaffTier: prev.checkOutStaffTier || actor.tier,
-        progress: {
-          ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
-          completedAt,
-          currentStep: 1,
-        },
-        billing: nextBilling,
-      };
-    });
-
-    // 1. Gửi action COMPLETE_ORDER lên máy chủ để cập nhật database vĩnh viễn
-    void postAction('COMPLETE_ORDER', {
-      billing: calculatedBilling,
-      status: 'DONE',
-      completedAt,
-    });
-
-    // 2. Xóa ca đang làm dở dang và giải phóng Chuyên Viên
-    setActiveServicingBookingId(null);
-    setActiveServicingStep(null);
-
-    // 3. Cập nhật snapshot offline
-    saveLocalProgressSnapshot(activeBookingId, {
-      status: 'DONE',
-      completedAt,
-      currentStep: 1,
-    });
-
-    // 4. Bắt buộc chuyển segment sang ĐÃ XONG (DONE) theo chỉ đạo của Danny!
-    setBookingSegment('DONE');
-
-    // 5. Đi thẳng đến Screen 14 (Hóa đơn nhiệt) để xem lại hoặc in bill
-    setCurrentStep(15);
-  };
-
-  // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
-  const handleRecordTip = (tipAmount: number) => {
-    const completedAt = new Date().toISOString();
-    let calculatedBilling: any = null;
-
-    updateActiveBooking((prev) => {
-      const cvShare = Math.round(tipAmount * 0.7);
-      const checkInShare = Math.round(tipAmount * 0.1);
-      const checkOutShare = Math.round(tipAmount * 0.1);
-      const ccShare = checkInShare + checkOutShare;
-      const currentBilling = prev.billing || {
-        subtotal: prev.servicePrice,
-        vatRate: 0.08,
-        vatAmount: Math.round(prev.servicePrice * 0.08),
-        serviceTotal: prev.servicePrice,
-        comboTotal: 0,
-        productTotal: 0,
-        paymentMethod: 'VIETQR' as const,
-      };
-      const subtotal = currentBilling.subtotal;
-      const vatRate = currentBilling.vatRate ?? 0.08;
-      const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
-      const grandTotal = subtotal + vatAmount + tipAmount;
-
-      const nextBilling = {
-        ...currentBilling,
-        vatRate,
-        vatAmount,
-        tipAmount,
-        tipCvShare: cvShare,
-        tipCheckInShare: checkInShare,
-        tipCheckOutShare: checkOutShare,
-        tipCcShare: ccShare,
-        grandTotal,
-        completedAt,
-      };
-
-      calculatedBilling = nextBilling;
-
-      return {
-        ...prev,
-        status: 'DONE',
-        checkOutStaffId: prev.checkOutStaffId || actor.staffId,
-        checkOutStaffName: prev.checkOutStaffName || actor.name,
-        checkOutStaffTier: prev.checkOutStaffTier || actor.tier,
-        progress: {
-          ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
-          completedAt,
-          currentStep: 1,
-        },
-        billing: nextBilling,
-      };
-    });
-
-    void postAction('COMPLETE_ORDER', { billing: calculatedBilling, status: 'DONE', completedAt });
-    setActiveServicingBookingId(null);
-    setActiveServicingStep(null);
-    saveLocalProgressSnapshot(activeBookingId, {
-      status: 'DONE',
-      completedAt,
-      currentStep: 1,
-    });
-    setBookingSegment('DONE');
-    setCurrentStep(15);
-  };
-
-  // Step 15: Finish Order
-  const handleFinishOrder = () => {
-    const completedAt = new Date().toISOString();
-    updateActiveBooking((prev) => ({
-      ...prev,
-      status: 'DONE',
-      progress: {
-        ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
-        completedAt,
-        currentStep: 1,
-      },
-      billing: prev.billing
-        ? {
-            ...prev.billing,
-            completedAt: prev.billing.completedAt || completedAt,
-          }
-        : undefined,
-    }));
-    setActiveServicingBookingId(null);
-    setActiveServicingStep(null);
-    saveLocalProgressSnapshot(activeBookingId, {
-      status: 'DONE',
-      completedAt,
-      currentStep: 1,
-    });
-    void postAction('COMPLETE_ORDER', { status: 'DONE', completedAt });
-    setBookingSegment('DONE');
-    setCurrentStep(1);
-  };
+  // Delegated Billing & Checkout Handlers (Modular Slice)
+  const { handleGoToBilling, handleChoosePaymentMethod, handleRecordTip, handleFinishOrder } = useIosBillingCheckout({
+    activeBookingId,
+    actor,
+    updateActiveBooking,
+    postAction,
+    setCurrentStep,
+    setBookingSegment,
+  });
 
   return {
     bookings: visibleBookings,
@@ -1615,7 +1489,7 @@ export function useIosAppState(
     role,
     setRole,
     canSwitchRole,
-    isAdmin: canSwitchRole,
+    isAdmin,
     actor,
     scopeMode,
     setScopeMode,
@@ -1655,5 +1529,9 @@ export function useIosAppState(
     handleRevertToIncoming,
     selectedDateOffset,
     handleDateOffsetChange,
+    selectedStoreId: effectiveStoreId,
+    setSelectedStoreId,
+    currentBranch,
+    availableBranches: IOS_AVAILABLE_BRANCHES,
   };
 }

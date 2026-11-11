@@ -3,13 +3,21 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   BookingItem,
+  KNOWN_STAFF_AVATARS,
   resolveStaffAvatarUrl,
   resolveCustomerBookingTab,
   resolveServicingSubStatus,
 } from '../../state/mockData';
-import { ActiveActorProfile, BookingScopeMode, IosUserRole } from '../../state/useIosAppState';
+import {
+  ActiveActorProfile,
+  BookingScopeMode,
+  IosUserRole,
+  IosBranchConfig,
+  IOS_AVAILABLE_BRANCHES,
+} from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../ui-kit/ComboSessionBadge';
+import { IosBranchSelectorSheet } from '../ui-kit/IosBranchSelectorSheet';
 import {
   resolveDisplayServiceName,
   parseDaysSinceLastVisit,
@@ -19,6 +27,7 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   RotateCcw,
   X,
   Info,
@@ -62,6 +71,10 @@ interface Screen01IncomingBookingsProps {
   onOpenProfileMenu?: () => void;
   isAdmin?: boolean;
   onRevertToIncoming?: (bookingId: number) => void;
+  selectedStoreId?: number;
+  onSelectStoreId?: (storeId: number) => void;
+  currentBranch?: IosBranchConfig;
+  availableBranches?: IosBranchConfig[];
 }
 
 function getStepShortTitle(step?: number): string {
@@ -438,7 +451,22 @@ export function Screen01IncomingBookings({
   onOpenProfileMenu,
   isAdmin = false,
   onRevertToIncoming,
+  selectedStoreId = 6,
+  onSelectStoreId,
+  currentBranch,
+  availableBranches = IOS_AVAILABLE_BRANCHES,
 }: Screen01IncomingBookingsProps) {
+  // Modal chọn chi nhánh cho Admin
+  const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
+
+  // Invariant (UI-010): Chỉ Admin thực sự VÀ khi không ở vai trò Chuyên Viên (CV/CVL/CVLL) mới được đổi chi nhánh
+  const canSwitchBranch = Boolean(isAdmin && role !== 'CVL' && role !== 'CVLL' && role !== 'CV');
+
+  const effectiveBranch = useMemo(() => {
+    if (currentBranch) return currentBranch;
+    return availableBranches.find((b) => b.id === selectedStoreId) || availableBranches[0];
+  }, [currentBranch, availableBranches, selectedStoreId]);
+
   // Modal xác nhận Admin trả khách về Chờ đón
   const [revertConfirmModal, setRevertConfirmModal] = useState<{
     isOpen: boolean;
@@ -499,16 +527,39 @@ export function Screen01IncomingBookings({
     <div className="flex-1 flex flex-col bg-black text-white overflow-hidden select-none">
       {/* 1. Single Native iOS Navigation Bar (Clean 1-row layout) */}
       <div className="h-12 px-3 bg-black border-b border-neutral-900 flex items-center justify-between z-10 flex-shrink-0">
-        {/* Left: Tên chi nhánh viết tắt siêu gọn "ĐT" + Live Refresh Indicator */}
-        <button
-          onClick={onRefreshDb}
-          className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 text-neutral-300 hover:text-white active:scale-95 transition-all cursor-pointer"
-          title="Làm mới dữ liệu từ máy chủ (Chi nhánh Đề Thám · ĐT)"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11.5px] font-black text-neutral-200 tracking-wider">ĐT</span>
-          <RefreshCw className={`w-3 h-3 text-neutral-400 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
-        </button>
+        {/* Left: Tên chi nhánh viết tắt siêu gọn ("ĐT" / "EP") + Live Refresh Indicator */}
+        <div className="flex items-center gap-1 bg-[#1C1C1E] border border-neutral-800 rounded-full pl-2 pr-1.5 py-1 text-neutral-300 shadow-xs">
+          {canSwitchBranch ? (
+            <button
+              onClick={() => setIsBranchSheetOpen(true)}
+              className="flex items-center gap-1.5 hover:text-amber-400 active:scale-95 cursor-pointer transition-all select-none"
+              title={`${effectiveBranch.name} · Bấm để đổi chi nhánh (Admin)`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-[11.5px] font-black text-neutral-100 tracking-wider">{effectiveBranch.code}</span>
+              <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
+            </button>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 select-none"
+              title={`Chi nhánh ${effectiveBranch.name} (Cố định theo Chuyên Viên)`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-[11.5px] font-black text-neutral-100 tracking-wider">{effectiveBranch.code}</span>
+            </div>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRefreshDb?.();
+            }}
+            disabled={isRefreshing}
+            className="p-0.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white active:scale-90 transition-all cursor-pointer"
+            title="Làm mới dữ liệu từ máy chủ"
+          >
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
+          </button>
+        </div>
 
         {/* Center: Chuyển ngày < Hôm nay > mượt mà */}
         <div className="flex items-center gap-0.5 bg-[#1C1C1E] px-1 py-0.5 rounded-full border border-neutral-800 shadow-inner">
@@ -695,9 +746,11 @@ export function Screen01IncomingBookings({
             const isDone = bookingSegment === 'DONE' || b.status === 'DONE';
             const doneSummary = isDone ? getDoneBookingSummary(b) : null;
 
-            const isCurrentActiveServicing = Boolean(activeServicingBooking && b.id === activeServicingBooking.id);
+            const isCurrentActiveServicing = Boolean(
+              activeServicingBooking && Number(b.id) === Number(activeServicingBooking.id)
+            );
             const isOtherCustomerLocked = Boolean(
-              activeServicingBooking && b.id !== activeServicingBooking.id && !isCvll && !isAdmin
+              activeServicingBooking && Number(b.id) !== Number(activeServicingBooking.id) && !isCvll && !isAdmin
             );
 
             // Avatar Ring Indicator
@@ -709,8 +762,12 @@ export function Screen01IncomingBookings({
                   : 'border-2 border-neutral-500'; // Combo Live bình thường
             }
 
+            const isServicingOrDone = isServicingActive || isDone;
+
+            // Khi ở tab Đang làm hoặc Đã xong, khách không còn là "Đang đợi đầu tua" nữa mà đã được nhận ca làm
             const isNextQueue =
-              b.isNextQueueCustomer || b.isUnassignedQueue || b.bookingAccessTag === 'NEXT_QUEUE_CUSTOMER';
+              !isServicingOrDone &&
+              (b.isNextQueueCustomer || b.isUnassignedQueue || b.bookingAccessTag === 'NEXT_QUEUE_CUSTOMER');
 
             const isBookedInAdvance = Boolean(
               b.isBookedInAdvance ??
@@ -722,10 +779,33 @@ export function Screen01IncomingBookings({
                   b.bookingAccessTag === 'MY_BOOKED_CUSTOMER'))
             );
 
+            // Xác định chính xác CV/CVL đang làm hoặc phục vụ ca này:
+            const effectiveStaffId =
+              b.assignedStaffId && b.assignedStaffId > 0
+                ? b.assignedStaffId
+                : b.checkInStaffId && b.checkInStaffId > 0
+                  ? b.checkInStaffId
+                  : isCurrentActiveServicing || isServicingOrDone
+                    ? actor?.staffId || 46272
+                    : undefined;
+
+            const effectiveStaffName =
+              b.assignedStaffName &&
+              b.assignedStaffName !== 'Chưa phân công' &&
+              b.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+                ? b.assignedStaffName
+                : b.checkInStaffName
+                  ? b.checkInStaffName
+                  : isCurrentActiveServicing || isServicingOrDone
+                    ? actor?.name || 'Thảo Ly'
+                    : undefined;
+
             const cvStaffAvatar =
-              b.assignedStaffAvatar ||
-              resolveStaffAvatarUrl(null, b.assignedStaffId, b.assignedStaffName) ||
-              'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png';
+              resolveStaffAvatarUrl(b.assignedStaffAvatar, effectiveStaffId, effectiveStaffName) ||
+              resolveStaffAvatarUrl(b.checkInStaffAvatar, effectiveStaffId, effectiveStaffName) ||
+              (isCurrentActiveServicing && actor?.avatar ? actor.avatar : undefined) ||
+              (effectiveStaffId ? KNOWN_STAFF_AVATARS[String(effectiveStaffId)] : undefined) ||
+              (isServicingOrDone ? actor?.avatar || KNOWN_STAFF_AVATARS['46272'] : undefined);
 
             const cardBgStyle = isCurrentActiveServicing
               ? 'bg-[#221C0E] border-2 border-amber-400 ring-2 ring-amber-400/30'
@@ -804,21 +884,25 @@ export function Screen01IncomingBookings({
                     )}
                   </div>
 
-                  {/* Góc dưới bên phải: Avatar Chuyên Viên (CV) - Viền 1px xanh lá Emerald khi book riêng, Viền 1px xám khi đi theo tua, Để trống khi chưa phân công */}
-                  {!isNextQueue && b.assignedStaffId && b.assignedStaffId > 0 && cvStaffAvatar && (
+                  {/* Góc dưới bên phải: Avatar Chuyên Viên (CV/CVL) đang làm hoặc được phân công */}
+                  {cvStaffAvatar && (!isNextQueue || isServicingOrDone) && (
                     <div
                       className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full overflow-hidden shadow-md z-10 ${
-                        isBookedInAdvance ? 'border border-emerald-500' : 'border border-neutral-500'
+                        isBookedInAdvance
+                          ? 'border border-emerald-500 ring-1 ring-emerald-500/40'
+                          : isServicingActive
+                            ? 'border-2 border-amber-400 ring-1 ring-amber-400/50'
+                            : 'border border-neutral-500'
                       } bg-neutral-900 flex items-center justify-center`}
                       title={
                         isBookedInAdvance
-                          ? `Book riêng trước: ${b.assignedStaffName || 'Chuyên Viên'}`
-                          : `Đi theo tua: ${b.assignedStaffName || 'Chuyên Viên'}`
+                          ? `Book riêng trước: ${effectiveStaffName || 'Chuyên Viên'}`
+                          : `Chuyên Viên: ${effectiveStaffName || 'Chuyên Viên'}`
                       }
                     >
                       <img
                         src={cvStaffAvatar}
-                        alt={b.assignedStaffName || 'Chuyên Viên'}
+                        alt={effectiveStaffName || 'Chuyên Viên'}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = 'none';
@@ -853,8 +937,19 @@ export function Screen01IncomingBookings({
                     {formatLashSpecLine(b)}
                   </div>
 
-                  {/* LINE 3: Lần X · 23N Thông tin combo pill mới và dặm nếu có */}
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {/* LINE 3: [Combo Info nếu có] Lần X · 23N */}
+                  <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                    {isComboLive && remainingSessions > 0 && (
+                      <div className="shrink-0 flex items-center">
+                        <ComboSessionBadge
+                          normalRemaining={b.comboLiveStatus?.normalRemaining}
+                          retainRemaining={b.comboLiveStatus?.retainRemaining}
+                          remainingSessions={remainingSessions}
+                          comboName={b.comboLiveStatus?.comboName}
+                        />
+                      </div>
+                    )}
+
                     <span className="text-[11px] text-neutral-400 font-medium tabular-nums">
                       Lần {visits}
                       {daysText}
@@ -865,15 +960,6 @@ export function Screen01IncomingBookings({
                         <Lock className="w-2.5 h-2.5 stroke-[2.2] shrink-0" />
                         <span>Chưa thể check-in</span>
                       </span>
-                    )}
-
-                    {isComboLive && remainingSessions > 0 && (
-                      <ComboSessionBadge
-                        normalRemaining={b.comboLiveStatus?.normalRemaining}
-                        retainRemaining={b.comboLiveStatus?.retainRemaining}
-                        remainingSessions={remainingSessions}
-                        comboName={b.comboLiveStatus?.comboName}
-                      />
                     )}
                   </div>
 
@@ -1300,6 +1386,19 @@ export function Screen01IncomingBookings({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 5. Sheet chọn chi nhánh cho Admin */}
+      {canSwitchBranch && (
+        <IosBranchSelectorSheet
+          isOpen={isBranchSheetOpen}
+          onClose={() => setIsBranchSheetOpen(false)}
+          selectedStoreId={selectedStoreId}
+          onSelectBranch={(storeId) => {
+            onSelectStoreId?.(storeId);
+          }}
+          availableBranches={availableBranches}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosUserRole } from '../ui-kit/IosTabBar';
+import { IosBranchConfig } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { thermalPrinterService, PrinterConnectionType } from '../../services/thermalPrinterService';
 import {
@@ -15,6 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
   Award,
+  Building2,
 } from 'lucide-react';
 
 interface ScreenSettingsRoleSwitchProps {
@@ -22,6 +24,11 @@ interface ScreenSettingsRoleSwitchProps {
   canSwitchRole?: boolean;
   onRoleChange: (role: IosUserRole) => void;
   onBack: () => void;
+  currentBranch?: IosBranchConfig;
+  selectedStoreId?: number;
+  onSelectBranch?: (storeId: number) => void;
+  availableBranches?: IosBranchConfig[];
+  isAdmin?: boolean;
 }
 
 export function ScreenSettingsRoleSwitch({
@@ -29,6 +36,11 @@ export function ScreenSettingsRoleSwitch({
   canSwitchRole = false,
   onRoleChange,
   onBack,
+  currentBranch,
+  selectedStoreId = 6,
+  onSelectBranch,
+  availableBranches = [],
+  isAdmin = false,
 }: ScreenSettingsRoleSwitchProps) {
   const [printerType, setPrinterType] = useState<PrinterConnectionType>('BLUETOOTH');
   const [paperWidth, setPaperWidth] = useState<'80mm' | '58mm'>('80mm');
@@ -93,13 +105,13 @@ export function ScreenSettingsRoleSwitch({
       customerName: 'Khách Kiểm Thử Máy In',
       staffName: 'Thảo Ly (CV🪶)',
       storeName: 'Wings Lashes Q.1',
-      storeAddress: '159 - 159A Đề Thám, P. Cô Giang, Q.1',
+      storeAddress: '159A Đề Thám, P. Cô Giang, Q.1',
       storePhone: '1800 8154',
       dateStr: new Date().toLocaleString('vi-VN'),
       services: [
         { name: 'New Flawless Mink', price: 770000, qty: 1 },
         { name: 'Combo 5 lần New Flawless', price: 4500000, qty: 1 },
-        { name: 'Cây dưỡng mi Yeppeum 6ml', price: 1100000, qty: 1 },
+        { name: 'Dưỡng Mi Yeppeum Korea', price: 1100000, qty: 1 },
       ],
       subtotal: 6370000,
       discount: 0,

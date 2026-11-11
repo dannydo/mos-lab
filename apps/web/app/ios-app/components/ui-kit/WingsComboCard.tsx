@@ -22,6 +22,8 @@ export interface WingsComboCardProps {
   customerPhone?: string;
   customerAvatar?: string;
   selected?: boolean;
+  /** Khi khách chỉ làm ca lẻ, card xám đi để báo hiệu không chọn */
+  dimmed?: boolean;
   includeVat?: boolean;
   compact?: boolean;
   showActionFooter?: boolean;
@@ -30,6 +32,8 @@ export interface WingsComboCardProps {
   onZoomOriginalCard?: (e: React.MouseEvent) => void;
   onCopyQuote?: (e: React.MouseEvent) => void;
   copiedQuote?: boolean;
+  /** Cho phép hiển thị huy hiệu thưởng CV (ẩn khi tư vấn khách để bảo mật) */
+  showStaffRewards?: boolean;
   /** Nếu có: thay thế bảng volume (390/770/880) bằng vertical tier selector bên trong card */
   allTiers?: WingsTierOption[];
 }
@@ -63,9 +67,14 @@ function getCardBackgroundStyle(categoryId: string, theme?: string): React.CSSPr
       background: 'radial-gradient(circle at 18% 22%, #9622b8 0%, #52106e 48%, #220533 82%, #11021a 100%)',
     };
   }
-  if (categoryId === 'Classic_Volume' || theme === 'blue') {
+  if (categoryId.startsWith('Volume') || theme === 'teal') {
     return {
-      background: 'radial-gradient(circle at 18% 22%, #2f3fd4 0%, #19227c 48%, #0a0e3f 82%, #050721 100%)',
+      background: 'radial-gradient(circle at 18% 22%, #0d5c63 0%, #083c41 48%, #031c1f 82%, #010d0e 100%)',
+    };
+  }
+  if (categoryId.startsWith('Classic') || categoryId === 'Classic_Volume' || theme === 'blue') {
+    return {
+      background: 'radial-gradient(circle at 18% 22%, #1a3680 0%, #102354 48%, #08112c 82%, #030714 100%)',
     };
   }
   if (categoryId === 'VVIP' || theme === 'black-fire') {
@@ -73,7 +82,7 @@ function getCardBackgroundStyle(categoryId: string, theme?: string): React.CSSPr
       background: 'radial-gradient(circle at 80% 22%, #591111 0%, #240909 42%, #0d090a 78%, #050507 100%)',
     };
   }
-  // Default: FlawlessMink (black-gold)
+  // Default: FlawlessMink (black-gold luxury)
   return {
     background: 'radial-gradient(circle at 22% 20%, #2e2514 0%, #15120c 48%, #090807 82%, #040405 100%)',
   };
@@ -101,10 +110,15 @@ function formatCardBrandSubtitle(categoryId: string, categoryName: string): stri
       return 'ULTRALIGHT 4D';
     case 'UltraLight_5D':
       return 'ULTRALIGHT 5D';
-    case 'FlawlessMink':
-      return 'FLAWLESS MINK';
+    case 'Classic_1D':
     case 'Classic_Volume':
-      return 'CLASSIC & VOLUME';
+      return 'CLASSIC 1D';
+    case 'Volume_2D':
+      return 'VOLUME 2D';
+    case 'Volume_3D':
+      return 'VOLUME 3D';
+    case 'FlawlessMink':
+      return 'FLAWLESS MINK 𝓜';
     case 'VVIP':
       return 'VVIP PASS · 20 LẦN';
     default:
@@ -371,6 +385,7 @@ export function WingsComboCard({
   customerPhone,
   customerAvatar,
   selected = false,
+  dimmed = false,
   includeVat = false,
   compact = false,
   showActionFooter = true,
@@ -379,6 +394,7 @@ export function WingsComboCard({
   onZoomOriginalCard,
   onCopyQuote,
   copiedQuote = false,
+  showStaffRewards = false,
   allTiers,
 }: WingsComboCardProps) {
   const bgStyle = getCardBackgroundStyle(pkg.categoryId, pkg.theme);
@@ -465,12 +481,19 @@ export function WingsComboCard({
               : onSelect
                 ? 'pointer'
                 : 'default',
-        opacity: pkg.isLocked ? 0.68 : 1,
-        border: selected ? '2.5px solid #F5C451' : '1.5px solid rgba(212, 175, 55, 0.42)',
+        opacity: pkg.isLocked ? 0.68 : dimmed ? 0.52 : 1,
+        filter: dimmed ? 'grayscale(0.92) contrast(0.88)' : undefined,
+        border: selected
+          ? '2.5px solid #F5C451'
+          : dimmed
+            ? '1.5px solid rgba(150, 150, 150, 0.28)'
+            : '1.5px solid rgba(212, 175, 55, 0.42)',
         boxShadow: selected
           ? '0 10px 28px rgba(245, 196, 81, 0.28), 0 0 0 2px rgba(245, 196, 81, 0.22)'
-          : '0 6px 20px rgba(0, 0, 0, 0.22)',
-        transition: 'all 0.2s ease',
+          : dimmed
+            ? 'none'
+            : '0 6px 20px rgba(0, 0, 0, 0.22)',
+        transition: 'all 0.25s ease',
         color: '#FFFFFF',
         ...bgStyle,
       }}
@@ -578,27 +601,33 @@ export function WingsComboCard({
         </div>
       )}
 
-      {/* Selected Top-Left Glow Pill */}
+      {/* Selected Top-Right Checkmark Badge */}
       {selected && (
         <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect?.();
+          }}
           style={{
             position: 'absolute',
-            top: 8,
-            left: 12,
-            zIndex: 5,
+            top: 7,
+            right: 8,
+            zIndex: 10,
+            width: 22,
+            height: 22,
+            borderRadius: '50%',
             background: 'linear-gradient(135deg, #FFE27A 0%, #D49B27 100%)',
             color: '#1F1402',
-            fontSize: 10,
-            fontWeight: 900,
-            padding: '2px 8px',
-            borderRadius: 999,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 4,
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.55), 0 0 10px rgba(245, 196, 81, 0.4)',
+            border: '1.5px solid rgba(255, 255, 255, 0.6)',
+            cursor: 'pointer',
           }}
+          title="Đang chọn gói (Chạm để bỏ chọn)"
         >
-          <span>✓ ĐANG CHỌN GÓI NÀY</span>
+          <Check style={{ width: 13, height: 13, strokeWidth: 3.2 }} />
         </div>
       )}
 
@@ -608,7 +637,7 @@ export function WingsComboCard({
           position: 'relative',
           zIndex: 2,
           padding: compact ? '11px 12px 8px' : '13px 14px 10px',
-          paddingTop: selected ? (compact ? 24 : 26) : compact ? 11 : 13,
+          paddingTop: compact ? 12 : 14,
         }}
       >
         {/* Top Row: Left (Wings Gold Logo + Lash Line + Customer Dotted Lines) & Right (Gold Laurel Wreath) */}
@@ -847,7 +876,7 @@ export function WingsComboCard({
             discountPct={pkg.discountPct}
             ribbonLabel={pkg.packageKind === 'vvip_pass' ? '20 LẦN VIP' : pkg.ruleName}
             validityMonths={pkg.validityMonths}
-            cvBonus={pkg.cvBonus}
+            cvBonus={showStaffRewards ? pkg.cvBonus : undefined}
             compact={compact}
           />
         </div>
@@ -1122,33 +1151,56 @@ export function WingsComboCard({
               paddingTop: compact ? 6 : 8,
               borderTop: '1px solid rgba(243, 206, 104, 0.22)',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: 6,
+              flexDirection: 'column',
+              gap: 4.5,
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {/* Left: Exact Matched Price & Gaming Stat / Loot Breakdown */}
-            <div style={{ fontVariantNumeric: 'tabular-nums', flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {/* Row 1: Giá combo chính, Giá gốc gạch ngang & Đơn giá trung bình mỗi buổi */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                flexWrap: 'wrap',
+              }}
+            >
+              {/* Left: Giá chính + Giá gốc gạch ngang */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
                 <span
                   style={{
-                    fontSize: compact ? 15 : 16.5,
+                    fontSize: compact ? 16 : 17.5,
                     fontWeight: 900,
                     color: '#FFE27A',
                     textShadow: '0 1px 3px rgba(0,0,0,0.65)',
+                    letterSpacing: '-0.01em',
                   }}
                 >
                   {displayPrice.toLocaleString('vi-VN')}đ
                 </span>
+
+                {displayRetailTotal > displayPrice && (
+                  <span
+                    style={{
+                      fontSize: compact ? 10.5 : 11,
+                      color: 'rgba(255, 255, 255, 0.45)',
+                      textDecoration: 'line-through',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {displayRetailTotal.toLocaleString('vi-VN')}đ
+                  </span>
+                )}
+
                 {includeVat && (
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize: 8.5,
                       fontWeight: 800,
                       color: '#34D399',
                       background: 'rgba(52, 211, 153, 0.16)',
-                      border: '1px solid rgba(52, 211, 153, 0.4)',
+                      border: '1px solid rgba(52, 211, 153, 0.35)',
                       borderRadius: 4,
                       padding: '1px 5px',
                       letterSpacing: '0.02em',
@@ -1157,96 +1209,31 @@ export function WingsComboCard({
                     Đã gồm 8% VAT
                   </span>
                 )}
+              </div>
+
+              {/* Right: Badge trung bình mỗi lần & Action buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
                 <span
                   style={{
-                    fontSize: 10.5,
-                    color: 'rgba(255,255,255,0.45)',
-                    textDecoration: 'line-through',
-                  }}
-                >
-                  {displayRetailTotal.toLocaleString('vi-VN')}đ
-                </span>
-                {/* Average Stat Chip */}
-                <span
-                  style={{
-                    background: 'rgba(245, 196, 81, 0.18)',
-                    border: '1px solid rgba(245, 196, 81, 0.38)',
+                    background: 'rgba(245, 196, 81, 0.14)',
+                    border: '1px solid rgba(245, 196, 81, 0.32)',
                     color: '#FFE27A',
-                    borderRadius: 6,
-                    padding: '1px 6px',
-                    fontSize: 9.5,
+                    borderRadius: 999,
+                    padding: compact ? '1.5px 7px' : '2px 8px',
+                    fontSize: compact ? 9.5 : 10,
                     fontWeight: 800,
-                    letterSpacing: '0.02em',
+                    letterSpacing: '0.01em',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 3,
+                    gap: 3.5,
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <Zap style={{ width: 10, height: 10 }} />
+                  <Zap style={{ width: 10, height: 10, color: '#FFE27A' }} />
                   <span>~{formatCompactVnd(displayAvgPerSession)}/lần</span>
                 </span>
-              </div>
-              {/* Loot Breakdown: Paid parts & Bonus loot without (0đ) */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  flexWrap: 'wrap',
-                  fontSize: 10,
-                  marginTop: 3,
-                }}
-              >
-                {pkg.readableContent.includes(' · ') ? (
-                  <>
-                    <span
-                      style={{
-                        color: 'rgba(255, 246, 214, 0.9)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 3.5,
-                      }}
-                    >
-                      <ShoppingCart style={{ width: 10.5, height: 10.5, color: '#FFE27A' }} />
-                      <span>{pkg.readableContent.split(' · ')[0]}</span>
-                    </span>
-                    <span style={{ color: 'rgba(243, 206, 104, 0.4)' }}>•</span>
-                    <span
-                      style={{
-                        color: '#6EE7B7',
-                        fontWeight: 700,
-                        background: 'rgba(16, 185, 129, 0.16)',
-                        border: '1px solid rgba(16, 185, 129, 0.32)',
-                        borderRadius: 5,
-                        padding: '0.5px 5px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 3,
-                      }}
-                    >
-                      <Gift style={{ width: 10, height: 10, color: '#6EE7B7' }} />
-                      <span>{pkg.readableContent.split(' · ')[1]}</span>
-                    </span>
-                  </>
-                ) : (
-                  <span
-                    style={{
-                      color: 'rgba(255, 246, 214, 0.88)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 3.5,
-                    }}
-                  >
-                    <Sparkles style={{ width: 10.5, height: 10.5, color: '#FFE27A' }} />
-                    <span>{pkg.readableContent}</span>
-                  </span>
-                )}
-              </div>
-            </div>
 
-            {/* Right: Optional Action Buttons (Thẻ gốc, Báo giá) */}
-            {(onZoomOriginalCard || onCopyQuote) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* Optional Action Buttons (Thẻ gốc, Báo giá) */}
                 {onZoomOriginalCard && (
                   <button
                     type="button"
@@ -1255,20 +1242,20 @@ export function WingsComboCard({
                       onZoomOriginalCard(e);
                     }}
                     style={{
-                      padding: '4px 8px',
-                      borderRadius: 7,
+                      padding: '3px 7px',
+                      borderRadius: 6,
                       border: '1px solid rgba(243, 206, 104, 0.35)',
                       background: 'rgba(0, 0, 0, 0.35)',
                       color: '#F8E7B0',
-                      fontSize: 10.5,
+                      fontSize: 10,
                       fontWeight: 700,
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 4,
+                      gap: 3.5,
                     }}
                   >
-                    <ZoomIn style={{ width: 11, height: 11 }} />
+                    <ZoomIn style={{ width: 10.5, height: 10.5 }} />
                     <span>Thẻ gốc</span>
                   </button>
                 )}
@@ -1281,34 +1268,109 @@ export function WingsComboCard({
                       onCopyQuote(e);
                     }}
                     style={{
-                      padding: '4px 8px',
-                      borderRadius: 7,
+                      padding: '3px 7px',
+                      borderRadius: 6,
                       border: '1px solid rgba(243, 206, 104, 0.35)',
                       background: copiedQuote ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 0, 0, 0.35)',
                       color: copiedQuote ? '#A7F3D0' : '#F8E7B0',
-                      fontSize: 10.5,
+                      fontSize: 10,
                       fontWeight: 700,
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 4,
+                      gap: 3.5,
                     }}
                   >
                     {copiedQuote ? (
                       <>
-                        <Check style={{ width: 11, height: 11 }} />
+                        <Check style={{ width: 10.5, height: 10.5 }} />
                         <span>Đã chép</span>
                       </>
                     ) : (
                       <>
-                        <Copy style={{ width: 11, height: 11 }} />
+                        <Copy style={{ width: 10.5, height: 10.5 }} />
                         <span>Báo giá</span>
                       </>
                     )}
                   </button>
                 )}
               </div>
-            )}
+            </div>
+
+            {/* Row 2: Chi tiết quyền lợi Mua & Tặng (Tinh tế, gọn gàng, không dùng icon giỏ hàng thô) */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                flexWrap: 'wrap',
+                fontSize: compact ? 9.5 : 10,
+                marginTop: 1,
+              }}
+            >
+              {(() => {
+                if (!pkg.readableContent.includes(' · ')) {
+                  return (
+                    <span
+                      style={{
+                        color: 'rgba(255, 246, 214, 0.88)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3.5,
+                      }}
+                    >
+                      <Sparkles style={{ width: 10.5, height: 10.5, color: '#FFE27A' }} />
+                      <span>{pkg.readableContent}</span>
+                    </span>
+                  );
+                }
+
+                const parts = pkg.readableContent.split(' · ');
+                const paidPart = parts[0];
+                const rawBonusPart = parts[1];
+                // Tinh gọn số tiền trị giá quà tặng: "2.970.000đ" -> "2.97M"
+                const compactBonusPart = rawBonusPart.replace(/\(Trị giá ([\d.]+)\s*đ\)/i, (_, numStr) => {
+                  const cleanNum = Number(numStr.replace(/\./g, ''));
+                  return !isNaN(cleanNum) && cleanNum > 0
+                    ? `(Trị giá ${formatCompactBonusValue(cleanNum)})`
+                    : `(Trị giá ${numStr}đ)`;
+                });
+
+                return (
+                  <>
+                    <span
+                      style={{
+                        color: 'rgba(255, 246, 214, 0.92)',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3.5,
+                      }}
+                    >
+                      <span style={{ color: '#FFE27A', fontSize: 11 }}>✦</span>
+                      <span>{paidPart}</span>
+                    </span>
+                    <span style={{ color: 'rgba(243, 206, 104, 0.4)' }}>•</span>
+                    <span
+                      style={{
+                        color: '#6EE7B7',
+                        fontWeight: 700,
+                        background: 'rgba(16, 185, 129, 0.14)',
+                        border: '1px solid rgba(16, 185, 129, 0.28)',
+                        borderRadius: 5,
+                        padding: '1px 6px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3.5,
+                      }}
+                    >
+                      <Gift style={{ width: 10, height: 10, color: '#34D399' }} />
+                      <span>{compactBonusPart}</span>
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         )}
       </div>

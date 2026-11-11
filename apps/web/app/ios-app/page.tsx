@@ -1,33 +1,97 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { canAccessIosConsultationApp, isCvRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
+import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
 import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
-import { Screen02CheckInProfile } from './components/screens/Screen02CheckInProfile';
-import { Screen03ConsultationMatrix } from './components/screens/Screen03ConsultationMatrix';
-import { Screen04StaffQueueAssign } from './components/screens/Screen04StaffQueueAssign';
-import { Screen05ServicingTransfer } from './components/screens/Screen05ServicingTransfer';
-import { Screen06CvDashboardReceive } from './components/screens/Screen06CvDashboardReceive';
-import { Screen07LashProgressBefore } from './components/screens/Screen07LashProgressBefore';
-import { Screen07bLashProgressCleaned } from './components/screens/Screen07bLashProgressCleaned';
-import { Screen08LashProgressTimer } from './components/screens/Screen08LashProgressTimer';
-import { Screen09LashProgressAfter } from './components/screens/Screen09LashProgressAfter';
-import { Screen10CustomerSurvey } from './components/screens/Screen10CustomerSurvey';
-import { Screen11ProductUpsell } from './components/screens/Screen11ProductUpsell';
-import { Screen12CheckoutBilling } from './components/screens/Screen12CheckoutBilling';
-import { Screen13CheckoutTip } from './components/screens/Screen13CheckoutTip';
-import { Screen14ThermalReceiptDone } from './components/screens/Screen14ThermalReceiptDone';
 
-import { ScreenStoreDashboard } from './components/screens/ScreenStoreDashboard';
-import { ScreenInventoryStock } from './components/screens/ScreenInventoryStock';
-import { ScreenCvPaystub } from './components/screens/ScreenCvPaystub';
-import { ScreenSettingsRoleSwitch } from './components/screens/ScreenSettingsRoleSwitch';
+const ScreenSkeleton = () => (
+  <div className="w-full min-h-[450px] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-pulse">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+      <span className="text-xs font-medium text-neutral-400">Đang tải màn hình...</span>
+    </div>
+  </div>
+);
+
+const Screen02CheckInProfile = dynamic(
+  () => import('./components/screens/Screen02CheckInProfile').then((m) => m.Screen02CheckInProfile),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen03ConsultationMatrix = dynamic(
+  () => import('./components/screens/Screen03ConsultationMatrix').then((m) => m.Screen03ConsultationMatrix),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen04StaffQueueAssign = dynamic(
+  () => import('./components/screens/Screen04StaffQueueAssign').then((m) => m.Screen04StaffQueueAssign),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen05ServicingTransfer = dynamic(
+  () => import('./components/screens/Screen05ServicingTransfer').then((m) => m.Screen05ServicingTransfer),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen06CvDashboardReceive = dynamic(
+  () => import('./components/screens/Screen06CvDashboardReceive').then((m) => m.Screen06CvDashboardReceive),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen07LashProgressBefore = dynamic(
+  () => import('./components/screens/Screen07LashProgressBefore').then((m) => m.Screen07LashProgressBefore),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen07bLashProgressCleaned = dynamic(
+  () => import('./components/screens/Screen07bLashProgressCleaned').then((m) => m.Screen07bLashProgressCleaned),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen08LashProgressTimer = dynamic(
+  () => import('./components/screens/Screen08LashProgressTimer').then((m) => m.Screen08LashProgressTimer),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen09LashProgressAfter = dynamic(
+  () => import('./components/screens/Screen09LashProgressAfter').then((m) => m.Screen09LashProgressAfter),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen10CustomerSurvey = dynamic(
+  () => import('./components/screens/Screen10CustomerSurvey').then((m) => m.Screen10CustomerSurvey),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen11ProductUpsell = dynamic(
+  () => import('./components/screens/Screen11ProductUpsell').then((m) => m.Screen11ProductUpsell),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen12CheckoutBilling = dynamic(
+  () => import('./components/screens/Screen12CheckoutBilling').then((m) => m.Screen12CheckoutBilling),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen13CheckoutTip = dynamic(
+  () => import('./components/screens/Screen13CheckoutTip').then((m) => m.Screen13CheckoutTip),
+  { loading: () => <ScreenSkeleton /> }
+);
+const Screen14ThermalReceiptDone = dynamic(
+  () => import('./components/screens/Screen14ThermalReceiptDone').then((m) => m.Screen14ThermalReceiptDone),
+  { loading: () => <ScreenSkeleton /> }
+);
+const ScreenStoreDashboard = dynamic(
+  () => import('./components/screens/ScreenStoreDashboard').then((m) => m.ScreenStoreDashboard),
+  { loading: () => <ScreenSkeleton /> }
+);
+const ScreenInventoryStock = dynamic(
+  () => import('./components/screens/ScreenInventoryStock').then((m) => m.ScreenInventoryStock),
+  { loading: () => <ScreenSkeleton /> }
+);
+const ScreenCvPaystub = dynamic(() => import('./components/screens/ScreenCvPaystub').then((m) => m.ScreenCvPaystub), {
+  loading: () => <ScreenSkeleton />,
+});
+const ScreenSettingsRoleSwitch = dynamic(
+  () => import('./components/screens/ScreenSettingsRoleSwitch').then((m) => m.ScreenSettingsRoleSwitch),
+  { loading: () => <ScreenSkeleton /> }
+);
 
 function IosAppInner() {
   const [authorized, setAuthorized] = useState<boolean>(false);
@@ -71,8 +135,9 @@ function IosAppInner() {
 
   if (!authorized) {
     return (
-      <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold">
-        Đang mở ứng dụng Tư vấn & Checkout (CV🪶)...
+      <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
+        <span>Đang mở ứng dụng Tư vấn & Checkout</span>
+        <CvFeather1Badge />
       </div>
     );
   }
@@ -84,6 +149,11 @@ function IosAppInner() {
         <ScreenSettingsRoleSwitch
           currentRole={state.role}
           canSwitchRole={state.canSwitchRole}
+          currentBranch={state.currentBranch}
+          selectedStoreId={state.selectedStoreId}
+          onSelectBranch={state.isAdmin ? state.setSelectedStoreId : undefined}
+          availableBranches={state.availableBranches}
+          isAdmin={state.isAdmin}
           onRoleChange={(r) => {
             state.setRole(r);
             state.setIsSettingsOpen(false);
@@ -116,6 +186,9 @@ function IosAppInner() {
     if (['CV', 'CVL', 'CVLL'].includes(state.role) && state.activeTab === 'paystub') {
       return (
         <ScreenCvPaystub
+          actor={state.actor}
+          staffStats={state.staffStats}
+          bookings={state.bookings}
           onBack={() => {
             state.setActiveTab('booking');
             state.setCurrentStep(1);
@@ -178,6 +251,10 @@ function IosAppInner() {
             onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
             isAdmin={state.isAdmin}
             onRevertToIncoming={state.handleRevertToIncoming}
+            selectedStoreId={state.selectedStoreId}
+            onSelectStoreId={state.setSelectedStoreId}
+            currentBranch={state.currentBranch}
+            availableBranches={state.availableBranches}
           />
         );
       case 2: {
@@ -237,8 +314,10 @@ function IosAppInner() {
           <Screen07bLashProgressCleaned
             booking={currentBooking}
             onBack={() => state.setCurrentStep(7)}
-            onSavePhoto={state.handleSaveCleanedPhoto}
-            onAutoSavePhoto={(url) => state.handleAutoSavePhoto('cleaned', url)}
+            onSavePhoto={(photoUrl, retainLashes) => state.handleSaveCleanedPhoto(photoUrl, retainLashes)}
+            onAutoSavePhoto={(url, retainLashes) =>
+              state.handleAutoSavePhoto('cleaned', url, retainLashes ? { retainLashes } : undefined)
+            }
           />
         );
       case 9:
@@ -318,6 +397,11 @@ function IosAppInner() {
             bookings={state.bookings}
             bookingSegment={state.bookingSegment}
             setBookingSegment={state.setBookingSegment}
+            counts={state.counts}
+            isRefreshing={state.isRefreshing}
+            lastRefreshedAt={state.lastRefreshedAt}
+            isLiveDb={state.isLiveDb}
+            onRefreshDb={() => state.refreshDb()}
             dateOffset={state.selectedDateOffset}
             onDateOffsetChange={state.handleDateOffsetChange}
             role={state.role}
@@ -326,6 +410,8 @@ function IosAppInner() {
             actor={state.actor}
             scopeMode={state.scopeMode}
             onScopeModeChange={state.setScopeMode}
+            activeServicingBooking={state.activeServicingBooking}
+            onResumeServicing={state.handleResumeServicing}
             onSelectBooking={(id) => {
               const idNum = Number(id);
               state.setActiveBookingId(idNum);
@@ -349,6 +435,10 @@ function IosAppInner() {
             onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
             isAdmin={state.isAdmin}
             onRevertToIncoming={state.handleRevertToIncoming}
+            selectedStoreId={state.selectedStoreId}
+            onSelectStoreId={state.setSelectedStoreId}
+            currentBranch={state.currentBranch}
+            availableBranches={state.availableBranches}
           />
         );
     }
@@ -413,6 +503,11 @@ function IosAppInner() {
           actor={state.actor}
           role={state.role}
           canSwitchRole={state.canSwitchRole}
+          currentBranch={state.currentBranch}
+          selectedStoreId={state.selectedStoreId}
+          onSelectBranch={state.isAdmin ? state.setSelectedStoreId : undefined}
+          availableBranches={state.availableBranches}
+          isAdmin={state.isAdmin}
           onRoleChange={(r) => {
             state.setRole(r);
             setIsProfileSheetOpen(false);

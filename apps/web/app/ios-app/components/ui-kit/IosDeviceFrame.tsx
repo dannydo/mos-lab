@@ -11,13 +11,14 @@ interface IosDeviceFrameProps {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   onReset: () => void;
+  selectedBranchName?: string;
   children: React.ReactNode;
 }
 
 const STEP_TITLES = [
   '1. Lịch Hẹn Incoming (CC)',
   '2. Xem Hồ Sơ & Check In (CC)',
-  '3. Khám Mi & Ma Trận Dáng (CC)',
+  '3. Kiểm Tra Mi & Ma Trận Dáng (CC)',
   '4. Gán Chuyên Viên & Giường (CC)',
   '5. Bàn Giao Servicing (CC)',
   '6. CV Nhận Ca Trên App (CV)',
@@ -40,6 +41,7 @@ export function IosDeviceFrame({
   currentStep,
   setCurrentStep,
   onReset,
+  selectedBranchName,
   children,
 }: IosDeviceFrameProps) {
   return (
@@ -58,7 +60,7 @@ export function IosDeviceFrame({
               </span>
             </div>
             <p className="text-[11px] text-neutral-400">
-              Chi nhánh Đề Thám · Flow chuẩn: CC $\rightarrow$ CV $\rightarrow$ CC
+              {selectedBranchName || 'Chi nhánh Đề Thám'} · Flow chuẩn: CC $\rightarrow$ CV $\rightarrow$ CC
             </p>
           </div>
         </div>

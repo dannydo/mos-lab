@@ -2,6 +2,9 @@ import { calculateComboBonus } from '../types/career-progression.js';
 
 export type WingsComboCategoryId =
   | 'Classic_Volume'
+  | 'Classic_1D'
+  | 'Volume_2D'
+  | 'Volume_3D'
   | 'FlawlessMink'
   | 'HyperLight_2X'
   | 'HyperLight_3X'
@@ -5157,24 +5160,133 @@ export const WINGS_COMBO_CATEGORIES: WingsComboCategory[] = [
   },
 ];
 
+// Phân định chuẩn theo chất liệu: Classic 1D (Mi lụa đơn), Volume 2D & 3D (Fan 2-3D mi lụa 0.07-0.10mm)
+const baseClassicVolumeCat = WINGS_COMBO_CATEGORIES.find((c) => c.id === 'Classic_Volume')!;
+
+const classic1DCat: WingsComboCategory = {
+  ...baseClassicVolumeCat,
+  id: 'Classic_1D',
+  name: 'Classic 1D',
+  theme: 'blue',
+  segment: 'Mi Lụa Sợi Đơn (1D)',
+  unitPrices: baseClassicVolumeCat.unitPrices,
+  rules: baseClassicVolumeCat.rules,
+};
+
+const volume2DCat: WingsComboCategory = {
+  ...baseClassicVolumeCat,
+  id: 'Volume_2D',
+  name: 'Volume 2D',
+  theme: 'teal',
+  segment: 'Mi Lụa Fan 2D (0.07-0.10mm)',
+  unitPrices: [
+    { volume: 550, newPrice: 550000, refillPrice: 340000, isUnderLash: false },
+    { volume: 660, newPrice: 660000, refillPrice: 390000, isUnderLash: false },
+    { volume: 770, newPrice: 770000, refillPrice: 470000, isUnderLash: false },
+    { volume: 880, newPrice: 880000, refillPrice: 530000, isUnderLash: false },
+    {
+      volume: 'under',
+      newPrice: 390000,
+      refillPrice: 0,
+      serviceKey: 'under_390',
+      label: 'Mi dưới 390',
+      isUnderLash: true,
+    },
+  ],
+  rules: baseClassicVolumeCat.rules.map((r) => ({
+    ...r,
+    prices: r.prices.filter((p) => p.isUnderLash || [550, 660, 770, 880].includes(Number(p.volume))),
+  })),
+};
+
+const volume3DCat: WingsComboCategory = {
+  ...baseClassicVolumeCat,
+  id: 'Volume_3D',
+  name: 'Volume 3D',
+  theme: 'teal',
+  segment: 'Mi Lụa Fan 3D (0.07-0.10mm)',
+  unitPrices: [
+    { volume: 660, newPrice: 660000, refillPrice: 390000, isUnderLash: false },
+    { volume: 770, newPrice: 770000, refillPrice: 470000, isUnderLash: false },
+    { volume: 880, newPrice: 880000, refillPrice: 530000, isUnderLash: false },
+    { volume: 1110, newPrice: 1110000, refillPrice: 680000, isUnderLash: false },
+    {
+      volume: 'under',
+      newPrice: 390000,
+      refillPrice: 0,
+      serviceKey: 'under_390',
+      label: 'Mi dưới 390',
+      isUnderLash: true,
+    },
+  ],
+  rules: baseClassicVolumeCat.rules.map((r) => ({
+    ...r,
+    prices: r.prices.filter((p) => p.isUnderLash || [660, 770, 880, 1110].includes(Number(p.volume))),
+  })),
+};
+
+WINGS_COMBO_CATEGORIES.push(classic1DCat, volume2DCat, volume3DCat);
+
 const VOLUME_FIBER_MAP: Record<
   string,
   Record<string, { countPerEye: number; totalFibers: number; fanLabel: string; badge?: 'BEST SELLER' | 'MOST POPULAR' }>
 > = {
   Classic_Volume: {
-    '390': { countPerEye: 60, totalFibers: 120, fanLabel: '1D/2D · 60 sợi/mắt (120-200 sợi)' },
-    '440': { countPerEye: 70, totalFibers: 140, fanLabel: '1D/2D · 70 sợi/mắt (140-240 sợi)' },
-    '550': { countPerEye: 90, totalFibers: 180, fanLabel: '1D/2D · 80-90 sợi/mắt (180-320 sợi)', badge: 'BEST SELLER' },
-    '660': { countPerEye: 110, totalFibers: 220, fanLabel: '1D/2D · 100-110 sợi/mắt (220-400 sợi)' },
-    '880': { countPerEye: 130, totalFibers: 260, fanLabel: '1D/2D · 120-130 sợi/mắt (260-480 sợi)' },
+    '390': { countPerEye: 60, totalFibers: 120, fanLabel: '1D · 60 sợi/mắt (Mi lụa)' },
+    '440': { countPerEye: 70, totalFibers: 140, fanLabel: '1D · 70 sợi/mắt (Mi lụa)' },
+    '550': { countPerEye: 90, totalFibers: 180, fanLabel: '1D · 90 sợi/mắt (Mi lụa)', badge: 'BEST SELLER' },
+    '660': { countPerEye: 110, totalFibers: 220, fanLabel: '1D · 110 sợi/mắt (Mi lụa)' },
+    '880': { countPerEye: 130, totalFibers: 260, fanLabel: '1D · 130 sợi/mắt (Mi lụa)' },
+    under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
+  },
+  Classic_1D: {
+    '390': { countPerEye: 60, totalFibers: 120, fanLabel: '1D · 60 sợi/mắt (Mi lụa)' },
+    '440': { countPerEye: 70, totalFibers: 140, fanLabel: '1D · 70 sợi/mắt (Mi lụa)' },
+    '550': { countPerEye: 90, totalFibers: 180, fanLabel: '1D · 90 sợi/mắt (Mi lụa)', badge: 'BEST SELLER' },
+    '660': { countPerEye: 110, totalFibers: 220, fanLabel: '1D · 110 sợi/mắt (Mi lụa)' },
+    '880': { countPerEye: 130, totalFibers: 260, fanLabel: '1D · 130 sợi/mắt (Mi lụa)' },
+    under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
+  },
+  Volume_2D: {
+    '550': { countPerEye: 70, totalFibers: 280, fanLabel: '2D · 70 fan/mắt (140 sợi · 0.07-0.10mm)' },
+    '660': {
+      countPerEye: 90,
+      totalFibers: 360,
+      fanLabel: '2D · 90 fan/mắt (180 sợi · 0.07-0.10mm)',
+      badge: 'BEST SELLER',
+    },
+    '770': { countPerEye: 110, totalFibers: 440, fanLabel: '2D · 110 fan/mắt (220 sợi · 0.07-0.10mm)' },
+    '880': { countPerEye: 130, totalFibers: 520, fanLabel: '2D · 130 fan/mắt (260 sợi · 0.07-0.10mm)' },
+    under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
+  },
+  Volume_3D: {
+    '660': { countPerEye: 70, totalFibers: 420, fanLabel: '3D · 70 fan/mắt (210 sợi · 0.07-0.10mm)' },
+    '770': {
+      countPerEye: 90,
+      totalFibers: 540,
+      fanLabel: '3D · 90 fan/mắt (270 sợi · 0.07-0.10mm)',
+      badge: 'BEST SELLER',
+    },
+    '880': { countPerEye: 110, totalFibers: 660, fanLabel: '3D · 110 fan/mắt (330 sợi · 0.07-0.10mm)' },
+    '1110': { countPerEye: 130, totalFibers: 780, fanLabel: '3D · 130 fan/mắt (390 sợi · 0.07-0.10mm)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   FlawlessMink: {
-    '770': { countPerEye: 60, totalFibers: 120, fanLabel: '1D · 60 sợi/mắt (120 sợi)' },
-    '880': { countPerEye: 70, totalFibers: 140, fanLabel: '1D · 70 sợi/mắt (140 sợi)', badge: 'MOST POPULAR' },
-    '1110': { countPerEye: 90, totalFibers: 180, fanLabel: '1D · 90 sợi/mắt (180 sợi)', badge: 'BEST SELLER' },
-    '1440': { countPerEye: 110, totalFibers: 220, fanLabel: '1D · 110 sợi/mắt (220 sợi)' },
-    '1770': { countPerEye: 130, totalFibers: 260, fanLabel: '1D · 130 sợi/mắt (260 sợi)' },
+    '770': { countPerEye: 60, totalFibers: 120, fanLabel: '1D · 60 sợi/mắt (100% Lông chồn thật)' },
+    '880': {
+      countPerEye: 70,
+      totalFibers: 140,
+      fanLabel: '1D · 70 sợi/mắt (100% Lông chồn thật)',
+      badge: 'MOST POPULAR',
+    },
+    '1110': {
+      countPerEye: 90,
+      totalFibers: 180,
+      fanLabel: '1D · 90 sợi/mắt (100% Lông chồn thật)',
+      badge: 'BEST SELLER',
+    },
+    '1440': { countPerEye: 110, totalFibers: 220, fanLabel: '1D · 110 sợi/mắt (100% Lông chồn thật)' },
+    '1770': { countPerEye: 130, totalFibers: 260, fanLabel: '1D · 130 sợi/mắt (100% Lông chồn thật)' },
     under: { countPerEye: 35, totalFibers: 70, fanLabel: 'Mi dưới · 70 sợi 2 mắt' },
   },
   HyperLight_2X: {
@@ -5644,8 +5756,19 @@ export function matchComboCategoryAndVolumeFromBooking(input?: {
     if (volText.includes('3d') || combinedText.includes('3d')) categoryId = 'UltraLight_3D';
     else if (volText.includes('5d') || combinedText.includes('5d')) categoryId = 'UltraLight_5D';
     else categoryId = 'UltraLight_4D';
-  } else if (combinedText.includes('classic') || combinedText.includes('volume') || combinedText.includes('2d')) {
-    categoryId = 'Classic_Volume';
+  } else if (combinedText.includes('volume')) {
+    if (
+      volText.includes('3d') ||
+      combinedText.includes('3d') ||
+      volText.includes('3 fan') ||
+      combinedText.includes('3 fan')
+    ) {
+      categoryId = 'Volume_3D';
+    } else {
+      categoryId = 'Volume_2D';
+    }
+  } else if (combinedText.includes('classic') || combinedText.includes('1d') || volText.includes('1d')) {
+    categoryId = 'Classic_1D';
   }
 
   const category = getWingsComboCategory(categoryId);
@@ -5653,7 +5776,29 @@ export function matchComboCategoryAndVolumeFromBooking(input?: {
     .filter((u) => !u.isUnderLash && typeof u.volume === 'number')
     .map((u) => Number(u.volume));
 
-  if (combinedText.includes('under') || combinedText.includes('mi dưới') || volText.includes('dưới')) {
+  // Chỉ match volume là 'under' nếu dịch vụ THUẦN TÚY là Mi Dưới (ví dụ "Nối Mi Dưới", "Mi Dưới 390", "Dặm Mi Dưới").
+  // Nếu dịch vụ là dịch vụ kép có mi trên (ví dụ "HyperLight 530K (90 fan) + Mi Dưới", "New Classic 440 + Mi Dưới"),
+  // thì Combo chính (Section 1) BẮT BUỘC phải là Combo Mi Trên (HyperLight, Classic, IvyLight...),
+  // còn gói Mi Dưới sẽ được chọn riêng ở Section 2B (Gói Combo Mi Dưới)!
+  const hasUpperLashService =
+    combinedText.includes('hyperlight') ||
+    combinedText.includes('hyper light') ||
+    combinedText.includes('hyper_light') ||
+    combinedText.includes('ivylight') ||
+    combinedText.includes('ivy light') ||
+    combinedText.includes('ivy_light') ||
+    combinedText.includes('ultralight') ||
+    combinedText.includes('ultra light') ||
+    combinedText.includes('ultra_light') ||
+    combinedText.includes('classic') ||
+    combinedText.includes('flawless') ||
+    (combinedText.includes('volume') && !combinedText.includes('mi dưới thuần'));
+
+  const isPureUnderLash =
+    !hasUpperLashService &&
+    (combinedText.includes('under') || combinedText.includes('mi dưới') || volText.includes('dưới'));
+
+  if (isPureUnderLash) {
     return {
       categoryId,
       category,
@@ -5823,8 +5968,8 @@ export function getComboPackagesForCategoryAndVolume(params: {
       categoryName: category.name,
       ruleName: rule.name,
       displayName: priceRow.isUnderLash
-        ? `Combo ${rule.name} · Mi Dưới 390 (${totalSessions} lần)`
-        : `Combo ${rule.name} · ${category.name} ${priceRow.volume} (${totalSessions} lần)`,
+        ? `Combo ${rule.name} · Mi Dưới 390`
+        : `Combo ${rule.name} · ${category.name} ${priceRow.volume}`,
       shortRuleLabel: isWelcome ? `${rule.name} (Welcome)` : rule.name,
       volume: priceRow.isUnderLash ? 'under' : Number(priceRow.volume),
       volumeMeta: volMeta,
@@ -6180,7 +6325,7 @@ export interface LashFamilySibling {
 }
 
 export interface LashFamilyInfo {
-  familyKey: 'HyperLight' | 'IvyLight' | 'UltraLight' | 'Classic_Flawless' | 'VVIP';
+  familyKey: 'HyperLight' | 'IvyLight' | 'UltraLight' | 'Classic' | 'Volume' | 'Mink' | 'Classic_Flawless' | 'VVIP';
   familyName: string;
   siblings: LashFamilySibling[];
 }
@@ -6303,28 +6448,64 @@ export function getLashFamilyInfo(categoryId: WingsComboCategoryId | string): La
     };
   }
 
-  if (categoryId === 'Classic_Volume' || categoryId === 'FlawlessMink') {
+  if (categoryId === 'Classic_1D' || categoryId === 'Classic_Volume') {
     return {
-      familyKey: 'Classic_Flawless',
-      familyName: 'Dòng Classic & Flawless Mink',
+      familyKey: 'Classic',
+      familyName: 'Dòng Classic 1D (Mi Lụa)',
       siblings: [
         {
-          categoryId: 'FlawlessMink',
-          levelKey: 'FlawlessMink',
-          levelLabel: 'Flawless Mink 1:1',
-          shortLabel: 'Flawless Mink',
+          categoryId: 'Classic_1D',
+          levelKey: '1D',
+          levelLabel: 'Classic 1D · Mi Lụa Sợi Đơn',
+          shortLabel: '1D',
           unitWord: 'sợi',
           fibersPerUnit: 1,
           fiberDensityLabel: 'Sợi đơn 1:1',
         },
+      ],
+    };
+  }
+
+  if (categoryId === 'Volume_2D' || categoryId === 'Volume_3D') {
+    return {
+      familyKey: 'Volume',
+      familyName: 'Dòng Volume 2D-3D (Mi Lụa)',
+      siblings: [
         {
-          categoryId: 'Classic_Volume',
-          levelKey: 'Classic_Volume',
-          levelLabel: 'Classic & Volume 2D',
-          shortLabel: 'Classic 2D',
-          unitWord: 'sợi',
+          categoryId: 'Volume_2D',
+          levelKey: '2D',
+          levelLabel: 'Volume 2D · Fan 2 sợi (0.07-0.10mm)',
+          shortLabel: '2D',
+          unitWord: 'fan',
           fibersPerUnit: 2,
-          fiberDensityLabel: '2 sợi/fan 2D',
+          fiberDensityLabel: 'Fan 2 sợi 2D',
+        },
+        {
+          categoryId: 'Volume_3D',
+          levelKey: '3D',
+          levelLabel: 'Volume 3D · Fan 3 sợi (0.07-0.10mm)',
+          shortLabel: '3D',
+          unitWord: 'fan',
+          fibersPerUnit: 3,
+          fiberDensityLabel: 'Fan 3 sợi 3D',
+        },
+      ],
+    };
+  }
+
+  if (categoryId === 'FlawlessMink') {
+    return {
+      familyKey: 'Mink',
+      familyName: 'Dòng Flawless Mink 𝓜 (100% Lông Chồn Thật)',
+      siblings: [
+        {
+          categoryId: 'FlawlessMink',
+          levelKey: 'FlawlessMink',
+          levelLabel: 'Flawless Mink 𝓜 · Lông Chồn Thật Luxury',
+          shortLabel: 'Mink 𝓜',
+          unitWord: 'sợi',
+          fibersPerUnit: 1,
+          fiberDensityLabel: 'Sợi đơn 1:1 Lông chồn thật',
         },
       ],
     };

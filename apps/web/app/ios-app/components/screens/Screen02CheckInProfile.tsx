@@ -307,10 +307,10 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `Cảnh Báo Override: Đã Quá ${preset.retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Single'})`,
+        title: `Cảnh Báo Override: Đã Quá ${preset.retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Khách Lẻ'})`,
         message: isComboLive
           ? `Khách Gói Combo ghé ${daysText}. Theo quy định khách mua Combo đi trong 25 ngày luôn được tính Dặm, sau 25 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính DẶM.`
-          : `Khách lẻ (Single) ghé ${daysText}. Theo quy định khách Single đi trong 21 ngày có Giá Dặm vô điều kiện, sau 21 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính GIÁ DẶM.`,
+          : `Khách lẻ ghé ${daysText}. Theo quy định khách lẻ đi trong 21 ngày có Giá Dặm vô điều kiện, sau 21 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính GIÁ DẶM.`,
         reasons,
         onConfirm: (reason: string) => {
           setQuickServiceType('Retain');
@@ -322,7 +322,7 @@ export function Screen02CheckInProfile({
       return;
     }
 
-    // 6. Nếu khách lẻ Single đi trong hạn được hưởng Giá Dặm mà chuyển sang thu Giá Nối Mới
+    // 6. Nếu khách lẻ đi trong hạn được hưởng Giá Dặm mà chuyển sang thu Giá Nối Mới
     if (targetType === 'Normal' && !isComboLive && preset.isWithinRetainWindow) {
       const reasons = [
         `Mi cũ rụng > 70% không đủ điều kiện dặm — khách đồng ý tính Nối Mới`,
@@ -331,8 +331,8 @@ export function Screen02CheckInProfile({
       ];
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
-        title: `Cảnh Báo Override: Đi Trong ${preset.retainDaysLimit} Ngày (Single)`,
-        message: `Khách lẻ (Single) ghé lần cuối ngày ${preset.lastVisitDate} (${preset.daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách Single đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
+        title: `Cảnh Báo Override: Đi Trong ${preset.retainDaysLimit} Ngày (Khách Lẻ)`,
+        message: `Khách lẻ ghé lần cuối ngày ${preset.lastVisitDate} (${preset.daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách lẻ đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
         reasons,
         onConfirm: (reason: string) => {
           setQuickServiceType('Normal');
@@ -713,7 +713,7 @@ export function Screen02CheckInProfile({
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>{isComboLive ? `✦ ${preset.normalRemaining}` : '✦ Mới'}</span>
+                <span>{isComboLive ? preset.normalRemaining : 'Mới'}</span>
               </button>
 
               <button
@@ -726,16 +726,16 @@ export function Screen02CheckInProfile({
                 }`}
               >
                 <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                <span>{isComboLive ? `↻ ${preset.retainRemaining}` : '↻ Dặm'}</span>
+                <span>{isComboLive ? preset.retainRemaining : 'Dặm'}</span>
               </button>
             </div>
           </div>
         ) : (
-          /* Khách Single: Sleek dark card, no walls of red warning text */
+          /* Khách Lẻ: Sleek dark card, no walls of red warning text */
           <div className="rounded-2xl p-3 shadow-sm border border-amber-500/40 bg-[#1C1C1E] text-white flex items-center justify-between">
             <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              Khách Lẻ (Single)
+              Khách Lẻ
             </span>
             <span className="bg-amber-400/20 text-amber-400 border border-amber-400/30 text-[10.5px] font-black px-2.5 py-0.5 rounded-full">
               ≤ 21N: Giá Dặm
@@ -1444,14 +1444,14 @@ export function Screen02CheckInProfile({
                 </p>
               </div>
 
-              {/* Card 2: Quy chuẩn bắt buộc cho Nhân viên */}
+              {/* Card 2: Quy chuẩn bắt buộc cho Chuyên viên */}
               <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 space-y-1">
                 <div className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                   <span>QUY CHUẨN KỸ THUẬT (BẮT BUỘC)</span>
                 </div>
                 <p className="text-amber-100/90 leading-relaxed font-bold">
-                  Nhân viên{' '}
+                  Chuyên viên{' '}
                   <strong className="text-amber-300 underline underline-offset-2">
                     BẮT BUỘC phải gỡ ra toàn bộ mi cũ
                   </strong>{' '}

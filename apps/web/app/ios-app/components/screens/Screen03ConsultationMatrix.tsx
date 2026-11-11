@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
@@ -10,6 +11,7 @@ import {
   Sparkles,
   CheckCircle2,
   Eye,
+  EyeOff,
   FileText,
   Sliders,
   ZoomIn,
@@ -44,6 +46,7 @@ import {
   getUnderLashComboPackages,
 } from '@mos-lab/shared';
 import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
+import { calculateCvComboTierBonus } from '../../state/useIosBillingCheckout';
 import { LASH_CURL_LIST } from './LashCurlData';
 import { LashCurlIllustration } from './LashCurlIllustration';
 import { LashCurlZoomModal } from './LashCurlZoomModal';
@@ -64,6 +67,7 @@ import {
   parseDaysSinceLastVisit,
   resolveServiceSpecsFromComboOrHistory,
   formatComboName,
+  resolveDisplayServiceName,
   COMBO_RETAIN_CYCLE_DAYS_LIMIT,
   SINGLE_RETAIN_CYCLE_DAYS_LIMIT,
   getRetainCycleDaysLimit,
@@ -131,7 +135,8 @@ interface Screen03ConsultationMatrixProps {
       serviceType?: string;
     } | null,
     targetBookingId?: number,
-    selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null
+    selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null,
+    assignmentMode?: 'SELF_SERVICE' | 'ASSIGN_OTHER'
   ) => void;
 }
 
@@ -145,6 +150,7 @@ interface DualThumbRangeSliderProps {
   value: [number, number];
   onChange: (val: [number, number]) => void;
   formatValue?: (val: number) => string;
+  isDark?: boolean;
 }
 
 function parseLengthRange(val?: string | null): [number, number] {
@@ -189,7 +195,7 @@ function parseCountRange(val?: string | null): [number, number] {
   return [Math.min(n1, n2), Math.max(n1, n2)];
 }
 
-function DualThumbRangeSlider({ min, max, step, value, onChange, formatValue }: DualThumbRangeSliderProps) {
+function DualThumbRangeSlider({ min, max, step, value, onChange, formatValue, isDark }: DualThumbRangeSliderProps) {
   const [valMin, valMax] = value;
   const minPct = Math.max(0, Math.min(100, ((valMin - min) / (max - min)) * 100));
   const maxPct = Math.max(0, Math.min(100, ((valMax - min) / (max - min)) * 100));
@@ -217,12 +223,14 @@ function DualThumbRangeSlider({ min, max, step, value, onChange, formatValue }: 
 
   return (
     <div className="flex items-center gap-2 pt-0.5 select-none">
-      <span className="text-[10px] font-bold text-gray-400 tabular-nums w-8 text-right shrink-0">
+      <span
+        className={`text-[10px] font-bold tabular-nums w-8 text-right shrink-0 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}
+      >
         {formatValue ? formatValue(min) : min}
       </span>
       <div className="relative flex-1 h-6 flex items-center">
         {/* Track nền xám */}
-        <div className="absolute left-0 right-0 h-2 bg-gray-200 rounded-full" />
+        <div className={`absolute left-0 right-0 h-2 rounded-full ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`} />
         {/* Dải vàng highlight giữa min và max */}
         <div
           className="absolute h-2 bg-[#FFB400] rounded-full pointer-events-none"
@@ -256,7 +264,9 @@ function DualThumbRangeSlider({ min, max, step, value, onChange, formatValue }: 
           style={{ zIndex: isMinHigher ? 20 : 25 }}
         />
       </div>
-      <span className="text-[10px] font-bold text-gray-400 tabular-nums w-8 shrink-0">
+      <span
+        className={`text-[10px] font-bold tabular-nums w-8 shrink-0 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}
+      >
         {formatValue ? formatValue(max) : max}
       </span>
     </div>
@@ -264,9 +274,13 @@ function DualThumbRangeSlider({ min, max, step, value, onChange, formatValue }: 
 }
 
 export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: Screen03ConsultationMatrixProps) {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
+
   const [materialCatalog, setMaterialCatalog] = useState<LashMaterialSpec[]>(() => loadMaterialCatalog());
   const [isConfiguratorOpen, setIsConfiguratorOpen] = useState<boolean>(false);
   const [infoModalKey, setInfoModalKey] = useState<InfoModalType>(null);
+  const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
 
   useEffect(() => {
     setMaterialCatalog(loadMaterialCatalog());
@@ -470,12 +484,19 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   const [upgradeScope, setUpgradeScope] = useState<'SINGLE' | 'ALL'>('SINGLE');
   const [retainUpgradeMode, setRetainUpgradeMode] = useState<'DEDUCT_NORMAL' | 'PAY_DIFF'>('DEDUCT_NORMAL');
   const [pendingUpgradeConfirmation, setPendingUpgradeConfirmation] = useState<{
-    fromName: string;
-    toName: string;
-    singleDiff: number;
+    comboName: string;
+    comboBasePrice: number;
+    targetName: string;
+    targetPrice: number;
+    targetSpecs?: string;
+    serviceType: 'Normal' | 'Retain';
     upgradeScope: 'SINGLE' | 'ALL';
+    singleDiff: number;
+    normalDiff: number;
+    retainDiff: number;
+    comboNormalRemaining: number;
+    comboRetainRemaining: number;
     totalAmount: number;
-    remainingSessionsCount: number;
     onConfirm: () => void;
   } | null>(null);
   const [hasConfirmedUpgrade, setHasConfirmedUpgrade] = useState<boolean>(false);
@@ -756,10 +777,10 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
         type: 'CYCLE_OVERRIDE',
-        title: `⚠️ Cảnh Báo Override: Đã Quá ${retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Single'})`,
+        title: `⚠️ Cảnh Báo Override: Đã Quá ${retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Khách Lẻ'})`,
         message: isComboLive
           ? `Khách Gói Combo ghé ${daysText}. Theo quy định khách mua Combo đi trong 25 ngày luôn được tính Dặm, sau 25 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính DẶM.`
-          : `Khách lẻ (Single) ghé ${daysText}. Theo quy định khách Single đi trong 21 ngày có Giá Dặm vô điều kiện, sau 21 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính GIÁ DẶM.`,
+          : `Khách lẻ ghé ${daysText}. Theo quy định khách lẻ đi trong 21 ngày có Giá Dặm vô điều kiện, sau 21 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính GIÁ DẶM.`,
         defaultReason: reasons[0],
         reasons,
         onConfirm: (reason: string) => {
@@ -838,10 +859,10 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
       setSelectedOverrideReasonDraft(reasons[0]);
       setPendingOverride({
         type: 'CYCLE_OVERRIDE',
-        title: `⚠️ Cảnh Báo Override: Đi Trong ${retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Single'})`,
+        title: `⚠️ Cảnh Báo Override: Đi Trong ${retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Khách Lẻ'})`,
         message: isComboLive
           ? `Khách Gói Combo ghé lần cuối ngày ${lastVisitDate} (${daysSinceLastVisit} ngày trước ≤ 25 ngày). Theo quy định khách mua Combo đi trong 25 ngày luôn luôn được tính DẶM, nhưng bạn đang chuyển sang tính NỐI MỚI.`
-          : `Khách lẻ (Single) ghé lần cuối ngày ${lastVisitDate} (${daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách Single đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
+          : `Khách lẻ ghé lần cuối ngày ${lastVisitDate} (${daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách lẻ đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
         defaultReason: reasons[0],
         reasons,
         onConfirm: (reason: string) => {
@@ -1354,9 +1375,16 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
     comboRetainRemaining,
   ]);
 
+  const [cvllAssignmentMode, setCvllAssignmentMode] = useState<'SELF_SERVICE' | 'ASSIGN_OTHER'>(() => {
+    if (booking?.assignedStaffId && booking.assignedStaffId > 0 && booking.assignedStaffId !== actor?.staffId) {
+      return 'ASSIGN_OTHER';
+    }
+    return 'SELF_SERVICE';
+  });
+
   const executeFinalSave = (confirmedUpgradePrice?: number) => {
     const finalUpgradePrice = confirmedUpgradePrice !== undefined ? confirmedUpgradePrice : totalUpgradeAmount;
-    const finalNotes = isOverridden && overrideReason ? `[CV🪶 Override: ${overrideReason}] ${notes}`.trim() : notes;
+    const finalNotes = isOverridden && overrideReason ? `[CVL Override: ${overrideReason}] ${notes}`.trim() : notes;
 
     onSave(
       {
@@ -1397,19 +1425,28 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         serviceType,
       },
       booking?.id,
-      selectedUnderComboObject
+      selectedUnderComboObject,
+      actor?.tier === 'CVLL' ? cvllAssignmentMode : undefined
     );
   };
 
   const handleSubmit = () => {
     if (isComboLive && totalUpgradeAmount > 0 && !hasConfirmedUpgrade) {
+      const basePrice = serviceType === 'Retain' ? comboBaseRetainPrice : comboBaseServicePrice;
       setPendingUpgradeConfirmation({
-        fromName: `${formatComboName(comboName)} (${(serviceType === 'Retain' ? comboBaseRetainPrice : comboBaseServicePrice).toLocaleString('vi-VN')} đ)`,
-        toName: `${livePricingAndCvPoints.skuName} (${livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ)`,
-        singleDiff: singleUpgradeDiff,
+        comboName: formatComboName(comboName),
+        comboBasePrice: basePrice,
+        targetName: livePricingAndCvPoints.skuName,
+        targetPrice: livePricingAndCvPoints.skuPrice,
+        targetSpecs: `${selectedCount} · ${selectedVolume}`,
+        serviceType,
         upgradeScope,
+        singleDiff: singleUpgradeDiff,
+        normalDiff: normalUpgradeDiff,
+        retainDiff: retainUpgradeDiff,
+        comboNormalRemaining,
+        comboRetainRemaining,
         totalAmount: totalUpgradeAmount,
-        remainingSessionsCount: comboRemainingSessions,
         onConfirm: () => {
           setHasConfirmedUpgrade(true);
           setPendingUpgradeConfirmation(null);
@@ -1425,12 +1462,16 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
   const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const rawCustomerPhone = booking?.customerPhone || '0933.779.207';
   const customerPhone = rawCustomerPhone.replace(/\*+\s*/g, '').trim();
-  const serviceName = booking?.serviceName || 'New Flawless Mink';
+  const serviceName = resolveDisplayServiceName(booking) || 'New Flawless Mink';
   const servicePrice = booking?.servicePrice ? booking.servicePrice.toLocaleString('vi-VN') : '770.000';
   const actorName = actor?.name || 'Thảo Ly';
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-hidden select-none">
+    <div
+      className={`flex-1 flex flex-col overflow-hidden select-none transition-colors ${
+        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'
+      }`}
+    >
       <IosNavigationBar
         title="Tư Vấn Dáng Mi"
         onBack={onBack}
@@ -1444,43 +1485,69 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
       <div className="flex-1 px-3.5 py-2.5 space-y-3 overflow-y-auto pb-8">
         {/* 1. Customer & Consultation Header Card (Bỏ pill CVL tư vấn, bỏ **** giữ phone) */}
-        <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 flex items-center justify-between">
+        <div
+          className={`rounded-2xl p-3 shadow-xs border flex items-center justify-between transition-colors ${
+            isDark ? 'bg-[#1C1C1E] border-neutral-800 text-white' : 'bg-white border-neutral-100 text-neutral-900'
+          }`}
+        >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 truncate">
-              <span className="text-[14px] font-bold text-black truncate">{customerName}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 text-gray-700 font-bold tabular-nums">
+              <span className={`text-[14px] font-bold truncate ${isDark ? 'text-white' : 'text-black'}`}>
+                {customerName}
+              </span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold tabular-nums ${
+                  isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-neutral-100 text-gray-700'
+                }`}
+              >
                 {customerPhone}
               </span>
               <span
                 className={`text-[9.5px] px-2 py-0.5 rounded-full font-black ${
-                  isNewClient ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-50 text-emerald-800'
+                  isNewClient
+                    ? isDark
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-800'
+                      : 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : isDark
+                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
+                      : 'bg-emerald-50 text-emerald-800'
                 }`}
               >
                 {isNewClient ? 'KHÁCH MỚI' : `LẦN ${booking?.customerVisits || 2}`}
               </span>
             </div>
-            <div className="text-[11.5px] text-gray-500 mt-0.5 font-medium truncate">
+            <div
+              className={`text-[11.5px] mt-0.5 font-medium truncate ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}
+            >
               Dịch vụ:{' '}
-              <strong className="text-black">
+              <strong className={isDark ? 'text-white' : 'text-black'}>
                 {serviceName.toLowerCase().includes('any') ? 'Chưa chọn mẫu mi' : serviceName}
               </strong>{' '}
-              ({servicePrice} đ) · In: <strong className="text-emerald-600">{actorName}</strong>
+              · In: <strong className="text-emerald-500">{actorName}</strong>
             </div>
           </div>
         </div>
 
         {/* Cảnh Báo Khách Mới Hoặc Tóm Tắt Mi Thật */}
         {isNewClient ? (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-[#FFB400] rounded-2xl p-2.5 shadow-xs flex items-center justify-between gap-2">
+          <div
+            className={`border-2 border-[#FFB400] rounded-2xl p-2.5 shadow-xs flex items-center justify-between gap-2 ${
+              isDark
+                ? 'bg-gradient-to-r from-amber-950/40 to-orange-950/30'
+                : 'bg-gradient-to-r from-amber-50 to-orange-50'
+            }`}
+          >
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-6 h-6 rounded-full bg-[#FFB400] text-black flex items-center justify-center shrink-0">
                 <Sparkles className="w-3.5 h-3.5 text-black" />
               </span>
               <div className="min-w-0">
-                <div className="text-[11px] font-black text-amber-950 uppercase tracking-tight">
-                  KHÁCH MỚI · BẮT BUỘC KHÁM MI THẬT
+                <div
+                  className={`text-[11px] font-black uppercase tracking-tight ${isDark ? 'text-amber-300' : 'text-amber-950'}`}
+                >
+                  KHÁCH MỚI · BẮT BUỘC KIỂM TRA MI THẬT
                 </div>
-                <div className="text-[10px] text-amber-800 font-medium truncate">
+                <div className={`text-[10px] font-medium truncate ${isDark ? 'text-amber-200/80' : 'text-amber-800'}`}>
                   Đo chiều dài (mm) & độ dày sợi để chọn mi nối an toàn
                 </div>
               </div>
@@ -1490,20 +1557,32 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               onClick={() => setActiveSubTab('PROFILE')}
               className="px-2.5 py-1 rounded-lg bg-black text-[#FFB400] text-[10px] font-bold shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
-              Khám Ngay →
+              Kiểm Tra Ngay →
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl px-3 py-1.5 shadow-xs border border-neutral-100 flex items-center justify-between text-[11px]">
+          <div
+            className={`rounded-2xl px-3 py-1.5 shadow-xs border flex items-center justify-between text-[11px] transition-colors ${
+              isDark
+                ? 'bg-[#1C1C1E] border-neutral-800 text-neutral-300'
+                : 'bg-white border-neutral-100 text-neutral-700'
+            }`}
+          >
             <div className="flex items-center gap-1.5 min-w-0">
-              <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="text-gray-500 font-medium shrink-0">Mi Thật:</span>
-              <strong className="text-black font-extrabold truncate">
+              <Eye className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span className={`font-medium shrink-0 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Mi Thật:</span>
+              <strong className={`font-extrabold truncate ${isDark ? 'text-white' : 'text-black'}`}>
                 {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
                 {naturalLengthLabel} · {naturalThicknessLabel}
               </strong>
               {!naturalCountLabel && (
-                <span className="text-amber-700 bg-amber-50 border border-amber-200 text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                <span
+                  className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                    isDark
+                      ? 'text-amber-300 bg-amber-950/60 border border-amber-800'
+                      : 'text-amber-700 bg-amber-50 border border-amber-200'
+                  }`}
+                >
                   Chưa đo sợi
                 </span>
               )}
@@ -1511,7 +1590,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             <button
               type="button"
               onClick={() => setActiveSubTab('PROFILE')}
-              className="text-[#D97706] font-bold text-[10.5px] hover:underline cursor-pointer shrink-0 ml-1.5"
+              className={`font-bold text-[10.5px] hover:underline cursor-pointer shrink-0 ml-1.5 ${
+                isDark ? 'text-[#FFB400]' : 'text-[#D97706]'
+              }`}
             >
               {naturalCountLabel ? 'Đo lại mi →' : '+ Bổ sung số sợi →'}
             </button>
@@ -1519,16 +1600,26 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         )}
 
         {/* 2. Sub-tab Filter Segment Bar (Chỉ gồm 2 bước chuyên môn kỹ thuật) */}
-        <div className="bg-white/80 backdrop-blur-xs p-1 rounded-xl shadow-xs border border-gray-200/80 grid grid-cols-2 gap-1.5">
+        <div
+          className={`p-1 rounded-xl shadow-xs border grid grid-cols-2 gap-1.5 transition-colors ${
+            isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white/80 backdrop-blur-xs border-gray-200/80'
+          }`}
+        >
           <button
             type="button"
             onClick={() => setActiveSubTab('PROFILE')}
             className={`py-2 px-2 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1.5 leading-none relative cursor-pointer ${
-              activeSubTab === 'PROFILE' ? 'bg-black text-[#FFB400] shadow-sm' : 'text-gray-600 hover:text-black'
+              activeSubTab === 'PROFILE'
+                ? isDark
+                  ? 'bg-[#2C2C2E] text-[#FFB400] shadow-xs'
+                  : 'bg-black text-[#FFB400] shadow-sm'
+                : isDark
+                  ? 'text-neutral-400 hover:text-white'
+                  : 'text-gray-600 hover:text-black'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>Khám Mi Thật</span>
+            <span>Kiểm Tra Mi Thật</span>
             {isNewClient && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
           </button>
 
@@ -1536,7 +1627,13 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             type="button"
             onClick={() => setActiveSubTab('SPECS')}
             className={`py-2 px-2 rounded-lg text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1.5 leading-none cursor-pointer ${
-              activeSubTab === 'SPECS' ? 'bg-black text-[#FFB400] shadow-sm' : 'text-gray-600 hover:text-black'
+              activeSubTab === 'SPECS'
+                ? isDark
+                  ? 'bg-[#2C2C2E] text-[#FFB400] shadow-xs'
+                  : 'bg-black text-[#FFB400] shadow-sm'
+                : isDark
+                  ? 'text-neutral-400 hover:text-white'
+                  : 'text-gray-600 hover:text-black'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -1550,25 +1647,35 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         {activeSubTab === 'SPECS' && (
           <div className="space-y-3.5">
             {/* QUY CÁCH DỊCH VỤ: THIẾT KẾ MINIMALISM (Ít chữ · Icon trực quan · Thao tác 1 chạm) */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2">
+            <div
+              className={`rounded-2xl p-3 shadow-xs border space-y-2 transition-colors ${
+                isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+              }`}
+            >
               {/* Header gọn: Tên gói / Single + Badge Ngày ghé cuối & Tổng lượt */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="w-5 h-5 rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
                     <Zap className="w-3 h-3 fill-current" />
                   </span>
-                  <span className="text-[12px] font-extrabold text-neutral-900 truncate">
-                    {isComboLive ? formatComboName(comboName) : 'Khách lẻ Single (Chu kỳ 21N)'}
+                  <span className={`text-[12px] font-extrabold truncate ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                    {isComboLive ? formatComboName(comboName) : 'Khách Lẻ'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0 tabular-nums">
                   {daysSinceLastVisit !== null && (
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isWithin25Days ? 'bg-emerald-100/90 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                        isWithin25Days
+                          ? isDark
+                            ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
+                            : 'bg-emerald-100/90 text-emerald-800'
+                          : isDark
+                            ? 'bg-amber-950/80 text-amber-300 border border-amber-800'
+                            : 'bg-amber-100 text-amber-900'
                       }`}
                     >
-                      {daysSinceLastVisit} ngày
+                      {daysSinceLastVisit}N
                     </span>
                   )}
                   {isComboLive && (
@@ -1584,20 +1691,30 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               </div>
 
               {/* Khối Thông số Mi Trên + Nút +Mi dưới & 1 dòng thông số Mi Dưới tối giản */}
-              <div className="bg-neutral-50/80 rounded-xl p-2.5 border border-neutral-200/80 space-y-2">
+              <div
+                className={`rounded-xl p-2.5 border space-y-2 transition-colors ${
+                  isDark ? 'bg-[#141416] border-neutral-800' : 'bg-neutral-50/80 border-neutral-200/80'
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] font-extrabold text-neutral-900 truncate">
+                      <span
+                        className={`text-[12px] font-extrabold truncate ${isDark ? 'text-white' : 'text-neutral-900'}`}
+                      >
                         {currentMaterialSpec.shortLabel} · {selectedVolume} · {selectedCount}
                       </span>
                       {lastVisitDate && (
-                        <span className="text-[10px] text-neutral-400 font-medium tabular-nums shrink-0">
+                        <span
+                          className={`text-[10px] font-medium tabular-nums shrink-0 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}
+                        >
                           ({lastVisitDate.slice(0, 5)})
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] font-semibold text-neutral-600 truncate mt-0.5 tabular-nums">
+                    <div
+                      className={`text-[11px] font-semibold truncate mt-0.5 tabular-nums ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}
+                    >
                       {selectedStyle.replace(/sexy\s*\/?\s*cat|cat\s*\/?\s*sexy/gi, 'Natural')} ·{' '}
                       {selectedCurl.replace(/^Cong\s+/i, '')} ·{' '}
                       {selectedThickness.replace(/\s*mm/gi, '').replace(/\s+/g, '')} ·{' '}
@@ -1611,7 +1728,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     className={`px-2.5 py-1 rounded-full border text-[11px] font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 ${
                       hasUnderMink
                         ? 'bg-purple-600 border-purple-600 text-white shadow-2xs'
-                        : 'bg-white border-neutral-200 text-neutral-600 hover:border-purple-300'
+                        : isDark
+                          ? 'bg-[#1C1C1E] border-neutral-700 text-neutral-300 hover:border-purple-400'
+                          : 'bg-white border-neutral-200 text-neutral-600 hover:border-purple-300'
                     }`}
                   >
                     {hasUnderMink && <Check className="w-3 h-3 stroke-[3]" />}
@@ -1621,9 +1740,17 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
                 {/* 1 Dòng Ngang Duy Nhất Cho Mi Dưới: [B|C] · [6|7|6-7] · [20|30|40] + Chọn độc lập [Mới | Dặm] */}
                 {hasUnderMink && (
-                  <div className="pt-2 border-t border-neutral-200/70 flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap">
+                  <div
+                    className={`pt-2 border-t flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap ${
+                      isDark ? 'border-neutral-800' : 'border-neutral-200/70'
+                    }`}
+                  >
                     <div className="flex items-center gap-1">
-                      <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-neutral-200">
+                      <div
+                        className={`inline-flex items-center p-0.5 rounded-lg border ${
+                          isDark ? 'bg-[#1C1C1E] border-neutral-700' : 'bg-white border-neutral-200'
+                        }`}
+                      >
                         {(['B', 'C'] as const).map((c) => (
                           <button
                             key={c}
@@ -1632,7 +1759,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
                               underMinkCurl === c
                                 ? 'bg-purple-600 text-white shadow-2xs'
-                                : 'text-neutral-600 hover:text-black'
+                                : isDark
+                                  ? 'text-neutral-400 hover:text-white'
+                                  : 'text-neutral-600 hover:text-black'
                             }`}
                           >
                             {c}
@@ -1641,12 +1770,20 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       </div>
 
                       {/* Độ dài: default 7 · nút cộng trừ tăng giảm 1 */}
-                      <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-neutral-200 tabular-nums">
+                      <div
+                        className={`inline-flex items-center p-0.5 rounded-lg border tabular-nums ${
+                          isDark ? 'bg-[#1C1C1E] border-neutral-700' : 'bg-white border-neutral-200'
+                        }`}
+                      >
                         <button
                           type="button"
                           onClick={() => setUnderMinkLength((prev) => stepUnderMinkLength(prev, -1))}
                           disabled={parseUnderMinkLengthMm(underMinkLength) <= UNDER_MINK_PREP_SPEC.minLengthMm}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
+                          }`}
                         >
                           −
                         </button>
@@ -1657,19 +1794,31 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           type="button"
                           onClick={() => setUnderMinkLength((prev) => stepUnderMinkLength(prev, 1))}
                           disabled={parseUnderMinkLengthMm(underMinkLength) >= UNDER_MINK_PREP_SPEC.maxLengthMm}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
+                          }`}
                         >
                           +
                         </button>
                       </div>
 
                       {/* Số lượng: default 30 · nút cộng trừ tăng giảm 10 */}
-                      <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-neutral-200 tabular-nums">
+                      <div
+                        className={`inline-flex items-center p-0.5 rounded-lg border tabular-nums ${
+                          isDark ? 'bg-[#1C1C1E] border-neutral-700' : 'bg-white border-neutral-200'
+                        }`}
+                      >
                         <button
                           type="button"
                           onClick={() => setUnderMinkCount((prev) => stepUnderMinkCount(prev, -10))}
                           disabled={parseUnderMinkCountFibers(underMinkCount) <= UNDER_MINK_PREP_SPEC.minCountFibers}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
+                          }`}
                         >
                           −
                         </button>
@@ -1680,7 +1829,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           type="button"
                           onClick={() => setUnderMinkCount((prev) => stepUnderMinkCount(prev, 10))}
                           disabled={parseUnderMinkCountFibers(underMinkCount) >= UNDER_MINK_PREP_SPEC.maxCountFibers}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-100 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
+                          }`}
                         >
                           +
                         </button>
@@ -1688,14 +1841,20 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     </div>
 
                     {/* Chọn ĐỘC LẬP Mi Dưới: Mới (390K) hoặc Dặm (250K) */}
-                    <div className="inline-flex items-center bg-white p-0.5 rounded-lg border border-purple-200 shrink-0">
+                    <div
+                      className={`inline-flex items-center p-0.5 rounded-lg border shrink-0 ${
+                        isDark ? 'bg-[#1C1C1E] border-purple-800' : 'bg-white border-purple-200'
+                      }`}
+                    >
                       <button
                         type="button"
                         onClick={() => setUnderMinkServiceType('Normal')}
                         className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
                           underMinkServiceType === 'Normal'
                             ? 'bg-[#FFB400] text-black shadow-2xs'
-                            : 'text-neutral-500 hover:text-black'
+                            : isDark
+                              ? 'text-neutral-400 hover:text-white'
+                              : 'text-neutral-500 hover:text-black'
                         }`}
                       >
                         {hasUnderMinkCombo ? `Mới (${underComboNormalRemaining})` : 'Mới'}
@@ -1706,7 +1865,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
                           underMinkServiceType === 'Retain'
                             ? 'bg-[#34C759] text-white shadow-2xs'
-                            : 'text-neutral-500 hover:text-black'
+                            : isDark
+                              ? 'text-neutral-400 hover:text-white'
+                              : 'text-neutral-500 hover:text-black'
                         }`}
                       >
                         {hasUnderMinkCombo ? `Dặm (${underComboRetainRemaining})` : 'Dặm'}
@@ -1717,12 +1878,20 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               </div>
 
               {isOverridden && (
-                <div className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-between gap-2 text-[10px] text-rose-900 font-semibold">
+                <div
+                  className={`px-2.5 py-1 rounded-lg border flex items-center justify-between gap-2 text-[10px] font-semibold ${
+                    isDark ? 'bg-rose-950/60 border-rose-800 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-900'
+                  }`}
+                >
                   <span className="truncate">⚠️ {overrideReason}</span>
                   <button
                     type="button"
                     onClick={handleRestoreAutoRule}
-                    className="px-1.5 py-0.5 rounded bg-white text-rose-700 border border-rose-300 text-[9px] font-bold shrink-0 cursor-pointer"
+                    className={`px-1.5 py-0.5 rounded border text-[9px] font-bold shrink-0 cursor-pointer ${
+                      isDark
+                        ? 'bg-rose-900/80 text-rose-200 border-rose-700 hover:bg-rose-800'
+                        : 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50'
+                    }`}
                   >
                     Hoàn tác ↺
                   </button>
@@ -1739,7 +1908,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isAlwaysFullSet ? '✦ Mới' : isComboLive ? `✦ ${comboNormalRemaining}` : '✦ Mới'}</span>
+                  <span>{isAlwaysFullSet ? 'Mới' : isComboLive ? comboNormalRemaining : 'Mới'}</span>
                 </button>
 
                 <button
@@ -1756,7 +1925,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   title={isComboLive && !hasComboRetainRemaining ? 'Gói đã hết lần Dặm' : undefined}
                 >
                   <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isAlwaysFullSet ? '↻ Dặm' : isComboLive ? `↻ ${comboRetainRemaining}` : '↻ Dặm'}</span>
+                  <span>{isAlwaysFullSet ? 'Dặm' : isComboLive ? comboRetainRemaining : 'Dặm'}</span>
                 </button>
               </div>
 
@@ -1909,17 +2078,35 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
               {/* Thông báo xanh khi khách dùng đúng dịch vụ trong gói Combo */}
               {isComboLive && totalUpgradeAmount === 0 && (
-                <div className="bg-emerald-50/90 border border-emerald-300/80 rounded-xl p-2.5 flex items-center justify-between text-[11.5px] text-emerald-900 shadow-2xs">
+                <div
+                  className={`border rounded-xl p-2.5 flex items-center justify-between text-[11.5px] shadow-2xs ${
+                    isDark
+                      ? 'bg-emerald-950/60 border-emerald-800 text-emerald-200'
+                      : 'bg-emerald-50/90 border-emerald-300/80 text-emerald-900'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0">
+                    <span
+                      className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
+                        isDark ? 'bg-emerald-800 text-emerald-100' : 'bg-emerald-200 text-emerald-800'
+                      }`}
+                    >
                       ✓
                     </span>
                     <span className="font-semibold">
                       Dịch vụ trong gói Combo ·{' '}
-                      <strong className="text-emerald-950 font-black">Miễn phụ thu (0đ)</strong>
+                      <strong className={`font-black ${isDark ? 'text-emerald-300' : 'text-emerald-950'}`}>
+                        Miễn phụ thu (0đ)
+                      </strong>
                     </span>
                   </div>
-                  <span className="font-mono text-[10.5px] font-bold bg-white px-2 py-0.5 rounded text-emerald-800 border border-emerald-200 shadow-2xs shrink-0">
+                  <span
+                    className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded border shadow-2xs shrink-0 ${
+                      isDark
+                        ? 'bg-[#18181A] text-emerald-300 border-emerald-800'
+                        : 'bg-white text-emerald-800 border-emerald-200'
+                    }`}
+                  >
                     Trừ 1 suất {serviceType === 'Retain' ? 'Dặm' : 'Mới'}
                   </span>
                 </div>
@@ -1927,21 +2114,37 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
               {/* NÚT MUA THÊM GÓI COMBO — iOS Inset Grouped Cell */}
               {!selectedNewComboPkg && !selectedUnderComboPkg && (
-                <div className="pt-2 border-t border-neutral-100">
+                <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-neutral-100'}`}>
                   <button
                     type="button"
                     onClick={() => handleOpenComboModal('upper')}
-                    className="w-full p-3 rounded-2xl bg-white border border-neutral-200/90 hover:border-amber-300 flex items-center justify-between transition-all cursor-pointer active:scale-98 shadow-2xs group"
+                    className={`w-full p-3 rounded-2xl border flex items-center justify-between transition-all cursor-pointer active:scale-98 shadow-2xs group ${
+                      isDark
+                        ? 'bg-[#18181A] border-neutral-800 hover:border-amber-400/50'
+                        : 'bg-white border-neutral-200/90 hover:border-amber-300'
+                    }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      <div
+                        className={`w-7 h-7 rounded-xl border flex items-center justify-center shrink-0 ${
+                          isDark ? 'bg-amber-950/60 border-amber-800/80' : 'bg-amber-50 border-amber-200/80'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                       </div>
-                      <span className="text-[13px] font-black text-neutral-800">Gói Combo</span>
+                      <span className={`text-[13px] font-black ${isDark ? 'text-white' : 'text-neutral-800'}`}>
+                        + Combo
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-[12px] text-neutral-400 font-bold group-hover:text-amber-700 transition-colors">
+                    <div
+                      className={`flex items-center gap-1 text-[12px] font-bold transition-colors ${
+                        isDark
+                          ? 'text-neutral-400 group-hover:text-amber-300'
+                          : 'text-neutral-400 group-hover:text-amber-700'
+                      }`}
+                    >
                       <span>Chọn gói</span>
-                      <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-amber-700" />
+                      <ChevronRight className="w-4 h-4" />
                     </div>
                   </button>
                 </div>
@@ -1949,21 +2152,37 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
               {/* KHỐI COMBO ĐÃ CHỌN — iOS Inset Grouped Card */}
               {(selectedNewComboPkg || selectedUnderComboPkg) && (
-                <div className="rounded-2xl bg-white border border-neutral-200/90 shadow-2xs overflow-hidden">
+                <div
+                  className={`rounded-2xl shadow-2xs overflow-hidden border ${
+                    isDark ? 'bg-[#18181A] border-neutral-800' : 'bg-white border-neutral-200/90'
+                  }`}
+                >
                   {/* Card Header */}
-                  <div className="px-3.5 py-2.5 bg-neutral-50/80 border-b border-neutral-150 flex items-center justify-between">
+                  <div
+                    className={`px-3.5 py-2.5 border-b flex items-center justify-between ${
+                      isDark ? 'bg-[#141416] border-neutral-800' : 'bg-neutral-50/80 border-neutral-150'
+                    }`}
+                  >
                     <span className="text-[10.5px] font-black text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
                       <Sparkles className="w-3 h-3 text-amber-500" />
                       <span>Combo Đã Chọn</span>
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full tabular-nums">
+                      <span
+                        className={`text-[11px] font-black px-2 py-0.5 rounded-full tabular-nums border ${
+                          isDark
+                            ? 'text-emerald-300 bg-emerald-950/60 border-emerald-800'
+                            : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                        }`}
+                      >
                         +{comboPurchaseTotal.toLocaleString('vi-VN')}đ
                       </span>
                       <button
                         type="button"
                         onClick={() => handleOpenComboModal('upper')}
-                        className="text-[11px] font-bold text-amber-600 hover:text-amber-800 flex items-center gap-0.5 cursor-pointer active:opacity-75 transition-opacity"
+                        className={`text-[11px] font-bold flex items-center gap-0.5 cursor-pointer active:opacity-75 transition-opacity ${
+                          isDark ? 'text-[#FFB400] hover:text-amber-300' : 'text-amber-600 hover:text-amber-800'
+                        }`}
                       >
                         <span>Đổi</span>
                         <ChevronRight className="w-3 h-3" />
@@ -1972,22 +2191,30 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   </div>
 
                   {/* Items List */}
-                  <div className="divide-y divide-neutral-100 text-[12px]">
+                  <div className={`divide-y text-[12px] ${isDark ? 'divide-neutral-800' : 'divide-neutral-100'}`}>
                     {selectedNewComboPkg && (
                       <div className="p-3 space-y-1">
                         {/* Hàng 1: Tên gói Combo & Giá + Xóa */}
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-extrabold text-neutral-900 text-[13px] tracking-tight truncate">
+                          <span
+                            className={`font-extrabold text-[13px] tracking-tight truncate ${
+                              isDark ? 'text-white' : 'text-neutral-900'
+                            }`}
+                          >
                             Combo {selectedNewComboPkg.ruleName}
                           </span>
                           <div className="flex items-center gap-1.5 shrink-0 font-variant-numeric tabular-nums">
-                            <span className="font-black text-neutral-900 text-[13px]">
+                            <span className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'}`}>
                               {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ
                             </span>
                             <button
                               type="button"
                               onClick={() => setSelectedNewComboPkg(null)}
-                              className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-rose-100 text-neutral-400 hover:text-rose-600 flex items-center justify-center text-[10px] font-black transition-colors cursor-pointer"
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black transition-colors cursor-pointer ${
+                                isDark
+                                  ? 'bg-neutral-800 hover:bg-rose-950 text-neutral-400 hover:text-rose-400'
+                                  : 'bg-neutral-100 hover:bg-rose-100 text-neutral-400 hover:text-rose-600'
+                              }`}
                               title="Bỏ chọn gói Mi Trên"
                               aria-label="Xóa gói Mi Trên"
                             >
@@ -1997,13 +2224,17 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         </div>
 
                         {/* Hàng 2: Tên dòng mi & thông số */}
-                        <div className="text-[12px] font-bold text-neutral-600 truncate">
+                        <div
+                          className={`text-[12px] font-bold truncate ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}
+                        >
                           {selectedNewComboPkg.categoryName}{' '}
                           {selectedNewComboPkg.volume !== 'under' ? selectedNewComboPkg.volume : 'Mi Dưới 390'}
                         </div>
 
                         {/* Hàng 3: Chi tiết số buổi & suất */}
-                        <div className="text-[10.5px] text-neutral-400 font-semibold tabular-nums">
+                        <div
+                          className={`text-[10.5px] font-semibold tabular-nums ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}
+                        >
                           ✦ {selectedNewComboPkg.comboNewCount + selectedNewComboPkg.bonusNewCount} Mới · ↻{' '}
                           {selectedNewComboPkg.comboRefillCount + selectedNewComboPkg.bonusRefillCount} Dặm (
                           {selectedNewComboPkg.totalSessions} buổi)
@@ -2015,17 +2246,25 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       <div className="p-3 space-y-1">
                         {/* Hàng 1: Tên gói Combo & Giá + Xóa */}
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-extrabold text-neutral-900 text-[13px] tracking-tight truncate">
+                          <span
+                            className={`font-extrabold text-[13px] tracking-tight truncate ${
+                              isDark ? 'text-white' : 'text-neutral-900'
+                            }`}
+                          >
                             Combo {selectedUnderComboPkg.ruleName} · Mi Dưới
                           </span>
                           <div className="flex items-center gap-1.5 shrink-0 font-variant-numeric tabular-nums">
-                            <span className="font-black text-neutral-900 text-[13px]">
+                            <span className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'}`}>
                               {selectedUnderComboPkg.comboPrice.toLocaleString('vi-VN')}đ
                             </span>
                             <button
                               type="button"
                               onClick={() => setSelectedUnderComboPkg(null)}
-                              className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-rose-100 text-neutral-400 hover:text-rose-600 flex items-center justify-center text-[10px] font-black transition-colors cursor-pointer"
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black transition-colors cursor-pointer ${
+                                isDark
+                                  ? 'bg-neutral-800 hover:bg-rose-950 text-neutral-400 hover:text-rose-400'
+                                  : 'bg-neutral-100 hover:bg-rose-100 text-neutral-400 hover:text-rose-600'
+                              }`}
                               title="Bỏ chọn gói Mi Dưới"
                               aria-label="Xóa gói Mi Dưới"
                             >
@@ -2035,12 +2274,16 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         </div>
 
                         {/* Hàng 2: Tên dòng mi & thông số */}
-                        <div className="text-[12px] font-bold text-neutral-600 truncate">
+                        <div
+                          className={`text-[12px] font-bold truncate ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}
+                        >
                           {selectedUnderComboPkg.categoryName} · Mi Dưới 390
                         </div>
 
                         {/* Hàng 3: Chi tiết số buổi & suất */}
-                        <div className="text-[10.5px] text-neutral-400 font-semibold tabular-nums">
+                        <div
+                          className={`text-[10.5px] font-semibold tabular-nums ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}
+                        >
                           ✦ {selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.bonusNewCount} Mới · ↻{' '}
                           {selectedUnderComboPkg.comboRefillCount + selectedUnderComboPkg.bonusRefillCount} Dặm (
                           {selectedUnderComboPkg.totalSessions} buổi)
@@ -2048,19 +2291,66 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       </div>
                     )}
 
-                    {/* Bottom Row: Thưởng Chuyên Viên */}
-                    {(selectedNewComboPkg?.cvBonus || 0) + (selectedUnderComboPkg?.cvBonus || 0) > 0 && (
-                      <div className="px-3 py-2 bg-neutral-50/50 flex items-center justify-between text-[11px]">
-                        <span className="text-neutral-500 font-medium">Thưởng chuyên viên:</span>
-                        <span className="inline-flex items-center gap-0.5 text-emerald-700 font-black bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full tabular-nums">
-                          +
-                          {Math.round(
-                            ((selectedNewComboPkg?.cvBonus || 0) + (selectedUnderComboPkg?.cvBonus || 0)) / 1000
-                          )}
-                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                        </span>
-                      </div>
-                    )}
+                    {/* Bottom Row: Thưởng Chuyên Viên (Ẩn theo mặc định, chỉ hiện khi CV bật toggle) */}
+                    {calculateCvComboTierBonus(
+                      (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0)
+                    ) > 0 &&
+                      (showStaffRewards ? (
+                        <div
+                          className={`px-3 py-2 flex items-center justify-between text-[11px] ${
+                            isDark ? 'bg-[#141416] text-neutral-400' : 'bg-neutral-50/50 text-neutral-500'
+                          }`}
+                        >
+                          <span className="font-medium">Thưởng chuyên viên:</span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`inline-flex items-center gap-0.5 font-black px-2 py-0.5 rounded-full tabular-nums border ${
+                                isDark
+                                  ? 'text-emerald-300 bg-emerald-950/60 border-emerald-800'
+                                  : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                              }`}
+                            >
+                              +
+                              {Math.round(
+                                calculateCvComboTierBonus(
+                                  (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0)
+                                ) / 1000
+                              )}
+                              <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowStaffRewards(false)}
+                              className="p-1 rounded text-neutral-400 hover:text-neutral-200 cursor-pointer"
+                              title="Ẩn thưởng"
+                            >
+                              <EyeOff className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`px-3 py-1 flex items-center justify-end text-[10.5px] ${
+                            isDark ? 'bg-[#141416]' : 'bg-neutral-50/50'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setShowStaffRewards(true)}
+                            className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
+                              isDark
+                                ? 'text-neutral-500 hover:text-neutral-300'
+                                : 'text-neutral-400 hover:text-neutral-600'
+                            } transition-colors cursor-pointer select-none`}
+                          >
+                            <Eye className="w-3 h-3 text-neutral-400" />
+                            <span className="inline-flex items-center gap-1">
+                              <span>Xem</span>
+                              <FeatherSvg className="w-3 h-3 text-amber-500" />
+                            </span>
+                          </button>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
@@ -2112,7 +2402,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             {/* BƯỚC 1: CHỌN CHẤT LIỆU / DÒNG MI (MATERIAL FAMILY)                    */}
             {/* --------------------------------------------------------------------- */}
             <div>
-              <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+              <div
+                className={`text-[11px] font-extrabold uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between ${
+                  isDark ? 'text-neutral-300' : 'text-gray-700'
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="w-4 h-4 rounded-full bg-black text-[#FFB400] text-[10px] font-black inline-flex items-center justify-center">
                     1
@@ -2123,7 +2417,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   <button
                     type="button"
                     onClick={() => setInfoModalKey('MATERIAL')}
-                    className="w-6 h-6 rounded-full bg-amber-100/90 text-amber-800 hover:bg-amber-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                      isDark
+                        ? 'bg-amber-950/60 text-amber-300 hover:bg-amber-900/80 border border-amber-800'
+                        : 'bg-amber-100/90 text-amber-800 hover:bg-amber-200'
+                    }`}
                     title="Xem quy chuẩn dòng mi"
                   >
                     <Info className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2133,7 +2431,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       type="button"
                       onClick={() => setIsConfiguratorOpen(true)}
                       aria-label="Cấu hình ma trận chất liệu (Chỉ Super Admin)"
-                      className="w-6 h-6 rounded-full bg-neutral-900 text-[#FFB400] hover:bg-black flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
+                      className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                        isDark
+                          ? 'bg-neutral-800 text-[#FFB400] hover:bg-neutral-700 border border-neutral-700'
+                          : 'bg-neutral-900 text-[#FFB400] hover:bg-black'
+                      }`}
                       title="Cấu hình ma trận chất liệu (Chỉ Super Admin)"
                     >
                       <Sliders className="w-3 h-3" />
@@ -2142,7 +2444,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100">
+              <div
+                className={`rounded-2xl p-2.5 shadow-xs border transition-colors ${
+                  isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+                }`}
+              >
                 <div className="grid grid-cols-2 gap-2">
                   {materialCatalog
                     .filter((mat) => mat.code !== 'UNDER_MINK')
@@ -2165,15 +2471,15 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
                       const icon =
                         mat.code === 'ULTRALIGHT' ? (
-                          <Feather className="w-3.5 h-3.5 text-amber-600" />
+                          <Feather className="w-3.5 h-3.5 text-amber-500" />
                         ) : mat.code === 'HYPERLIGHT' ? (
                           <Zap className="w-3.5 h-3.5 text-amber-500" />
                         ) : mat.code === 'IVYLIGHT' ? (
-                          <Leaf className="w-3.5 h-3.5 text-emerald-600" />
+                          <Leaf className="w-3.5 h-3.5 text-emerald-500" />
                         ) : mat.code === 'NEW_VOLUME' ? (
-                          <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                          <Layers className="w-3.5 h-3.5 text-indigo-400" />
                         ) : mat.code === 'NEW_CLASSIC' ? (
-                          <Eye className="w-3.5 h-3.5 text-blue-600" />
+                          <Eye className="w-3.5 h-3.5 text-blue-400" />
                         ) : (
                           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                         );
@@ -2185,8 +2491,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           onClick={() => handleSelectMaterial(mat)}
                           className={`p-2 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                             active
-                              ? 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-1 ring-[#FFB400]'
-                              : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
+                              ? isDark
+                                ? 'bg-[#2A2315] border-[#FFB400] text-white shadow-xs ring-1 ring-[#FFB400]'
+                                : 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-1 ring-[#FFB400]'
+                              : isDark
+                                ? 'bg-[#18181A] border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                                : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -2197,7 +2507,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             {active && <CheckCircle2 className="w-3.5 h-3.5 text-[#FF9500] shrink-0" />}
                           </div>
 
-                          <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-100">
+                          <div
+                            className={`flex items-center justify-between mt-1.5 pt-1.5 border-t ${
+                              isDark ? 'border-neutral-800' : 'border-gray-100'
+                            }`}
+                          >
                             {(() => {
                               const badgeText = mat.badge.split('·')[0].trim();
                               const isBest = badgeText === 'BEST SELLER';
@@ -2217,14 +2531,22 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                               return (
                                 <span
                                   className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded leading-none ${
-                                    active ? 'bg-black text-[#FFB400]' : 'bg-gray-200/80 text-gray-600'
+                                    active
+                                      ? isDark
+                                        ? 'bg-[#3A301E] text-[#FFB400]'
+                                        : 'bg-black text-[#FFB400]'
+                                      : isDark
+                                        ? 'bg-neutral-800 text-neutral-400'
+                                        : 'bg-gray-200/80 text-gray-600'
                                   }`}
                                 >
                                   {badgeText}
                                 </span>
                               );
                             })()}
-                            <span className="text-[10.5px] font-bold text-gray-500 tabular-nums">
+                            <span
+                              className={`text-[10.5px] font-bold tabular-nums ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}
+                            >
                               từ {startingPrice}
                             </span>
                           </div>
@@ -2239,7 +2561,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             {/* BƯỚC 2: THIẾT KẾ TRÊN HẠN CHẾ CỦA CHẤT LIỆU (CONSTRAINED DESIGN)      */}
             {/* --------------------------------------------------------------------- */}
             <div>
-              <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+              <div
+                className={`text-[11px] font-extrabold uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between ${
+                  isDark ? 'text-neutral-300' : 'text-gray-700'
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="w-4 h-4 rounded-full bg-black text-[#FFB400] text-[10px] font-black inline-flex items-center justify-center">
                     2
@@ -2250,7 +2576,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   <button
                     type="button"
                     onClick={() => setInfoModalKey('DESIGN')}
-                    className="w-6 h-6 rounded-full bg-amber-100/90 text-amber-800 hover:bg-amber-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                      isDark
+                        ? 'bg-amber-950/60 text-amber-300 hover:bg-amber-900/80 border border-amber-800'
+                        : 'bg-amber-100/90 text-amber-800 hover:bg-amber-200'
+                    }`}
                     title="Xem quy chuẩn 4 dáng mi & dáng mắt"
                   >
                     <Info className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2258,7 +2588,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100">
+              <div
+                className={`rounded-2xl p-2.5 shadow-xs border transition-colors ${
+                  isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+                }`}
+              >
                 <div
                   className={`grid gap-2 ${
                     currentMaterialSpec.allowedDesigns.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
@@ -2278,8 +2612,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           }}
                           className={`p-1 rounded-xl border text-left transition-all relative cursor-pointer overflow-hidden ${
                             active
-                              ? 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-2 ring-[#FFB400]/40'
-                              : 'bg-[#F9F9FB] border-gray-200 hover:border-gray-300'
+                              ? isDark
+                                ? 'bg-[#2A2315] border-[#FFB400] text-white shadow-xs ring-2 ring-[#FFB400]/40'
+                                : 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-2 ring-[#FFB400]/40'
+                              : isDark
+                                ? 'bg-[#18181A] border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                                : 'bg-[#F9F9FB] border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <div className="relative aspect-4/3 w-full rounded-lg overflow-hidden bg-neutral-950 border border-black/10 shadow-2xs group">
@@ -2313,22 +2651,34 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             {/* BƯỚC 3: ĐỘ CONG · ĐỘ DÀY · CHIỀU DÀI CỦA CHẤT LIỆU                    */}
             {/* --------------------------------------------------------------------- */}
             <div className="space-y-3">
-              <div className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider px-1 flex items-center justify-between">
+              <div
+                className={`text-[11px] font-extrabold uppercase tracking-wider px-1 flex items-center justify-between ${
+                  isDark ? 'text-neutral-300' : 'text-gray-700'
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="w-4 h-4 rounded-full bg-black text-[#FFB400] text-[10px] font-black inline-flex items-center justify-center">
                     3
                   </span>
                   <span>BƯỚC 3: THÔNG SỐ KỸ THUẬT</span>
                 </div>
-                <span className="text-[10px] text-gray-500 font-bold">{currentMaterialSpec.shortLabel}</span>
+                <span className={`text-[10px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                  {currentMaterialSpec.shortLabel}
+                </span>
               </div>
 
               {/* Thẻ ghim thông số mi thật để đối chiếu an toàn */}
-              <div className="bg-gradient-to-r from-blue-50/80 to-amber-50/80 border border-blue-200/80 rounded-xl p-2 flex items-center justify-between text-[11px]">
+              <div
+                className={`border rounded-xl p-2 flex items-center justify-between text-[11px] transition-colors ${
+                  isDark
+                    ? 'bg-gradient-to-r from-blue-950/40 to-amber-950/40 border-blue-900/60 text-neutral-300'
+                    : 'bg-gradient-to-r from-blue-50/80 to-amber-50/80 border-blue-200/80'
+                }`}
+              >
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Activity className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="text-gray-600 font-medium">Mi thật:</span>
-                  <strong className="text-black font-extrabold truncate">
+                  <Activity className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className={`font-medium ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>Mi thật:</span>
+                  <strong className={`font-extrabold truncate ${isDark ? 'text-white' : 'text-black'}`}>
                     {naturalCountLabel ? `${naturalCountLabel} · ` : ''}
                     {naturalLengthLabel} · {naturalThicknessLabel}
                   </strong>
@@ -2340,7 +2690,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   <button
                     type="button"
                     onClick={() => setActiveSubTab('PROFILE')}
-                    className="text-[#D97706] font-bold text-[10px] hover:underline pl-1 cursor-pointer"
+                    className={`font-bold text-[10px] hover:underline pl-1 cursor-pointer ${
+                      isDark ? 'text-[#FFB400]' : 'text-[#D97706]'
+                    }`}
                   >
                     Đổi
                   </button>
@@ -2348,14 +2700,24 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               </div>
 
               {/* 3.1 ĐỘ CONG CỦA CHẤT LIỆU (CURL) */}
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2">
+              <div
+                className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${
+                  isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-extrabold text-black uppercase">3.1 Độ Cong</span>
+                    <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
+                      3.1 Độ Cong
+                    </span>
                     <button
                       type="button"
                       onClick={() => setInfoModalKey('CURL')}
-                      className="w-5 h-5 rounded-full bg-amber-100/90 text-amber-900 hover:bg-amber-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                        isDark
+                          ? 'bg-amber-950/60 text-amber-300 hover:bg-amber-900/80 border border-amber-800'
+                          : 'bg-amber-100/90 text-amber-900 hover:bg-amber-200'
+                      }`}
                       title="Bản đồ độ cong"
                     >
                       <Info className="w-3 h-3 stroke-[2.5]" />
@@ -2367,7 +2729,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       setZoomCurlId(selectedCurl);
                       setIsCurlZoomOpen(true);
                     }}
-                    className="text-[10.5px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 active:opacity-70 cursor-pointer shrink-0"
+                    className={`text-[10.5px] font-bold flex items-center gap-1 active:opacity-70 cursor-pointer shrink-0 ${
+                      isDark ? 'text-[#FFB400] hover:text-amber-300' : 'text-amber-600 hover:text-amber-700'
+                    }`}
                   >
                     <ZoomIn className="w-3 h-3" />
                     <span>Trượt xem</span>
@@ -2397,8 +2761,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             onClick={() => setSelectedCurl(c.id)}
                             className={`p-2 rounded-xl text-center transition-all flex flex-col items-center justify-between border relative select-none cursor-pointer ${
                               active
-                                ? 'bg-amber-50/90 border-[#FFB400] text-black font-extrabold shadow-sm ring-1 ring-[#FFB400]'
-                                : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
+                                ? isDark
+                                  ? 'bg-[#2A2315] border-[#FFB400] text-white font-extrabold shadow-sm ring-1 ring-[#FFB400]'
+                                  : 'bg-amber-50/90 border-[#FFB400] text-black font-extrabold shadow-sm ring-1 ring-[#FFB400]'
+                                : isDark
+                                  ? 'bg-[#18181A] border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                                  : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
                             }`}
                           >
                             <button
@@ -2411,23 +2779,43 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                               }}
                               className={`absolute top-1 right-1 z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                                 active
-                                  ? 'bg-black text-[#FFB400] hover:bg-neutral-800'
-                                  : 'bg-white/90 text-gray-500 hover:text-black shadow-xs'
+                                  ? isDark
+                                    ? 'bg-[#3A301E] text-[#FFB400]'
+                                    : 'bg-black text-[#FFB400] hover:bg-neutral-800'
+                                  : isDark
+                                    ? 'bg-neutral-800/90 text-neutral-400 hover:text-white'
+                                    : 'bg-white/90 text-gray-500 hover:text-black shadow-xs'
                               }`}
                             >
                               <ZoomIn className="w-2.5 h-2.5" />
                             </button>
 
                             <div className="w-full">
-                              <LashCurlIllustration curl={c} variant="card" isActive={active} />
+                              <LashCurlIllustration curl={c} variant="card" isActive={active} isDark={isDark} />
                             </div>
 
                             <div className="w-full mt-1">
                               <div className="flex items-center justify-center gap-1">
-                                <span className="text-[13px] font-black">{c.code}</span>
+                                <span
+                                  className={`text-[13px] font-black ${
+                                    active
+                                      ? isDark
+                                        ? 'text-white'
+                                        : 'text-black'
+                                      : isDark
+                                        ? 'text-neutral-200'
+                                        : 'text-gray-900'
+                                  }`}
+                                >
+                                  {c.code}
+                                </span>
                                 <span
                                   className={`text-[9.5px] font-bold px-1 rounded ${
-                                    active ? 'bg-[#FFB400] text-black' : 'bg-gray-200 text-gray-700'
+                                    active
+                                      ? 'bg-[#FFB400] text-black'
+                                      : isDark
+                                        ? 'bg-neutral-800 text-neutral-300'
+                                        : 'bg-gray-200 text-gray-700'
                                   }`}
                                 >
                                   {c.angleLabel}
@@ -2443,14 +2831,24 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               </div>
 
               {/* 3.2 ĐỘ DÀY CỦA CHẤT LIỆU (THICKNESS) */}
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2">
+              <div
+                className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${
+                  isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-extrabold text-black uppercase">3.2 Độ Dày Sợi</span>
+                    <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
+                      3.2 Độ Dày Sợi
+                    </span>
                     <button
                       type="button"
                       onClick={() => setInfoModalKey('THICKNESS')}
-                      className="w-5 h-5 rounded-full bg-amber-100/90 text-amber-900 hover:bg-amber-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                        isDark
+                          ? 'bg-amber-950/60 text-amber-300 hover:bg-amber-900/80 border border-amber-800'
+                          : 'bg-amber-100/90 text-amber-900 hover:bg-amber-200'
+                      }`}
                       title="Quy chuẩn độ dày"
                     >
                       <Info className="w-3 h-3 stroke-[2.5]" />
@@ -2481,7 +2879,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             className={`py-2 px-2.5 rounded-xl border text-center transition-all relative cursor-pointer ${
                               active
                                 ? 'bg-[#FFB400] border-[#FFB400] text-black font-extrabold shadow-xs'
-                                : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-300'
+                                : isDark
+                                  ? 'bg-[#18181A] border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                                  : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-300'
                             }`}
                           >
                             <div className="text-[12.5px] font-black tabular-nums">{thick.label}</div>
@@ -2494,28 +2894,50 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
                 {/* Cảnh báo độ dày không an toàn so với mi thật */}
                 {thicknessWarning && (
-                  <div className="p-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-[10.5px] font-semibold flex items-center gap-2">
-                    <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <div
+                    className={`p-2 rounded-xl text-[10.5px] font-semibold flex items-center gap-2 border ${
+                      isDark
+                        ? 'bg-rose-950/60 border-rose-800 text-rose-300'
+                        : 'bg-rose-50 border-rose-300 text-rose-800'
+                    }`}
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                     <span>{thicknessWarning}</span>
                   </div>
                 )}
               </div>
 
               {/* 3.3 CHIỀU DÀI & BẢNG NÚT SIZE TỰ CHỌN TỐI ĐA 5 SIZE */}
-              <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-neutral-100 space-y-2.5">
+              <div
+                className={`rounded-2xl p-2.5 shadow-xs border space-y-2.5 ${
+                  isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-extrabold text-black uppercase">3.3 Chiều Dài</span>
+                    <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
+                      3.3 Chiều Dài
+                    </span>
                     <button
                       type="button"
                       onClick={() => setInfoModalKey('LENGTH')}
-                      className="w-5 h-5 rounded-full bg-amber-100/90 text-amber-900 hover:bg-amber-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                        isDark
+                          ? 'bg-amber-950/60 text-amber-300 hover:bg-amber-900/80 border border-amber-800'
+                          : 'bg-amber-100/90 text-amber-900 hover:bg-amber-200'
+                      }`}
                       title="Quy tắc chiều dài"
                     >
                       <Info className="w-3 h-3 stroke-[2.5]" />
                     </button>
                   </div>
-                  <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 tabular-nums">
+                  <span
+                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border tabular-nums ${
+                      isDark
+                        ? 'text-amber-300 bg-amber-950/60 border-amber-800'
+                        : 'text-amber-700 bg-amber-50 border-amber-200'
+                    }`}
+                  >
                     Đã chọn: {selectedLengths.join(' · ')} ({selectedLengths.length}/5 size)
                   </span>
                 </div>
@@ -2533,7 +2955,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         className={`h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative select-none active:scale-95 ${
                           active
                             ? 'bg-[#FFB400] border-[#FFB400] text-black font-black shadow-md ring-2 ring-[#FFB400]/40'
-                            : 'bg-[#F9F9FB] border-gray-200 text-gray-800 hover:border-gray-300 font-bold'
+                            : isDark
+                              ? 'bg-[#18181A] border-neutral-800 text-neutral-300 hover:border-neutral-700 font-bold'
+                              : 'bg-[#F9F9FB] border-gray-200 text-gray-800 hover:border-gray-300 font-bold'
                         }`}
                       >
                         <span className="text-[16px] font-black leading-none tabular-nums">{sizeNum}</span>
@@ -2549,33 +2973,51 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   })}
                 </div>
 
-                <div className="text-[10px] text-gray-500 flex items-center justify-between px-0.5">
+                <div
+                  className={`text-[10px] flex items-center justify-between px-0.5 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}
+                >
                   <span>Chạm để chọn/bỏ chọn (Tối đa 5 size)</span>
-                  <span className="font-mono font-bold text-gray-700">{selectedLengths.join(' - ')}</span>
+                  <span className={`font-mono font-bold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                    {selectedLengths.join(' - ')}
+                  </span>
                 </div>
 
                 {/* Cảnh báo chiều dài vượt ngưỡng an toàn so với mi thật */}
                 {lengthWarning && (
-                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10.5px] font-semibold flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <div
+                    className={`p-2 rounded-xl text-[10.5px] font-semibold flex items-center gap-2 border ${
+                      isDark
+                        ? 'bg-amber-950/60 border-amber-800 text-amber-300'
+                        : 'bg-amber-50 border-amber-300 text-amber-900'
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>{lengthWarning}</span>
                   </div>
                 )}
               </div>
 
               {/* 3.4 KỸ THUẬT FAN / SỐ SỢI & MÀU SẮC CỦA CHẤT LIỆU */}
-              <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-2.5">
+              <div
+                className={`rounded-2xl p-3 shadow-xs border space-y-2.5 transition-colors ${
+                  isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold text-black uppercase">
+                  <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
                     3.4 Kỹ Thuật Volume · Mật Độ & Màu Sắc
                   </span>
-                  <span className="text-[10px] text-gray-500">{currentMaterialSpec.shortLabel}</span>
+                  <span className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                    {currentMaterialSpec.shortLabel}
+                  </span>
                 </div>
 
                 {/* Kỹ thuật Volume được phép (chỉ hiện khi có từ 2 kỹ thuật trở lên) */}
                 {currentMaterialSpec.allowedVolumes.length > 1 && (
                   <div>
-                    <div className="text-[10px] font-semibold text-gray-500 mb-1">Kỹ thuật fan cho phép:</div>
+                    <div className={`text-[10px] font-semibold mb-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                      Kỹ thuật fan cho phép:
+                    </div>
                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                       {currentMaterialSpec.allowedVolumes.map((vol) => (
                         <button
@@ -2583,7 +3025,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           type="button"
                           onClick={() => setSelectedVolume(vol)}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
-                            selectedVolume === vol ? 'bg-black text-[#FFB400]' : 'bg-[#F2F2F7] text-gray-700'
+                            selectedVolume === vol
+                              ? 'bg-[#FFB400] text-black shadow-xs font-black'
+                              : isDark
+                                ? 'bg-[#141416] text-neutral-400 hover:text-white border border-neutral-800'
+                                : 'bg-[#F2F2F7] text-gray-700'
                           }`}
                         >
                           {vol}
@@ -2594,12 +3040,18 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 )}
 
                 {/* Mật độ sợi / fan hoàn thành theo Menu Wings Lashes */}
-                <div className="pt-2 border-t border-gray-100">
+                <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10.5px] font-extrabold text-gray-700">
+                    <span className={`text-[10.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
                       BẬC SỐ LƯỢNG SỢI / FAN (MENU WINGS):
                     </span>
-                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isDark
+                          ? 'text-amber-300 bg-amber-950/60 border-amber-800'
+                          : 'text-amber-900 bg-amber-100/80 border-amber-300'
+                      }`}
+                    >
                       {serviceType === 'Retain' ? 'Dặm Refill' : 'Nối Mới'} · Chưa VAT
                     </span>
                   </div>
@@ -2617,8 +3069,14 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           : currentMaterialSpec.code === 'IVYLIGHT'
                             ? 'nhịp'
                             : 'fan';
+                      const newPrice = detail?.newPrice;
+                      const refillPrice = detail?.refillPrice;
+                      const newPriceStr = newPrice ? `${Math.round(newPrice / 1000).toLocaleString('vi-VN')}K` : '';
+                      const refillPriceStr = refillPrice
+                        ? `${Math.round(refillPrice / 1000).toLocaleString('vi-VN')}K`
+                        : '';
                       const price = detail ? (serviceType === 'Retain' ? detail.refillPrice : detail.newPrice) : null;
-                      const priceStr = price ? `${Math.round(price / 1000)}K` : '';
+                      const priceStr = price ? `${Math.round(price / 1000).toLocaleString('vi-VN')}K` : '';
                       const badge = detail?.badge;
 
                       return (
@@ -2628,8 +3086,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           onClick={() => setSelectedCount(cnt)}
                           className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
                             active
-                              ? 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-1 ring-[#FFB400]'
-                              : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
+                              ? isDark
+                                ? 'bg-[#2A2315] border-[#FFB400] text-white shadow-xs ring-1 ring-[#FFB400]'
+                                : 'bg-amber-50/95 border-[#FFB400] text-black shadow-xs ring-1 ring-[#FFB400]'
+                              : isDark
+                                ? 'bg-[#18181A] border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                                : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -2650,20 +3112,78 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                                 </span>
                               )}
                             </div>
-                            {priceStr && (
+                            {newPriceStr && refillPriceStr ? (
+                              <div className="flex items-center gap-1.5 tabular-nums text-right shrink-0">
+                                <span
+                                  className={
+                                    serviceType === 'Normal'
+                                      ? active
+                                        ? 'font-black text-[13px] text-[#FFB400]'
+                                        : isDark
+                                          ? 'font-black text-[13px] text-white'
+                                          : 'font-black text-[13px] text-neutral-900'
+                                      : active
+                                        ? isDark
+                                          ? 'text-[11px] font-medium text-amber-200/70'
+                                          : 'text-[11px] font-medium text-amber-900/70'
+                                        : isDark
+                                          ? 'text-[11px] font-medium text-neutral-400'
+                                          : 'text-[11px] font-medium text-neutral-500'
+                                  }
+                                >
+                                  <span className="text-[9.5px] uppercase font-bold mr-0.5 opacity-80">Mới</span>
+                                  {newPriceStr}
+                                </span>
+                                <span
+                                  className={isDark ? 'text-neutral-600 text-[10px]' : 'text-neutral-300 text-[10px]'}
+                                >
+                                  ·
+                                </span>
+                                <span
+                                  className={
+                                    serviceType === 'Retain'
+                                      ? active
+                                        ? 'font-black text-[13px] text-[#FFB400]'
+                                        : isDark
+                                          ? 'font-black text-[13px] text-white'
+                                          : 'font-black text-[13px] text-neutral-900'
+                                      : active
+                                        ? isDark
+                                          ? 'text-[11px] font-medium text-amber-200/70'
+                                          : 'text-[11px] font-medium text-amber-900/70'
+                                        : isDark
+                                          ? 'text-[11px] font-medium text-neutral-400'
+                                          : 'text-[11px] font-medium text-neutral-500'
+                                  }
+                                >
+                                  <span className="text-[9.5px] uppercase font-bold mr-0.5 opacity-80">Dặm</span>
+                                  {refillPriceStr}
+                                </span>
+                              </div>
+                            ) : priceStr ? (
                               <span
                                 className={`text-[13px] font-black tabular-nums ${
-                                  active ? 'text-amber-800' : 'text-gray-900'
+                                  active
+                                    ? isDark
+                                      ? 'text-amber-400'
+                                      : 'text-amber-800'
+                                    : isDark
+                                      ? 'text-white'
+                                      : 'text-gray-900'
                                 }`}
                               >
                                 {priceStr}
                               </span>
-                            )}
+                            ) : null}
                           </div>
 
-                          <div className="flex items-center justify-between text-[10px] text-gray-500 mt-1.5 pt-1 border-t border-gray-100/80">
+                          <div
+                            className={`flex items-center justify-between text-[10px] mt-1.5 pt-1 border-t ${
+                              isDark ? 'border-neutral-800 text-neutral-400' : 'border-gray-100/80 text-gray-500'
+                            }`}
+                          >
                             <span>{detail ? `${detail.totalFibers} sợi / 2 mắt` : cnt}</span>
-                            <span className="font-semibold text-gray-700">
+                            <span className={`font-semibold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
                               {detail ? `~${detail.durationMin} phút` : ''}
                             </span>
                           </div>
@@ -2674,10 +3194,18 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
 
                 {/* Màu sắc sợi mi: Chọn được nhiều màu cùng lúc */}
-                <div className="pt-1.5 border-t border-gray-100">
+                <div className={`pt-1.5 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
                   <div className="flex items-center justify-between mb-1.5">
-                    <div className="text-[10px] font-semibold text-gray-500">Màu sắc sợi mi:</div>
-                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    <div className={`text-[10px] font-semibold ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                      Màu sắc sợi mi:
+                    </div>
+                    <span
+                      className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full border ${
+                        isDark
+                          ? 'bg-amber-950/60 text-amber-300 border-amber-800'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                      }`}
+                    >
                       Chọn được nhiều màu
                     </span>
                   </div>
@@ -2700,8 +3228,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           }}
                           className={`p-2 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs ring-1 ring-amber-400'
-                              : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
+                              ? isDark
+                                ? 'bg-[#2A2315] border-[#FFB400] text-white font-bold shadow-xs ring-1 ring-amber-400'
+                                : 'bg-amber-50/90 border-[#FFB400] text-black font-bold shadow-xs ring-1 ring-amber-400'
+                              : isDark
+                                ? 'bg-[#18181A] border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                                : 'bg-[#F9F9FB] border-gray-100 text-gray-800 hover:border-gray-200'
                           }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
@@ -2741,25 +3273,49 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                   </button>
                 </div>
 
-                <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-purple-100 space-y-2">
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-purple-50/80 border border-purple-200">
+                <div
+                  className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${
+                    isDark ? 'bg-[#1C1C1E] border-purple-900/60' : 'bg-white border-purple-100'
+                  }`}
+                >
+                  <div
+                    className={`flex items-center justify-between p-2 rounded-xl border ${
+                      isDark ? 'bg-purple-950/40 border-purple-800/60' : 'bg-purple-50/80 border-purple-200'
+                    }`}
+                  >
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <ArrowDownRight className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span className="text-[12px] font-black text-purple-950 truncate">+Mi Dưới Under</span>
-                      <span className="text-[11px] font-semibold text-purple-800/80 tabular-nums">
+                      <ArrowDownRight className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                      <span
+                        className={`text-[12px] font-black truncate ${isDark ? 'text-purple-300' : 'text-purple-950'}`}
+                      >
+                        +Mi Dưới Under
+                      </span>
+                      <span
+                        className={`text-[11px] font-semibold tabular-nums ${isDark ? 'text-purple-300' : 'text-purple-800/80'}`}
+                      >
                         {underMinkCurl.replace(/^Cong\s+/i, '')} · {underMinkLength.replace(/\s*mm/gi, '')} ·{' '}
                         {underMinkCount}
                       </span>
                     </div>
-                    <div className="text-[12px] font-black text-purple-700 shrink-0 tabular-nums">
+                    <div
+                      className={`text-[12px] font-black shrink-0 tabular-nums ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
+                    >
                       {hasUnderMinkCombo ? '0đ (Trừ gói)' : underMinkServiceType === 'Retain' ? '+250K' : '+390K'}
                     </div>
                   </div>
 
                   {/* 1 Dòng Ngang Duy Nhất Khi Bật Mi Dưới: [B|C] · [6|7|6-7] · [20|30|40] + Chọn độc lập [Mới | Dặm] */}
-                  <div className="pt-2 border-t border-neutral-100 flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap">
+                  <div
+                    className={`pt-2 border-t flex items-center justify-between gap-1 text-[10px] tabular-nums whitespace-nowrap ${
+                      isDark ? 'border-neutral-800' : 'border-neutral-100'
+                    }`}
+                  >
                     <div className="flex items-center gap-1">
-                      <div className="inline-flex items-center bg-neutral-50 p-0.5 rounded-lg border border-neutral-200">
+                      <div
+                        className={`inline-flex items-center p-0.5 rounded-lg border ${
+                          isDark ? 'bg-[#141416] border-neutral-700' : 'bg-neutral-50 border-neutral-200'
+                        }`}
+                      >
                         {(['B', 'C'] as const).map((c) => (
                           <button
                             key={c}
@@ -2768,7 +3324,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
                               underMinkCurl === c
                                 ? 'bg-purple-600 text-white shadow-2xs'
-                                : 'text-neutral-600 hover:text-black'
+                                : isDark
+                                  ? 'text-neutral-400 hover:text-white'
+                                  : 'text-neutral-600 hover:text-black'
                             }`}
                           >
                             {c}
@@ -2777,12 +3335,20 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       </div>
 
                       {/* Độ dài: default 7 · nút cộng trừ tăng giảm 1 */}
-                      <div className="inline-flex items-center bg-neutral-50 p-0.5 rounded-lg border border-neutral-200 tabular-nums">
+                      <div
+                        className={`inline-flex items-center p-0.5 rounded-lg border tabular-nums ${
+                          isDark ? 'bg-[#141416] border-neutral-700' : 'bg-neutral-50 border-neutral-200'
+                        }`}
+                      >
                         <button
                           type="button"
                           onClick={() => setUnderMinkLength((prev) => stepUnderMinkLength(prev, -1))}
                           disabled={parseUnderMinkLengthMm(underMinkLength) <= UNDER_MINK_PREP_SPEC.minLengthMm}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-200/70 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-200/70'
+                          }`}
                         >
                           −
                         </button>
@@ -2793,19 +3359,31 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           type="button"
                           onClick={() => setUnderMinkLength((prev) => stepUnderMinkLength(prev, 1))}
                           disabled={parseUnderMinkLengthMm(underMinkLength) >= UNDER_MINK_PREP_SPEC.maxLengthMm}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-200/70 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-200/70'
+                          }`}
                         >
                           +
                         </button>
                       </div>
 
                       {/* Số lượng: default 30 · nút cộng trừ tăng giảm 10 */}
-                      <div className="inline-flex items-center bg-neutral-50 p-0.5 rounded-lg border border-neutral-200 tabular-nums">
+                      <div
+                        className={`inline-flex items-center p-0.5 rounded-lg border tabular-nums ${
+                          isDark ? 'bg-[#141416] border-neutral-700' : 'bg-neutral-50 border-neutral-200'
+                        }`}
+                      >
                         <button
                           type="button"
                           onClick={() => setUnderMinkCount((prev) => stepUnderMinkCount(prev, -10))}
                           disabled={parseUnderMinkCountFibers(underMinkCount) <= UNDER_MINK_PREP_SPEC.minCountFibers}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-200/70 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-200/70'
+                          }`}
                         >
                           −
                         </button>
@@ -2816,7 +3394,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           type="button"
                           onClick={() => setUnderMinkCount((prev) => stepUnderMinkCount(prev, 10))}
                           disabled={parseUnderMinkCountFibers(underMinkCount) >= UNDER_MINK_PREP_SPEC.maxCountFibers}
-                          className="w-5 h-5 rounded-md font-black text-neutral-500 hover:text-black hover:bg-neutral-200/70 disabled:opacity-30 cursor-pointer inline-flex items-center justify-center"
+                          className={`w-5 h-5 rounded-md font-black disabled:opacity-30 cursor-pointer inline-flex items-center justify-center ${
+                            isDark
+                              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                              : 'text-neutral-500 hover:text-black hover:bg-neutral-200/70'
+                          }`}
                         >
                           +
                         </button>
@@ -2824,7 +3406,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     </div>
 
                     <div
-                      className="inline-flex items-center bg-neutral-50 p-0.5 rounded-lg border border-purple-200 shrink-0"
+                      className={`inline-flex items-center p-0.5 rounded-lg border shrink-0 ${
+                        isDark ? 'bg-[#141416] border-purple-800' : 'bg-neutral-50 border-purple-200'
+                      }`}
                       title={
                         hasUnderMinkCombo
                           ? `Khách có gói Combo Mi Dưới · Tự động trừ vào gói (0đ)`
@@ -2837,7 +3421,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
                           underMinkServiceType === 'Normal'
                             ? 'bg-[#FFB400] text-black shadow-2xs'
-                            : 'text-neutral-500 hover:text-black'
+                            : isDark
+                              ? 'text-neutral-400 hover:text-white'
+                              : 'text-neutral-500 hover:text-black'
                         }`}
                       >
                         {hasUnderMinkCombo ? `Mới (${underComboNormalRemaining})` : 'Mới'}
@@ -2848,7 +3434,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                         className={`px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all whitespace-nowrap ${
                           underMinkServiceType === 'Retain'
                             ? 'bg-[#34C759] text-white shadow-2xs'
-                            : 'text-neutral-500 hover:text-black'
+                            : isDark
+                              ? 'text-neutral-400 hover:text-white'
+                              : 'text-neutral-500 hover:text-black'
                         }`}
                       >
                         {hasUnderMinkCombo ? `Dặm (${underComboRetainRemaining})` : 'Dặm'}
@@ -2867,17 +3455,35 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         {activeSubTab === 'PROFILE' && (
           <div className="space-y-3">
             {/* CARD 1: 4 CHỈ SỐ ĐO MI THẬT (SLIDER MIN-MAX + UNICODE HƯỚNG) */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-3">
-              <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+            <div
+              className={`rounded-2xl p-3 shadow-xs border space-y-3 transition-colors ${
+                isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+              }`}
+            >
+              <div
+                className={`flex items-center justify-between pb-1 border-b ${
+                  isDark ? 'border-neutral-800' : 'border-gray-100'
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-black text-[#FFB400] text-[10.5px] font-black inline-flex items-center justify-center">
                     1
                   </span>
-                  <span className="text-[11.5px] font-extrabold text-black uppercase tracking-tight">
+                  <span
+                    className={`text-[11.5px] font-extrabold uppercase tracking-tight ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
                     Đo 4 thông số mi thật
                   </span>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? 'bg-amber-950/60 text-amber-300 border-amber-800'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                  }`}
+                >
                   Chuẩn Wings
                 </span>
               </div>
@@ -2887,7 +3493,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11.5px] font-extrabold text-gray-800">Dài</span>
+                      <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
+                        Dài
+                      </span>
                       <button
                         type="button"
                         onClick={() =>
@@ -2899,7 +3507,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             advice: naturalLengthSpec.advice,
                           })
                         }
-                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                        className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                          isDark
+                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                        }`}
                         title="Xem hướng dẫn đo chiều dài"
                       >
                         <Info className="w-3 h-3 stroke-[2.5]" />
@@ -2918,14 +3530,17 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     step={1}
                     value={naturalLengthRange}
                     onChange={setNaturalLengthRange}
+                    isDark={isDark}
                   />
                 </div>
 
                 {/* Dòng 2: Độ Dày (Dual Slider 0.05 - 0.20, step 0.01) */}
-                <div className="space-y-1 pt-2 border-t border-gray-100">
+                <div className={`space-y-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11.5px] font-extrabold text-gray-800">Dày</span>
+                      <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
+                        Dày
+                      </span>
                       <button
                         type="button"
                         onClick={() =>
@@ -2936,7 +3551,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             advice: `Khuyên dùng: ${naturalThicknessSpec.recommendedMaterial}`,
                           })
                         }
-                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                        className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                          isDark
+                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                        }`}
                         title="Xem tải trọng nang mi"
                       >
                         <Info className="w-3 h-3 stroke-[2.5]" />
@@ -2956,14 +3575,17 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     value={naturalThicknessRange}
                     onChange={setNaturalThicknessRange}
                     formatValue={(v) => v.toFixed(2)}
+                    isDark={isDark}
                   />
                 </div>
 
                 {/* Dòng 3: Số Sợi / Mật Độ (Dual Slider 40 - 200, step 5) */}
-                <div className="space-y-1 pt-2 border-t border-gray-100">
+                <div className={`space-y-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11.5px] font-extrabold text-gray-800">Số sợi</span>
+                      <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
+                        Số sợi
+                      </span>
                       <button
                         type="button"
                         onClick={() =>
@@ -2974,7 +3596,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                               'Đếm sơ bộ số lượng sợi mi thật trên một bờ mí trên: 40-60 sợi (thưa, khuyên làm fan nhẹ 2D-3D bù khuyết), 60-80 sợi (tiêu chuẩn, tải trọng cân bằng), 80-120+ sợi (dày khỏe, thích hợp nối classic hoặc volume đậm).',
                           })
                         }
-                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                        className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                          isDark
+                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                        }`}
                         title="Xem hướng dẫn mật độ sợi"
                       >
                         <Info className="w-3 h-3 stroke-[2.5]" />
@@ -2993,13 +3619,18 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     step={5}
                     value={naturalCountRange}
                     onChange={setNaturalCountRange}
+                    isDark={isDark}
                   />
                 </div>
 
                 {/* Dòng 4: Hướng Mọc (Dùng UNICODE toàn bộ, không dùng emoji!) */}
-                <div className="flex items-center justify-between gap-1 pt-2 border-t border-gray-100">
+                <div
+                  className={`flex items-center justify-between gap-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
+                >
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[11.5px] font-extrabold text-gray-800">Hướng</span>
+                    <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
+                      Hướng
+                    </span>
                     <button
                       type="button"
                       onClick={() =>
@@ -3010,7 +3641,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             'Hướng mọc quyết định độ cong cần chọn: Mi chúc xuống (↘) cần độ cong CC hoặc D để nâng bờ mi không sụp mắt; mi mọc thẳng (➔) chọn cong C/B; mi hướng lên (↗) chọn cong B nhẹ nhàng; mi đan chéo (⇄) cần định hình trục mi.',
                         })
                       }
-                      className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                        isDark
+                          ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                      }`}
                       title="Xem hướng mọc mi"
                     >
                       <Info className="w-3 h-3 stroke-[2.5]" />
@@ -3035,7 +3670,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           className={`w-9 h-8 rounded-lg text-center transition-all cursor-pointer text-[16px] font-black flex items-center justify-center ${
                             active
                               ? 'bg-[#FFB400] text-black shadow-xs ring-1 ring-amber-400'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              : isDark
+                                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                           }`}
                         >
                           {dir.icon}
@@ -3048,13 +3685,25 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             </div>
 
             {/* CARD 2: DÁNG MẮT & SỨC KHỎE NANG MI */}
-            <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100 space-y-3">
-              <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+            <div
+              className={`rounded-2xl p-3 shadow-xs border space-y-3 ${
+                isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+              }`}
+            >
+              <div
+                className={`flex items-center justify-between pb-1 border-b ${
+                  isDark ? 'border-neutral-800' : 'border-gray-100'
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-black text-[#FFB400] text-[10.5px] font-black inline-flex items-center justify-center">
                     2
                   </span>
-                  <span className="text-[11.5px] font-extrabold text-black uppercase tracking-tight">
+                  <span
+                    className={`text-[11.5px] font-extrabold uppercase tracking-tight ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
                     Dáng mắt & sức khỏe
                   </span>
                 </div>
@@ -3064,7 +3713,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                     setZoomEyeShapeId(selectedEyeShape);
                     setIsEyeCompareOpen(true);
                   }}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 transition-colors cursor-pointer"
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                    isDark
+                      ? 'text-amber-300 bg-amber-950/60 hover:bg-amber-900/60 border-amber-800'
+                      : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border-amber-300'
+                  }`}
                 >
                   <Images className="w-3 h-3 text-[#FF9500]" />
                   <span>So sánh 5 dáng (i)</span>
@@ -3074,9 +3727,13 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               <div className="space-y-2.5">
                 {/* Dáng mắt: 5 chip nhỏ kèm thumbnail mini */}
                 <div>
-                  <div className="text-[11px] font-extrabold text-gray-700 mb-1.5 flex items-center justify-between">
+                  <div
+                    className={`text-[11px] font-extrabold mb-1.5 flex items-center justify-between ${
+                      isDark ? 'text-neutral-400' : 'text-gray-700'
+                    }`}
+                  >
                     <span>Dáng mắt khách</span>
-                    <span className="text-[10px] text-amber-700 font-bold">
+                    <span className="text-[10px] text-amber-500 font-bold">
                       {NATURAL_EYE_SHAPES.find((e) => e.id === selectedEyeShape)
                         ?.name.split('(')[0]
                         .trim() || 'Mí lót'}
@@ -3097,8 +3754,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           }}
                           className={`p-1 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
                             active
-                              ? 'bg-amber-50 border-[#FFB400] text-black font-black shadow-xs ring-1 ring-amber-400'
-                              : 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-gray-100'
+                              ? isDark
+                                ? 'bg-[#2A2315] border-[#FFB400] text-white font-black shadow-xs ring-1 ring-amber-400'
+                                : 'bg-amber-50 border-[#FFB400] text-black font-black shadow-xs ring-1 ring-amber-400'
+                              : isDark
+                                ? 'bg-[#18181A] border-neutral-800 text-neutral-400 hover:bg-neutral-800'
+                                : 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-gray-100'
                           }`}
                         >
                           <div className="w-6 h-6 rounded-full overflow-hidden bg-neutral-900 border border-black/10 shrink-0 mb-1">
@@ -3112,8 +3773,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
 
                 {/* Nang mi */}
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="text-[11px] font-extrabold text-gray-700 mb-1.5 flex items-center justify-between">
+                <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+                  <div
+                    className={`text-[11px] font-extrabold mb-1.5 flex items-center justify-between ${
+                      isDark ? 'text-neutral-400' : 'text-gray-700'
+                    }`}
+                  >
                     <span>Nang mi</span>
                     <button
                       type="button"
@@ -3124,7 +3789,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             'Đánh giá nang mi giúp xác định dòng mi an toàn: Mi mới lần đầu cần keo dịu nhẹ; mi tổn thương/gãy rụng chỉ nối 0.05-0.07mm kết hợp dưỡng Yeppeum.',
                         })
                       }
-                      className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                        isDark
+                          ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                      }`}
                       title="Xem hướng dẫn nang mi"
                     >
                       <Info className="w-3 h-3 stroke-[2.5]" />
@@ -3146,7 +3815,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer font-bold text-[10px] leading-tight ${
                             active
                               ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              : isDark
+                                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                           }`}
                         >
                           {h.short}
@@ -3157,8 +3828,12 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                 </div>
 
                 {/* Độ nhạy cảm mắt */}
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="text-[11px] font-extrabold text-gray-700 mb-1.5 flex items-center justify-between">
+                <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+                  <div
+                    className={`text-[11px] font-extrabold mb-1.5 flex items-center justify-between ${
+                      isDark ? 'text-neutral-400' : 'text-gray-700'
+                    }`}
+                  >
                     <span>Độ nhạy cảm</span>
                     <button
                       type="button"
@@ -3169,7 +3844,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                             'Mắt nhạy cảm dùng keo siêu êm dịu Wings và sấy quạt kỹ; mắt hở khi ngủ dán pad che kín lòng trắng mắt; mắt mới phun mí thao tác nhẹ tay tránh chạm chân mí.',
                         })
                       }
-                      className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                        isDark
+                          ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                      }`}
                       title="Xem lưu ý nhạy cảm"
                     >
                       <Info className="w-3 h-3 stroke-[2.5]" />
@@ -3191,7 +3870,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                           className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer font-bold text-[10px] leading-tight ${
                             active
                               ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              : isDark
+                                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                           }`}
                         >
                           {m.short}
@@ -3272,56 +3953,88 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
         {/* Ghi Chú Kỹ Thuật & Cam Kết Với Khách */}
         <div>
-          <div className="text-[11px] font-extrabold text-gray-600 uppercase tracking-wider px-1 mb-1.5 flex items-center gap-1">
-            <FileText className="w-3.5 h-3.5 text-gray-500" />
+          <div
+            className={`text-[11px] font-extrabold uppercase tracking-wider px-1 mb-1.5 flex items-center gap-1 ${
+              isDark ? 'text-neutral-400' : 'text-gray-600'
+            }`}
+          >
+            <FileText className={`w-3.5 h-3.5 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`} />
             <span>GHI CHÚ KỸ THUẬT & CAM KẾT VỚI KHÁCH</span>
           </div>
-          <div className="bg-white rounded-2xl p-3 shadow-xs border border-neutral-100">
+          <div
+            className={`rounded-2xl p-3 shadow-xs border ${
+              isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+            }`}
+          >
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full bg-transparent text-[13px] text-gray-800 leading-relaxed focus:outline-none resize-none font-medium"
+              className={`w-full bg-transparent text-[13px] leading-relaxed focus:outline-none resize-none font-medium ${
+                isDark ? 'text-neutral-200 placeholder-neutral-600' : 'text-gray-800 placeholder-gray-400'
+              }`}
               placeholder="Nhập ghi chú kỹ thuật, loại keo, form mắt..."
             />
           </div>
         </div>
 
         {/* BÁO GIÁ DỊCH VỤ GỌN GÀNG & DỄ HIỂU (BỎ GIÁ TRONG TÊN + TÓM TẮT THÔNG SỐ CƠ BẢN) */}
-        <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-neutral-100 space-y-2.5">
+        <div
+          className={`rounded-2xl p-3.5 shadow-xs border space-y-2.5 ${
+            isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
+          }`}
+        >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Báo giá dịch vụ</div>
-              <div className="text-[14.5px] font-black text-gray-900 leading-snug mt-0.5">{cleanServiceName}</div>
+              <div
+                className={`text-[10px] font-bold uppercase tracking-wider ${
+                  isDark ? 'text-neutral-500' : 'text-gray-400'
+                }`}
+              >
+                Báo giá dịch vụ
+              </div>
+              <div
+                className={`text-[14.5px] font-black leading-snug mt-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}
+              >
+                {cleanServiceName}
+              </div>
               {/* Tóm tắt thông số cơ bản chuẩn: Classic 1D Doll 70 C0.10 10-11-12 */}
-              <div className="text-[11.5px] font-bold text-[#D97706] bg-amber-50/90 px-2 py-0.5 rounded-lg border border-amber-200/80 inline-block mt-1.5 font-mono tracking-tight shadow-2xs">
+              <div
+                className={`text-[11.5px] font-bold px-2 py-0.5 rounded-lg border inline-block mt-1.5 font-mono tracking-tight shadow-2xs ${
+                  isDark
+                    ? 'text-amber-300 bg-amber-950/60 border-amber-800'
+                    : 'text-[#D97706] bg-amber-50/90 border-amber-200/80'
+                }`}
+              >
                 {specsSummaryString}
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-[18px] font-black text-[#D97706] tabular-nums leading-none">
+              <div className="text-[18px] font-black text-[#FFB400] tabular-nums leading-none">
                 {livePricingAndCvPoints.skuPrice.toLocaleString('vi-VN')} đ
               </div>
-              <div className="text-[10px] font-bold text-gray-400 mt-1 tabular-nums">
+              <div
+                className={`text-[10px] font-bold mt-1 tabular-nums ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}
+              >
                 +8% VAT: {livePricingAndCvPoints.totalPriceWithVat.toLocaleString('vi-VN')} đ
               </div>
             </div>
           </div>
 
           {(livePricingAndCvPoints.upgradePrice > 0 || hasUnderMink) && (
-            <div className="pt-2 border-t border-gray-100 space-y-1 text-[11px]">
+            <div className={`pt-2 border-t space-y-1 text-[11px] ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
               {livePricingAndCvPoints.upgradePrice > 0 && (
-                <div className="flex items-center justify-between text-gray-600">
+                <div className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
                   <span>Phụ thu nâng cấp:</span>
-                  <span className="font-bold text-emerald-700 tabular-nums">
+                  <span className="font-bold text-emerald-400 tabular-nums">
                     +{livePricingAndCvPoints.upgradePrice.toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               )}
               {hasUnderMink && (
-                <div className="flex items-center justify-between text-gray-600">
+                <div className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
                   <span>+ Mi Dưới ({underMinkServiceType === 'Retain' ? 'Dặm' : 'Mới'}):</span>
-                  <span className="font-bold text-purple-700 tabular-nums">
+                  <span className="font-bold text-purple-400 tabular-nums">
                     {livePricingAndCvPoints.isUnderMinkComboDeducted
                       ? 'Trừ gói Combo (0 đ)'
                       : underMinkServiceType === 'Retain'
@@ -3333,13 +4046,90 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
             </div>
           )}
 
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
-            <span className="text-gray-500 font-medium">Vòng xoay:</span>
-            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold tabular-nums text-[11px]">
+          <div
+            className={`pt-2 border-t flex items-center justify-between text-[11px] ${
+              isDark ? 'border-neutral-800' : 'border-gray-100'
+            }`}
+          >
+            <span className={`font-medium ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Vòng xoay:</span>
+            <span
+              className={`px-2 py-0.5 rounded-full border font-bold tabular-nums text-[11px] ${
+                isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}
+            >
               +{livePricingAndCvPoints.totalPoints} pts
             </span>
           </div>
         </div>
+
+        {/* Chế độ Nhận ca hoặc Phân ca cho 🪶CV🪶 (CVLL) khi tư vấn khách chưa cố định CV khác */}
+        {actor?.tier === 'CVLL' && (
+          <div
+            className={`rounded-2xl p-3 border space-y-2 ${
+              isDark ? 'bg-[#1C1C1E] border-amber-500/30' : 'bg-amber-50/70 border-amber-200'
+            }`}
+          >
+            <div className="flex items-center justify-between text-[11px] font-extrabold">
+              <span className="inline-flex items-center gap-1.5">
+                <CvFeather2Badge />
+                <span className={isDark ? 'text-amber-300' : 'text-amber-900'}>CHẾ ĐỘ ĐIỀU PHỐI CA SAU TƯ VẤN:</span>
+              </span>
+              <span className={`text-[10px] font-semibold ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                Check-in +10% Tip
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCvllAssignmentMode('SELF_SERVICE')}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  cvllAssignmentMode === 'SELF_SERVICE'
+                    ? 'bg-[#FFB400] text-black border-amber-500 font-black shadow-xs'
+                    : isDark
+                      ? 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-700 font-bold'
+                      : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-300 font-bold'
+                }`}
+              >
+                <div className="text-[11.5px] leading-snug">⚡ Tự nhận làm mi</div>
+                <div
+                  className={`text-[9.5px] mt-0.5 ${
+                    cvllAssignmentMode === 'SELF_SERVICE'
+                      ? 'text-black/80 font-bold'
+                      : isDark
+                        ? 'text-neutral-400'
+                        : 'text-gray-500'
+                  }`}
+                >
+                  Vào thẳng Bước 6 (Hưởng 90% Tip)
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCvllAssignmentMode('ASSIGN_OTHER')}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  cvllAssignmentMode === 'ASSIGN_OTHER'
+                    ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-xs'
+                    : isDark
+                      ? 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-700 font-bold'
+                      : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-300 font-bold'
+                }`}
+              >
+                <div className="text-[11.5px] leading-snug">🤝 Tư vấn hộ · Phân ca</div>
+                <div
+                  className={`text-[9.5px] mt-0.5 ${
+                    cvllAssignmentMode === 'ASSIGN_OTHER'
+                      ? 'text-black/80 font-bold'
+                      : isDark
+                        ? 'text-neutral-400'
+                        : 'text-gray-500'
+                  }`}
+                >
+                  Qua Bước 4 chọn CV & Giường
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Big Action Button */}
         <div className="pt-1">
@@ -3350,7 +4140,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
           >
             {comboPurchaseTotal > 0
               ? `LƯU TƯ VẤN & MUA COMBO (+${comboPurchaseTotal.toLocaleString('vi-VN')} Đ)`
-              : 'LƯU TƯ VẤN & BẮT ĐẦU LÀM MI'}
+              : actor?.tier === 'CVLL' && cvllAssignmentMode === 'ASSIGN_OTHER'
+                ? 'LƯU TƯ VẤN & CHỌN CHUYÊN VIÊN LÀM MI →'
+                : 'LƯU TƯ VẤN & BẮT ĐẦU LÀM MI'}
           </button>
         </div>
       </div>
@@ -3416,22 +4208,40 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
       {/* Modal Cảnh Báo Xác Nhận Khi CV🪶 Override Chu Kỳ 25 Ngày Hoặc Khác Gói Combo */}
       {pendingOverride && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-[360px] bg-white rounded-3xl p-4 shadow-2xl border-2 border-rose-500 space-y-3 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div
+            className={`w-full max-w-[360px] rounded-3xl p-4 shadow-2xl border-2 border-rose-500 space-y-3 animate-in fade-in zoom-in-95 duration-150 ${
+              isDark ? 'bg-[#1C1C1E] text-white' : 'bg-white text-neutral-900'
+            }`}
+          >
             <div className="flex items-start gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+              <div
+                className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
+                  isDark ? 'bg-rose-950/80 text-rose-400' : 'bg-rose-100 text-rose-600'
+                }`}
+              >
                 <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div className="min-w-0">
-                <div className="text-[13px] font-black text-rose-950 leading-tight">{pendingOverride.title}</div>
-                <div className="text-[11px] text-neutral-600 font-medium mt-1 leading-relaxed">
+                <div className={`text-[13px] font-black leading-tight ${isDark ? 'text-rose-300' : 'text-rose-950'}`}>
+                  {pendingOverride.title}
+                </div>
+                <div
+                  className={`text-[11px] font-medium mt-1 leading-relaxed ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-600'
+                  }`}
+                >
                   {pendingOverride.message}
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5 pt-1">
-              <div className="text-[10.5px] font-extrabold text-neutral-800 uppercase tracking-wide flex items-center gap-1">
+              <div
+                className={`text-[10.5px] font-extrabold uppercase tracking-wide flex items-center gap-1 ${
+                  isDark ? 'text-neutral-300' : 'text-neutral-800'
+                }`}
+              >
                 <span>Chọn lý do</span>
                 <CvFeather1Badge />
                 <span>Override (Bắt buộc ghi nhận):</span>
@@ -3446,12 +4256,16 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
                       onClick={() => setSelectedOverrideReasonDraft(reason)}
                       className={`w-full p-2.5 rounded-xl border text-left text-[11px] font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
                         active
-                          ? 'bg-rose-50 border-rose-500 text-rose-950 ring-1 ring-rose-500'
-                          : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:border-neutral-300'
+                          ? isDark
+                            ? 'bg-rose-950/50 border-rose-500 text-rose-200 ring-1 ring-rose-500'
+                            : 'bg-rose-50 border-rose-500 text-rose-950 ring-1 ring-rose-500'
+                          : isDark
+                            ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                            : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:border-neutral-300'
                       }`}
                     >
                       <span className="leading-snug">{reason}</span>
-                      {active && <CheckCircle2 className="w-4 h-4 text-rose-600 shrink-0" />}
+                      {active && <CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" />}
                     </button>
                   );
                 })}
@@ -3462,7 +4276,11 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               <button
                 type="button"
                 onClick={() => setPendingOverride(null)}
-                className="py-2.5 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-extrabold text-[12px] cursor-pointer transition-all"
+                className={`py-2.5 px-3 rounded-xl font-extrabold text-[12px] cursor-pointer transition-all ${
+                  isDark
+                    ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                    : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
+                }`}
               >
                 Hủy · Giữ chuẩn
               </button>
@@ -3523,65 +4341,151 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
 
       {/* Modal Xác Nhận Nâng Cấp Dịch Vụ Từ Combo */}
       {pendingUpgradeConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-[#1C1C1E] text-white rounded-2xl w-full max-w-sm p-4 border border-emerald-500/50 shadow-2xl space-y-3.5 relative">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5" />
-                </span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-[#1C1C1E] text-white rounded-3xl w-full max-w-[390px] p-4 border border-emerald-500/50 shadow-2xl space-y-3.5 relative overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <Sparkles className="w-5 h-5 stroke-[2.2]" />
+                </div>
                 <div>
-                  <h4 className="text-[13.5px] font-black uppercase text-emerald-400 tracking-wide">
-                    Xác Nhận Nâng Cấp
+                  <h4 className="text-[14px] font-black uppercase text-emerald-400 tracking-wide">
+                    Xác Nhận Nâng Cấp Dịch Vụ
                   </h4>
-                  <span className="text-[10.5px] text-neutral-400 font-medium">Từ Gói Combo Đang Sử Dụng</span>
+                  <span className="text-[11px] text-neutral-400 font-medium">Từ Gói Combo Đang Sử Dụng</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setPendingUpgradeConfirmation(null)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer shrink-0 mt-0.5"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-neutral-900/90 rounded-xl p-3 border border-neutral-800 space-y-2 text-[12px]">
-              <div className="flex items-center justify-between text-neutral-400">
-                <span>Dịch vụ gốc:</span>
-                <span className="text-neutral-200 font-bold truncate max-w-[190px] text-right">
-                  {pendingUpgradeConfirmation.fromName}
-                </span>
+            {/* Chi tiết so sánh Dịch vụ gốc vs Dịch vụ nâng cấp */}
+            <div className="space-y-2">
+              {/* Card 1: Gói gốc */}
+              <div className="bg-black/60 rounded-xl p-2.5 border border-white/10 space-y-1">
+                <div className="flex items-center justify-between text-[10.5px]">
+                  <span className="text-neutral-400 font-bold uppercase tracking-wider">1. Gói Combo gốc</span>
+                  <span className="text-neutral-400 tabular-nums font-semibold">
+                    {pendingUpgradeConfirmation.serviceType === 'Normal' ? '✦ Suất Nối Mới' : '↻ Suất Dặm'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12.5px] font-black text-white leading-snug">
+                    {pendingUpgradeConfirmation.comboName}
+                  </span>
+                  <span className="text-[12.5px] font-bold text-neutral-300 tabular-nums shrink-0">
+                    {pendingUpgradeConfirmation.comboBasePrice.toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-neutral-400">
-                <span>Nâng cấp lên:</span>
-                <span className="text-amber-300 font-bold truncate max-w-[190px] text-right">
-                  {pendingUpgradeConfirmation.toName}
-                </span>
+
+              {/* Card 2: Dịch vụ nâng cấp mới */}
+              <div className="bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-xl p-2.5 border border-amber-500/40 space-y-1">
+                <div className="flex items-center justify-between text-[10.5px]">
+                  <span className="text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span>2. Nâng cấp hôm nay</span>
+                  </span>
+                  {pendingUpgradeConfirmation.targetSpecs && (
+                    <span className="text-amber-300/80 font-bold tabular-nums">
+                      {pendingUpgradeConfirmation.targetSpecs}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-black text-amber-300 leading-snug">
+                    {pendingUpgradeConfirmation.targetName}
+                  </span>
+                  <span className="text-[13px] font-black text-amber-400 tabular-nums shrink-0">
+                    {pendingUpgradeConfirmation.targetPrice.toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-neutral-400">
-                <span>Phạm vi áp dụng:</span>
-                <span className="text-neutral-200 font-bold">
-                  {pendingUpgradeConfirmation.upgradeScope === 'ALL'
-                    ? `Gói (✦ ${comboNormalRemaining} · ↻ ${comboRetainRemaining})`
-                    : serviceType === 'Normal'
-                      ? '✦ 1 Mới'
-                      : '↻ 1 Dặm'}
-                </span>
-              </div>
-              <div className="pt-2 border-t border-neutral-800 flex items-center justify-between">
-                <span className="font-bold text-white">Phụ thu thanh toán:</span>
-                <span className="text-[15px] font-black text-emerald-400 tabular-nums">
-                  +{pendingUpgradeConfirmation.totalAmount.toLocaleString('vi-VN')} đ
-                </span>
+
+              {/* Card 3: Bảng tính toán chênh lệch & Phụ thu */}
+              <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 space-y-2 text-[11.5px]">
+                {/* Phạm vi áp dụng */}
+                <div className="flex items-center justify-between text-neutral-400">
+                  <span>Phạm vi áp dụng:</span>
+                  <span className="font-bold text-white text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 border border-neutral-700">
+                    {pendingUpgradeConfirmation.upgradeScope === 'ALL'
+                      ? `Toàn bộ gói (${pendingUpgradeConfirmation.comboNormalRemaining} Mới · ${pendingUpgradeConfirmation.comboRetainRemaining} Dặm)`
+                      : pendingUpgradeConfirmation.serviceType === 'Normal'
+                        ? 'Chỉ 1 ca Nối Mới hôm nay (✦ 1)'
+                        : 'Chỉ 1 ca Dặm hôm nay (↻ 1)'}
+                  </span>
+                </div>
+
+                {/* Công thức chênh lệch */}
+                {pendingUpgradeConfirmation.upgradeScope === 'SINGLE' ? (
+                  <div className="flex items-center justify-between text-neutral-300 pt-1 border-t border-neutral-800/80">
+                    <span>Cách tính chênh lệch:</span>
+                    <span className="font-mono text-[11px] text-neutral-300 tabular-nums">
+                      {pendingUpgradeConfirmation.targetPrice.toLocaleString('vi-VN')} -{' '}
+                      {pendingUpgradeConfirmation.comboBasePrice.toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-1 pt-1 border-t border-neutral-800/80 text-[11px]">
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span>
+                        Nối Mới ({pendingUpgradeConfirmation.comboNormalRemaining} ca × +
+                        {pendingUpgradeConfirmation.normalDiff.toLocaleString('vi-VN')} đ):
+                      </span>
+                      <span className="font-bold text-neutral-200 tabular-nums">
+                        +
+                        {(
+                          pendingUpgradeConfirmation.normalDiff * pendingUpgradeConfirmation.comboNormalRemaining
+                        ).toLocaleString('vi-VN')}{' '}
+                        đ
+                      </span>
+                    </div>
+                    {pendingUpgradeConfirmation.comboRetainRemaining > 0 && (
+                      <div className="flex items-center justify-between text-neutral-400">
+                        <span>
+                          Dặm ({pendingUpgradeConfirmation.comboRetainRemaining} ca × +
+                          {pendingUpgradeConfirmation.retainDiff.toLocaleString('vi-VN')} đ):
+                        </span>
+                        <span className="font-bold text-neutral-200 tabular-nums">
+                          +
+                          {(
+                            pendingUpgradeConfirmation.retainDiff * pendingUpgradeConfirmation.comboRetainRemaining
+                          ).toLocaleString('vi-VN')}{' '}
+                          đ
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tổng tiền phụ thu */}
+                <div className="pt-2 border-t border-neutral-800 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="font-extrabold text-white text-[12.5px]">Phụ thu thanh toán:</span>
+                    <span className="text-[10px] text-neutral-400">
+                      (Trừ 1 suất {pendingUpgradeConfirmation.serviceType === 'Normal' ? 'Mới' : 'Dặm'} trong ví)
+                    </span>
+                  </div>
+                  <span className="text-[17px] font-black text-emerald-400 tabular-nums tracking-tight">
+                    +{pendingUpgradeConfirmation.totalAmount.toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
               </div>
             </div>
 
+            {/* Note box */}
             <div className="bg-emerald-950/60 rounded-xl p-2.5 border border-emerald-500/30 text-[11px] text-emerald-200/90 leading-snug">
               ℹ️ Khoản phụ thu này sẽ được tự động cộng vào hóa đơn tại quầy Thu Ngân khi khách làm xong và Checkout.
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            {/* CTA Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
               <button
                 type="button"
                 onClick={() => setPendingUpgradeConfirmation(null)}
@@ -3592,7 +4496,7 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
               <button
                 type="button"
                 onClick={pendingUpgradeConfirmation.onConfirm}
-                className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[12px] shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-105 text-white font-extrabold text-[12px] shadow-lg shadow-emerald-900/30 cursor-pointer transition-all flex items-center justify-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Xác nhận</span>
@@ -3609,6 +4513,9 @@ export function Screen03ConsultationMatrix({ booking, actor, onBack, onSave }: S
         initialCategoryId={comboCatalogTarget === 'under' ? 'Classic_Volume' : autoMatchedCombo.categoryId}
         initialVolume={comboCatalogTarget === 'under' ? 'under' : autoMatchedCombo.volume}
         welcomeEligibility={welcomeEligibility}
+        customerName={customerName}
+        customerPhone={customerPhone}
+        customerAvatar={booking?.customerAvatar}
         selectedPackageId={comboCatalogTarget === 'under' ? selectedUnderComboPkg?.id : selectedNewComboPkg?.id}
         initialSelectedUpperPkg={selectedNewComboPkg}
         initialSelectedUnderPkg={selectedUnderComboPkg}

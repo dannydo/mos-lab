@@ -12,10 +12,7 @@ import {
 function calculateCvComboTierBonus(comboPrice: number): number {
   if (!comboPrice || comboPrice <= 0) return 0;
   if (comboPrice < 2000000) return 50000;
-  if (comboPrice < 3000000) return 100000;
-  if (comboPrice < 4000000) return 150000;
-  const extraMillions = Math.floor((comboPrice - 3000000) / 1000000);
-  return 150000 + extraMillions * 50000;
+  return Math.floor(comboPrice / 1000000) * 50000;
 }
 
 function calculateCvSerumTierBonus(unitPrice: number, quantity: number): number {

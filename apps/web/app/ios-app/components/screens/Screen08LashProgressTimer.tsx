@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
@@ -192,9 +193,13 @@ export function Screen08LashProgressTimer({
       Boolean(booking?.attributes?.overrideReason?.includes('Nối Mới Combo')));
 
   const bedLabel = booking.assignedBed || 'G03';
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
+    <div
+      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
+    >
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
       <IosNavigationBar
         title="Tiến Trình Nối Mi"
@@ -228,11 +233,17 @@ export function Screen08LashProgressTimer({
       <div className="flex-1 flex flex-col justify-around px-4 py-4 overflow-y-auto space-y-3">
         {/* Toggle Mode: Countdown vs Elapsed */}
         <div className="flex justify-center">
-          <div className="bg-white/90 p-1 rounded-2xl border border-neutral-200/80 shadow-xs flex items-center gap-1">
+          <div
+            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white/90 border-neutral-200/80'} p-1 rounded-2xl border shadow-xs flex items-center gap-1`}
+          >
             <button
               onClick={() => setTimerMode('COUNTDOWN')}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                timerMode === 'COUNTDOWN' ? 'bg-[#FFB400] text-black shadow-xs' : 'text-neutral-500 hover:text-black'
+                timerMode === 'COUNTDOWN'
+                  ? 'bg-[#FFB400] text-black shadow-xs'
+                  : isDark
+                    ? 'text-neutral-400 hover:text-white'
+                    : 'text-neutral-500 hover:text-black'
               }`}
             >
               <Hourglass className="w-3.5 h-3.5" />
@@ -241,7 +252,13 @@ export function Screen08LashProgressTimer({
             <button
               onClick={() => setTimerMode('ELAPSED')}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                timerMode === 'ELAPSED' ? 'bg-neutral-900 text-white shadow-xs' : 'text-neutral-500 hover:text-black'
+                timerMode === 'ELAPSED'
+                  ? isDark
+                    ? 'bg-neutral-800 text-white shadow-xs'
+                    : 'bg-neutral-900 text-white shadow-xs'
+                  : isDark
+                    ? 'text-neutral-400 hover:text-white'
+                    : 'text-neutral-500 hover:text-black'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -253,7 +270,7 @@ export function Screen08LashProgressTimer({
         {/* Big Circular Timer (Dinamically colored by speed / countdown state) */}
         <div className="flex flex-col justify-center items-center my-1">
           <div
-            className={`w-[250px] h-[250px] rounded-full border-[7px] ${speedEvaluation.ringColor} bg-white flex flex-col items-center justify-center shadow-xl transition-all duration-300 relative`}
+            className={`w-[250px] h-[250px] rounded-full border-[7px] ${speedEvaluation.ringColor} ${isDark ? 'bg-[#1C1C1E]' : 'bg-white'} flex flex-col items-center justify-center shadow-xl transition-all duration-300 relative`}
           >
             {/* Speed Pill on top of clock */}
             <span
@@ -263,7 +280,9 @@ export function Screen08LashProgressTimer({
             </span>
 
             {/* Sub label */}
-            <span className="text-[11.5px] font-bold text-neutral-400 uppercase tracking-wider">
+            <span
+              className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-400'} uppercase tracking-wider`}
+            >
               {timerMode === 'COUNTDOWN'
                 ? isOvertime
                   ? 'QUÁ GIỜ CAM KẾT'
@@ -274,7 +293,7 @@ export function Screen08LashProgressTimer({
             {/* Big Digit Display */}
             <span
               className={`text-[46px] font-black tabular-nums tracking-tight my-0.5 leading-none ${
-                isOvertime ? 'text-rose-600' : 'text-black'
+                isOvertime ? 'text-rose-500' : isDark ? 'text-white' : 'text-black'
               }`}
             >
               {timerMode === 'COUNTDOWN'
@@ -285,16 +304,20 @@ export function Screen08LashProgressTimer({
             </span>
 
             {/* Sub info: Dual indicator */}
-            <div className="flex items-center gap-1 mt-1 text-[11px] font-mono text-neutral-500 tabular-nums">
+            <div
+              className={`flex items-center gap-1 mt-1 text-[11px] font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'} tabular-nums`}
+            >
               <span>Đã làm: {formatTime(seconds)}</span>
               <span>/</span>
-              <span className="font-bold text-neutral-800">{targetMinutes}:00</span>
+              <span className={`font-bold ${isDark ? 'text-neutral-200' : 'text-neutral-800'}`}>
+                {targetMinutes}:00
+              </span>
             </div>
 
             {/* Live pulsing dot */}
-            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-semibold text-emerald-600">
+            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-semibold text-emerald-500">
               <span
-                className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-400'}`}
+                className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-500'}`}
               />
               <span>{isRunning ? 'Đang chạy tự động' : 'Đang tạm dừng'}</span>
             </div>
@@ -302,48 +325,64 @@ export function Screen08LashProgressTimer({
         </div>
 
         {/* Speed & Career Promotion Impact Card */}
-        <div className={`rounded-2xl p-3.5 border ${speedEvaluation.bg} shadow-xs space-y-1 mx-1`}>
+        <div
+          className={`rounded-2xl p-3.5 border ${isDark ? 'bg-[#1C1C1E] border-neutral-800' : speedEvaluation.bg} shadow-xs space-y-1 mx-1`}
+        >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-extrabold ${speedEvaluation.color} flex items-center gap-1.5`}>
               <Zap className="w-3.5 h-3.5" />
               <span>{speedEvaluation.title}</span>
             </span>
-            <span className="text-[11px] font-mono text-neutral-500 tabular-nums">Tiến độ {progressPercent}%</span>
+            <span className={`text-[11px] font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'} tabular-nums`}>
+              Tiến độ {progressPercent}%
+            </span>
           </div>
-          <p className="text-[11.5px] text-neutral-600 leading-snug font-medium">{speedEvaluation.sub}</p>
+          <p className={`text-[11.5px] ${isDark ? 'text-neutral-300' : 'text-neutral-600'} leading-snug font-medium`}>
+            {speedEvaluation.sub}
+          </p>
         </div>
 
         {/* Tech Invariant Banner: Ca Nối Mới Combo bắt buộc gỡ sạch 100% mi cũ */}
         {isComboNewFullSet && (
-          <div className="bg-amber-500/10 border-2 border-amber-500 rounded-2xl p-3 flex items-start gap-2.5 mx-1 shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+          <div
+            className={`${isDark ? 'bg-amber-950/30 border-amber-600/70' : 'bg-amber-500/10 border-amber-500'} border-2 rounded-2xl p-3 flex items-start gap-2.5 mx-1 shadow-xs`}
+          >
+            <div
+              className={`w-8 h-8 rounded-xl ${isDark ? 'bg-amber-500/30 text-amber-400' : 'bg-amber-500/20 text-amber-600'} flex items-center justify-center shrink-0 mt-0.5`}
+            >
               <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[11.5px] font-black text-amber-800 uppercase tracking-tight">
-                ⚠️ QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
+              <div
+                className={`text-[11.5px] font-black ${isDark ? 'text-amber-400' : 'text-amber-800'} uppercase tracking-tight`}
+              >
+                QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
               </div>
-              <div className="text-[11px] font-bold text-amber-950 leading-snug mt-0.5">
-                Nhân viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi cũ
-                khi trừ suất nối mới)!
+              <div
+                className={`text-[11px] font-bold ${isDark ? 'text-amber-200' : 'text-amber-950'} leading-snug mt-0.5`}
+              >
+                Chuyên viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi
+                cũ khi trừ suất nối mới)!
               </div>
             </div>
           </div>
         )}
 
         {/* Progress Card (Lash Specs) */}
-        <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-100 space-y-2 mx-1">
+        <div
+          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3.5 shadow-sm border space-y-2 mx-1`}
+        >
           <div className="flex items-center justify-between text-[13.5px]">
-            <span className="text-gray-500 font-medium">Dịch vụ đang làm</span>
+            <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium`}>Dịch vụ đang làm</span>
             <div className="flex items-center gap-2">
-              <span className="text-black font-extrabold">{displayServiceName}</span>
+              <span className={`${isDark ? 'text-white' : 'text-black'} font-extrabold`}>{displayServiceName}</span>
               {onEditService && (
                 <button
                   type="button"
                   onClick={onEditService}
                   aria-label="Sửa thông số mi"
                   title="Sửa thông số mi"
-                  className="p-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center justify-center active:scale-95 cursor-pointer"
+                  className={`p-1 rounded-full ${isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800 hover:bg-blue-900/60' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'} border transition-colors flex items-center justify-center active:scale-95 cursor-pointer`}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
@@ -352,9 +391,9 @@ export function Screen08LashProgressTimer({
           </div>
 
           <div className="space-y-1 text-[11.5px]">
-            <div className="flex items-center justify-between text-gray-500">
+            <div className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
               <span>Mi trên:</span>
-              <span className="font-bold text-gray-900">
+              <span className={`font-bold ${isDark ? 'text-neutral-200' : 'text-gray-900'}`}>
                 {[
                   booking?.attributes?.style || 'Natural',
                   (booking?.attributes?.curl || 'C').replace(/^Cong\s+/i, ''),
@@ -366,9 +405,11 @@ export function Screen08LashProgressTimer({
               </span>
             </div>
             {booking?.attributes?.hasUnderMink && (
-              <div className="flex items-center justify-between text-purple-700 bg-purple-50 rounded-lg px-2 py-1 border border-purple-200">
+              <div
+                className={`flex items-center justify-between ${isDark ? 'text-purple-300 bg-purple-950/50 border-purple-800' : 'text-purple-700 bg-purple-50 border-purple-200'} rounded-lg px-2 py-1 border`}
+              >
                 <span className="font-bold text-[10.5px]">Mi dưới:</span>
-                <span className="font-black text-[11px] text-purple-900">
+                <span className={`font-black text-[11px] ${isDark ? 'text-purple-200' : 'text-purple-900'}`}>
                   1D · {(booking?.attributes?.underMinkCurl || 'B').replace(/^Cong\s+/i, '')} ·{' '}
                   {(booking?.attributes?.underMinkThickness || '0.10').replace(/\s*mm/gi, '')} ·{' '}
                   {(booking?.attributes?.underMinkLength || '7').replace(/\s*mm/gi, '')} ·{' '}
@@ -385,7 +426,11 @@ export function Screen08LashProgressTimer({
             <button
               onClick={() => setIsRunning(!isRunning)}
               className={`py-3.5 px-4 rounded-2xl font-bold text-[13.5px] active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                isRunning ? 'bg-[#E5E7EB] text-gray-800' : 'bg-emerald-600 text-white shadow-md'
+                isRunning
+                  ? isDark
+                    ? 'bg-neutral-800 text-neutral-200'
+                    : 'bg-[#E5E7EB] text-gray-800'
+                  : 'bg-emerald-600 text-white shadow-md'
               }`}
             >
               {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}

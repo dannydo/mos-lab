@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
-import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import {
   Sparkles,
   Eye,
@@ -93,6 +92,17 @@ export function Screen06CvDashboardReceive({
 
   // State thời gian CV🪶 chọn cam kết: khởi tạo null để BẮT BUỘC CV🪶 phải chủ động bấm chạm chọn
   const [selectedDurationMin, setSelectedDurationMin] = useState<number | null>(null);
+  const [showTimeRequiredWarning, setShowTimeRequiredWarning] = useState<boolean>(false);
+  const timeSectionRef = React.useRef<HTMLDivElement>(null);
+
+  const handleStartTaskClick = () => {
+    if (!selectedDurationMin) {
+      setShowTimeRequiredWarning(true);
+      timeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    onStartTask(selectedDurationMin);
+  };
 
   // Thời lượng hiệu lực dùng để tính giờ xong
   const activeDurationMin = selectedDurationMin || suggestedDurationMin;
@@ -137,6 +147,31 @@ export function Screen06CvDashboardReceive({
       Boolean(booking?.attributes?.overrideReason?.includes('gỡ toàn bộ')) ||
       Boolean(booking?.attributes?.overrideReason?.includes('Nối Mới Combo')));
 
+  const isRetain = useMemo(() => {
+    const sType = String(booking?.serviceType || '').toLowerCase();
+    const sName = (displayServiceName || booking?.serviceName || '').toLowerCase();
+    const bAny = booking as any;
+    const sKey = (bAny?.serviceKey || '').toLowerCase();
+    const cName = (bAny?.categoryName || '').toLowerCase();
+    const isRetainService =
+      sType === 'retain' ||
+      sName.includes('dặm') ||
+      sName.includes('dam') ||
+      sName.includes('refill') ||
+      sKey.includes('retain') ||
+      cName.includes('dặm') ||
+      cName.includes('dam') ||
+      cName.includes('refill') ||
+      Boolean(bAny?.isRefill) ||
+      Boolean(booking?.attributes && (booking.attributes as any).isRefill) ||
+      Boolean(booking?.attributes && (booking.attributes as any).serviceType === 'Retain');
+
+    if (isComboNewFullSet || sType === 'normal' || sType === 'new') {
+      return false;
+    }
+    return isRetainService;
+  }, [booking, displayServiceName, isComboNewFullSet]);
+
   return (
     <div className="flex-1 flex flex-col bg-black overflow-hidden select-none font-sans">
       {/* 1. Sleek Native iOS Navigation Bar (Replaces bulky avatar & NOW header) */}
@@ -166,19 +201,29 @@ export function Screen06CvDashboardReceive({
         <div className="flex items-center justify-end min-w-[70px]">
           <div
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border shadow-xs transition-all select-none ${
-              selectedDurationMin ? 'border-emerald-500/70 text-emerald-400' : 'border-amber-500/50 text-amber-400'
+              selectedDurationMin ? 'border-emerald-500/70 text-emerald-400' : 'border-neutral-700 text-neutral-400'
             }`}
             title={
               selectedDurationMin
                 ? `Thời lượng cam kết: ~${selectedDurationMin} phút · Dự kiến hoàn thành lúc ${estimatedFinishTime}`
-                : `Thời lượng gợi ý ma trận: ~${suggestedDurationMin} phút (Chưa chọn cam kết)`
+                : `Chưa chọn thời gian cam kết`
             }
           >
-            <Clock className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-[12px] font-black tabular-nums tracking-tight">~{activeDurationMin}p</span>
-            <span className="text-[9.5px] text-neutral-300 font-semibold border-l border-neutral-700/80 pl-1.5 tabular-nums">
-              Xong {estimatedFinishTime}
-            </span>
+            <Clock
+              className={`w-3.5 h-3.5 shrink-0 ${selectedDurationMin ? 'text-emerald-400' : 'text-neutral-500'}`}
+            />
+            {selectedDurationMin ? (
+              <>
+                <span className="text-[12px] font-black tabular-nums tracking-tight text-emerald-400">
+                  ~{selectedDurationMin}p
+                </span>
+                <span className="text-[9.5px] text-neutral-300 font-semibold border-l border-neutral-700/80 pl-1.5 tabular-nums">
+                  Xong {estimatedFinishTime}
+                </span>
+              </>
+            ) : (
+              <span className="text-[11px] font-bold text-neutral-400">Chưa chọn giờ</span>
+            )}
           </div>
         </div>
       </div>
@@ -190,14 +235,6 @@ export function Screen06CvDashboardReceive({
           {/* Laser Glow top bar */}
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
 
-          {/* Top Quest Bar: Title */}
-          <div className="flex items-center justify-between gap-2 pt-0.5">
-            <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[11px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 fill-black stroke-black shrink-0" />
-              <span>NHIỆM VỤ TIẾP NHẬN</span>
-            </span>
-          </div>
-
           {/* Customer Info & Target Service */}
           <div className="bg-black/50 border border-white/10 rounded-2xl p-3 flex items-start gap-3">
             {/* Customer Avatar */}
@@ -207,7 +244,7 @@ export function Screen06CvDashboardReceive({
                 alt={booking.customerName}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
+                  e.currentTarget.src = '/ios-assets/no-image.png';
                 }}
               />
             </div>
@@ -247,12 +284,11 @@ export function Screen06CvDashboardReceive({
                 <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div className="min-w-0">
-                <div className="text-[11.5px] font-black text-amber-300 uppercase tracking-tight flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-300 inline shrink-0" />
-                  <span>QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)</span>
+                <div className="text-[11.5px] font-black text-amber-300 uppercase tracking-tight">
+                  QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
                 </div>
                 <div className="text-[11px] font-bold text-amber-100/95 leading-snug mt-0.5">
-                  Nhân viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi
+                  Chuyên viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi
                   cũ khi trừ suất nối mới)!
                 </div>
               </div>
@@ -267,10 +303,7 @@ export function Screen06CvDashboardReceive({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-[11.5px] font-black text-emerald-300 uppercase tracking-tight flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 inline shrink-0" />
-                    <span>Ca Nâng Cấp Từ Gói Combo</span>
-                  </span>
+                  <span>Ca Nâng Cấp Từ Gói Combo</span>
                   <span className="text-emerald-400 tabular-nums">
                     +{(booking.upgradePrice || 0).toLocaleString('vi-VN')} đ
                   </span>
@@ -293,10 +326,21 @@ export function Screen06CvDashboardReceive({
 
             {/* Slot 1: Mi Trên */}
             <div className="bg-gradient-to-b from-[#2A2315] to-[#1A1A1C] rounded-xl p-2.5 border border-amber-500/40 space-y-2 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-black text-amber-400 uppercase tracking-tight flex items-center gap-1.5">
-                  <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> MI TRÊN
-                </span>
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10.5px] font-black text-amber-400 uppercase tracking-tight flex items-center gap-1.5">
+                    <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> MI TRÊN
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight border ${
+                      isRetain
+                        ? 'bg-purple-500/25 text-purple-300 border-purple-400/40'
+                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                    }`}
+                  >
+                    {isRetain ? 'Dặm' : 'Nối Mới'}
+                  </span>
+                </div>
                 <span className="text-[9.5px] font-black text-amber-200 bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 rounded-md">
                   {booking.attributes?.material || 'HyperLight'} · {booking.attributes?.volume || '3X'} ·{' '}
                   {booking.attributes?.count || '70 fan'}
@@ -348,11 +392,21 @@ export function Screen06CvDashboardReceive({
             {/* Slot 2: Mi Dưới */}
             {booking.attributes?.hasUnderMink && (
               <div className="bg-gradient-to-b from-[#261633] to-[#1A1A1C] rounded-xl p-2.5 border border-purple-500/50 space-y-2 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10.5px] font-black text-purple-300 uppercase tracking-tight flex items-center gap-1.5">
-                    <LashTrayIcon className="w-3.5 h-3.5 text-purple-300 shrink-0" /> MI DƯỚI (
-                    {booking.attributes?.underMinkServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'})
-                  </span>
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10.5px] font-black text-purple-300 uppercase tracking-tight flex items-center gap-1.5">
+                      <LashTrayIcon className="w-3.5 h-3.5 text-purple-300 shrink-0" /> MI DƯỚI
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight border ${
+                        booking.attributes?.underMinkServiceType === 'Retain'
+                          ? 'bg-purple-500/25 text-purple-200 border-purple-400/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                      }`}
+                    >
+                      {booking.attributes?.underMinkServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'}
+                    </span>
+                  </div>
                   <span className="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 border border-purple-400/40">
                     {booking.attributes?.underMinkCount || '30 sợi'}
                   </span>
@@ -467,10 +521,13 @@ export function Screen06CvDashboardReceive({
 
           {/* 3.5 BẮT BUỘC: KHỐI DỰ ĐOÁN THỜI GIAN HOÀN THÀNH CA (CV🪶 CAM KẾT) */}
           <div
+            ref={timeSectionRef}
             className={`rounded-2xl p-3.5 space-y-2.5 transition-all ${
               selectedDurationMin
                 ? 'bg-[#1C1C1E] border border-emerald-500/50 shadow-md'
-                : 'bg-[#1C1C1E] border-2 border-amber-500/80 shadow-lg shadow-amber-500/10'
+                : showTimeRequiredWarning
+                  ? 'bg-[#1C1C1E] border-2 border-rose-500/80 shadow-lg shadow-rose-500/20 animate-pulse'
+                  : 'bg-[#1C1C1E] border border-neutral-700/80 shadow-md'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -484,21 +541,14 @@ export function Screen06CvDashboardReceive({
                 className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full border leading-none ${
                   selectedDurationMin
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
+                    : showTimeRequiredWarning
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
+                      : 'bg-neutral-800 text-neutral-400 border-neutral-700'
                 }`}
               >
                 {selectedDurationMin ? `Đã chọn: ${selectedDurationMin}p` : 'Bắt buộc chọn'}
               </span>
             </div>
-
-            <p className="text-[11px] text-neutral-400 leading-snug">
-              Chuẩn kỹ thuật theo ma trận:{' '}
-              <strong className="text-amber-300 font-bold">~{suggestedDurationMin} phút</strong>.{' '}
-              <CvFeather1Badge featherClass="w-2.5 h-2.5 text-amber-400" />{' '}
-              <span className={selectedDurationMin ? 'text-neutral-400' : 'text-amber-200 font-bold'}>
-                bấm chọn 1 mức phút phía dưới để mở khóa bắt đầu:
-              </span>
-            </p>
 
             {/* Quick Pills & Stepper */}
             <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
@@ -509,11 +559,14 @@ export function Screen06CvDashboardReceive({
                   <button
                     key={mins}
                     type="button"
-                    onClick={() => setSelectedDurationMin(mins)}
+                    onClick={() => {
+                      setSelectedDurationMin(mins);
+                      setShowTimeRequiredWarning(false);
+                    }}
                     className={`relative px-2.5 py-1.5 rounded-xl text-[11.5px] font-bold tabular-nums transition-all active:scale-95 cursor-pointer flex items-center gap-1 border ${
                       isSelected
                         ? 'bg-[#FFB400] text-black border-[#FFB400] shadow-sm font-black ring-2 ring-amber-400/50'
-                        : isSuggested
+                        : isSuggested && selectedDurationMin !== null
                           ? 'bg-[#252528] text-amber-300 border-amber-500/70 hover:border-amber-400'
                           : 'bg-[#141416] text-neutral-300 border-neutral-700/80 hover:border-neutral-500'
                     }`}
@@ -522,7 +575,11 @@ export function Screen06CvDashboardReceive({
                     {isSuggested && (
                       <span
                         className={`text-[8.5px] px-1 py-0.2 rounded font-black leading-none ${
-                          isSelected ? 'bg-black text-[#FFB400]' : 'bg-amber-400/20 text-amber-400'
+                          isSelected
+                            ? 'bg-black text-[#FFB400]'
+                            : selectedDurationMin !== null
+                              ? 'bg-amber-400/20 text-amber-400'
+                              : 'bg-neutral-800 text-neutral-400'
                         }`}
                       >
                         Gợi ý
@@ -538,21 +595,29 @@ export function Screen06CvDashboardReceive({
                   type="button"
                   onClick={() => {
                     const current = selectedDurationMin ?? suggestedDurationMin;
-                    setSelectedDurationMin(Math.max(30, current - 5));
+                    setSelectedDurationMin(
+                      selectedDurationMin === null ? suggestedDurationMin : Math.max(30, current - 5)
+                    );
+                    setShowTimeRequiredWarning(false);
                   }}
                   className="px-2 py-1.5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
                   title="Giảm 5 phút"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="px-2 text-[11.5px] font-extrabold text-amber-400 tabular-nums">
-                  {selectedDurationMin ? `${selectedDurationMin}p` : `${suggestedDurationMin}p`}
+                <span
+                  className={`px-2 text-[11.5px] font-extrabold tabular-nums ${selectedDurationMin ? 'text-amber-400' : 'text-neutral-500'}`}
+                >
+                  {selectedDurationMin ? `${selectedDurationMin}p` : '—'}
                 </span>
                 <button
                   type="button"
                   onClick={() => {
                     const current = selectedDurationMin ?? suggestedDurationMin;
-                    setSelectedDurationMin(Math.min(180, current + 5));
+                    setSelectedDurationMin(
+                      selectedDurationMin === null ? suggestedDurationMin : Math.min(180, current + 5)
+                    );
+                    setShowTimeRequiredWarning(false);
                   }}
                   className="px-2 py-1.5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
                   title="Tăng 5 phút"
@@ -565,34 +630,38 @@ export function Screen06CvDashboardReceive({
             {/* Estimated Finish Time Banner */}
             <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-neutral-800">
               <span className="text-neutral-400">Dự kiến xong lúc:</span>
-              <span className="font-extrabold text-white tabular-nums">
+              <span className="font-extrabold tabular-nums">
                 {selectedDurationMin ? (
                   <span className="text-emerald-400">{estimatedFinishTime} (Cam kết)</span>
                 ) : (
-                  <span className="text-neutral-400">{estimatedFinishTime} (Ước tính)</span>
+                  <span className="text-neutral-500 font-semibold">—</span>
                 )}
               </span>
             </div>
           </div>
 
-          {/* 4. Big CTA Button: Start Quest (BẮT BUỘC CHỌN MỚI ĐƯỢC NHẤN NÚT) */}
-          {selectedDurationMin ? (
+          {/* 4. Big CTA Button: Start Quest */}
+          {showTimeRequiredWarning && !selectedDurationMin ? (
             <button
               type="button"
-              onClick={() => onStartTask(selectedDurationMin)}
-              className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[14px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
+              onClick={handleStartTaskClick}
+              className="w-full py-4 px-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 text-neutral-400 font-bold text-[12.5px] tracking-wider flex items-center justify-center gap-2 cursor-pointer uppercase select-none active:scale-[0.99] transition-all"
             >
-              <Play className="w-4 h-4 fill-black stroke-black" />
-              <span>MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM (~{selectedDurationMin}p)</span>
+              <Lock className="w-4 h-4 text-neutral-400" />
+              <span>BẮT BUỘC CHỌN THỜI GIAN TRƯỚC KHI BẮT ĐẦU</span>
             </button>
           ) : (
             <button
               type="button"
-              disabled
-              className="w-full py-4 px-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 text-neutral-500 font-bold text-[12.5px] tracking-wider flex items-center justify-center gap-2 cursor-not-allowed opacity-60 uppercase select-none"
+              onClick={handleStartTaskClick}
+              className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[14px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
             >
-              <Lock className="w-4 h-4 text-neutral-500" />
-              <span>BẮT BUỘC CHỌN THỜI GIAN TRƯỚC KHI BẮT ĐẦU</span>
+              <Play className="w-4 h-4 fill-black stroke-black" />
+              <span>
+                {selectedDurationMin
+                  ? `MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM (~${selectedDurationMin}p)`
+                  : 'MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM'}
+              </span>
             </button>
           )}
         </div>

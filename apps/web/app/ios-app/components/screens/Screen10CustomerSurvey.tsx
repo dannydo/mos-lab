@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
 import { getLocalProgressSnapshot, getLocalProgressSnapshotAsync } from '../../state/offlineSync';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { Star, Sparkles, Maximize2, Check } from 'lucide-react';
 
 interface Screen10CustomerSurveyProps {
@@ -88,8 +90,13 @@ export function Screen10CustomerSurvey({
     });
   };
 
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
+
   return (
-    <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
+    <div
+      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
+    >
       {/* Top Navbar on Black with Working Native Back Button */}
       <IosNavigationBar title="Wings Beauty Survey" onBack={onBack} backTitle="Ảnh After" />
 
@@ -135,24 +142,38 @@ export function Screen10CustomerSurvey({
         <div className="space-y-4">
           {/* Main Greeting */}
           <div className="text-center pt-1">
-            <h2 className="text-[20px] font-black text-black leading-tight px-2">
+            <h2 className={`text-[20px] font-black ${isDark ? 'text-white' : 'text-black'} leading-tight px-2`}>
               {customerName} ơi, Chị cảm nhận ca làm hôm nay thế nào ạ?
             </h2>
-            <div className="text-[12px] text-gray-500 font-medium mt-1.5">
-              Chuyên viên phục vụ: <span className="text-gray-800 font-bold">{staffName} (CV🪶)</span> · Salon Đề Thám
+            <div
+              className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium mt-1.5 inline-flex items-center justify-center gap-1`}
+            >
+              <span>Chuyên viên phục vụ:</span>
+              <span
+                className={`${isDark ? 'text-neutral-200' : 'text-gray-800'} font-bold inline-flex items-center gap-1`}
+              >
+                {staffName} (<CvFeather1Badge />)
+              </span>
+              <span>· Salon Đề Thám</span>
             </div>
           </div>
 
           {/* GƯƠNG SOI FORM MI CHO KHÁCH (Before & After Mirror Showcase: 2 Hàng Dọc Trên/Dưới) */}
-          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 space-y-3">
+          <div
+            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border space-y-3`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-[#FFB400]" />
-                <span className="text-[12px] font-black text-black uppercase tracking-wider">
+                <span
+                  className={`text-[12px] font-black ${isDark ? 'text-white' : 'text-black'} uppercase tracking-wider`}
+                >
                   GƯƠNG SOI FORM MI · ĐỐI CHIẾU TRƯỚC & SAU
                 </span>
               </div>
-              <span className="text-[10px] font-bold text-gray-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+              <span
+                className={`text-[10px] font-bold ${isDark ? 'text-neutral-400 bg-neutral-800' : 'text-gray-500 bg-neutral-100'} px-2 py-0.5 rounded-full`}
+              >
                 Chạm để phóng to
               </span>
             </div>
@@ -256,8 +277,12 @@ export function Screen10CustomerSurvey({
           </div>
 
           {/* 5 Yellow Stars (Interactive) */}
-          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80 text-center">
-            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+          <div
+            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border text-center`}
+          >
+            <div
+              className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider mb-2`}
+            >
               ĐÁNH GIÁ SỰ HÀI LÒNG CỦA CHỊ
             </div>
             <div className="flex justify-center items-center gap-2">
@@ -270,7 +295,7 @@ export function Screen10CustomerSurvey({
                 >
                   <Star
                     className={`w-8 h-8 ${
-                      s <= rating ? 'text-[#FFB400] fill-[#FFB400]' : 'text-neutral-300'
+                      s <= rating ? 'text-[#FFB400] fill-[#FFB400]' : isDark ? 'text-neutral-700' : 'text-neutral-300'
                     } transition-colors`}
                   />
                 </button>
@@ -289,12 +314,20 @@ export function Screen10CustomerSurvey({
               onClick={() => setSelectedEmotion('happy')}
               className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'happy'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
-                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
+                  ? isDark
+                    ? 'border-2 border-[#FFB400] bg-amber-950/40 shadow-sm scale-102'
+                    : 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : isDark
+                    ? 'bg-neutral-900 border border-neutral-800 hover:bg-neutral-800'
+                    : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">😄</span>
-              <span className="text-[11px] font-bold text-amber-900 mt-2 text-center leading-tight">Rất Hài Lòng</span>
+              <span
+                className={`text-[11px] font-bold ${isDark ? 'text-amber-300' : 'text-amber-900'} mt-2 text-center leading-tight`}
+              >
+                Rất Hài Lòng
+              </span>
             </button>
 
             {/* 2. Bình Thường */}
@@ -303,12 +336,18 @@ export function Screen10CustomerSurvey({
               onClick={() => setSelectedEmotion('normal')}
               className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'normal'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
-                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
+                  ? isDark
+                    ? 'border-2 border-[#FFB400] bg-amber-950/40 shadow-sm scale-102'
+                    : 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : isDark
+                    ? 'bg-neutral-900 border border-neutral-800 hover:bg-neutral-800'
+                    : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">🙂</span>
-              <span className="text-[11px] font-semibold text-gray-700 mt-2 text-center leading-tight">
+              <span
+                className={`text-[11px] font-semibold ${isDark ? 'text-neutral-300' : 'text-gray-700'} mt-2 text-center leading-tight`}
+              >
                 Bình Thường
               </span>
             </button>
@@ -319,12 +358,20 @@ export function Screen10CustomerSurvey({
               onClick={() => setSelectedEmotion('dislike')}
               className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'dislike'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
-                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
+                  ? isDark
+                    ? 'border-2 border-[#FFB400] bg-amber-950/40 shadow-sm scale-102'
+                    : 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : isDark
+                    ? 'bg-neutral-900 border border-neutral-800 hover:bg-neutral-800'
+                    : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">🙁</span>
-              <span className="text-[11px] font-semibold text-gray-700 mt-2 text-center leading-tight">Chưa Thích</span>
+              <span
+                className={`text-[11px] font-semibold ${isDark ? 'text-neutral-300' : 'text-gray-700'} mt-2 text-center leading-tight`}
+              >
+                Chưa Thích
+              </span>
             </button>
 
             {/* 4. Thất Vọng */}
@@ -333,18 +380,30 @@ export function Screen10CustomerSurvey({
               onClick={() => setSelectedEmotion('disappointed')}
               className={`p-2.5 rounded-2xl flex flex-col items-center justify-center aspect-[3/4] transition-all cursor-pointer ${
                 selectedEmotion === 'disappointed'
-                  ? 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
-                  : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
+                  ? isDark
+                    ? 'border-2 border-[#FFB400] bg-amber-950/40 shadow-sm scale-102'
+                    : 'border-2 border-[#FFB400] bg-amber-50/70 shadow-sm scale-102'
+                  : isDark
+                    ? 'bg-neutral-900 border border-neutral-800 hover:bg-neutral-800'
+                    : 'bg-white shadow-xs border border-neutral-200/70 hover:bg-neutral-50'
               }`}
             >
               <span className="text-3xl">😡</span>
-              <span className="text-[11px] font-semibold text-gray-700 mt-2 text-center leading-tight">Thất Vọng</span>
+              <span
+                className={`text-[11px] font-semibold ${isDark ? 'text-neutral-300' : 'text-gray-700'} mt-2 text-center leading-tight`}
+              >
+                Thất Vọng
+              </span>
             </button>
           </div>
 
           {/* Điểm chị ưng ý nhất (Interactive Toggle Chips) */}
-          <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200/80">
-            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1 mb-2">
+          <div
+            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border`}
+          >
+            <div
+              className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider px-1 mb-2`}
+            >
               ĐIỂM CHỊ ƯNG Ý NHẤT (CHẠM ĐỂ CHỌN)
             </div>
             <div className="space-y-2">
@@ -358,7 +417,9 @@ export function Screen10CustomerSurvey({
                     className={`w-full py-2.5 px-3.5 rounded-xl font-bold text-[13px] flex items-center justify-between transition-all cursor-pointer text-left ${
                       isSelected
                         ? 'bg-[#FFB400] text-black shadow-xs'
-                        : 'bg-neutral-100 text-gray-600 hover:bg-neutral-200'
+                        : isDark
+                          ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                          : 'bg-neutral-100 text-gray-600 hover:bg-neutral-200'
                     }`}
                   >
                     <span>{point}</span>
@@ -381,7 +442,7 @@ export function Screen10CustomerSurvey({
           <button
             type="button"
             onClick={onBack}
-            className="w-full py-2.5 text-center text-neutral-600 hover:text-black text-[13px] font-bold active:opacity-60 transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
+            className={`w-full py-2.5 text-center ${isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-black'} text-[13px] font-bold active:opacity-60 transition-opacity cursor-pointer flex items-center justify-center gap-1.5`}
           >
             <span>‹ Quay lại xem ảnh After & thời gian</span>
           </button>

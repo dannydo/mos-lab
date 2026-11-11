@@ -286,7 +286,7 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
   // Plus inline quick-switch pills on Desktop for CV🪶 / CC / CV
   if (variant === 'header-icon') {
     const isDark = themeMode === 'dark';
-    const desktopItems = items.filter((item) => item.key !== 'chat');
+    const desktopItems = items.filter((item) => item.key !== 'chat' && item.key !== 'consult');
 
     return (
       <div className="inline-flex items-center gap-1.5" data-testid="header-role-quick-switch">

@@ -8482,3 +8482,17 @@ button:not(:disabled):not(.ant-btn-loading):active,
   border-top-left-radius: 20px !important;
   border-top-right-radius: 20px !important;
 }
+
+/* ==========================================================================
+   No Spin Buttons (Hide number input up/down arrows across browsers)
+   ========================================================================== */
+input.no-spin-buttons::-webkit-outer-spin-button,
+input.no-spin-buttons::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+  display: none !important;
+}
+input.no-spin-buttons {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}

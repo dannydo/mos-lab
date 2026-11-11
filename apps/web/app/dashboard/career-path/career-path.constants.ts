@@ -235,31 +235,24 @@ export function formatCareerRoleName(role?: string | null, compact = false): str
 
 /**
  * Tính tiền thưởng hoa hồng Combo bậc thang theo giá trị gói (Kinh Thánh mOS Điều răn COMBO-REWARD-001):
- * - Combo < 2M: 50K
- * - Combo 2M - < 3M: 100K
- * - Combo 3M - < 4M: 150K
- * - Từ 4M trở lên: 150K + 50K cho mỗi 1M tăng thêm (e.g. 4.5M -> 200K, 6M -> 300K, 8M -> 400K)
+ * - Dưới 2M: +50K
+ * - Mỗi 1M kế tiếp: +50K (2M -> 100K, 3M -> 150K, 4M -> 200K, 9M -> 450K...)
  */
 export function calculateComboBonus(
   price: number,
   config?: {
     comboUnder2mBonus?: number;
+    comboStepPerMillionBonus?: number;
     comboUnder3mBonus?: number;
     comboUnder4mBonus?: number;
-    comboStepPerMillionBonus?: number;
   }
 ): number {
+  if (!price || price <= 0) return 0;
   const under2m = config?.comboUnder2mBonus ?? 50_000;
-  const under3m = config?.comboUnder3mBonus ?? 100_000;
-  const under4m = config?.comboUnder4mBonus ?? 150_000;
   const step = config?.comboStepPerMillionBonus ?? 50_000;
 
   if (price < 2_000_000) return under2m;
-  if (price < 3_000_000) return under3m;
-  if (price < 4_000_000) return under4m;
-
-  const millionsAbove4m = Math.floor((price - 4_000_000) / 1_000_000);
-  return under4m + (1 + millionsAbove4m) * step;
+  return Math.floor(price / 1_000_000) * step;
 }
 
 export interface HudMetricItem {

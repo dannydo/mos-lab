@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
+import { calculateCvComboTierBonus } from '../../state/useIosBillingCheckout';
 
 interface Screen13CheckoutTipProps {
   booking?: BookingItem;
@@ -30,7 +31,10 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
       ? techShare70 + checkOutShare10
       : techShare70;
 
-  const comboBonus = booking?.selectedCombo?.bonus || 0;
+  const comboTotal =
+    (booking?.selectedCombo ? Number(booking.selectedCombo.price || 0) : 0) +
+    (booking?.selectedUnderCombo ? Number(booking.selectedUnderCombo.price || 0) : 0);
+  const comboBonus = calculateCvComboTierBonus(comboTotal);
   const serumBonus = (booking?.cartProducts || []).reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
   const subtotal = booking?.billing?.subtotal || 1650000;
   const vatRate = booking?.billing?.vatRate ?? 0.08;

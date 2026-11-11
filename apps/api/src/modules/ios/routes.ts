@@ -131,13 +131,13 @@ async function saveLiveOverrides(overrides: Record<string, any>): Promise<void> 
   }
 }
 
+/**
+ * Thưởng hoa hồng Combo CVL: Dưới 2M +50K, mỗi 1M kế tiếp +50K
+ */
 function calculateCvComboTierBonus(comboPrice: number): number {
   if (!comboPrice || comboPrice <= 0) return 0;
   if (comboPrice < 2000000) return 50000;
-  if (comboPrice < 3000000) return 100000;
-  if (comboPrice < 4000000) return 150000;
-  const extraMillions = Math.floor((comboPrice - 3000000) / 1000000);
-  return 150000 + extraMillions * 50000;
+  return Math.floor(comboPrice / 1000000) * 50000;
 }
 
 function calculateCvSerumTierBonus(unitPrice: number, quantity: number): number {
@@ -471,6 +471,7 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const customerIds = Array.from(new Set(rows.map((r) => Number(r.user_id)).filter((id) => id > 0)));
       const comboBalanceMap = new Map<number, any>();
       const underMinkComboMap = new Map<number, any>();
+      const diamondBalanceMap = new Map<number, number>();
       const lashHistoryMap = new Map<number, Array<{ date: string; serviceName: string; staffName: string }>>();
       const lastVisitSpecsMap = new Map<number, any>();
 
@@ -539,11 +540,20 @@ export async function iosRoutes(fastify: FastifyInstance) {
              GROUP BY usb.user_id`
           );
 
-          const [[historyRows], [balanceRows], [underBalanceRows]] = await Promise.all([
+          const diamondPromise = pool.query<mysql.RowDataPacket[]>(
+            `SELECT user_id, amount FROM user_balance WHERE user_id IN (${idListStr}) AND currency_id = 3`
+          );
+
+          const [[historyRows], [balanceRows], [underBalanceRows], [diamondRows]] = await Promise.all([
             historyPromise,
             balancePromise,
             underBalancePromise,
+            diamondPromise,
           ]);
+
+          for (const dr of diamondRows) {
+            diamondBalanceMap.set(Number(dr.user_id), Number(dr.amount || 0));
+          }
 
           const latestUpperOsIds: number[] = [];
           const osToUserMap = new Map<number, { userId: number; serviceKey: string }>();
@@ -721,15 +731,6 @@ export async function iosRoutes(fastify: FastifyInstance) {
         const isNew = Number(r.is_new) || 0;
         const customerId = Number(r.user_id) || 0;
 
-        const isDbUnassigned = !r.assigned_staff_id || Number(r.assigned_staff_id) === 0;
-        const isUnassignedQueue = !override.assignedStaffId && isDbUnassigned;
-
-        const assignedStaffId = isUnassignedQueue ? 0 : Number(override.assignedStaffId ?? r.assigned_staff_id ?? 0);
-        const assignedStaffName = isUnassignedQueue
-          ? 'Chờ phân công (Đầu tua)'
-          : override.assignedStaffName ||
-            (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : 'Chuyên Viên');
-
         const checkInStaffId =
           override.checkInStaffId ?? (r.check_in_staff_id ? Number(r.check_in_staff_id) : undefined);
         const checkInStaffName = override.checkInStaffName ?? r.check_in_staff_name ?? undefined;
@@ -739,6 +740,24 @@ export async function iosRoutes(fastify: FastifyInstance) {
           override.checkOutStaffId ?? (r.check_out_staff_id ? Number(r.check_out_staff_id) : undefined);
         const checkOutStaffName = override.checkOutStaffName ?? r.check_out_staff_name ?? undefined;
         const checkOutStaffTier = override.checkOutStaffTier ?? undefined;
+
+        const isDbUnassigned = !r.assigned_staff_id || Number(r.assigned_staff_id) === 0;
+        const isServicingOrDone =
+          status === 'SERVICING' ||
+          status === 'DONE' ||
+          Boolean(checkInStaffId) ||
+          Boolean(override.assignedStaffId) ||
+          Boolean(r.check_in_staff_id) ||
+          (r.assigned_staff_id && Number(r.assigned_staff_id) > 0);
+        const isUnassignedQueue = !override.assignedStaffId && isDbUnassigned && !checkInStaffId && !isServicingOrDone;
+
+        const assignedStaffId = isUnassignedQueue
+          ? 0
+          : Number(override.assignedStaffId ?? r.assigned_staff_id ?? checkInStaffId ?? 0);
+        const assignedStaffName = isUnassignedQueue
+          ? 'Chờ phân công (Đầu tua)'
+          : override.assignedStaffName ||
+            (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : checkInStaffName || 'Chuyên Viên');
 
         const comboInfo = comboBalanceMap.get(customerId) || {
           isComboLive: false,
@@ -752,19 +771,34 @@ export async function iosRoutes(fastify: FastifyInstance) {
         };
 
         const selectedCombo = override.selectedCombo || null;
+        const selectedUnderCombo = override.selectedUnderCombo || null;
+        const comboRedemption = override.comboRedemption || null;
         const cartProducts = override.cartProducts || [];
         const productTotal = cartProducts.reduce(
           (sum: number, p: any) => sum + Number(p.price || 0) * Number(p.quantity || 1),
           0
         );
-        const comboTotal = selectedCombo ? Number(selectedCombo.price || 0) : 0;
+        const comboTotal =
+          (selectedCombo ? Number(selectedCombo.price || 0) : 0) +
+          (selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0);
         const upgradePrice = Number(override.upgradePrice || 0);
         const isClientComboLive = Boolean(comboInfo.isComboLive);
-        const effectiveServiceTotal = selectedCombo ? 0 : isClientComboLive ? upgradePrice : servicePrice;
+        const effectiveServiceTotal = comboRedemption
+          ? Number(comboRedemption.totalCustomerPayToday ?? 0)
+          : selectedCombo
+            ? 0
+            : isClientComboLive
+              ? upgradePrice
+              : servicePrice;
         const subtotal = effectiveServiceTotal + comboTotal + productTotal;
-        const tipAmount = Number(override.billing?.tipAmount ?? 50000);
+        const vatRate = 0.08;
+        const vatAmount = Math.round(subtotal * vatRate);
+        const diamondUsed = Number(override.billing?.diamondUsed ?? 0);
+        const diamondDiscountAmount = Number(override.billing?.diamondDiscountAmount ?? diamondUsed * 1000);
+        const tipAmount = Number(override.billing?.tipAmount ?? 0);
 
-        const comboBonus = selectedCombo ? calculateCvComboTierBonus(Number(selectedCombo.price || 0)) : 0;
+        // Tính thưởng Combo CVL dựa trên tổng doanh thu Combo thu được (Gộp 2 gói nếu có) theo bậc thang đã cấu hình
+        const comboBonus = calculateCvComboTierBonus(comboTotal);
         const serumBonus = cartProducts.reduce(
           (sum: number, p: any) => sum + calculateCvSerumTierBonus(Number(p.price || 0), Number(p.quantity || 1)),
           0
@@ -772,9 +806,11 @@ export async function iosRoutes(fastify: FastifyInstance) {
 
         const effectiveCheckInId = checkInStaffId || assignedStaffId;
         const effectiveCheckOutId = checkOutStaffId || assignedStaffId;
-        const isSelfCheckIn = effectiveCheckInId === assignedStaffId;
-        const isSelfCheckOut = effectiveCheckOutId === assignedStaffId;
-        const cvTipPercent = 70 + (isSelfCheckIn ? 10 : 0) + (isSelfCheckOut ? 10 : 0);
+        const targetStaffId = activeStaffId || assignedStaffId;
+        const cvTipPercent =
+          (assignedStaffId > 0 && assignedStaffId === targetStaffId ? 70 : 0) +
+          (effectiveCheckInId > 0 && effectiveCheckInId === targetStaffId ? 10 : 0) +
+          (effectiveCheckOutId > 0 && effectiveCheckOutId === targetStaffId ? 10 : 0);
 
         const isAnyPlaceholder = (name?: string | null) =>
           !name ||
@@ -817,12 +853,16 @@ export async function iosRoutes(fastify: FastifyInstance) {
           customerName: (r.customer_name || 'Khách').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim(),
           customerPhone: formatPhoneNumberDots(r.customer_phone, !canViewFullPhone),
           customerId,
+          diamondBalance: diamondBalanceMap.get(customerId) ?? 0,
           customerAvatar: resolveCustomerAvatar(r.customer_avatar),
-          assignedStaffAvatar: resolveStaffAvatar(r.staff_avatar),
+          assignedStaffAvatar: resolveStaffAvatar(r.staff_avatar || r.check_in_staff_avatar),
           customerVisits: visits || 1,
           customerNote: note,
           timeSlot: formatTimeSlot(r.booking_date_start, duration),
           time12h: formatTime12h(r.booking_date_start),
+          storeId: Number(r.client_store_id) || storeId,
+          branchCode: Number(r.client_store_id) === 16 || storeId === 16 ? 'EP' : 'DT',
+          branchName: Number(r.client_store_id) === 16 || storeId === 16 ? 'Estella Place' : 'Đề Thám',
           serviceName: effectiveServiceName,
           serviceType: override.serviceType || r.service_type || 'Normal',
           servicePrice,
@@ -890,6 +930,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
             },
           ],
           selectedCombo,
+          selectedUnderCombo,
+          comboRedemption,
           attributes:
             override.attributes ||
             (() => {
@@ -938,6 +980,10 @@ export async function iosRoutes(fastify: FastifyInstance) {
           },
           billing: {
             subtotal,
+            vatRate,
+            vatAmount,
+            diamondUsed,
+            diamondDiscountAmount,
             serviceTotal: effectiveServiceTotal,
             comboTotal,
             productTotal,
@@ -947,7 +993,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
             tipCheckInShare: Math.round(tipAmount * 0.1),
             tipCheckOutShare: Math.round(tipAmount * 0.1),
             tipCcShare: Math.round(tipAmount * 0.2),
-            grandTotal: subtotal + tipAmount,
+            transferProofPhoto: override.billing?.transferProofPhoto,
+            grandTotal: Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount),
           },
         };
       });
@@ -964,6 +1011,12 @@ export async function iosRoutes(fastify: FastifyInstance) {
               progress: override.status === 'INCOMING' ? undefined : override.progress || mockBooking.progress,
               attributes: override.attributes || mockBooking.attributes,
               selectedCombo: override.selectedCombo !== undefined ? override.selectedCombo : mockBooking.selectedCombo,
+              selectedUnderCombo:
+                override.selectedUnderCombo !== undefined
+                  ? override.selectedUnderCombo
+                  : mockBooking.selectedUnderCombo,
+              comboRedemption:
+                override.comboRedemption !== undefined ? override.comboRedemption : mockBooking.comboRedemption,
               checkInStaffId: override.checkInStaffId || mockBooking.assignedStaffId,
               checkInStaffName: override.checkInStaffName || mockBooking.assignedStaffName,
               checkInStaffTier: override.checkInStaffTier || 'CVL',
@@ -986,10 +1039,9 @@ export async function iosRoutes(fastify: FastifyInstance) {
         ? allMappedBookings.filter((b) => {
             const isOwnCustomer =
               !b.isUnassignedQueue &&
-              b.assignedStaffId > 0 &&
-              (b.assignedStaffId === activeStaffId ||
-                b.checkInStaffId === activeStaffId ||
-                b.checkOutStaffId === activeStaffId);
+              ((b.assignedStaffId && Number(b.assignedStaffId) > 0 && Number(b.assignedStaffId) === activeStaffId) ||
+                (b.checkInStaffId && Number(b.checkInStaffId) === activeStaffId) ||
+                (b.checkOutStaffId && Number(b.checkOutStaffId) === activeStaffId));
             if (isOwnCustomer) return true;
 
             const isNextCandidate = b.isUnassignedQueue && (b.status === 'INCOMING' || b.status === 'CHECKED_IN');
@@ -1163,6 +1215,20 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const current = overrides[String(bookingId)] || {};
 
       if (
+        (action === 'CHECK_IN' || action === 'SAVE_CONSULTATION') &&
+        isLockedCvl &&
+        current.checkInStaffId &&
+        Number(current.checkInStaffId) > 0 &&
+        Number(current.checkInStaffId) !== actorStaffId
+      ) {
+        return reply.status(409).send({
+          success: false,
+          error:
+            'Khách hàng Đầu tua này vừa được Chuyên Viên khác tiếp nhận Check-in. Vui lòng làm mới danh sách sảnh.',
+        });
+      }
+
+      if (
         isLockedCvl &&
         action !== 'RESET_DEMO' &&
         current.assignedStaffId &&
@@ -1174,11 +1240,12 @@ export async function iosRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({
           success: false,
           error:
-            'CV🪶 chỉ được phép thao tác trên khách hàng kế tiếp (Đầu tua) hoặc khách book của chính mình, không được truy cập khách của Chuyên Viên khác.',
+            'CVL (Chuyên Viên Tự Chủ) chỉ được phép thao tác trên khách hàng kế tiếp (Đầu tua) hoặc khách book của chính mình, không được truy cập khách của Chuyên Viên khác.',
         });
       }
 
       if (action === 'CHECK_IN') {
+        const shouldAutoAssignToSelf = actorStaffTier === 'CVL';
         overrides[String(bookingId)] = {
           ...current,
           status: 'CHECKED_IN',
@@ -1186,18 +1253,39 @@ export async function iosRoutes(fastify: FastifyInstance) {
           checkInStaffId: actorStaffId,
           checkInStaffName: actorStaffName,
           checkInStaffTier: actorStaffTier,
+          assignedStaffId: current.assignedStaffId || (shouldAutoAssignToSelf ? actorStaffId : 0),
+          assignedStaffName:
+            current.assignedStaffName && current.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+              ? current.assignedStaffName
+              : shouldAutoAssignToSelf
+                ? actorStaffName
+                : 'Chờ phân công (Đầu tua)',
           checkedInAt: new Date().toISOString(),
         };
       } else if (action === 'SAVE_CONSULTATION') {
+        const isAssignOther = body.assignmentMode === 'ASSIGN_OTHER';
         overrides[String(bookingId)] = {
           ...current,
-          status: body.nextStatus || 'SERVICING',
-          orderState: body.nextStatus === 'SERVICING' ? 'Service Start' : 'Consultation',
+          status: isAssignOther ? 'CHECKED_IN' : body.nextStatus || 'SERVICING',
+          orderState: isAssignOther
+            ? 'Consultation'
+            : body.nextStatus === 'SERVICING'
+              ? 'Service Start'
+              : 'Consultation',
           checkInStaffId: current.checkInStaffId || actorStaffId,
           checkInStaffName: current.checkInStaffName || actorStaffName,
           checkInStaffTier: current.checkInStaffTier || actorStaffTier,
+          assignedStaffId: isAssignOther ? current.assignedStaffId || 0 : current.assignedStaffId || actorStaffId,
+          assignedStaffName: isAssignOther
+            ? current.assignedStaffName || 'Chờ phân công (Đầu tua)'
+            : current.assignedStaffName && current.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+              ? current.assignedStaffName
+              : actorStaffName,
           attributes: body.attributes || current.attributes,
           selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
+          selectedUnderCombo:
+            body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
+          comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
           serviceName: body.skuPricing?.skuName || current.serviceName,
           servicePrice: body.skuPricing?.skuPrice ?? current.servicePrice,
           serviceType: body.skuPricing?.serviceType || current.serviceType,
@@ -1254,6 +1342,35 @@ export async function iosRoutes(fastify: FastifyInstance) {
           );
         }
 
+        let progressPool: mysql.Pool | null = null;
+        try {
+          progressPool = getLegacyPool();
+        } catch (_) {}
+        if (progressPool && (incomingProgress.retainLashCountLeft !== undefined || incomingProgress.retainLashes)) {
+          try {
+            const leftVal = incomingProgress.retainLashCountLeft ?? incomingProgress.retainLashes?.left;
+            const rightVal = incomingProgress.retainLashCountRight ?? incomingProgress.retainLashes?.right;
+            if (leftVal !== undefined && rightVal !== undefined) {
+              const [osRows] = await progressPool.query<mysql.RowDataPacket[]>(
+                'SELECT id FROM order_service WHERE order_id = ? ORDER BY id ASC LIMIT 1',
+                [Number(bookingId)]
+              );
+              if (osRows.length > 0) {
+                const osId = osRows[0].id;
+                const groupKey = String(Math.floor(Date.now() / 1000));
+                await progressPool.query(
+                  `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_value, group_key, date_created)
+                   VALUES (11, 1, 'service-retain-attribute', ?, 17, ?, ?, NOW()),
+                          (11, 1, 'service-retain-attribute', ?, 18, ?, ?, NOW())`,
+                  [osId, String(leftVal), groupKey, osId, String(rightVal), groupKey]
+                );
+              }
+            }
+          } catch (dbErr) {
+            console.warn('[ios-api] Failed to persist retain lash counts to legacy DB:', dbErr);
+          }
+        }
+
         overrides[String(bookingId)] = {
           ...current,
           status: 'SERVICING',
@@ -1280,6 +1397,9 @@ export async function iosRoutes(fastify: FastifyInstance) {
           checkOutStaffTier: actorStaffTier,
           cartProducts: body.cartProducts !== undefined ? body.cartProducts : current.cartProducts,
           selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
+          selectedUnderCombo:
+            body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
+          comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
           checkedOutAt: new Date().toISOString(),
         };
       } else if (action === 'COMPLETE_ORDER') {
@@ -1293,6 +1413,10 @@ export async function iosRoutes(fastify: FastifyInstance) {
           checkOutStaffId,
           checkOutStaffName,
           checkOutStaffTier,
+          selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
+          selectedUnderCombo:
+            body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
+          comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
           billing: {
             ...(current.billing || {}),
             ...(body.billing || {}),

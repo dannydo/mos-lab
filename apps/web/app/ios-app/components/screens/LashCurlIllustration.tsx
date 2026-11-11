@@ -9,6 +9,7 @@ interface LashCurlIllustrationProps {
   isActive?: boolean;
   className?: string;
   showLabels?: boolean;
+  isDark?: boolean;
 }
 
 /**
@@ -217,6 +218,7 @@ export const LashCurlIllustration: React.FC<LashCurlIllustrationProps> = ({
   isActive = false,
   className = '',
   showLabels = true,
+  isDark = false,
 }) => {
   const isZoom = variant === 'zoom';
 
@@ -254,16 +256,26 @@ export const LashCurlIllustration: React.FC<LashCurlIllustrationProps> = ({
               <stop offset="100%" stopColor="#C29580" />
             </linearGradient>
             <linearGradient id={`extGrad-card-${curl.id}`} x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#000000" />
-              <stop offset="65%" stopColor="#111827" />
-              <stop offset="100%" stopColor="#09090B" />
+              {isDark ? (
+                <>
+                  <stop offset="0%" stopColor="#FFFFFF" />
+                  <stop offset="65%" stopColor="#E2E8F0" />
+                  <stop offset="100%" stopColor="#CBD5E1" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor="#000000" />
+                  <stop offset="65%" stopColor="#111827" />
+                  <stop offset="100%" stopColor="#09090B" />
+                </>
+              )}
             </linearGradient>
           </defs>
 
           {/* Subtle Angle Measurement Arc between Natural Lash & Extension Lash */}
           <path
             d={`M ${natMid.x.toFixed(1)} ${natMid.y.toFixed(1)} Q ${(Math.max(natMid.x, extMid.x) + 6).toFixed(1)} ${((natMid.y + extMid.y) * 0.5).toFixed(1)}, ${extMid.x.toFixed(1)} ${extMid.y.toFixed(1)}`}
-            stroke={isActive ? '#D97706' : '#94A3B8'}
+            stroke={isActive ? '#D97706' : isDark ? '#64748B' : '#94A3B8'}
             strokeWidth="0.65"
             strokeDasharray="1.8 1.8"
             opacity="0.7"
@@ -278,7 +290,7 @@ export const LashCurlIllustration: React.FC<LashCurlIllustrationProps> = ({
               x={NATURAL_LASH_BEZIER.p3.x + 2}
               y={NATURAL_LASH_BEZIER.p3.y + 6.2}
               textAnchor="end"
-              fill="#8C5843"
+              fill={isDark ? '#D4A373' : '#8C5843'}
               fontSize="5.4"
               fontWeight="700"
               fontFamily="system-ui, -apple-system, sans-serif"
@@ -287,17 +299,19 @@ export const LashCurlIllustration: React.FC<LashCurlIllustrationProps> = ({
             </text>
           )}
 
-          {/* 2. Extension Lash (Sợi mi nối đen bóng, tỷ lệ mảnh chuẩn 1:40, ngọn nhọn sắc nét) */}
+          {/* 2. Extension Lash (Sợi mi nối đen bóng hoặc ánh bạch kim trên nền tối) */}
           <path
             d={extRibbon.ribbonPath}
             fill={`url(#extGrad-card-${curl.id})`}
-            filter="drop-shadow(0 1px 1.5px rgba(0,0,0,0.18))"
+            filter={
+              isDark ? 'drop-shadow(0 1px 2px rgba(255,255,255,0.15))' : 'drop-shadow(0 1px 1.5px rgba(0,0,0,0.18))'
+            }
           />
 
           {/* Subtle silk sheen along the lower/middle belly */}
           <path
             d={extRibbon.spinePath}
-            stroke={isActive ? '#F59E0B' : '#64748B'}
+            stroke={isActive ? '#F59E0B' : isDark ? '#94A3B8' : '#64748B'}
             strokeWidth="0.32"
             strokeLinecap="round"
             opacity="0.45"

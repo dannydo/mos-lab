@@ -1566,18 +1566,19 @@ export function resolveDisplayServiceName(booking?: {
   attributes?: { material?: string; count?: string; volume?: string; style?: string };
   customerVisits?: number;
 }): string {
+  const cleanPriceSuffix = (str: string) => str.replace(/\s*\(\s*[\d.,]+\s*đ?\s*\)/gi, '').trim();
   const s = String(booking?.serviceName || '').trim();
   const pkgKey = booking?.packageKey || booking?.comboLiveStatus?.packageKey;
   if (s && !s.toLowerCase().includes('any')) {
-    return formatComboName(s, pkgKey);
+    return cleanPriceSuffix(formatComboName(s, pkgKey));
   }
   if (booking?.comboLiveStatus?.isComboLive && booking.comboLiveStatus.comboName) {
-    return formatComboName(booking.comboLiveStatus.comboName, pkgKey);
+    return cleanPriceSuffix(formatComboName(booking.comboLiveStatus.comboName, pkgKey));
   }
   if (booking?.lashHistory && booking.lashHistory.length > 0) {
     const validHistory = booking.lashHistory.find((h) => h.serviceName && !h.serviceName.toLowerCase().includes('any'));
     if (validHistory?.serviceName) {
-      return validHistory.serviceName;
+      return cleanPriceSuffix(validHistory.serviceName);
     }
   }
   const mat = booking?.attributes?.material || 'HyperLight';
@@ -1585,7 +1586,7 @@ export function resolveDisplayServiceName(booking?: {
   const count = booking?.attributes?.count || '70 fan';
   const sku = resolveLashSkuPricing(mat, count, vol);
   if (sku?.skuName && !sku.skuName.toLowerCase().includes('any')) {
-    return sku.skuName;
+    return cleanPriceSuffix(sku.skuName);
   }
   return booking?.customerVisits && booking.customerVisits > 1 ? 'New Hyperlight 550' : 'Chưa chọn mẫu mi';
 }

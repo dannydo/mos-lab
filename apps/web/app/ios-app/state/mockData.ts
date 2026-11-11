@@ -233,7 +233,9 @@ export interface BookingItem {
   };
   diamondBalance?: number; // Số dư ví Kim Cương của khách (1 💎 = 1.000 VNĐ)
   debtAmount?: number; // Số tiền khách còn thiếu / công nợ (Ví dụ: 200.000đ -> 🔴 -200K)
-  branchCode?: string; // Mã chi nhánh (ví dụ: 'DT' - Đề Thám)
+  storeId?: number; // ID chi nhánh (ví dụ: 6 - Đề Thám, 16 - Estella Place)
+  branchCode?: string; // Mã chi nhánh (ví dụ: 'DT' - Đề Thám, 'EP' - Estella Place)
+  branchName?: string; // Tên chi nhánh
   lastVisitDate?: string; // Ngày ghé gần nhất (DD/MM/YYYY)
   lashHistory?: LashHistoryItem[];
   selectedCombo?: {
@@ -349,6 +351,10 @@ export interface BookingItem {
     updatedAt?: string;
     cloudSynced?: boolean;
     cloudSyncedAt?: string;
+    retainLashCountLeft?: number;
+    retainLashCountRight?: number;
+    retainLashes?: { left: number; right: number };
+    retainAttributeValues?: Record<string, { attribute_option_value: string; attribute_key: string }>;
   };
   survey?: {
     rating: number;
@@ -834,7 +840,7 @@ export const STAFF_QUEUE = [
 export const SALON_INFO = {
   storeId: 6,
   name: 'Wings Beauty Salon Đề Thám',
-  address: '159 - 159A Đề Thám, P. Cô Giang, Quận 1, TP.HCM',
+  address: '159A Đề Thám, P. Cô Giang, Quận 1, TP.HCM',
   hotline: '0937.554.430',
   currentCc: { id: 37790, name: 'Diễm Hương', role: 'Tư Vấn Viên Quầy' },
 };

@@ -10,7 +10,9 @@ export interface WingsUnifiedComboCardProps {
   customerPhone?: string;
   customerAvatar?: string;
   selectedPackageId?: string | null;
+  dimmed?: boolean;
   includeVat?: boolean;
+  showStaffRewards?: boolean;
   onSelectPackage: (pkg: MatchedComboPackageOption) => void;
   onSelectLocked?: () => void;
 }
@@ -26,7 +28,9 @@ export function WingsUnifiedComboCard({
   customerPhone,
   customerAvatar,
   selectedPackageId,
+  dimmed = false,
   includeVat = false,
+  showStaffRewards = false,
   onSelectPackage,
   onSelectLocked,
 }: WingsUnifiedComboCardProps) {
@@ -112,7 +116,9 @@ export function WingsUnifiedComboCard({
       customerPhone={customerPhone}
       customerAvatar={customerAvatar}
       selected={Boolean(selectedPackageId && selectedPackageId === activePkg.id)}
+      dimmed={dimmed}
       includeVat={includeVat}
+      showStaffRewards={showStaffRewards}
       compact
       showActionFooter={!activePkg.isLocked}
       allTiers={allTiers}

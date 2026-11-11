@@ -1,63 +1,147 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
-import { DollarSign, Award, Clock, HeartHandshake, Sparkles, ChevronRight, TrendingUp } from 'lucide-react';
+import { CvFeather1Badge, CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { BookingItem } from '../../state/mockData';
+import { ActiveActorProfile, StaffMonthlyStats } from '../../state/useIosAppState';
+import { calculateActorTipBreakdown } from '../../state/useIosBillingCheckout';
+import { Award, Clock, HeartHandshake, Sparkles, TrendingUp } from 'lucide-react';
 
 interface ScreenCvPaystubProps {
+  actor?: ActiveActorProfile;
+  staffStats?: (Partial<StaffMonthlyStats> & Record<string, any>) | null;
+  bookings?: BookingItem[];
   onBack?: () => void;
   onOpenSettings?: () => void;
 }
 
-export function ScreenCvPaystub({ onBack, onOpenSettings }: ScreenCvPaystubProps) {
-  const paystubData = {
-    staffName: 'Diễm Hương (CV🪶)',
-    level: 'CV🪶 (Level 3)',
-    currentMonth: 'Tháng 10/2026',
-    totalEstimatedEarnings: 18450000,
-    breakdown: [
-      {
-        id: 'hourly',
-        title: 'Lương Theo Giờ Làm Thực Tế',
-        amount: 8200000,
-        desc: '164 giờ tích lũy (50.000đ/giờ)',
-        icon: Clock,
-        color: 'text-blue-500',
-      },
-      {
-        id: 'service',
-        title: 'Thưởng Dịch Vụ Nối Mi',
-        amount: 5900000,
-        desc: '42 ca nối mi & dặm mi hoàn tất',
-        icon: Sparkles,
-        color: 'text-purple-500',
-      },
-      {
-        id: 'tip',
-        title: 'Thưởng Tips Từ Khách Hàng (70%)',
-        amount: 2850000,
-        desc: '38 lượt tip từ khách (Điều răn TIP-001)',
-        icon: HeartHandshake,
-        color: 'text-rose-500',
-      },
-      {
-        id: 'combo',
-        title: 'Thưởng Bán Chéo Combo & Serum',
-        amount: 1500000,
-        desc: '15 sản phẩm bọt vệ sinh & serum dưỡng',
-        icon: Award,
-        color: 'text-amber-500',
-      },
-    ],
-    recentTippedOrders: [
-      { customer: 'Chị Quyên', time: 'Hôm nay 15:45', service: 'Flawless 3D Design', tip: 100000, share: 70000 },
-      { customer: 'Chị Mai Lan', time: 'Hôm qua 11:20', service: 'Classic Tự Nhiên', tip: 50000, share: 35000 },
-      { customer: 'Chị Thu Hà', time: '02/10 16:10', service: 'Volume Glamour', tip: 150000, share: 105000 },
-    ],
-  };
+export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOpenSettings }: ScreenCvPaystubProps) {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
+
+  const now = new Date();
+  const currentMonthLabel = `Tháng ${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+  const staffName = actor?.name || 'Khanh Cao';
+  const isCvll = actor?.tier === 'CVLL';
+
+  const myCompletedBookings = useMemo(() => {
+    const actorId = Number(actor?.staffId || 0);
+    return bookings.filter((b) => {
+      if (b.status !== 'DONE') return false;
+      if (!actorId) return true;
+      return (
+        Number(b.assignedStaffId) === actorId ||
+        Number(b.checkInStaffId) === actorId ||
+        Number(b.checkOutStaffId) === actorId
+      );
+    });
+  }, [bookings, actor?.staffId]);
+
+  const liveStats = useMemo(() => {
+    const completedToday = staffStats?.completedToday ?? myCompletedBookings.length;
+    const tipToday =
+      staffStats?.tipEarnedToday ??
+      myCompletedBookings.reduce((sum, b) => {
+        const bd = calculateActorTipBreakdown(b, actor, b.billing?.tipAmount ?? 0);
+        return sum + bd.actorEarnedAmount;
+      }, 0);
+    const comboAndSerumToday =
+      (staffStats?.comboBonusToday ?? 0) + (staffStats?.serumBonusToday ?? 0) ||
+      myCompletedBookings.reduce(
+        (sum, b) =>
+          sum + Number(b.cvRewardBreakdown?.comboBonusAmount || 0) + Number(b.cvRewardBreakdown?.serumBonusAmount || 0),
+        0
+      );
+
+    const baseMonthlyHourly = 8200000;
+    const baseMonthlyService = 5900000 + completedToday * 140000;
+    const baseMonthlyTip = 2850000 + tipToday;
+    const baseMonthlyCombo = 1500000 + comboAndSerumToday;
+    const totalEstimatedEarnings = baseMonthlyHourly + baseMonthlyService + baseMonthlyTip + baseMonthlyCombo;
+
+    const recentTippedOrders = myCompletedBookings
+      .filter((b) => Number(b.billing?.tipAmount || 0) > 0)
+      .slice(0, 5)
+      .map((b) => {
+        const bd = calculateActorTipBreakdown(b, actor, b.billing?.tipAmount ?? 0);
+        return {
+          customer: b.customerName,
+          time: `Hôm nay ${b.time12h || ''}`.trim(),
+          service: b.serviceName,
+          tip: Number(b.billing?.tipAmount || 0),
+          share: bd.actorEarnedAmount,
+          percent: bd.actorEarnedPercent,
+        };
+      });
+
+    if (recentTippedOrders.length === 0) {
+      recentTippedOrders.push(
+        {
+          customer: 'Chị Quyên',
+          time: 'Hôm nay 15:45',
+          service: 'Flawless 3D Design',
+          tip: 100000,
+          share: 90000,
+          percent: 90,
+        },
+        {
+          customer: 'Chị Mai Lan',
+          time: 'Hôm qua 11:20',
+          service: 'Classic Tự Nhiên',
+          tip: 50000,
+          share: 40000,
+          percent: 80,
+        }
+      );
+    }
+
+    return {
+      completedToday,
+      tipToday,
+      comboAndSerumToday,
+      totalEstimatedEarnings,
+      breakdown: [
+        {
+          id: 'hourly',
+          title: 'Lương Theo Giờ Làm Thực Tế',
+          amount: baseMonthlyHourly,
+          desc: `164 giờ tích lũy · Ca hôm nay: ${staffStats?.shiftHours || '08:30 - 20:00'}`,
+          icon: Clock,
+          color: 'text-blue-500',
+        },
+        {
+          id: 'service',
+          title: 'Thưởng Dịch Vụ & Điểm Xoay Tua',
+          amount: baseMonthlyService,
+          desc: `${42 + completedToday} ca hoàn tất (${completedToday} ca hôm nay · +${staffStats?.pointsToday ?? 0} pts)`,
+          icon: Sparkles,
+          color: 'text-purple-500',
+        },
+        {
+          id: 'tip',
+          title: 'Thưởng Tips Phân Bổ (70/10/10)',
+          amount: baseMonthlyTip,
+          desc: `Hôm nay: +${tipToday.toLocaleString('vi-VN')}đ (70% Làm mi + 10% In + 10% Out)`,
+          icon: HeartHandshake,
+          color: 'text-rose-500',
+        },
+        {
+          id: 'combo',
+          title: 'Thưởng Chốt Combo & Dưỡng Mi Yeppeum',
+          amount: baseMonthlyCombo,
+          desc: `Hôm nay: +${comboAndSerumToday.toLocaleString('vi-VN')}đ thưởng bán gói & sản phẩm`,
+          icon: Award,
+          color: 'text-amber-500',
+        },
+      ],
+      recentTippedOrders,
+    };
+  }, [staffStats, myCompletedBookings, actor]);
 
   return (
-    <div className="flex flex-col h-full bg-[#F2F2F7]">
+    <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
       <IosNavigationBar
         title="Thu Nhập Tạm Tính (Live Paystub)"
         leftAction={onBack ? { label: 'Quay lại', onClick: onBack } : undefined}
@@ -69,30 +153,33 @@ export function ScreenCvPaystub({ onBack, onOpenSettings }: ScreenCvPaystubProps
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {/* Main Earnings Card */}
-        <div className="bg-gradient-to-br from-[#1C1C1E] via-[#2A2A2E] to-[#1C1C1E] rounded-2xl p-5 text-white shadow-md relative overflow-hidden">
+        <div className="bg-gradient-to-br from-[#1C1C1E] via-[#2A2A2E] to-[#1C1C1E] rounded-2xl p-5 text-white shadow-md relative overflow-hidden border border-neutral-800">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF9500]/10 rounded-full blur-2xl"></div>
 
-          <div className="flex items-center justify-between text-xs text-white/70 mb-1">
-            <span>
-              {paystubData.staffName} · {paystubData.currentMonth}
+          <div className="flex items-center justify-between text-xs text-white/80 mb-1">
+            <span className="inline-flex items-center gap-1.5 font-bold">
+              <span>{staffName}</span>
+              {isCvll ? <CvFeather2Badge /> : <CvFeather1Badge />}
+              <span>· {currentMonthLabel}</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-[#FF9500]/20 text-[#FFB400] font-semibold text-[10px]">
-              {paystubData.level}
+            <span className="px-2 py-0.5 rounded-full bg-[#FF9500]/20 text-[#FFB400] font-semibold text-[10px] inline-flex items-center gap-1">
+              {isCvll ? <CvFeather2Badge /> : <CvFeather1Badge />}
             </span>
           </div>
 
           <div className="mt-2">
-            <span className="text-xs text-white/60 font-medium">Tổng Thu Nhập Tạm Tính</span>
+            <span className="text-xs text-white/60 font-medium">Tổng Thu Nhập Tạm Tính Trong Tháng</span>
             <div className="text-3xl font-extrabold text-[#FFB400] mt-0.5 tabular-nums tracking-tight">
-              {new Intl.NumberFormat('vi-VN').format(paystubData.totalEstimatedEarnings)}đ
+              {new Intl.NumberFormat('vi-VN').format(liveStats.totalEstimatedEarnings)}đ
             </div>
           </div>
 
           <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/80">
-            <span className="flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> +18% so với cùng kỳ tháng trước
+            <span className="flex items-center gap-1 tabular-nums">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> Hôm nay: +
+              {(liveStats.tipToday + liveStats.comboAndSerumToday || 0).toLocaleString('vi-VN')}đ thưởng & tip
             </span>
-            <span className="text-[11px] text-white/60">Cập nhật lúc 17:30</span>
+            <span className="text-[11px] text-white/60 tabular-nums">{liveStats.completedToday} ca hoàn tất</span>
           </div>
         </div>
 
@@ -102,26 +189,40 @@ export function ScreenCvPaystub({ onBack, onOpenSettings }: ScreenCvPaystubProps
             Chi Tiết Các Khoản Thu Nhập
           </h3>
 
-          <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs">
-            {paystubData.breakdown.map((item) => {
+          <div
+            className={`${
+              isDark
+                ? 'bg-[#1C1C1E] border-neutral-800 divide-neutral-800'
+                : 'bg-white border-[#E5E5EA] divide-[#E5E5EA]'
+            } rounded-xl border divide-y overflow-hidden shadow-xs`}
+          >
+            {liveStats.breakdown.map((item) => {
               const Icon = item.icon;
               return (
                 <div
                   key={item.id}
-                  className="p-3.5 flex items-center justify-between hover:bg-[#F9F9FB] transition-colors"
+                  className={`p-3.5 flex items-center justify-between ${
+                    isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-[#F9F9FB]'
+                  } transition-colors`}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#F2F2F7] flex items-center justify-center">
+                    <div
+                      className={`w-9 h-9 rounded-lg ${
+                        isDark ? 'bg-neutral-800' : 'bg-[#F2F2F7]'
+                      } flex items-center justify-center`}
+                    >
                       <Icon className={`w-5 h-5 ${item.color} stroke-[2]`} />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-[#1C1C1E]">{item.title}</div>
-                      <div className="text-[11px] text-[#8E8E93] mt-0.5">{item.desc}</div>
+                      <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>
+                        {item.title}
+                      </div>
+                      <div className="text-[11px] text-[#8E8E93] mt-0.5 tabular-nums">{item.desc}</div>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <div className="text-sm font-bold text-[#1C1C1E] tabular-nums">
+                    <div className={`text-sm font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'} tabular-nums`}>
                       {new Intl.NumberFormat('vi-VN').format(item.amount)}đ
                     </div>
                   </div>
@@ -135,25 +236,31 @@ export function ScreenCvPaystub({ onBack, onOpenSettings }: ScreenCvPaystubProps
         <div>
           <div className="flex items-center justify-between mb-2 px-1">
             <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">
-              Lịch Sử Tiền Tip Gần Đây (CV 70%)
+              Lịch Sử Tiền Tip Theo Chặng (70/10/10)
             </h3>
-            <span className="text-[11px] text-[#8E8E93]">Ngưỡng $\ge$ 20.000đ</span>
+            <span className="text-[11px] text-[#8E8E93]">Minh bạch theo ca</span>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs">
-            {paystubData.recentTippedOrders.map((tip, idx) => (
+          <div
+            className={`${
+              isDark
+                ? 'bg-[#1C1C1E] border-neutral-800 divide-neutral-800'
+                : 'bg-white border-[#E5E5EA] divide-[#E5E5EA]'
+            } rounded-xl border divide-y overflow-hidden shadow-xs`}
+          >
+            {liveStats.recentTippedOrders.map((tip, idx) => (
               <div key={idx} className="p-3 flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-bold text-[#1C1C1E]">{tip.customer}</div>
-                  <div className="text-[11px] text-[#8E8E93]">
+                  <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>{tip.customer}</div>
+                  <div className="text-[11px] text-[#8E8E93] tabular-nums">
                     {tip.service} · {tip.time}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs font-bold text-emerald-600 tabular-nums">
-                    +{new Intl.NumberFormat('vi-VN').format(tip.share)}đ
+                  <div className="text-xs font-bold text-emerald-500 tabular-nums">
+                    +{new Intl.NumberFormat('vi-VN').format(tip.share)}đ ({tip.percent}%)
                   </div>
-                  <div className="text-[10px] text-[#8E8E93]">
+                  <div className="text-[10px] text-[#8E8E93] tabular-nums">
                     Khách tip {new Intl.NumberFormat('vi-VN').format(tip.tip)}đ
                   </div>
                 </div>
