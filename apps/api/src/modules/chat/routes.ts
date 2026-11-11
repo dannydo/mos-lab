@@ -5402,6 +5402,15 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const hasAttachmentOnly = query.hasAttachment === 'true' || query.hasAttachment === true;
         const limit = Math.min(Math.max(Number(query.limit) || 30, 1), 100);
 
+        if (requestedConvId === AI_COPILOT_CONV_ID) {
+          return {
+            success: true,
+            query: rawQ,
+            totalMatches: 0,
+            items: [],
+          };
+        }
+
         const [{ conversations, userPrefsByUserKey }, staffDirectory] = await Promise.all([
           loadChatState(fastify),
           loadStaffDirectoryCached(fastify),
@@ -5440,6 +5449,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         let matchedMessages: SafeAny[] = [];
 
         if (ready && crm?.crmChatMessage) {
+          const searchConditions: SafeAny[] = [
+            { text: { contains: rawQ } },
+            { senderName: { contains: rawQ } },
+          ];
+          if (normQ !== rawQ.toLowerCase()) {
+            searchConditions.push(
+              { text: { contains: normQ } },
+              { senderName: { contains: normQ } }
+            );
+          }
+
           const whereClause: SafeAny = {
             conversationId: { in: targetConvIds },
             isDeleted: false,
@@ -5447,29 +5467,63 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           if (inThreadOnly) {
             whereClause.parentMessageId = { not: null };
           }
+          if (!hasAttachmentOnly) {
+            whereClause.OR = searchConditions;
+          }
 
-          const dbResults = await crm.crmChatMessage.findMany({
-            where: whereClause,
-            orderBy: { createdAt: 'desc' },
-            take: 300,
-            select: {
-              id: true,
-              conversationId: true,
-              parentMessageId: true,
-              senderId: true,
-              senderName: true,
-              senderRole: true,
-              senderAvatar: true,
-              roleColor: true,
-              text: true,
-              timeLabel: true,
-              isDeleted: true,
-              metadataJson: true,
-              createdAt: true,
-            },
-          });
+          const selectFields = {
+            id: true,
+            conversationId: true,
+            parentMessageId: true,
+            senderId: true,
+            senderName: true,
+            senderRole: true,
+            senderAvatar: true,
+            roleColor: true,
+            text: true,
+            timeLabel: true,
+            isDeleted: true,
+            metadataJson: true,
+            createdAt: true,
+          };
 
-          matchedMessages = dbResults.filter((row: SafeAny) => {
+          const [textResults, attachmentResults] = await Promise.all([
+            crm.crmChatMessage.findMany({
+              where: whereClause,
+              orderBy: { createdAt: 'desc' },
+              take: 300,
+              select: selectFields,
+            }),
+            crm.crmChatMessage
+              .findMany({
+                where: {
+                  conversationId: { in: targetConvIds },
+                  isDeleted: false,
+                  ...(inThreadOnly ? { parentMessageId: { not: null } } : {}),
+                  metadataJson: {
+                    path: '$.attachments[0]',
+                    not: null,
+                  },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 150,
+                select: selectFields,
+              })
+              .catch(() => []),
+          ]);
+
+          const combinedMap = new Map<string, SafeAny>();
+          for (const row of textResults) {
+            combinedMap.set(row.id, row);
+          }
+          for (const row of attachmentResults) {
+            combinedMap.set(row.id, row);
+          }
+          const allCandidateRows = Array.from(combinedMap.values()).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+
+          matchedMessages = allCandidateRows.filter((row: SafeAny) => {
             const meta = (row.metadataJson || {}) as SafeAny;
             const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
             if (hasAttachmentOnly && attachments.length === 0) {
