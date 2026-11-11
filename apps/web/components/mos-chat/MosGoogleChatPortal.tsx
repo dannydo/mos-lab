@@ -299,6 +299,33 @@ const LiveTaskCountdownBadge: React.FC<{ remindAt: string }> = React.memo(({ rem
 });
 LiveTaskCountdownBadge.displayName = 'LiveTaskCountdownBadge';
 
+const NOTIFIED_BUZZ_STORAGE_KEY = 'mos_chat_notified_buzz_ids_v1';
+
+function loadNotifiedBuzzKeys(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.localStorage.getItem(NOTIFIED_BUZZ_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) {
+      return new Set(arr.filter((x): x is string => typeof x === 'string'));
+    }
+  } catch {
+    // ignore
+  }
+  return new Set();
+}
+
+function saveNotifiedBuzzKeys(keys: Set<string>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const arr = Array.from(keys).slice(-400);
+    window.localStorage.setItem(NOTIFIED_BUZZ_STORAGE_KEY, JSON.stringify(arr));
+  } catch {
+    // ignore
+  }
+}
+
 export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   open,
   standalone = false,
@@ -472,7 +499,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [mobileActiveMsgId, setMobileActiveMsgId] = useState<string | null>(null);
   const [heartFlyMsgId, setHeartFlyMsgId] = useState<string | null>(null);
   const lastTapRef = useRef<{ msgId: string; time: number }>({ msgId: '', time: 0 });
-  const notifiedBuzzIdsRef = useRef<Set<string>>(new Set());
+  const notifiedBuzzIdsRef = useRef<Set<string>>(loadNotifiedBuzzKeys());
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
   const isInitialBootstrapRef = useRef<boolean>(true);
 
@@ -1833,13 +1860,36 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             for (const conv of res.conversations) {
               for (const m of conv.messages || []) {
                 seenMessageIdsRef.current.add(m.id);
+                if (m.isBuzzed && m.buzzedAt) {
+                  const buzzAgeMs = Date.now() - new Date(m.buzzedAt).getTime();
+                  if (
+                    buzzAgeMs > 60_000 ||
+                    !conv.hasUnreadBuzz ||
+                    ((conv.unreadCount || 0) === 0 && (conv.unreadThreadCount || 0) === 0)
+                  ) {
+                    notifiedBuzzIdsRef.current.add(`${m.id}-${m.buzzedAt}`);
+                    if (m.latestBuzz?.id) notifiedBuzzIdsRef.current.add(m.latestBuzz.id);
+                  }
+                }
                 if (m.thread && m.thread.length > 0) {
                   for (const r of m.thread) {
                     seenMessageIdsRef.current.add(r.id);
+                    if (r.isBuzzed && r.buzzedAt) {
+                      const buzzAgeMs = Date.now() - new Date(r.buzzedAt).getTime();
+                      if (
+                        buzzAgeMs > 60_000 ||
+                        !conv.hasUnreadBuzz ||
+                        ((conv.unreadCount || 0) === 0 && (conv.unreadThreadCount || 0) === 0)
+                      ) {
+                        notifiedBuzzIdsRef.current.add(`${r.id}-${r.buzzedAt}`);
+                        if (r.latestBuzz?.id) notifiedBuzzIdsRef.current.add(r.latestBuzz.id);
+                      }
+                    }
                   }
                 }
               }
             }
+            saveNotifiedBuzzKeys(notifiedBuzzIdsRef.current);
           }
 
           for (const conv of res.conversations) {
@@ -1892,7 +1942,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               const handleUrgentBuzzItem = (item: MosChatMessage | MosChatThreadReply) => {
                 if (!item.isBuzzed || !item.buzzedAt) return;
                 const buzzKey = `${item.id}-${item.buzzedAt}`;
-                const isMine =
+                const buzzEventId = item.latestBuzz?.id;
+
+                const isMsgMine =
                   String(item.senderId) === myId ||
                   (myStaffId > 0 && Number(item.senderId) === myStaffId) ||
                   Boolean(
@@ -1901,7 +1953,39 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       .trim()
                       .toLowerCase() === myName
                   );
-                if (isMine || notifiedBuzzIdsRef.current.has(buzzKey)) return;
+                const buzzSenderId = item.latestBuzz?.senderId;
+                const isBuzzAuthorMe =
+                  (buzzSenderId != null &&
+                    (String(buzzSenderId) === myId || (myStaffId > 0 && Number(buzzSenderId) === myStaffId))) ||
+                  Boolean(
+                    myName &&
+                    String(item.latestBuzz?.senderName || '')
+                      .trim()
+                      .toLowerCase() === myName
+                  );
+                const isMine = isMsgMine || isBuzzAuthorMe;
+
+                // Already notified or was buzzed by current user
+                if (
+                  isMine ||
+                  notifiedBuzzIdsRef.current.has(buzzKey) ||
+                  (buzzEventId && notifiedBuzzIdsRef.current.has(buzzEventId))
+                ) {
+                  notifiedBuzzIdsRef.current.add(buzzKey);
+                  if (buzzEventId) notifiedBuzzIdsRef.current.add(buzzEventId);
+                  saveNotifiedBuzzKeys(notifiedBuzzIdsRef.current);
+                  return;
+                }
+
+                // MOS-BUG-213: Stale buzzes (older than 90 seconds) must NEVER ring, vibrate, or pop up alerts
+                // when another user messages into the thread or when the conversation is polled.
+                const buzzAgeMs = Date.now() - new Date(item.buzzedAt).getTime();
+                if (buzzAgeMs > 90_000) {
+                  notifiedBuzzIdsRef.current.add(buzzKey);
+                  if (buzzEventId) notifiedBuzzIdsRef.current.add(buzzEventId);
+                  saveNotifiedBuzzKeys(notifiedBuzzIdsRef.current);
+                  return;
+                }
 
                 const userObj = {
                   id: myStaffId || myId,
@@ -1915,6 +1999,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 });
 
                 notifiedBuzzIdsRef.current.add(buzzKey);
+                if (buzzEventId) notifiedBuzzIdsRef.current.add(buzzEventId);
+                saveNotifiedBuzzKeys(notifiedBuzzIdsRef.current);
 
                 // ──── Tiered Notification Filter for BUZZ ────
                 // Check if this BUZZ should produce popup + sound based on the effective notification mode.
@@ -5027,6 +5113,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         replyId,
       });
       if (res?.success) {
+        const buzzKey = `${replyId || msgId}-${res.buzzEvent.buzzedAt}`;
+        notifiedBuzzIdsRef.current.add(buzzKey);
+        if (res.buzzEvent?.id) {
+          notifiedBuzzIdsRef.current.add(res.buzzEvent.id);
+        }
+        saveNotifiedBuzzKeys(notifiedBuzzIdsRef.current);
+
         playWebAudioBuzzChime();
         triggerBuzzVibration();
         antdMessage.success({

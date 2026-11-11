@@ -748,6 +748,89 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     expect(playNeuralSpeech).not.toHaveBeenCalled();
   });
 
+  it('MOS-BUG-213: does NOT re-trigger buzz alerts when another user replies to an already buzzed thread', async () => {
+    (playNeuralSpeech as any).mockClear();
+
+    const pastBuzzedAt = new Date(Date.now() - 300_000).toISOString(); // 5 minutes ago
+    const mockConvWithBuzzedThread = {
+      id: 'space-urgent-thread-213',
+      type: 'space' as const,
+      name: 'nhóm-vận-hành-213',
+      memberCount: 4,
+      unreadCount: 0,
+      unreadThreadCount: 1, // Has 1 new unread thread reply
+      hasUnreadBuzz: false, // Old buzz was already read/notified
+      unreadBuzzCount: 0,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-buzzed-past',
+          conversationId: 'space-urgent-thread-213',
+          senderId: 'staff-tam',
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: '@Danny Do Khách VIP cần phòng gấp!',
+          timeLabel: '10:00',
+          createdAt: pastBuzzedAt,
+          isBuzzed: true,
+          buzzCount: 1,
+          buzzedAt: pastBuzzedAt,
+          latestBuzz: {
+            id: 'b-past-1',
+            senderId: 'staff-tam',
+            senderName: 'Tâm Nguyễn',
+            senderRole: 'Admin',
+            buzzedAt: pastBuzzedAt,
+          },
+          thread: [
+            {
+              id: 'th-new-reply-213',
+              senderId: 'staff-khai',
+              senderName: 'Quang Khải',
+              senderRole: 'Staff',
+              text: 'Dạ em đang sắp xếp phòng rồi anh Tâm ơi',
+              timeLabel: '10:05',
+              createdAt: new Date().toISOString(),
+              isBuzzed: undefined, // Normal reply, NOT a buzz
+            },
+          ],
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [mockConvWithBuzzedThread],
+      tasks: [],
+      staffDirectory: [
+        { id: 99, displayName: 'Danny Do', role: 'Admin' },
+        { id: 4, displayName: 'Tâm Nguyễn', role: 'Admin' },
+        { id: 6, displayName: 'Quang Khải', role: 'Staff' },
+      ],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Verify conversation is displayed in list
+    await waitFor(() => {
+      expect(screen.getByText('nhóm-vận-hành-213')).toBeTruthy();
+    });
+
+    // In MOS-BUG-213, old buzz must NOT trigger neural speech voice alert or buzz chime/toast
+    expect(playNeuralSpeech).not.toHaveBeenCalled();
+    expect(screen.queryByText(/⚡ TIN NHẮN KHẨN CẤP \(BUZZ\)/i)).toBeNull();
+  });
+
   it('allows dragging and dropping image file into the subthread pane and composer', async () => {
     const mockConvWithThread = {
       id: 'space-test-subthread',

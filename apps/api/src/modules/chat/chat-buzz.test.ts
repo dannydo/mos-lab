@@ -221,4 +221,90 @@ describe('mOS Chat Buzz / Bump Urgent Message Invariants (MOS-BUG-131)', () => {
     // Root message itself remains unbuzzed if only reply was buzzed
     assert.equal(Boolean(rootMsg.isBuzzed), false);
   });
+
+  it('MOS-BUG-213: does NOT trigger unread buzz when user replies to an already-buzzed thread', () => {
+    const buzzedMsg: MosChatMessage = {
+      id: 'msg-parent-buzzed',
+      conversationId: 'space-operations',
+      senderId: 4, // Tâm sent and buzzed
+      senderName: 'Tâm Nguyễn',
+      senderRole: 'Admin',
+      text: 'Tin nhắn khẩn cấp đã buzz trước đó',
+      timeLabel: '10:00',
+      createdAt: new Date().toISOString(),
+      isBuzzed: true,
+      buzzedAt: new Date(Date.now() - 300_000).toISOString(), // 5 mins ago
+      latestBuzz: {
+        id: 'buzz-old-1',
+        senderId: 4,
+        senderName: 'Tâm Nguyễn',
+        buzzedAt: new Date(Date.now() - 300_000).toISOString(),
+      },
+      thread: [
+        {
+          id: 'th-old-1',
+          senderId: 4,
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: 'Phản hồi 1',
+          timeLabel: '10:01',
+          createdAt: new Date(Date.now() - 250_000).toISOString(),
+        },
+      ],
+    };
+
+    const conv: MosChatConversation = {
+      id: 'space-operations',
+      type: 'space',
+      name: 'Vận hành khẩn cấp',
+      color: '#f59e0b',
+      memberIds: [4, 6],
+      unreadCount: 0,
+      messages: [buzzedMsg],
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Khải has already read the root message and thread reply #1
+    const prefsKhaiRead = {
+      readMessageCountByConv: { 'space-operations': 1 },
+      readThreadReplyCountByMsg: {
+        'msg-parent-buzzed': 1,
+        'space-operations::msg-parent-buzzed': 1,
+      },
+    };
+
+    // Format for Khải before new reply
+    const formattedBefore = formatConversationForUser(conv, userKhai, staffDirectory, prefsKhaiRead as any);
+    assert.equal(formattedBefore.hasUnreadBuzz, false);
+    assert.equal(formattedBefore.unreadCount, 0);
+    assert.equal(formattedBefore.unreadThreadCount, 0);
+
+    // Now Danny (staff 1) posts a normal, non-urgent reply into the thread
+    const newReply: MosChatThreadReply = {
+      id: 'th-new-reply',
+      senderId: 1,
+      senderName: 'Danny Do',
+      senderRole: 'Super Admin',
+      text: 'Dạ em nhận thông tin rồi anh Tâm ơi',
+      timeLabel: '10:05',
+      createdAt: new Date().toISOString(),
+      isBuzzed: undefined, // Normal reply, NOT buzzed
+    };
+    buzzedMsg.thread!.push(newReply);
+
+    // Format for Khải after Danny's normal reply
+    const formattedAfter = formatConversationForUser(conv, userKhai, staffDirectory, prefsKhaiRead as any);
+
+    // Khải should have 1 unread thread reply, but MUST NOT have hasUnreadBuzz = true
+    assert.equal(formattedAfter.unreadThreadCount, 1);
+    assert.equal(formattedAfter.hasUnreadBuzz, false);
+    assert.equal(formattedAfter.unreadBuzzCount, 0);
+
+    // Also format for Tâm (the original author of the buzz)
+    const formattedForTam = formatConversationForUser(conv, userTam, staffDirectory, {
+      readMessageCountByConv: { 'space-operations': 1 },
+      readThreadReplyCountByMsg: { 'msg-parent-buzzed': 1, 'space-operations::msg-parent-buzzed': 1 },
+    } as any);
+    assert.equal(formattedForTam.hasUnreadBuzz, false);
+  });
 });

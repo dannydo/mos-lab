@@ -375,9 +375,45 @@ export function formatConversationForUser(
         : Math.max(0, msgs.length - personalizedUnread);
     const unreadMessages = msgs.slice(startIndex);
     for (const m of unreadMessages) {
-      if (m.isBuzzed && Number(m.senderId) !== myStaffId) {
+      const isBuzzMine =
+        Number(m.latestBuzz?.senderId) === myStaffId ||
+        String(m.latestBuzz?.senderId) === String(user?.id) ||
+        Number(m.senderId) === myStaffId;
+      if (m.isBuzzed && !isBuzzMine) {
         hasUnreadBuzz = true;
         unreadBuzzCount++;
+      }
+    }
+  }
+
+  // Also check unread thread replies if any were buzzed by someone else
+  for (const m of conv.messages || []) {
+    if ((m.unreadThreadReplyCount || 0) > 0 && Array.isArray(m.thread)) {
+      const threadKey = `${conv.id}::${m.id}`;
+      const explicitRead =
+        userPrefs?.readThreadReplyCountByMsg?.[threadKey] ?? userPrefs?.readThreadReplyCountByMsg?.[m.id];
+      let lastMyReplyIdx = -1;
+      for (let i = 0; i < m.thread.length; i++) {
+        if (Number(m.thread[i].senderId) === myStaffId) {
+          lastMyReplyIdx = i;
+        }
+      }
+      const replyStartIdx =
+        typeof explicitRead === 'number'
+          ? Math.max(explicitRead, lastMyReplyIdx >= 0 ? lastMyReplyIdx + 1 : 0)
+          : lastMyReplyIdx >= 0
+            ? lastMyReplyIdx + 1
+            : 0;
+      const unreadReplies = m.thread.slice(replyStartIdx);
+      for (const r of unreadReplies) {
+        const isReplyBuzzMine =
+          Number(r.latestBuzz?.senderId) === myStaffId ||
+          String(r.latestBuzz?.senderId) === String(user?.id) ||
+          Number(r.senderId) === myStaffId;
+        if (r.isBuzzed && !isReplyBuzzMine) {
+          hasUnreadBuzz = true;
+          unreadBuzzCount++;
+        }
       }
     }
   }
