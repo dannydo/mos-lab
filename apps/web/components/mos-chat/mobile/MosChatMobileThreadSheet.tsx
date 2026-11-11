@@ -1408,6 +1408,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           return (
             <div
               key={reply.id}
+              id={`thread-reply-${reply.id}`}
+              data-reply-id={reply.id}
               onTouchStart={(e) => handleTouchStartReply(e, reply)}
               onTouchMove={(e) => handleTouchMoveReply(e, reply.id)}
               onTouchEnd={() => handleTouchEndReply(reply)}

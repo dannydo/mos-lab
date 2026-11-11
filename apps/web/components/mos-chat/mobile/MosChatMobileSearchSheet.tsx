@@ -40,7 +40,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
   const executeSearch = useCallback(
     async (keyword: string, scope: FilterScope) => {
       const trimmed = keyword.trim();
-      if (!trimmed) {
+      if (!trimmed && scope === 'ALL') {
         setResults([]);
         setIsLoading(false);
         return;
@@ -96,7 +96,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (!val.trim()) {
+    if (!val.trim() && filterScope === 'ALL') {
       setResults([]);
       setIsLoading(false);
       return;
@@ -110,9 +110,7 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
 
   const handleScopeChange = (scope: FilterScope) => {
     setFilterScope(scope);
-    if (query.trim()) {
-      void executeSearch(query, scope);
-    }
+    void executeSearch(query, scope);
   };
 
   if (!open) return null;
@@ -265,8 +263,33 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-bold text-slate-200">{item.senderName}</span>
                   <p className="text-[12.5px] leading-relaxed line-clamp-2 text-slate-300 mt-0.5 break-words">
-                    {item.text}
+                    {item.text || (item.hasAttachments ? '[Đính kèm hình ảnh/tệp]' : '')}
                   </p>
+                  {/* Image thumbnails preview */}
+                  {item.attachments &&
+                    item.attachments.filter(
+                      (a) => a.mimeType?.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(a.url)
+                    ).length > 0 && (
+                      <div className="flex items-center gap-1.5 mt-1.5 overflow-x-auto no-scrollbar">
+                        {item.attachments
+                          .filter(
+                            (a) => a.mimeType?.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(a.url)
+                          )
+                          .slice(0, 3)
+                          .map((att, i) => (
+                            <div
+                              key={att.id || i}
+                              className="w-12 h-12 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0"
+                            >
+                              <img
+                                src={att.url}
+                                alt={att.name || 'Ảnh đính kèm'}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   {item.hasAttachments && item.attachmentNames && item.attachmentNames.length > 0 && (
                     <div className="flex items-center gap-1 mt-1 flex-wrap">
                       {item.attachmentNames.map((n, i) => (
@@ -284,11 +307,17 @@ export const MosChatMobileSearchSheet: React.FC<MosChatMobileSearchSheetProps> =
               </div>
             </div>
           ))
-        ) : query.trim() ? (
+        ) : query.trim() || filterScope !== 'ALL' ? (
           <div className="py-16 text-center text-slate-400 px-4">
             <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
             <div className="text-sm font-semibold">Không tìm thấy kết quả nào</div>
-            <div className="text-xs text-slate-500 mt-1">Thử từ khóa khác hoặc chuyển sang tab Tất cả</div>
+            <div className="text-xs text-slate-500 mt-1">
+              {filterScope === 'HAS_ATTACHMENT'
+                ? 'Không có tin nhắn nào có tệp đính kèm'
+                : filterScope === 'THREAD_ONLY'
+                  ? 'Không có tin nhắn nào trong luồng'
+                  : 'Thử từ khóa khác hoặc chuyển sang tab Tất cả'}
+            </div>
           </div>
         ) : (
           <div className="py-16 text-center text-slate-500 px-6 text-xs leading-relaxed">

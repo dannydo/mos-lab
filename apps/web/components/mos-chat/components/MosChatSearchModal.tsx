@@ -69,7 +69,7 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
   const executeSearch = useCallback(
     async (keyword: string, scope: FilterScope) => {
       const trimmed = keyword.trim();
-      if (!trimmed) {
+      if (!trimmed && scope === 'ALL') {
         setResults([]);
         setIsLoading(false);
         return;
@@ -110,7 +110,7 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (!val.trim()) {
+    if (!val.trim() && filterScope === 'ALL') {
       setResults([]);
       setIsLoading(false);
       return;
@@ -124,9 +124,7 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
 
   const handleScopeChange = (scope: FilterScope) => {
     setFilterScope(scope);
-    if (query.trim()) {
-      void executeSearch(query, scope);
-    }
+    void executeSearch(query, scope);
   };
 
   // Keyboard navigation inside list
@@ -387,8 +385,37 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
                         className="text-[13px] leading-relaxed line-clamp-2 mt-0.5 break-words font-normal"
                         style={{ color: isDark ? '#e4e4e7' : '#3f3f46' }}
                       >
-                        {renderHighlightedSnippet(item.text, query)}
+                        {renderHighlightedSnippet(
+                          item.text || (item.hasAttachments ? '[Đính kèm hình ảnh/tệp]' : ''),
+                          query
+                        )}
                       </p>
+
+                      {/* Image Thumbnails Preview */}
+                      {item.attachments &&
+                        item.attachments.filter(
+                          (a) => a.mimeType?.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(a.url)
+                        ).length > 0 && (
+                          <div className="flex items-center gap-1.5 mt-1.5 overflow-x-auto no-scrollbar">
+                            {item.attachments
+                              .filter(
+                                (a) => a.mimeType?.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(a.url)
+                              )
+                              .slice(0, 4)
+                              .map((att, i) => (
+                                <div
+                                  key={att.id || i}
+                                  className="w-12 h-12 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0"
+                                >
+                                  <img
+                                    src={att.url}
+                                    alt={att.name || 'Ảnh đính kèm'}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ))}
+                          </div>
+                        )}
 
                       {/* Attachments preview */}
                       {item.hasAttachments && item.attachmentNames && item.attachmentNames.length > 0 && (
@@ -409,13 +436,16 @@ export const MosChatSearchModal: React.FC<MosChatSearchModalProps> = ({
                 </div>
               );
             })
-          ) : query.trim() ? (
+          ) : query.trim() || filterScope !== 'ALL' ? (
             <div className="py-12 flex flex-col items-center justify-center text-center px-4">
               <MessageSquare size={36} className="text-slate-500 mb-2 opacity-60" />
               <div className="text-sm font-semibold text-slate-300">Không tìm thấy tin nhắn nào</div>
               <div className="text-xs text-slate-500 mt-1 max-w-sm">
-                Không có kết quả khớp với từ khóa &ldquo;{query}&rdquo;. Thử kiểm tra lại chính tả hoặc chọn tab
-                &ldquo;Tất cả&rdquo;.
+                {filterScope === 'HAS_ATTACHMENT'
+                  ? 'Không có tin nhắn nào có tệp đính kèm phù hợp'
+                  : filterScope === 'THREAD_ONLY'
+                    ? 'Không có tin nhắn nào trong luồng phù hợp'
+                    : `Không có kết quả khớp với từ khóa "${query}". Thử kiểm tra lại chính tả hoặc chọn tab Tất cả.`}
               </div>
             </div>
           ) : (

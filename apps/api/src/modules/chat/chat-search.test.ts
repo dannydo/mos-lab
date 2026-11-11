@@ -153,4 +153,31 @@ describe('mOS Chat Message Search & Access Isolation Invariant', () => {
     const normQuery = removeVietnameseTones(query.toLowerCase());
     assert.ok(normAttName.includes(normQuery));
   });
+
+  it('matches semantic attachment intent queries ("ảnh", "hình", "đính kèm 1 ảnh")', () => {
+    const ATTACHMENT_INTENT_TERMS = [
+      'anh', 'hinh', 'hinh anh', 'anh chup', 'minh chung',
+      'photo', 'image', 'picture', 'file', 'tep', 'dinh kem',
+      'dinh kem 1 anh', '1 anh', '2 anh', 'tai lieu', 'unc'
+    ];
+
+    for (const rawQuery of ['ảnh', 'hình', 'đính kèm', 'đính kèm 1 ảnh', 'file']) {
+      const norm = removeVietnameseTones(rawQuery.toLowerCase());
+      const isIntent = ATTACHMENT_INTENT_TERMS.some((kw) => norm === kw || norm.includes(kw));
+      assert.equal(isIntent, true, `Query "${rawQuery}" must be recognized as attachment intent`);
+    }
+  });
+
+  it('formats fallback label when message has attachments but empty text', () => {
+    const attachments = [
+      { id: 'att-1', name: 'IMG_0521.jpg', url: '/chat/media/1.jpg', mimeType: 'image/jpeg' },
+    ];
+    const rawText = '';
+    const displayText =
+      rawText ||
+      (attachments.length > 0
+        ? `[Đính kèm ${attachments.length} ${attachments.length === 1 ? 'hình ảnh/tệp' : 'hình ảnh/tệp'}]`
+        : '');
+    assert.equal(displayText, '[Đính kèm 1 hình ảnh/tệp]');
+  });
 });

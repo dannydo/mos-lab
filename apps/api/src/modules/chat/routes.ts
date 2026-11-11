@@ -5388,7 +5388,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const user = (request as SafeAny).user as JwtUserPayload | undefined;
         const query = (request.query || {}) as SafeAny;
         const rawQ = String(query.q || '').trim();
-        if (!rawQ) {
+        const requestedConvId = query.conversationId ? String(query.conversationId).trim() : undefined;
+        const inThreadOnly = query.inThreadOnly === 'true' || query.inThreadOnly === true;
+        const hasAttachmentOnly = query.hasAttachment === 'true' || query.hasAttachment === true;
+        const limit = Math.min(Math.max(Number(query.limit) || 30, 1), 100);
+
+        // When no search keyword is given and no filter is active, return empty result
+        if (!rawQ && !hasAttachmentOnly && !inThreadOnly && !requestedConvId) {
           return {
             success: true,
             query: '',
@@ -5396,11 +5402,6 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             items: [],
           };
         }
-
-        const requestedConvId = query.conversationId ? String(query.conversationId).trim() : undefined;
-        const inThreadOnly = query.inThreadOnly === 'true' || query.inThreadOnly === true;
-        const hasAttachmentOnly = query.hasAttachment === 'true' || query.hasAttachment === true;
-        const limit = Math.min(Math.max(Number(query.limit) || 30, 1), 100);
 
         if (requestedConvId === AI_COPILOT_CONV_ID) {
           return {
@@ -5446,18 +5447,31 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const crm = (fastify as SafeAny)?.prisma?.crm;
         const normQ = removeVietnameseTones(rawQ.toLowerCase());
 
+        // Semantic attachment intent: "ảnh", "hình", "minh chứng", "file", "đính kèm 1 ảnh"...
+        const ATTACHMENT_INTENT_TERMS = [
+          'anh', 'hinh', 'hinh anh', 'anh chup', 'minh chung',
+          'photo', 'image', 'picture', 'file', 'tep', 'dinh kem',
+          'dinh kem 1 anh', '1 anh', '2 anh', 'tai lieu', 'unc'
+        ];
+        const isAttachmentIntent = normQ.length > 0 && ATTACHMENT_INTENT_TERMS.some(
+          (kw) => normQ === kw || normQ.includes(kw)
+        );
+
         let matchedMessages: SafeAny[] = [];
 
         if (ready && crm?.crmChatMessage) {
-          const searchConditions: SafeAny[] = [
-            { text: { contains: rawQ } },
-            { senderName: { contains: rawQ } },
-          ];
-          if (normQ !== rawQ.toLowerCase()) {
+          const searchConditions: SafeAny[] = [];
+          if (rawQ) {
             searchConditions.push(
-              { text: { contains: normQ } },
-              { senderName: { contains: normQ } }
+              { text: { contains: rawQ } },
+              { senderName: { contains: rawQ } }
             );
+            if (normQ !== rawQ.toLowerCase()) {
+              searchConditions.push(
+                { text: { contains: normQ } },
+                { senderName: { contains: normQ } }
+              );
+            }
           }
 
           const whereClause: SafeAny = {
@@ -5467,7 +5481,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           if (inThreadOnly) {
             whereClause.parentMessageId = { not: null };
           }
-          if (!hasAttachmentOnly) {
+          if (rawQ && !hasAttachmentOnly && searchConditions.length > 0) {
             whereClause.OR = searchConditions;
           }
 
@@ -5530,13 +5544,19 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
               return false;
             }
 
+            // If empty query, any row matching whereClause & attachment criteria is included
+            if (!normQ) {
+              return true;
+            }
+
             const textMatch = removeVietnameseTones(String(row.text || '').toLowerCase()).includes(normQ);
             const senderMatch = removeVietnameseTones(String(row.senderName || '').toLowerCase()).includes(normQ);
             const attachmentMatch = attachments.some((att: SafeAny) =>
               removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
             );
+            const intentMatch = isAttachmentIntent && attachments.length > 0;
 
-            return textMatch || senderMatch || attachmentMatch;
+            return textMatch || senderMatch || attachmentMatch || intentMatch;
           });
         } else {
           for (const convId of targetConvIds) {
@@ -5545,38 +5565,45 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             for (const m of c.messages || []) {
               const meta = m as SafeAny;
               const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
-              if (!inThreadOnly && (!hasAttachmentOnly || attachments.length > 0)) {
-                const textMatch = removeVietnameseTones(String(m.text || '').toLowerCase()).includes(normQ);
-                const senderMatch = removeVietnameseTones(String(m.senderName || '').toLowerCase()).includes(normQ);
-                const attMatch = attachments.some((att: SafeAny) =>
-                  removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
-                );
-                if (textMatch || senderMatch || attMatch) {
-                  matchedMessages.push({
-                    ...m,
-                    conversationId: c.id,
-                    parentMessageId: null,
-                    metadataJson: m,
-                  });
-                }
+              if (hasAttachmentOnly && attachments.length === 0) continue;
+              if (inThreadOnly) continue;
+
+              const textMatch = !normQ || removeVietnameseTones(String(m.text || '').toLowerCase()).includes(normQ);
+              const senderMatch = !normQ || removeVietnameseTones(String(m.senderName || '').toLowerCase()).includes(normQ);
+              const attMatch = attachments.some((att: SafeAny) =>
+                removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
+              );
+              const intentMatch = isAttachmentIntent && attachments.length > 0;
+
+              if (textMatch || senderMatch || attMatch || intentMatch) {
+                matchedMessages.push({
+                  ...m,
+                  conversationId: c.id,
+                  parentMessageId: null,
+                  metadataJson: m,
+                });
               }
+            }
+            for (const m of c.messages || []) {
               for (const r of m.thread || []) {
                 const rMeta = r as SafeAny;
                 const rAtts = Array.isArray(rMeta.attachments) ? rMeta.attachments : [];
-                if (!hasAttachmentOnly || rAtts.length > 0) {
-                  const rTextMatch = removeVietnameseTones(String(r.text || '').toLowerCase()).includes(normQ);
-                  const rSenderMatch = removeVietnameseTones(String(r.senderName || '').toLowerCase()).includes(normQ);
-                  const rAttMatch = rAtts.some((att: SafeAny) =>
-                    removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
-                  );
-                  if (rTextMatch || rSenderMatch || rAttMatch) {
-                    matchedMessages.push({
-                      ...r,
-                      conversationId: c.id,
-                      parentMessageId: m.id,
-                      metadataJson: r,
-                    });
-                  }
+                if (hasAttachmentOnly && rAtts.length === 0) continue;
+
+                const rTextMatch = !normQ || removeVietnameseTones(String(r.text || '').toLowerCase()).includes(normQ);
+                const rSenderMatch = !normQ || removeVietnameseTones(String(r.senderName || '').toLowerCase()).includes(normQ);
+                const rAttMatch = rAtts.some((att: SafeAny) =>
+                  removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
+                );
+                const rIntentMatch = isAttachmentIntent && rAtts.length > 0;
+
+                if (rTextMatch || rSenderMatch || rAttMatch || rIntentMatch) {
+                  matchedMessages.push({
+                    ...r,
+                    conversationId: c.id,
+                    parentMessageId: m.id,
+                    metadataJson: r,
+                  });
                 }
               }
             }
@@ -5592,6 +5619,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
           const attNames = attachments.map((a: SafeAny) => String(a.name || a.fileName || '')).filter(Boolean);
 
+          const rawText = String(row.text || '').trim();
+          const displayText = rawText || (attachments.length > 0
+            ? `[Đính kèm ${attachments.length} ${attachments.length === 1 ? 'hình ảnh/tệp' : 'hình ảnh/tệp'}]`
+            : '');
+
           return {
             id: row.id,
             conversationId: row.conversationId,
@@ -5604,13 +5636,20 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             senderRole: row.senderRole,
             senderAvatar: row.senderAvatar || null,
             roleColor: row.roleColor || null,
-            text: row.text || '',
+            text: displayText,
             timeLabel: row.timeLabel || '',
             createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || ''),
             isDeleted: Boolean(row.isDeleted),
             deletedByName: meta.deletedByName || null,
             hasAttachments: attachments.length > 0,
             attachmentNames: attNames,
+            attachments: attachments.map((a: SafeAny) => ({
+              id: a.id,
+              url: a.url,
+              name: a.name || a.fileName,
+              mimeType: a.mimeType,
+              sizeBytes: a.sizeBytes,
+            })),
           };
         });
 

@@ -1039,6 +1039,13 @@ export interface MosChatSearchResultItem {
   deletedByName?: string | null;
   hasAttachments?: boolean;
   attachmentNames?: string[];
+  attachments?: Array<{
+    id?: string;
+    url: string;
+    name?: string;
+    mimeType?: string;
+    sizeBytes?: number;
+  }>;
 }
 
 export interface SearchMosChatMessagesResponse {

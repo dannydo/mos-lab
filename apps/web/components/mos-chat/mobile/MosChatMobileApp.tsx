@@ -176,15 +176,43 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       if (parent) {
         setActiveThreadMsg(parent);
         setMobileView('thread');
+      } else {
+        // Fallback: create stub parent message so user can view the thread immediately
+        setActiveThreadMsg({
+          id: item.parentMessageId,
+          conversationId: item.conversationId,
+          senderId: 'system',
+          senderName: 'Luồng thảo luận',
+          senderRole: 'Hệ thống',
+          text: 'Đang mở luồng thảo luận...',
+          createdAt: item.createdAt,
+          timeLabel: item.timeLabel || '',
+          thread: [
+            {
+              id: item.id,
+              senderId: item.senderId,
+              senderName: item.senderName,
+              senderRole: item.senderRole || 'Nhân sự',
+              senderAvatar: item.senderAvatar || undefined,
+              text: item.text,
+              createdAt: item.createdAt,
+              timeLabel: item.timeLabel || '',
+            },
+          ],
+        });
+        setMobileView('thread');
       }
     }
 
     // Scroll & highlight selected message smoothly
     setTimeout(() => {
-      const targetElId = item.isThreadReply
-        ? `thread-reply-${item.id}`
-        : `mobile-msg-${item.id}`;
-      const el = document.getElementById(targetElId) || document.getElementById(`msg-${item.id}`);
+      const el =
+        document.getElementById(`thread-reply-${item.id}`) ||
+        document.getElementById(`mos-chat-reply-${item.id}`) ||
+        document.getElementById(`mos-chat-msg-${item.id}`) ||
+        document.getElementById(`mobile-msg-${item.id}`) ||
+        document.getElementById(`msg-${item.id}`);
+
       if (el && typeof el.scrollIntoView === 'function') {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add('bg-amber-500/25', 'transition-all', 'duration-500');

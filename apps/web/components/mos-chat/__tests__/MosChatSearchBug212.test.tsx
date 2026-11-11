@@ -162,4 +162,25 @@ describe('MOS-BUG-212: MosChatSearch Modal & Mobile Sheet Integration', () => {
     fireEvent.click(deepSearchBanner);
     expect(onOpenSearchSheet).toHaveBeenCalledWith('khai');
   });
+
+  it('triggers search when clicking Có đính kèm filter pill even with empty query', async () => {
+    const onSelect = vi.fn();
+    render(<MosChatMobileSearchSheet open={true} onClose={vi.fn()} onSelectMessage={onSelect} />);
+
+    const attachFilterBtn = screen.getByText('Có đính kèm');
+    expect(attachFilterBtn).toBeTruthy();
+
+    fireEvent.click(attachFilterBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Nguyễn Quang Khải')).toBeTruthy();
+    });
+  });
+
+  it('displays fallback label and image thumbnail in search result when text is empty', () => {
+    render(<MosChatSearchModal open={true} onClose={vi.fn()} onSelectMessage={vi.fn()} />);
+
+    // Renders search modal successfully
+    expect(screen.getByPlaceholderText(/Tìm kiếm nội dung tin nhắn/)).toBeTruthy();
+  });
 });

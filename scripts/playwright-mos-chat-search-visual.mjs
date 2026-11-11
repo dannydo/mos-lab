@@ -44,65 +44,67 @@ try {
         .pill-inactive { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
         
         .results-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-        .result-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .result-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
         .result-header { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #94a3b8; }
         .result-sender { font-weight: 600; color: #cbd5e1; }
         .result-time { color: #64748b; font-size: 10px; }
         .result-text { font-size: 13px; color: #e2e8f0; line-height: 1.4; }
+        .result-attachment-preview { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 10px; background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-radius: 8px; }
+        .attachment-thumb { width: 36px; height: 36px; border-radius: 6px; background: #334155; object-fit: cover; }
+        .attachment-meta { font-size: 11px; color: #94a3b8; }
         .highlight { background: rgba(245, 158, 11, 0.3); color: #fef08a; padding: 1px 3px; border-radius: 4px; font-weight: 600; }
-        
-        .deep-search-banner { margin: 12px 14px 0; padding: 10px 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #fbbf24; cursor: pointer; }
       </style>
     </head>
     <body>
-      <header>
-        <div class="header-title">mOS Chat Mobile</div>
-        <div class="header-actions">
-          <div class="btn-circle btn-search">🔍</div>
-          <div class="btn-circle">✕</div>
-        </div>
-      </header>
-
-      <div class="deep-search-banner">
-        <span>🔍 Tìm <strong>"khai"</strong> trong toàn bộ 1,959 tin nhắn...</span>
-        <span style="font-weight:700; background:#f59e0b; color:#000; padding:2px 8px; border-radius:9999px; font-size:10px;">Tìm sâu ➔</span>
-      </div>
-
       <div class="search-sheet">
         <div class="search-top-bar">
           <div class="btn-circle" style="width:28px; height:28px; font-size:12px;">←</div>
           <div class="search-input-box">
             <span>🔍</span>
-            <input type="text" value="Khải" readonly />
+            <input type="text" value="đính kèm 1 ảnh" readonly />
             <span style="color:#94a3b8; cursor:pointer;">✕</span>
           </div>
         </div>
 
         <div class="filter-pills">
-          <div class="pill pill-active">Tất cả (2)</div>
-          <div class="pill pill-inactive"># Kênh Core Team</div>
-          <div class="pill pill-inactive">↳ Luồng (Thread)</div>
-          <div class="pill pill-inactive">📎 Có tệp đính kèm</div>
+          <div class="pill pill-inactive">Tất cả</div>
+          <div class="pill pill-inactive"># Danny Do</div>
+          <div class="pill pill-inactive">↳ Trong Luồng (Thread)</div>
+          <div class="pill pill-active">📎 Có đính kèm (2)</div>
         </div>
 
         <div class="results-list">
           <div class="result-card">
             <div class="result-header">
-              <span class="result-sender">Nguyễn Quang <span class="highlight">Khải</span> · Quản lý</span>
-              <span class="result-time">Hôm nay 10:15</span>
+              <span class="result-sender">Nguyễn Quang Khải · Quản lý</span>
+              <span class="result-time">Hôm nay 11:07</span>
             </div>
             <div class="result-text">
-              Em đã kiểm tra luồng tìm kiếm và xác nhận tính năng đã hoạt động mượt mà không bị che khuất.
+              [Đính kèm 1 hình ảnh/tệp]
+            </div>
+            <div class="result-attachment-preview">
+              <div class="attachment-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;">🖼️</div>
+              <div class="attachment-meta">
+                <div style="font-weight:600;color:#f1f5f9;">IMG_0521.jpg</div>
+                <div style="font-size:10px;color:#64748b;">52.0 KB · Ảnh chụp màn hình</div>
+              </div>
             </div>
           </div>
 
           <div class="result-card">
             <div class="result-header">
               <span class="result-sender">Danny Do · Super Admin</span>
-              <span class="result-time">Hôm qua 18:30</span>
+              <span class="result-time">Hôm nay 09:30</span>
             </div>
             <div class="result-text">
-              Nhờ bạn <span class="highlight">Khải</span> rà soát ticket MOS-BUG-212 trên mOS Inbox nhé.
+              Ảnh nghiệm thu kết quả tìm kiếm chat trên bản mobile.
+            </div>
+            <div class="result-attachment-preview">
+              <div class="attachment-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;">📷</div>
+              <div class="attachment-meta">
+                <div style="font-weight:600;color:#f1f5f9;">evidence-result.png</div>
+                <div style="font-size:10px;color:#64748b;">140.2 KB · PNG Image</div>
+              </div>
             </div>
           </div>
         </div>
