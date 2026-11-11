@@ -41,13 +41,7 @@ vi.mock('../../../lib/api/chat.api', () => ({
 
 describe('MOS-BUG-212: MosChatSearch Modal & Mobile Sheet Integration', () => {
   it('renders MosChatSearchModal with zIndex 1500 to sit above chat portal and overlays', () => {
-    render(
-      <MosChatSearchModal
-        open={true}
-        onClose={vi.fn()}
-        onSelectMessage={vi.fn()}
-      />
-    );
+    render(<MosChatSearchModal open={true} onClose={vi.fn()} onSelectMessage={vi.fn()} />);
 
     // Ant Design modal wraps in ant-modal-wrap with z-index
     const modalWrap = document.querySelector('.ant-modal-wrap');
@@ -61,18 +55,14 @@ describe('MOS-BUG-212: MosChatSearch Modal & Mobile Sheet Integration', () => {
       id: AI_COPILOT_CONV_ID,
       type: 'dm',
       name: 'MAI Trợ lý AI',
+      color: '#0068FF',
       unreadCount: 0,
       updatedAt: new Date().toISOString(),
       messages: [],
     };
 
     render(
-      <MosChatSearchModal
-        open={true}
-        activeConversation={aiConversation}
-        onClose={vi.fn()}
-        onSelectMessage={vi.fn()}
-      />
+      <MosChatSearchModal open={true} activeConversation={aiConversation} onClose={vi.fn()} onSelectMessage={vi.fn()} />
     );
 
     // CURRENT_CONV tab for MAI should not be rendered
@@ -81,14 +71,7 @@ describe('MOS-BUG-212: MosChatSearch Modal & Mobile Sheet Integration', () => {
 
   it('renders MosChatMobileSearchSheet with z-[1600] and executes search with initialQuery', async () => {
     const onSelect = vi.fn();
-    render(
-      <MosChatMobileSearchSheet
-        open={true}
-        onClose={vi.fn()}
-        onSelectMessage={onSelect}
-        initialQuery="khai"
-      />
-    );
+    render(<MosChatMobileSearchSheet open={true} onClose={vi.fn()} onSelectMessage={onSelect} initialQuery="khai" />);
 
     const sheetContainer = document.querySelector('.z-\\[1600\\]');
     expect(sheetContainer).toBeTruthy();
@@ -104,17 +87,41 @@ describe('MOS-BUG-212: MosChatSearch Modal & Mobile Sheet Integration', () => {
         id: 'c-1',
         name: 'Nguyễn Quang Khải',
         type: 'dm',
+        color: '#0068FF',
         unreadCount: 0,
         updatedAt: new Date().toISOString(),
-        messages: [{ id: 'm-1', text: 'Báo cáo mOS Inbox hôm nay', senderId: 6, senderName: 'Khải', timeLabel: '09:00', createdAt: '' }],
+        messages: [
+          {
+            id: 'm-1',
+            conversationId: 'c-1',
+            text: 'Báo cáo mOS Inbox hôm nay',
+            senderId: 6,
+            senderName: 'Khải',
+            senderRole: 'staff',
+            timeLabel: '09:00',
+            createdAt: '',
+          },
+        ],
       },
       {
         id: 'c-2',
         name: 'Tâm Nguyễn',
         type: 'dm',
+        color: '#10B981',
         unreadCount: 0,
         updatedAt: new Date().toISOString(),
-        messages: [{ id: 'm-2', text: 'Chào buổi sáng', senderId: 4, senderName: 'Tâm', timeLabel: '08:00', createdAt: '' }],
+        messages: [
+          {
+            id: 'm-2',
+            conversationId: 'c-2',
+            text: 'Chào buổi sáng',
+            senderId: 4,
+            senderName: 'Tâm',
+            senderRole: 'staff',
+            timeLabel: '08:00',
+            createdAt: '',
+          },
+        ],
       },
     ];
 
