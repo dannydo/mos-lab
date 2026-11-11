@@ -358,49 +358,78 @@ export interface DesktopNotificationOptions extends NotificationOptions {
   onClick?: (e: Event) => void;
 }
 
+function fallbackShowNativeNotification(
+  title: string,
+  notifOptions: NotificationOptions,
+  options?: DesktopNotificationOptions
+): void {
+  try {
+    const n = new Notification(title, notifOptions);
+    n.onclick = (e: Event) => {
+      try {
+        window.focus();
+      } catch {
+        // ignore
+      }
+      if (options?.conversationId) {
+        window.dispatchEvent(
+          new CustomEvent('mos-chat:open', {
+            detail: {
+              conversationId: options.conversationId,
+              messageId: options.messageId,
+            },
+          })
+        );
+      }
+      if (options?.onClick) {
+        try {
+          options.onClick(e);
+        } catch {
+          // non-blocking
+        }
+      }
+      try {
+        n.close();
+      } catch {
+        // non-blocking
+      }
+    };
+  } catch {
+    // Non-blocking
+  }
+}
+
 /**
  * Native desktop notification wrapper with click-to-focus and chat conversation deep-linking (MOS-BUG-141).
  */
 export function showDesktopNotification(title: string, options?: DesktopNotificationOptions): void {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission === 'granted') {
-    try {
-      const n = new Notification(title, {
-        icon: '/apple-touch-icon.png',
-        badge: '/apple-touch-icon.png',
-        ...options,
-      });
-      n.onclick = (e: Event) => {
-        try {
-          window.focus();
-        } catch {
-          // ignore
-        }
-        if (options?.conversationId) {
-          window.dispatchEvent(
-            new CustomEvent('mos-chat:open', {
-              detail: {
-                conversationId: options.conversationId,
-                messageId: options.messageId,
-              },
-            })
-          );
-        }
-        if (options?.onClick) {
-          try {
-            options.onClick(e);
-          } catch {
-            // non-blocking
-          }
-        }
-        try {
-          n.close();
-        } catch {
-          // non-blocking
-        }
-      };
-    } catch {
-      // Non-blocking
+    const navUrl = options?.conversationId
+      ? `/chat?convId=${encodeURIComponent(options.conversationId)}${options.messageId ? `&msgId=${encodeURIComponent(options.messageId)}` : ''}`
+      : '/chat';
+
+    const notifOptions: NotificationOptions = {
+      icon: '/apple-touch-icon.png',
+      badge: '/apple-touch-icon.png',
+      ...options,
+      data: {
+        conversationId: options?.conversationId,
+        messageId: options?.messageId,
+        url: navUrl,
+        ...((options as { data?: unknown })?.data || {}),
+      },
+    };
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.showNotification(title, notifOptions))
+        .catch(() => {
+          fallbackShowNativeNotification(title, notifOptions, options);
+        });
+      return;
     }
+
+    fallbackShowNativeNotification(title, notifOptions, options);
   }
 }

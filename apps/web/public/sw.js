@@ -65,7 +65,11 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const data = event.notification.data || {};
-  const targetUrl = data.url || '/chat';
+  const targetUrl =
+    data.url ||
+    (data.conversationId
+      ? `/chat?convId=${encodeURIComponent(data.conversationId)}${data.messageId ? `&msgId=${encodeURIComponent(data.messageId)}` : ''}`
+      : '/chat');
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
@@ -74,7 +78,12 @@ self.addEventListener('notificationclick', (event) => {
           try {
             client.postMessage({
               type: 'MOS_PUSH_NOTIFICATION_CLICK',
-              data,
+              data: {
+                ...data,
+                conversationId: data.conversationId,
+                messageId: data.messageId,
+                url: targetUrl,
+              },
             });
           } catch {
             // ignore
