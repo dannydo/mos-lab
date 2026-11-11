@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Tooltip, Popover, Avatar, theme } from 'antd';
 import {
   Sparkles,
@@ -233,6 +233,31 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
       };
     }, [composerHasTextListenerRef, syncLocalHasText]);
 
+    // Format quote preview label gracefully with fallback for cards & media
+    const quotedPreviewText = useMemo(() => {
+      if (!replyingToMessage) return '';
+      if (replyingToMessage.text?.trim()) {
+        return cleanQuotedText(replyingToMessage.text);
+      }
+      if (replyingToMessage.customerCard?.name) {
+        return `[Thẻ KH: ${replyingToMessage.customerCard.name}]`;
+      }
+      if (replyingToMessage.attachments && replyingToMessage.attachments.length > 0) {
+        return `[${replyingToMessage.attachments.length} hình ảnh]`;
+      }
+      return '[Tin nhắn]';
+    }, [replyingToMessage]);
+
+    // Ensure textarea is immediately focused and visible when quoting a message
+    useEffect(() => {
+      if (replyingToMessage) {
+        setIsPreviewModeMain(false);
+        requestAnimationFrame(() => {
+          composerInputRef?.current?.focus();
+        });
+      }
+    }, [replyingToMessage, composerInputRef]);
+
     const effectiveHasText = localHasText || composerHasText;
 
     return (
@@ -321,7 +346,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 Trả lời {replyingToMessage.senderName}:
               </span>
               <span className="truncate opacity-80" style={{ color: token.colorText }}>
-                {cleanQuotedText(replyingToMessage.text || '')}
+                {quotedPreviewText}
               </span>
             </div>
             <button
@@ -1204,7 +1229,8 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
       prev.activeConversation?.id === next.activeConversation?.id &&
       prev.stagedAttachments === next.stagedAttachments &&
       prev.stagedCustomerCard === next.stagedCustomerCard &&
-      prev.mentionRenderKey === next.mentionRenderKey
+      prev.mentionRenderKey === next.mentionRenderKey &&
+      prev.replyingToMessage === next.replyingToMessage
     );
   }
 );
