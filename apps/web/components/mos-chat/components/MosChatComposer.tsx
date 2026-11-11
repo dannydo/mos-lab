@@ -31,6 +31,7 @@ import type {
 } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
+import { cleanQuotedText } from '../utils/quoteUtils';
 
 /**
  * Zero-thrash textarea auto-resizer:
@@ -140,6 +141,8 @@ export interface MosChatComposerProps {
   lastCompositionEndMsRef: React.MutableRefObject<number>;
   composerHasTextListenerRef?: React.MutableRefObject<((hasText: boolean) => void) | null>;
   mentionRenderKey?: string;
+  replyingToMessage?: MosChatMessage | null;
+  setReplyingToMessage?: React.Dispatch<React.SetStateAction<MosChatMessage | null>> | ((msg: MosChatMessage | null) => void);
 }
 
 export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
@@ -190,6 +193,8 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     isComposingRef,
     lastCompositionEndMsRef,
     composerHasTextListenerRef,
+    replyingToMessage,
+    setReplyingToMessage,
   }) => {
     // Performance: get token locally via hook instead of receiving as prop
     // (parent's token object has a new identity on every render, defeating React.memo)
@@ -298,6 +303,35 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
               aria-label="Bỏ đính kèm thẻ khách hàng"
             >
               <X size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* Replying quote preview banner (MOS-BUG-214) */}
+        {replyingToMessage && (
+          <div
+            className="mb-2 px-3 py-1.5 rounded-xl flex items-center justify-between text-xs animate-in fade-in duration-200 border-l-4"
+            style={{
+              background: isDark ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.14)',
+              borderColor: '#d4a84b',
+            }}
+          >
+            <div className="flex items-center gap-2 overflow-hidden mr-2">
+              <span className="font-semibold text-amber-500 dark:text-amber-400">
+                Trả lời {replyingToMessage.senderName}:
+              </span>
+              <span className="truncate opacity-80" style={{ color: token.colorText }}>
+                {cleanQuotedText(replyingToMessage.text || '')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyingToMessage?.(null)}
+              className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-400 hover:text-slate-200 cursor-pointer shrink-0 transition-colors"
+              aria-label="Hủy trích dẫn"
+              title="Hủy trích dẫn (Esc)"
+            >
+              <X size={13} />
             </button>
           </div>
         )}
@@ -548,6 +582,11 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   }}
                   onKeyDown={(e) => {
                     if (handleMentionKeyDown(e, 'main')) return;
+                    if (e.key === 'Escape' && replyingToMessage) {
+                      e.preventDefault();
+                      setReplyingToMessage?.(null);
+                      return;
+                    }
                     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
                       e.preventDefault();
                       handleApplyFormat('bold', 'main');
@@ -788,6 +827,11 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   }}
                   onKeyDown={(e) => {
                     if (handleMentionKeyDown(e, 'main')) return;
+                    if (e.key === 'Escape' && replyingToMessage) {
+                      e.preventDefault();
+                      setReplyingToMessage?.(null);
+                      return;
+                    }
                     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
                       e.preventDefault();
                       handleApplyFormat('bold', 'main');
