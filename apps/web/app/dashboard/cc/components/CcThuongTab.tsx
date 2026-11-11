@@ -221,6 +221,10 @@ export default function CcThuongTab({
     return mappedData.reduce((acc, curr) => acc + (curr.single_sales || 0), 0);
   }, [mappedData]);
 
+  const totalDebtCollected = useMemo(() => {
+    return mappedData.reduce((acc, curr) => acc + (curr.debt_collected || 0), 0);
+  }, [mappedData]);
+
   // totalSales = Total Revenue for display (includes all categories)
   const totalSales = useMemo(() => {
     return mappedData.reduce(
@@ -310,6 +314,7 @@ export default function CcThuongTab({
         comboCount: number;
         greenComboCount: number;
         comboSales: number;
+        debtCollected: number;
         productCount: number;
         singleSales: number;
         totalVisits: number;
@@ -328,6 +333,7 @@ export default function CcThuongTab({
         comboCount: 0,
         greenComboCount: 0,
         comboSales: 0,
+        debtCollected: 0,
         productCount: 0,
         singleSales: 0,
         totalVisits: 0,
@@ -347,6 +353,7 @@ export default function CcThuongTab({
           comboCount: 0,
           greenComboCount: 0,
           comboSales: 0,
+          debtCollected: 0,
           productCount: 0,
           singleSales: 0,
           totalVisits: 0,
@@ -359,6 +366,7 @@ export default function CcThuongTab({
       item.comboCount += r.combo_count || 0;
       item.greenComboCount += r.green_combo_count || 0;
       item.comboSales += r.combo_sales || 0;
+      item.debtCollected = (item.debtCollected || 0) + (r.debt_collected || 0);
       item.productCount += r.product_count || 0;
       item.singleSales += r.single_sales || 0;
       item.totalVisits += r.total_visits || 0;
@@ -388,6 +396,7 @@ export default function CcThuongTab({
         comboSalesCount: item.comboCount,
         greenComboSalesCount: item.greenComboCount,
         comboSales: item.comboSales,
+        debtCollected: item.debtCollected,
         productSalesCount: item.productCount,
         singleSales: item.singleSales,
         totalVisits: item.totalVisits,
@@ -614,20 +623,33 @@ export default function CcThuongTab({
       dataIndex: 'totalSales',
       key: 'totalSales',
       align: 'right' as const,
-      render: (val: number) => (
-        <div className="w-full text-right">
-          <div className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
-            {Math.round(val || 0).toLocaleString('vi-VN')} đ
-          </div>
-          {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
-            <div
-              className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
-              title={`Dự kiến cả ${periodNoun}`}
-            >
-              🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+      render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
+        <Tooltip
+          title={
+            record.debtCollected && record.debtCollected > 0
+              ? `Combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ • Thu nợ: ${Math.round(record.debtCollected).toLocaleString('vi-VN')} đ • SP: ${Math.round(val - (record.comboSales || 0) - (record.debtCollected || 0)).toLocaleString('vi-VN')} đ`
+              : undefined
+          }
+        >
+          <div className="w-full text-right cursor-help">
+            <div className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
+              {Math.round(val || 0).toLocaleString('vi-VN')} đ
             </div>
-          )}
-        </div>
+            {record.debtCollected && record.debtCollected > 0 ? (
+              <div className="tabular-nums text-[10px] text-emerald-500 font-medium">
+                Thu nợ: +{Math.round(record.debtCollected).toLocaleString('vi-VN')} đ
+              </div>
+            ) : null}
+            {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+              <div
+                className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                title={`Dự kiến cả ${periodNoun}`}
+              >
+                🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+              </div>
+            )}
+          </div>
+        </Tooltip>
       ),
     },
     {

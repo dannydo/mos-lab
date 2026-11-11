@@ -86,6 +86,7 @@ export interface DailySalesBonusLeaderboardEntry {
   comboSalesCount: number;
   greenComboSalesCount: number;
   comboSales: number;
+  debtCollected?: number;
   productSalesCount: number;
   singleSales: number;
   totalVisits: number;

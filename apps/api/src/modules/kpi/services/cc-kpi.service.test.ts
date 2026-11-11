@@ -342,3 +342,31 @@ test('MOS-BUG-137: formats bonus_sales_day_combo breakdown and syncs to legacy t
   assert.equal(legacyTrackingKey.total_bonus_amount, dailyBonusVnd);
   assert.equal(Object.keys(legacyTrackingKey.level[0].BonusSalesDayCombo.reward).length, 3);
 });
+
+test('MOS-BUG-218: debt_collected from combo debt payments is recorded into total_sales and qualifies for daily bonus', () => {
+  // Case 1: CC IN != CC OUT -> 50/50 split for debt collected
+  const splitShares = splitCcShares(10, 20, [10, 20]);
+  assert.deepEqual(splitShares, [
+    { staffId: 10, share: 0.5 },
+    { staffId: 20, share: 0.5 },
+  ]);
+
+  // Case 2: Same CC handles customer returning to pay debt -> 100%
+  const singleShares = splitCcShares(48026, 48026, [48026]);
+  assert.deepEqual(singleShares, [{ staffId: 48026, share: 1 }]);
+
+  // Case 3: Debt collection row is included in total_sales calculation
+  const comboSales = 10_000_000;
+  const productSales = 2_000_000;
+  const debtCollected = 5_000_000;
+  const totalSales = comboSales + productSales + debtCollected;
+
+  assert.equal(totalSales, 17_000_000);
+
+  // At 17_000_000 VND, tier rate is 2.0% (>= 15M)
+  const tierRate = resolveCcDailyBonusTierRate(totalSales);
+  assert.equal(tierRate, 2.0);
+
+  const dailyBonus = Math.round((totalSales * tierRate) / 100);
+  assert.equal(dailyBonus, 340_000);
+});

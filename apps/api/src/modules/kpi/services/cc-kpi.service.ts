@@ -1282,12 +1282,48 @@ export class CcKpiService {
         cs.client_store_key
     `;
 
-    const [comboRows, upgradeRows, productRows, singleRows, visitRows] = await Promise.all([
+    let storeFilterClauseDebt = '';
+    if (storeId && storeId !== 'ALL') {
+      const numericStoreId = parseInt(storeId, 10);
+      if (!isNaN(numericStoreId)) {
+        storeFilterClauseDebt = ` AND COALESCE(o.client_store_id, ud.client_store_id) = ${numericStoreId}`;
+      }
+    }
+
+    const debtPaymentSalesQuery = `
+      SELECT 
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created), '%Y-%m-%d') as sale_date,
+        COALESCE(
+          (SELECT os.check_in_staff_id FROM \`order_service\` os WHERE os.order_id = udp.order_id AND os.check_in_staff_id IS NOT NULL LIMIT 1),
+          udp.created_staff_id
+        ) as cc_in_id,
+        COALESCE(
+          (SELECT os.check_out_staff_id FROM \`order_service\` os WHERE os.order_id = udp.order_id AND os.check_out_staff_id IS NOT NULL LIMIT 1),
+          udp.created_staff_id
+        ) as cc_out_id,
+        udp.paid_amount as debt_collected,
+        UPPER(COALESCE(cs_order.client_store_key, cs_debt.client_store_key, 'MOS')) as store_code
+      FROM \`user_debt_payment\` udp
+      JOIN \`user_debt\` ud ON ud.id = udp.user_debt_id
+      LEFT JOIN \`order\` o ON o.id = udp.order_id
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      LEFT JOIN \`client_store\` cs_order ON cs_order.id = o.client_store_id
+      LEFT JOIN \`client_store\` cs_debt ON cs_debt.id = ud.client_store_id
+      WHERE udp.paid_amount > 0
+        AND udp.is_completed = 1
+        AND COALESCE(udp.is_cancelled, 0) = 0
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) >= '${startStr} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) <= '${queryEndAt}'
+        ${storeFilterClauseDebt}
+    `;
+
+    const [comboRows, upgradeRows, productRows, singleRows, visitRows, debtRows] = await Promise.all([
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(upgradeSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(visitMetricsQuery),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSalesQuery),
     ]);
 
     // === 50/50 SPLIT LOGIC: Split doanh số TRƯỚC → Gom theo NGÀY → Tra Tier Rate ===
@@ -1388,6 +1424,19 @@ export class CcKpiService {
       splits.forEach(({ staffId, share }) => {
         const entry = getOrCreate(dateStr, staffId, storeCode);
         entry.single_sales += Math.round(sales * share);
+      });
+    });
+
+    // Process debt collection rows (per-payment, 50/50 split if CC IN != CC OUT)
+    debtRows.forEach((r) => {
+      const splits = splitCcShares(r.cc_in_id, r.cc_out_id, targetStaffIds);
+      const sales = Math.round(Number(r.debt_collected) || 0);
+      const dateStr = String(r.sale_date);
+      const storeCode = String(r.store_code || 'MOS');
+
+      splits.forEach(({ staffId, share }) => {
+        const entry = getOrCreate(dateStr, staffId, storeCode);
+        entry.debt_collected += Math.round(sales * share);
       });
     });
 
