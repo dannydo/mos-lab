@@ -1565,6 +1565,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setReplyingToMessage(msg);
     setTimeout(() => {
       composerInputRef.current?.focus();
+      composerInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 50);
   }, []);
 

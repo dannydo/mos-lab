@@ -201,6 +201,49 @@ describe('mOS Chat Desktop Reply to Message (MOS-BUG-214)', () => {
     expect(handleReplyToMessage).toHaveBeenCalledWith(mockMessage);
   });
 
+  it('re-renders and displays quoting banner via React.memo when replyingToMessage transitions from null to a message', () => {
+    const setReplyingToMessage = vi.fn();
+    const { rerender } = render(
+      <MosChatComposer
+        {...(defaultComposerProps as MosChatComposerProps)}
+        replyingToMessage={null}
+        setReplyingToMessage={setReplyingToMessage}
+      />
+    );
+
+    expect(screen.queryByText('Trả lời Nguyễn Quang Khải:')).not.toBeInTheDocument();
+
+    // Rerender with message (simulates parent setReplyingToMessage state change)
+    rerender(
+      <MosChatComposer
+        {...(defaultComposerProps as MosChatComposerProps)}
+        replyingToMessage={mockMessage}
+        setReplyingToMessage={setReplyingToMessage}
+      />
+    );
+
+    expect(screen.getByText('Trả lời Nguyễn Quang Khải:')).toBeInTheDocument();
+    expect(screen.getByText('DNTT cho Zalo OA 6 tháng 15 member @Bùi Sinh Nguyên')).toBeInTheDocument();
+  });
+
+  it('renders fallback quote preview when replying to a message with attachments or card without text', () => {
+    const mediaMessage: MosChatMessage = {
+      ...mockMessage,
+      id: 'msg-media-1',
+      text: '',
+      attachments: [{ id: 'att-1', name: 'img.jpg', sizeBytes: 1024, url: 'https://example.com/img.jpg', mimeType: 'image/jpeg' }],
+    };
+    render(
+      <MosChatComposer
+        {...(defaultComposerProps as MosChatComposerProps)}
+        replyingToMessage={mediaMessage}
+      />
+    );
+
+    expect(screen.getByText('Trả lời Nguyễn Quang Khải:')).toBeInTheDocument();
+    expect(screen.getByText('[1 hình ảnh]')).toBeInTheDocument();
+  });
+
   it('renders quoting preview banner in MosChatComposer when replyingToMessage is set', () => {
     const setReplyingToMessage = vi.fn();
     render(

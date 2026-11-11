@@ -1481,7 +1481,10 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                           <button
                             type="button"
                             aria-label="Trả lời tin nhắn này"
-                            onClick={() => handleReplyToMessage?.(m)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReplyToMessage?.(m);
+                            }}
                             className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
                             style={{ color: token.colorTextSecondary }}
                           >
