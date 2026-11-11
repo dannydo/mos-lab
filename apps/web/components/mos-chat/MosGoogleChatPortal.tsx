@@ -251,6 +251,8 @@ import { MosChatThreadDrawer } from './components/MosChatThreadDrawer';
 import { MosChatModals } from './components/MosChatModals';
 import { MosChatSearchModal } from './components/MosChatSearchModal';
 import type { MosChatSearchResultItem } from '@mos-lab/shared';
+import { MosChatReactionUsersModal } from './components/MosChatReactionUsersModal';
+import type { MosChatReactionUsersTarget } from './types/mos-chat-types';
 import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
 import { MosChatPinnedPane } from './components/MosChatPinnedPane';
@@ -1412,6 +1414,39 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   // Message Content Search Modal (⌘K / Ctrl+K)
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  // Reaction Users Modal (MOS-BUG-217: Xem ai thả cảm xúc trên máy tính)
+  const [reactionUsersModalOpen, setReactionUsersModalOpen] = useState<boolean>(false);
+  const [reactionUsersTarget, setReactionUsersTarget] = useState<MosChatReactionUsersTarget | null>(null);
+
+  const handleOpenReactionUsers = useCallback(
+    (
+      target: {
+        id?: string;
+        messageId?: string;
+        replyId?: string;
+        reactions?: Record<string, number>;
+        reactionUsers?: Record<string, Array<number | string>>;
+      },
+      initialEmoji?: string
+    ) => {
+      const resolvedMsgId = target.messageId || target.id || '';
+      setReactionUsersTarget({
+        messageId: resolvedMsgId,
+        replyId: target.replyId,
+        reactions: target.reactions || {},
+        reactionUsers: target.reactionUsers || {},
+        initialEmoji,
+      });
+      setReactionUsersModalOpen(true);
+    },
+    []
+  );
+
+  const handleCloseReactionUsers = useCallback(() => {
+    setReactionUsersModalOpen(false);
+    setReactionUsersTarget(null);
+  }, []);
 
   // Global ⌘K / Ctrl+K shortcut for message search
   useEffect(() => {
@@ -4706,6 +4741,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       try {
         const res = await apiClient.chat.reactToMessage(msgId, targetConvId, emoji, replyId);
         if (res?.reactions) {
+          setReactionUsersTarget((prev) => {
+            if (!prev) return null;
+            if (prev.messageId === msgId && prev.replyId === replyId) {
+              return {
+                ...prev,
+                reactions: res.reactions || {},
+                reactionUsers: res.reactionUsers ?? prev.reactionUsers ?? {},
+              };
+            }
+            return prev;
+          });
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== targetConvId) return c;
@@ -4747,6 +4793,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     try {
       const res = await apiClient.chat.reactToMessage(msgId, targetConvId, emoji);
       if (res?.reactions) {
+        setReactionUsersTarget((prev) => {
+          if (!prev) return null;
+          if (prev.messageId === msgId && !prev.replyId) {
+            return {
+              ...prev,
+              reactions: res.reactions || {},
+              reactionUsers: res.reactionUsers ?? prev.reactionUsers ?? {},
+            };
+          }
+          return prev;
+        });
         setConversations((prev) =>
           prev.map((c) => {
             if (c.id !== targetConvId) return c;
@@ -11404,6 +11461,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     handleSetTtsSpeed={handleSetTtsSpeed}
                     hasUserReacted={hasUserReacted}
                     handleToggleReaction={handleToggleReaction}
+                    handleOpenReactionUsers={handleOpenReactionUsers}
+                    staffDirectory={staffDirectory}
                     mobileActiveMsgId={mobileActiveMsgId}
                     openMovePopoverKey={openMovePopoverKey}
                     setOpenMovePopoverKey={setOpenMovePopoverKey}
@@ -11612,6 +11671,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               isDannyAccount={isDannyAccount}
               hasUserReacted={hasUserReacted}
               handleToggleReaction={handleToggleReaction}
+              handleOpenReactionUsers={handleOpenReactionUsers}
+              staffDirectory={staffDirectory}
               openStickerPopoverKey={openStickerPopoverKey}
               setOpenStickerPopoverKey={setOpenStickerPopoverKey}
               renderReactionPickerContent={renderReactionPickerContent}
@@ -11791,6 +11852,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         onClose={() => setSearchModalOpen(false)}
         activeConversation={activeConversation}
         onSelectMessage={handleSelectSearchResult}
+      />
+
+      {/* Reaction Users Details Modal (MOS-BUG-217) */}
+      <MosChatReactionUsersModal
+        open={reactionUsersModalOpen}
+        target={reactionUsersTarget}
+        onClose={handleCloseReactionUsers}
+        currentUser={currentUser}
+        staffDirectory={staffDirectory}
+        onToggleReaction={handleToggleReaction}
+        isDark={isDark}
       />
 
       <MosChatModals

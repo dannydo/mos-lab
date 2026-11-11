@@ -27,6 +27,7 @@ import {
   Trash2,
   Volume2,
   VolumeX,
+  Users,
   Zap,
 } from 'lucide-react';
 import {
@@ -34,11 +35,12 @@ import {
   type MosChatConversation,
   type MosChatMessage,
   type MosChatTaskItem,
+  type MosChatStaffMember,
   type SafeAny,
 } from '@mos-lab/shared';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard } from '../utils/chat-helpers';
+import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard, formatReactionUsersTooltip } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
 import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
@@ -234,6 +236,8 @@ export interface MosChatMessageFeedProps {
   renderMessageAttachments?: (attachments?: SafeAny[], compact?: boolean, isMine?: boolean) => React.ReactNode;
   openCustomerDetail?: (customerId: number) => void;
   handleReplyToMessage?: (m: MosChatMessage) => void;
+  handleOpenReactionUsers?: (target: SafeAny, initialEmoji?: string) => void;
+  staffDirectory?: MosChatStaffMember[];
 }
 
 export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
@@ -331,6 +335,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     renderMessageAttachments,
     openCustomerDetail,
     handleReplyToMessage,
+    handleOpenReactionUsers,
+    staffDirectory = [],
   }) => {
     const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
 
@@ -1354,18 +1360,20 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                           const reactedByMe = hasUserReacted(m, emoji);
                           const stickerReaction = parseStickerReactionKey(emoji);
                           const label = stickerReaction ? stickerReaction.caption || stickerReaction.title : emoji;
+                          const tooltipTitle =
+                            formatReactionUsersTooltip(m, emoji, staffDirectory, currentUser) ||
+                            (reactedByMe
+                              ? `Bạn đã thả ${label} · Nhấn để gỡ cảm xúc (Undo)`
+                              : `Nhấn để thả cùng ${label}`);
                           return (
-                            <Tooltip
-                              key={emoji}
-                              title={
-                                reactedByMe
-                                  ? `Bạn đã thả ${label} · Nhấn để gỡ cảm xúc (Undo)`
-                                  : `Nhấn để thả cùng ${label}`
-                              }
-                            >
+                            <Tooltip key={emoji} title={tooltipTitle}>
                               <button
                                 type="button"
                                 onClick={() => handleToggleReaction(m.id, emoji)}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  handleOpenReactionUsers?.(m, emoji);
+                                }}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
                                 style={{
                                   background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : surfaceRaised,
@@ -1383,6 +1391,27 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                             </Tooltip>
                           );
                         })}
+
+                    {/* Button to view who reacted on desktop (MOS-BUG-217) */}
+                    {m.reactions &&
+                      Object.values(m.reactions).some((count) => count > 0) &&
+                      handleOpenReactionUsers && (
+                        <Tooltip title="Xem những ai đã thả cảm xúc">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReactionUsers(m)}
+                            className="inline-flex items-center justify-center w-5 h-5 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 transition-all cursor-pointer shadow-sm hover:scale-105"
+                            style={{
+                              background: surfaceRaised,
+                              border: `1px solid ${borderColor}`,
+                            }}
+                            title="Xem những ai đã thả cảm xúc"
+                            aria-label="Xem người thả cảm xúc"
+                          >
+                            <Users size={11} />
+                          </button>
+                        </Tooltip>
+                      )}
 
                     {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
                     <div

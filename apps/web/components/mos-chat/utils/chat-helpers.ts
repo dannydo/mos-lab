@@ -12,6 +12,7 @@ import { removeVietnameseTones } from '@mos-lab/shared';
 import { cleanMarkdownForSpeech } from '../../voice-assistant/speech-utils';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+import { parseStickerReactionKey } from '../mos-chat-stickers';
 
 export function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolean {
   const role = String(member.role || '')
@@ -1255,4 +1256,59 @@ export async function copyMessageToClipboard(
     antdMessage.error('Không thể sao chép vào bộ nhớ tạm');
     return false;
   }
+}
+
+/**
+ * Định dạng nội dung tooltip hiển thị danh sách người đã thả cảm xúc cho desktop (MOS-BUG-217).
+ */
+export function formatReactionUsersTooltip(
+  target:
+    | { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
+    | undefined
+    | null,
+  emoji: string,
+  staffDirectory: MosChatStaffMember[] = [],
+  currentUser?: { id?: number | string; username?: string; name?: string; displayName?: string } | null
+): string {
+  if (!target) return '';
+  const stickerReaction = parseStickerReactionKey(emoji);
+  const label = stickerReaction ? stickerReaction.caption || stickerReaction.title : emoji;
+  const count = target.reactions?.[emoji] || 0;
+  if (count <= 0) return '';
+
+  const myId = String(currentUser?.id ?? '');
+  const myUsername = String(currentUser?.username ?? '').toLowerCase();
+  const userKeys = target.reactionUsers?.[emoji];
+  const isMe = (uStr: string) =>
+    (myId && uStr === myId) ||
+    (myUsername && uStr.toLowerCase() === myUsername) ||
+    (uStr === 'me' || (myId === '' && uStr === '1'));
+
+  const reactedByMe = Array.isArray(userKeys) ? userKeys.some((u) => isMe(String(u))) : false;
+
+  let names: string[] = [];
+  if (Array.isArray(userKeys) && userKeys.length > 0) {
+    names = userKeys.map((u) => {
+      const uStr = String(u);
+      if (isMe(uStr)) return 'Bạn';
+      const staff = staffDirectory.find(
+        (s) => String(s.id) === uStr || String(s.username || '').toLowerCase() === uStr.toLowerCase()
+      );
+      return staff?.displayName || (staff as SafeAny)?.name || `Thành viên #${uStr}`;
+    });
+  }
+
+  const actionHint = reactedByMe ? 'Nhấn để gỡ' : 'Nhấn để thả cùng';
+
+  if (names.length === 0) {
+    return reactedByMe
+      ? `Bạn đã thả ${label} · ${actionHint} (Undo)`
+      : `${count} người đã thả ${label} · ${actionHint}`;
+  }
+
+  const prefix = names.length <= 3
+    ? names.join(', ')
+    : `${names.slice(0, 3).join(', ')} và ${names.length - 3} người khác`;
+
+  return `${prefix} đã thả ${label} · ${actionHint}`;
 }

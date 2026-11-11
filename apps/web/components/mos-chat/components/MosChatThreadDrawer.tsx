@@ -34,6 +34,7 @@ import {
   Sparkles,
   Trash2,
   UserRoundPlus,
+  Users,
   Volume2,
   VolumeX,
   X,
@@ -47,13 +48,14 @@ import {
   type MosChatThreadReply,
   type MosChatCustomerCard,
   type UpdateMosChatTaskRequest,
+  type MosChatStaffMember,
   type SafeAny,
 } from '@mos-lab/shared';
 import { MosChatThreadChecklist } from './MosChatThreadChecklist';
 import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard } from '../utils/chat-helpers';
+import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard, formatReactionUsersTooltip } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { findSourceMessage, scrollToMessageAndFlash, cleanQuotedText, formatQuotePayload } from '../utils/quoteUtils';
 import { syncTextareaHeightSmart } from './MosChatComposer';
@@ -302,6 +304,8 @@ export interface MosChatThreadDrawerProps {
   updateThreadInput?: (val: string) => void;
   threadHasTextListenerRef?: React.MutableRefObject<((hasText: boolean) => void) | null>;
   mentionRenderKey?: string;
+  handleOpenReactionUsers?: (target: SafeAny, initialEmoji?: string) => void;
+  staffDirectory?: MosChatStaffMember[];
 }
 
 export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.memo(
@@ -430,6 +434,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     threadHasText,
     updateThreadInput,
     threadHasTextListenerRef,
+    handleOpenReactionUsers,
+    staffDirectory = [],
   }) => {
     const [formatBarOpenThread, setFormatBarOpenThread] = useState<boolean>(true);
     const [isPreviewModeThread, setIsPreviewModeThread] = useState<boolean>(false);
@@ -1184,14 +1190,18 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       const reactedByMe = hasUserReacted(activeThreadMessage, emoji);
                       const stickerReaction = parseStickerReactionKey(emoji);
                       const label = stickerReaction ? stickerReaction.caption || stickerReaction.title : emoji;
+                      const tooltipTitle =
+                        formatReactionUsersTooltip(activeThreadMessage, emoji, staffDirectory, currentUser) ||
+                        (reactedByMe ? `Đã thả ${label} · Nhấn để gỡ cảm xúc` : `Thả cùng ${label}`);
                       return (
-                        <Tooltip
-                          key={emoji}
-                          title={reactedByMe ? `Đã thả ${label} · Nhấn để gỡ cảm xúc` : `Thả cùng ${label}`}
-                        >
+                        <Tooltip key={emoji} title={tooltipTitle}>
                           <button
                             type="button"
                             onClick={() => handleToggleReaction(activeThreadMessage.id, emoji)}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              handleOpenReactionUsers?.(activeThreadMessage, emoji);
+                            }}
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
                             style={{
                               background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : canvasBg,
@@ -1209,6 +1219,25 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         </Tooltip>
                       );
                     })}
+
+                  {/* Button to view who reacted for root thread msg (MOS-BUG-217) */}
+                  {handleOpenReactionUsers && (
+                    <Tooltip title="Xem những ai đã thả cảm xúc">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReactionUsers(activeThreadMessage)}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 transition-all cursor-pointer shadow-sm hover:scale-105"
+                        style={{
+                          background: canvasBg,
+                          border: `1px solid ${borderColor}`,
+                        }}
+                        title="Xem những ai đã thả cảm xúc"
+                        aria-label="Xem người thả cảm xúc"
+                      >
+                        <Users size={11} />
+                      </button>
+                    </Tooltip>
+                  )}
                 </div>
               )}
           </div>
@@ -1478,16 +1507,27 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                             const reactedByMe = hasUserReacted(r, emoji);
                             const stickerReaction = parseStickerReactionKey(emoji);
                             const label = stickerReaction ? stickerReaction.caption || stickerReaction.title : emoji;
+                            const tooltipTitle =
+                              formatReactionUsersTooltip(r, emoji, staffDirectory, currentUser) ||
+                              (reactedByMe ? `Bạn đã thả ${label} · Nhấn để gỡ cảm xúc` : `Nhấn để thả cùng ${label}`);
                             return (
-                              <Tooltip
-                                key={emoji}
-                                title={
-                                  reactedByMe ? `Bạn đã thả ${label} · Nhấn để gỡ cảm xúc` : `Nhấn để thả cùng ${label}`
-                                }
-                              >
+                              <Tooltip key={emoji} title={tooltipTitle}>
                                 <button
                                   type="button"
                                   onClick={() => handleToggleReaction(activeThreadMessage.id, emoji, r.id)}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    handleOpenReactionUsers?.(
+                                      {
+                                        id: r.id,
+                                        messageId: activeThreadMessage.id,
+                                        replyId: r.id,
+                                        reactions: r.reactions,
+                                        reactionUsers: r.reactionUsers,
+                                      },
+                                      emoji
+                                    );
+                                  }}
                                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
                                   style={{
                                     background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : surfaceRaised,
@@ -1505,6 +1545,33 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                               </Tooltip>
                             );
                           })}
+
+                        {/* Button to view who reacted for thread reply (MOS-BUG-217) */}
+                        {handleOpenReactionUsers && (
+                          <Tooltip title="Xem những ai đã thả cảm xúc">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleOpenReactionUsers({
+                                  id: r.id,
+                                  messageId: activeThreadMessage.id,
+                                  replyId: r.id,
+                                  reactions: r.reactions,
+                                  reactionUsers: r.reactionUsers,
+                                })
+                              }
+                              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 transition-all cursor-pointer shadow-sm hover:scale-105"
+                              style={{
+                                background: surfaceRaised,
+                                border: `1px solid ${borderColor}`,
+                              }}
+                              title="Xem những ai đã thả cảm xúc"
+                              aria-label="Xem người thả cảm xúc"
+                            >
+                              <Users size={11} />
+                            </button>
+                          </Tooltip>
+                        )}
                       </div>
                     )}
 
