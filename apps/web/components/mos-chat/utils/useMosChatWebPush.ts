@@ -19,7 +19,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 
 export interface UseMosChatWebPushOptions {
   enabled: boolean;
-  onSelectConversationFromPush?: (conversationId: string) => void;
+  onSelectConversationFromPush?: (conversationId: string, messageId?: string) => void;
 }
 
 export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: UseMosChatWebPushOptions) {
@@ -108,8 +108,19 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
     const handleServiceWorkerMessage = (event: MessageEvent) => {
       if (event.data?.type === 'MOS_PUSH_NOTIFICATION_CLICK') {
         const convId = event.data?.data?.conversationId;
+        const msgId = event.data?.data?.messageId;
         if (convId && onSelectConvRef.current) {
-          onSelectConvRef.current(String(convId));
+          onSelectConvRef.current(String(convId), msgId ? String(msgId) : undefined);
+        }
+        if (convId && typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('mos-chat:open', {
+              detail: {
+                conversationId: String(convId),
+                messageId: msgId ? String(msgId) : undefined,
+              },
+            })
+          );
         }
       }
     };

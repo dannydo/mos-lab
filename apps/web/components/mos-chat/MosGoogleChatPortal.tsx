@@ -263,6 +263,7 @@ import { useMosChatVoiceCall } from './utils/useMosChatVoiceCall';
 import { useMosChatWebPush } from './utils/useMosChatWebPush';
 import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from './components/MosChatVoiceCallWidget';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
+import { HeaderNotificationCenter } from '../notification-center/HeaderNotificationCenter';
 import dynamic from 'next/dynamic';
 import { ErrorBoundary } from '../ErrorBoundary';
 
@@ -2198,8 +2199,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }
                   );
                 } else if (
-                  isPersonalForMe &&
-                  (!openRef.current || activeConvIdRef.current !== conv.id || activeSubtab !== 'chat')
+                  !openRef.current || activeConvIdRef.current !== conv.id || activeSubtab !== 'chat'
                 ) {
                   const senderLabel = item.senderName || conv.name || 'Đồng nghiệp';
                   const preview = item.text
@@ -2211,7 +2211,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     ? `💬 Tin nhắn mới từ ${senderLabel}`
                     : isMentioned
                       ? `💬 ${senderLabel} đã nhắc tên bạn trong #${conv.name}`
-                      : `💬 ${senderLabel} phản hồi luồng của bạn trong #${conv.name}`;
+                      : isMyThreadReply
+                        ? `💬 ${senderLabel} phản hồi luồng của bạn trong #${conv.name}`
+                        : `💬 [${conv.name}] ${senderLabel}`;
                   notification.info({
                     key: `chat-msg-notify-${item.id}`,
                     message: <span className="font-semibold text-xs">{toastTitle}</span>,
@@ -2364,10 +2366,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   useMosChatWebPush({
     enabled: Boolean(currentUser?.id),
-    onSelectConversationFromPush: (convId) => {
+    onSelectConversationFromPush: (convId, msgId) => {
       ensurePortalOpen();
-      setActiveConvId(convId);
-      setActiveSubtab('chat');
+      navigateToMessageRef.current(convId, msgId);
     },
   });
 
@@ -5327,6 +5328,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setActiveSubtab('chat');
       if (isMobile) setMobileActiveView('conversation');
 
+      if (standalone && typeof window !== 'undefined') {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('convId', convId);
+          if (msgId) {
+            url.searchParams.set('msgId', msgId);
+          } else {
+            url.searchParams.delete('msgId');
+          }
+          window.history.replaceState(null, '', url.toString());
+        } catch {
+          // ignore
+        }
+      }
+
       const targetConv =
         convId === AI_COPILOT_CONV_ID ? aiCopilotConversation : conversations.find((c) => c.id === convId);
 
@@ -5386,11 +5402,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return false;
       };
 
-      setTimeout(() => {
-        if (!attemptScroll()) {
-          setTimeout(attemptScroll, 200);
-        }
-      }, 250);
+      const scrollDelays = [60, 200, 450, 800];
+      scrollDelays.forEach((delay) => {
+        setTimeout(() => {
+          attemptScroll();
+        }, delay);
+      });
 
       setTimeout(() => {
         setHighlightedMsgId((prev) => (prev === msgId ? null : prev));
@@ -5400,6 +5417,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       conversations,
       aiCopilotConversation,
       isMobile,
+      standalone,
       handleOpenThread,
       isTabVisible,
       markConversationReadOptimisticAndSync,
@@ -10880,7 +10898,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </button>
                   </Tooltip>
 
-                  {/* Group 1: Notification & Thread (feature toggles) */}
+                  {/* Group 1: Notification Center & Settings & Thread */}
+                  {/* Notification Center Popover (Inbox, Mentions, Tasks, Chat) */}
+                  <HeaderNotificationCenter
+                    themeMode={isDark ? 'dark' : 'light'}
+                    onOpenChat={(convId, msgId) => {
+                      if (convId) {
+                        ensurePortalOpen();
+                        navigateToMessageRef.current(convId, msgId);
+                      }
+                    }}
+                  />
+
                   {/* Notification Settings Button (Tiered Notification Filter) */}
                   <Tooltip title="Cài đặt thông báo (Lọc tin nhắn & BUZZ)">
                     <button

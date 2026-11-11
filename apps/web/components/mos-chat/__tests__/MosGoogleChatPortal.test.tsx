@@ -113,6 +113,15 @@ vi.mock('../../../lib/api-client', () => ({
         { id: 2, name: 'Thùy Dương', role: 'Tư Vấn CC' },
       ]),
     },
+    notifications: {
+      getFeed: vi.fn().mockResolvedValue({
+        items: [],
+        unreadCount: 0,
+        urgentCount: 0,
+      }),
+      markAsRead: vi.fn().mockResolvedValue({ success: true }),
+      markAllAsRead: vi.fn().mockResolvedValue({ success: true }),
+    },
   },
 }));
 
@@ -1208,5 +1217,76 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
 
     expect(onOpenSpy).toHaveBeenCalledTimes(1);
     expect(onToggleSpy).not.toHaveBeenCalled();
+  });
+
+  it('renders HeaderNotificationCenter in portal header and updates URL upon standalone navigation (MOS-BUG-215)', async () => {
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [
+        {
+          id: 'space-core-team',
+          name: 'Core Team',
+          type: 'space',
+          messages: [
+            { id: 'm-1', text: 'Hello team', senderName: 'Danny', senderId: 1, createdAt: new Date().toISOString() },
+          ],
+        },
+        {
+          id: 'dm-pair-1-6',
+          name: 'Nguyễn Quang Khải',
+          type: 'dm',
+          messages: [
+            { id: 'm-2', text: 'Chào anh Danny', senderName: 'Khải', senderId: 6, createdAt: new Date().toISOString() },
+          ],
+        },
+      ],
+      tasks: [],
+      staffDirectory: [
+        { id: 1, displayName: 'Danny Do', role: 'super_admin' },
+        { id: 6, displayName: 'Nguyễn Quang Khải', role: 'admin' },
+      ],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        standalone={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 1, displayName: 'Danny Do', role: 'super_admin' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiClient.chat.bootstrap).toHaveBeenCalled();
+    });
+
+    // Verify Notification Center bell is present in header
+    expect(screen.getByRole('button', { name: /thông báo & việc cần làm/i })).toBeDefined();
+
+    // Trigger navigation via mos-chat:open event (as if from desktop notification or notification center)
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('mos-chat:open', {
+          detail: {
+            conversationId: 'dm-pair-1-6',
+            messageId: 'm-2',
+          },
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(replaceStateSpy).toHaveBeenCalledWith(
+        null,
+        '',
+        expect.stringContaining('convId=dm-pair-1-6')
+      );
+    });
   });
 });
