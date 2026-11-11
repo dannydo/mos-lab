@@ -149,6 +149,7 @@ import type {
   MosChatImageAttachment,
   MosChatImageMimeType,
   MosChatMessage,
+  MosChatQuotedMessage,
   MosChatMissionActionType,
   MosChatMissionSummary,
   MosChatReadReceiptEntry,
@@ -240,6 +241,7 @@ import { MosChatSaveThreadWorkflowModal, MosChatTriggerWorkflowModal } from './w
 import { MosChatMermaidBlock } from './MosChatMermaidBlock';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from './MosChatMathBlock';
 import { MosChatRichText } from './MosChatRichText';
+import { cleanQuotedText } from './utils/quoteUtils';
 import { MosChatProvider } from './context/MosChatContext';
 import { MosChatMobileApp } from './mobile/MosChatMobileApp';
 import { MosChatSidebar } from './components/MosChatSidebar';
@@ -1545,6 +1547,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const prevMainMsgCountRef = useRef<{ convId: string; count: number }>({ convId: '', count: 0 });
   const prevThreadReplyCountRef = useRef<{ msgId: string; count: number }>({ msgId: '', count: 0 });
   const [openStickerPopoverKey, setOpenStickerPopoverKey] = useState<string | null>(null);
+  const [replyingToMessage, setReplyingToMessage] = useState<MosChatMessage | null>(null);
   const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadInputRef = useRef<HTMLTextAreaElement | null>(null);
   const dockInputRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -1552,6 +1555,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const lastCompositionEndMsRef = useRef<number>(0);
   const lastSentRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    setReplyingToMessage(null);
+  }, [activeConvId]);
+
+  const handleReplyToMessage = useCallback((msg: MosChatMessage) => {
+    setReplyingToMessage(msg);
+    setTimeout(() => {
+      composerInputRef.current?.focus();
+    }, 50);
+  }, []);
 
   // Inline Message Edit & Delete History States — editingTextRef prevents root re-renders on every keystroke
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -4223,7 +4237,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     targetConvId: string,
     rawText: string,
     customerCard?: MosChatCustomerCard | null,
-    attachments?: MosChatImageAttachment[]
+    attachments?: MosChatImageAttachment[],
+    replyToId?: string | null,
+    replyTo?: MosChatQuotedMessage | null
   ) => {
     const text = rawText.trim();
     const cleanAttachments = attachments && attachments.length > 0 ? attachments : undefined;
@@ -4258,6 +4274,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       attachments: cleanAttachments,
       reactions: {},
       thread: [],
+      replyToId: replyToId || null,
+      replyTo: replyTo || null,
     };
 
     // CASE 1: Private 1-1 Chat with 🤖 MAI (mOS AI) (100% personal)
@@ -4422,6 +4440,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         text: optimisticMsg.text,
         customerCard: customerCard || null,
         attachments: cleanAttachments,
+        replyToId: replyToId || null,
+        replyTo: replyTo || null,
       });
       if (res?.message) {
         sentMessage = res.message;
@@ -4500,11 +4520,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setIsUrgentSend(false);
     }
 
+    const replyMeta = replyingToMessage
+      ? {
+          id: replyingToMessage.id,
+          senderId: replyingToMessage.senderId,
+          senderName: replyingToMessage.senderName,
+          senderAvatar: replyingToMessage.senderAvatar,
+          text: cleanQuotedText(replyingToMessage.text),
+        }
+      : null;
+    const replyToId = replyingToMessage?.id || null;
+    setReplyingToMessage(null);
+
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     updateComposerText('');
     setStagedAttachments([]);
     setStagedCustomerCard(null);
-    const sent = await handleSendMessage(activeConversation.id, text, cardToSend, attachmentsToSend);
+    const sent = await handleSendMessage(
+      activeConversation.id,
+      text,
+      cardToSend,
+      attachmentsToSend,
+      replyToId,
+      replyMeta
+    );
     if (wasUrgent && sent?.id) {
       void handleBuzzMessage(sent.id);
     }
@@ -11333,6 +11372,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     antdMessage={antdMessage}
                     renderMessageAttachments={renderMessageAttachments}
                     openCustomerDetail={openCustomerDetail}
+                    handleReplyToMessage={handleReplyToMessage}
                   />
 
                   {/* Clean Single-Line Composer with Staging Thumbnails, AI Quick Prompts & Icon-only Toolbar */}
@@ -11348,6 +11388,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     surfaceRaised={surfaceRaised}
                     borderColor={borderColor}
                     borderStrong={borderStrong}
+                    replyingToMessage={replyingToMessage}
+                    setReplyingToMessage={setReplyingToMessage}
                     composerTextRef={composerTextRef}
                     composerHasText={composerHasText}
                     updateComposerText={updateComposerText}

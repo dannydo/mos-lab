@@ -17,6 +17,7 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Reply,
   Rocket,
   RotateCcw,
   Search,
@@ -232,6 +233,7 @@ export interface MosChatMessageFeedProps {
   antdMessage: SafeAny;
   renderMessageAttachments?: (attachments?: SafeAny[], compact?: boolean, isMine?: boolean) => React.ReactNode;
   openCustomerDetail?: (customerId: number) => void;
+  handleReplyToMessage?: (m: MosChatMessage) => void;
 }
 
 export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
@@ -328,6 +330,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     antdMessage,
     renderMessageAttachments,
     openCustomerDetail,
+    handleReplyToMessage,
   }) => {
     const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
 
@@ -948,6 +951,12 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                             return (
                               <div
                                 onClick={(e) => handleMessageTap(m, e)}
+                                onDoubleClick={(e) => {
+                                  if (!m.isDeleted) {
+                                    e.stopPropagation();
+                                    handleReplyToMessage?.(m);
+                                  }
+                                }}
                                 title={
                                   hasSubthread
                                     ? `Nhấn để mở luồng trả lời phụ (${m.thread?.length} phản hồi)`
@@ -1465,6 +1474,21 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                           <MessageSquareReply size={13} />
                         </button>
                       </Tooltip>
+
+                      {/* Trả lời tin nhắn này (Quote Reply trong hội thoại - MOS-BUG-214) */}
+                      {!m.isDeleted && (
+                        <Tooltip title="Trả lời tin nhắn này">
+                          <button
+                            type="button"
+                            aria-label="Trả lời tin nhắn này"
+                            onClick={() => handleReplyToMessage?.(m)}
+                            className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                            style={{ color: token.colorTextSecondary }}
+                          >
+                            <Reply size={13} />
+                          </button>
+                        </Tooltip>
+                      )}
 
                       {canMoveThisMsg && filteredMessages.length > 1 && (
                         <Tooltip
