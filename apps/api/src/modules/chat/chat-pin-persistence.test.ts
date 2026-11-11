@@ -107,4 +107,112 @@ describe('chat message & space pinning persistence invariants (MOS-BUG-198)', ()
 
     assert.strictEqual(shouldHydrate, true);
   });
+
+  it('enforces Pinned Trumps Hidden invariant: a pinned space is never hidden (MOS-BUG-216)', () => {
+    const spaceId = 'space-a5e2da40'; // Space kho & hàng lỗi của Nguyễn Quang Khải
+    const prefs: MosChatUserSidebarPrefs = {
+      pinnedIds: [spaceId],
+      hiddenIds: [spaceId, 'space-other'],
+      mutedIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+      updatedAt: '2026-11-11T08:00:00.000Z',
+    };
+
+    // Sanitize rule mimicking bootstrap & PUT user-prefs
+    const pinnedSet = new Set(prefs.pinnedIds || []);
+    const sanitizedHidden = (prefs.hiddenIds || []).filter((id) => !pinnedSet.has(id));
+
+    assert.strictEqual(sanitizedHidden.includes(spaceId), false);
+    assert.deepStrictEqual(sanitizedHidden, ['space-other']);
+
+    // Frontend visibility helper logic check
+    const isHiddenByUser = (convId: string, p: MosChatUserSidebarPrefs) => {
+      if ((p.pinnedIds || []).includes(convId)) return false;
+      return (p.hiddenIds || []).includes(convId);
+    };
+
+    assert.strictEqual(isHiddenByUser(spaceId, prefs), false, 'Pinned space must never be considered hidden');
+    assert.strictEqual(isHiddenByUser('space-other', prefs), true, 'Unpinned hidden space remains hidden');
+  });
+
+  it('toggling pin on a space cleans up hiddenIds and updates spaces conversationOrder (MOS-BUG-216)', () => {
+    const spaceId = 'space-a5e2da40';
+    const currentPrefs: MosChatUserSidebarPrefs = {
+      pinnedIds: [],
+      hiddenIds: [spaceId, 'dm-123'],
+      mutedIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {
+        spaces: ['space-other-1', 'space-other-2'],
+      },
+      updatedAt: '2026-11-11T08:00:00.000Z',
+    };
+
+    // Simulate backend POST /chat/conversations/:id/pin
+    const shouldPin = true;
+    const filteredPinned = (currentPrefs.pinnedIds || []).filter((id) => id !== spaceId);
+    const nextPinned = shouldPin ? [spaceId, ...filteredPinned] : filteredPinned;
+    const nextHidden = shouldPin
+      ? (currentPrefs.hiddenIds || []).filter((id) => id !== spaceId)
+      : (currentPrefs.hiddenIds || []);
+
+    const secKey = 'spaces';
+    const nextConvOrder: Record<string, string[]> = { ...(currentPrefs.conversationOrder || {}) };
+    if (shouldPin) {
+      const curArr = nextConvOrder[secKey] || [];
+      nextConvOrder[secKey] = [spaceId, ...curArr.filter((id) => id !== spaceId)];
+    }
+
+    assert.deepStrictEqual(nextPinned, [spaceId]);
+    assert.deepStrictEqual(nextHidden, ['dm-123']);
+    assert.deepStrictEqual(nextConvOrder.spaces, [spaceId, 'space-other-1', 'space-other-2']);
+  });
+
+  it('hydrates new pinned space from server even when client clock is ahead (MOS-BUG-216)', () => {
+    const spaceId = 'space-a5e2da40';
+    const serverPrefs: MosChatUserSidebarPrefs = {
+      pinnedIds: [spaceId],
+      hiddenIds: [],
+      mutedIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+      updatedAt: '2026-11-11T08:00:00.000Z',
+    };
+
+    const localPrefs: MosChatUserSidebarPrefs = {
+      pinnedIds: [],
+      hiddenIds: [],
+      mutedIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+      updatedAt: '2026-11-11T08:00:10.000Z', // Local is 10s ahead
+    };
+
+    const serverPinned = serverPrefs.pinnedIds || [];
+    const localPinned = localPrefs.pinnedIds || [];
+    const hasNewServerPinned = serverPinned.some((id) => !localPinned.includes(id));
+
+    assert.strictEqual(hasNewServerPinned, true);
+
+    // Merge logic: ensure newly pinned space is never dropped
+    const mergedPinned = Array.from(new Set([...serverPinned, ...localPinned]));
+    assert.deepStrictEqual(mergedPinned, [spaceId]);
+  });
 });

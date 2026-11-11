@@ -1395,6 +1395,12 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
 
+        // Pinned Trumps Hidden Invariant (MOS-BUG-216): Cuộc hội thoại đã ghim thì tuyệt đối không bị ẩn
+        if (userPrefs && Array.isArray(userPrefs.pinnedIds) && userPrefs.pinnedIds.length > 0) {
+          const pinnedSet = new Set(userPrefs.pinnedIds);
+          userPrefs.hiddenIds = (userPrefs.hiddenIds || []).filter((id) => !pinnedSet.has(id));
+        }
+
         // Zero-DB, lightweight short-circuit when conversations/tasks unchanged (still returns fresh staffDirectory presence!)
         if (!missionMutated && clientVersion > 0 && clientVersion === version) {
           return {
@@ -1547,9 +1553,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           }
         }
 
+        const rawPinned = Array.isArray(body.pinnedIds) ? body.pinnedIds : (current.pinnedIds || []);
+        const nextPinned = Array.from(new Set(rawPinned));
+        // Pinned Trumps Hidden Invariant (MOS-BUG-216): Cuộc hội thoại đã ghim thì tuyệt đối không bị ẩn
+        const rawHidden = Array.isArray(body.hiddenIds) ? body.hiddenIds : (current.hiddenIds || []);
+        const nextHidden = rawHidden.filter((id) => !nextPinned.includes(id));
+
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, {
           ...current,
           ...body,
+          pinnedIds: nextPinned,
+          hiddenIds: nextHidden,
           readMessageCountByConv: mergedReadMessageCountByConv,
           readAtByConv: {
             ...(current.readAtByConv || {}),
@@ -4164,9 +4178,23 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const shouldPin = typeof body.pinned === 'boolean' ? body.pinned : !exists;
         const filteredPinned = (currentPrefs.pinnedIds || []).filter((id) => id !== convId);
         const nextPinned = shouldPin ? [convId, ...filteredPinned] : filteredPinned;
+        // Pinned Trumps Hidden Invariant (MOS-BUG-216): Bỏ khỏi hiddenIds khi ghim
+        const nextHidden = shouldPin
+          ? (currentPrefs.hiddenIds || []).filter((id) => id !== convId)
+          : (currentPrefs.hiddenIds || []);
+
+        const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
+        const nextConvOrder: Record<string, string[]> = { ...(currentPrefs.conversationOrder || {}) };
+        if (shouldPin) {
+          const curArr = nextConvOrder[secKey] || [];
+          nextConvOrder[secKey] = [convId, ...curArr.filter((id) => id !== convId)];
+        }
+
         const updatedPrefs = {
           ...currentPrefs,
           pinnedIds: nextPinned,
+          hiddenIds: nextHidden,
+          conversationOrder: nextConvOrder,
           updatedAt: new Date().toISOString(),
         };
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);

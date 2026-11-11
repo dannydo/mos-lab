@@ -710,7 +710,8 @@ export const MosChatSidebar: React.FC<MosChatSidebarProps> = React.memo(
                         const isSelected = conv.id === activeConversation?.id;
                         const isPinned = pinnedSetForSec.has(conv.id);
                         const prevItem = itemIdx > 0 ? sec.items[itemIdx - 1] : null;
-                        const showPinnedSubHeader = itemIdx === 0 && isPinned;
+                        const isFirstPinned = isPinned && (!prevItem || !pinnedSetForSec.has(prevItem.id));
+                        const showPinnedSubHeader = isFirstPinned;
                         const showUnpinnedSubHeader =
                           pinnedCountInSec > 0 && !isPinned && (!prevItem || pinnedSetForSec.has(prevItem.id));
                         const isMuted = (userPrefs.mutedIds || []).includes(conv.id);

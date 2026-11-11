@@ -1697,8 +1697,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const mergedSectionOrder = Array.from(
           new Set([...customIds, ...(computed.sectionOrder || []), 'dm', 'spaces'])
         ).filter((id) => id === 'dm' || id === 'spaces' || customIds.includes(id));
+        const cleanPinned = Array.from(new Set(computed.pinnedIds || []));
+        const cleanHidden = (computed.hiddenIds || []).filter((id) => !cleanPinned.includes(id));
         const next: MosChatUserSidebarPrefs = {
           ...computed,
+          pinnedIds: cleanPinned,
+          hiddenIds: cleanHidden,
           customSections: cleanCustom,
           sectionOrder: mergedSectionOrder,
           updatedAt: new Date().toISOString(),
@@ -1796,14 +1800,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               Object.keys(res.userPrefs?.conversationOrder || {}).length > 0;
             const isFirstHydration = !hasHydratedPrefsFromServerRef.current;
             hasHydratedPrefsFromServerRef.current = true;
+            const serverPinned = res.userPrefs?.pinnedIds || [];
+            const localPinned = prev.pinnedIds || [];
+            const hasNewServerPinned = serverPinned.some((id) => !localPinned.includes(id));
+
             if (
               (isFirstHydration && (hasServerCustomizations || !prev.updatedAt)) ||
               (!prev.updatedAt && (hasServerCustomizations || isFirstHydration)) ||
               serverTs >= localTs ||
+              hasNewServerPinned ||
               (serverTs > 0 && Math.abs(serverTs - localTs) < 5000 && hasServerCustomizations)
             ) {
+              const effectivePinned = Array.from(
+                new Set([...serverPinned, ...(serverTs < localTs ? localPinned : [])])
+              );
+              const effectiveHidden = (res.userPrefs?.hiddenIds || []).filter((id) => !effectivePinned.includes(id));
+              const mergedPrefs: MosChatUserSidebarPrefs = {
+                ...res.userPrefs!,
+                pinnedIds: effectivePinned,
+                hiddenIds: effectiveHidden,
+              };
+
               try {
-                if (JSON.stringify(prev) === JSON.stringify(res.userPrefs)) {
+                if (JSON.stringify(prev) === JSON.stringify(mergedPrefs)) {
                   return prev;
                 }
               } catch {
@@ -1811,12 +1830,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               }
               if (typeof window !== 'undefined') {
                 try {
-                  window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(res.userPrefs));
+                  window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(mergedPrefs));
                 } catch {
                   // ignore
                 }
               }
-              return res.userPrefs!;
+              return mergedPrefs;
             }
             return prev;
           });
@@ -2772,6 +2791,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const isConversationHiddenByUser = useCallback(
     (conv: MosChatConversation): boolean => {
+      // Pinned Trumps Hidden Invariant (MOS-BUG-216): Cuộc hội thoại/Space đã ghim cá nhân thì tuyệt đối không bị ẩn
+      if ((userPrefs.pinnedIds || []).includes(conv.id)) return false;
       if (!(userPrefs.hiddenIds || []).includes(conv.id)) return false;
       const hiddenAtMsgCount = userPrefs.readMessageCountByConv?.[conv.id];
       if (typeof hiddenAtMsgCount === 'number' && conv.messages.length > hiddenAtMsgCount) {
@@ -2780,7 +2801,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       return true;
     },
-    [userPrefs.hiddenIds, userPrefs.readMessageCountByConv]
+    [userPrefs.pinnedIds, userPrefs.hiddenIds, userPrefs.readMessageCountByConv]
   );
 
   // Listen to global custom event 'mos-chat:open' (e.g. clicking an online colleague avatar on Header or from Notification)
@@ -3519,11 +3540,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           ? (prev.pinnedIds || []).filter((id) => id !== convId)
           : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
 
+        // Pinned Trumps Hidden (MOS-BUG-216): Khi ghim thì tự động bỏ khỏi hiddenIds
+        const nextHidden = exists
+          ? (prev.hiddenIds || [])
+          : (prev.hiddenIds || []).filter((id) => id !== convId);
+
         const nextConvOrder: Record<string, string[]> = { ...(prev.conversationOrder || {}) };
+        const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
         if (!exists) {
-          for (const [secKey, arr] of Object.entries(nextConvOrder)) {
-            if (Array.isArray(arr) && arr.length > 0) {
-              nextConvOrder[secKey] = [convId, ...arr.filter((id) => id !== convId)];
+          const curArr = nextConvOrder[secKey] || [];
+          nextConvOrder[secKey] = [convId, ...curArr.filter((id) => id !== convId)];
+          for (const [sKey, arr] of Object.entries(nextConvOrder)) {
+            if (sKey !== secKey && Array.isArray(arr) && arr.includes(convId)) {
+              nextConvOrder[sKey] = [convId, ...arr.filter((id) => id !== convId)];
             }
           }
         }
@@ -3536,11 +3565,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return {
           ...prev,
           pinnedIds: nextPinned,
+          hiddenIds: nextHidden,
           conversationOrder: nextConvOrder,
         };
       });
+      notifyLivePeers();
+      // Kích hoạt song song API backend để đồng bộ tức thì trên relational database
+      apiClient.chat.togglePinConversation(convId).catch(() => {});
     },
-    [allUserConversations, updateUserSidebarPrefs]
+    [allUserConversations, updateUserSidebarPrefs, notifyLivePeers]
   );
 
   const toggleMuteConversation = useCallback(
