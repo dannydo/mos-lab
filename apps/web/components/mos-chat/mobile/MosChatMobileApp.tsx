@@ -49,6 +49,7 @@ import { useMosChatVoiceCall } from '../utils/useMosChatVoiceCall';
 import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
 import { useMosChatWebPush } from '../utils/useMosChatWebPush';
 import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
+import { BellRing } from 'lucide-react';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -679,6 +680,31 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         onClose={onClose}
       />
 
+      {/* Push Notification Call Ring Activation Banner on Mobile */}
+      {!webPush.isSubscribed && (
+        <div
+          data-testid="mos-chat-mobile-push-banner"
+          className="bg-amber-500/15 border-b border-amber-500/30 px-3.5 py-2 flex items-center justify-between gap-2.5 text-xs text-amber-200 z-30 shrink-0"
+          role="alert"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <BellRing className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+            <span className="truncate">
+              {webPush.needsIosHomeScreen
+                ? 'Thêm vào Màn hình chính để bật chuông khi khóa máy'
+                : 'Bật chuông cuộc gọi & tin nhắn khi khóa máy'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPushModalOpen(true)}
+            className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold text-[11px] shrink-0 active:scale-95 transition-transform cursor-pointer"
+          >
+            {webPush.needsIosHomeScreen ? 'Xem cách làm' : 'Bật ngay'}
+          </button>
+        </div>
+      )}
+
       {/* Dynamic Screen View */}
       {mobileView === 'inbox' && (
         <MosChatMobileInbox
@@ -1079,6 +1105,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         onEnablePush={() => void webPush.enablePushNotifications()}
         onDisablePush={() => void webPush.disablePushNotifications()}
         onSendTestPush={() => void webPush.sendDelayedTestPush(4)}
+        onSendTestCallPush={() => void webPush.sendTestCallPushNow(activeConversation?.id)}
       />
 
       {standalone && (

@@ -8,7 +8,14 @@ import {
   chatVoiceCallManager,
   generateLiveKitJwtToken,
 } from './chat-voice-call.service.js';
-import { createVapidJwtToken, encryptWebPushAes128Gcm, generateVapidKeyPair } from './chat-web-push.service.js';
+import {
+  createVapidJwtToken,
+  encryptWebPushAes128Gcm,
+  generateVapidKeyPair,
+  getOrCreateVapidKeys,
+  registerStaffPushSubscription,
+  getStaffPushSubscriptionCount,
+} from './chat-web-push.service.js';
 
 describe('mOS Chat Voice Call Service & WebRTC/LiveKit Signaling', () => {
   beforeEach(() => {
@@ -224,5 +231,43 @@ describe('mOS Chat Voice Call Service & WebRTC/LiveKit Signaling', () => {
     assert.equal(decryptedRecord[decryptedRecord.length - 1], 0x02);
     const decryptedText = decryptedRecord.subarray(0, decryptedRecord.length - 1).toString('utf8');
     assert.equal(decryptedText, payloadJson);
+  });
+
+  it('persists VAPID keys and staff push subscriptions in prisma crm.crmConfig table', async () => {
+    const fakeStore = new Map<string, string>();
+    const fakeFastify: any = {
+      prisma: {
+        crm: {
+          crmConfig: {
+            findUnique: async ({ where }: any) => {
+              const val = fakeStore.get(where.key);
+              return val ? { key: where.key, value: val } : null;
+            },
+            upsert: async ({ where, update, create }: any) => {
+              const val = update?.value ?? create?.value;
+              fakeStore.set(where.key, val);
+              return { key: where.key, value: val };
+            },
+          },
+        },
+      },
+    };
+
+    const vapid = await getOrCreateVapidKeys(fakeFastify);
+    assert.ok(vapid.publicKey);
+    assert.ok(fakeStore.has('mos_chat:web_push_vapid_v1'));
+
+    const count = await registerStaffPushSubscription(fakeFastify, '6', {
+      endpoint: 'https://web.push.apple.com/test-endpoint-6',
+      keys: {
+        p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4Ywf',
+        auth: 'tBHItJI5svbpez7KI4CCXg',
+      },
+    });
+    assert.equal(count, 1);
+    assert.ok(fakeStore.has('mos_chat:web_push_subs_v1'));
+
+    const storedCount = await getStaffPushSubscriptionCount(fakeFastify, '6');
+    assert.equal(storedCount, 1);
   });
 });

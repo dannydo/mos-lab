@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bell, BellRing, CheckCircle2, Share, PlusSquare, Smartphone, Sparkles, X } from 'lucide-react';
+import { Bell, BellRing, CheckCircle2, Share, PlusSquare, Smartphone, Sparkles, PhoneCall, X } from 'lucide-react';
 
 export interface MosChatPushNotificationModalProps {
   open: boolean;
@@ -18,6 +18,7 @@ export interface MosChatPushNotificationModalProps {
   onEnablePush: () => void;
   onDisablePush: () => void;
   onSendTestPush: () => void;
+  onSendTestCallPush?: () => void;
 }
 
 export const MosChatPushNotificationModal: React.FC<MosChatPushNotificationModalProps> = ({
@@ -35,6 +36,7 @@ export const MosChatPushNotificationModal: React.FC<MosChatPushNotificationModal
   onEnablePush,
   onDisablePush,
   onSendTestPush,
+  onSendTestCallPush,
 }) => {
   if (!open) return null;
 
@@ -161,6 +163,17 @@ export const MosChatPushNotificationModal: React.FC<MosChatPushNotificationModal
             </button>
           ) : (
             <div className="space-y-2">
+              {onSendTestCallPush && (
+                <button
+                  type="button"
+                  onClick={onSendTestCallPush}
+                  className="w-full py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[13px] flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+                >
+                  <PhoneCall size={17} />
+                  <span>📞 Bắn chuông gọi thử nghiệm ngay (Test Call)</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 disabled={testCountdown > 0}

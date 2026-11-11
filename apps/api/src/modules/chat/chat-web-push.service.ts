@@ -124,13 +124,13 @@ export async function getOrCreateVapidKeys(fastify?: FastifyInstance): Promise<S
   if (cachedVapidKeys) return cachedVapidKeys;
 
   const crm = (fastify as SafeAny)?.prisma?.crm;
-  if (crm?.crmSystemConfig) {
+  if (crm?.crmConfig) {
     try {
-      const row = await crm.crmSystemConfig.findUnique({
-        where: { configKey: WEB_PUSH_VAPID_CONFIG_KEY },
+      const row = await crm.crmConfig.findUnique({
+        where: { key: WEB_PUSH_VAPID_CONFIG_KEY },
       });
-      if (row?.configValue) {
-        const parsed = JSON.parse(row.configValue) as StoredVapidKeyPair;
+      if (row?.value) {
+        const parsed = JSON.parse(row.value) as StoredVapidKeyPair;
         if (parsed?.publicKey && parsed?.privateJwk?.d) {
           cachedVapidKeys = parsed;
           return parsed;
@@ -144,14 +144,14 @@ export async function getOrCreateVapidKeys(fastify?: FastifyInstance): Promise<S
   const generated = generateVapidKeyPair();
   cachedVapidKeys = generated;
 
-  if (crm?.crmSystemConfig) {
+  if (crm?.crmConfig) {
     try {
-      await crm.crmSystemConfig.upsert({
-        where: { configKey: WEB_PUSH_VAPID_CONFIG_KEY },
-        update: { configValue: JSON.stringify(generated) },
+      await crm.crmConfig.upsert({
+        where: { key: WEB_PUSH_VAPID_CONFIG_KEY },
+        update: { value: JSON.stringify(generated) },
         create: {
-          configKey: WEB_PUSH_VAPID_CONFIG_KEY,
-          configValue: JSON.stringify(generated),
+          key: WEB_PUSH_VAPID_CONFIG_KEY,
+          value: JSON.stringify(generated),
         },
       });
     } catch {
@@ -166,13 +166,13 @@ async function loadSubscriptionsMap(fastify?: FastifyInstance): Promise<Subscrip
   if (cachedSubscriptionsByStaff) return cachedSubscriptionsByStaff;
 
   const crm = (fastify as SafeAny)?.prisma?.crm;
-  if (crm?.crmSystemConfig) {
+  if (crm?.crmConfig) {
     try {
-      const row = await crm.crmSystemConfig.findUnique({
-        where: { configKey: WEB_PUSH_SUBS_CONFIG_KEY },
+      const row = await crm.crmConfig.findUnique({
+        where: { key: WEB_PUSH_SUBS_CONFIG_KEY },
       });
-      if (row?.configValue) {
-        const parsed = JSON.parse(row.configValue) as SubscriptionsByStaffMap;
+      if (row?.value) {
+        const parsed = JSON.parse(row.value) as SubscriptionsByStaffMap;
         if (parsed && typeof parsed === 'object') {
           cachedSubscriptionsByStaff = parsed;
           return parsed;
@@ -190,14 +190,14 @@ async function loadSubscriptionsMap(fastify?: FastifyInstance): Promise<Subscrip
 async function saveSubscriptionsMap(fastify: FastifyInstance | undefined, map: SubscriptionsByStaffMap): Promise<void> {
   cachedSubscriptionsByStaff = map;
   const crm = (fastify as SafeAny)?.prisma?.crm;
-  if (crm?.crmSystemConfig) {
+  if (crm?.crmConfig) {
     try {
-      await crm.crmSystemConfig.upsert({
-        where: { configKey: WEB_PUSH_SUBS_CONFIG_KEY },
-        update: { configValue: JSON.stringify(map) },
+      await crm.crmConfig.upsert({
+        where: { key: WEB_PUSH_SUBS_CONFIG_KEY },
+        update: { value: JSON.stringify(map) },
         create: {
-          configKey: WEB_PUSH_SUBS_CONFIG_KEY,
-          configValue: JSON.stringify(map),
+          key: WEB_PUSH_SUBS_CONFIG_KEY,
+          value: JSON.stringify(map),
         },
       });
     } catch {
@@ -293,6 +293,7 @@ export async function sendWebPushToStaffIds(
                 TTL: '45',
                 Urgency: 'high',
                 Authorization: `vapid t=${jwt}, k=${vapidKeys.publicKey}`,
+                'Crypto-Key': `p256ecdsa=${vapidKeys.publicKey}`,
               },
               body: new Uint8Array(encryptedBody),
               signal: AbortSignal.timeout(8000),
@@ -302,14 +303,19 @@ export async function sendWebPushToStaffIds(
               sent++;
             } else {
               failed++;
+              const errBody = await res.text().catch(() => '');
+              fastify?.log?.warn?.(
+                `Web push send failed to endpoint ${sub.endpoint.slice(0, 45)}... status ${res.status}: ${errBody}`
+              );
               // 404 or 410 from Apple/Google means the push subscription was revoked or expired
               if (res.status === 404 || res.status === 410) {
                 map[staffId] = (map[staffId] || []).filter((item) => item.endpoint !== sub.endpoint);
                 mapDirty = true;
               }
             }
-          } catch {
+          } catch (pushErr) {
             failed++;
+            fastify?.log?.warn?.(`Web push network exception: ${(pushErr as Error)?.message}`);
           }
         })()
       );

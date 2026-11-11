@@ -1754,4 +1754,22 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     );
     expect(apiClient.ai.getSession).toHaveBeenCalledWith('sess-sync-desktop');
   });
+
+  it('renders mobile push notification banner when not subscribed and opens push modal on tap', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mos-chat-mobile-push-banner')).toBeTruthy();
+    });
+
+    const bannerBtn = screen.getByRole('button', { name: /Bật ngay/i });
+    expect(bannerBtn).toBeTruthy();
+    fireEvent.click(bannerBtn);
+
+    expect(screen.getByText(/Chuông báo Cuộc gọi khi Khóa máy/i)).toBeTruthy();
+  });
 });

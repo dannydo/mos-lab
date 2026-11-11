@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Smartphone,
   Sparkles,
+  PhoneCall,
 } from 'lucide-react';
 import type {
   MosChatConversation,
@@ -162,6 +163,20 @@ export const MosChatNotificationSettingsModal: React.FC<NotificationSettingsModa
           <div className="flex items-center gap-1.5 shrink-0">
             {webPush.isSubscribed ? (
               <>
+                <button
+                  type="button"
+                  onClick={() => void webPush.sendTestCallPushNow()}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer inline-flex items-center gap-1"
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    color: '#34d399',
+                  }}
+                  title="Bắn chuông gọi thử nghiệm ngay đến thiết bị"
+                >
+                  <PhoneCall size={12} />
+                  <span>Gọi thử</span>
+                </button>
                 <button
                   type="button"
                   disabled={webPush.testCountdown > 0}

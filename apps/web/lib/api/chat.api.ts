@@ -422,8 +422,12 @@ export const chatApi = {
       const res = await api.post('/chat/push/unsubscribe', payload);
       return res.data;
     },
-    sendTestPush: async (): Promise<{ success: boolean; sent: number; failed: number }> => {
-      const res = await api.post('/chat/push/test', {});
+    sendTestPush: async (payload?: {
+      title?: string;
+      body?: string;
+      conversationId?: string;
+    }): Promise<{ success: boolean; sent: number; failed: number }> => {
+      const res = await api.post('/chat/push/test', payload || {});
       return res.data;
     },
   },

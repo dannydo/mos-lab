@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { MosChatVoiceCallSession } from '@mos-lab/shared';
 import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
+import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
 import { formatVoiceCallTimer } from '../utils/useMosChatVoiceCall';
 
 describe('MosChatVoiceCallWidget & Voice Call UI Invariants', () => {
@@ -122,5 +123,33 @@ describe('MosChatVoiceCallWidget & Voice Call UI Invariants', () => {
     expect(screen.getByText('2 người')).toBeTruthy();
     fireEvent.click(screen.getByText('Tham gia ngay'));
     expect(onJoin).toHaveBeenCalledWith('dm-1-4');
+  });
+
+  it('renders test call push button in MosChatPushNotificationModal and triggers handler', () => {
+    const onSendTestCall = vi.fn();
+    render(
+      <MosChatPushNotificationModal
+        open={true}
+        onClose={vi.fn()}
+        isSupported={true}
+        isIos={true}
+        isStandalonePwa={true}
+        needsIosHomeScreen={false}
+        permission="granted"
+        isSubscribed={true}
+        subscribedCount={1}
+        isLoading={false}
+        testCountdown={0}
+        onEnablePush={vi.fn()}
+        onDisablePush={vi.fn()}
+        onSendTestPush={vi.fn()}
+        onSendTestCallPush={onSendTestCall}
+      />
+    );
+
+    const testCallBtn = screen.getByText(/Bắn chuông gọi thử nghiệm ngay/i);
+    expect(testCallBtn).toBeTruthy();
+    fireEvent.click(testCallBtn);
+    expect(onSendTestCall).toHaveBeenCalledTimes(1);
   });
 });

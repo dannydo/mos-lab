@@ -387,6 +387,26 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 <Phone className="w-4 h-4 text-emerald-400" />
               </button>
 
+              {/* Push Notification / Call Ring Settings Button */}
+              {onOpenPushSettings && (
+                <button
+                  type="button"
+                  onClick={onOpenPushSettings}
+                  className={`w-9 h-9 relative rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer border ${
+                    isPushSubscribed
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                      : 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                  }`}
+                  aria-label="Chuông báo cuộc gọi khi khóa máy"
+                  title="Chuông báo cuộc gọi khi khóa màn hình"
+                >
+                  {isPushSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                  {!isPushSubscribed && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                  )}
+                </button>
+              )}
+
               {/* 2. Tasks Toggle Button */}
               <button
                 type="button"

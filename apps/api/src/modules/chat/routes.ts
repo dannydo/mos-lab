@@ -6237,7 +6237,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
   );
 
   // POST /api/chat/push/test
-  fastify.post(
+  fastify.post<{ Body?: { title?: string; body?: string; conversationId?: string } }>(
     '/chat/push/test',
     {
       preHandler: [requireAuth],
@@ -6246,18 +6246,21 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       try {
         const user = (request as SafeAny).user as JwtUserPayload | undefined;
         const staffId = String(user?.id ?? '0');
+        const bodyConvId = request.body?.conversationId ? String(request.body.conversationId) : undefined;
+        const targetUrl = bodyConvId ? `/chat?convId=${encodeURIComponent(bodyConvId)}` : '/chat';
         const result = await sendWebPushToStaffIds(fastify, [staffId], {
-          title: '📞 Cuộc gọi thử nghiệm từ mOS Chat',
-          body: 'Thông báo cuộc gọi khi khóa màn hình iPhone đã hoạt động hoàn hảo!',
+          title: request.body?.title || '📞 Cuộc gọi thử nghiệm từ mOS Chat',
+          body: request.body?.body || 'Thông báo cuộc gọi khi khóa màn hình iPhone đã hoạt động hoàn hảo!',
           icon: '/apple-touch-icon.png',
           badge: '/icon-192.png',
           tag: `mos-voice-test-${Date.now()}`,
           renotify: true,
           requireInteraction: true,
-          vibrate: [300, 150, 300, 150, 300],
+          vibrate: [300, 150, 300, 150, 300, 150, 400],
           data: {
-            type: 'CHAT_TEST',
-            url: '/chat',
+            type: 'VOICE_CALL_INCOMING',
+            conversationId: bodyConvId,
+            url: targetUrl,
           },
         });
         return {

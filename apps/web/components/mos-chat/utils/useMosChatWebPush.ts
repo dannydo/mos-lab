@@ -71,8 +71,46 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
         if (!pushSupported) return;
 
         const reg = await window.navigator.serviceWorker.register('/sw.js');
-        const existingSub = await reg.pushManager.getSubscription();
+        let existingSub = await reg.pushManager.getSubscription();
         if (cancelled) return;
+
+        // Self-healing: if subscription key does not match server key, renew it
+        if (existingSub && cfg?.vapidPublicKey && existingSub.options?.applicationServerKey) {
+          try {
+            const currentKeyBytes = new Uint8Array(existingSub.options.applicationServerKey);
+            const expectedKeyBytes = urlBase64ToUint8Array(cfg.vapidPublicKey);
+            let matches = currentKeyBytes.length === expectedKeyBytes.length;
+            if (matches) {
+              for (let i = 0; i < currentKeyBytes.length; i++) {
+                if (currentKeyBytes[i] !== expectedKeyBytes[i]) {
+                  matches = false;
+                  break;
+                }
+              }
+            }
+            if (!matches) {
+              await existingSub.unsubscribe().catch(() => {});
+              existingSub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(cfg.vapidPublicKey),
+              });
+            }
+          } catch {
+            // ignore renewal error
+          }
+        }
+
+        // Auto-subscribe if notification permission is already granted but no subscription exists
+        if (!existingSub && window.Notification.permission === 'granted' && cfg?.vapidPublicKey) {
+          try {
+            existingSub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(cfg.vapidPublicKey),
+            });
+          } catch {
+            // ignore background auto-subscribe error
+          }
+        }
 
         if (existingSub) {
           setIsSubscribed(true);
@@ -246,6 +284,29 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
     [testCountdown]
   );
 
+  const sendTestCallPushNow = useCallback(
+    async (targetConversationId?: string): Promise<boolean> => {
+      try {
+        const res = await apiClient.chat.sendTestPush({
+          title: '📞 Cuộc gọi thử nghiệm từ mOS Chat',
+          body: 'Thông báo cuộc gọi khi khóa màn hình iPhone đã hoạt động hoàn hảo!',
+          conversationId: targetConversationId,
+        });
+        if (res.sent > 0) {
+          antdMessage.success('Đã bắn chuông thông báo cuộc gọi đến thiết bị của bạn!');
+          return true;
+        } else {
+          antdMessage.warning('Chưa có thiết bị nào đăng ký nhận thông báo. Hãy bấm "Bật ngay" trước.');
+          return false;
+        }
+      } catch {
+        antdMessage.error('Không thể gửi thông báo thử nghiệm.');
+        return false;
+      }
+    },
+    []
+  );
+
   const needsIosHomeScreen = isIos && !isStandalonePwa && !isSupported;
 
   return {
@@ -261,5 +322,6 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
     enablePushNotifications,
     disablePushNotifications,
     sendDelayedTestPush,
+    sendTestCallPushNow,
   };
 }
