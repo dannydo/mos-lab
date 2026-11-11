@@ -1676,9 +1676,22 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== taskId) return t;
+        let updatedChecklist = t.checklist;
+        if (payload.checklistAction === 'delete' && payload.checklistItemId) {
+          updatedChecklist = (t.checklist || []).filter((c) => c.id !== payload.checklistItemId);
+        } else if (payload.checklistAction === 'toggle' && payload.checklistItemId) {
+          updatedChecklist = (t.checklist || []).map((c) =>
+            c.id === payload.checklistItemId ? { ...c, done: !c.done } : c
+          );
+        } else if (payload.checklistAction === 'edit' && payload.checklistItemId && payload.checklistItem) {
+          updatedChecklist = (t.checklist || []).map((c) =>
+            c.id === payload.checklistItemId ? { ...c, ...payload.checklistItem } : c
+          );
+        }
         return {
           ...t,
           ...payload,
+          checklist: updatedChecklist,
           updatedAt: new Date().toISOString(),
         };
       })

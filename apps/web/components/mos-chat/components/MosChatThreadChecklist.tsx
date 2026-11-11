@@ -15,6 +15,7 @@ import {
   UserPlus,
   X,
   Wand2,
+  Loader2,
 } from 'lucide-react';
 import { Tooltip, Modal, Input, Progress, message, Popover } from 'antd';
 import {
@@ -70,6 +71,10 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
   // Inline Edit state
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+
+  // Item Action Loading states (prevent double-clicks & show loading spinner)
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
 
   // Popover states for Deadline & Assignee
   const [openDeadlineItemId, setOpenDeadlineItemId] = useState<string | null>(null);
@@ -148,6 +153,30 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
     } finally {
       isAddingRef.current = false;
       setIsAdding(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (deletingItemId) return;
+    setDeletingItemId(itemId);
+    try {
+      await onDeleteChecklistItem(itemId);
+    } catch (err: any) {
+      message.error(err?.message || 'Không thể xóa mục việc, vui lòng thử lại');
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
+
+  const handleToggleItem = async (itemId: string) => {
+    if (togglingItemId) return;
+    setTogglingItemId(itemId);
+    try {
+      await onToggleChecklistItem(itemId);
+    } catch (err: any) {
+      message.error(err?.message || 'Không thể cập nhật trạng thái mục việc');
+    } finally {
+      setTogglingItemId(null);
     }
   };
 
@@ -383,6 +412,9 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                   )
                 : null;
               const avatarUrl = item.assigneeAvatar || matchedStaff?.avatarUrl || null;
+              const isDeleting = deletingItemId === item.id;
+              const isToggling = togglingItemId === item.id;
+              const isItemBusy = isDeleting || isToggling;
 
               return (
                 <div
@@ -391,7 +423,7 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                     item.done
                       ? 'bg-emerald-500/5 text-slate-400 dark:text-slate-500'
                       : 'bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 text-slate-800 dark:text-slate-200'
-                  }`}
+                  } ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
                   style={{
                     border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
                   }}
@@ -400,14 +432,20 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                     {/* Circular Checkbox */}
                     <button
                       type="button"
-                      onClick={() => onToggleChecklistItem(item.id)}
+                      disabled={isItemBusy || Boolean(deletingItemId)}
+                      onClick={() => handleToggleItem(item.id)}
+                      aria-label={isToggling ? `Đang cập nhật ${item.title}` : `Đánh dấu ${item.title}`}
                       className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                         item.done
                           ? 'bg-emerald-500 text-white'
                           : 'border border-slate-400 dark:border-slate-500 hover:border-emerald-500 text-transparent hover:text-emerald-500'
-                      }`}
+                      } ${isToggling ? 'opacity-80 cursor-wait' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
-                      <Check size={10} strokeWidth={item.done ? 3 : 2} />
+                      {isToggling ? (
+                        <Loader2 size={10} className="animate-spin text-amber-500" />
+                      ) : (
+                        <Check size={10} strokeWidth={item.done ? 3 : 2} />
+                      )}
                     </button>
 
                     {isEditing ? (
@@ -734,23 +772,31 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
                       <Tooltip title="Sửa nội dung mục này">
                         <button
                           type="button"
+                          disabled={Boolean(isItemBusy || deletingItemId || togglingItemId)}
                           onClick={() => handleStartEdit(item)}
                           aria-label={`Sửa mục ${item.title}`}
-                          className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                          className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Pencil size={11} />
                         </button>
                       </Tooltip>
 
                       {/* Delete button */}
-                      <Tooltip title="Xóa mục việc này">
+                      <Tooltip title={isDeleting ? 'Đang xóa...' : 'Xóa mục việc này'}>
                         <button
                           type="button"
-                          onClick={() => onDeleteChecklistItem(item.id)}
-                          aria-label={`Xóa mục ${item.title}`}
-                          className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                          disabled={Boolean(isItemBusy || deletingItemId || togglingItemId || isAdding || editingItemId)}
+                          onClick={() => handleDeleteItem(item.id)}
+                          aria-label={isDeleting ? `Đang xóa ${item.title}` : `Xóa mục ${item.title}`}
+                          className={`p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors ${
+                            isDeleting ? 'text-rose-500 cursor-wait' : ''
+                          } disabled:opacity-40 disabled:cursor-not-allowed`}
                         >
-                          <Trash2 size={11} />
+                          {isDeleting ? (
+                            <Loader2 size={11} className="animate-spin text-rose-500" />
+                          ) : (
+                            <Trash2 size={11} />
+                          )}
                         </button>
                       </Tooltip>
                     </div>

@@ -175,4 +175,88 @@ describe('MosChatThreadChecklist UI Component', () => {
       expect(screen.getByDisplayValue('Tối ưu hiệu năng')).toBeInTheDocument();
     });
   });
+
+  it('shows loading state when deleting a checklist item and disables button during deletion', async () => {
+    let resolveDelete: () => void = () => {};
+    const deletePromise = new Promise<void>((resolve) => {
+      resolveDelete = resolve;
+    });
+    const handleDelete = vi.fn().mockReturnValue(deletePromise);
+
+    render(
+      <MosChatThreadChecklist
+        task={mockTask}
+        activeThreadMessage={mockMsg}
+        onToggleChecklistItem={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onDeleteChecklistItem={handleDelete}
+        isDark={false}
+      />
+    );
+
+    const deleteBtn = screen.getByRole('button', { name: 'Xóa mục Thiết kế giao diện component checklist' });
+    expect(deleteBtn).toBeInTheDocument();
+    expect(deleteBtn).not.toBeDisabled();
+
+    // Click delete
+    fireEvent.click(deleteBtn);
+    expect(handleDelete).toHaveBeenCalledWith('chk-1');
+
+    // While deletion is in-flight: button shows loading label and is disabled
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Đang xóa Thiết kế giao diện component checklist' })
+      ).toBeDisabled();
+    });
+
+    // Clicking again while in-flight should NOT trigger another call (prevents double-click / timeout)
+    fireEvent.click(screen.getByRole('button', { name: 'Đang xóa Thiết kế giao diện component checklist' }));
+    expect(handleDelete).toHaveBeenCalledTimes(1);
+
+    // Resolve deletion
+    resolveDelete();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Xóa mục Thiết kế giao diện component checklist' })
+      ).not.toBeDisabled();
+    });
+  });
+
+  it('shows loading spinner when toggling a checklist item and prevents double toggle', async () => {
+    let resolveToggle: () => void = () => {};
+    const togglePromise = new Promise<void>((resolve) => {
+      resolveToggle = resolve;
+    });
+    const handleToggle = vi.fn().mockReturnValue(togglePromise);
+
+    render(
+      <MosChatThreadChecklist
+        task={mockTask}
+        activeThreadMessage={mockMsg}
+        onToggleChecklistItem={handleToggle}
+        onAddChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        isDark={false}
+      />
+    );
+
+    const toggleBtn = screen.getByRole('button', { name: 'Đánh dấu Thiết kế giao diện component checklist' });
+    fireEvent.click(toggleBtn);
+    expect(handleToggle).toHaveBeenCalledWith('chk-1');
+
+    // While toggling is in-flight: shows updating label and disabled
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Đang cập nhật Thiết kế giao diện component checklist' })
+      ).toBeDisabled();
+    });
+
+    // Resolve toggle
+    resolveToggle();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Đánh dấu Thiết kế giao diện component checklist' })
+      ).not.toBeDisabled();
+    });
+  });
 });

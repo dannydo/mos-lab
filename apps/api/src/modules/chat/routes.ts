@@ -3670,7 +3670,15 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
                 });
               }
               conv.updatedAt = now.toISOString();
-              await saveConversations(fastify, conversations);
+              const addedReply = sourceMsg.thread[sourceMsg.thread.length - 1];
+              await saveConversations(fastify, conversations, {
+                touchedConversation: conv,
+                touchedReply: {
+                  conversationId: conv.id,
+                  parentMessageId: sourceMsg.id,
+                  reply: addedReply,
+                },
+              });
             }
           }
         }
@@ -3744,7 +3752,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         }
         task.updatedAt = now.toISOString();
 
-        await saveTasks(fastify, tasks);
+        await saveTasks(fastify, tasks, { touchedTask: task });
         return { success: true, task };
       })
   );
@@ -3790,8 +3798,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       }
 
       await Promise.all([
-        saveTasks(fastify, tasks),
-        convChanged ? saveConversations(fastify, conversations) : Promise.resolve(),
+        saveTasks(fastify, tasks, { deletedTaskId: taskId }),
+        convChanged
+          ? saveConversations(fastify, conversations, conv ? { touchedConversation: conv } : undefined)
+          : Promise.resolve(),
       ]);
 
       return { success: true, taskId, message: 'Đã xoá công việc thành công' };

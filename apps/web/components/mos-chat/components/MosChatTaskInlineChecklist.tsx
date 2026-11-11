@@ -810,15 +810,21 @@ export const MosChatTaskInlineChecklist: React.FC<MosChatTaskInlineChecklistProp
                     </Tooltip>
 
                     {/* Delete button */}
-                    <Tooltip title="Xoá mục này">
+                    <Tooltip title={isItemActing ? 'Đang xóa...' : 'Xoá mục này'}>
                       <button
                         type="button"
-                        disabled={isItemActing}
+                        disabled={Boolean(actingItemId || isSummarizing || editingItemId)}
                         onClick={() => handleDelete(item.id)}
-                        aria-label={`Xoá mục ${item.title}`}
-                        className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-all shrink-0"
+                        aria-label={isItemActing ? `Đang xóa ${item.title}` : `Xoá mục ${item.title}`}
+                        className={`opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-all shrink-0 ${
+                          isItemActing ? 'text-rose-500 cursor-wait' : ''
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
                       >
-                        <Trash2 size={11} />
+                        {isItemActing ? (
+                          <Loader2 size={11} className="animate-spin text-rose-500" />
+                        ) : (
+                          <Trash2 size={11} />
+                        )}
                       </button>
                     </Tooltip>
                   </div>

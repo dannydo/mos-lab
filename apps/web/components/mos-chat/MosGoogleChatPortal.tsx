@@ -6542,6 +6542,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               };
             })
           );
+        } else if (payload.checklistAction === 'delete' && payload.checklistItemId) {
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id !== taskId) return t;
+              return {
+                ...t,
+                checklist: (t.checklist || []).filter((c) => c.id !== payload.checklistItemId),
+              };
+            })
+          );
+        } else if (payload.checklistAction === 'toggle' && payload.checklistItemId) {
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id !== taskId) return t;
+              return {
+                ...t,
+                checklist: (t.checklist || []).map((c) =>
+                  c.id === payload.checklistItemId ? { ...c, done: !c.done } : c
+                ),
+              };
+            })
+          );
         }
 
         const res = await apiClient.chat.updateTask(taskId, payload);
