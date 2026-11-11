@@ -79,6 +79,7 @@ import {
   VoiceCallActorInfo,
 } from './chat-voice-call.service.js';
 import {
+  dispatchChatMessageWebPush,
   getOrCreateVapidKeys,
   getStaffPushSubscriptionCount,
   registerStaffPushSubscription,
@@ -1553,10 +1554,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           }
         }
 
-        const rawPinned = Array.isArray(body.pinnedIds) ? body.pinnedIds : (current.pinnedIds || []);
+        const rawPinned = Array.isArray(body.pinnedIds) ? body.pinnedIds : current.pinnedIds || [];
         const nextPinned = Array.from(new Set(rawPinned));
         // Pinned Trumps Hidden Invariant (MOS-BUG-216): Cuộc hội thoại đã ghim thì tuyệt đối không bị ẩn
-        const rawHidden = Array.isArray(body.hiddenIds) ? body.hiddenIds : (current.hiddenIds || []);
+        const rawHidden = Array.isArray(body.hiddenIds) ? body.hiddenIds : current.hiddenIds || [];
         const nextHidden = rawHidden.filter((id) => !nextPinned.includes(id));
 
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, {
@@ -2102,7 +2103,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       // Advance sender's read count for this conversation in userPrefs
       const userPrefKey = resolveUserPrefKey(user, staffDirectory);
-      const { userPrefsByUserKey } = await loadChatState(fastify);
+      const { userPrefsByUserKey, accessConfig } = await loadChatState(fastify);
       const currentSenderPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
       const updatedSenderPrefs: MosChatUserSidebarPrefs = {
         ...currentSenderPrefs,
@@ -2121,6 +2122,19 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         },
       };
       const savedPrefs = await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+
+      void dispatchChatMessageWebPush(fastify, {
+        conv,
+        senderUser: user,
+        senderName: newMessage.senderName || senderName,
+        messageId: newMessage.id,
+        text: newMessage.text,
+        customerCardName: newMessage.customerCard?.name || null,
+        attachmentCount: newMessage.attachments?.length || 0,
+        staffDirectory,
+        accessConfig,
+        userPrefsByUserKey,
+      });
 
       return {
         success: true,
@@ -2247,7 +2261,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       // Advance sender's read count for this sub-thread in userPrefs
       const userPrefKey = resolveUserPrefKey(user, staffDirectory);
-      const { userPrefsByUserKey } = await loadChatState(fastify);
+      const { userPrefsByUserKey, accessConfig } = await loadChatState(fastify);
       const currentSenderPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
       const threadKey = `${conv.id}::${msg.id}`;
       const updatedSenderPrefs: MosChatUserSidebarPrefs = {
@@ -2266,6 +2280,20 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         },
       };
       await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+
+      void dispatchChatMessageWebPush(fastify, {
+        conv,
+        senderUser: user,
+        senderName: replyItem.senderName || senderName,
+        messageId: replyItem.id,
+        threadRootMessageId: msg.id,
+        text: replyItem.text,
+        customerCardName: replyItem.customerCard?.name || null,
+        attachmentCount: replyItem.attachments?.length || 0,
+        staffDirectory,
+        accessConfig,
+        userPrefsByUserKey,
+      });
 
       return { success: true, reply: replyItem, message: msg };
     }
@@ -4181,7 +4209,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         // Pinned Trumps Hidden Invariant (MOS-BUG-216): Bỏ khỏi hiddenIds khi ghim
         const nextHidden = shouldPin
           ? (currentPrefs.hiddenIds || []).filter((id) => id !== convId)
-          : (currentPrefs.hiddenIds || []);
+          : currentPrefs.hiddenIds || [];
 
         const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
         const nextConvOrder: Record<string, string[]> = { ...(currentPrefs.conversationOrder || {}) };
@@ -5477,28 +5505,34 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
         // Semantic attachment intent: "ảnh", "hình", "minh chứng", "file", "đính kèm 1 ảnh"...
         const ATTACHMENT_INTENT_TERMS = [
-          'anh', 'hinh', 'hinh anh', 'anh chup', 'minh chung',
-          'photo', 'image', 'picture', 'file', 'tep', 'dinh kem',
-          'dinh kem 1 anh', '1 anh', '2 anh', 'tai lieu', 'unc'
+          'anh',
+          'hinh',
+          'hinh anh',
+          'anh chup',
+          'minh chung',
+          'photo',
+          'image',
+          'picture',
+          'file',
+          'tep',
+          'dinh kem',
+          'dinh kem 1 anh',
+          '1 anh',
+          '2 anh',
+          'tai lieu',
+          'unc',
         ];
-        const isAttachmentIntent = normQ.length > 0 && ATTACHMENT_INTENT_TERMS.some(
-          (kw) => normQ === kw || normQ.includes(kw)
-        );
+        const isAttachmentIntent =
+          normQ.length > 0 && ATTACHMENT_INTENT_TERMS.some((kw) => normQ === kw || normQ.includes(kw));
 
         let matchedMessages: SafeAny[] = [];
 
         if (ready && crm?.crmChatMessage) {
           const searchConditions: SafeAny[] = [];
           if (rawQ) {
-            searchConditions.push(
-              { text: { contains: rawQ } },
-              { senderName: { contains: rawQ } }
-            );
+            searchConditions.push({ text: { contains: rawQ } }, { senderName: { contains: rawQ } });
             if (normQ !== rawQ.toLowerCase()) {
-              searchConditions.push(
-                { text: { contains: normQ } },
-                { senderName: { contains: normQ } }
-              );
+              searchConditions.push({ text: { contains: normQ } }, { senderName: { contains: normQ } });
             }
           }
 
@@ -5597,7 +5631,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
               if (inThreadOnly) continue;
 
               const textMatch = !normQ || removeVietnameseTones(String(m.text || '').toLowerCase()).includes(normQ);
-              const senderMatch = !normQ || removeVietnameseTones(String(m.senderName || '').toLowerCase()).includes(normQ);
+              const senderMatch =
+                !normQ || removeVietnameseTones(String(m.senderName || '').toLowerCase()).includes(normQ);
               const attMatch = attachments.some((att: SafeAny) =>
                 removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
               );
@@ -5619,7 +5654,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
                 if (hasAttachmentOnly && rAtts.length === 0) continue;
 
                 const rTextMatch = !normQ || removeVietnameseTones(String(r.text || '').toLowerCase()).includes(normQ);
-                const rSenderMatch = !normQ || removeVietnameseTones(String(r.senderName || '').toLowerCase()).includes(normQ);
+                const rSenderMatch =
+                  !normQ || removeVietnameseTones(String(r.senderName || '').toLowerCase()).includes(normQ);
                 const rAttMatch = rAtts.some((att: SafeAny) =>
                   removeVietnameseTones(String(att.name || att.fileName || '').toLowerCase()).includes(normQ)
                 );
@@ -5648,9 +5684,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           const attNames = attachments.map((a: SafeAny) => String(a.name || a.fileName || '')).filter(Boolean);
 
           const rawText = String(row.text || '').trim();
-          const displayText = rawText || (attachments.length > 0
-            ? `[Đính kèm ${attachments.length} ${attachments.length === 1 ? 'hình ảnh/tệp' : 'hình ảnh/tệp'}]`
-            : '');
+          const displayText =
+            rawText ||
+            (attachments.length > 0
+              ? `[Đính kèm ${attachments.length} ${attachments.length === 1 ? 'hình ảnh/tệp' : 'hình ảnh/tệp'}]`
+              : '');
 
           return {
             id: row.id,

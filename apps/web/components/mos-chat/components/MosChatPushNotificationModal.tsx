@@ -64,7 +64,7 @@ export const MosChatPushNotificationModal: React.FC<MosChatPushNotificationModal
             <div>
               <div className="text-[16px] font-bold text-white leading-tight">Chuông báo Cuộc gọi khi Khóa máy</div>
               <div className="text-[12px] text-white/60 mt-0.5">
-                Nhận thông báo cuộc gọi đến & BUZZ khẩn cấp trên iPhone / MacBook
+                Nhận thông báo Tin nhắn riêng (DM), @Mention, Cuộc gọi &amp; BUZZ trên iPhone / MacBook
               </div>
             </div>
           </div>
@@ -102,8 +102,8 @@ export const MosChatPushNotificationModal: React.FC<MosChatPushNotificationModal
           </div>
           <p className="text-[12px] text-white/65 mt-1.5 leading-relaxed mb-0">
             {isSubscribed
-              ? 'Khi đồng nghiệp gọi hoặc BUZZ khẩn cấp, màn hình khóa sẽ sáng lên và rung báo ngay cả khi bạn đang thoát Safari.'
-              : 'Bật tính năng này để không bỏ lỡ cuộc gọi nội bộ khi đang khóa màn hình iPhone hoặc chuyển sang ứng dụng khác.'}
+              ? 'Khi có tin nhắn riêng (DM), được @Mention, cuộc gọi đến hoặc BUZZ khẩn cấp, màn hình khóa sẽ sáng lên và báo ngay cả khi bạn đang thoát Safari.'
+              : 'Bật tính năng này để nhận thông báo Tin nhắn riêng (DM), @Mention và cuộc gọi nội bộ ngay cả khi khóa màn hình iPhone hoặc chuyển sang ứng dụng khác.'}
           </p>
         </div>
 

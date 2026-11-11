@@ -19,7 +19,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 
 export interface UseMosChatWebPushOptions {
   enabled: boolean;
-  onSelectConversationFromPush?: (conversationId: string, messageId?: string) => void;
+  onSelectConversationFromPush?: (conversationId: string, messageId?: string, threadRootMessageId?: string) => void;
 }
 
 export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: UseMosChatWebPushOptions) {
@@ -147,8 +147,13 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
       if (event.data?.type === 'MOS_PUSH_NOTIFICATION_CLICK') {
         const convId = event.data?.data?.conversationId;
         const msgId = event.data?.data?.messageId;
+        const threadRootMsgId = event.data?.data?.threadRootMessageId;
         if (convId && onSelectConvRef.current) {
-          onSelectConvRef.current(String(convId), msgId ? String(msgId) : undefined);
+          onSelectConvRef.current(
+            String(convId),
+            msgId ? String(msgId) : undefined,
+            threadRootMsgId ? String(threadRootMsgId) : undefined
+          );
         }
         if (convId && typeof window !== 'undefined') {
           window.dispatchEvent(
@@ -156,6 +161,7 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
               detail: {
                 conversationId: String(convId),
                 messageId: msgId ? String(msgId) : undefined,
+                threadRootMessageId: threadRootMsgId ? String(threadRootMsgId) : undefined,
               },
             })
           );
@@ -284,28 +290,25 @@ export function useMosChatWebPush({ enabled, onSelectConversationFromPush }: Use
     [testCountdown]
   );
 
-  const sendTestCallPushNow = useCallback(
-    async (targetConversationId?: string): Promise<boolean> => {
-      try {
-        const res = await apiClient.chat.sendTestPush({
-          title: '📞 Cuộc gọi thử nghiệm từ mOS Chat',
-          body: 'Thông báo cuộc gọi khi khóa màn hình iPhone đã hoạt động hoàn hảo!',
-          conversationId: targetConversationId,
-        });
-        if (res.sent > 0) {
-          antdMessage.success('Đã bắn chuông thông báo cuộc gọi đến thiết bị của bạn!');
-          return true;
-        } else {
-          antdMessage.warning('Chưa có thiết bị nào đăng ký nhận thông báo. Hãy bấm "Bật ngay" trước.');
-          return false;
-        }
-      } catch {
-        antdMessage.error('Không thể gửi thông báo thử nghiệm.');
+  const sendTestCallPushNow = useCallback(async (targetConversationId?: string): Promise<boolean> => {
+    try {
+      const res = await apiClient.chat.sendTestPush({
+        title: '📞 Cuộc gọi thử nghiệm từ mOS Chat',
+        body: 'Thông báo cuộc gọi khi khóa màn hình iPhone đã hoạt động hoàn hảo!',
+        conversationId: targetConversationId,
+      });
+      if (res.sent > 0) {
+        antdMessage.success('Đã bắn chuông thông báo cuộc gọi đến thiết bị của bạn!');
+        return true;
+      } else {
+        antdMessage.warning('Chưa có thiết bị nào đăng ký nhận thông báo. Hãy bấm "Bật ngay" trước.');
         return false;
       }
-    },
-    []
-  );
+    } catch {
+      antdMessage.error('Không thể gửi thông báo thử nghiệm.');
+      return false;
+    }
+  }, []);
 
   const needsIosHomeScreen = isIos && !isStandalonePwa && !isSupported;
 

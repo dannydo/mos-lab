@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Modal, Input, Select, DatePicker, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import type {
@@ -55,12 +55,21 @@ export interface MosChatMobileAppProps {
   standalone?: boolean;
   onStartVoiceCall?: (conversationId: string) => void;
   onClose?: () => void;
+  initialNavTarget?: {
+    conversationId?: string;
+    messageId?: string;
+    threadRootMessageId?: string;
+    openTab?: 'chat' | 'tasks' | 'pinned';
+    taskId?: string;
+    timestamp?: number;
+  } | null;
 }
 
 export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   standalone = false,
   onStartVoiceCall,
   onClose,
+  initialNavTarget,
 }) => {
   const {
     currentUser,
@@ -145,11 +154,101 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   const [searchInitialScope, setSearchInitialScope] = useState<FilterScope>('ALL');
   const [pushModalOpen, setPushModalOpen] = useState(false);
 
+  const pendingPushTargetRef = useRef<{
+    convId: string;
+    msgId?: string;
+    threadRootMsgId?: string;
+  } | null>(null);
+
+  const navigateToPushTarget = useCallback(
+    (convId: string, msgId?: string, threadRootMsgId?: string) => {
+      setActiveConvId(convId);
+      const targetConv = conversations.find((c) => c.id === convId);
+      const candidateMsgs = targetConv?.messages?.length ? targetConv.messages : messages;
+      const parentMsg = threadRootMsgId
+        ? candidateMsgs.find((m) => m.id === threadRootMsgId)
+        : msgId
+          ? candidateMsgs.find((m) => (m.thread || []).some((r) => r.id === msgId))
+          : undefined;
+
+      if (parentMsg) {
+        setActiveThreadMsg(parentMsg);
+        setMobileView('thread');
+        pendingPushTargetRef.current = null;
+      } else {
+        setMobileView('room');
+        if (threadRootMsgId || msgId) {
+          pendingPushTargetRef.current = { convId, msgId, threadRootMsgId };
+        }
+      }
+
+      if (msgId && typeof document !== 'undefined') {
+        setTimeout(() => {
+          const el =
+            document.getElementById(`thread-reply-${msgId}`) ||
+            document.getElementById(`mos-chat-reply-${msgId}`) ||
+            document.getElementById(`mos-chat-msg-${msgId}`) ||
+            document.getElementById(`mobile-msg-${msgId}`) ||
+            document.getElementById(`msg-${msgId}`);
+          if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 350);
+      }
+    },
+    [conversations, messages, setActiveConvId, setActiveThreadMsg, setMobileView]
+  );
+
+  const handledInitialNavKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!initialNavTarget?.conversationId) return;
+    const navKey = `${initialNavTarget.conversationId}::${initialNavTarget.messageId || ''}::${initialNavTarget.threadRootMessageId || ''}::${initialNavTarget.timestamp || ''}`;
+    if (handledInitialNavKeyRef.current === navKey) return;
+    handledInitialNavKeyRef.current = navKey;
+    navigateToPushTarget(
+      initialNavTarget.conversationId,
+      initialNavTarget.messageId,
+      initialNavTarget.threadRootMessageId
+    );
+  }, [initialNavTarget, navigateToPushTarget]);
+
+  useEffect(() => {
+    const pending = pendingPushTargetRef.current;
+    if (!pending || activeConversation?.id !== pending.convId) return;
+    if (!messages || messages.length === 0) return;
+
+    const parentMsg = pending.threadRootMsgId
+      ? messages.find((m) => m.id === pending.threadRootMsgId)
+      : pending.msgId
+        ? messages.find((m) => (m.thread || []).some((r) => r.id === pending.msgId))
+        : undefined;
+
+    if (parentMsg) {
+      setActiveThreadMsg(parentMsg);
+      setMobileView('thread');
+    }
+
+    if (pending.msgId && typeof document !== 'undefined') {
+      setTimeout(() => {
+        const el =
+          document.getElementById(`thread-reply-${pending.msgId}`) ||
+          document.getElementById(`mos-chat-reply-${pending.msgId}`) ||
+          document.getElementById(`mos-chat-msg-${pending.msgId}`) ||
+          document.getElementById(`mobile-msg-${pending.msgId}`) ||
+          document.getElementById(`msg-${pending.msgId}`);
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 250);
+    }
+    pendingPushTargetRef.current = null;
+  }, [activeConversation?.id, messages, setActiveThreadMsg, setMobileView]);
+
   const webPush = useMosChatWebPush({
     enabled: Boolean(currentUser?.id),
-    onSelectConversationFromPush: (convId) => {
-      setActiveConvId(convId);
-      setMobileView('room');
+    onSelectConversationFromPush: (convId, msgId, threadRootMsgId) => {
+      navigateToPushTarget(convId, msgId, threadRootMsgId);
     },
   });
 
@@ -668,9 +767,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         onOpenSearch={() => {
           setSearchInitialQuery('');
           setSearchInitialScope(
-            activeConversation?.id && activeConversation.id !== AI_COPILOT_CONV_ID
-              ? 'CURRENT_CONV'
-              : 'ALL'
+            activeConversation?.id && activeConversation.id !== AI_COPILOT_CONV_ID ? 'CURRENT_CONV' : 'ALL'
           );
           setSearchSheetOpen(true);
         }}

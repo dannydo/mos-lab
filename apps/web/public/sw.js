@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-// mOS Lab Service Worker — Web Push Notifications for Voice Calls & Urgent Buzz (iOS PWA & Desktop)
+// mOS Lab Service Worker — Web Push Notifications for Direct Messages, @Mentions, Voice Calls & Urgent Buzz (iOS PWA & Desktop)
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -68,7 +68,7 @@ self.addEventListener('notificationclick', (event) => {
   const targetUrl =
     data.url ||
     (data.conversationId
-      ? `/chat?convId=${encodeURIComponent(data.conversationId)}${data.messageId ? `&msgId=${encodeURIComponent(data.messageId)}` : ''}`
+      ? `/chat?convId=${encodeURIComponent(data.conversationId)}${data.messageId ? `&msgId=${encodeURIComponent(data.messageId)}` : ''}${data.threadRootMessageId ? `&threadId=${encodeURIComponent(data.threadRootMessageId)}` : ''}`
       : '/chat');
 
   event.waitUntil(
@@ -82,6 +82,7 @@ self.addEventListener('notificationclick', (event) => {
                 ...data,
                 conversationId: data.conversationId,
                 messageId: data.messageId,
+                threadRootMessageId: data.threadRootMessageId,
                 url: targetUrl,
               },
             });

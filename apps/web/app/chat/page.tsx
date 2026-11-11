@@ -55,24 +55,26 @@ function ChatPageContent() {
     searchParams?.get('chatConvId') || searchParams?.get('conversationId') || searchParams?.get('convId') || undefined;
   const msgId =
     searchParams?.get('chatMsgId') || searchParams?.get('messageId') || searchParams?.get('msgId') || undefined;
+  const threadRootMessageId = searchParams?.get('threadId') || searchParams?.get('threadRootMessageId') || undefined;
   const tab = searchParams?.get('tab') as 'chat' | 'tasks' | 'pinned' | undefined;
   const taskId = searchParams?.get('taskId') || undefined;
 
   const targetNavigation = useMemo(() => {
-    if (!convId && !msgId && !tab && !taskId) return null;
+    if (!convId && !msgId && !threadRootMessageId && !tab && !taskId) return null;
     return {
       conversationId: convId,
       messageId: msgId,
+      threadRootMessageId,
       openTab: tab,
       taskId: taskId,
       timestamp: Date.now(),
     };
-  }, [convId, msgId, tab, taskId]);
+  }, [convId, msgId, threadRootMessageId, tab, taskId]);
 
   if (isMobile) {
     return (
       <MosChatProvider currentUser={currentUser} initialConvId={convId} initialSubtab={tab}>
-        <MosChatMobileApp standalone={true} />
+        <MosChatMobileApp standalone={true} initialNavTarget={targetNavigation} />
       </MosChatProvider>
     );
   }

@@ -1213,9 +1213,11 @@ export interface MosChatWebPushNotificationPayload {
   requireInteraction?: boolean;
   vibrate?: number[];
   data?: {
-    type: 'VOICE_CALL_INCOMING' | 'VOICE_CALL_MISSED' | 'CHAT_BUZZ' | 'CHAT_TEST';
+    type: 'VOICE_CALL_INCOMING' | 'VOICE_CALL_MISSED' | 'CHAT_BUZZ' | 'CHAT_DM' | 'CHAT_MENTION' | 'CHAT_TEST';
     callId?: string;
     conversationId?: string;
+    messageId?: string;
+    threadRootMessageId?: string;
     url?: string;
   };
 }

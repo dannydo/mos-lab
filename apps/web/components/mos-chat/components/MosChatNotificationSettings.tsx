@@ -154,8 +154,8 @@ export const MosChatNotificationSettingsModal: React.FC<NotificationSettingsModa
               </div>
               <div className="text-[11px]" style={{ color: token.colorTextSecondary }}>
                 {webPush.isSubscribed
-                  ? `Đã bật (${webPush.subscribedCount} thiết bị đăng ký)`
-                  : 'Bật để iPhone/máy tính đổ chuông cuộc gọi ngay cả khi khóa màn hình'}
+                  ? `Đã bật cho DM, @Mention, Cuộc gọi & BUZZ (${webPush.subscribedCount} thiết bị đăng ký)`
+                  : 'Bật để iPhone/máy tính báo Tin nhắn riêng (DM), @Mention & đổ chuông cuộc gọi khi khóa màn hình'}
               </div>
             </div>
           </div>
