@@ -69,15 +69,45 @@ describe('MOS-BUG-212: MosChatSearch Modal & Mobile Sheet Integration', () => {
     expect(screen.queryByText('MAI Trợ lý AI')).toBeNull();
   });
 
-  it('renders MosChatMobileSearchSheet with z-[1600] and executes search with initialQuery', async () => {
+  it('renders MosChatMobileSearchSheet with z-[1600], safe-area insets, and executes search with initialQuery', async () => {
     const onSelect = vi.fn();
     render(<MosChatMobileSearchSheet open={true} onClose={vi.fn()} onSelectMessage={onSelect} initialQuery="khai" />);
 
-    const sheetContainer = document.querySelector('.z-\\[1600\\]');
+    const sheetContainer = document.querySelector('.z-\\[1600\\]') as HTMLElement;
     expect(sheetContainer).toBeTruthy();
+    // Check safe area padding to prevent notch collision (MOS-BUG-212)
+    expect(sheetContainer.className).toContain('safe-area-inset-top');
+    expect(sheetContainer.className).toContain('safe-area-inset-bottom');
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('khai')).toBeTruthy();
+    });
+  });
+
+  it('defaults to CURRENT_CONV and loads conversation messages when activeConversation is provided', async () => {
+    const activeConv: MosChatConversation = {
+      id: 'dm-pair-1-6',
+      type: 'dm',
+      name: 'Danny Do',
+      color: '#0068FF',
+      unreadCount: 0,
+      updatedAt: new Date().toISOString(),
+      messages: [],
+    };
+
+    render(
+      <MosChatMobileSearchSheet
+        open={true}
+        onClose={vi.fn()}
+        onSelectMessage={vi.fn()}
+        activeConversation={activeConv}
+      />
+    );
+
+    // Placeholder dynamically includes conversation name
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Tìm trong Danny Do/)).toBeTruthy();
+      expect(screen.getByText('Nguyễn Quang Khải')).toBeTruthy();
     });
   });
 

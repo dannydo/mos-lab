@@ -29,7 +29,7 @@ import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMoveThreadModal } from './MosChatMobileMoveThreadModal';
-import { MosChatMobileSearchSheet } from './MosChatMobileSearchSheet';
+import { MosChatMobileSearchSheet, type FilterScope } from './MosChatMobileSearchSheet';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
@@ -141,6 +141,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   // Mobile Message Search Sheet state
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
+  const [searchInitialScope, setSearchInitialScope] = useState<FilterScope>('ALL');
   const [pushModalOpen, setPushModalOpen] = useState(false);
 
   const webPush = useMosChatWebPush({
@@ -665,6 +666,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         onOpenTaskModal={() => openTaskModalForThread()}
         onOpenSearch={() => {
           setSearchInitialQuery('');
+          setSearchInitialScope(
+            activeConversation?.id && activeConversation.id !== AI_COPILOT_CONV_ID
+              ? 'CURRENT_CONV'
+              : 'ALL'
+          );
           setSearchSheetOpen(true);
         }}
         onOpenPushSettings={() => setPushModalOpen(true)}
@@ -678,6 +684,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         <MosChatMobileInbox
           onOpenSearchSheet={(q) => {
             setSearchInitialQuery(q || '');
+            setSearchInitialScope('ALL');
             setSearchSheetOpen(true);
           }}
         />
@@ -1053,6 +1060,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         activeConversation={activeConversation}
         onSelectMessage={handleSelectSearchResult}
         initialQuery={searchInitialQuery}
+        initialScope={searchInitialScope}
       />
 
       {/* Lock-Screen Call Notification (Web Push PWA) Modal */}
