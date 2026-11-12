@@ -1,0 +1,80 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
+
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+const phase9Indexes = [
+  {
+    name: 'idx_iwci_check_item',
+    table: 'inventory_warehouse_check_item',
+    columns: ['inventory_warehouse_check_id', 'inventory_warehouse_item_id'],
+  },
+  {
+    name: 'idx_iwi_wh_state_item',
+    table: 'inventory_warehouse_item',
+    columns: ['inventory_warehouse_id', 'item_state', 'inventory_item_id'],
+  },
+  {
+    name: 'idx_slust_group_date_id',
+    table: 'sales_lead_user_service_type',
+    columns: ['service_group', 'date_created', 'id'],
+  },
+  {
+    name: 'idx_iit_date_created',
+    table: 'item_insert_tracker',
+    columns: ['date_created'],
+  },
+] as const;
+
+const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
+
+async function main() {
+  const legacy = new LegacyPrismaClient({
+    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } },
+  });
+
+  try {
+    const existing = await legacy.$queryRawUnsafe<Array<{ index_name: string }>>(
+      `SELECT DISTINCT index_name FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name IN (${phase9Indexes
+        .map((index) => `'${index.name}'`)
+        .join(', ')})`
+    );
+    const existingNames = new Set(existing.map((index) => index.index_name));
+
+    for (const index of phase9Indexes) {
+      if (existingNames.has(index.name)) {
+        console.log(`Index already present: ${index.name}`);
+        continue;
+      }
+
+      const statement = `ALTER TABLE ${quoteIdentifier(index.table)} ADD INDEX ${quoteIdentifier(index.name)} (${index.columns
+        .map(quoteIdentifier)
+        .join(', ')}), ALGORITHM=INPLACE, LOCK=NONE`;
+      console.log(`Creating index: ${index.name} on ${index.table}...`);
+      try {
+        await legacy.$executeRawUnsafe(statement);
+        console.log(`Successfully created index: ${index.name}`);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Duplicate key name')) {
+          console.log(`Index already present after concurrent DDL: ${index.name}`);
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    console.log('Refreshing optimizer statistics for modified tables...');
+    await legacy.$executeRawUnsafe(
+      'ANALYZE TABLE `inventory_warehouse_check_item`, `inventory_warehouse_item`, `sales_lead_user_service_type`, `item_insert_tracker`'
+    );
+    console.log('Optimizer statistics refreshed successfully.');
+  } finally {
+    await legacy.$disconnect();
+  }
+}
+
+main().catch((error) => {
+  console.error('Failed to apply Phase 9 legacy query performance indexes:', error);
+  process.exit(1);
+});
