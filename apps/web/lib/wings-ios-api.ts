@@ -23,12 +23,17 @@ export interface WingsApiResponse<T = any> {
   code?: string;
 }
 
+/**
+ * @deprecated Legacy Swift Api.swift parity reference helper.
+ * Active mOS /ios-app traffic MUST go through `apiClient.ios` (`apps/web/lib/api/ios.api.ts`) -> `/api/ios/*`.
+ * Never hardcode live session tokens in source control.
+ */
 export const DEFAULT_CC_SESSION: WingsUserSession = {
-  user_id: '46092',
-  login_token: 'S25YQl5SJHl4dll6OElIeXNnakJQcGU3KXV5QmxkQH1HZF5JLW1WfWE5I2tpbTFqXzJGLUNeMmVeRXVHWCkoaQ==',
+  user_id: '',
+  login_token: '',
   client_business_id: '1',
-  client_store_id: '6', // 159A Đề Thám
-  full_name: 'Quang Khải CC',
+  client_store_id: '6',
+  full_name: 'Client Consultant',
   user_group_name: 'Client Consultant',
   user_group_id: '14',
 };

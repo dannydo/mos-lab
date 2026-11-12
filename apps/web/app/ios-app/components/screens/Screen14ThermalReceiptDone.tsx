@@ -9,6 +9,7 @@ import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import {
   calculateCvComboTierBonus,
+  calculateCvSerumTierBonus,
   resolveEffectiveServiceTotal,
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
@@ -68,7 +69,10 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
     (selectedCombo ? Number(selectedCombo.price || 0) : 0) +
     (selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0);
   const comboBonus = calculateCvComboTierBonus(comboTotalRevenue);
-  const serumBonus = cartProducts.reduce((s, p) => s + (p.cvBonus || 100000) * p.quantity, 0);
+  const serumBonus = cartProducts.reduce(
+    (s, p) => s + (p.cvBonus !== undefined ? p.cvBonus * p.quantity : calculateCvSerumTierBonus(p.price, p.quantity)),
+    0
+  );
   const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
   const actorTipBreakdown = calculateActorTipBreakdown(booking, actor, tipAmount);
   const tipEarned = actorTipBreakdown.actorEarnedAmount;

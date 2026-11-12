@@ -175,6 +175,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       curl: 'C',
       length: '10-12 mm',
       thickness: '0.07 mm',
+      isNewClientDiagnosticDone: false,
       notes: 'Khách mới: cần soi dáng mắt & tư vấn chọn sợi',
     },
   },

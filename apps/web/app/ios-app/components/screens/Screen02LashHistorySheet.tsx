@@ -50,19 +50,19 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
     },
     checkInBy: {
       name: item.staffName || 'Thảo Ly',
-      role: 'CV🪶',
+      role: 'CVL',
       tier: 'CVL',
       avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
     },
     lashedBy: {
       name: item.staffName || 'Thảo Ly',
-      role: 'CV🪶',
+      role: 'CVL',
       tier: 'CVL',
       avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
     },
     checkOutBy: {
       name: item.staffName || 'Thảo Ly',
-      role: 'CV🪶',
+      role: 'CVL',
       tier: 'CVL',
       avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png',
     },

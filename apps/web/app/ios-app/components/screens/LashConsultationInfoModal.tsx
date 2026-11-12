@@ -16,6 +16,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { LashMaterialSpec } from './LashMaterialConstraintMatrix';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 
 export type InfoModalType = 'MATERIAL' | 'DESIGN' | 'CURL' | 'THICKNESS' | 'LENGTH' | null;
 
@@ -56,7 +57,9 @@ export const LashConsultationInfoModal: React.FC<LashConsultationInfoModalProps>
                 {type === 'THICKNESS' && 'Quy Chuẩn Độ Dày & An Toàn Gốc Mi'}
                 {type === 'LENGTH' && 'Quy Tắc Chiều Dài & Tỷ Lệ Vàng'}
               </h3>
-              <p className="text-[10px] text-neutral-400 font-medium">Chỉ dẫn chuyên môn cho Chuyên Viên (CV🪶)</p>
+              <p className="text-[10px] text-neutral-400 font-medium">
+                Chỉ dẫn chuyên môn cho Chuyên Viên (<CvFeather1Badge />)
+              </p>
             </div>
           </div>
 

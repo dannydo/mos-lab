@@ -84,5 +84,8 @@ describe('Kinh Thánh mOS contextual registry', () => {
       (item) => item.id
     );
     expect(workshopIds).toContain('WS-001');
+
+    const iosAppIds = getMosBibleCommandmentsForPath('/ios-app').map((item) => item.id);
+    expect(iosAppIds).toContain('OPS-003');
   });
 });

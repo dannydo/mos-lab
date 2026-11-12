@@ -154,7 +154,7 @@ export function Screen10CustomerSurvey({
               >
                 {staffName} (<CvFeather1Badge />)
               </span>
-              <span>· Salon Đề Thám</span>
+              <span>· {booking?.branchName || 'Salon Đề Thám'}</span>
             </div>
           </div>
 
@@ -184,12 +184,18 @@ export function Screen10CustomerSurvey({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between px-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-[10px] font-black">
+                    <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center text-[10px] font-black">
                       1
                     </span>
-                    <span className="text-[12px] font-black text-black">1. ẢNH TRƯỚC KHI NỐI · MẮT MỘC</span>
+                    <span className={`text-[12px] font-black ${isDark ? 'text-white' : 'text-black'}`}>
+                      1. ẢNH TRƯỚC KHI NỐI · MẮT MỘC
+                    </span>
                   </div>
-                  <span className="text-[9.5px] font-bold text-gray-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                  <span
+                    className={`text-[9.5px] font-bold ${
+                      isDark ? 'text-neutral-400 bg-neutral-800' : 'text-gray-500 bg-neutral-100'
+                    } px-2 py-0.5 rounded-full`}
+                  >
                     Mắt mộc ban đầu
                   </span>
                 </div>
@@ -232,7 +238,9 @@ export function Screen10CustomerSurvey({
                     <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-xs">
                       2
                     </span>
-                    <span className="text-[12px] font-black text-emerald-800">2. ẢNH SAU HOÀN THIỆN · ĐẠT CHUẨN</span>
+                    <span className={`text-[12px] font-black ${isDark ? 'text-emerald-400' : 'text-emerald-800'}`}>
+                      2. ẢNH SAU HOÀN THIỆN · ĐẠT CHUẨN
+                    </span>
                   </div>
                   <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
                     Form mi mới của Chị ✨

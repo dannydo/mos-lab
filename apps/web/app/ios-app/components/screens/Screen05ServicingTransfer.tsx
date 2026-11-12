@@ -1,28 +1,63 @@
 'use client';
 
-import React from 'react';
-import { Calendar, Phone, ShoppingCart, ArrowRight } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
+import { Calendar, Phone, ShoppingCart, ArrowRight, ChevronLeft } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
+import { IosBranchConfig } from '../../state/useIosAppState';
 
 interface Screen05ServicingTransferProps {
   booking: BookingItem;
+  servicingBookings?: BookingItem[];
+  currentBranch?: IosBranchConfig;
+  onBack?: () => void;
   onTransferToCv: () => void;
 }
 
-export function Screen05ServicingTransfer({ booking, onTransferToCv }: Screen05ServicingTransferProps) {
-  const customerName = booking?.customerName || 'Quyên';
-  const customerPhone = (booking?.customerPhone || '0937.554.430').replace(/\*+\s*/g, '').trim();
-  const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
-  const assignedBed = booking?.assignedBed || 'GIƯỜNG 03';
+export function Screen05ServicingTransfer({
+  booking,
+  servicingBookings = [],
+  currentBranch,
+  onBack,
+  onTransferToCv,
+}: Screen05ServicingTransferProps) {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
+
+  const assignedStaff = booking?.assignedStaffName || 'Chuyên Viên';
+  const assignedBed = booking?.assignedBed || 'Giường 01';
+  const checkInStaff = booking?.checkInStaffName || 'Tư Vấn Viên';
+  const serviceName = booking?.serviceName || 'Dịch vụ nối mi thiết kế';
+  const branchHeader = booking?.branchName || currentBranch?.shortName || 'Salon Đề Thám';
+
+  const activeRows = useMemo(() => {
+    const others = servicingBookings.filter((b) => Number(b.id) !== Number(booking?.id));
+    return booking ? [booking, ...others].slice(0, 5) : others.slice(0, 5);
+  }, [booking, servicingBookings]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
+    <div
+      className={`flex-1 flex flex-col ${
+        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'
+      } overflow-y-auto select-none`}
+    >
       {/* Top Navigation Bar on Black */}
       <header className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-2.5 px-4 flex items-center justify-between bg-black border-b border-neutral-900 select-none z-40 relative min-h-[50px] shrink-0">
-        <div className="flex items-center">
-          <Calendar className="w-5 h-5 text-[#FFB400]" />
+        <div className="flex items-center gap-2">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-0.5 text-[#FFB400] text-sm font-semibold active:opacity-60 cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span>Quay lại</span>
+            </button>
+          ) : (
+            <Calendar className="w-5 h-5 text-[#FFB400]" />
+          )}
         </div>
-        <div className="text-[#FFB400] font-bold text-[17px] tracking-tight">De Tham</div>
+        <div className="text-[#FFB400] font-bold text-[17px] tracking-tight">{branchHeader}</div>
         <div className="flex items-center gap-3.5">
           <Phone className="w-5 h-5 text-[#FFB400]" />
           <ShoppingCart className="w-5 h-5 text-[#FFB400]" />
@@ -52,68 +87,96 @@ export function Screen05ServicingTransfer({ booking, onTransferToCv }: Screen05S
       {/* Content */}
       <div className="flex-1 flex flex-col justify-between overflow-y-auto">
         {/* Booking Items */}
-        <div className="bg-white divide-y divide-gray-100 border-b border-gray-200">
-          {/* Row 1: Current Booking (Quyên) */}
-          <div
-            onClick={onTransferToCv}
-            className="p-3.5 flex items-center gap-3 cursor-pointer active:bg-amber-50/50 transition-colors"
-          >
-            <span className="text-gray-400 font-bold text-sm w-4 text-center">1</span>
-            <div className="w-12 h-12 rounded-full bg-[#FFB400] border-2 border-[#34C759] p-0.5 flex items-center justify-center text-black font-extrabold text-base shrink-0 shadow-xs">
-              {customerName.charAt(0) || 'Q'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="text-[15px] font-bold text-black truncate">{customerName}</span>
-                <span className="text-[13px] font-bold text-[#FF3B30]">10:35 am</span>
-              </div>
-              <div className="text-[12px] text-gray-500 font-normal">{customerPhone}</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="bg-[#22C55E] text-white font-extrabold text-[10px] px-2 py-0.5 rounded-full">
-                  {assignedBed}
-                </span>
-                <span className="text-[12px] text-[#FF9500] font-semibold">CV: {assignedStaff}</span>
-              </div>
-              <div className="text-[12px] text-gray-700 font-medium mt-0.5">New Flawless 550 · Bắt đầu 10:35 am</div>
-            </div>
-          </div>
+        <div
+          className={`${
+            isDark ? 'bg-[#1C1C1E] divide-neutral-800 border-neutral-800' : 'bg-white divide-gray-100 border-gray-200'
+          } divide-y border-b`}
+        >
+          {activeRows.map((row, idx) => {
+            const isPrimary = Number(row.id) === Number(booking?.id);
+            const rowName = row.customerName || 'Khách hàng';
+            const rowPhone = (row.customerPhone || '').replace(/\*+\s*/g, '').trim();
+            const rowTime = row.time12h || row.timeSlot?.split('-')[0]?.trim() || '--:--';
+            const rowBed = row.assignedBed || (isPrimary ? assignedBed : `Giường 0${idx + 1}`);
+            const rowStaff = row.assignedStaffName || assignedStaff;
 
-          {/* Row 2: Second Servicing Booking (Chi) */}
-          <div className="p-3.5 flex items-center gap-3 opacity-80">
-            <span className="text-gray-400 font-bold text-sm w-4 text-center">2</span>
-            <div className="w-12 h-12 rounded-full bg-emerald-100 border-2 border-[#34C759] p-0.5 flex items-center justify-center text-emerald-800 font-extrabold text-base shrink-0 shadow-xs">
-              C
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="text-[15px] font-bold text-black truncate">Chi</span>
-                <span className="text-[13px] font-bold text-[#FF3B30]">09:00 am</span>
-              </div>
-              <div className="text-[12px] text-gray-500 font-normal">0938.133.636</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="bg-[#22C55E] text-white font-extrabold text-[10px] px-2 py-0.5 rounded-full">
-                  GIƯỜNG 01
+            return (
+              <div
+                key={row.id}
+                onClick={isPrimary ? onTransferToCv : undefined}
+                className={`p-3.5 flex items-center gap-3 transition-colors ${
+                  isPrimary
+                    ? isDark
+                      ? 'cursor-pointer active:bg-neutral-800/70'
+                      : 'cursor-pointer active:bg-amber-50/50'
+                    : 'opacity-80'
+                }`}
+              >
+                <span
+                  className={`${isDark ? 'text-neutral-500' : 'text-gray-400'} font-bold text-sm w-4 text-center tabular-nums`}
+                >
+                  {idx + 1}
                 </span>
-                <span className="text-[12px] text-[#FF9500] font-semibold">CV: Diễm My</span>
+                <div
+                  className={`w-12 h-12 rounded-full border-2 border-[#34C759] p-0.5 flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs ${
+                    isPrimary
+                      ? 'bg-[#FFB400] text-black'
+                      : isDark
+                        ? 'bg-emerald-950 text-emerald-300'
+                        : 'bg-emerald-100 text-emerald-800'
+                  }`}
+                >
+                  {rowName.charAt(0) || 'K'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[15px] font-bold ${isDark ? 'text-white' : 'text-black'} truncate`}>
+                      {rowName}
+                    </span>
+                    <span className="text-[13px] font-bold text-[#FF3B30] tabular-nums">{rowTime}</span>
+                  </div>
+                  {rowPhone && (
+                    <div
+                      className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-normal tabular-nums`}
+                    >
+                      {rowPhone}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="bg-[#22C55E] text-white font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase">
+                      {rowBed}
+                    </span>
+                    <span className="text-[12px] text-[#FF9500] font-semibold">CV: {rowStaff}</span>
+                  </div>
+                  <div
+                    className={`text-[12px] ${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium mt-0.5 truncate`}
+                  >
+                    {row.serviceName || serviceName}
+                  </div>
+                </div>
               </div>
-              <div className="text-[12px] text-gray-700 font-medium mt-0.5">New Hyperlight 550 · Dặm mi</div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Green Notification Card & Handover button */}
         <div className="p-4 space-y-3">
-          <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-2xl p-4 shadow-xs">
-            <p className="text-[13px] text-[#15803D] font-medium leading-relaxed">
-              ✓ CC Diễm Hương đã dẫn khách vào Giường 03 và bàn giao thông số nối mi New Flawless cho CV Thảo Ly.
+          <div
+            className={`${
+              isDark ? 'bg-emerald-950/30 border-emerald-700/60' : 'bg-[#F0FDF4] border-[#86EFAC]'
+            } border rounded-2xl p-4 shadow-xs`}
+          >
+            <p className={`text-[13px] ${isDark ? 'text-emerald-300' : 'text-[#15803D]'} font-medium leading-relaxed`}>
+              ✓ {checkInStaff} đã dẫn khách {booking?.customerName || ''} vào {assignedBed} và bàn giao thông số nối mi{' '}
+              {serviceName} cho CV {assignedStaff}.
             </p>
           </div>
 
           <button
             onClick={onTransferToCv}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-bold text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-bold text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer uppercase"
           >
-            <span>CHUYỂN SANG MÀN HÌNH CHUYÊN VIÊN (CV THẢO LY)</span>
+            <span>CHUYỂN SANG MÀN HÌNH CHUYÊN VIÊN (CV {assignedStaff})</span>
             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>

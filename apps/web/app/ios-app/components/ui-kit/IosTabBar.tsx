@@ -49,7 +49,7 @@ export function IosTabBar({
   return (
     <div className="w-full bg-[#1C1C1E]/95 backdrop-blur-xl border-t border-neutral-800 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none z-40 relative shadow-2xl flex-shrink-0 text-neutral-400">
       <div className="h-12 px-2 flex items-center justify-around relative">
-        {/* VAI TRÒ CV🪶 (CVL) & 🪶CV🪶 (CVLL): TỰ TƯ VẤN & CHECKOUT */}
+        {/* VAI TRÒ CVL & CVLL: TỰ TƯ VẤN & CHECKOUT */}
         {(role === 'CVL' || role === 'CVLL') && (
           <>
             <button

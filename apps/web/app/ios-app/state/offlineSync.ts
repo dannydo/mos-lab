@@ -1,6 +1,6 @@
 'use client';
 
-import { resolveApiBaseUrl } from '~/lib/api-base-url';
+import { apiClient } from '~/lib/api-client';
 
 export interface OfflineAction {
   id: string;
@@ -363,7 +363,7 @@ export function clearLocalProgressSnapshot(bookingId: number) {
 }
 
 /**
- * Đồng bộ toàn bộ các action đang chờ lên máy chủ
+ * Đồng bộ toàn bộ các action đang chờ lên máy chủ qua SDK apiClient.ios
  */
 export async function syncPendingActions(actorInfo?: {
   staffId?: number;
@@ -378,45 +378,34 @@ export async function syncPendingActions(actorInfo?: {
   const actions = getPendingActions();
   if (actions.length === 0) return { syncedCount: 0, remainingCount: 0 };
 
-  const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
-  const effectiveAuth = token
-    ? `Bearer ${token}`
-    : process.env.NODE_ENV !== 'production'
-      ? 'Bearer mock-token-for-dev'
-      : undefined;
   let syncedCount = 0;
 
   for (const item of actions) {
     try {
-      const apiBase = resolveApiBaseUrl();
-      const res = await fetch(`${apiBase}/ios/bookings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(effectiveAuth ? { Authorization: effectiveAuth } : {}),
-        },
-        body: JSON.stringify({
-          bookingId: item.bookingId,
-          action: item.action,
-          actorStaffId: actorInfo?.staffId,
-          actorStaffName: actorInfo?.name,
-          actorStaffTier: actorInfo?.tier,
-          ...item.payload,
-          isOfflineSynced: true,
-          offlineSyncedAt: new Date().toISOString(),
-        }),
+      const data = await apiClient.ios.executeBookingAction({
+        bookingId: item.bookingId,
+        action: item.action as any,
+        actorStaffId: actorInfo?.staffId,
+        actorStaffName: actorInfo?.name,
+        actorStaffTier: actorInfo?.tier,
+        ...item.payload,
+        isOfflineSynced: true,
+        offlineSyncedAt: new Date().toISOString(),
       });
 
-      if (res.ok) {
+      if (data?.success !== false) {
         removeOfflineAction(item.id);
         syncedCount += 1;
       } else {
-        // Tăng retry count
         item.retryCount += 1;
       }
-    } catch (err) {
-      console.warn(`[OfflineSync] Network error syncing action ${item.id}:`, err);
-      break; // Mạng vẫn chưa ổn định, dừng vòng lặp
+    } catch (err: any) {
+      if (err?.response) {
+        item.retryCount += 1;
+      } else {
+        console.warn(`[OfflineSync] Network error syncing action ${item.id}:`, err);
+        break; // Mạng vẫn chưa ổn định, dừng vòng lặp
+      }
     }
   }
 

@@ -13,17 +13,25 @@ interface ScreenCvPaystubProps {
   actor?: ActiveActorProfile;
   staffStats?: (Partial<StaffMonthlyStats> & Record<string, any>) | null;
   bookings?: BookingItem[];
+  isDemoMode?: boolean;
   onBack?: () => void;
   onOpenSettings?: () => void;
 }
 
-export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOpenSettings }: ScreenCvPaystubProps) {
+export function ScreenCvPaystub({
+  actor,
+  staffStats,
+  bookings = [],
+  isDemoMode = false,
+  onBack,
+  onOpenSettings,
+}: ScreenCvPaystubProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
   const now = new Date();
   const currentMonthLabel = `Tháng ${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-  const staffName = actor?.name || 'Khanh Cao';
+  const staffName = actor?.name || 'Chuyên Viên';
   const isCvll = actor?.tier === 'CVLL';
 
   const myCompletedBookings = useMemo(() => {
@@ -55,11 +63,17 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
         0
       );
 
-    const baseMonthlyHourly = 8200000;
-    const baseMonthlyService = 5900000 + completedToday * 140000;
-    const baseMonthlyTip = 2850000 + tipToday;
-    const baseMonthlyCombo = 1500000 + comboAndSerumToday;
-    const totalEstimatedEarnings = baseMonthlyHourly + baseMonthlyService + baseMonthlyTip + baseMonthlyCombo;
+    const monthlyShifts = Number(staffStats?.completedShiftsCount ?? completedToday);
+    const liveMonthlyServiceRevenue = Number(staffStats?.monthlyRevenue ?? 0);
+    const liveHourlyAmount = isDemoMode ? 8200000 : Number(staffStats?.hourlyPayMonth ?? 0);
+    const liveServiceAmount = isDemoMode
+      ? 5900000 + completedToday * 140000
+      : Number(staffStats?.serviceBonusMonth ?? liveMonthlyServiceRevenue);
+    const liveTipAmount = isDemoMode ? 2850000 + tipToday : Number(staffStats?.tipEarnedMonth ?? tipToday);
+    const liveComboAmount = isDemoMode
+      ? 1500000 + comboAndSerumToday
+      : Number(staffStats?.comboBonusMonth ?? comboAndSerumToday);
+    const totalEstimatedEarnings = liveHourlyAmount + liveServiceAmount + liveTipAmount + liveComboAmount;
 
     const recentTippedOrders = myCompletedBookings
       .filter((b) => Number(b.billing?.tipAmount || 0) > 0)
@@ -76,10 +90,10 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
         };
       });
 
-    if (recentTippedOrders.length === 0) {
+    if (isDemoMode && recentTippedOrders.length === 0) {
       recentTippedOrders.push(
         {
-          customer: 'Chị Quyên',
+          customer: 'Chị Quyên (Demo)',
           time: 'Hôm nay 15:45',
           service: 'Flawless 3D Design',
           tip: 100000,
@@ -87,7 +101,7 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
           percent: 90,
         },
         {
-          customer: 'Chị Mai Lan',
+          customer: 'Chị Mai Lan (Demo)',
           time: 'Hôm qua 11:20',
           service: 'Classic Tự Nhiên',
           tip: 50000,
@@ -106,23 +120,25 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
         {
           id: 'hourly',
           title: 'Lương Theo Giờ Làm Thực Tế',
-          amount: baseMonthlyHourly,
-          desc: `164 giờ tích lũy · Ca hôm nay: ${staffStats?.shiftHours || '08:30 - 20:00'}`,
+          amount: liveHourlyAmount,
+          desc: isDemoMode
+            ? `164 giờ tích lũy · Ca hôm nay: ${staffStats?.shiftHours || '08:30 - 20:00'}`
+            : `Ca trực hôm nay: ${staffStats?.shiftHours || 'Theo lịch phân ca'}`,
           icon: Clock,
           color: 'text-blue-500',
         },
         {
           id: 'service',
-          title: 'Thưởng Dịch Vụ & Điểm Xoay Tua',
-          amount: baseMonthlyService,
-          desc: `${42 + completedToday} ca hoàn tất (${completedToday} ca hôm nay · +${staffStats?.pointsToday ?? 0} pts)`,
+          title: isDemoMode ? 'Thưởng Dịch Vụ & Điểm Xoay Tua' : 'Doanh Thu & Điểm Dịch Vụ Tích Lũy',
+          amount: liveServiceAmount,
+          desc: `${monthlyShifts} ca trong tháng (${completedToday} ca hôm nay · +${staffStats?.pointsToday ?? 0} pts)`,
           icon: Sparkles,
           color: 'text-purple-500',
         },
         {
           id: 'tip',
           title: 'Thưởng Tips Phân Bổ (70/10/10)',
-          amount: baseMonthlyTip,
+          amount: liveTipAmount,
           desc: `Hôm nay: +${tipToday.toLocaleString('vi-VN')}đ (70% Làm mi + 10% In + 10% Out)`,
           icon: HeartHandshake,
           color: 'text-rose-500',
@@ -130,7 +146,7 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
         {
           id: 'combo',
           title: 'Thưởng Chốt Combo & Dưỡng Mi Yeppeum',
-          amount: baseMonthlyCombo,
+          amount: liveComboAmount,
           desc: `Hôm nay: +${comboAndSerumToday.toLocaleString('vi-VN')}đ thưởng bán gói & sản phẩm`,
           icon: Award,
           color: 'text-amber-500',
@@ -138,7 +154,7 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
       ],
       recentTippedOrders,
     };
-  }, [staffStats, myCompletedBookings, actor]);
+  }, [staffStats, myCompletedBookings, actor, isDemoMode]);
 
   return (
     <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
@@ -248,24 +264,30 @@ export function ScreenCvPaystub({ actor, staffStats, bookings = [], onBack, onOp
                 : 'bg-white border-[#E5E5EA] divide-[#E5E5EA]'
             } rounded-xl border divide-y overflow-hidden shadow-xs`}
           >
-            {liveStats.recentTippedOrders.map((tip, idx) => (
-              <div key={idx} className="p-3 flex items-center justify-between">
-                <div>
-                  <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>{tip.customer}</div>
-                  <div className="text-[11px] text-[#8E8E93] tabular-nums">
-                    {tip.service} · {tip.time}
+            {liveStats.recentTippedOrders.length === 0 ? (
+              <div className="p-4 text-center text-xs text-[#8E8E93]">Chưa có ca nhận Tip trong ngày hôm nay.</div>
+            ) : (
+              liveStats.recentTippedOrders.map((tip, idx) => (
+                <div key={idx} className="p-3 flex items-center justify-between">
+                  <div>
+                    <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>
+                      {tip.customer}
+                    </div>
+                    <div className="text-[11px] text-[#8E8E93] tabular-nums">
+                      {tip.service} · {tip.time}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-emerald-500 tabular-nums">
+                      +{new Intl.NumberFormat('vi-VN').format(tip.share)}đ ({tip.percent}%)
+                    </div>
+                    <div className="text-[10px] text-[#8E8E93] tabular-nums">
+                      Khách tip {new Intl.NumberFormat('vi-VN').format(tip.tip)}đ
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold text-emerald-500 tabular-nums">
-                    +{new Intl.NumberFormat('vi-VN').format(tip.share)}đ ({tip.percent}%)
-                  </div>
-                  <div className="text-[10px] text-[#8E8E93] tabular-nums">
-                    Khách tip {new Intl.NumberFormat('vi-VN').format(tip.tip)}đ
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

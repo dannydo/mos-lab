@@ -1,0 +1,592 @@
+'use client';
+
+import React from 'react';
+import { Heart, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { BookingItem } from '../../../state/mockData';
+import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
+
+function cleanComboTitle(name?: string | null): string {
+  if (!name) return '';
+  return name.replace(/\s*\(\d+\s*lần\)/gi, '').trim();
+}
+
+export interface CheckoutReceiptSectionProps {
+  isDark: boolean;
+  booking?: BookingItem;
+  customerName: string;
+  customerPhone: string;
+  assignedStaff: string;
+  checkInStaff: string;
+  checkOutStaff: string;
+  serviceName: string;
+  servicePrice: number;
+  upgradePrice: number;
+  isComboLive: boolean;
+  selectedCombo: BookingItem['selectedCombo'] | null;
+  selectedUnderCombo: BookingItem['selectedUnderCombo'] | null;
+  comboRedemption: BookingItem['comboRedemption'] | null;
+  cartProducts: NonNullable<BookingItem['cartProducts']>;
+  hasBothCombos: boolean;
+  comboTotalRevenue: number;
+  totalComboBonus: number;
+  subtotal: number;
+  vatAmount: number;
+  tipAmount: number;
+  effectiveDiamondUsed: number;
+  diamondDiscountAmount: number;
+  finalGrandTotal: number;
+  showStaffRewards: boolean;
+  onToggleShowStaffRewards: () => void;
+  onEditService?: () => void;
+}
+
+export function CheckoutReceiptSection({
+  isDark,
+  booking,
+  customerName,
+  customerPhone,
+  assignedStaff,
+  checkInStaff,
+  checkOutStaff,
+  serviceName,
+  servicePrice,
+  upgradePrice,
+  isComboLive,
+  selectedCombo,
+  selectedUnderCombo,
+  comboRedemption,
+  cartProducts,
+  hasBothCombos,
+  comboTotalRevenue,
+  totalComboBonus,
+  subtotal,
+  vatAmount,
+  tipAmount,
+  effectiveDiamondUsed,
+  diamondDiscountAmount,
+  finalGrandTotal,
+  showStaffRewards,
+  onToggleShowStaffRewards,
+  onEditService,
+}: CheckoutReceiptSectionProps) {
+  return (
+    <>
+      {/* Customer & Specialist iOS Minimal Card */}
+      <div
+        className={`${
+          isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-200/80'
+        } rounded-2xl p-3 shadow-2xs border flex items-center gap-3`}
+      >
+        {/* Customer Avatar */}
+        <div className="relative w-11 h-11 flex-shrink-0">
+          <div
+            className={`w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 border ${
+              isDark ? 'border-neutral-700' : 'border-neutral-200'
+            } shadow-xs`}
+          >
+            {booking?.customerAvatar ? (
+              <img
+                src={booking.customerAvatar}
+                alt={customerName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = '/ios-assets/no-image.png';
+                }}
+              />
+            ) : (
+              <img src="/ios-assets/no-image.png" alt="No Image" className="w-full h-full object-cover" />
+            )}
+          </div>
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 ${
+              isDark ? 'border-neutral-900' : 'border-white'
+            } animate-pulse`}
+          />
+        </div>
+
+        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div
+              className={`text-[15px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight truncate`}
+            >
+              {customerName} ·{' '}
+              <span className={`tabular-nums font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                {customerPhone}
+              </span>
+            </div>
+            <div
+              className={`text-[11.5px] ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              } mt-0.5 font-semibold flex items-center gap-1 flex-wrap`}
+            >
+              <span>
+                Chuyên viên:{' '}
+                <strong className={isDark ? 'text-neutral-200' : 'text-neutral-900'}>{assignedStaff}</strong>
+              </span>
+              <CvFeather1Badge />
+              {(checkInStaff !== assignedStaff || checkOutStaff !== assignedStaff) && (
+                <span className={`${isDark ? 'text-neutral-500' : 'text-neutral-400'} text-[10.5px] font-normal`}>
+                  (In: {checkInStaff} · Out: {checkOutStaff})
+                </span>
+              )}
+            </div>
+          </div>
+          <span className="bg-emerald-500 text-white font-black text-[10.5px] px-2.5 py-1 rounded-full shadow-2xs shrink-0 tracking-tight">
+            Đã Check-out
+          </span>
+        </div>
+      </div>
+
+      {/* Section 1: Chi Tiết Hóa Đơn Chuẩn Apple Receipt */}
+      <div>
+        <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider px-1 mb-1.5">
+          <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Chi Tiết Hóa Đơn</span>
+          <button
+            type="button"
+            onClick={onToggleShowStaffRewards}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-all cursor-pointer select-none active:scale-95 ${
+              showStaffRewards
+                ? isDark
+                  ? 'bg-amber-950/70 text-amber-300 border border-amber-700/60 shadow-xs'
+                  : 'bg-amber-100 text-amber-900 border border-amber-300 shadow-xs'
+                : isDark
+                  ? 'bg-neutral-800/90 text-neutral-400 hover:text-neutral-200 border border-neutral-700'
+                  : 'bg-gray-100 text-gray-600 hover:text-gray-800 border border-gray-200'
+            }`}
+          >
+            {showStaffRewards ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="inline-flex items-center gap-1">
+                  <span>Ẩn</span>
+                  <FeatherSvg className="w-3 h-3 text-amber-500" />
+                </span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                <span className="inline-flex items-center gap-1">
+                  <span>Xem</span>
+                  <FeatherSvg className="w-3 h-3 text-amber-500" />
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+        <div
+          className={`${
+            isDark
+              ? 'bg-neutral-900/90 border-neutral-800 divide-neutral-800/80'
+              : 'bg-white border-neutral-200/80 divide-neutral-100'
+          } rounded-2xl shadow-2xs border overflow-hidden divide-y`}
+        >
+          {/* Item 1: Service */}
+          <div className="p-3.5 flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span
+                  className={`text-[13px] font-extrabold ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight`}
+                >
+                  {serviceName}
+                </span>
+                {onEditService && (
+                  <button
+                    type="button"
+                    onClick={onEditService}
+                    title="Đổi dịch vụ / Nâng cấp"
+                    aria-label="Đổi dịch vụ"
+                    className={`w-5 h-5 rounded-full ${
+                      isDark
+                        ? 'bg-blue-950/60 text-blue-300 border-blue-800'
+                        : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                    } border transition-colors inline-flex items-center justify-center text-[10px] active:scale-90 cursor-pointer shadow-2xs`}
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+              <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}>
+                {assignedStaff}
+                {booking?.attributes?.style ? ` · Dáng ${booking.attributes.style}` : ''}
+              </div>
+              {selectedCombo ? (
+                selectedCombo.todaySingleServiceWaived ? (
+                  <div className="pt-0.5">
+                    <span
+                      className={`inline-flex items-center text-[10px] font-bold ${
+                        isDark
+                          ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
+                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      } border px-1.5 py-0.5 rounded`}
+                    >
+                      Trừ Buổi 1 (Miễn phí ca này)
+                    </span>
+                  </div>
+                ) : (
+                  <div className="pt-0.5">
+                    <span
+                      className={`inline-flex items-center text-[10px] font-bold ${
+                        isDark
+                          ? 'text-indigo-300 bg-indigo-950/40 border-indigo-500/40'
+                          : 'text-indigo-700 bg-indigo-50 border-indigo-200'
+                      } border px-1.5 py-0.5 rounded`}
+                    >
+                      Trả lẻ ca này · Giữ trọn số buổi gói
+                    </span>
+                  </div>
+                )
+              ) : comboRedemption ? (
+                <div className="pt-0.5 flex items-center gap-1.5 flex-wrap text-[10px]">
+                  <span
+                    className={`font-bold ${
+                      isDark ? 'text-sky-300 bg-sky-950/40 border-sky-500/40' : 'text-sky-700 bg-sky-50 border-sky-200'
+                    } border px-1.5 py-0.5 rounded`}
+                  >
+                    Trừ 1 lượt gói ({comboRedemption.comboName || 'Gói cũ'})
+                  </span>
+                  <span className="text-neutral-400 font-semibold tabular-nums">
+                    Ví còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
+                  </span>
+                </div>
+              ) : (
+                upgradePrice > 0 && (
+                  <div className="pt-0.5">
+                    <span
+                      className={`inline-flex items-center text-[10px] font-bold ${
+                        isDark
+                          ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
+                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      } border px-1.5 py-0.5 rounded tabular-nums`}
+                    >
+                      Nâng cấp (+{upgradePrice.toLocaleString('vi-VN')}đ)
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* Price: Zero-Drop 'đ' invariant */}
+            <div className="text-right shrink-0">
+              {comboRedemption ? (
+                <div className="space-y-0.5">
+                  <span
+                    className={`text-[13px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-black tabular-nums whitespace-nowrap block`}
+                  >
+                    {comboRedemption.totalCustomerPayToday > 0
+                      ? `+${comboRedemption.totalCustomerPayToday.toLocaleString('vi-VN')}đ`
+                      : '0đ'}
+                  </span>
+                  <span
+                    className={`text-[10px] ${
+                      isDark ? 'text-sky-300 bg-sky-950/50 border-sky-500/40' : 'text-sky-700 bg-sky-50 border-sky-200'
+                    } font-bold px-1.5 py-0.5 rounded border whitespace-nowrap inline-block`}
+                  >
+                    Trừ 1 lượt
+                  </span>
+                </div>
+              ) : selectedCombo ? (
+                selectedCombo.todaySingleServiceWaived !== false ? (
+                  <div className="space-y-0.5">
+                    <span
+                      className={`text-[13px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-black tabular-nums whitespace-nowrap block`}
+                    >
+                      0đ
+                    </span>
+                    <span
+                      className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
+                    >
+                      {servicePrice.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                ) : (
+                  <span
+                    className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap block`}
+                  >
+                    {servicePrice.toLocaleString('vi-VN')}đ
+                  </span>
+                )
+              ) : isComboLive ? (
+                <div className="space-y-0.5">
+                  <span
+                    className={`text-[13px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-black tabular-nums whitespace-nowrap block`}
+                  >
+                    {upgradePrice > 0 ? `+${upgradePrice.toLocaleString('vi-VN')}đ` : '0đ'}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap inline-block ${
+                      upgradePrice > 0
+                        ? isDark
+                          ? 'text-emerald-300 bg-emerald-950/50 border-emerald-500/40'
+                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                        : isDark
+                          ? 'text-sky-300 bg-sky-950/50 border-sky-500/40'
+                          : 'text-sky-700 bg-sky-50 border-sky-200'
+                    }`}
+                  >
+                    {upgradePrice > 0 ? 'Phụ thu' : 'Trừ lượt'}
+                  </span>
+                </div>
+              ) : (
+                <span
+                  className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap block`}
+                >
+                  {servicePrice.toLocaleString('vi-VN')}đ
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Item 2: Combo if selected */}
+          {selectedCombo && (
+            <div
+              className={`p-3.5 flex items-start justify-between gap-3 ${isDark ? 'bg-amber-950/20' : 'bg-amber-50/30'}`}
+            >
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-[13px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight`}
+                  >
+                    {cleanComboTitle(selectedCombo.name)}
+                  </span>
+                </div>
+                <div
+                  className={`flex items-center gap-2 flex-wrap text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
+                >
+                  <span>{selectedCombo.sessions || selectedCombo.remainingAfterToday?.totalRemaining || 10} buổi</span>
+                  {!hasBothCombos && showStaffRewards && (
+                    <>
+                      <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
+                      <span
+                        className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
+                      >
+                        Thưởng chốt: +{Math.round(totalComboBonus / 1000)}
+                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <span
+                className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
+              >
+                {selectedCombo.price.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+          )}
+
+          {/* Item 2B: Under Lash Combo if selected */}
+          {selectedUnderCombo && (
+            <div
+              className={`p-3.5 flex items-start justify-between gap-3 ${isDark ? 'bg-purple-950/20' : 'bg-purple-50/30'}`}
+            >
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-[13px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight`}
+                  >
+                    {cleanComboTitle(selectedUnderCombo.name)}
+                  </span>
+                </div>
+                <div
+                  className={`flex items-center gap-2 flex-wrap text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
+                >
+                  <span>{selectedUnderCombo.sessions || 10} buổi (Mi Dưới)</span>
+                  {!hasBothCombos && showStaffRewards && (
+                    <>
+                      <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
+                      <span
+                        className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
+                      >
+                        Thưởng chốt: +{Math.round(totalComboBonus / 1000)}
+                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <span
+                className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
+              >
+                {selectedUnderCombo.price.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+          )}
+
+          {/* Item 2C: Combined 2-Combo Bonus Tier Banner */}
+          {hasBothCombos && showStaffRewards && (
+            <div
+              className={`px-3.5 py-2.5 flex items-center justify-between text-[11.5px] border-t ${
+                isDark
+                  ? 'bg-gradient-to-r from-amber-950/40 to-purple-950/40 text-amber-200 border-amber-900/40'
+                  : 'bg-gradient-to-r from-amber-50 to-purple-50 text-amber-950 border-amber-200/70'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="font-bold truncate">
+                  Thưởng chốt Combo (Gộp 2 gói · {comboTotalRevenue.toLocaleString('vi-VN')}đ):
+                </span>
+              </div>
+              <span
+                className={`${
+                  isDark
+                    ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800'
+                    : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                } font-black tabular-nums border px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 shrink-0 text-[12px]`}
+              >
+                +{Math.round(totalComboBonus / 1000)}
+                <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+              </span>
+            </div>
+          )}
+
+          {/* Item 3: Products */}
+          {cartProducts.map((p, idx) => (
+            <div key={idx} className="p-3.5 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className={`text-[13px] font-bold ${isDark ? 'text-white' : 'text-neutral-900'} truncate`}>
+                  {p.productName}
+                </div>
+                <div
+                  className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium inline-flex items-center gap-1`}
+                >
+                  <span>SL: {p.quantity}</span>
+                  {showStaffRewards && (
+                    <>
+                      <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
+                      <span
+                        className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
+                      >
+                        Thưởng: +{Math.round(((p.cvBonus || 100000) * p.quantity) / 1000)}
+                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <span
+                className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
+              >
+                {(p.price * p.quantity).toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+          ))}
+
+          {/* Subtotal & VAT Rows */}
+          <div
+            className={`p-3.5 ${isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-neutral-50/50 border-neutral-100'} space-y-1.5 border-t text-[12px]`}
+          >
+            <div
+              className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
+            >
+              <span>Tạm tính dịch vụ & SP:</span>
+              <span
+                className={`${isDark ? 'text-neutral-200' : 'text-neutral-900'} font-bold tabular-nums whitespace-nowrap shrink-0`}
+              >
+                {subtotal.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+            <div
+              className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
+            >
+              <span>Thuế VAT (8%):</span>
+              <span
+                className={`${isDark ? 'text-neutral-200' : 'text-neutral-900'} font-bold tabular-nums whitespace-nowrap shrink-0`}
+              >
+                +{vatAmount.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+            {tipAmount > 0 && (
+              <div
+                className={`flex items-center justify-between ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-semibold`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 shrink-0" />
+                  <span>Tiền tip chuyên viên:</span>
+                </span>
+                <span className="font-black tabular-nums whitespace-nowrap shrink-0">
+                  +{tipAmount.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+            )}
+            {effectiveDiamondUsed > 0 && (
+              <div
+                className={`flex items-center justify-between font-bold px-2.5 py-1.5 rounded-xl border ${
+                  isDark
+                    ? 'text-cyan-300 bg-cyan-950/40 border-cyan-800/60'
+                    : 'text-cyan-800 bg-cyan-50/80 border-cyan-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>💎 Thanh toán Kim Cương:</span>
+                  <span
+                    className={`text-[10px] font-black px-1.5 py-0.5 rounded border tabular-nums ${
+                      isDark ? 'text-cyan-300 bg-neutral-900 border-cyan-700' : 'text-cyan-800 bg-white border-cyan-300'
+                    }`}
+                  >
+                    {effectiveDiamondUsed} 💎
+                  </span>
+                </div>
+                <span className="font-black tabular-nums whitespace-nowrap shrink-0">
+                  -{diamondDiscountAmount.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Total Row */}
+          <div
+            className={`p-3.5 ${
+              isDark ? 'bg-[#251B08] border-amber-500/30' : 'bg-[#FFFBEB] border-amber-200/80'
+            } flex items-center justify-between border-t`}
+          >
+            <div>
+              <span
+                className={`text-[13px] font-black ${isDark ? 'text-amber-200' : 'text-neutral-900'} tracking-tight block`}
+              >
+                TỔNG TIỀN THANH TOÁN
+              </span>
+              <span className={`text-[10.5px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}>
+                {effectiveDiamondUsed > 0
+                  ? `Đã cấn trừ ${effectiveDiamondUsed} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ)`
+                  : tipAmount > 0
+                    ? 'Đã gồm Dịch vụ + 8% VAT + Tiền tip'
+                    : 'Đã bao gồm 8% thuế VAT'}
+              </span>
+            </div>
+            <span className="text-[20px] font-black text-[#FF9500] tabular-nums whitespace-nowrap shrink-0 tracking-tight">
+              {finalGrandTotal.toLocaleString('vi-VN')}đ
+            </span>
+          </div>
+
+          {/* CV Rotation Points Recording Banner */}
+          {booking?.cvRotationPoints && showStaffRewards && (
+            <div
+              className={`px-3.5 py-2.5 ${
+                isDark ? 'bg-blue-950/40 border-blue-900/60' : 'bg-blue-50/60 border-blue-100'
+              } border-t flex items-center justify-between text-[11.5px]`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                <span className={`font-black ${isDark ? 'text-blue-300' : 'text-blue-950'} shrink-0`}>
+                  ◔ Vòng xoay CV:
+                </span>
+                <span className={`text-[11px] ${isDark ? 'text-blue-400' : 'text-blue-700'} font-medium truncate`}>
+                  {booking.cvRotationBreakdown || 'Điểm thưởng ca'}
+                </span>
+              </div>
+              <span
+                className={`font-black tabular-nums whitespace-nowrap shrink-0 border px-2 py-0.5 rounded-full text-[10.5px] ${
+                  isDark
+                    ? 'text-blue-300 bg-blue-900/50 border-blue-700'
+                    : 'text-blue-800 bg-blue-100/70 border-blue-200'
+                }`}
+              >
+                +{booking.cvRotationPoints} pts
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

@@ -3,12 +3,16 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { canAccessIosConsultationApp, isCvRole, resolveLockedIosRoleForUser } from '@mos-lab/shared';
+import {
+  canAccessIosConsultationApp,
+  hasCompleteNaturalLashSet,
+  isCvRole,
+  resolveLockedIosRoleForUser,
+} from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
-import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
 
@@ -100,12 +104,13 @@ function IosAppInner() {
   const stepStr = searchParams.get('step');
   const roleParam = searchParams.get('role')?.toUpperCase() as IosUserRole | undefined;
   const bookingIdStr = searchParams.get('bookingId');
+  const isDemoMode = searchParams.get('demo') === '1' || searchParams.get('demo') === 'true';
   const initialStep = stepStr ? parseInt(stepStr, 10) : 1;
   const initialBookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : undefined;
   const initialRole: IosUserRole =
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
 
-  const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId);
+  const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId, isDemoMode);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -142,6 +147,62 @@ function IosAppInner() {
     );
   }
 
+  const handleSelectBookingFromList = (id: number) => {
+    const idNum = Number(id);
+    state.setActiveBookingId(idNum);
+    const target = state.bookings.find((b) => Number(b.id) === idNum);
+    if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
+      state.setCurrentStep(15);
+    } else if (target?.status === 'SERVICING') {
+      const needsNewClientLashCheck =
+        (target.customerVisits ?? 1) <= 1 && !hasCompleteNaturalLashSet(target) && !target.progress?.startedAt;
+      const step = target.progress?.currentStep;
+      if (needsNewClientLashCheck) {
+        state.setCurrentStep(3);
+      } else if (step && step >= 3 && step <= 14) {
+        state.setCurrentStep(step);
+      } else {
+        state.setCurrentStep(6);
+      }
+    } else if (target?.status === 'CHECKED_IN') {
+      state.setCurrentStep(3);
+    } else {
+      // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
+      state.setCurrentStep(2);
+    }
+  };
+
+  const renderIncomingBookingsScreen = () => (
+    <Screen01IncomingBookings
+      bookings={state.bookings}
+      bookingSegment={state.bookingSegment}
+      setBookingSegment={state.setBookingSegment}
+      counts={state.counts}
+      isRefreshing={state.isRefreshing}
+      lastRefreshedAt={state.lastRefreshedAt}
+      isLiveDb={state.isLiveDb}
+      onRefreshDb={() => state.refreshDb()}
+      dateOffset={state.selectedDateOffset}
+      onDateOffsetChange={state.handleDateOffsetChange}
+      role={state.role}
+      canSwitchRole={state.canSwitchRole}
+      onRoleChange={state.setRole}
+      actor={state.actor}
+      scopeMode={state.scopeMode}
+      onScopeModeChange={state.setScopeMode}
+      activeServicingBooking={state.activeServicingBooking}
+      onResumeServicing={state.handleResumeServicing}
+      onSelectBooking={handleSelectBookingFromList}
+      onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
+      isAdmin={state.isAdmin}
+      onRevertToIncoming={state.handleRevertToIncoming}
+      selectedStoreId={state.selectedStoreId}
+      onSelectStoreId={state.setSelectedStoreId}
+      currentBranch={state.currentBranch}
+      availableBranches={state.availableBranches}
+    />
+  );
+
   const renderActiveScreen = () => {
     // 1. Màn hình Cài đặt & Chuyển vai trò
     if (state.isSettingsOpen) {
@@ -167,10 +228,12 @@ function IosAppInner() {
     if (state.role === 'STORE') {
       return (
         <ScreenStoreDashboard
+          bookings={state.bookings}
+          currentBranch={state.currentBranch}
+          isDemoMode={isDemoMode}
           onSelectBooking={(id) => {
-            state.setActiveBookingId(id);
             state.setRole('CVL');
-            state.setCurrentStep(2);
+            handleSelectBookingFromList(id);
           }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
@@ -182,13 +245,14 @@ function IosAppInner() {
       return <ScreenInventoryStock onOpenSettings={() => state.setIsSettingsOpen(true)} />;
     }
 
-    // 4. Tab Thu nhập tạm tính (Paystub) cho CV🪶 / 🪶CV🪶 / CV
+    // 4. Tab Thu nhập tạm tính (Paystub) cho CVL / CVLL / CV
     if (['CV', 'CVL', 'CVLL'].includes(state.role) && state.activeTab === 'paystub') {
       return (
         <ScreenCvPaystub
           actor={state.actor}
           staffStats={state.staffStats}
           bookings={state.bookings}
+          isDemoMode={isDemoMode}
           onBack={() => {
             state.setActiveTab('booking');
             state.setCurrentStep(1);
@@ -198,7 +262,7 @@ function IosAppInner() {
       );
     }
 
-    // 5. Core Service Flow (14 màn hình chuẩn iOS kết nối DB thực tế cho CV🪶 & 🪶CV🪶)
+    // 5. Core Service Flow (14 màn hình chuẩn iOS kết nối DB thực tế cho CVL & CVLL)
     const currentBooking =
       state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) ||
       (state.activeServicingBooking
@@ -208,56 +272,8 @@ function IosAppInner() {
 
     switch (state.currentStep) {
       case 1:
-        return (
-          <Screen01IncomingBookings
-            bookings={state.bookings}
-            bookingSegment={state.bookingSegment}
-            setBookingSegment={state.setBookingSegment}
-            counts={state.counts}
-            isRefreshing={state.isRefreshing}
-            lastRefreshedAt={state.lastRefreshedAt}
-            isLiveDb={state.isLiveDb}
-            onRefreshDb={() => state.refreshDb()}
-            dateOffset={state.selectedDateOffset}
-            onDateOffsetChange={state.handleDateOffsetChange}
-            role={state.role}
-            canSwitchRole={state.canSwitchRole}
-            onRoleChange={state.setRole}
-            actor={state.actor}
-            scopeMode={state.scopeMode}
-            onScopeModeChange={state.setScopeMode}
-            activeServicingBooking={state.activeServicingBooking}
-            onResumeServicing={state.handleResumeServicing}
-            onSelectBooking={(id) => {
-              const idNum = Number(id);
-              state.setActiveBookingId(idNum);
-              const target = state.bookings.find((b) => Number(b.id) === idNum);
-              if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
-                state.setCurrentStep(15);
-              } else if (target?.status === 'SERVICING') {
-                const step = target.progress?.currentStep;
-                if (step && step >= 3 && step <= 14) {
-                  state.setCurrentStep(step);
-                } else {
-                  state.setCurrentStep(6);
-                }
-              } else if (target?.status === 'CHECKED_IN') {
-                state.setCurrentStep(3);
-              } else {
-                // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
-                state.setCurrentStep(2);
-              }
-            }}
-            onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
-            isAdmin={state.isAdmin}
-            onRevertToIncoming={state.handleRevertToIncoming}
-            selectedStoreId={state.selectedStoreId}
-            onSelectStoreId={state.setSelectedStoreId}
-            currentBranch={state.currentBranch}
-            availableBranches={state.availableBranches}
-          />
-        );
-      case 2: {
+        return renderIncomingBookingsScreen();
+      case 2:
         return (
           <Screen02CheckInProfile
             booking={currentBooking}
@@ -270,23 +286,39 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(1)}
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
+            onUpdateAvatar={state.handleUpdateCustomerAvatar}
           />
         );
-      }
-      case 3: {
+      case 3:
         return (
           <Screen03ConsultationMatrix
             booking={currentBooking}
             actor={state.actor}
             onBack={() => state.setCurrentStep(2)}
             onSave={state.handleSaveConsultation}
+            onUpdateAvatar={state.handleUpdateCustomerAvatar}
+            onAutoSaveDraft={state.handleAutoSaveConsultationDraft}
           />
         );
-      }
       case 4:
-        return <Screen04StaffQueueAssign onBack={() => state.setCurrentStep(3)} onAssign={state.handleAssignStaff} />;
+        return (
+          <Screen04StaffQueueAssign
+            booking={currentBooking}
+            currentBranch={state.currentBranch}
+            onBack={() => state.setCurrentStep(3)}
+            onAssign={state.handleAssignStaff}
+          />
+        );
       case 5:
-        return <Screen05ServicingTransfer booking={currentBooking} onTransferToCv={state.handleTransferToCv} />;
+        return (
+          <Screen05ServicingTransfer
+            booking={currentBooking}
+            servicingBookings={state.bookings.filter((b) => b.status === 'SERVICING')}
+            currentBranch={state.currentBranch}
+            onBack={() => state.setCurrentStep(4)}
+            onTransferToCv={state.handleTransferToCv}
+          />
+        );
       case 6:
         return (
           <Screen06CvDashboardReceive
@@ -392,55 +424,7 @@ function IosAppInner() {
           />
         );
       default:
-        return (
-          <Screen01IncomingBookings
-            bookings={state.bookings}
-            bookingSegment={state.bookingSegment}
-            setBookingSegment={state.setBookingSegment}
-            counts={state.counts}
-            isRefreshing={state.isRefreshing}
-            lastRefreshedAt={state.lastRefreshedAt}
-            isLiveDb={state.isLiveDb}
-            onRefreshDb={() => state.refreshDb()}
-            dateOffset={state.selectedDateOffset}
-            onDateOffsetChange={state.handleDateOffsetChange}
-            role={state.role}
-            canSwitchRole={state.canSwitchRole}
-            onRoleChange={state.setRole}
-            actor={state.actor}
-            scopeMode={state.scopeMode}
-            onScopeModeChange={state.setScopeMode}
-            activeServicingBooking={state.activeServicingBooking}
-            onResumeServicing={state.handleResumeServicing}
-            onSelectBooking={(id) => {
-              const idNum = Number(id);
-              state.setActiveBookingId(idNum);
-              const target = state.bookings.find((b) => Number(b.id) === idNum);
-              if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
-                state.setCurrentStep(15);
-              } else if (target?.status === 'SERVICING') {
-                const step = target.progress?.currentStep;
-                if (step && step >= 3 && step <= 14) {
-                  state.setCurrentStep(step);
-                } else {
-                  state.setCurrentStep(6);
-                }
-              } else if (target?.status === 'CHECKED_IN') {
-                state.setCurrentStep(3);
-              } else {
-                // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
-                state.setCurrentStep(2);
-              }
-            }}
-            onOpenProfileMenu={() => setIsProfileSheetOpen(true)}
-            isAdmin={state.isAdmin}
-            onRevertToIncoming={state.handleRevertToIncoming}
-            selectedStoreId={state.selectedStoreId}
-            onSelectStoreId={state.setSelectedStoreId}
-            currentBranch={state.currentBranch}
-            availableBranches={state.availableBranches}
-          />
-        );
+        return renderIncomingBookingsScreen();
     }
   };
 
@@ -556,8 +540,9 @@ export default function IosAppPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold">
-          Đang tải ứng dụng Tư vấn & Checkout (CV🪶)...
+        <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
+          <span>Đang tải ứng dụng Tư vấn & Checkout</span>
+          <CvFeather1Badge />
         </div>
       }
     >

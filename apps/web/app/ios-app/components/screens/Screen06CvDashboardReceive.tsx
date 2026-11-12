@@ -4,37 +4,8 @@ import React, { useMemo, useState } from 'react';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
-import {
-  Sparkles,
-  Eye,
-  Zap,
-  Shield,
-  Play,
-  Edit3,
-  MessageSquare,
-  Award,
-  RotateCw,
-  Clock,
-  ChevronLeft,
-  AlertTriangle,
-  Minus,
-  Plus,
-  Check,
-  Lock,
-} from 'lucide-react';
-
-function LashTrayIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" className={className} aria-hidden="true">
-      {/* Lash Tile / Tray base */}
-      <rect x="2" y="2" width="12" height="12" rx="2" strokeWidth="1.5" />
-      {/* Lash strips arranged horizontally */}
-      <line x1="4.5" y1="5.5" x2="11.5" y2="5.5" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="4.5" y1="8.5" x2="11.5" y2="8.5" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="4.5" y1="11.5" x2="9.5" y2="11.5" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { CvReceiveMaterialsCard } from './servicing/CvReceiveMaterialsCard';
+import { Sparkles, Eye, Play, RotateCw, Clock, ChevronLeft, AlertTriangle, Minus, Plus, Lock } from 'lucide-react';
 
 interface Screen06CvDashboardReceiveProps {
   booking: BookingItem;
@@ -51,11 +22,6 @@ export function Screen06CvDashboardReceive({
   onBack,
   staffStats,
 }: Screen06CvDashboardReceiveProps) {
-  const staffAvatar = resolveStaffAvatarUrl(
-    booking.assignedStaffAvatar,
-    booking.assignedStaffId || 13783,
-    booking.assignedStaffName || 'Khanh Cao'
-  );
   const bookerAvatar = resolveStaffAvatarUrl(booking.bookerAvatar, undefined, booking.bookerName || 'CC');
   const customerAvatar =
     booking.customerAvatar || 'https://cdn.wingslashes.com/uploads/user/avatar/48400/original/48400.jpg';
@@ -90,15 +56,32 @@ export function Screen06CvDashboardReceive({
     return base;
   }, [booking, displayServiceName]);
 
-  // State thời gian CV🪶 chọn cam kết: khởi tạo null để BẮT BUỘC CV🪶 phải chủ động bấm chạm chọn
+  // State thời gian CVL chọn cam kết: khởi tạo null để BẮT BUỘC CVL phải chủ động bấm chạm chọn
   const [selectedDurationMin, setSelectedDurationMin] = useState<number | null>(null);
   const [showTimeRequiredWarning, setShowTimeRequiredWarning] = useState<boolean>(false);
   const timeSectionRef = React.useRef<HTMLDivElement>(null);
 
+  const hasCompleteNaturalLashSet = Boolean(
+    booking.attributes?.isNewClientDiagnosticDone === true &&
+    booking.attributes?.naturalLashLength?.trim() &&
+    booking.attributes?.naturalLashThickness?.trim() &&
+    (booking.attributes?.naturalLashCount?.trim() || booking.attributes?.naturalLashDensity?.trim()) &&
+    booking.attributes?.lashTrail?.trim() &&
+    booking.attributes?.eyeShape?.trim() &&
+    booking.attributes?.lashHealth?.trim() &&
+    booking.attributes?.medicalProblem?.trim()
+  );
+
+  const mustCheckNaturalLashFirst = (booking.customerVisits ?? 1) <= 1 && !hasCompleteNaturalLashSet;
+
   const handleStartTaskClick = () => {
+    if (mustCheckNaturalLashFirst && onEditService) {
+      onEditService();
+      return;
+    }
     if (!selectedDurationMin) {
       setShowTimeRequiredWarning(true);
-      timeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      timeSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
       return;
     }
     onStartTask(selectedDurationMin);
@@ -138,8 +121,6 @@ export function Screen06CvDashboardReceive({
   const monthLabel = staffStats?.monthLabel || `tháng ${currentMonth}`;
   const displayRevenue = staffStats?.monthlyRevenueFormatted || (16253200).toLocaleString('vi-VN') + ' đ';
   const displaySatisfaction = (staffStats?.satisfactionRate ?? 100) + '%';
-  const displayShifts = (staffStats?.completedShiftsCount ?? 9) + ' ca';
-  const displayRating = (staffStats?.rating ?? 5.0).toFixed(1);
 
   const isComboNewFullSet =
     Boolean(booking?.comboLiveStatus?.isComboLive) &&
@@ -277,6 +258,34 @@ export function Screen06CvDashboardReceive({
             </div>
           </div>
 
+          {/* Mandatory Natural Lash Check Banner for New Clients */}
+          {mustCheckNaturalLashFirst && (
+            <div className="bg-rose-950/70 border-2 border-rose-500 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-lg">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Eye className="w-4.5 h-4.5 stroke-[2.5]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11.5px] font-black text-rose-300 uppercase tracking-tight">
+                    KHÁCH MỚI · CHƯA KIỂM TRA MI THẬT
+                  </div>
+                  <div className="text-[11px] font-bold text-rose-100/95 leading-snug mt-0.5">
+                    Bắt buộc đo 4 thông số mi thật & dáng mắt trước khi bắt đầu làm mi!
+                  </div>
+                </div>
+              </div>
+              {onEditService && (
+                <button
+                  type="button"
+                  onClick={onEditService}
+                  className="px-2.5 py-1.5 rounded-xl bg-[#FFB400] text-black font-black text-[11px] shrink-0 cursor-pointer shadow-sm"
+                >
+                  Kiểm tra →
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Tech Invariant Banner: Ca Nối Mới Combo bắt buộc gỡ sạch 100% mi cũ */}
           {isComboNewFullSet && (
             <div className="bg-amber-950/70 border-2 border-amber-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg">
@@ -317,209 +326,14 @@ export function Screen06CvDashboardReceive({
           )}
 
           {/* 3. NGUYÊN VẬT LIỆU */}
-          <div className="bg-[#242426] rounded-2xl p-3 space-y-2.5 border border-neutral-700/80">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> NGUYÊN VẬT LIỆU
-              </span>
-            </div>
+          <CvReceiveMaterialsCard
+            booking={booking}
+            isRetain={isRetain}
+            bookerAvatar={bookerAvatar}
+            onEditService={onEditService}
+          />
 
-            {/* Slot 1: Mi Trên */}
-            <div className="bg-gradient-to-b from-[#2A2315] to-[#1A1A1C] rounded-xl p-2.5 border border-amber-500/40 space-y-2 shadow-xs">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10.5px] font-black text-amber-400 uppercase tracking-tight flex items-center gap-1.5">
-                    <LashTrayIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> MI TRÊN
-                  </span>
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight border ${
-                      isRetain
-                        ? 'bg-purple-500/25 text-purple-300 border-purple-400/40'
-                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-                    }`}
-                  >
-                    {isRetain ? 'Dặm' : 'Nối Mới'}
-                  </span>
-                </div>
-                <span className="text-[9.5px] font-black text-amber-200 bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 rounded-md">
-                  {booking.attributes?.material || 'HyperLight'} · {booking.attributes?.volume || '3X'} ·{' '}
-                  {booking.attributes?.count || '70 fan'}
-                </span>
-              </div>
-
-              {/* 4 Stat Chips Grid: Cột Độ dài rộng hơn để chứa đủ 5 sizes */}
-              <div className="grid grid-cols-[1fr_0.75fr_1.6fr_0.85fr] gap-1">
-                <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 text-center min-w-0">
-                  <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">Dáng</span>
-                  <span className="text-[10.5px] font-black text-white block truncate mt-0.5 whitespace-nowrap">
-                    {booking.attributes?.style || 'Natural'}
-                  </span>
-                </div>
-                <div className="bg-black/60 border border-blue-500/30 rounded-lg py-1 px-1 text-center min-w-0">
-                  <span className="text-[8.5px] font-bold text-blue-400 uppercase block">Cong</span>
-                  <span className="text-[11px] font-black text-blue-300 block truncate mt-0.5 whitespace-nowrap">
-                    {(booking.attributes?.curl || 'C').replace(/^Cong\s+/i, '')}
-                  </span>
-                </div>
-                <div className="bg-black/60 border border-emerald-500/30 rounded-lg py-1 px-1 text-center min-w-0">
-                  <span className="text-[8.5px] font-bold text-emerald-400 uppercase block">Độ dài</span>
-                  {(() => {
-                    const rawLen = (booking.attributes?.length || '10-12')
-                      .replace(/\s*mm/gi, '')
-                      .replace(/\s*-\s*/g, '-')
-                      .trim();
-                    return (
-                      <span
-                        className={`font-black text-emerald-300 block mt-0.5 whitespace-nowrap tabular-nums tracking-tighter ${
-                          rawLen.length > 9 ? 'text-[9.5px]' : 'text-[11px]'
-                        }`}
-                        title={booking.attributes?.length}
-                      >
-                        {rawLen}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <div className="bg-black/60 border border-purple-500/30 rounded-lg py-1 px-1 text-center min-w-0">
-                  <span className="text-[8.5px] font-bold text-purple-400 uppercase block">Độ dày</span>
-                  <span className="text-[11px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap tabular-nums">
-                    {(booking.attributes?.thickness || '0.10').replace(/\s*mm/gi, '')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Slot 2: Mi Dưới */}
-            {booking.attributes?.hasUnderMink && (
-              <div className="bg-gradient-to-b from-[#261633] to-[#1A1A1C] rounded-xl p-2.5 border border-purple-500/50 space-y-2 shadow-xs">
-                <div className="flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10.5px] font-black text-purple-300 uppercase tracking-tight flex items-center gap-1.5">
-                      <LashTrayIcon className="w-3.5 h-3.5 text-purple-300 shrink-0" /> MI DƯỚI
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight border ${
-                        booking.attributes?.underMinkServiceType === 'Retain'
-                          ? 'bg-purple-500/25 text-purple-200 border-purple-400/40'
-                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-                      }`}
-                    >
-                      {booking.attributes?.underMinkServiceType === 'Retain' ? 'Dặm' : 'Nối Mới'}
-                    </span>
-                  </div>
-                  <span className="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 border border-purple-400/40">
-                    {booking.attributes?.underMinkCount || '30 sợi'}
-                  </span>
-                </div>
-
-                {/* 4 Stat Chips Grid */}
-                <div className="grid grid-cols-[1fr_0.75fr_1.6fr_0.85fr] gap-1">
-                  <div className="bg-black/60 border border-purple-400/20 rounded-lg py-1 px-1 text-center min-w-0">
-                    <span className="text-[8.5px] font-bold text-neutral-400 uppercase block">Chất liệu</span>
-                    <span className="text-[10.5px] font-black text-purple-200 block truncate mt-0.5 whitespace-nowrap">
-                      1D Mink
-                    </span>
-                  </div>
-                  <div className="bg-black/60 border border-blue-500/30 rounded-lg py-1 px-1 text-center min-w-0">
-                    <span className="text-[8.5px] font-bold text-blue-400 uppercase block">Cong</span>
-                    <span className="text-[11px] font-black text-blue-300 block truncate mt-0.5 whitespace-nowrap">
-                      {(booking.attributes?.underMinkCurl || 'B').replace(/^Cong\s+/i, '')}
-                    </span>
-                  </div>
-                  <div className="bg-black/60 border border-emerald-500/30 rounded-lg py-1 px-1 text-center min-w-0">
-                    <span className="text-[8.5px] font-bold text-emerald-400 uppercase block">Độ dài</span>
-                    <span className="text-[11px] font-black text-emerald-300 block truncate mt-0.5 whitespace-nowrap tabular-nums">
-                      {(booking.attributes?.underMinkLength || '7').replace(/\s*mm/gi, '')}
-                    </span>
-                  </div>
-                  <div className="bg-black/60 border border-purple-500/30 rounded-lg py-1 px-1 text-center min-w-0">
-                    <span className="text-[8.5px] font-bold text-purple-400 uppercase block">Độ dày</span>
-                    <span className="text-[11px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap tabular-nums">
-                      {(booking.attributes?.underMinkThickness || '0.10').replace(/\s*mm/gi, '')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Mini-HUD: Thông số mi thật đã khám */}
-            <div className="bg-blue-950/40 border border-blue-500/30 rounded-xl p-2.5 space-y-1.5">
-              <span className="text-[9.5px] font-black uppercase text-blue-400 tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <span>👁️</span> HỒ SƠ MI THẬT (MỤC TIÊU NỐI)
-                </span>
-                <span className="text-[9px] text-blue-300/80 font-bold">Đã lưu</span>
-              </span>
-              <div className="grid grid-cols-[0.85fr_1.35fr_1fr] gap-1.5 text-center">
-                <div className="bg-black/50 border border-blue-400/20 rounded-lg py-1 px-1 min-w-0">
-                  <span className="text-[8.5px] font-bold text-blue-400 uppercase block">Dài</span>
-                  <span className="text-[11.5px] font-black text-white block mt-0.5 whitespace-nowrap tabular-nums">
-                    {(booking.attributes?.naturalLashLength || '8').replace(/\s*mm/gi, '').trim()}
-                  </span>
-                </div>
-                <div className="bg-black/50 border border-emerald-400/20 rounded-lg py-1 px-1 min-w-0">
-                  <span className="text-[8.5px] font-bold text-emerald-400 uppercase block">Dày</span>
-                  <span className="text-[11px] font-black text-emerald-300 block mt-0.5 whitespace-nowrap tabular-nums tracking-tight">
-                    {(booking.attributes?.naturalLashThickness || '0.05-0.07').replace(/\s*mm/gi, '').trim()}
-                  </span>
-                </div>
-                <div className="bg-black/50 border border-purple-400/20 rounded-lg py-1 px-1 min-w-0">
-                  <span className="text-[8.5px] font-bold text-purple-400 uppercase block">Mí</span>
-                  <span className="text-[10.5px] font-black text-purple-300 block truncate mt-0.5 whitespace-nowrap">
-                    {booking.attributes?.eyeShape?.split('(')[0].split('/')[0].trim() || 'Mí lót'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quest Note: Dặn dò CC / Booker với Avatar */}
-            <div className="bg-[#2C241E] border border-amber-500/30 rounded-xl p-2.5 flex items-start gap-2.5">
-              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-amber-400/60 bg-neutral-800 shrink-0 mt-0.5">
-                {bookerAvatar ? (
-                  <img
-                    src={bookerAvatar}
-                    alt="Booker"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-amber-600 text-black font-black text-[10px] flex items-center justify-center">
-                    CC
-                  </div>
-                )}
-                <span className="absolute -bottom-0.5 -right-0.5 px-0.8 py-0.2 rounded bg-amber-400 text-black text-[6.5px] font-black leading-none">
-                  Note
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[9.5px] font-black uppercase text-amber-400 flex items-center gap-1">
-                  <MessageSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>DẶN DÒ TỪ {booking.bookerName || 'CC'}</span>
-                </span>
-                <p className="text-[11.5px] text-amber-100/90 font-medium leading-snug mt-0.5">
-                  {booking.customerNote || '31/10 c book Thảo Ly'}
-                </p>
-              </div>
-            </div>
-
-            {/* Action link: Đổi chất liệu / Sửa thông số mi */}
-            {onEditService && (
-              <div className="pt-0.5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={onEditService}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-blue-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/30 transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-xs"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Đổi Chất Liệu / Sửa Thông Số Mi</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* 3.5 BẮT BUỘC: KHỐI DỰ ĐOÁN THỜI GIAN HOÀN THÀNH CA (CV🪶 CAM KẾT) */}
+          {/* 3.5 BẮT BUỘC: KHỐI DỰ ĐOÁN THỜI GIAN HOÀN THÀNH CA (CVL CAM KẾT) */}
           <div
             ref={timeSectionRef}
             className={`rounded-2xl p-3.5 space-y-2.5 transition-all ${
@@ -641,7 +455,16 @@ export function Screen06CvDashboardReceive({
           </div>
 
           {/* 4. Big CTA Button: Start Quest */}
-          {showTimeRequiredWarning && !selectedDurationMin ? (
+          {mustCheckNaturalLashFirst ? (
+            <button
+              type="button"
+              onClick={handleStartTaskClick}
+              className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[13.5px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
+            >
+              <Eye className="w-4 h-4 stroke-[2.5]" />
+              <span>KIỂM TRA MI THẬT TRƯỚC KHI BẮT ĐẦU →</span>
+            </button>
+          ) : showTimeRequiredWarning && !selectedDurationMin ? (
             <button
               type="button"
               onClick={handleStartTaskClick}

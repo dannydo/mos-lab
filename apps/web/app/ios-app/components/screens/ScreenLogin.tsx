@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { IosUserRole } from '../ui-kit/IosTabBar';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { Sparkles, ScanFace, ChevronDown, Lock, Phone, UserCheck, ShieldCheck, ArrowRight } from 'lucide-react';
 
 interface ScreenLoginProps {
@@ -19,9 +20,10 @@ export function ScreenLogin({ onLoginSuccess }: ScreenLoginProps) {
   const demoAccounts: Array<{
     role: IosUserRole;
     name: string;
+    displayName?: React.ReactNode;
     phone: string;
     store: string;
-    roleLabel: string;
+    roleLabel: React.ReactNode;
   }> = [
     {
       role: 'CC',
@@ -32,10 +34,15 @@ export function ScreenLogin({ onLoginSuccess }: ScreenLoginProps) {
     },
     {
       role: 'CV',
-      name: 'Diễm Hương (CV🪶)',
+      name: 'Diễm Hương (CVL)',
+      displayName: (
+        <span className="inline-flex items-center gap-0.5">
+          Diễm Hương (<CvFeather1Badge />)
+        </span>
+      ),
       phone: '0937554430',
       store: 'Chi Nhánh Đề Thám, Q.1',
-      roleLabel: 'CV🪶',
+      roleLabel: <CvFeather1Badge />,
     },
     {
       role: 'STORE',
@@ -228,7 +235,7 @@ export function ScreenLogin({ onLoginSuccess }: ScreenLoginProps) {
                   {acc.role}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[11px] font-bold text-white truncate">{acc.name}</div>
+                  <div className="text-[11px] font-bold text-white truncate">{acc.displayName || acc.name}</div>
                   <div className="text-[9px] text-neutral-400 truncate">{acc.roleLabel}</div>
                 </div>
               </button>

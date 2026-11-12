@@ -1,16 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
-import { Package, Search, Plus, AlertCircle, CheckCircle2, ChevronRight, Filter } from 'lucide-react';
+import { Package, Search, AlertCircle, ChevronRight } from 'lucide-react';
 
 interface ScreenInventoryStockProps {
   onOpenSettings?: () => void;
 }
 
 export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockProps) {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
+
   const [filterCategory, setFilterCategory] = useState<'ALL' | 'LASH' | 'GLUE' | 'CARE'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [restockRequested, setRestockRequested] = useState(false);
 
   const inventoryItems = [
     {
@@ -85,7 +90,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#F2F2F7]">
+    <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
       <IosNavigationBar
         title="Quản Lý Kho (Inventory)"
         rightAction={{
@@ -95,13 +100,17 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
       />
 
       {/* Search Bar */}
-      <div className="px-4 py-2 bg-white border-b border-[#E5E5EA]">
-        <div className="flex items-center bg-[#F2F2F7] rounded-xl px-3 py-1.5 text-xs text-[#8E8E93]">
+      <div className={`px-4 py-2 ${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-[#E5E5EA]'} border-b`}>
+        <div
+          className={`flex items-center ${
+            isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-[#F2F2F7] text-[#8E8E93]'
+          } rounded-xl px-3 py-1.5 text-xs`}
+        >
           <Search className="w-4 h-4 mr-2 text-[#8E8E93]" />
           <input
             type="text"
             placeholder="Tìm mã vật tư, khay mi, keo..."
-            className="w-full bg-transparent text-[#1C1C1E] focus:outline-none text-xs"
+            className={`w-full bg-transparent ${isDark ? 'text-white' : 'text-[#1C1C1E]'} focus:outline-none text-xs`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -117,11 +126,13 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
           ].map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setFilterCategory(cat.id as any)}
-              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              onClick={() => setFilterCategory(cat.id as 'ALL' | 'LASH' | 'GLUE' | 'CARE')}
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 filterCategory === cat.id
-                  ? 'bg-black text-[#FFB400]'
-                  : 'bg-[#F2F2F7] text-[#8E8E93] hover:text-[#1C1C1E]'
+                  ? 'bg-[#FFB400] text-black font-bold'
+                  : isDark
+                    ? 'bg-neutral-800 text-neutral-400 hover:text-white'
+                    : 'bg-[#F2F2F7] text-[#8E8E93] hover:text-[#1C1C1E]'
               }`}
             >
               {cat.label}
@@ -132,35 +143,60 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
 
       {/* Stock Summary Banner */}
       <div className="px-4 py-3">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between text-amber-900 text-xs">
+        <div
+          className={`${
+            isDark
+              ? 'bg-amber-950/30 border-amber-700/60 text-amber-200'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+          } border rounded-xl p-3 flex items-center justify-between text-xs`}
+        >
           <div className="flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <AlertCircle className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'} flex-shrink-0`} />
             <span>
               Có <strong>2 vật tư</strong> sắp chạm ngưỡng tối thiểu cần đề xuất nhập kho.
             </span>
           </div>
-          <button className="text-[#FF9500] font-bold text-xs whitespace-nowrap ml-2">Đề xuất</button>
+          <button
+            type="button"
+            onClick={() => setRestockRequested(true)}
+            className="text-[#FF9500] font-bold text-xs whitespace-nowrap ml-2 cursor-pointer"
+          >
+            {restockRequested ? '✓ Đã gửi' : 'Đề xuất'}
+          </button>
         </div>
       </div>
 
       {/* Inventory List */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="bg-white rounded-xl border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden shadow-xs">
+        <div
+          className={`${
+            isDark ? 'bg-[#1C1C1E] border-neutral-800 divide-neutral-800' : 'bg-white border-[#E5E5EA] divide-[#E5E5EA]'
+          } rounded-xl border divide-y overflow-hidden shadow-xs`}
+        >
           {filteredItems.map((item) => (
-            <div key={item.id} className="p-3.5 flex items-center justify-between hover:bg-[#F9F9FB] transition-colors">
+            <div
+              key={item.id}
+              className={`p-3.5 flex items-center justify-between ${
+                isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-[#F9F9FB]'
+              } transition-colors`}
+            >
               <div className="flex items-center space-x-3">
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs ${
                     item.status === 'LOW_STOCK'
-                      ? 'bg-red-50 text-red-600 border border-red-200'
-                      : 'bg-emerald-50 text-emerald-700'
+                      ? isDark
+                        ? 'bg-red-950/50 text-red-400 border border-red-800'
+                        : 'bg-red-50 text-red-600 border border-red-200'
+                      : isDark
+                        ? 'bg-emerald-950/50 text-emerald-400'
+                        : 'bg-emerald-50 text-emerald-700'
                   }`}
                 >
                   <Package className="w-5 h-5 stroke-[2]" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-[#1C1C1E]">{item.name}</div>
-                  <div className="text-[11px] text-[#8E8E93] mt-0.5">
+                  <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>{item.name}</div>
+                  <div className="text-[11px] text-[#8E8E93] mt-0.5 tabular-nums">
                     Mã: {item.id} · Tối thiểu: {item.minStock} {item.unit}
                   </div>
                 </div>
@@ -169,7 +205,9 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
               <div className="flex items-center space-x-3">
                 <div className="text-right">
                   <div
-                    className={`text-sm font-bold tabular-nums ${item.status === 'LOW_STOCK' ? 'text-red-600' : 'text-[#1C1C1E]'}`}
+                    className={`text-sm font-bold tabular-nums ${
+                      item.status === 'LOW_STOCK' ? 'text-red-500' : isDark ? 'text-white' : 'text-[#1C1C1E]'
+                    }`}
                   >
                     {item.stock} {item.unit}
                   </div>
@@ -177,7 +215,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
                     {item.status === 'LOW_STOCK' ? 'Sắp hết' : 'Đủ định mức'}
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#C7C7CC]" />
+                <ChevronRight className="w-4 h-4 text-[#8E8E93]" />
               </div>
             </div>
           ))}

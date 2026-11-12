@@ -1,10 +1,12 @@
+import { apiClient } from '~/lib/api-client';
+
 /**
  * Thermal Printer Service (ESC/POS Engine)
  * Hỗ trợ in hóa đơn nhiệt khổ 80mm & 58mm cho Salon Wings
  * Tích hợp:
  * 1. Capacitor Bluetooth LE Native Bridge (khi chạy trong Hybrid Shell iOS)
  * 2. Web Bluetooth API (trên Chrome/Android/PC)
- * 3. LAN IP ESC/POS Bridge (qua Fastify backend /api/ios/print-receipt)
+ * 3. LAN IP ESC/POS Bridge (qua Fastify backend SDK apiClient.ios.printReceipt)
  * 4. Fallback AirPrint / Native Dialog
  */
 
@@ -191,15 +193,13 @@ class ThermalPrinterService {
     try {
       // 1. Thử gửi lệnh qua LAN IP nếu máy in kết nối mạng Wi-Fi salon
       if (this.activeDevice.type === 'LAN_IP' && this.activeDevice.ipAddress) {
-        const res = await fetch('/api/ios/print-receipt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ip: this.activeDevice.ipAddress,
-            receipt,
-          }),
+        const escPosBytes = this.generateEscPosCommands(receipt);
+        const rawText = new TextDecoder().decode(escPosBytes);
+        const data = await apiClient.ios.printReceipt({
+          printerIp: this.activeDevice.ipAddress,
+          rawText,
         });
-        if (res.ok) {
+        if (data?.success !== false) {
           this.activeDevice.status = 'CONNECTED';
           return { success: true, message: `Đã in thành công tới máy in LAN IP ${this.activeDevice.ipAddress}` };
         }

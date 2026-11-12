@@ -191,7 +191,7 @@ async function handleWaitAndDeploy(
     } catch {
       try {
         const log = execFileSync('git', ['-C', mainRepo, 'log', '-n', '10', '--oneline'], { encoding: 'utf8' });
-        if (log.includes(ticketBranch) || (ticketId && log.includes(`mos-bug-${ticketId}`))) {
+        if (log.includes(commitSha.slice(0, 8))) {
           isAlreadyMerged = true;
         }
       } catch {

@@ -41,6 +41,7 @@ pnpm dev
 - Customer endpoints currently run from `apps/api/src/modules/customers/routes.ts` plus the sub-routes imported at its top.
 - KPI endpoints currently run from `apps/api/src/modules/kpi/routes.ts` plus its explicitly imported sub-routes.
 - OmiCall endpoints currently run from `apps/api/src/modules/omicall/routes.ts`.
+- iOS Consultation & Checkout App (`/ios-app` & `/api/ios`): follow `apps/web/app/ios-app/AGENTS.md`, `apps/api/src/modules/ios/AGENTS.md`, shared rules in `packages/shared/src/types/ios-app.ts`, and `apiClient.ios`.
 - Prisma output under `apps/api/src/generated` and Next.js `.next*` folders are generated; never review or edit them as source.
 
 ## Fast agent workflow

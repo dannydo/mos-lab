@@ -39,7 +39,7 @@ describe('IosProfileMenuSheet Theme & Mode Switching', () => {
     staffId: 889,
     name: 'Thảo Ly',
     tier: 'CVL',
-    badgeLabel: 'CV🪶 Tự Chủ',
+    badgeLabel: 'CVL · Chuyên Viên Tự Chủ',
     storeId: 6,
     branchName: 'Chi nhánh Đề Thám',
   };

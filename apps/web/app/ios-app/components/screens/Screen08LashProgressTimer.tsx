@@ -143,7 +143,7 @@ export function Screen08LashProgressTimer({
   const isOvertime = remainingSeconds < 0;
   const progressPercent = Math.min(100, Math.round((seconds / targetSeconds) * 100));
 
-  // Đánh giá tốc độ và tác động thăng hạng CV🪶 theo chuẩn cv-speed-model
+  // Đánh giá tốc độ và tác động thăng hạng CVL theo chuẩn cv-speed-model
   const speedEvaluation = useMemo(() => {
     if (isOvertime) {
       return {

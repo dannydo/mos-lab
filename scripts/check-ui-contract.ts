@@ -242,6 +242,79 @@ for (const file of [...sourceFiles, ...styleFiles]) {
   }
 }
 
+// ============================================================================
+// mOS iOS App (/ios-app & modules/ios) AI-Agent Hard Guardrails
+// ============================================================================
+const maxIosSourceLines = 700;
+const iosWebAgentGuide = join(webRoot, 'app/ios-app/AGENTS.md');
+const iosApiDir = join(workspaceRoot, 'apps/api/src/modules/ios');
+const iosApiAgentGuide = join(iosApiDir, 'AGENTS.md');
+
+if (!existsSync(iosWebAgentGuide)) {
+  violations.push('app/ios-app/AGENTS.md: missing scoped AI Agent developer guide for /ios-app.');
+}
+if (!existsSync(iosApiAgentGuide)) {
+  violations.push('apps/api/src/modules/ios/AGENTS.md: missing scoped AI Agent developer guide for /api/ios.');
+}
+
+const iosApiFiles = existsSync(iosApiDir) ? walk(iosApiDir).filter((file) => /\.(ts|tsx)$/.test(file)) : [];
+const iosWebFiles = sourceFiles.filter((file) => relative(webRoot, file).startsWith('app/ios-app/'));
+
+const rawFeatherUnicodePattern = /\u{1FAB6}/u;
+const legacyCvPlusPattern = /\bCV\+\+?(?![A-Za-z0-9_])/;
+const forbiddenDisrespectfulTermPattern = /\b(thợ mi|thợ kỹ thuật|thợ tự chủ|thợ lash|thợ cứng|tay nghề thợ)\b/i;
+
+for (const file of iosWebFiles) {
+  const displayPath = relative(webRoot, file);
+  const source = readFileSync(file, 'utf8');
+  const isTestFile = displayPath.includes('/__tests__/') || /\.test\.(ts|tsx)$/.test(displayPath);
+  const lines = source.split('\n').length;
+
+  if (!isTestFile && lines > maxIosSourceLines) {
+    violations.push(
+      `${displayPath}: ${lines} lines exceeds the ${maxIosSourceLines}-line iOS module ceiling. Extract sub-components/hooks so AI Agents can read the file in one tool call.`
+    );
+  }
+  if (rawFeatherUnicodePattern.test(source)) {
+    violations.push(
+      `${displayPath}: contains raw Unicode feather emoji (U+1FAB6). Use <CvFeather1Badge />, <CvFeather2Badge />, or <FeatherSvg /> from CvFeatherLabels.tsx instead.`
+    );
+  }
+  if (legacyCvPlusPattern.test(source) || forbiddenDisrespectfulTermPattern.test(source)) {
+    violations.push(
+      `${displayPath}: contains legacy/disrespectful terminology. Use CV, CVL, CVLL, CC, or Chuyên Viên.`
+    );
+  }
+  if (!isTestFile && /\bfetch\s*\(/.test(source)) {
+    violations.push(
+      `${displayPath}: raw fetch() inside app/ios-app is forbidden. Route all /api/ios calls through apiClient.ios (apps/web/lib/api/ios.api.ts).`
+    );
+  }
+}
+
+for (const file of iosApiFiles) {
+  const displayPath = relative(workspaceRoot, file);
+  const source = readFileSync(file, 'utf8');
+  const isTestFile = displayPath.includes('/__tests__/') || /\.test\.ts$/.test(displayPath);
+  const lines = source.split('\n').length;
+
+  if (!isTestFile && lines > maxIosSourceLines) {
+    violations.push(
+      `${displayPath}: ${lines} lines exceeds the ${maxIosSourceLines}-line iOS backend module ceiling. Extract service modules under apps/api/src/modules/ios/services/.`
+    );
+  }
+  if (rawFeatherUnicodePattern.test(source)) {
+    violations.push(
+      `${displayPath}: contains raw Unicode feather emoji (U+1FAB6). Use tier codes CVL / CVLL in backend strings.`
+    );
+  }
+  if (legacyCvPlusPattern.test(source) || forbiddenDisrespectfulTermPattern.test(source)) {
+    violations.push(
+      `${displayPath}: contains legacy/disrespectful terminology. Use CV, CVL, CVLL, CC, or Chuyên Viên.`
+    );
+  }
+}
+
 if (violations.length > 0) {
   console.error('UI contract check failed:\n' + violations.map((violation) => `- ${violation}`).join('\n'));
   process.exit(1);

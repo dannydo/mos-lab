@@ -23,7 +23,7 @@ export function FeatherSvg({
 }
 
 /**
- * Hiển thị nhãn 🪶CV🪶 với 2 lông vũ hai bên cân xứng tuyệt đối
+ * Hiển thị nhãn CVLL với 2 lông vũ vector hai bên cân xứng tuyệt đối
  */
 export function CvFeather2Badge({
   className = '',
@@ -46,7 +46,7 @@ export function CvFeather2Badge({
 }
 
 /**
- * Hiển thị nhãn CV🪶 với 1 lông vũ vector bên phải
+ * Hiển thị nhãn CVL với 1 lông vũ vector bên phải
  */
 export function CvFeather1Badge({
   className = '',

@@ -357,7 +357,7 @@ export function Screen09LashProgressAfter({
             {(afterPhotoPreview || cloudSyncStatus === 'uploading') && (
               <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
                 <span className="bg-black/80 text-white text-[10px] font-mono px-2 py-0.8 rounded border border-neutral-700/80">
-                  {booking.customerName} · Salon Đề Thám
+                  {booking.customerName} · {booking.branchName || 'Wings Lashes'}
                 </span>
                 <IosCloudSyncBadge status={cloudSyncStatus} />
               </div>

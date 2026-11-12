@@ -19,6 +19,7 @@ import {
 import { LASH_CURL_LIST, type LashCurlDetail } from './LashCurlData';
 import { LashCurlIllustration } from './LashCurlIllustration';
 import { LashCurlOverviewChart } from './LashCurlOverviewChart';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 
 interface LashCurlZoomModalProps {
   isOpen: boolean;
@@ -478,7 +479,9 @@ export const LashCurlZoomModal: React.FC<LashCurlZoomModalProps> = ({
               <div className="flex items-start gap-2.5 text-[11.5px] bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3">
                 <HelpCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold text-amber-400 block mb-0.5">Lưu ý kỹ thuật cho CV🪶:</span>
+                  <span className="font-bold text-amber-400 block mb-0.5">
+                    Lưu ý kỹ thuật cho <CvFeather1Badge />:
+                  </span>
                   <span className="text-amber-100 leading-relaxed">{currentCurl.technicianTip}</span>
                 </div>
               </div>

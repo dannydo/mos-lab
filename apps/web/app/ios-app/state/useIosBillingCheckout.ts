@@ -1,9 +1,24 @@
 'use client';
 
 import { useCallback } from 'react';
+import {
+  calculateCvComboTierBonus,
+  calculateCvSerumTierBonus,
+  resolveEffectiveServiceTotal,
+  calculateActorTipBreakdown,
+} from '@mos-lab/shared';
+import type { ActorTipBreakdown } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
-import { ActiveActorProfile } from './useIosAppState';
+import { ActiveActorProfile } from './iosActorProfile';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServicingStep } from './offlineSync';
+
+export {
+  calculateCvComboTierBonus,
+  calculateCvSerumTierBonus,
+  resolveEffectiveServiceTotal,
+  calculateActorTipBreakdown,
+};
+export type { ActorTipBreakdown };
 
 export type CartProductItem = NonNullable<BookingItem['cartProducts']>[number];
 
@@ -12,140 +27,6 @@ export interface UpsellPayload {
   selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
   selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
   comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
-}
-
-/**
- * Thưởng hoa hồng Combo CVL (Kinh Thánh mOS Điều răn COMBO-REWARD-001):
- * - Dưới 2M: +50K
- * - Mỗi 1M kế tiếp: +50K (2M -> 100K, 3M -> 150K, 4M -> 200K, 9M -> 450K...)
- */
-export function calculateCvComboTierBonus(comboPrice: number): number {
-  if (!comboPrice || comboPrice <= 0) return 0;
-  if (comboPrice < 2000000) return 50000;
-  return Math.floor(comboPrice / 1000000) * 50000;
-}
-
-export function calculateCvSerumTierBonus(unitPrice: number, quantity: number): number {
-  if (!quantity || quantity <= 0) return 0;
-  let perUnit = 1000;
-  if (unitPrice >= 1000000) perUnit = 100000;
-  else if (unitPrice > 550000) perUnit = 50000;
-  else if (unitPrice > 0) perUnit = 10000;
-  else perUnit = 1000;
-  return perUnit * quantity;
-}
-
-/**
- * Chuẩn hóa tiền dịch vụ ca hôm nay (Kinh Thánh mOS):
- * - Nếu khách đang có gói Combo Live và trừ lượt gói (comboRedemption):
- *   luôn ưu tiên lấy theo comboRedemption.totalCustomerPayToday (0đ hoặc phụ thu nâng cấp),
- *   kể cả khi khách đồng thời mua thêm gói Combo mới để gia hạn (selectedCombo)!
- * - Nếu khách không có gói Combo Live cũ mà mua gói mới lần đầu (selectedCombo):
- *   xét selectedCombo.todaySingleServiceWaived ? 0 : servicePrice.
- */
-export function resolveEffectiveServiceTotal(params: {
-  servicePrice?: number;
-  upgradePrice?: number;
-  isComboLive?: boolean;
-  selectedCombo?: Partial<NonNullable<BookingItem['selectedCombo']>> | null;
-  comboRedemption?: Partial<NonNullable<BookingItem['comboRedemption']>> | null;
-}): number {
-  const baseServicePrice = Number(params.servicePrice ?? 0);
-  const upgradePrice = Number(params.upgradePrice ?? 0);
-
-  if (params.comboRedemption) {
-    return Number(params.comboRedemption.totalCustomerPayToday ?? 0);
-  }
-  if (params.selectedCombo) {
-    if (params.selectedCombo.todaySingleServiceWaived) {
-      return 0;
-    }
-    return params.isComboLive ? upgradePrice : baseServicePrice;
-  }
-  if (params.isComboLive) {
-    return upgradePrice;
-  }
-  return baseServicePrice;
-}
-
-export interface ActorTipBreakdown {
-  tipAmount: number;
-  techStaffId: number;
-  techStaffName: string;
-  techShareAmount: number; // 70%
-  checkInStaffId: number;
-  checkInStaffName: string;
-  checkInShareAmount: number; // 10%
-  checkOutStaffId: number;
-  checkOutStaffName: string;
-  checkOutShareAmount: number; // 10%
-  fundShareAmount: number; // 10%
-  actorEarnedPercent: number; // 0 | 10 | 20 | 70 | 80 | 90
-  actorEarnedAmount: number;
-  actorRoleSummary: string;
-}
-
-/**
- * Bóc tách tiền Tip theo đúng staffId thực tế từng khâu (Điều răn TIP-001 & CV-002):
- * - 70% Chuyên Viên làm mi (assignedStaffId)
- * - 10% Nhân sự đón khách Check-in (checkInStaffId)
- * - 10% Nhân sự tiễn khách Check-out (checkOutStaffId)
- * - 10% Quỹ vận hành chung
- */
-export function calculateActorTipBreakdown(
-  booking?: Partial<BookingItem> | null,
-  actor?: Partial<ActiveActorProfile> | null,
-  overrideTipAmount?: number
-): ActorTipBreakdown {
-  const tipAmount = Math.max(0, Number(overrideTipAmount ?? booking?.billing?.tipAmount ?? 0));
-  const actorStaffId = Number(actor?.staffId || 0);
-  const actorName = actor?.name || 'Chuyên Viên';
-
-  const techStaffId = Number(booking?.assignedStaffId || actorStaffId || 0);
-  const techStaffName = booking?.assignedStaffName || actorName;
-
-  const checkInStaffId = Number(booking?.checkInStaffId || techStaffId || actorStaffId || 0);
-  const checkInStaffName = booking?.checkInStaffName || techStaffName;
-
-  const checkOutStaffId = Number(booking?.checkOutStaffId || actorStaffId || techStaffId || 0);
-  const checkOutStaffName = booking?.checkOutStaffName || actorName;
-
-  const techShareAmount = Math.round(tipAmount * 0.7);
-  const checkInShareAmount = Math.round(tipAmount * 0.1);
-  const checkOutShareAmount = Math.round(tipAmount * 0.1);
-  const fundShareAmount = Math.max(0, tipAmount - techShareAmount - checkInShareAmount - checkOutShareAmount);
-
-  const isActorTech = actorStaffId > 0 && techStaffId === actorStaffId;
-  const isActorCheckIn = actorStaffId > 0 && checkInStaffId === actorStaffId;
-  const isActorCheckOut = actorStaffId > 0 && checkOutStaffId === actorStaffId;
-
-  const actorEarnedPercent = (isActorTech ? 70 : 0) + (isActorCheckIn ? 10 : 0) + (isActorCheckOut ? 10 : 0);
-  const actorEarnedAmount =
-    (isActorTech ? techShareAmount : 0) +
-    (isActorCheckIn ? checkInShareAmount : 0) +
-    (isActorCheckOut ? checkOutShareAmount : 0);
-
-  const roles: string[] = [];
-  if (isActorTech) roles.push('Làm mi 70%');
-  if (isActorCheckIn) roles.push('Check-in 10%');
-  if (isActorCheckOut) roles.push('Check-out 10%');
-
-  return {
-    tipAmount,
-    techStaffId,
-    techStaffName,
-    techShareAmount,
-    checkInStaffId,
-    checkInStaffName,
-    checkInShareAmount,
-    checkOutStaffId,
-    checkOutStaffName,
-    checkOutShareAmount,
-    fundShareAmount,
-    actorEarnedPercent,
-    actorEarnedAmount,
-    actorRoleSummary: roles.length > 0 ? roles.join(' + ') : 'Hỗ trợ ca (0%)',
-  };
 }
 
 export interface UseIosBillingCheckoutParams {
@@ -193,7 +74,11 @@ export function useIosBillingCheckout({
         const tipAmount = prev.billing?.tipAmount ?? 0;
 
         const comboBonusAmount = calculateCvComboTierBonus(comboTotal);
-        const serumBonusAmount = nextProducts.reduce((sum, p) => sum + (p.cvBonus || 0) * p.quantity, 0);
+        const serumBonusAmount = nextProducts.reduce(
+          (sum, p) =>
+            sum + (p.cvBonus !== undefined ? p.cvBonus * p.quantity : calculateCvSerumTierBonus(p.price, p.quantity)),
+          0
+        );
 
         let resolvedNextCombo = nextCombo;
         let resolvedNextUnderCombo = nextUnderCombo;
@@ -408,7 +293,8 @@ export function useIosBillingCheckout({
         const subtotal = currentBilling.subtotal;
         const vatRate = currentBilling.vatRate ?? 0.08;
         const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
-        const grandTotal = subtotal + vatAmount + tipAmount;
+        const diamondDiscountAmount = prev.billing?.diamondDiscountAmount ?? (prev.billing?.diamondUsed || 0) * 1000;
+        const grandTotal = Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount);
 
         const nextBilling = {
           ...currentBilling,

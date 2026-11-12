@@ -134,7 +134,7 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
     if (!open) return;
     const activeEye = EYE_SHAPES_EXTENDED_DETAILS[currentIndex];
     if (activeEye && tabRefs.current[activeEye.id]) {
-      tabRefs.current[activeEye.id]?.scrollIntoView({
+      tabRefs.current[activeEye.id]?.scrollIntoView?.({
         behavior: 'smooth',
         inline: 'center',
         block: 'nearest',

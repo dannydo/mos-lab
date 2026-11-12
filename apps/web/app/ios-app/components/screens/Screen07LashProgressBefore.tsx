@@ -402,8 +402,8 @@ export function Screen07LashProgressBefore({
 
             {/* Watermark overlay & Auto-save / Cloud Sync status */}
             <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-              <span className="bg-black/80 text-white text-[10px] font-mono px-2 py-0.8 rounded border border-neutral-700/80">
-                10:38:15 AM · Salon Đề Thám
+              <span className="bg-black/80 text-white text-[10px] font-mono px-2 py-0.8 rounded border border-neutral-700/80 tabular-nums">
+                {booking?.time12h || 'Hôm nay'} · {booking?.branchName || 'Wings Lashes'}
               </span>
               {(photoPreview || cloudSyncStatus === 'uploading') && <IosCloudSyncBadge status={cloudSyncStatus} />}
             </div>
