@@ -8,15 +8,17 @@ import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import {
-  calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
+import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
 
 interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
+  cvPlusRules?: Partial<CvToCvPlusRequirements>;
   onFinishOrder: () => void;
   onBack?: () => void;
 }
@@ -26,7 +28,13 @@ function cleanComboTitle(name?: string | null): string {
   return name.replace(/\s*\(\d+\s*lần\)/gi, '').trim();
 }
 
-export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBack }: Screen14ThermalReceiptDoneProps) {
+export function Screen14ThermalReceiptDone({
+  booking,
+  actor,
+  cvPlusRules,
+  onFinishOrder,
+  onBack,
+}: Screen14ThermalReceiptDoneProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
@@ -44,12 +52,20 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
   const tipAmount = booking?.billing?.tipAmount ?? 0;
   const diamondUsed = booking?.billing?.diamondUsed || 0;
   const diamondDiscountAmount = booking?.billing?.diamondDiscountAmount || diamondUsed * 1000;
+  const hasUnderMinkCombo = Boolean(
+    booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
+  );
   const effectiveServiceCharge = resolveEffectiveServiceTotal({
     servicePrice,
     upgradePrice: booking?.upgradePrice || 0,
+    serviceName: booking?.serviceName,
     isComboLive: Boolean(booking?.comboLiveStatus?.isComboLive),
+    hasUnderMink: booking?.attributes?.hasUnderMink,
+    underMinkServiceType: booking?.attributes?.underMinkServiceType,
+    hasUnderMinkCombo,
     comboRedemption,
     selectedCombo,
+    selectedUnderCombo,
   });
   const vatRate = booking?.billing?.vatRate ?? 0.08;
   const subtotal =
@@ -65,15 +81,25 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
       ? booking.billing.grandTotal
       : Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount);
 
-  const comboTotalRevenue =
-    (selectedCombo ? Number(selectedCombo.price || 0) : 0) +
-    (selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0);
-  const comboBonus = calculateCvComboTierBonus(comboTotalRevenue);
-  const serumBonus = cartProducts.reduce(
-    (s, p) => s + (p.cvBonus !== undefined ? p.cvBonus * p.quantity : calculateCvSerumTierBonus(p.price, p.quantity)),
-    0
-  );
   const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
+  const dualComboBonus = calculateDualComboTierBonus(
+    selectedCombo ? Number(selectedCombo.price || 0) : 0,
+    selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0,
+    cvPlusRules
+  );
+  const comboBonus = isCheckoutStaffCc ? 0 : dualComboBonus.totalBonus;
+  const serumBonus = isCheckoutStaffCc
+    ? 0
+    : cartProducts.reduce(
+        (s, p) =>
+          s +
+          (p.cvBonus !== undefined
+            ? p.cvBonus * p.quantity
+            : calculateCvSerumTierBonus(p.price, p.quantity, cvPlusRules)),
+        0
+      );
+  const settlementStatus = booking?.billing?.settlementStatus;
+  const isPendingCounter = settlementStatus === 'PENDING_COUNTER_SETTLEMENT';
   const actorTipBreakdown = calculateActorTipBreakdown(booking, actor, tipAmount);
   const tipEarned = actorTipBreakdown.actorEarnedAmount;
 
@@ -143,12 +169,29 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
 
         <div className={`border-b border-dashed ${isDark ? 'border-neutral-700' : 'border-gray-300'}`} />
 
-        <div className="text-center">
+        <div className="text-center space-y-1">
           <div className={`text-[13px] font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-black'}`}>
             PHIẾU THANH TOÁN & GHI NHẬN CA
           </div>
-          <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} mt-0.5 font-mono`}>
-            HĐ: #{booking?.orderNumber || 'BK-336925'} · Hoàn tất
+          <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-mono`}>
+            HĐ: #{booking?.orderNumber || 'BK-336925'} · {isPendingCounter ? 'Chờ Quầy thu ngân chốt' : 'Hoàn tất'}
+          </div>
+          <div>
+            <span
+              className={`inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${
+                isPendingCounter
+                  ? isDark
+                    ? 'bg-amber-950/50 text-amber-300 border-amber-700/60'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                  : isDark
+                    ? 'bg-emerald-950/50 text-emerald-300 border-emerald-700/60'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              }`}
+            >
+              {isPendingCounter
+                ? '⏳ Chờ Quầy thu Tiền mặt / POS · Đã khóa thưởng Checkout'
+                : '✓ Đã hoàn tất & Ghi sổ kế toán · Báo Cáo CV'}
+            </span>
           </div>
         </div>
 
@@ -201,23 +244,24 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
                     ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
                   </span>
                 </div>
+              ) : (selectedCombo && selectedCombo.todaySingleServiceWaived !== false) ||
+                (selectedUnderCombo && selectedUnderCombo.todaySingleServiceWaived !== false) ? (
+                <div className={`text-[10.5px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold`}>
+                  {effectiveServiceCharge === 0
+                    ? '✓ Trừ vào Buổi 1 gói mới mua (Miễn thu lẻ ca này)'
+                    : '✓ Đã trừ Buổi 1 gói mới mua · Thu lẻ dịch vụ còn lại'}
+                </div>
               ) : selectedCombo ? (
-                selectedCombo.todaySingleServiceWaived !== false ? (
-                  <div className={`text-[10.5px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold`}>
-                    ✓ Trừ vào Buổi 1 gói mới mua (Miễn thu lẻ ca này)
-                  </div>
-                ) : (
-                  <div className={`text-[10.5px] ${isDark ? 'text-indigo-400' : 'text-indigo-700'} font-bold`}>
-                    ✓ Khách trả lẻ ca này · Giữ trọn số buổi gói mới mua
-                  </div>
-                )
+                <div className={`text-[10.5px] ${isDark ? 'text-indigo-400' : 'text-indigo-700'} font-bold`}>
+                  ✓ Khách trả lẻ ca này · Giữ trọn số buổi gói mới mua
+                </div>
               ) : null}
             </div>
             <div className="text-right shrink-0">
               <span className={`tabular-nums font-bold ${isDark ? 'text-white' : 'text-black'}`}>
                 {effectiveServiceCharge.toLocaleString('vi-VN')} đ
               </span>
-              {!comboRedemption && selectedCombo && selectedCombo.todaySingleServiceWaived !== false && (
+              {!comboRedemption && effectiveServiceCharge < servicePrice && (
                 <span
                   className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-gray-400'} line-through block tabular-nums`}
                 >
@@ -280,7 +324,10 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
               <div
                 className={`text-[10px] ${isDark ? 'text-purple-300 bg-purple-950/50 border-purple-800' : 'text-purple-900 bg-purple-50/80 border-purple-200'} px-2 py-1 rounded-md border tabular-nums`}
               >
-                ✨ Ví gói mi dưới: Đủ {selectedUnderCombo.sessions || 10} buổi (Mi Dưới)
+                ✨ Ví gói mi dưới:{' '}
+                {selectedUnderCombo.remainingAfterToday
+                  ? `Còn ${selectedUnderCombo.remainingAfterToday.totalRemaining} buổi sau ca hôm nay (Gói ${selectedUnderCombo.sessions || 5} buổi)`
+                  : `Đủ ${selectedUnderCombo.sessions || 5} buổi (Mi Dưới)`}
               </div>
             </div>
           )}
@@ -558,11 +605,19 @@ export function Screen14ThermalReceiptDone({ booking, actor, onFinishOrder, onBa
                       )}
                       {comboBonus > 0 && (
                         <div className="flex justify-between items-center">
-                          <span>Thưởng chốt Combo ({selectedUnderCombo ? 'Gộp 2 gói' : '1 gói'}):</span>
+                          <span>
+                            Thưởng chốt Combo ({selectedCombo && selectedUnderCombo ? '2 gói độc lập' : '1 gói'}):
+                          </span>
                           <span className="font-bold tabular-nums inline-flex items-center gap-0.5 text-amber-400">
                             +{Math.round(comboBonus / 1000)}
                             <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
                           </span>
+                        </div>
+                      )}
+                      {isCheckoutStaffCc && (selectedCombo || selectedUnderCombo) && (
+                        <div className="flex justify-between items-center text-emerald-400">
+                          <span>Thưởng bán Combo (CC Checkout):</span>
+                          <span className="font-bold">Tính trên Báo Cáo CC (Combo-Sold)</span>
                         </div>
                       )}
                       {serumBonus > 0 && (

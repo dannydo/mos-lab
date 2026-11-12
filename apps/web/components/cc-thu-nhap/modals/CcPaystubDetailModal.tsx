@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { CcPaystubRecord } from '@mos-lab/shared';
+import { CvFeather1Badge } from '~/app/ios-app/components/ui-kit/CvFeatherLabels';
 import { formatVND } from '~/lib/format-utils';
 
 const { Text } = Typography;
@@ -496,6 +497,86 @@ export default function CcPaystubDetailModal({
                   </td>
                 </tr>
 
+                {/* (17.M) Thưởng Kèm Cặp Đào Tạo Chuyên Viên Tự Chủ (Mentor CC) */}
+                {selectedRecord.trainingMentorshipDetails &&
+                  selectedRecord.trainingMentorshipDetails.length > 0 &&
+                  selectedRecord.trainingMentorshipDetails.map((detail, idx) => {
+                    const comboPct = (detail.actualComboRate * 100).toFixed(1);
+                    const thresholdPct = Math.round(detail.minComboRateThreshold * 100);
+                    const sharePct = Math.round(detail.menteeBonusShareRate * 100);
+                    return (
+                      <tr
+                        key={detail.pairId || idx}
+                        className={
+                          detail.isUnlocked
+                            ? 'bg-amber-500/10 dark:bg-amber-950/25 font-semibold'
+                            : 'bg-rose-500/5 dark:bg-rose-950/15'
+                        }
+                      >
+                        <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-amber-600 dark:text-amber-400 font-mono text-[11px]">
+                          17.{idx + 1}
+                        </td>
+                        <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 font-bold text-amber-800 dark:text-amber-200">
+                          <div className="flex flex-wrap items-center gap-1">
+                            <span>Thưởng Đào Tạo</span>
+                            <CvFeather1Badge className="text-[11px] text-amber-500" />
+                            <span>{detail.menteeDisplayName}</span>
+                          </div>
+                          <div className="text-[10px] font-normal tabular-nums text-slate-500 dark:text-slate-400 mt-0.5">
+                            Kỳ: {detail.startDate} &rarr; {detail.endDate}
+                          </div>
+                        </td>
+                        <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-[11px] font-normal">
+                          <div className="space-y-0.5">
+                            <div
+                              className={
+                                detail.isUnlocked
+                                  ? 'font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums'
+                                  : 'font-semibold text-rose-600 dark:text-rose-400 tabular-nums'
+                              }
+                            >
+                              Tỷ lệ Combo Mentee: {comboPct}% ({detail.combosSoldCount}/{detail.notComboLiveOrders}{' '}
+                              khách Not Live) &bull;{' '}
+                              {detail.isUnlocked
+                                ? `Đạt chuẩn >= ${thresholdPct}%`
+                                : `Chưa đạt ${thresholdPct}% (Nhận 0đ)`}
+                            </div>
+                            <div className="text-[10.5px] text-slate-600 dark:text-slate-300 tabular-nums">
+                              Thu nhập tăng thêm của {detail.menteeDisplayName}:{' '}
+                              <strong>+{formatVND(detail.menteeTotalAdditionalIncome)}đ</strong> (+2k/h:{' '}
+                              {formatVND(detail.menteeDeltaHourlyWage)}đ &bull; +20% Tip:{' '}
+                              {formatVND(detail.menteeDeltaTipBonus)}đ &bull; Combo:{' '}
+                              {formatVND(detail.menteeComboBonusTotal)}đ &bull; Dưỡng mi:{' '}
+                              {formatVND(detail.menteeSerumBonusTotal)}đ)
+                            </div>
+                            {detail.isUnlocked ? (
+                              <div className="text-[10.5px] text-amber-700 dark:text-amber-300 tabular-nums font-medium">
+                                Công thức Mentor: {formatVND(detail.mentorFixedEarned)}đ cứng + {sharePct}% &times;{' '}
+                                {formatVND(detail.menteeTotalAdditionalIncome)}đ = +{formatVND(detail.mentorTotalBonus)}
+                                đ
+                              </div>
+                            ) : (
+                              <div className="text-[10.5px] text-rose-600/90 dark:text-rose-400/90">
+                                Mentee dưới ngưỡng {thresholdPct}% bán gói: Mentor không nhận 1M cứng và 50% thưởng
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td
+                          className={`py-2 px-3 text-right tabular-nums font-bold ${
+                            detail.isUnlocked
+                              ? 'text-amber-600 dark:text-amber-300'
+                              : 'text-slate-400 dark:text-slate-500'
+                          }`}
+                        >
+                          {detail.isUnlocked
+                            ? `+${Math.round(detail.mentorTotalBonus).toLocaleString('vi-VN')}đ`
+                            : '0đ'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
                 {/* GROUP 4: PHỤ CẤP & CÔNG LÀM VIỆC */}
                 <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-y border-slate-200 dark:border-slate-700">
                   <td
@@ -659,8 +740,8 @@ export default function CcPaystubDetailModal({
                     Tổng thu nhập thực tế trong tháng (Gross)
                   </td>
                   <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-blue-700 dark:text-blue-400 text-[11px] font-normal">
-                    Lương thời gian + Thưởng thời gian (off tuần) + Thưởng CC (Xoay, Combo/SP, Tips, Kim Cương) + Gửi xe
-                    + Phụ cấp khác
+                    Lương thời gian + Thưởng thời gian (off tuần) + Thưởng CC (Xoay, Combo/SP, Tips, Kim Cương, Đào tạo
+                    CVL) + Gửi xe + Phụ cấp khác
                   </td>
                   <td className="py-2 px-3 text-right tabular-nums font-bold text-blue-700 dark:text-blue-300 text-sm">
                     {Math.round(selectedRecord.totalIncome).toLocaleString('vi-VN')}đ

@@ -151,29 +151,43 @@ export function useIosBookingsSync({
         })) as { success?: boolean; progress?: Record<string, any>; cloudSyncedAt?: string; [key: string]: any };
 
         if (data?.success !== false) {
-          if (data?.progress) {
+          if (data?.progress || data?.override?.billing) {
             setBookings((prev) =>
               prev.map((b) =>
                 Number(b.id) === targetBookingId
                   ? {
                       ...b,
-                      progress: {
-                        elapsedSeconds: b.progress?.elapsedSeconds ?? 0,
-                        timerRunning: b.progress?.timerRunning ?? false,
-                        ...(b.progress || {}),
-                        ...data.progress,
-                        cloudSynced: true,
-                        cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
-                      },
+                      ...(data?.override?.billing
+                        ? {
+                            billing: {
+                              ...(b.billing || ({} as any)),
+                              ...data.override.billing,
+                            },
+                          }
+                        : {}),
+                      ...(data?.progress
+                        ? {
+                            progress: {
+                              elapsedSeconds: b.progress?.elapsedSeconds ?? 0,
+                              timerRunning: b.progress?.timerRunning ?? false,
+                              ...(b.progress || {}),
+                              ...data.progress,
+                              cloudSynced: true,
+                              cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
+                            },
+                          }
+                        : {}),
                     }
                   : b
               )
             );
-            saveLocalProgressSnapshot(targetBookingId, {
-              ...data.progress,
-              cloudSynced: true,
-              cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
-            });
+            if (data?.progress) {
+              saveLocalProgressSnapshot(targetBookingId, {
+                ...data.progress,
+                cloudSynced: true,
+                cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
+              });
+            }
           }
           return { success: true, data };
         }

@@ -1,14 +1,20 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, SetStateAction } from 'react';
 import {
   checkWelcomeComboEligibility,
   matchComboCategoryAndVolumeFromBooking,
   getComboPackagesForCategoryAndVolume,
   getUnderLashComboPackages,
+  calculateComboPurchaseAccounting,
+  calculateCvComboTierBonus,
+  resolveMatchedUpperComboFromSaved,
+  resolveMatchedUnderComboFromSaved,
+  resolveServicePriceSplit,
   type MatchedComboPackageOption,
 } from '@mos-lab/shared';
 import type { BookingItem } from '../../../state/mockData';
+import { getLocalProgressSnapshot } from '../../../state/offlineSync';
 import { calculateLashPricingAndCvPoints } from '../LashMaterialConstraintMatrix';
 import type { PendingUpgradeConfirmationState } from './ConsultationTypes';
 import type { useLashDesignSelection } from './useLashDesignSelection';
@@ -91,8 +97,74 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
 
   const [isComboCatalogModalOpen, setIsComboCatalogModalOpen] = useState<boolean>(false);
   const [comboCatalogTarget, setComboCatalogTarget] = useState<'upper' | 'under'>('upper');
-  const [selectedNewComboPkg, setSelectedNewComboPkg] = useState<MatchedComboPackageOption | null>(null);
-  const [selectedUnderComboPkg, setSelectedUnderComboPkg] = useState<MatchedComboPackageOption | null>(null);
+
+  const bookingId = booking?.id;
+  const savedSelectedCombo = booking?.selectedCombo;
+  const savedSelectedUnderCombo = booking?.selectedUnderCombo;
+
+  const hydratedUpperComboPkg = useMemo(() => {
+    if (savedSelectedCombo) {
+      return resolveMatchedUpperComboFromSaved(savedSelectedCombo, welcomeEligibility, autoMatchedCombo);
+    }
+    if (bookingId) {
+      const snap = getLocalProgressSnapshot(bookingId);
+      const draftUpper = snap?.consultationDraft?.selectedNewComboPkg;
+      if (draftUpper) {
+        return resolveMatchedUpperComboFromSaved(draftUpper, welcomeEligibility, autoMatchedCombo);
+      }
+    }
+    return null;
+  }, [bookingId, savedSelectedCombo, welcomeEligibility, autoMatchedCombo]);
+
+  const hydratedUnderComboPkg = useMemo(() => {
+    if (savedSelectedUnderCombo) {
+      return resolveMatchedUnderComboFromSaved(savedSelectedUnderCombo, welcomeEligibility);
+    }
+    if (bookingId) {
+      const snap = getLocalProgressSnapshot(bookingId);
+      const draftUnder = snap?.consultationDraft?.selectedUnderComboPkg;
+      if (draftUnder) {
+        return resolveMatchedUnderComboFromSaved(draftUnder, welcomeEligibility);
+      }
+    }
+    return null;
+  }, [bookingId, savedSelectedUnderCombo, welcomeEligibility]);
+
+  const [manualUpperEdit, setManualUpperEdit] = useState<{
+    bookingId: number | undefined;
+    pkg: MatchedComboPackageOption | null;
+  } | null>(null);
+  const [manualUnderEdit, setManualUnderEdit] = useState<{
+    bookingId: number | undefined;
+    pkg: MatchedComboPackageOption | null;
+  } | null>(null);
+
+  const selectedNewComboPkg =
+    manualUpperEdit && manualUpperEdit.bookingId === booking?.id ? manualUpperEdit.pkg : hydratedUpperComboPkg;
+  const selectedUnderComboPkg =
+    manualUnderEdit && manualUnderEdit.bookingId === booking?.id ? manualUnderEdit.pkg : hydratedUnderComboPkg;
+
+  const setSelectedNewComboPkg = useCallback(
+    (next: SetStateAction<MatchedComboPackageOption | null>) => {
+      setManualUpperEdit((prev) => {
+        const current = prev && prev.bookingId === booking?.id ? prev.pkg : hydratedUpperComboPkg;
+        const resolved = typeof next === 'function' ? next(current) : next;
+        return { bookingId: booking?.id, pkg: resolved };
+      });
+    },
+    [booking?.id, hydratedUpperComboPkg]
+  );
+
+  const setSelectedUnderComboPkg = useCallback(
+    (next: SetStateAction<MatchedComboPackageOption | null>) => {
+      setManualUnderEdit((prev) => {
+        const current = prev && prev.bookingId === booking?.id ? prev.pkg : hydratedUnderComboPkg;
+        const resolved = typeof next === 'function' ? next(current) : next;
+        return { bookingId: booking?.id, pkg: resolved };
+      });
+    },
+    [booking?.id, hydratedUnderComboPkg]
+  );
 
   const quickUpperPackages = useMemo(() => {
     return getComboPackagesForCategoryAndVolume({
@@ -121,83 +193,6 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     }
   };
 
-  const comboPurchaseTotal = (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0);
-
-  const selectedComboObject: NonNullable<BookingItem['selectedCombo']> | null = useMemo(() => {
-    if (!selectedNewComboPkg) return null;
-    return {
-      id: selectedNewComboPkg.id,
-      name: selectedNewComboPkg.displayName,
-      price: selectedNewComboPkg.comboPrice,
-      bonus: selectedNewComboPkg.cvBonus,
-      sessions: selectedNewComboPkg.totalSessions,
-      ruleName: selectedNewComboPkg.ruleName,
-      categoryId: selectedNewComboPkg.categoryId,
-      categoryName: selectedNewComboPkg.categoryName,
-      volume: selectedNewComboPkg.volume,
-      paidNewCount: selectedNewComboPkg.comboNewCount,
-      paidRefillCount: selectedNewComboPkg.comboRefillCount,
-      bonusNewCount: selectedNewComboPkg.bonusNewCount,
-      bonusRefillCount: selectedNewComboPkg.bonusRefillCount,
-      validityMonths: selectedNewComboPkg.validityMonths,
-      retailTotal: selectedNewComboPkg.retailTotal,
-      savingsAmount: selectedNewComboPkg.savingsAmount,
-      avgPerSessionPrice: selectedNewComboPkg.avgPerSessionPrice,
-      todaySingleServiceWaived: isComboLive ? false : true,
-      isUpTierUpgrade: false,
-      originalServiceCategory: selectedNewComboPkg.categoryId,
-      recognizedRevenueToday: isComboLive ? 0 : booking?.servicePrice || 770000,
-      deferredRevenueBalance: selectedNewComboPkg.comboPrice,
-      remainingAfterToday: {
-        paidNew: selectedNewComboPkg.comboNewCount,
-        paidRefill: selectedNewComboPkg.comboRefillCount,
-        bonusNew: selectedNewComboPkg.bonusNewCount,
-        bonusRefill: selectedNewComboPkg.bonusRefillCount,
-        totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
-        totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
-        totalRemaining: selectedNewComboPkg.totalSessions,
-      },
-    };
-  }, [selectedNewComboPkg, isComboLive, booking?.servicePrice]);
-
-  const selectedUnderComboObject: NonNullable<BookingItem['selectedUnderCombo']> | null = useMemo(() => {
-    if (!selectedUnderComboPkg) return null;
-    return {
-      id: selectedUnderComboPkg.id,
-      name: selectedUnderComboPkg.displayName,
-      price: selectedUnderComboPkg.comboPrice,
-      bonus: selectedUnderComboPkg.cvBonus,
-      sessions: selectedUnderComboPkg.totalSessions,
-      ruleName: selectedUnderComboPkg.ruleName,
-      validityMonths: selectedUnderComboPkg.validityMonths,
-      retailTotal: selectedUnderComboPkg.retailTotal,
-      savingsAmount: selectedUnderComboPkg.savingsAmount,
-      avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
-      todaySingleServiceWaived: true,
-      recognizedRevenueToday: 0,
-      deferredRevenueBalance: selectedUnderComboPkg.comboPrice,
-      remainingAfterToday: {
-        paidNew: selectedUnderComboPkg.comboNewCount,
-        paidRefill: selectedUnderComboPkg.comboRefillCount,
-        bonusNew: selectedUnderComboPkg.bonusNewCount,
-        bonusRefill: selectedUnderComboPkg.bonusRefillCount,
-        totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
-        totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
-        totalRemaining: selectedUnderComboPkg.totalSessions,
-      },
-    };
-  }, [selectedUnderComboPkg]);
-
-  useEffect(() => {
-    if (isComboLive) {
-      if (!hasComboNormalRemaining && hasComboRetainRemaining) {
-        setRetainUpgradeMode('PAY_DIFF');
-      } else if (hasComboNormalRemaining && !hasComboRetainRemaining) {
-        setRetainUpgradeMode('DEDUCT_NORMAL');
-      }
-    }
-  }, [isComboLive, hasComboNormalRemaining, hasComboRetainRemaining]);
-
   const livePricingAndCvPoints = useMemo(() => {
     return calculateLashPricingAndCvPoints({
       materialId: selectedMaterial,
@@ -223,6 +218,144 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     underMinkServiceType,
     hasUnderMinkCombo,
   ]);
+
+  const comboPurchaseTotal = (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0);
+
+  const { upperServicePrice, underServicePrice } = useMemo(
+    () =>
+      resolveServicePriceSplit({
+        servicePrice: livePricingAndCvPoints.skuPrice,
+        serviceName: livePricingAndCvPoints.skuName,
+        hasUnderMink,
+        underMinkServiceType,
+        hasUnderMinkCombo,
+      }),
+    [
+      livePricingAndCvPoints.skuPrice,
+      livePricingAndCvPoints.skuName,
+      hasUnderMink,
+      underMinkServiceType,
+      hasUnderMinkCombo,
+    ]
+  );
+
+  const autoMatchedCategoryId = autoMatchedCombo.categoryId;
+
+  const selectedComboObject: NonNullable<BookingItem['selectedCombo']> | null = useMemo(() => {
+    if (!selectedNewComboPkg) return null;
+    const hasBoth = Boolean(selectedNewComboPkg && selectedUnderComboPkg && comboPurchaseTotal > 0);
+    const effectiveBonus = hasBoth
+      ? calculateCvComboTierBonus(comboPurchaseTotal)
+      : calculateCvComboTierBonus(selectedNewComboPkg.comboPrice);
+    const shouldWaiveToday =
+      savedSelectedCombo?.id === selectedNewComboPkg.id && savedSelectedCombo.todaySingleServiceWaived !== undefined
+        ? Boolean(savedSelectedCombo.todaySingleServiceWaived)
+        : !isComboLive;
+    const acct = calculateComboPurchaseAccounting(
+      selectedNewComboPkg,
+      upperServicePrice || selectedNewComboPkg.newUnitPrice || 770000
+    );
+
+    return {
+      id: selectedNewComboPkg.id,
+      name: selectedNewComboPkg.displayName,
+      price: selectedNewComboPkg.comboPrice,
+      bonus: effectiveBonus,
+      sessions: selectedNewComboPkg.totalSessions,
+      ruleName: selectedNewComboPkg.ruleName,
+      categoryId: selectedNewComboPkg.categoryId,
+      categoryName: selectedNewComboPkg.categoryName,
+      volume: selectedNewComboPkg.volume,
+      paidNewCount: selectedNewComboPkg.comboNewCount,
+      paidRefillCount: selectedNewComboPkg.comboRefillCount,
+      bonusNewCount: selectedNewComboPkg.bonusNewCount,
+      bonusRefillCount: selectedNewComboPkg.bonusRefillCount,
+      validityMonths: selectedNewComboPkg.validityMonths,
+      retailTotal: selectedNewComboPkg.retailTotal,
+      savingsAmount: selectedNewComboPkg.savingsAmount,
+      avgPerSessionPrice: selectedNewComboPkg.avgPerSessionPrice,
+      todaySingleServiceWaived: shouldWaiveToday,
+      isUpTierUpgrade: selectedNewComboPkg.categoryId !== autoMatchedCategoryId,
+      originalServiceCategory: autoMatchedCategoryId,
+      recognizedRevenueToday: isComboLive ? 0 : shouldWaiveToday ? acct.recognizedRevenueToday : upperServicePrice,
+      deferredRevenueBalance:
+        isComboLive || !shouldWaiveToday ? selectedNewComboPkg.comboPrice : acct.deferredRevenueBalance,
+      remainingAfterToday:
+        !isComboLive && shouldWaiveToday
+          ? acct.remainingWalletAfterToday
+          : {
+              paidNew: selectedNewComboPkg.comboNewCount,
+              paidRefill: selectedNewComboPkg.comboRefillCount,
+              bonusNew: selectedNewComboPkg.bonusNewCount,
+              bonusRefill: selectedNewComboPkg.bonusRefillCount,
+              totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
+              totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
+              totalRemaining: selectedNewComboPkg.totalSessions,
+            },
+    };
+  }, [
+    selectedNewComboPkg,
+    selectedUnderComboPkg,
+    comboPurchaseTotal,
+    savedSelectedCombo,
+    isComboLive,
+    upperServicePrice,
+    autoMatchedCategoryId,
+  ]);
+
+  const selectedUnderComboObject: NonNullable<BookingItem['selectedUnderCombo']> | null = useMemo(() => {
+    if (!selectedUnderComboPkg) return null;
+    const hasBoth = Boolean(selectedNewComboPkg && selectedUnderComboPkg && comboPurchaseTotal > 0);
+    const effectiveUnderBonus = hasBoth ? 0 : calculateCvComboTierBonus(selectedUnderComboPkg.comboPrice);
+    const underAcct = calculateComboPurchaseAccounting(selectedUnderComboPkg, underServicePrice || 390000);
+    const shouldWaiveUnderToday = Boolean(hasUnderMink && !hasUnderMinkCombo);
+
+    return {
+      id: selectedUnderComboPkg.id,
+      name: selectedUnderComboPkg.displayName,
+      price: selectedUnderComboPkg.comboPrice,
+      bonus: effectiveUnderBonus,
+      sessions: selectedUnderComboPkg.totalSessions,
+      ruleName: selectedUnderComboPkg.ruleName,
+      validityMonths: selectedUnderComboPkg.validityMonths,
+      retailTotal: selectedUnderComboPkg.retailTotal,
+      savingsAmount: selectedUnderComboPkg.savingsAmount,
+      avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
+      todaySingleServiceWaived: shouldWaiveUnderToday,
+      recognizedRevenueToday: shouldWaiveUnderToday ? underAcct.recognizedRevenueToday : 0,
+      deferredRevenueBalance: shouldWaiveUnderToday
+        ? underAcct.deferredRevenueBalance
+        : selectedUnderComboPkg.comboPrice,
+      remainingAfterToday: shouldWaiveUnderToday
+        ? underAcct.remainingWalletAfterToday
+        : {
+            paidNew: selectedUnderComboPkg.comboNewCount,
+            paidRefill: selectedUnderComboPkg.comboRefillCount,
+            bonusNew: selectedUnderComboPkg.bonusNewCount,
+            bonusRefill: selectedUnderComboPkg.bonusRefillCount,
+            totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
+            totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
+            totalRemaining: selectedUnderComboPkg.totalSessions,
+          },
+    };
+  }, [
+    selectedUnderComboPkg,
+    selectedNewComboPkg,
+    comboPurchaseTotal,
+    underServicePrice,
+    hasUnderMink,
+    hasUnderMinkCombo,
+  ]);
+
+  useEffect(() => {
+    if (isComboLive) {
+      if (!hasComboNormalRemaining && hasComboRetainRemaining) {
+        setRetainUpgradeMode('PAY_DIFF');
+      } else if (hasComboNormalRemaining && !hasComboRetainRemaining) {
+        setRetainUpgradeMode('DEDUCT_NORMAL');
+      }
+    }
+  }, [isComboLive, hasComboNormalRemaining, hasComboRetainRemaining]);
 
   const cleanServiceName = useMemo(() => {
     return livePricingAndCvPoints.skuName.replace(/\s*\d+[Kk]\b/g, '').trim();

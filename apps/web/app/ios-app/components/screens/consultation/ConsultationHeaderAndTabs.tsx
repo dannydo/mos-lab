@@ -210,7 +210,7 @@ export function ConsultationHeaderAndTabs({
                     : 'BẮT BUỘC XÁC NHẬN KIỂM TRA MI THẬT TRƯỚC!'
                   : isNewClient
                     ? 'KHÁCH MỚI · BẮT BUỘC KIỂM TRA MI THẬT (KHÔNG MẶC ĐỊNH)'
-                    : 'ĐANG ĐO MI THẬT · BẮT BUỘC HOÀN TẤT ĐỦ 7 MỤC'}
+                    : 'CHƯA CÓ HỒ SƠ MI THẬT · BẮT BUỘC KIỂM TRA ĐỦ 7 MỤC'}
               </div>
               <div
                 className={`text-[10px] font-medium truncate ${
@@ -241,7 +241,7 @@ export function ConsultationHeaderAndTabs({
             {completedNaturalLashCount}/7
           </span>
         </div>
-      ) : isNewClient ? (
+      ) : isNaturalLashComplete ? (
         <div
           className={`border rounded-2xl px-3 py-2 shadow-xs flex items-center justify-between gap-2 transition-colors ${
             isDark

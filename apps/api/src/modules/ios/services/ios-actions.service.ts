@@ -1,10 +1,12 @@
 import mysql from 'mysql2/promise';
-import { SafeAny, validateNaturalLashConsultationSave } from '@mos-lab/shared';
+import { hasCompleteNaturalLashAttributes, SafeAny, validateNaturalLashConsultationSave } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
+import { settleIosOrderWithLegacyPhp, SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
+import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
 
@@ -54,7 +56,8 @@ async function persistRetainLashCountsToLegacy(bookingId: number, incomingProgre
 export async function executeIosBookingAction(
   authUser: IosAuthContext,
   body: SafeAny,
-  repo: IosOverrideRepository = defaultIosOverrideRepo
+  repo: IosOverrideRepository = defaultIosOverrideRepo,
+  bridgeDepsOverride?: Partial<SettleLegacyOrderBridgeDeps>
 ): Promise<ExecuteIosActionResult> {
   const bookingId = Number(body?.bookingId || 0);
   const action = String(body?.action || '').toUpperCase();
@@ -74,7 +77,8 @@ export async function executeIosBookingAction(
 
   if (action === 'RESET_DEMO' && !bookingId) {
     const demoIds = INITIAL_BOOKINGS.map((b) => b.id);
-    await repo.resetDemoOverrides(body?.resetAll ? undefined : demoIds);
+    const demoCustIds = INITIAL_BOOKINGS.map((b) => b.customerId).filter((id) => id > 0);
+    await repo.resetDemoOverrides(body?.resetAll ? undefined : demoIds, body?.resetAll ? undefined : demoCustIds);
     const nowIso = new Date().toISOString();
     return {
       statusCode: 200,
@@ -94,6 +98,9 @@ export async function executeIosBookingAction(
 
   return repo.withBookingLock(bookingId, async () => {
     const current: BookingOverrideRecord = (await repo.loadBookingOverride(bookingId)) || {};
+    const effectiveCustomerId = Number(
+      body?.customerId || current.customerId || INITIAL_BOOKINGS.find((b) => b.id === bookingId)?.customerId || 0
+    );
 
     if (
       (action === 'CHECK_IN' || action === 'SAVE_CONSULTATION') &&
@@ -153,9 +160,11 @@ export async function executeIosBookingAction(
       };
     } else if (action === 'SAVE_CONSULTATION_DRAFT') {
       const attrs = body.attributes || {};
+      const mergedDraftAttrs = { ...(current.attributes || {}), ...attrs };
       nextOverride = {
         ...current,
-        attributes: { ...(current.attributes || {}), ...attrs },
+        ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
+        attributes: mergedDraftAttrs,
         notes: body.notes !== undefined ? body.notes : current.notes,
         selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
         selectedUnderCombo:
@@ -165,11 +174,24 @@ export async function executeIosBookingAction(
         serviceType: body.skuPricing?.serviceType || current.serviceType,
         draftSavedAt: new Date().toISOString(),
       };
+      if (
+        effectiveCustomerId > 0 &&
+        mergedDraftAttrs.isNewClientDiagnosticDone === true &&
+        hasCompleteNaturalLashAttributes(mergedDraftAttrs)
+      ) {
+        await repo.saveCustomerNaturalLashProfile(effectiveCustomerId, mergedDraftAttrs);
+      }
     } else if (action === 'SAVE_CONSULTATION') {
       const attrs = body.attributes || {};
+      const savedCustNaturalLash =
+        effectiveCustomerId > 0 ? await repo.loadCustomerNaturalLashProfile(effectiveCustomerId) : null;
+      const baseExistingAttrs = {
+        ...(savedCustNaturalLash || {}),
+        ...(current.attributes || {}),
+      };
       const naturalLashValidation = validateNaturalLashConsultationSave({
         incomingAttributes: attrs,
-        existingAttributes: current.attributes,
+        existingAttributes: baseExistingAttrs,
         customerVisits:
           body.customerVisits !== undefined
             ? Number(body.customerVisits)
@@ -187,9 +209,16 @@ export async function executeIosBookingAction(
         };
       }
 
+      const mergedAttrs = {
+        ...baseExistingAttrs,
+        ...attrs,
+        isNewClientDiagnosticDone: true,
+      };
+
       const isAssignOther = body.assignmentMode === 'ASSIGN_OTHER';
       nextOverride = {
         ...current,
+        ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
         status: isAssignOther ? 'CHECKED_IN' : body.nextStatus || 'SERVICING',
         orderState: isAssignOther ? 'Consultation' : body.nextStatus === 'SERVICING' ? 'Service Start' : 'Consultation',
         checkInStaffId: current.checkInStaffId || actorStaffId,
@@ -201,7 +230,7 @@ export async function executeIosBookingAction(
           : current.assignedStaffName && current.assignedStaffName !== 'Chờ phân công (Đầu tua)'
             ? current.assignedStaffName
             : actorStaffName,
-        attributes: body.attributes || current.attributes,
+        attributes: mergedAttrs,
         selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
         selectedUnderCombo:
           body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
@@ -216,6 +245,9 @@ export async function executeIosBookingAction(
         consultedByStaffName: actorStaffName,
         consultedAt: new Date().toISOString(),
       };
+      if (effectiveCustomerId > 0 && hasCompleteNaturalLashAttributes(mergedAttrs)) {
+        await repo.saveCustomerNaturalLashProfile(effectiveCustomerId, mergedAttrs);
+      }
     } else if (action === 'ASSIGN_STAFF') {
       nextOverride = {
         ...current,
@@ -226,8 +258,29 @@ export async function executeIosBookingAction(
         orderState: 'Preparation',
       };
     } else if (action === 'START_SERVICE') {
+      const savedCustNaturalLash =
+        effectiveCustomerId > 0 ? await repo.loadCustomerNaturalLashProfile(effectiveCustomerId) : null;
+      const effectiveAttrs = {
+        ...(savedCustNaturalLash || {}),
+        ...(current.attributes || {}),
+      };
+      if (
+        current.attributes?.isNewClientDiagnosticDone === false ||
+        !hasCompleteNaturalLashAttributes(effectiveAttrs)
+      ) {
+        return {
+          statusCode: 400,
+          payload: {
+            success: false,
+            error:
+              'Bắt buộc kiểm tra mi thật và chọn đầy đủ 7/7 thông số trước khi đến bước Nhiệm Vụ Ca Làm và bắt đầu ca làm.',
+          },
+        };
+      }
       nextOverride = {
         ...current,
+        ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
+        attributes: { ...effectiveAttrs, isNewClientDiagnosticDone: true },
         status: 'SERVICING',
         orderState: 'Service Start',
         assignedStaffId: current.assignedStaffId || actorStaffId,
@@ -242,6 +295,26 @@ export async function executeIosBookingAction(
         },
       };
     } else if (action === 'UPDATE_PROGRESS' || action === 'SAVE_PROGRESS') {
+      if (body.orderState === 'Preparation') {
+        const savedCustNaturalLash =
+          effectiveCustomerId > 0 ? await repo.loadCustomerNaturalLashProfile(effectiveCustomerId) : null;
+        const effectiveAttrs = {
+          ...(savedCustNaturalLash || {}),
+          ...(current.attributes || {}),
+        };
+        if (
+          current.attributes?.isNewClientDiagnosticDone === false ||
+          !hasCompleteNaturalLashAttributes(effectiveAttrs)
+        ) {
+          return {
+            statusCode: 400,
+            payload: {
+              success: false,
+              error: 'Bắt buộc kiểm tra mi thật và chọn đầy đủ 7/7 thông số trước khi mở tiến trình & bắt đầu ca làm.',
+            },
+          };
+        }
+      }
       const incomingProgress = { ...(body.progress || {}) };
 
       if (
@@ -325,17 +398,22 @@ export async function executeIosBookingAction(
         checkedOutAt: new Date().toISOString(),
       };
     } else if (action === 'COMPLETE_ORDER' || action === 'COMPLETE_CHECKOUT') {
-      const checkOutStaffId = current.checkOutStaffId || actorStaffId;
+      const checkOutStaffId = Number(current.checkOutStaffId || actorStaffId);
       const checkOutStaffName = current.checkOutStaffName || actorStaffName;
       const checkOutStaffTier = current.checkOutStaffTier || actorStaffTier;
+      const checkInStaffId = Number(current.checkInStaffId || actorStaffId);
+      const assignedStaffId = Number(current.assignedStaffId || actorStaffId);
       const completedAtIso = new Date().toISOString();
-      nextOverride = {
+
+      const draftOverride: BookingOverrideRecord = {
         ...current,
         status: 'DONE',
-        orderState: 'Completed',
+        checkInStaffId,
+        assignedStaffId,
         checkOutStaffId,
         checkOutStaffName,
         checkOutStaffTier,
+        cartProducts: body.cartProducts !== undefined ? body.cartProducts : current.cartProducts,
         selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
         selectedUnderCombo:
           body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
@@ -353,6 +431,34 @@ export async function executeIosBookingAction(
         },
         completedAt: completedAtIso,
       };
+
+      const settlement = await settleIosOrderWithLegacyPhp(
+        {
+          bookingId,
+          mergedOverride: draftOverride,
+          checkInStaffId,
+          assignedStaffId,
+          checkOutStaffId,
+        },
+        {
+          loadSettlementReceipt: (id) => repo.loadSettlementReceipt(id),
+          saveSettlementReceipt: (id, receipt) => repo.saveSettlementReceipt(id, receipt),
+          ...bridgeDepsOverride,
+        }
+      );
+
+      nextOverride = {
+        ...draftOverride,
+        orderState: settlement.orderState,
+        billing: {
+          ...draftOverride.billing,
+          settlementStatus: settlement.settlementStatus,
+          ...(settlement.bankTransferRef ? { bankTransferRef: settlement.bankTransferRef } : {}),
+          legacySyncedAt: settlement.settledAt,
+        },
+      };
+
+      invalidateStaffStatsCache([actorStaffId, assignedStaffId, checkInStaffId, checkOutStaffId]);
     } else if (action === 'REVERT_TO_INCOMING') {
       nextOverride = {
         status: 'INCOMING',
@@ -360,6 +466,9 @@ export async function executeIosBookingAction(
       };
     } else if (action === 'RESET_DEMO') {
       await repo.deleteBookingOverride(bookingId);
+      if (effectiveCustomerId > 0) {
+        await repo.deleteCustomerNaturalLashProfile(effectiveCustomerId);
+      }
       nextOverride = null;
     } else {
       nextOverride = Object.keys(current).length > 0 ? current : null;
@@ -378,6 +487,7 @@ export async function executeIosBookingAction(
         action,
         override: nextOverride,
         updatedOverride: nextOverride ?? undefined,
+        settlementStatus: nextOverride?.billing?.settlementStatus,
         cloudSynced: true,
         cloudSyncedAt: nowIso,
         savedAt: nowIso,

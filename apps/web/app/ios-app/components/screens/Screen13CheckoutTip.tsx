@@ -6,19 +6,22 @@ import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import {
   calculateActorTipBreakdown,
-  calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
+  resolveEffectiveServiceTotal,
 } from '../../state/useIosBillingCheckout';
+import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 
 interface Screen13CheckoutTipProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
+  cvPlusRules?: Partial<CvToCvPlusRequirements>;
   onBack: () => void;
   onRecordTip: (tipAmount: number) => void;
 }
 
-export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Screen13CheckoutTipProps) {
+export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRecordTip }: Screen13CheckoutTipProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
@@ -46,15 +49,42 @@ export function Screen13CheckoutTip({ booking, actor, onBack, onRecordTip }: Scr
   const fundShare10 = tipBreakdown.fundShareAmount;
   const totalCvEarnedTip = tipBreakdown.actorEarnedAmount;
 
+  const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
   const comboTotal =
     (booking?.selectedCombo ? Number(booking.selectedCombo.price || 0) : 0) +
     (booking?.selectedUnderCombo ? Number(booking.selectedUnderCombo.price || 0) : 0);
-  const comboBonus = calculateCvComboTierBonus(comboTotal);
-  const serumBonus = (booking?.cartProducts || []).reduce(
-    (s, p) => s + (p.cvBonus !== undefined ? p.cvBonus * p.quantity : calculateCvSerumTierBonus(p.price, p.quantity)),
-    0
+  const dualComboBonus = calculateDualComboTierBonus(
+    booking?.selectedCombo ? Number(booking.selectedCombo.price || 0) : 0,
+    booking?.selectedUnderCombo ? Number(booking.selectedUnderCombo.price || 0) : 0,
+    cvPlusRules
   );
-  const subtotal = booking?.billing?.subtotal ?? booking?.servicePrice ?? 0;
+  const comboBonus = isCheckoutStaffCc ? 0 : dualComboBonus.totalBonus;
+  const serumBonus = isCheckoutStaffCc
+    ? 0
+    : (booking?.cartProducts || []).reduce(
+        (s, p) =>
+          s +
+          (p.cvBonus !== undefined
+            ? p.cvBonus * p.quantity
+            : calculateCvSerumTierBonus(p.price, p.quantity, cvPlusRules)),
+        0
+      );
+  const productTotal = (booking?.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
+  const fallbackEffectiveService = resolveEffectiveServiceTotal({
+    servicePrice: booking?.servicePrice ?? 0,
+    upgradePrice: booking?.upgradePrice,
+    serviceName: booking?.serviceName,
+    isComboLive: Boolean(booking?.comboLiveStatus?.isComboLive),
+    hasUnderMink: booking?.attributes?.hasUnderMink,
+    underMinkServiceType: booking?.attributes?.underMinkServiceType,
+    hasUnderMinkCombo: Boolean(
+      booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
+    ),
+    comboRedemption: booking?.comboRedemption || null,
+    selectedCombo: booking?.selectedCombo || null,
+    selectedUnderCombo: booking?.selectedUnderCombo || null,
+  });
+  const subtotal = booking?.billing?.subtotal ?? fallbackEffectiveService + comboTotal + productTotal;
   const vatRate = booking?.billing?.vatRate ?? 0.08;
   const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
   const diamondDiscountAmount = booking?.billing?.diamondDiscountAmount ?? (booking?.billing?.diamondUsed || 0) * 1000;

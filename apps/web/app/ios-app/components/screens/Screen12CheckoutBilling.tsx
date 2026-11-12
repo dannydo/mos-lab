@@ -1,18 +1,21 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
+import { GraduationCap } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { compressLashImage } from '../../utils/imageCompressor';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { IosCloudSyncStatus } from '../ui-kit/IosCloudSyncBadge';
 import {
-  calculateCvComboTierBonus,
+  calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
+import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
 import { CheckoutReceiptSection } from './checkout/CheckoutReceiptSection';
 import { CheckoutTipAndDiamondSection } from './checkout/CheckoutTipAndDiamondSection';
 import { CheckoutPaymentMethodSection } from './checkout/CheckoutPaymentMethodSection';
@@ -22,6 +25,7 @@ import { CheckoutZaloConsentModal } from './checkout/CheckoutZaloConsentModal';
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
+  cvPlusRules?: Partial<CvToCvPlusRequirements>;
   onBack: () => void;
   onChoosePayment: (
     method: 'CASH' | 'POS' | 'VIETQR',
@@ -41,6 +45,7 @@ interface Screen12CheckoutBillingProps {
 export function Screen12CheckoutBilling({
   booking,
   actor,
+  cvPlusRules,
   onBack,
   onChoosePayment,
   onEditService,
@@ -115,12 +120,20 @@ export function Screen12CheckoutBilling({
   const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
   const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
+  const hasUnderMinkCombo = Boolean(
+    booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
+  );
   const effectiveServiceCharge = resolveEffectiveServiceTotal({
     servicePrice,
     upgradePrice,
+    serviceName: booking?.serviceName,
     isComboLive,
+    hasUnderMink: booking?.attributes?.hasUnderMink,
+    underMinkServiceType: booking?.attributes?.underMinkServiceType,
+    hasUnderMinkCombo,
     comboRedemption,
     selectedCombo,
+    selectedUnderCombo,
   });
   const actorTipBreakdown = useMemo(
     () => calculateActorTipBreakdown(booking, actor, tipAmount),
@@ -135,11 +148,19 @@ export function Screen12CheckoutBilling({
   const vatAmount = Math.round(subtotal * vatRate);
   const totalWithVat = subtotal + vatAmount;
 
-  // CVL: TÍNH THƯỞNG COMBO DỰA TRÊN TỔNG DOANH THU COMBO THU ĐƯỢC (GỘP 2 GÓI NẾU CÓ)
+  // CVL: NẾU MUA 2 COMBO CÙNG LÚC, CỘNG GỘP TỔNG TIỀN TRƯỚC RỒI TÍNH THƯỞNG THEO CÔNG THỨC CAREER_PROGRESSION_RULES (<2M = 50K, MỖI 1M KẾ TIẾP = 50K)
+  // Trong kỳ Training (isTrainingCvlOrder): nếu CVL tự mở xem đơn (dù CC bấm checkout giùm), CVL vẫn thấy 100% thưởng của mình
+  const isCheckoutStaffCc =
+    actor?.tier === 'CC' || (!booking?.isTrainingCvlOrder && booking?.checkOutStaffTier === 'CC');
   const comboTotalRevenue =
     (selectedCombo ? Number(selectedCombo.price || 0) : 0) +
     (selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0);
-  const totalComboBonus = calculateCvComboTierBonus(comboTotalRevenue);
+  const dualComboBonus = calculateDualComboTierBonus(
+    selectedCombo ? Number(selectedCombo.price || 0) : 0,
+    selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0,
+    cvPlusRules
+  );
+  const totalComboBonus = isCheckoutStaffCc ? 0 : dualComboBonus.totalBonus;
   const hasBothCombos = Boolean(selectedCombo && selectedUnderCombo && comboTotalRevenue > 0);
 
   // TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ (Khớp 100% legacy database & iOS App cũ)
@@ -273,6 +294,37 @@ export function Screen12CheckoutBilling({
       />
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
+        {booking?.isTrainingCvlOrder && actor?.tier === 'CC' && (
+          <div
+            className={`rounded-2xl border p-3 text-xs ${
+              isDark
+                ? 'bg-amber-950/40 border-amber-700/50 text-amber-100'
+                : 'bg-amber-50 border-amber-300 text-amber-950'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 font-bold">
+              <span className="inline-flex items-center gap-1.5">
+                <GraduationCap className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>Ca Đào Tạo</span>
+                <CvFeather1Badge className="text-[11px] text-amber-500" />
+                <span>{assignedStaff}</span>
+              </span>
+              {booking.trainingMentorName && (
+                <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300">
+                  Mentor: CC {booking.trainingMentorName}
+                </span>
+              )}
+            </div>
+            <p className={`mt-1 leading-relaxed text-[11px] ${isDark ? 'text-amber-200/90' : 'text-amber-900/90'}`}>
+              100% thưởng Gói Combo
+              {dualComboBonus.totalBonus > 0 ? ` (+${dualComboBonus.totalBonus.toLocaleString('vi-VN')}đ)` : ''}, Dưỡng
+              mi &amp; +20% Tip ca này cộng trực tiếp cho <strong>{assignedStaff}</strong>. CC bấm Check-out giùm nhận{' '}
+              <strong className="tabular-nums">0đ</strong> ca này &bull; Cuối tháng Mentor CC nhận{' '}
+              <strong className="tabular-nums">1.000.000đ + 50%</strong> khi tỷ lệ Combo &ge; 20%.
+            </p>
+          </div>
+        )}
+
         <CheckoutReceiptSection
           isDark={isDark}
           booking={booking}
@@ -283,6 +335,7 @@ export function Screen12CheckoutBilling({
           checkOutStaff={checkOutStaff}
           serviceName={serviceName}
           servicePrice={servicePrice}
+          effectiveServiceCharge={effectiveServiceCharge}
           upgradePrice={upgradePrice}
           isComboLive={isComboLive}
           selectedCombo={selectedCombo}
@@ -292,6 +345,9 @@ export function Screen12CheckoutBilling({
           hasBothCombos={hasBothCombos}
           comboTotalRevenue={comboTotalRevenue}
           totalComboBonus={totalComboBonus}
+          upperComboBonus={isCheckoutStaffCc ? 0 : dualComboBonus.upperBonus}
+          underComboBonus={isCheckoutStaffCc ? 0 : dualComboBonus.underBonus}
+          isCheckoutStaffCc={isCheckoutStaffCc}
           subtotal={subtotal}
           vatAmount={vatAmount}
           tipAmount={tipAmount}

@@ -17,6 +17,11 @@ import {
 import { qaShopService } from '../qa-shop/qa-shop.service.js';
 import { TeamService } from '../teams/team.service.js';
 import { ComboRecognitionService } from '../customers/services/combo-recognition.service.js';
+import {
+  buildExcludeOtherMenteeTrainingOrderSql,
+  buildIsMenteeTrainingWindowSql,
+  CvlTrainingMentorshipService,
+} from '../kpi/services/cvl-training-mentorship.service.js';
 
 const CAREER_CONFIG_KEY = 'CAREER_PROGRESSION_RULES';
 
@@ -42,6 +47,71 @@ export function resolveBranchInfo(storeId?: number | null) {
   if (id === 16) return { storeId: 16, branchName: 'Estella Place', branchCode: 'EP' };
   if (id === 2) return { storeId: 2, branchName: 'PXL', branchCode: 'PXL' };
   return { storeId: 6, branchName: 'Đề Thám', branchCode: 'DT' };
+}
+
+export type CvRewardCalculationMode = 'ACTUAL_PAYROLL' | 'SIMULATION';
+
+/**
+ * Điều răn CV-002: Trong kỳ lương thực tế (ACTUAL_PAYROLL), ai bấm Checkout (check_out_staff_id)
+ * người đó nhận thưởng gói Combo & Dưỡng mi Yeppeum. Nếu CC bấm Checkout (check_out_staff_id = CC),
+ * CVL không được cộng trùng thưởng gói của ca đó.
+ */
+export function buildCheckoutAttributionSqlCondition(mode: CvRewardCalculationMode = 'SIMULATION'): string {
+  if (mode === 'ACTUAL_PAYROLL') {
+    return '(os.check_out_staff_id = ? OR ((os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND os.assigned_staff_id = ?))';
+  }
+  return '(os.check_out_staff_id = ? OR os.assigned_staff_id = ?)';
+}
+
+/**
+ * Tách chuẩn xác phần Tip kỹ thuật 70% và phần Tip tư vấn/checkout (+10% / +20%) từ bảng staff_tip.
+ * StaffTipRunner của Legacy PHP đã ghi thẳng tỷ lệ thực nhận (90%, 80%, 70%, 20%, 10%) vào tip_percentage,
+ * nên tuyệt đối không nhân (9/7) hoặc (2/7) lên dòng đã mang tip_percentage > 70 (tránh đội thành 115.7%).
+ */
+export function resolveCvTipSplitFromRows(
+  rows: Array<{ tip_amount?: number | string | null; tip_percentage?: number | string | null }>,
+  mode: CvRewardCalculationMode = 'SIMULATION'
+): {
+  totalLedgerTip: number;
+  baseTechTip: number;
+  consultDeltaTip: number;
+  tipCv: number;
+  tipCvPlus: number;
+} {
+  let totalLedgerTip = 0;
+  let baseTechTip = 0;
+  let simulatedTipCvPlus = 0;
+
+  for (const r of rows) {
+    const amt = Math.round(Number(r?.tip_amount || 0));
+    if (amt <= 0) continue;
+    const rawPct = Number(r?.tip_percentage || 0);
+    const pct = rawPct > 0 ? rawPct : 70;
+
+    totalLedgerTip += amt;
+
+    if (pct >= 70) {
+      const rowBase70 = pct === 70 ? amt : Math.round((amt * 70) / pct);
+      baseTechTip += rowBase70;
+      if (mode === 'SIMULATION' && pct === 70) {
+        simulatedTipCvPlus += Math.round((amt * 9) / 7);
+      } else {
+        simulatedTipCvPlus += amt;
+      }
+    } else {
+      // Dòng tip thuần Check-in / Check-out (10% hoặc 20%) khi Chuyên Viên khác làm dịch vụ
+      simulatedTipCvPlus += amt;
+    }
+  }
+
+  const consultDeltaTip = Math.max(0, totalLedgerTip - baseTechTip);
+  return {
+    totalLedgerTip,
+    baseTechTip,
+    consultDeltaTip,
+    tipCv: baseTechTip,
+    tipCvPlus: mode === 'ACTUAL_PAYROLL' ? totalLedgerTip : simulatedTipCvPlus,
+  };
 }
 
 export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') {
@@ -129,6 +199,8 @@ export class CareerProgressionService {
           ...(parsed.cvToCc || {}),
           ...(parsed.cvToCvPlus || {}),
         };
+        delete normalizedCvReq.comboUnder3mBonus;
+        delete normalizedCvReq.comboUnder4mBonus;
         if (!normalizedCvReq.minBananaCount || normalizedCvReq.minBananaCount <= 1) {
           normalizedCvReq.minBananaCount = 20;
         }
@@ -137,6 +209,8 @@ export class CareerProgressionService {
           ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvPlusToCvPlusPlus,
           ...(parsed.cvPlusToCvPlusPlus || {}),
         };
+        delete normalizedCvPlusReq.comboUnder3mBonus;
+        delete normalizedCvPlusReq.comboUnder4mBonus;
 
         cachedConfig = {
           ...DEFAULT_CAREER_PROGRESSION_CONFIG,
@@ -177,16 +251,20 @@ export class CareerProgressionService {
       ...(newConfig.cvToCc || {}),
       ...(newConfig.cvToCvPlus || {}),
     };
+    delete mergedCvReq.comboUnder3mBonus;
+    delete mergedCvReq.comboUnder4mBonus;
 
     const mergedCvPlusReq = {
       ...current.cvPlusToCvPlusPlus,
       ...(newConfig.cvPlusToCvPlusPlus || {}),
     };
+    delete mergedCvPlusReq.comboUnder3mBonus;
+    delete mergedCvPlusReq.comboUnder4mBonus;
 
     const merged: CareerProgressionConfig = {
       ...current,
       ...newConfig,
-      version: newConfig.version || current.version || '2026.4',
+      version: newConfig.version || current.version || '2026.5',
       updatedAt: new Date().toISOString(),
       updatedBy: updatedBy || 'Admin',
       cvToCc: mergedCvReq,
@@ -2539,15 +2617,18 @@ export class CareerProgressionService {
   }
 
   /**
-   * Tính toán chi tiết quyền lợi CV+ (lương giờ tăng, 90% tip, thưởng combo bậc thang)
+   * Tính toán chi tiết quyền lợi CVL (lương giờ tăng, 90% tip, thưởng combo bậc thang)
    * và áp dụng chế tài ngưỡng 20% NOT COMBO LIVE theo Kinh Thánh mOS.
    */
   static async calculateCvPlusRewardsForStaff(
     fastify: FastifyInstance,
     staffId: number,
     targetMonthOrRange?: string | { startStr: string; endStr: string },
-    persist = false
+    persist = false,
+    options?: { mode?: CvRewardCalculationMode }
   ): Promise<CvPlusRewardSnapshot> {
+    const mode: CvRewardCalculationMode = options?.mode || 'SIMULATION';
+    const checkoutAttributionSql = buildCheckoutAttributionSqlCondition(mode);
     const config = await this.getConfig(fastify);
     const cvReq = config.cvToCvPlus || config.cvToCc;
 
@@ -2555,8 +2636,12 @@ export class CareerProgressionService {
     let month: string;
     let startStr: string;
     let endStr: string;
+    let rangeStartDate: string;
+    let rangeEndDate: string;
+    let isCustomRange = false;
 
     if (typeof targetMonthOrRange === 'object' && targetMonthOrRange?.startStr && targetMonthOrRange?.endStr) {
+      isCustomRange = true;
       startStr = targetMonthOrRange.startStr.includes(' ')
         ? targetMonthOrRange.startStr
         : `${targetMonthOrRange.startStr} 00:00:00`;
@@ -2564,6 +2649,8 @@ export class CareerProgressionService {
         ? targetMonthOrRange.endStr
         : `${targetMonthOrRange.endStr} 23:59:59`;
       month = startStr.substring(0, 7);
+      rangeStartDate = startStr.slice(0, 10);
+      rangeEndDate = endStr.slice(0, 10);
     } else {
       month = (targetMonthOrRange as string) || '';
       if (!month) {
@@ -2582,7 +2669,11 @@ export class CareerProgressionService {
       const nextY = nextMonthDate.getFullYear();
       const nextM = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
       endStr = `${nextY}-${nextM}-01 00:00:00`;
+      rangeStartDate = `${month}-01`;
+      const lastDay = new Date(y, m, 0).getDate();
+      rangeEndDate = `${month}-${String(lastDay).padStart(2, '0')}`;
     }
+    const endOp = isCustomRange ? '<=' : '<';
 
     // 1. Resolve staff & legacy IDs
     const crmStaff = await fastify.prisma.crm.crmStaff.findFirst({
@@ -2616,6 +2707,25 @@ export class CareerProgressionService {
     }
 
     const branchName = resolveBranchInfo(branchId).branchName;
+    const safeLegacyStaffId = Math.floor(Number(targetLegacyStaffId || 0));
+    const allActiveTrainingPairs =
+      mode === 'ACTUAL_PAYROLL'
+        ? await CvlTrainingMentorshipService.getActivePairsForRange(fastify, rangeStartDate, rangeEndDate)
+        : [];
+    const menteeTrainingPairs = allActiveTrainingPairs.filter((p) => p.menteeLegacyStaffId === safeLegacyStaffId);
+    const effectiveCheckoutAttributionSql =
+      mode === 'ACTUAL_PAYROLL' && menteeTrainingPairs.length > 0 && safeLegacyStaffId > 0
+        ? `(${checkoutAttributionSql} OR (os.assigned_staff_id = ${safeLegacyStaffId} AND ${buildIsMenteeTrainingWindowSql(menteeTrainingPairs, 'o.booking_date_start')}))`
+        : checkoutAttributionSql;
+    const excludeOtherMenteeTrainingSql =
+      mode === 'ACTUAL_PAYROLL'
+        ? buildExcludeOtherMenteeTrainingOrderSql(
+            allActiveTrainingPairs,
+            safeLegacyStaffId,
+            'o.id',
+            'o.booking_date_start'
+          )
+        : '';
 
     // 2. Query completed orders for this staff
     const orders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -2626,7 +2736,7 @@ export class CareerProgressionService {
       WHERE os.assigned_staff_id = ?
         AND o.order_state = 'Completed'
         AND o.booking_date_start >= ?
-        AND o.booking_date_start < ?
+        AND o.booking_date_start ${endOp} ?
       `,
       targetLegacyStaffId,
       startStr,
@@ -2651,7 +2761,7 @@ export class CareerProgressionService {
       else notComboLiveOrders++;
     }
 
-    // 4. Query Combos sold by this staff (Kinh Thánh mOS Điều răn CV-002: Ai Checkout người đó được nhận thưởng Combo theo thang CV🪶)
+    // 4. Query Combos sold by this staff (Kinh Thánh mOS Điều răn CV-002: Ai Checkout người đó được nhận thưởng Combo theo thang CVL)
     const combos = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
       `
       SELECT 
@@ -2667,16 +2777,17 @@ export class CareerProgressionService {
         COALESCE(sl.service_name, s.service_key, 'Gói combo') AS combo_name
       FROM order_service_combo osc
       JOIN \`order\` o ON o.id = osc.order_id
-      JOIN order_service os ON os.order_id = osc.order_id AND (os.check_out_staff_id = ? OR os.assigned_staff_id = ?)
+      JOIN order_service os ON os.order_id = osc.order_id AND ${effectiveCheckoutAttributionSql}
       LEFT JOIN user_profile up ON up.user_id = o.user_id
       LEFT JOIN service s ON s.id = osc.service_id
       LEFT JOIN service_language sl ON sl.service_id = osc.service_id AND sl.language_id = 1
       WHERE o.order_state = 'Completed'
         AND o.booking_date_start >= ?
-        AND o.booking_date_start < ?
+        AND o.booking_date_start ${endOp} ?
         AND osc.total_price > 0
+        ${excludeOtherMenteeTrainingSql}
       GROUP BY osc.id
-      ORDER BY o.booking_date_start ASC
+      ORDER BY o.booking_date_start ASC, osc.id ASC
       `,
       targetLegacyStaffId,
       targetLegacyStaffId,
@@ -2684,23 +2795,41 @@ export class CareerProgressionService {
       endStr
     );
 
-    const comboDetails: CvPlusComboDetail[] = combos.map((c: any) => {
-      const price = Number(c.total_price);
+    // Kinh Thánh mOS Điều răn CV-002 (v2.8.0): Nếu khách mua 2 (hoặc nhiều) gói Combo cùng 1 lúc trong cùng 1 đơn (order_id),
+    // cộng gộp tổng tiền các gói trong đơn đó lại trước rồi mới áp công thức thưởng 1 lần duy nhất (<2M = 50K, mỗi 1M kế tiếp = +50K).
+    const combosByOrderId = new Map<number, any[]>();
+    for (const c of combos) {
+      const orderId = Number(c.order_id);
+      const group = combosByOrderId.get(orderId) || [];
+      group.push(c);
+      combosByOrderId.set(orderId, group);
+    }
+
+    const comboDetails: CvPlusComboDetail[] = [];
+    for (const [orderId, group] of combosByOrderId.entries()) {
+      const sortedItems = [...group].sort((a, b) => Number(b.total_price || 0) - Number(a.total_price || 0));
+      const comboItems = sortedItems.map((item: any) => ({
+        comboName: String(item.combo_name),
+        price: Number(item.total_price || 0),
+      }));
+      const price = comboItems.reduce((sum, item) => sum + item.price, 0);
       const bonus = calculateComboBonus(price, cvReq);
-      return {
-        orderId: Number(c.order_id),
-        orderCode: String(c.order_code),
-        orderDate: String(c.booking_date_start),
-        customerName: c.client_name ? String(c.client_name) : undefined,
-        comboName: String(c.combo_name),
+      const first = group[0];
+      comboDetails.push({
+        orderId,
+        orderCode: String(first.order_code),
+        orderDate: String(first.booking_date_start),
+        customerName: first.client_name ? String(first.client_name) : undefined,
+        comboName: comboItems.map((item) => item.comboName).join(' + '),
         price,
         bonus,
-      };
-    });
+        comboCount: comboItems.length,
+        comboItems,
+      });
+    }
 
     const rawComboBonusTotal = comboDetails.reduce((sum, c) => sum + c.bonus, 0);
-    const uniqueComboOrderIds = new Set(combos.map((c: any) => Number(c.order_id)));
-    const comboSoldCount = uniqueComboOrderIds.size;
+    const comboSoldCount = comboDetails.length;
 
     // Self combo conversion rate on NOT_COMBO_LIVE customer segment (Kinh Thánh mOS Điều răn CV-002)
     // Quy tắc:
@@ -2727,25 +2856,35 @@ export class CareerProgressionService {
     }
     const isPenalized = !isTargetHit;
 
-    // 5. Query Tips
-    const tipRes = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-      `
-      SELECT COALESCE(SUM(st.tip_amount), 0) as total_tip
-      FROM staff_tip st
-      JOIN \`order\` o ON o.id = st.order_id
-      WHERE st.user_id = ?
-        AND o.order_state = 'Completed'
-        AND o.booking_date_start >= ?
-        AND o.booking_date_start < ?
-      `,
-      targetLegacyStaffId,
-      startStr,
-      endStr
-    );
-    const rawTip = Number(tipRes[0]?.total_tip) || 0;
-    const tipCv = rawTip;
-    // Standard CV receives 70% tip. CV+ receives 90% tip (70% base + 20% consultation tip share).
-    const tipCvPlus = Math.round(rawTip * (9 / 7));
+    // 5. Query Tips (tách theo tip_percentage từ staff_tip để tránh nhân trùng 9/7 trên dòng đã 90%/80%)
+    const [tipRows, transferredTipMap] = await Promise.all([
+      fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
+        SELECT st.tip_amount, st.tip_percentage
+        FROM staff_tip st
+        JOIN \`order\` o ON o.id = st.order_id
+        WHERE st.user_id = ?
+          AND o.order_state = 'Completed'
+          AND o.booking_date_start >= ?
+          AND o.booking_date_start ${endOp} ?
+        `,
+        targetLegacyStaffId,
+        startStr,
+        endStr
+      ),
+      mode === 'ACTUAL_PAYROLL' && menteeTrainingPairs.length > 0
+        ? CvlTrainingMentorshipService.queryTransferredCcTipsByMentee(
+            fastify,
+            menteeTrainingPairs,
+            rangeStartDate,
+            rangeEndDate
+          )
+        : Promise.resolve(new Map<number, number>()),
+    ]);
+    const tipSplit = resolveCvTipSplitFromRows(tipRows, mode);
+    const transferredTrainingCcTip = transferredTipMap.get(safeLegacyStaffId) || 0;
+    const tipCv = tipSplit.tipCv;
+    const tipCvPlus = tipSplit.tipCvPlus + transferredTrainingCcTip;
 
     // 6. Query Shifts & Working Hours
     const shiftRes = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -2756,7 +2895,7 @@ export class CareerProgressionService {
       WHERE os.assigned_staff_id = ?
         AND o.order_state = 'Completed'
         AND o.booking_date_start >= ?
-        AND o.booking_date_start < ?
+        AND o.booking_date_start ${endOp} ?
       `,
       targetLegacyStaffId,
       startStr,
@@ -2786,12 +2925,13 @@ export class CareerProgressionService {
           COALESCE(pl.product_name, p.product_sku, 'Sản phẩm') as product_name
         FROM order_product op
         JOIN \`order\` o ON o.id = op.order_id
-        JOIN order_service os ON os.order_id = op.order_id AND (os.check_out_staff_id = ? OR os.assigned_staff_id = ?)
+        JOIN order_service os ON os.order_id = op.order_id AND ${effectiveCheckoutAttributionSql}
         LEFT JOIN product p ON p.id = op.product_id
         LEFT JOIN product_language pl ON pl.product_id = op.product_id AND pl.language_id = 1
         WHERE o.order_state = 'Completed'
           AND o.booking_date_start >= ?
-          AND o.booking_date_start < ?
+          AND o.booking_date_start ${endOp} ?
+          ${excludeOtherMenteeTrainingSql}
         GROUP BY op.id
         `,
         targetLegacyStaffId,

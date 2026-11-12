@@ -1,6 +1,7 @@
 import type { ReportPeriodComparison } from './report-period.js';
 import type { HolidayPayBreakdown } from './holiday-work.js';
 import type { CvPaystubSocialSecurityBreakdown, CvOtherAllowanceItem } from './cv.js';
+import type { CcTrainingMentorshipBreakdown } from './cvl-training-mentorship.js';
 
 export interface StaffKPI {
   id: number;
@@ -159,6 +160,8 @@ export interface CcPaystubRecord extends HolidayPayBreakdown {
   tippedVisitsCount?: number;
   diamondBonus?: number;
   diamondCount?: number;
+  trainingMentorshipBonus?: number;
+  trainingMentorshipDetails?: CcTrainingMentorshipBreakdown[];
   extraSupport?: number;
   extraSupportNote?: string;
   totalIncome: number;
@@ -202,6 +205,7 @@ export interface CcPaystubResponse {
     totalComboProductBonus: number;
     totalMinigameBonus: number;
     totalCcTipBonus: number;
+    totalTrainingMentorshipBonus?: number;
     totalExtraSupport?: number;
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;

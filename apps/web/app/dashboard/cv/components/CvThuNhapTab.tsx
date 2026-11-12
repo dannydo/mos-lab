@@ -53,6 +53,7 @@ import {
   removeVietnameseTones,
   type ReportComparisonMode,
   calculateFractionToday,
+  formatComboTierBracketLabel,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -1856,14 +1857,14 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       {/* 3. Thưởng Combo Bậc Thang */}
                       <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                          <span>Thưởng Combo Bậc</span>
+                          <span>Thưởng Combo</span>
                           <span className="text-blue-500 font-bold">📦</span>
                         </div>
                         <div className="text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums mt-1">
                           +{formatVND(bd.comboBonusTotal || 0)}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          {bd.comboDetails?.length || 0} gói combo đã chốt
+                          {bd.combosSoldCount || bd.comboDetails?.length || 0} đơn combo đã chốt
                         </div>
                       </div>
 
@@ -1914,14 +1915,11 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                             </thead>
                             <tbody className="divide-y divide-amber-100/50 dark:divide-amber-900/30">
                               {bd.comboDetails.map((item, idx) => {
-                                const ladderTier =
-                                  item.price >= 4000000
-                                    ? '≥4M'
-                                    : item.price >= 3000000
-                                      ? '3M-<4M'
-                                      : item.price >= 2000000
-                                        ? '2M-<3M'
-                                        : '<2M';
+                                const ladderTier = formatComboTierBracketLabel(item.price);
+                                const isMultiComboOrder =
+                                  (item.comboCount ?? 1) > 1 &&
+                                  Array.isArray(item.comboItems) &&
+                                  item.comboItems.length > 1;
                                 return (
                                   <tr
                                     key={item.orderId || idx}
@@ -1937,15 +1935,29 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                                       {item.customerName || 'Khách vãng lai'}
                                     </td>
                                     <td className="py-1 px-3 text-slate-700 dark:text-slate-300 text-[11px]">
-                                      {item.comboName}
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <span>{item.comboName}</span>
+                                        {isMultiComboOrder && (
+                                          <span className="inline-flex items-center justify-center leading-none py-0.5 px-1.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                            Gộp {item.comboCount} gói cùng lúc
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isMultiComboOrder && (
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">
+                                          {item
+                                            .comboItems!.map((sub) => `${sub.comboName} (${formatVND(sub.price)})`)
+                                            .join(' + ')}
+                                        </div>
+                                      )}
                                     </td>
                                     <td className="py-1 px-2 text-right tabular-nums text-slate-600 dark:text-slate-400 text-[11px]">
                                       {formatVND(item.price)}
                                     </td>
                                     <td className="py-1 px-2 text-center">
-                                      <Tag color="gold" className="text-[10px] m-0">
+                                      <span className="inline-flex items-center justify-center leading-none py-1 px-2 rounded text-[10px] font-bold tabular-nums bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                                         {ladderTier}
-                                      </Tag>
+                                      </span>
                                     </td>
                                     <td className="py-1 px-3 text-right tabular-nums font-bold text-amber-600 dark:text-amber-400 text-[11px]">
                                       +{formatVND(item.bonus)}

@@ -5,12 +5,17 @@ import {
   CcTipLeaderboardResponse,
   CcTipRecord,
   CcTipResponse,
+  CvlTrainingMentorshipPair,
   ReportComparisonMode,
   SafeAny,
   TIP_SYSTEM_CONFIG,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { getPreviousReportPeriod } from '../services/report-period-comparison.js';
+import {
+  buildExcludeTrainingCvlOrderSql,
+  CvlTrainingMentorshipService,
+} from '../services/cvl-training-mentorship.service.js';
 
 async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
@@ -24,7 +29,9 @@ function normalizeDatePart(value: string | undefined, fallback: string): string 
   return datePart && ISO_DATE_PATTERN.test(datePart) ? datePart : fallback;
 }
 
-function buildActualCheckinOrdersCte(): string {
+function buildActualCheckinOrdersCte(activeTrainingPairs: CvlTrainingMentorshipPair[] = []): string {
+  const excludeActualSql = buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'ro.actual_booking_date_start');
+  const excludeBookingSql = buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'o.booking_date_start');
   return `
     WITH filtered_orders AS (
       SELECT ro.order_id AS orderId, ro.actual_booking_date_start AS checkinTime
@@ -33,6 +40,7 @@ function buildActualCheckinOrdersCte(): string {
       WHERE o.order_state = 'Completed'
         AND ro.actual_booking_date_start >= ?
         AND ro.actual_booking_date_start <= ?
+        ${excludeActualSql}
 
       UNION ALL
 
@@ -43,6 +51,7 @@ function buildActualCheckinOrdersCte(): string {
         AND ro.actual_booking_date_start IS NULL
         AND o.booking_date_start >= ?
         AND o.booking_date_start <= ?
+        ${excludeBookingSql}
     )
   `;
 }
@@ -65,7 +74,12 @@ async function getCcTipSummaryForPeriod(
     storeQueryParams.push(`%${options.storeId}%`);
   }
 
-  const filteredOrdersCte = buildActualCheckinOrdersCte();
+  const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(
+    fastify,
+    options.dateFrom.slice(0, 10),
+    options.endAt.slice(0, 10)
+  );
+  const filteredOrdersCte = buildActualCheckinOrdersCte(activeTrainingPairs);
   const dateQueryParams = actualCheckinQueryParams(options.dateFrom, options.endAt);
 
   const [summaryRows, ccBonusRows] = await Promise.all([
@@ -155,7 +169,12 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         storeQueryParams.push(`%${storeId}%`);
       }
 
-      const filteredOrdersCte = buildActualCheckinOrdersCte();
+      const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(
+        fastify,
+        startPart,
+        endPart
+      );
+      const filteredOrdersCte = buildActualCheckinOrdersCte(activeTrainingPairs);
       const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
 
       const summarySql = `
@@ -311,10 +330,15 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      const activeCcIds = (await getActiveCcIds(fastify)) || [37790, 34295, 46092, 51659, 48026, 48997];
+      const [activeCcIdsRaw, activeTrainingPairs] = await Promise.all([
+        getActiveCcIds(fastify),
+        CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
+      ]);
+      const activeCcIds = activeCcIdsRaw || [37790, 34295, 46092, 51659, 48026, 48997];
       const activeCcStr = activeCcIds.join(',');
 
       let whereCond = `ro.date BETWEEN '${startPart}' AND '${endPart}' AND o.order_state = 'Completed'`;
+      whereCond += buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'ro.date');
 
       if (consultantId && consultantId !== 'ALL') {
         const numId = Number(consultantId);

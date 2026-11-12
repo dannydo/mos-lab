@@ -53,18 +53,18 @@ interface BibleTopicContent {
 const BIBLE_TOPICS_MAP: Record<CareerBibleTopic, BibleTopicContent> = {
   COMBO: {
     ruleId: 'CV-002',
-    ruleTitle: 'Quy chế Thưởng Combo Nối Mi Bậc Thang & Ngưỡng 21%',
-    version: '2.0.0',
+    ruleTitle: 'Quy chế Thưởng Combo Nối Mi Tối Giản & Ngưỡng 20%',
+    version: '2.8.0',
     icon: <Sparkles className="w-5 h-5 text-pink-400" />,
-    subtitle: 'Thưởng hoa hồng tiền tươi theo món và bậc thang giá trị gói combo',
+    subtitle: 'Thưởng hoa hồng tiền tươi tối giản hóa và cộng gộp các gói mua cùng 1 lúc',
     commandments: [
       'Áp dụng trên tập khách hàng Not Combo Live (chưa có gói combo đang hoạt động; khách có combo bán gia hạn vẫn cộng dồn).',
-      'Thưởng tiền tươi bậc thang: Gói < 2 Triệu nhận 50.000đ; Gói 2M - < 3M nhận 100.000đ; Gói 3M - < 4M nhận 150.000đ; Từ 4M trở lên cộng 50.000đ cho mỗi 1M (Gói 4.5M nhận 200.000đ/combo).',
-      'Định mức kỳ vọng: Tự chốt tối thiểu 8 combo/tháng (~+1.600.000đ hoa hồng cá nhân).',
-      'Tỷ lệ tự chốt tối thiểu bắt buộc: Phải đạt từ 21% trở lên trên tệp khách tiềm năng.',
+      'Công thức thưởng tối giản: Tổng đơn Combo < 2 Triệu = 50.000đ; mỗi 1 Triệu kế tiếp (từ 2M trở lên) = +50.000đ (2M–<3M: 100K, 3M–<4M: 150K, 4M–<5M: 200K, 8M–<9M: 400K...).',
+      'Quy tắc 2 Combo Mua Cùng 1 Lúc: Nếu khách mua 2 (hoặc nhiều) gói Combo cùng 1 lúc trong cùng 1 đơn (ví dụ Combo Mi Trên + Combo Mi Dưới cùng order_id), bắt buộc cộng gộp tổng tiền 2 gói lại trước rồi mới áp công thức tính thưởng 1 lần duy nhất.',
+      'Tỷ lệ tự chốt tối thiểu bắt buộc: Phải đạt từ 20% trở lên trên tệp khách Not Combo Live.',
     ],
-    rewardFormula: 'Thưởng Combo = 50k (<2M) | 100k (2-3M) | 150k (3-4M) | +50k/1M (≥4M)',
-    penalty: 'Nếu tỷ lệ chốt < 21%: Khóa 100% tiền thưởng combo (0đ) và lương tăng thêm; chỉ bảo lưu 90% tip tư vấn.',
+    rewardFormula: '< 2M = 50K • Mỗi 1M kế tiếp = +50K (Mua 2 gói cùng lúc: cộng gộp tổng tiền trước khi tính)',
+    penalty: 'Nếu tỷ lệ chốt < 20%: Khóa 100% tiền thưởng combo (0đ) và lương tăng thêm; chỉ bảo lưu 90% tip tư vấn.',
     routeScope: '/dashboard/career-path',
   },
   SERUM: {

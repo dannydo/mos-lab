@@ -389,24 +389,27 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'OPS-003',
     book: 'SERVICE',
-    title:
-      'Khách hàng mới bắt buộc kiểm tra mi thật trước — Không giá trị mặc định, bắt buộc thiết lập đủ 7/7 thông số',
+    title: 'Bắt buộc Kiểm Tra Mi Thật trước khi đến Nhiệm Vụ Ca Làm — Không giá trị mặc định, bắt buộc đủ 7/7 thông số',
     summary:
-      'Trên ứng dụng /ios-app, mục Kiểm Tra Mi Thật không có bất kỳ thông số mặc định (default) nào cho khách hàng khi chưa đo thực tế. Mọi khách hàng mới bắt buộc phải được Chuyên Viên đo và chọn đủ 7/7 thông số mi thật & dáng mắt trước khi mở khóa Thiết Kế Trên Mi Thật, áp dụng gợi ý, lưu tư vấn hoặc bắt đầu làm mi.',
+      'Trên ứng dụng /ios-app, mục Kiểm Tra Mi Thật không có bất kỳ thông số mặc định (default) nào khi chưa đo thực tế. Mọi khách hàng chưa có đủ hồ sơ 7/7 thông số mi thật (bất kể khách mới Lần 1 hay khách cũ quay lại đang ở trạng thái "Chưa đo") đều bắt buộc phải được Chuyên Viên đo và xác nhận đủ 7/7 thông số trước khi mở khóa Thiết Kế Trên Mi Thật, lưu tư vấn, đến màn hình Nhiệm Vụ Ca Làm (Bước 6) hoặc bắt đầu làm mi.',
     commandments: [
-      '1. Cấm gán giá trị mặc định (Zero-Default Invariant): Khi khách hàng chưa có hồ sơ đo mi thật đã lưu, cả 7 chỉ số trong Kiểm Tra Mi Thật (Dài, Dày, Số sợi, Hướng mọc, Dáng mắt khách, Nang mi, Độ nhạy cảm) đều khởi tạo rỗng ("Chưa đo" / "Chưa chọn"), tuyệt đối không tự điền sẵn bất kỳ con số hay lựa chọn mặc định nào.',
-      '2. Khóa Quick Check-in đối với Khách Hàng Mới: Tại màn hình Hồ Sơ Khách (Bước 2), khách hàng mới không được bấm "Nhận ca & Giữ form cũ" để bỏ qua bước tư vấn, kể cả khi đã mua trước gói ❖; hệ thống bắt buộc điều hướng vào Bước 3 (Kiểm Tra Mi Thật).',
-      '3. Bắt buộc thiết lập đủ 7/7 thông số mới mở khóa Thiết Kế & Gợi Ý: Chỉ sau khi Chuyên Viên trực tiếp đo và chọn đủ cả 7 thông số (Dài, Dày, Số sợi, Hướng, Dáng mắt khách, Nang mi, Độ nhạy cảm) và bấm xác nhận, hệ thống mới tính Tỷ Lệ Vàng Wings, mở khóa tab "Thiết Kế Trên Mi Thật" và cho phép lưu tư vấn.',
-      '4. Chốt chặn kép tại Backend & Nhiệm Vụ Ca Làm: API lưu tư vấn (/api/ios/bookings) và màn hình Nhận Ca (Bước 6) từ chối lưu hoặc bắt đầu bấm giờ làm mi đối với khách mới nếu isNewClientDiagnosticDone = false hoặc thiếu bất kỳ thông số nào trong 7 thông số mi thật; đồng thời khách mới không được gán lịch sử mi giả định và luôn mặc định loại dịch vụ Nối Mới.',
+      '1. Cấm gán giá trị mặc định (Zero-Default Invariant): Khi khách hàng chưa có hồ sơ đo mi thật đầy đủ, cả 7 chỉ số trong Kiểm Tra Mi Thật (Dài, Dày, Số sợi, Hướng mọc, Dáng mắt khách, Nang mi, Độ nhạy cảm) đều khởi tạo rỗng ("Chưa đo" / "Chưa chọn"), tuyệt đối không tự điền sẵn bất kỳ con số hay lựa chọn mặc định nào.',
+      '2. Khóa Quick Check-in khi Hồ Sơ Mi Thật "Chưa đo": Tại màn hình Hồ Sơ Khách (Bước 2), mọi khách hàng chưa có đủ 7/7 thông số mi thật không được bấm "Nhận ca & Giữ form cũ" để bỏ qua bước kiểm tra mi thật, kể cả khách cũ quay lại hoặc khách đã có gói ❖; hệ thống bắt buộc điều hướng vào Bước 3 (tab Kiểm Tra Mi Thật).',
+      '3. Bắt buộc thiết lập đủ 7/7 thông số mới mở khóa Thiết Kế & Lưu Tư Vấn: Chỉ sau khi Chuyên Viên trực tiếp đo, chọn đủ cả 7 thông số (Dài, Dày, Số sợi, Hướng, Dáng mắt khách, Nang mi, Độ nhạy cảm) và bấm xác nhận, hệ thống mới tính Tỷ Lệ Vàng Wings, mở khóa tab "Thiết Kế Trên Mi Thật", lưu hồ sơ mi thật theo khách hàng (IOS_CUST_NLASH:<customerId>) và cho phép chuyển sang Nhiệm Vụ Ca Làm.',
+      '4. Chốt chặn đa tầng trước và tại Nhiệm Vụ Ca Làm (Bước 6): Bộ định tuyến /ios-app, màn hình Nhiệm Vụ Ca Làm (Screen06CvDashboardReceive) và API Backend (/api/ios/bookings SAVE_CONSULTATION & START_SERVICE) tuyệt đối chặn lưu tư vấn, chặn vào/ở lại Bước 6 với trạng thái "Chưa đo" và chặn bấm giờ làm mi nếu thiếu bất kỳ thông số nào trong 7/7 thông số mi thật.',
     ],
     rationale:
-      'Nếu hệ thống điền sẵn giá trị mặc định (như 7mm, 0.05-0.07mm, Mí lót...), nhân sự có thể bấm xác nhận lướt qua mà không đo cữ mi thật thực tế của khách, dẫn đến chọn sai độ dài/độ dày gây nặng mắt hoặc hại nang mi.',
+      'Nếu cho phép khách hàng (dù là khách mới hay khách quay lại chưa từng đo đủ hồ sơ mi thật) đi thẳng đến Nhiệm Vụ Ca Làm với Hồ Sơ Mi Thật "Chưa đo", Chuyên Viên sẽ nối mi mà không có cữ dài/dày/mí an toàn thực tế, dẫn đến nguy cơ chọn sai độ dài hoặc độ dày gây nặng mắt và tổn hại nang mi.',
     examples: [
-      'Khách mới Nhàn (Lần 1) mở màn hình Tư Vấn Dáng Mi: cả 7 mục Dài, Dày, Số sợi, Hướng, Dáng mắt, Nang mi, Độ nhạy cảm đều ở trạng thái "Chưa đo / Chưa chọn" (0/7); Chuyên Viên bắt buộc chạm chọn đủ 7/7 thông số mới kích hoạt được nút xác nhận và mở khóa Thiết Kế Trên Mi Thật.',
+      'Khách mới Nhàn (Lần 1) hoặc khách cũ Hà (Lần 10) chưa có hồ sơ mi thật ("Chưa đo"): hệ thống khóa Quick Check-in, tự động mở tab Kiểm Tra Mi Thật (0/7), khóa Thiết Kế Trên Mi Thật và không cho đến bước Nhiệm Vụ Ca Làm cho tới khi Chuyên Viên đo & xác nhận đủ 7/7 thông số.',
+      'Sau khi khách đã được đo và lưu đủ 7/7 thông số mi thật một lần trên /ios-app, các lần ghé tiếp theo hệ thống tự động nạp lại Hồ Sơ Mi Thật ("Đã lưu") để hiển thị cữ Dài / Dày / Mí chuẩn xác trên Hồ Sơ Khách, Tư Vấn và Nhiệm Vụ Ca Làm.',
     ],
     tags: [
       'khách mới',
+      'khách quay lại',
+      'chưa đo',
       'kiểm tra mi thật',
+      'nhiệm vụ ca làm',
       'không mặc định',
       'no default',
       'tư vấn dáng mi',
@@ -416,8 +419,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/ios-app'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-11-11',
+    version: '1.2.0',
+    effectiveFrom: '2026-11-12',
     sources: [
       {
         label: 'Màn hình Tư Vấn Dáng Mi & Cổng Kiểm Tra Mi Thật',
@@ -529,18 +532,23 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Duy nhất Tiền Tip (tipAmount) của khách hàng trao tặng cho Chuyên Viên và nhân sự phục vụ TUYỆT ĐỐI KHÔNG chịu thuế VAT. Tiền tip được chuyển trọn vẹn 100% vào cơ cấu phân bổ thưởng nhân sự (CV 70%, In/Out 20%, Quỹ 10%).',
       'Tổng tiền thanh toán cuối cùng (Grand Total) bắt buộc tuân thủ công thức: Grand Total = Tạm tính (Subtotal) + Thuế VAT (8%) + Tiền Tip (♥) - Cấn trừ Ví Kim Cương (💎).',
       'Tất cả hóa đơn in nhiệt xuất cho khách hàng (Thermal Receipt Screen 14) bắt buộc phải in minh bạch dòng Thuế VAT (8%) ngay sau phần Tạm tính và trước Tiền Tip.',
+      'Kiểm soát dòng tiền & Kết chuyển sổ thuế trên /ios-app (Idempotent Legacy PHP Bridge): Đơn 0đ (trừ gói) hoặc chuyển khoản VIETQR (có mã tham chiếu / ảnh chứng từ ngân hàng) được kết chuyển thẳng sang Completed (order_payment, report_order, accountant_revenue_gst, client_store_balance). Đơn Tiền mặt (CASH) và Máy POS Quẹt thẻ được đồng bộ dịch vụ, gói ❖, dưỡng mi và khóa cứng check_out_staff_id về trạng thái CheckOut để Lễ tân/CC tại quầy thu tiền thật vào két hoặc nhập mã chuẩn chi POS rồi bấm Completed.',
     ],
     rationale:
       'Đảm bảo tuân thủ 100% quy định thuế GTGT hiện hành của nhà nước, minh bạch tài chính cho khách hàng trên hóa đơn điện tử/hóa đơn in nhiệt, đồng thời bảo vệ trọn vẹn quyền lợi tiền tip của nhân sự.',
-    tags: ['VAT', '8%', 'CHECKOUT', 'BILLING', 'RECEIPT', 'TAX', 'TIP_EXEMPT'],
+    tags: ['VAT', '8%', 'CHECKOUT', 'BILLING', 'RECEIPT', 'TAX', 'TIP_EXEMPT', 'VIETQR', 'CASH_DRAWER'],
     routeScopes: ['/ios-app', '/dashboard/revenue', '/dashboard/finance'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-08',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-12',
     sources: [
       { label: 'Quy tắc VAT 8% Checkout', reference: 'Kinh Thánh mOS Điều răn VAT-001' },
       { label: 'Nghị định 72/2024/NĐ-CP', reference: 'Chính sách giảm thuế GTGT 8%' },
       { label: 'Hóa đơn in nhiệt Wings', reference: 'Screen12CheckoutBilling.tsx & Screen14ThermalReceiptDone.tsx' },
+      {
+        label: 'Idempotent Legacy PHP Bridge',
+        reference: 'apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts',
+      },
     ],
   },
   {
@@ -607,18 +615,20 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Phạm vi triển khai toàn cầu (Global Invariant): Cấu hình này áp dụng thống nhất trên toàn hệ thống Wings Lashes cho lộ trình thăng tiến CV🪶 (CVL).',
       'Chuẩn 6 Ải Cốt Lõi xét thăng cấp (CV ➔ CV🪶): (1) Sản lượng tối thiểu 330 bộ mi trong 3 tháng liền (110 bộ/tháng); (2) Tỷ lệ bảo hành Fix ≤ 1.5%; (3) Tỷ lệ Tip cao hơn tối thiểu 10% trung bình shop; (4) Kiểm định QA/QC tối thiểu 4 lần/tháng (1 lần/tuần) và bắt buộc không có bài FAILED (0 vi phạm); (5) Chỉ số gắn kết đồng đội HI ≥ 70%; (6) Tích lũy tối thiểu 20 Chuối Yêu Thương check-in trong tháng.',
       'Ải Trùm Cuối (Thử thách tự tư vấn): 30 ngày trực tiếp tư vấn tại giường với tỷ lệ chốt combo đạt tối thiểu theo ngưỡng minSelfComboRate từ cấu hình hệ thống trên tập khách tiềm năng.',
-      'Đãi ngộ vượt trội khi đạt chuẩn: Lương giờ tăng +2.000đ/h (đạt mức hourlyWage trong config, VD: 27.500đ/h), nhận trọn 90% Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum 6ml (Giá gốc 1.1M nhận 100K; Giảm giá < 50% nhận 50K; Giảm sâu ≥ 50% nhận 10K; Tặng kèm Free 0đ nhận 1K), và Thưởng hoa hồng Combo bậc thang tiền tươi (<2M: 50k, 2M-<3M: 100k, 3M-<4M: 150k, ≥4M: +50k/1M; gói 4.5M nhận 200k/combo; chuẩn 8 combo = +1.600.000đ/tháng). Tổng hoa hồng bán hàng dự kiến đạt +2.000.000đ/tháng.',
+      'Đãi ngộ vượt trội khi đạt chuẩn: Lương giờ tăng +2.000đ/h (đạt mức hourlyWage trong config, VD: 27.500đ/h), nhận trọn 90% Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum 6ml (Giá gốc 1.1M nhận 100K; Giảm giá < 50% nhận 50K; Giảm sâu ≥ 50% nhận 10K; Tặng kèm Free 0đ nhận 1K), và Thưởng hoa hồng Combo theo công thức đơn giản hóa (< 2M = 50.000đ; mỗi 1M kế tiếp từ mốc 2M = +50.000đ: 2M-<3M nhận 100K, 3M-<4M nhận 150K, 4M-<5M nhận 200K, 8M-<9M nhận 400K, 11M-<12M nhận 550K...). Khi khách mua 2 (hoặc nhiều) gói Combo cùng 1 lúc trong cùng 1 đơn thanh toán (cùng order_id, ví dụ Mi Trên + Mi Dưới), hệ thống cộng gộp tổng tiền các gói lại trước rồi mới tính thưởng 1 lần theo công thức trên.',
       'Chế tài nghiêm minh khi không đạt: Chuyên Viên VẪN ĐƯỢC BẢO LƯU 90% TIP (công nhận nỗ lực tư vấn). Nhưng BỊ KHÓA TOÀN BỘ PHẦN THƯỞNG KHÁC: không nhận lương giờ tăng thêm (giữ mức gốc 25.5k/h), không nhận thưởng combo (0đ), không nhận thưởng dưỡng mi (0đ).',
       'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp tỷ lệ tự chốt combo vẫn dưới ngưỡng quy định trong config, Chuyên Viên bị giáng cấp và quay lại CV, tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
       'Quy tắc Combo Mi Dưới (LashesUnder) trong Tỷ lệ chốt Combo: Gói combo mi dưới khi Chuyên Viên chốt được VẪN ĐƯỢC TÍNH VÀO TỬ SỐ của tỷ lệ chốt combo (tăng thành tích bán hàng và hưởng thưởng combo). Tuy nhiên, khách hàng chỉ sở hữu gói combo mi dưới thì KHÔNG BỊ TÍNH là Combo Live; ca làm phục vụ khách này vẫn được tính vào mẫu số Not Combo Live (khách tiềm năng) để Chuyên Viên có cơ hội tư vấn tiếp gói combo mi chính.',
       'Quy tắc Tự Tư Vấn & Tự Checkout trên /ios-app (Phân quyền CV🪶 & 🪶CV🪶): CV🪶 (1 lông · CVL) được xem danh sách khách hàng của chính mình (assigned_staff_id = mình) trên /ios-app, tự xem hồ sơ khách (lịch sử mi, số dư gói Combo Live vs Not Combo Live), tự bấm Check-in, Tư vấn chọn dịch vụ / bán gói Combo mới, Khảo sát hài lòng (HI), thêm Dưỡng mi Yeppeum và bấm Chốt Check-out mà không cần nhờ CC. 🪶CV🪶 (2 lông · CVLL) ngoài khách của mình còn được xem danh sách khách trong tiệm để hỗ trợ Check-in / Tư vấn / Check-out chéo giùm cho CV khác.',
-      'Quy tắc Chia Tip 50/50 Check-in & Check-out và Ghi Nhận Thưởng Theo Người Checkout (Ai Checkout Người Đó Được Nhận): Phần 20% Tip tư vấn giữ nguyên quy tắc chia 50/50: người bấm Check-in (check_in_staff_id) nhận 10% Tip và người bấm Check-out (check_out_staff_id) nhận 10% Tip (cộng với 70% Tip làm mi của assigned_staff_id = 90% Tip khi CV🪶 tự làm trọn gói). Đơn hàng có bán gói Combo (order_service_combo) hoặc sản phẩm Dưỡng mi (order_product) được ghi nhận thưởng cho người thực hiện Check-out (check_out_staff_id); khi người Check-out là CV🪶 hoặc 🪶CV🪶, tiền thưởng được tính theo bảng thưởng tiền tươi bậc thang của CV🪶 trong CAREER_PROGRESSION_RULES (khác với công thức % hoa hồng của CC).',
+      'Quy tắc Chia Tip 50/50 Check-in & Check-out, Gộp Giá Trị Khi Mua Nhiều Combo Cùng Lúc & Ghi Nhận Thưởng Theo Người Checkout: Phần 20% Tip tư vấn giữ nguyên quy tắc chia 50/50: người bấm Check-in (check_in_staff_id) nhận 10% Tip và người bấm Check-out (check_out_staff_id) nhận 10% Tip (cộng với 70% Tip làm mi của assigned_staff_id = 90% Tip khi CVL tự làm trọn gói; Báo Cáo CV đối chiếu trực tiếp tip_percentage trong bảng staff_tip để tuyệt đối không nhân trùng 9/7). Đơn hàng có bán gói Combo (order_service_combo) hoặc sản phẩm Dưỡng mi (order_product) ghi nhận thưởng CVL cho đúng người thực hiện Check-out (os.check_out_staff_id = CVL/CVLL); nếu khách mua 2 (hoặc nhiều) gói Combo cùng lúc trên cùng 1 đơn (order_id), bắt buộc cộng gộp tổng giá trị các gói lại rồi tính thưởng 1 lần theo công thức < 2M = 50K, mỗi 1M kế tiếp = +50K trong CAREER_PROGRESSION_RULES. Nếu CC thực hiện Check-out trên đơn CV thường thì tính theo quy chế Combo-Sold của CC và không cộng trùng sang Báo Cáo CV. Riêng khi CVL đang trong kỳ Training có Mentor CC kèm cặp (Điều răn CC-006), toàn bộ thưởng Gói Combo, Dưỡng mi Yeppeum và +20% Tip trên đơn của CVL đều ghi nhận trực tiếp 100% cho CVL dù CC bấm Check-in/Check-out giùm.',
+      'Kết chuyển Sổ sách 100% tương thích iOS App cũ (Idempotent Legacy PHP Bridge): Mọi ca hoàn tất trên /ios-app đều đồng bộ qua chuỗi API gốc /1/order/... của hệ thống quản trị (kèm khóa chống gửi đúp theo order_id) để bảo đảm không sai lệch một đồng ở cả 3 sổ: Tiền của khách hàng (user_service_balance, user_balance), Tiền thưởng nhân viên (staff_bonus, staff_tip, Báo Cáo CV & CC) và Thuế với nhà nước (order_payment, report_order, accountant_revenue_gst).',
       'Quy chuẩn Hiển thị Lông Vũ Vector trên Giao diện (UI Vector Feather Invariant): Ký tự Unicode Feather 🪶 (U+1FAB6) trên font Apple Color Emoji của macOS/iOS bị render thành màu nâu sọc vằn, ở kích cỡ nhỏ (10-14px) nhìn giống ổ bánh mì baguette (🥖) hoặc điếu thuốc, làm tổn hại đến sự sang trọng, thanh thoát của thương hiệu Wings. Do đó, trên toàn bộ giao diện Web và iOS App, BẮT BUỘC sử dụng component vector <CvFeather1Badge /> và <CvFeather2Badge /> (kèm <FeatherSvg /> từ lucide-react) với màu vàng kim (text-amber-400 / #FFB400 hoặc #F59E0B) và đường nét vector sắc sảo, tuyệt đối không render chuỗi ký tự emoji thô 🪶 trên UI người dùng.',
     ],
     rationale:
-      'Gắn kết quyền lợi tài chính đột phá với năng lực trực tiếp bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
+      'Gắn kết quyền lợi tài chính đột phá với năng lực trực tiếp bán combo tại giường, đơn giản hóa công thức thưởng minh bạch dễ nhớ (<2M = 50K, mỗi 1M kế tiếp = +50K, gộp tổng tiền khi khách mua 2 gói cùng lúc), công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
     examples: [
       'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 10 combo (tỷ lệ 25% ≥ ngưỡng 20% hoặc 21% trong config): Nhận đủ lương 27.5k/h, 90% Tip, thưởng combo và thưởng dưỡng mi (+2.000.000đ hoa hồng bán hàng).',
+      'Khách Đoan mua cùng lúc 2 gói trong 1 đơn: New Hyperlight 770 (2.304.400đ) + New Flawless Under Mink 390 (1.684.800đ) ➔ Cộng gộp tổng = 3.989.200đ (bậc 3M-<4M) ➔ Thưởng +150.000đ. Khách Linh mua cùng lúc 2 gói: 4.579.200đ + 4.212.000đ = 8.791.200đ (bậc 8M-<9M) ➔ Thưởng +400.000đ. Khách mua 4.190.000đ + 780.000đ = 4.970.000đ (bậc 4M-<5M) ➔ Thưởng +200.000đ.',
       'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < ngưỡng config): Vẫn nhận đủ 90% Tip (+560.120đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn dưới ngưỡng (2 tháng liền), nhân viên sẽ bị giáng cấp về CV.',
     ],
     tags: [
@@ -646,20 +656,32 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '2 tháng liền',
       'giáng cấp',
       'Dưỡng mi Yeppeum 100K 50K 10K 1K',
+      'Gộp 2 combo cùng đơn',
+      '<2M = 50K mỗi 1M kế tiếp = 50K',
       'Ai checkout người đó được',
       'Check-in 10% Check-out 10%',
+      'Legacy PHP Bridge',
+      'Training Mentorship CC-006',
     ],
-    routeScopes: ['/dashboard/career-path', '/dashboard/cv', '/ios-app'],
+    routeScopes: ['/dashboard/career-path', '/dashboard/cv', '/dashboard/cc', '/ios-app'],
     status: 'ACTIVE',
-    version: '2.5.0',
-    effectiveFrom: '2026-11-03',
+    version: '2.8.0',
+    effectiveFrom: '2026-11-12',
     sources: [
       { label: 'Kinh Thánh mOS · Điều răn CV-002', reference: 'packages/shared/src/business-rules/mos-bible.ts' },
       {
         label: 'Quy chế CV🪶 & CAREER_PROGRESSION_RULES trong crmConfig',
         reference: 'packages/shared/src/types/career-progression.ts',
       },
-      { label: 'Mô phỏng thăng cấp Career Service', reference: 'apps/api/src/modules/career/career.service.ts' },
+      {
+        label: 'Mô phỏng & Tính lương thực tế Career Service',
+        reference: 'apps/api/src/modules/career/career.service.ts',
+      },
+      { label: 'Phiếu lương Báo Cáo CV', reference: 'apps/api/src/modules/kpi/routes/cv-paystub.routes.ts' },
+      {
+        label: 'Idempotent Legacy PHP Bridge',
+        reference: 'apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts',
+      },
     ],
   },
   {
@@ -744,6 +766,61 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
         reference: 'apps/api/src/modules/kpi/routes/cc-paystub.routes.ts',
       },
       { label: 'iOS Client Consultant Controller', reference: 'ClientConsultantHomeVC.swift' },
+    ],
+  },
+  {
+    id: 'CC-006',
+    book: 'REWARDS',
+    title:
+      'Quy chế Mentor CC Đào Tạo Chuyên Viên Tự Chủ (CVL): CC Bấm Giùm Nhận 0đ Ca CVL & Thưởng Mentor 1M + 50% Cuối Tháng (Combo ≥ 20%)',
+    summary:
+      'Trong thời gian Chuyên Viên Tự Chủ (CVL) được Mentor CC kèm cặp 1-kèm-1, mọi CC bấm Check-in/Check-out giùm CVL đều nhận 0đ và 0 điểm xoay từ đơn của CVL; toàn bộ đãi ngộ ca làm chuyển trực tiếp cho CVL. Cuối tháng, Mentor CC nhận 1.000.000đ + 50% tổng đãi ngộ tăng thêm của CVL trong Thu nhập CC khi tỷ lệ chốt Combo của CVL đạt từ 20,0% trở lên.',
+    commandments: [
+      'Ghép cặp 1-kèm-1 cố định theo kỳ cấu hình động (CVL_TRAINING_MENTORSHIP_CONFIG trong crmConfig, chỉ Admin / Super Admin được chỉnh sửa): Mỗi cặp quy định rõ 1 Mentor CC kèm 1 Mentee CVL kèm khoảng ngày hiệu lực [startDate, endDate] (ví dụ Tháng 11/2026 tại Đề Thám: Diễm Hương kèm Thảo Ly, Thục Nghi kèm Khanh Cao tính trọn tháng 01/11/2026 – 30/11/2026).',
+      'Triệt tiêu 100% thưởng của mọi CC trên đơn của Mentee CVL đang trong kỳ Training: Bất kể CC nào bấm Check-in hay Check-out giùm trên đơn có assigned_staff_id là Mentee CVL (kể cả Mentor CC lẫn các CC khác trong tiệm), tất cả CC đều nhận 0đ và 0 điểm từ đơn đó — loại trừ khỏi CC Xoay, CC Daily Sales Bonus (Combo, Nâng cấp, Sản phẩm, Thu nợ, Lượt khách) và 20% CC Tip. Các đơn phục vụ CV thường khác vẫn tính thưởng CC bình thường.',
+      'Quy nạp trực tiếp 100% quyền lợi về Mentee CVL trên Thu nhập CV: Trong suốt khoảng ngày hiệu lực Training, mọi gói Combo (order_service_combo), sản phẩm Dưỡng mi Yeppeum (order_product) và phần +20% Tip tư vấn/checkout phát sinh trên đơn của Mentee CVL đều được ghi nhận trực tiếp cho Mentee CVL ở tầng tính toán mOS (không sửa bảng giao dịch gốc staff_tip của Legacy MySQL) để Mentee CVL hưởng trọn 90% Tip, thưởng bậc thang Combo, thưởng Dưỡng mi và chênh lệch lương giờ +2.000đ/giờ khi mở khóa.',
+      'Công thức Thưởng Đào Tạo Cuối Tháng cho Mentor CC trên Thu nhập CC: Cơ sở nhân 50% bằng đúng Tổng đãi ngộ tăng thêm của Mentee CVL trên bảng Thu nhập CV (totalAdditionalIncome = Lương giờ tăng thêm + Tip tư vấn +20% + Thưởng Gói Combo bậc thang + Thưởng Dưỡng mi Yeppeum).',
+      'Điều kiện mở khóa đồng bộ Điều răn CV-002 (≥ 20,0% Combo trên tập khách Not Combo Live): Nếu cuối kỳ Mentee CVL đạt tỷ lệ chốt Combo ≥ 20,0%, Mentor CC được cộng trực tiếp (1.000.000đ + 50% × totalAdditionalIncome) vào Tổng Thu Nhập và Thực Lãnh trên bảng Thu nhập CC. Nếu Mentee CVL không đạt ngưỡng 20,0%, Mentor CC mất toàn bộ gói thưởng Training (nhận 0đ, không nhận cả 1.000.000đ cứng lẫn 50%).',
+    ],
+    rationale:
+      'Tạo động lực đồng hành thực chất giữa Mentor CC và Chuyên Viên Tự Chủ mới thăng cấp mà không nhân đôi chi phí thưởng trên cùng một đơn hàng, đồng thời gắn chặt quyền lợi đào tạo của Mentor với chuẩn chuyển đổi Combo ≥ 20% của Mentee.',
+    examples: [
+      'Tháng 11/2026 tại Đề Thám, CC Diễm Hương kèm CVL Thảo Ly (01/11 – 30/11): Ca của Thảo Ly dù Diễm Hương, Thục Nghi hay Quang Khải CC bấm Check-out giùm thì các CC đều nhận 0đ/0pts trên ca đó; toàn bộ gói Combo, Dưỡng mi và +20% Tip ghi nhận vào Thu nhập CV của Thảo Ly. Cuối tháng Thảo Ly đạt ≥ 20% Combo và có tổng đãi ngộ CVL tăng thêm là 3.400.000đ -> Diễm Hương nhận 1.000.000đ + 50% × 3.400.000đ = 2.700.000đ trong Thu nhập CC.',
+      'Nếu cuối tháng Mentee CVL chỉ đạt 18,5% Combo (< 20,0%): Mentor CC nhận 0đ thưởng đào tạo (mất cả 1.000.000đ cứng lẫn phần 50%).',
+    ],
+    tags: [
+      'CC',
+      'CVL',
+      'Mentor',
+      'Mentee',
+      'Training',
+      'Đào tạo',
+      '1M + 50%',
+      '20% Combo',
+      'Diễm Hương',
+      'Thục Nghi',
+      'Thảo Ly',
+      'Khanh Cao',
+      'Thu nhập CC',
+      'Thu nhập CV',
+    ],
+    routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/career-path', '/ios-app'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-01',
+    sources: [
+      {
+        label: 'Cấu hình & Công thức Thưởng Đào Tạo CVL',
+        reference: 'packages/shared/src/types/cvl-training-mentorship.ts',
+      },
+      {
+        label: 'Service Phân Bổ Training Mentorship',
+        reference: 'apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts',
+      },
+      {
+        label: 'Phiếu Lương Thu Nhập CC & CV',
+        reference: 'apps/api/src/modules/kpi/routes/cc-paystub.routes.ts',
+      },
     ],
   },
   {
@@ -952,7 +1029,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '3. Mua Gói Mới Tại Checkout — Trừ Ngay Buổi Đầu Tiên Vào Gói: Khi khách quyết định mua gói Combo ngay tại bước Checkout của ca làm, buổi làm mi hôm nay được trừ luôn làm buổi đầu tiên (1 Paid New) của gói vừa mua. Khách chỉ thanh toán đúng tiền gói Combo (miễn thu tiền lẻ buổi hôm nay).',
       '4. Hạch Toán Kế Toán Ví Gói (FIFO Paid vs Bonus 0đ): Ví gói khách hàng tách bạch Lượt Mua (combo_new_count, combo_refill_count) và Lượt Tặng kèm (bonus_new_count, bonus_refill_count giá 0đ). Khi khách dùng gói, hệ thống ưu tiên trừ Lượt Mua trước (ghi nhận doanh thu thực hiện theo đơn giá chuẩn New/Refill từ quỹ doanh thu chờ phân bổ Deferred Revenue); sau khi hết Lượt Mua mới trừ đến Lượt Tặng với giá trị hạch toán 0đ.',
       '5. Quy Đổi Linh Hoạt & Tự Động Tính Phụ Thu (Refill -> New & Up-size Volume): Nếu ví gói của khách chỉ còn lượt Dặm (Refill) nhưng khách làm Nối Mới (hoặc quá chu kỳ 25 ngày), hệ thống cho phép trừ 1 lượt Refill trong gói và tự động cộng phụ thu chênh lệch (Giá New - Giá Refill). Nếu khách nâng cấp số sợi (Up-size Volume) hoặc đổi lên dòng mi cao hơn, hệ thống trừ 1 lượt gói và tự động cộng phụ thu chênh lệch đơn giá.',
-      '6. Thưởng Tiền Tươi Chốt Combo Cho CV🪶 / 🪶CV🪶: Tính tự động theo bậc thang giá trị gói (Điều răn CV-002): < 2M thưởng 50.000đ; 2M - < 3M thưởng 100.000đ; 3M - < 4M thưởng 150.000đ; từ 4M trở lên thưởng Math.floor(ComboPrice / 1.000.000) * 50.000đ.',
+      '6. Thưởng Tiền Tươi Chốt Combo Cho CV🪶 / 🪶CV🪶: Tính tự động theo công thức tối giản hóa (Điều răn CV-002): Tổng giá trị đơn Combo < 2M thưởng 50.000đ; mỗi 1M kế tiếp (từ 2M trở lên) cộng thêm +50.000đ (2M-<3M: 100.000đ, 3M-<4M: 150.000đ, 4M-<5M: 200.000đ...). Nếu khách mua 2 gói Combo cùng 1 lúc trong cùng 1 đơn thanh toán (ví dụ Combo Mi Trên + Combo Mi Dưới cùng order_id), bắt buộc cộng gộp tổng tiền 2 gói lại trước rồi mới áp công thức tính thưởng 1 lần duy nhất.',
     ],
     rationale:
       'Thay thế hoàn toàn trang tra cứu rời rạc bên ngoài bằng nguồn chân lý duy nhất trong mOS, ngăn chặn việc chọn nhầm gói tại quầy/giường và tự động hóa 100% kế toán doanh thu chờ phân bổ cũng như phụ thu nâng cấp.',
@@ -970,8 +1047,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/dashboard/catalog', '/ios-app', '/dashboard/customers', '/dashboard/appointments'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-05',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-12',
     sources: [
       {
         label: 'Wings Combo Catalog & Accounting Engine',

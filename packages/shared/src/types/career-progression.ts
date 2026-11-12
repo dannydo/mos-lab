@@ -43,13 +43,13 @@ export interface CvToCvPlusRequirements {
   serumDeepDiscountPriceBonus?: number;
   /** Thưởng dưỡng mi tặng kèm Free (1.000đ/cây) */
   serumFreePriceBonus?: number;
-  /** Thưởng combo giá trị < 2 triệu (50.000đ) */
+  /** Thưởng mốc nền cho tổng gói Combo < 2 triệu (mặc định: 50.000đ) */
   comboUnder2mBonus?: number;
-  /** Thưởng combo giá trị 2 triệu - < 3 triệu (100.000đ) */
+  /** @deprecated Đã đơn giản hóa công thức theo Điều răn CV-002 v2.8.0 (<2M = 50K, mỗi 1M kế tiếp = +50K) */
   comboUnder3mBonus?: number;
-  /** Thưởng combo giá trị 3 triệu - < 4 triệu (150.000đ) */
+  /** @deprecated Đã đơn giản hóa công thức theo Điều răn CV-002 v2.8.0 (<2M = 50K, mỗi 1M kế tiếp = +50K) */
   comboUnder4mBonus?: number;
-  /** Thưởng bậc thang cộng thêm mỗi 1 triệu từ 4 triệu trở lên (50.000đ/1M) */
+  /** Thưởng cộng thêm cho mỗi 1 triệu kế tiếp từ mốc 2 triệu trở lên (mặc định: 50.000đ/1M) */
   comboStepPerMillionBonus?: number;
   /** Lương theo giờ áp dụng khi lên CV+ (mặc định: 27.500đ/h, tăng +2.000đ/h) */
   hourlyWage?: number;
@@ -108,13 +108,13 @@ export interface CvPlusToCvPlusPlusRequirements {
   serumDeepDiscountPriceBonus?: number;
   /** Thưởng dưỡng mi tặng kèm Free (1.000đ/cây) */
   serumFreePriceBonus?: number;
-  /** Thưởng combo giá trị < 2 triệu (50.000đ) */
+  /** Thưởng mốc nền cho tổng gói Combo < 2 triệu (mặc định: 50.000đ) */
   comboUnder2mBonus?: number;
-  /** Thưởng combo giá trị 2 triệu - < 3 triệu (100.000đ) */
+  /** @deprecated Đã đơn giản hóa công thức theo Điều răn CV-002 v2.8.0 (<2M = 50K, mỗi 1M kế tiếp = +50K) */
   comboUnder3mBonus?: number;
-  /** Thưởng combo giá trị 3 triệu - < 4 triệu (150.000đ) */
+  /** @deprecated Đã đơn giản hóa công thức theo Điều răn CV-002 v2.8.0 (<2M = 50K, mỗi 1M kế tiếp = +50K) */
   comboUnder4mBonus?: number;
-  /** Thưởng bậc thang cộng thêm mỗi 1 triệu từ 4 triệu trở lên (50.000đ/1M) */
+  /** Thưởng cộng thêm cho mỗi 1 triệu kế tiếp từ mốc 2 triệu trở lên (mặc định: 50.000đ/1M) */
   comboStepPerMillionBonus?: number;
   /** Tỷ lệ chia hoa hồng cho CV làm mi khi CV++ chốt hộ (0.20 = 20%) */
   crossConsultCvShareRate?: number;
@@ -292,17 +292,15 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi nhẹ (< 50%)
   serumDeepDiscountPriceBonus: 10000, // 10K/cây giá giảm sâu (>= 50%)
   serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
-  comboUnder2mBonus: 50000, // 50K cho combo < 2M
-  comboUnder3mBonus: 100000, // 100K cho combo < 3M
-  comboUnder4mBonus: 150000, // 150K cho combo < 4M
-  comboStepPerMillionBonus: 50000, // +50K/1M từ 4M trở lên
+  comboUnder2mBonus: 50000, // < 2M = 50K
+  comboStepPerMillionBonus: 50000, // Mỗi 1M kế tiếp (từ 2M trở lên) = +50K
   hourlyWage: 27500, // 27.500đ/h (+2.000đ/h so với CV 25.500đ/h)
   tipShareRatio: 0.9, // 90% = 70% làm mi + 20% tư vấn
   enforceComboPenalty: true, // Chế tài nếu combo < 21%: khóa lương tăng thêm và thưởng bán hàng, chỉ giữ 20% tip tư vấn
 };
 
 const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
-  minMonthsInCvPlus: 2, // 2 tháng ở vị trí CV+
+  minMonthsInCvPlus: 2, // 2 tháng ở vị trí CVL
   minOrders: 350, // 350 ca / 3 tháng liền
   maxFixRate: 0.015, // Tỷ lệ lỗi Fix <= 1.5%
   minTipRatioAboveShop: 0.15, // Tip cao hơn 15% so với trung bình shop
@@ -325,11 +323,9 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi nhẹ (< 50%)
   serumDeepDiscountPriceBonus: 10000, // 10K/cây giá giảm sâu (>= 50%)
   serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
-  comboUnder2mBonus: 50000, // 50K cho combo < 2M
-  comboUnder3mBonus: 100000, // 100K cho combo < 3M
-  comboUnder4mBonus: 150000, // 150K cho combo < 4M
-  comboStepPerMillionBonus: 50000, // +50K/1M từ 4M trở lên
-  crossConsultCvShareRate: 0.2, // Chia 20% cho Chuyên Viên CV làm mi khi CV++ chốt hộ
+  comboUnder2mBonus: 50000, // < 2M = 50K
+  comboStepPerMillionBonus: 50000, // Mỗi 1M kế tiếp (từ 2M trở lên) = +50K
+  crossConsultCvShareRate: 0.2, // Chia 20% cho Chuyên Viên CV làm mi khi CVLL chốt hộ
   hourlyWage: 29500, // 29.500đ/h (+4.000đ/h so với CV 25.500đ/h)
   tipShareRatio: 0.9, // 90% trên khách của mình
 };
@@ -344,7 +340,7 @@ const DEFAULT_CV_PLUS_PLUS_TO_FM: CvPlusPlusToFmRequirements = {
 };
 
 export const DEFAULT_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = {
-  version: '2026.4',
+  version: '2026.5',
   updatedAt: new Date().toISOString(),
   updatedBy: 'System Update',
   cvToCvPlus: DEFAULT_CV_TO_CV_PLUS,
@@ -599,9 +595,11 @@ export interface StaffCareerStatus {
 }
 
 /**
- * Tính tiền thưởng hoa hồng Combo bậc thang theo giá trị gói (Kinh Thánh mOS Điều răn COMBO-REWARD-001):
- * - Dưới 2M: +50K
- * - Mỗi 1M kế tiếp: +50K (2M -> 100K, 3M -> 150K, 4M -> 200K, 9M -> 450K...)
+ * Tính tiền thưởng hoa hồng Combo bậc thang theo tổng giá trị gói trong đơn (Kinh Thánh mOS Điều răn CV-002 v2.8.0):
+ * - Nếu khách mua 2 (hoặc nhiều) gói Combo cùng lúc trong 1 đơn hàng (cùng order_id), cộng gộp tổng tiền các gói lại trước rồi thưởng theo công thức.
+ * - Dưới 2M (< 2.000.000đ): comboUnder2mBonus (mặc định 50.000đ)
+ * - Mỗi 1M kế tiếp từ mốc 2M trở lên: +comboStepPerMillionBonus (mặc định +50.000đ/1M)
+ *   => 2M-<3M: 100K | 3M-<4M: 150K | 4M-<5M: 200K | 8M-<9M: 400K | 11M-<12M: 550K...
  */
 export function calculateComboBonus(
   price: number,
@@ -610,14 +608,24 @@ export function calculateComboBonus(
     comboStepPerMillionBonus?: number;
     comboUnder3mBonus?: number;
     comboUnder4mBonus?: number;
-  }
+  } | null
 ): number {
   if (!price || price <= 0) return 0;
   const under2m = config?.comboUnder2mBonus ?? 50_000;
   const step = config?.comboStepPerMillionBonus ?? 50_000;
 
   if (price < 2_000_000) return under2m;
-  return Math.floor(price / 1_000_000) * step;
+  const extraMillionsFrom2M = Math.floor((price - 2_000_000) / 1_000_000) + 1;
+  return under2m + extraMillionsFrom2M * step;
+}
+
+/**
+ * Định dạng nhãn bậc thang Combo theo bước nhảy 1M từ mốc 2M (<2M, 2M-<3M, 3M-<4M, ..., 8M-<9M, 11M-<12M)
+ */
+export function formatComboTierBracketLabel(price: number): string {
+  if (!price || price < 2_000_000) return '<2M';
+  const floorM = Math.floor(price / 1_000_000);
+  return `${floorM}M-<${floorM + 1}M`;
 }
 
 /**
@@ -665,7 +673,7 @@ export interface BananaTransactionResponse {
 }
 
 /**
- * Chi tiết từng gói Combo được bán bởi Chuyên Viên
+ * Chi tiết đơn chốt gói Combo của Chuyên Viên (tự động gộp tổng tiền khi khách mua 2 gói cùng lúc trong 1 đơn order_id)
  */
 export interface CvPlusComboDetail {
   orderId: number;
@@ -675,6 +683,8 @@ export interface CvPlusComboDetail {
   comboName?: string;
   price: number;
   bonus: number;
+  comboCount?: number;
+  comboItems?: Array<{ comboName: string; price: number }>;
 }
 
 /**

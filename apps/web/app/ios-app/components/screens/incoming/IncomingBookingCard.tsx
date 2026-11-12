@@ -333,6 +333,14 @@ export function IncomingBookingCard({
               ' pts'
             )}
           </div>
+
+          {doneSummary.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' && (
+            <div className="pt-0.5">
+              <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-700/60 text-[9px] font-extrabold tracking-tight">
+                Chờ Quầy chốt
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="w-[88px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch">

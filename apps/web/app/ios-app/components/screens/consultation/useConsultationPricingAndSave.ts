@@ -108,6 +108,7 @@ export function useConsultationPricingAndSave({
     naturalDensity,
     naturalCount,
     isNaturalLashComplete,
+    hasCheckedNaturalLash,
     mustCompleteNaturalLashBeforeProceeding,
     triggerMandatoryLashCheckGuard,
   } = diagnostic;
@@ -122,6 +123,17 @@ export function useConsultationPricingAndSave({
   const executeFinalSave = (confirmedUpgradePrice?: number) => {
     const finalUpgradePrice = confirmedUpgradePrice !== undefined ? confirmedUpgradePrice : totalUpgradeAmount;
     const finalNotes = isOverridden && overrideReason ? `[CVL Override: ${overrideReason}] ${notes}`.trim() : notes;
+
+    if (booking?.id) {
+      try {
+        const snap = getLocalProgressSnapshot(booking.id) || {};
+        saveLocalProgressSnapshot(booking.id, {
+          ...snap,
+          bookingId: booking.id,
+          consultationDraft: undefined,
+        });
+      } catch (_) {}
+    }
 
     onSave(
       {
@@ -226,7 +238,7 @@ export function useConsultationPricingAndSave({
       naturalLashThickness: naturalThickness,
       naturalLashDensity: naturalDensity,
       naturalLashCount: naturalCount,
-      isNewClientDiagnosticDone: isNaturalLashComplete ? true : undefined,
+      isNewClientDiagnosticDone: hasCheckedNaturalLash && isNaturalLashComplete ? true : undefined,
       lashHealth: selectedLashHealth || undefined,
       lashTrail: selectedLashTrail || undefined,
       medicalProblem: selectedMedicalProblem || undefined,
@@ -253,6 +265,7 @@ export function useConsultationPricingAndSave({
     naturalThickness,
     naturalDensity,
     naturalCount,
+    hasCheckedNaturalLash,
     isNaturalLashComplete,
     selectedLashHealth,
     selectedLashTrail,
@@ -272,6 +285,7 @@ export function useConsultationPricingAndSave({
             attributes: currentAttrs,
             notes,
             selectedNewComboPkg,
+            selectedUnderComboPkg,
             updatedAt: new Date().toISOString(),
           },
         });
@@ -281,7 +295,7 @@ export function useConsultationPricingAndSave({
     if (onAutoSaveDraft) {
       await onAutoSaveDraft(
         currentAttrs,
-        selectedComboObject || booking?.selectedCombo,
+        selectedComboObject,
         livePricingAndCvPoints
           ? {
               skuName: livePricingAndCvPoints.skuName,
@@ -300,9 +314,10 @@ export function useConsultationPricingAndSave({
   }, [
     buildCurrentAttributes,
     booking?.id,
-    booking?.selectedCombo,
     onAutoSaveDraft,
     selectedComboObject,
+    selectedNewComboPkg,
+    selectedUnderComboPkg,
     livePricingAndCvPoints,
     totalUpgradeAmount,
     serviceType,

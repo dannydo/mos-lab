@@ -228,6 +228,8 @@ export interface CvPlusPaystubBreakdown {
     comboName: string;
     price: number;
     bonus: number;
+    comboCount?: number;
+    comboItems?: Array<{ comboName: string; price: number }>;
   }>;
 }
 

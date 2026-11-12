@@ -19,8 +19,8 @@ This document is the authoritative developer contract for AI Agents working insi
    - Only `CVL`, `CVLL`, `CC`, and `Admin / Super Admin` (`canAccessIosConsultationApp`) may access `/ios-app`.
    - Non-admin users are strictly locked to their authenticated role (`resolveLockedIosRoleForUser`), ignoring `?role=` spoofing.
    - `CVL` accounts MUST NEVER see `STORE_ALL` or other specialists' bookings — they may ONLY view **(a)** the 1 next unassigned lobby customer (`Đầu tua`) and **(b)** their own assigned/checked-in/checked-out customers (`filterBookingsForCvlScope`).
-5. **Zero-Default 7/7 Natural Lash Diagnostic Gate (Kinh Thánh mOS `OPS-003`)**:
-   - Natural Lash Check has **zero pre-filled defaults**. New clients (`customerVisits <= 1` or `isNewClientDiagnosticDone === false`) MUST have all 7 parameters measured (`naturalLashLength`, `naturalLashThickness`, `naturalLashCount`, `lashTrail`, `eyeShape`, `lashHealth`, `medicalProblem`) before unlocking Lash Design, saving consultation, or starting the servicing timer (`hasCompleteNaturalLashSet` / `validateNaturalLashConsultationSave`).
+5. **Zero-Default 7/7 Natural Lash Diagnostic Gate (Kinh Thánh mOS `OPS-003` v1.2.0)**:
+   - Natural Lash Check has **zero pre-filled defaults**. EVERY customer without a complete saved 7/7 Natural Lash profile (`CHƯA ĐO` — whether `Lần 1` or returning `Lần 10`) MUST have all 7 parameters measured (`naturalLashLength`, `naturalLashThickness`, `naturalLashCount`, `lashTrail`, `eyeShape`, `lashHealth`, `medicalProblem`) before unlocking Lash Design, reaching `Nhiệm Vụ Ca Làm` (`Step 6`), saving consultation, or starting the servicing timer (`hasCompleteNaturalLashSet` / `validateNaturalLashConsultationSave`). Once saved, 7/7 profiles persist per customer under `IOS_CUST_NLASH:<customerId>`.
 6. **100% Live Data Purity vs. Explicit Demo Mode (`?demo=1`)**:
    - Default `/ios-app` runs in **Live Mode**: never initialize with or fall back to `INITIAL_BOOKINGS`, never fabricate lash history dates, and never inject mock bookings.
    - Pass `?demo=1` (Admin/QA testing) to enable `INITIAL_BOOKINGS` demo dataset and `RESET_DEMO` controls.
@@ -31,23 +31,23 @@ This document is the authoritative developer contract for AI Agents working insi
 
 > **Critical Note for AI Agents:** Because `Step 8` was inserted for `Screen07bLashProgressCleaned`, `currentStep` numbers `8..15` are offset by `+1` from `Screen08..Screen14` filenames! Always check this table when calling `setCurrentStep(n)`:
 
-| `currentStep` | Screen Component                   | Business Stage                                                              | Primary Next Transition                                            |
-| :-----------: | :--------------------------------- | :-------------------------------------------------------------------------- | :----------------------------------------------------------------- |
-|     **1**     | `Screen01IncomingBookings.tsx`     | Sảnh đón khách (`INCOMING` / `SERVICING` / `DONE` / `CANCEL`)               | `2` (Incoming), `3` (Checked-in), `6..14` (Servicing), `15` (Done) |
-|     **2**     | `Screen02CheckInProfile.tsx`       | Đón khách, Hồ sơ mi & Quick Check-in                                        | `3` (Tư vấn chi tiết) hoặc `6` (Quick Check-in khách cũ)           |
-|     **3**     | `Screen03ConsultationMatrix.tsx`   | Kiểm tra 7/7 mi thật, Thiết kế dáng mi & Tư vấn gói Combo                   | `6` (`CVL`/`CVLL` tự nhận ca) hoặc `4` (`CC`/`CVLL` chia ca)       |
-|     **4**     | `Screen04StaffQueueAssign.tsx`     | Điều phối phân công Chuyên Viên (`CC` / `CVLL`)                             | `5`                                                                |
-|     **5**     | `Screen05ServicingTransfer.tsx`    | Bàn giao iPad / Chuyển ca về máy Chuyên Viên                                | `6`                                                                |
-|     **6**     | `Screen06CvDashboardReceive.tsx`   | Chuyên Viên nhận ca & Cam kết thời lượng hoàn thành                         | `7` (khóa nếu khách mới chưa đủ 7/7 thông số mi thật)              |
-|     **7**     | `Screen07LashProgressBefore.tsx`   | Chụp ảnh mi **Before** (trước vệ sinh)                                      | `8`                                                                |
-|     **8**     | `Screen07bLashProgressCleaned.tsx` | Vệ sinh Spa mi, Đếm sợi dặm (trái/phải) & Ảnh **Cleaned**                   | `9`                                                                |
-|     **9**     | `Screen08LashProgressTimer.tsx`    | Đồng hồ bấm giờ thực hiện kỹ thuật nối mi                                   | `10`                                                               |
-|    **10**     | `Screen09LashProgressAfter.tsx`    | Chụp ảnh hoàn thiện **After**                                               | `11`                                                               |
-|    **11**     | `Screen10CustomerSurvey.tsx`       | Khảo sát hài lòng khách hàng (Happiness Index)                              | `12`                                                               |
-|    **12**     | `Screen11ProductUpsell.tsx`        | Tư vấn Dưỡng mi Yeppeum & Smart Combo Matching / Khấu trừ gói               | `13`                                                               |
-|    **13**     | `Screen12CheckoutBilling.tsx`      | Đối soát hóa đơn, Kim Cương, VAT 8% & Thanh toán (VietQR/POS/Tiền mặt)      | `14` (hoặc `15` hoàn tất)                                          |
-|    **14**     | `Screen13CheckoutTip.tsx`          | Bóc tách Tip (70% Làm mi + 10% Check-in + 10% Check-out) & Thưởng bậc thang | `15`                                                               |
-|    **15**     | `Screen14ThermalReceiptDone.tsx`   | Xuất phiếu in nhiệt ESC/POS LAN/Bluetooth & Đóng ca (`DONE`)                | `1` (Quay về Sảnh)                                                 |
+| `currentStep` | Screen Component                   | Business Stage                                                              | Primary Next Transition                                              |
+| :-----------: | :--------------------------------- | :-------------------------------------------------------------------------- | :------------------------------------------------------------------- |
+|     **1**     | `Screen01IncomingBookings.tsx`     | Sảnh đón khách (`INCOMING` / `SERVICING` / `DONE` / `CANCEL`)               | `2` (Incoming), `3` (Checked-in), `6..14` (Servicing), `15` (Done)   |
+|     **2**     | `Screen02CheckInProfile.tsx`       | Đón khách, Hồ sơ mi & Quick Check-in                                        | `3` (Tư vấn chi tiết) hoặc `6` (Quick Check-in khách cũ)             |
+|     **3**     | `Screen03ConsultationMatrix.tsx`   | Kiểm tra 7/7 mi thật, Thiết kế dáng mi & Tư vấn gói Combo                   | `6` (`CVL`/`CVLL` tự nhận ca) hoặc `4` (`CC`/`CVLL` chia ca)         |
+|     **4**     | `Screen04StaffQueueAssign.tsx`     | Điều phối phân công Chuyên Viên (`CC` / `CVLL`)                             | `5`                                                                  |
+|     **5**     | `Screen05ServicingTransfer.tsx`    | Bàn giao iPad / Chuyển ca về máy Chuyên Viên                                | `6`                                                                  |
+|     **6**     | `Screen06CvDashboardReceive.tsx`   | Chuyên Viên nhận ca & Cam kết thời lượng hoàn thành                         | `7` (khóa & chuyển về `3` nếu khách chưa đo đủ 7/7 thông số mi thật) |
+|     **7**     | `Screen07LashProgressBefore.tsx`   | Chụp ảnh mi **Before** (trước vệ sinh)                                      | `8`                                                                  |
+|     **8**     | `Screen07bLashProgressCleaned.tsx` | Vệ sinh Spa mi, Đếm sợi dặm (trái/phải) & Ảnh **Cleaned**                   | `9`                                                                  |
+|     **9**     | `Screen08LashProgressTimer.tsx`    | Đồng hồ bấm giờ thực hiện kỹ thuật nối mi                                   | `10`                                                                 |
+|    **10**     | `Screen09LashProgressAfter.tsx`    | Chụp ảnh hoàn thiện **After**                                               | `11`                                                                 |
+|    **11**     | `Screen10CustomerSurvey.tsx`       | Khảo sát hài lòng khách hàng (Happiness Index)                              | `12`                                                                 |
+|    **12**     | `Screen11ProductUpsell.tsx`        | Tư vấn Dưỡng mi Yeppeum & Smart Combo Matching / Khấu trừ gói               | `13`                                                                 |
+|    **13**     | `Screen12CheckoutBilling.tsx`      | Đối soát hóa đơn, Kim Cương, VAT 8% & Thanh toán (VietQR/POS/Tiền mặt)      | `14` (hoặc `15` hoàn tất)                                            |
+|    **14**     | `Screen13CheckoutTip.tsx`          | Bóc tách Tip (70% Làm mi + 10% Check-in + 10% Check-out) & Thưởng bậc thang | `15`                                                                 |
+|    **15**     | `Screen14ThermalReceiptDone.tsx`   | Xuất phiếu in nhiệt ESC/POS LAN/Bluetooth & Đóng ca (`DONE`)                | `1` (Quay về Sảnh)                                                   |
 
 **Auxiliary Role & Tab Screens (`page.tsx` top-level switches):**
 

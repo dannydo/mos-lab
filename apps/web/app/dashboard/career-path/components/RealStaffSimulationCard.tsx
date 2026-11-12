@@ -135,8 +135,6 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         serumOriginalPriceBonus: 100000,
         serumDiscountedPriceBonus: 50000,
         comboUnder2mBonus: 50000,
-        comboUnder3mBonus: 100000,
-        comboUnder4mBonus: 150000,
         comboStepPerMillionBonus: 50000,
         crossConsultCvShareRate: 0.2,
       }
@@ -160,8 +158,6 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         serumOriginalPriceBonus: 100000,
         serumDiscountedPriceBonus: 50000,
         comboUnder2mBonus: 50000,
-        comboUnder3mBonus: 100000,
-        comboUnder4mBonus: 150000,
         comboStepPerMillionBonus: 50000,
       };
 

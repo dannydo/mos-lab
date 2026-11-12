@@ -1,7 +1,10 @@
+import { calculateComboBonus, type CvToCvPlusRequirements } from './career-progression.js';
+
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
 export type CustomerBookingTab = 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
 export type IosBookingStatus = 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
+export type IosSettlementStatus = 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
 
 export interface IosBranchConfig {
   id: number;
@@ -28,6 +31,18 @@ export interface IosStaffMonthlyStats {
   completedShiftsCount: number;
   satisfactionRate: number;
   rating: number;
+  completedToday?: number;
+  pointsToday?: number;
+  monthlyPoints?: number;
+  serviceBonusMonth?: number;
+  tipEarnedToday?: number;
+  tipEarnedMonth?: number;
+  comboBonusToday?: number;
+  serumBonusToday?: number;
+  comboBonusMonth?: number;
+  hourlyPayMonth?: number;
+  shiftHours?: string;
+  cvPlusRules?: Partial<CvToCvPlusRequirements>;
 }
 
 export interface IosActiveActorProfile {
@@ -259,6 +274,8 @@ export interface IosBookingItem {
   assignedStaffId?: number;
   assignedStaffAvatar?: string;
   assignedStaffTier?: string;
+  isTrainingCvlOrder?: boolean;
+  trainingMentorName?: string;
   checkInStaffId?: number;
   checkInStaffName?: string;
   checkInStaffTier?: string;
@@ -304,6 +321,7 @@ export interface IosBookingItem {
   selectedCombo?: IosSelectedCombo | null;
   selectedUnderCombo?: IosSelectedUnderCombo | null;
   comboRedemption?: IosComboRedemption | null;
+  _localComboUpdatedAt?: number;
   attributes?: IosBookingAttributes;
   progress?: IosBookingProgress;
   survey?: {
@@ -346,6 +364,10 @@ export interface IosBookingItem {
     grandTotal: number;
     debtAmount?: number;
     completedAt?: string;
+    settlementStatus?: IosSettlementStatus;
+    bankTransferRef?: string;
+    posTransactionId?: string;
+    legacySyncedAt?: string;
   };
 }
 
@@ -464,9 +486,8 @@ export function hasCompleteNaturalLashSet(
   booking?: { attributes?: NaturalLashConsultationAttributes | null } | null
 ): boolean {
   if (!booking?.attributes) return false;
-  return Boolean(
-    booking.attributes.isNewClientDiagnosticDone === true && hasCompleteNaturalLashAttributes(booking.attributes)
-  );
+  if (booking.attributes.isNewClientDiagnosticDone === false) return false;
+  return hasCompleteNaturalLashAttributes(booking.attributes);
 }
 
 export function hasAnyNaturalLashAttribute(attrs?: NaturalLashConsultationAttributes | null): boolean {
@@ -487,26 +508,18 @@ export function validateNaturalLashConsultationSave(params: {
   existingAttributes?: NaturalLashConsultationAttributes | null;
   customerVisits?: number;
 }): { valid: boolean; error?: string } {
-  const attrs = params.incomingAttributes || {};
-  const isNewClient =
-    (typeof params.customerVisits === 'number' && params.customerVisits <= 1) ||
-    params.existingAttributes?.isNewClientDiagnosticDone === false ||
-    attrs.isNewClientDiagnosticDone === false;
-  const hasAll7 = hasCompleteNaturalLashAttributes(attrs);
-  const hasAny = hasAnyNaturalLashAttribute(attrs);
+  const incoming = params.incomingAttributes || {};
+  const mergedAttrs: NaturalLashConsultationAttributes = {
+    ...(params.existingAttributes || {}),
+    ...incoming,
+  };
+  const hasAll7 = hasCompleteNaturalLashAttributes(mergedAttrs);
 
-  if (attrs.isNewClientDiagnosticDone === false || (isNewClient && (!attrs.isNewClientDiagnosticDone || !hasAll7))) {
+  if (incoming.isNewClientDiagnosticDone === false || !hasAll7) {
     return {
       valid: false,
       error:
-        'Khách hàng mới bắt buộc phải đo và chọn đầy đủ 7 thông số Kiểm Tra Mi Thật (không có mặc định) trước khi lưu tư vấn.',
-    };
-  }
-
-  if ((attrs.isNewClientDiagnosticDone === true || hasAny) && !hasAll7) {
-    return {
-      valid: false,
-      error: 'Kiểm Tra Mi Thật không có giá trị mặc định: bắt buộc đo và chọn đủ cả 7/7 thông số trước khi lưu tư vấn.',
+        'Bắt buộc kiểm tra mi thật và chọn đầy đủ 7/7 thông số (không có mặc định) trước khi lưu tư vấn và đến bước Nhiệm Vụ Ca Làm.',
     };
   }
 
@@ -514,45 +527,154 @@ export function validateNaturalLashConsultationSave(params: {
 }
 
 /**
- * Thưởng hoa hồng Combo CVL (Kinh Thánh mOS Điều răn COMBO-REWARD-001):
- * - Dưới 2M: +50K
- * - Mỗi 1M kế tiếp: +50K (2M -> 100K, 3M -> 150K, 4M -> 200K, 9M -> 450K...)
+ * Thưởng hoa hồng Combo CVL theo công thức đơn giản hóa động từ CAREER_PROGRESSION_RULES (Kinh Thánh mOS Điều răn CV-002 v2.8.0):
+ * - Dưới 2M (< 2.000.000đ): comboUnder2mBonus (mặc định 50.000đ)
+ * - Mỗi 1M kế tiếp từ mốc 2M trở lên: +comboStepPerMillionBonus (mặc định +50.000đ/1M)
  */
-export function calculateCvComboTierBonus(comboPrice: number): number {
-  if (!comboPrice || comboPrice <= 0) return 0;
-  if (comboPrice < 2000000) return 50000;
-  return Math.floor(comboPrice / 1000000) * 50000;
+export function calculateCvComboTierBonus(comboPrice: number, rules?: Partial<CvToCvPlusRequirements> | null): number {
+  return calculateComboBonus(comboPrice, rules);
 }
 
-export function calculateCvSerumTierBonus(unitPrice: number, quantity: number): number {
+/**
+ * Khi khách mua 2 gói Combo cùng 1 lúc trong cùng 1 đơn thanh toán (Mi Trên + Mi Dưới),
+ * cộng gộp tổng tiền 2 gói lại trước rồi thưởng 1 lần theo công thức (<2M = 50K, mỗi 1M kế tiếp = +50K),
+ * khớp 1-1 với sổ kế toán management.order_service_combo (gom theo order_id) và Báo Cáo CV (career.service.ts).
+ */
+export function calculateDualComboTierBonus(
+  upperComboPrice?: number | null,
+  underComboPrice?: number | null,
+  rules?: Partial<CvToCvPlusRequirements> | null
+): { upperBonus: number; underBonus: number; totalBonus: number; combinedPrice: number } {
+  const uPrice = Math.max(0, Number(upperComboPrice || 0));
+  const dPrice = Math.max(0, Number(underComboPrice || 0));
+  const combinedPrice = uPrice + dPrice;
+  if (combinedPrice <= 0) {
+    return { upperBonus: 0, underBonus: 0, totalBonus: 0, combinedPrice: 0 };
+  }
+  const totalBonus = calculateCvComboTierBonus(combinedPrice, rules);
+  if (uPrice > 0 && dPrice > 0) {
+    return {
+      upperBonus: totalBonus,
+      underBonus: 0,
+      totalBonus,
+      combinedPrice,
+    };
+  }
+  return {
+    upperBonus: uPrice > 0 ? totalBonus : 0,
+    underBonus: dPrice > 0 ? totalBonus : 0,
+    totalBonus,
+    combinedPrice,
+  };
+}
+
+export function calculateCvSerumTierBonus(
+  unitPrice: number,
+  quantity: number,
+  rules?: Partial<CvToCvPlusRequirements> | null
+): number {
   if (!quantity || quantity <= 0) return 0;
-  const perUnit = unitPrice >= 1000000 ? 100000 : unitPrice > 550000 ? 50000 : unitPrice > 0 ? 10000 : 1000;
+  const origBonus = rules?.serumOriginalPriceBonus ?? 100000;
+  const discBonus = rules?.serumDiscountedPriceBonus ?? 50000;
+  const deepDiscBonus = rules?.serumDeepDiscountPriceBonus ?? 10000;
+  const freeBonus = rules?.serumFreePriceBonus ?? 1000;
+  const perUnit =
+    unitPrice >= 1000000 ? origBonus : unitPrice > 550000 ? discBonus : unitPrice > 0 ? deepDiscBonus : freeBonus;
   return perUnit * quantity;
+}
+
+export function resolveServicePriceSplit(params: {
+  servicePrice?: number;
+  serviceName?: string;
+  hasUnderMink?: boolean;
+  underMinkServiceType?: 'Normal' | 'Retain';
+  hasUnderMinkCombo?: boolean;
+}): { upperServicePrice: number; underServicePrice: number } {
+  const baseServicePrice = Math.max(0, Number(params.servicePrice ?? 0));
+  const svcNameLower = String(params.serviceName || '').toLowerCase();
+
+  const isPureUnderLash =
+    (svcNameLower.includes('mi dưới') || svcNameLower.includes('under mink')) && !svcNameLower.includes('+');
+
+  if (isPureUnderLash) {
+    return { upperServicePrice: 0, underServicePrice: baseServicePrice };
+  }
+
+  const inferredUnderRetain =
+    params.underMinkServiceType === 'Retain' ||
+    svcNameLower.includes('mi dưới (dặm') ||
+    svcNameLower.includes('dặm 250k');
+  const inferredHasPaidUnderMink =
+    !params.hasUnderMinkCombo &&
+    !svcNameLower.includes('trừ gói mi dưới') &&
+    (Boolean(params.hasUnderMink) ||
+      svcNameLower.includes('+ mi dưới (mới') ||
+      svcNameLower.includes('+ mi dưới (dặm'));
+
+  if (!inferredHasPaidUnderMink) {
+    return { upperServicePrice: baseServicePrice, underServicePrice: 0 };
+  }
+
+  const underListPrice = inferredUnderRetain ? 250000 : 390000;
+  if (baseServicePrice > underListPrice) {
+    return {
+      upperServicePrice: baseServicePrice - underListPrice,
+      underServicePrice: underListPrice,
+    };
+  }
+
+  return { upperServicePrice: 0, underServicePrice: baseServicePrice };
 }
 
 export function resolveEffectiveServiceTotal(params: {
   servicePrice?: number;
   upgradePrice?: number;
+  serviceName?: string;
   isComboLive?: boolean;
+  hasUnderMink?: boolean;
+  underMinkServiceType?: 'Normal' | 'Retain';
+  hasUnderMinkCombo?: boolean;
   selectedCombo?: Partial<IosSelectedCombo> | null;
+  selectedUnderCombo?: Partial<IosSelectedUnderCombo> | null;
   comboRedemption?: Partial<IosComboRedemption> | null;
 }): number {
-  const baseServicePrice = Number(params.servicePrice ?? 0);
-  const upgradePrice = Number(params.upgradePrice ?? 0);
+  const baseServicePrice = Math.max(0, Number(params.servicePrice ?? 0));
+  const upgradePrice = Math.max(0, Number(params.upgradePrice ?? 0));
+  const { upperServicePrice, underServicePrice } = resolveServicePriceSplit({
+    servicePrice: baseServicePrice,
+    serviceName: params.serviceName,
+    hasUnderMink: params.hasUnderMink,
+    underMinkServiceType: params.underMinkServiceType,
+    hasUnderMinkCombo: params.hasUnderMinkCombo,
+  });
+
+  const isUnderWaivedByNewCombo = Boolean(
+    params.selectedUnderCombo && params.selectedUnderCombo.todaySingleServiceWaived !== false
+  );
 
   if (params.comboRedemption) {
-    return Number(params.comboRedemption.totalCustomerPayToday ?? 0);
+    const redemptionPay = Math.max(0, Number(params.comboRedemption.totalCustomerPayToday ?? 0));
+    const extraUnderCharge = isUnderWaivedByNewCombo ? 0 : underServicePrice;
+    return redemptionPay + extraUnderCharge;
   }
+
   if (params.selectedCombo) {
-    if (params.selectedCombo.todaySingleServiceWaived) {
-      return 0;
+    const isUpperWaived = Boolean(params.selectedCombo.todaySingleServiceWaived);
+    if (params.isComboLive) {
+      const adjustedUpgrade = isUnderWaivedByNewCombo ? Math.max(0, upgradePrice - underServicePrice) : upgradePrice;
+      return isUpperWaived ? 0 : adjustedUpgrade;
     }
-    return params.isComboLive ? upgradePrice : baseServicePrice;
+    const upperPay = isUpperWaived ? 0 : upperServicePrice;
+    const underPay = isUnderWaivedByNewCombo ? 0 : underServicePrice;
+    return upperPay + underPay;
   }
+
   if (params.isComboLive) {
-    return upgradePrice;
+    return isUnderWaivedByNewCombo ? Math.max(0, upgradePrice - underServicePrice) : upgradePrice;
   }
-  return baseServicePrice;
+
+  const underPay = isUnderWaivedByNewCombo ? 0 : underServicePrice;
+  return upperServicePrice + underPay;
 }
 
 export function calculateActorTipBreakdown(
@@ -566,12 +688,17 @@ export function calculateActorTipBreakdown(
 
   const techStaffId = Number(booking?.assignedStaffId || actorStaffId || 0);
   const techStaffName = booking?.assignedStaffName || actorName;
+  const isTrainingCvl = Boolean(booking?.isTrainingCvlOrder && techStaffId > 0);
 
-  const checkInStaffId = Number(booking?.checkInStaffId || techStaffId || actorStaffId || 0);
-  const checkInStaffName = booking?.checkInStaffName || techStaffName;
+  const checkInStaffId = isTrainingCvl
+    ? techStaffId
+    : Number(booking?.checkInStaffId || techStaffId || actorStaffId || 0);
+  const checkInStaffName = isTrainingCvl ? techStaffName : booking?.checkInStaffName || techStaffName;
 
-  const checkOutStaffId = Number(booking?.checkOutStaffId || actorStaffId || techStaffId || 0);
-  const checkOutStaffName = booking?.checkOutStaffName || actorName;
+  const checkOutStaffId = isTrainingCvl
+    ? techStaffId
+    : Number(booking?.checkOutStaffId || actorStaffId || techStaffId || 0);
+  const checkOutStaffName = isTrainingCvl ? techStaffName : booking?.checkOutStaffName || actorName;
 
   const techShareAmount = Math.round(tipAmount * 0.7);
   const checkInShareAmount = Math.round(tipAmount * 0.1);
@@ -607,7 +734,8 @@ export function calculateActorTipBreakdown(
     fundShareAmount,
     actorEarnedPercent,
     actorEarnedAmount,
-    actorRoleSummary: roles.length > 0 ? roles.join(' + ') : 'Hỗ trợ ca (0%)',
+    actorRoleSummary:
+      roles.length > 0 ? roles.join(' + ') : isTrainingCvl ? 'Hỗ trợ ca Đào tạo CVL (0%)' : 'Hỗ trợ ca (0%)',
   };
 }
 

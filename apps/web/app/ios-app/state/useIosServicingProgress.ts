@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, Dispatch, SetStateAction } from 'react';
+import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import {
   saveLocalProgressSnapshot,
@@ -46,6 +47,11 @@ export function useIosServicingProgress({
       const targetBooking = bookings.find((b) => Number(b.id) === targetId);
       if (!targetBooking) return;
       setActiveBookingId(targetBooking.id);
+      if (!hasCompleteNaturalLashSet(targetBooking) && !targetBooking.progress?.startedAt) {
+        setActiveTab('booking');
+        setCurrentStep(3);
+        return;
+      }
       const cached =
         (await getLocalProgressSnapshotAsync(targetBooking.id)) || getLocalProgressSnapshot(targetBooking.id);
       const targetStep =
@@ -63,6 +69,10 @@ export function useIosServicingProgress({
   // Step 6 -> Step 7: CV starts task (Preparation - đồng hồ tự động chạy ngay)
   const handleCvStartTask = useCallback(
     (durationMinutes?: number) => {
+      if (!hasCompleteNaturalLashSet(activeBooking)) {
+        setCurrentStep(3);
+        return;
+      }
       const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
       const effectiveDuration = durationMinutes || activeBooking.serviceDuration || 60;
       const progressPatch = {

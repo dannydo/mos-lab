@@ -22,6 +22,21 @@ interface UseNaturalLashDiagnosticParams {
   setSelectedLengths: (lengths: number[]) => void;
 }
 
+function hasSavedCompleteDiagnostic(b?: BookingItem): boolean {
+  if (!b?.attributes || b.attributes.isNewClientDiagnosticDone !== true) return false;
+  return Boolean(
+    parseLengthRangeOrNull(b.attributes.naturalLashLength) &&
+    parseThicknessRangeOrNull(b.attributes.naturalLashThickness) &&
+    parseCountRangeOrNull(
+      b.attributes.naturalLashCount || resolveNaturalLashCountLabel(b.attributes.naturalLashDensity)
+    ) &&
+    b.attributes.lashTrail?.trim() &&
+    b.attributes.eyeShape?.trim() &&
+    b.attributes.lashHealth?.trim() &&
+    b.attributes.medicalProblem?.trim()
+  );
+}
+
 export function useNaturalLashDiagnostic({
   booking,
   selectedLength,
@@ -93,24 +108,7 @@ export function useNaturalLashDiagnostic({
   const hasPartialNaturalLashEdits = completedNaturalLashCount > 0 && !isNaturalLashComplete;
 
   const [hasCheckedNaturalLash, setHasCheckedNaturalLash] = useState<boolean>(() => {
-    const initialIsNew =
-      (booking?.customerVisits ?? 1) <= 1 ||
-      Boolean(booking?.attributes?.lashHealth?.includes('Virgin')) ||
-      booking?.attributes?.isNewClientDiagnosticDone === false;
-    const initialSavedComplete =
-      booking?.attributes?.isNewClientDiagnosticDone === true &&
-      Boolean(
-        parseLengthRangeOrNull(booking?.attributes?.naturalLashLength) &&
-        parseThicknessRangeOrNull(booking?.attributes?.naturalLashThickness) &&
-        parseCountRangeOrNull(
-          booking?.attributes?.naturalLashCount || resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity)
-        ) &&
-        booking?.attributes?.lashTrail?.trim() &&
-        booking?.attributes?.eyeShape?.trim() &&
-        booking?.attributes?.lashHealth?.trim() &&
-        booking?.attributes?.medicalProblem?.trim()
-      );
-    return !initialIsNew || initialSavedComplete;
+    return hasSavedCompleteDiagnostic(booking);
   });
 
   const [showMandatoryLashCheckAlert, setShowMandatoryLashCheckAlert] = useState<boolean>(false);
@@ -123,8 +121,10 @@ export function useNaturalLashDiagnostic({
   const eyeShapeFirstBtnRef = useRef<HTMLButtonElement>(null);
   const lashHealthFirstBtnRef = useRef<HTMLButtonElement>(null);
   const medicalProblemFirstBtnRef = useRef<HTMLButtonElement>(null);
+  const syncedBookingKeyRef = useRef<string>(`${booking?.id ?? 0}:${hasSavedCompleteDiagnostic(booking) ? '1' : '0'}`);
 
-  const mustCheckNaturalLashFirst = isNewClient && (!hasCheckedNaturalLash || !isNaturalLashComplete);
+  // Bắt buộc kiểm tra mi thật đủ 7/7 thông số (không mặc định) cho TẤT CẢ khách chưa đo (kể cả Lần 1 hay Lần 10)
+  const mustCheckNaturalLashFirst = !hasCheckedNaturalLash || !isNaturalLashComplete;
   const mustCompleteNaturalLashBeforeProceeding = mustCheckNaturalLashFirst || hasPartialNaturalLashEdits;
 
   const naturalLengthLabel = useMemo(() => {
@@ -242,28 +242,17 @@ export function useNaturalLashDiagnostic({
   const [notes, setNotes] = useState(booking?.attributes?.notes || booking?.customerNote || '');
 
   const [activeSubTab, setActiveSubTab] = useState<'SPECS' | 'PROFILE'>(() => {
-    const initialIsNew =
-      (booking?.customerVisits ?? 1) <= 1 ||
-      Boolean(booking?.attributes?.lashHealth?.includes('Virgin')) ||
-      booking?.attributes?.isNewClientDiagnosticDone === false;
-    const savedComplete =
-      booking?.attributes?.isNewClientDiagnosticDone === true &&
-      Boolean(
-        parseLengthRangeOrNull(booking?.attributes?.naturalLashLength) &&
-        parseThicknessRangeOrNull(booking?.attributes?.naturalLashThickness) &&
-        parseCountRangeOrNull(
-          booking?.attributes?.naturalLashCount || resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity)
-        ) &&
-        booking?.attributes?.lashTrail?.trim() &&
-        booking?.attributes?.eyeShape?.trim() &&
-        booking?.attributes?.lashHealth?.trim() &&
-        booking?.attributes?.medicalProblem?.trim()
-      );
-    const initialNeedsCheck = initialIsNew && !savedComplete;
-    return initialNeedsCheck ? 'PROFILE' : 'SPECS';
+    return hasSavedCompleteDiagnostic(booking) ? 'SPECS' : 'PROFILE';
   });
 
   useEffect(() => {
+    const savedComplete = hasSavedCompleteDiagnostic(booking);
+    const nextSyncKey = `${booking?.id ?? 0}:${savedComplete ? '1' : '0'}`;
+    if (syncedBookingKeyRef.current === nextSyncKey) {
+      return;
+    }
+    syncedBookingKeyRef.current = nextSyncKey;
+
     const allowRestore = booking?.attributes?.isNewClientDiagnosticDone !== false;
     setNaturalLengthRange(parseLengthRangeOrNull(allowRestore ? booking?.attributes?.naturalLashLength : undefined));
     setNaturalThicknessRange(
@@ -283,30 +272,11 @@ export function useNaturalLashDiagnostic({
     setSelectedMedicalProblem(allowRestore ? booking?.attributes?.medicalProblem || '' : '');
     setNotes(booking?.attributes?.notes || booking?.customerNote || '');
 
-    const clientIsNew =
-      (booking?.customerVisits ?? 1) <= 1 ||
-      Boolean(booking?.attributes?.lashHealth?.includes('Virgin')) ||
-      booking?.attributes?.isNewClientDiagnosticDone === false;
-    const savedComplete =
-      booking?.attributes?.isNewClientDiagnosticDone === true &&
-      Boolean(
-        parseLengthRangeOrNull(booking?.attributes?.naturalLashLength) &&
-        parseThicknessRangeOrNull(booking?.attributes?.naturalLashThickness) &&
-        parseCountRangeOrNull(
-          booking?.attributes?.naturalLashCount || resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity)
-        ) &&
-        booking?.attributes?.lashTrail?.trim() &&
-        booking?.attributes?.eyeShape?.trim() &&
-        booking?.attributes?.lashHealth?.trim() &&
-        booking?.attributes?.medicalProblem?.trim()
-      );
-    const needsCheck = clientIsNew && !savedComplete;
-    setHasCheckedNaturalLash(!needsCheck);
+    setHasCheckedNaturalLash(savedComplete);
     setShowMandatoryLashCheckAlert(false);
-    setActiveSubTab(needsCheck ? 'PROFILE' : 'SPECS');
+    setActiveSubTab(savedComplete ? 'SPECS' : 'PROFILE');
   }, [
     booking?.id,
-    booking?.customerVisits,
     booking?.customerNote,
     booking?.attributes?.notes,
     booking?.attributes?.naturalLashLength,
@@ -352,7 +322,7 @@ export function useNaturalLashDiagnostic({
     setHasCheckedNaturalLash(true);
     setShowMandatoryLashCheckAlert(false);
 
-    if (recommendation) {
+    if (recommendation && isNewClient) {
       setSelectedStyle(recommendation.recommendedDesign);
       setSelectedCurl(recommendation.recommendedCurl);
       setSelectedThickness(recommendation.recommendedThickness);

@@ -337,19 +337,22 @@ export function getDoneBookingSummary(b: BookingItem) {
   const durationMinutes = rawElapsed >= 20 && rawElapsed <= 150 ? rawElapsed : b.serviceDuration || 60;
   const timeAndDurationStr = `${bookingTimeStr} · ${durationMinutes}p`;
 
-  // 2. Dòng TIỀN (Chỉ số quan trọng nhất)
+  // 2. Dòng TIỀN (Chỉ số quan trọng nhất: tổng cả Combo Mi Trên + Combo Mi Dưới nếu mua 2 gói)
   const debtAmount = Number(b.debtAmount || b.billing?.debtAmount || 0);
   const hasDebt = debtAmount > 0;
 
-  const soldComboPrice = Number(b.selectedCombo?.price || (b.billing as any)?.soldComboPrice || 0);
+  const explicitComboSum = Number(b.selectedCombo?.price || 0) + Number(b.selectedUnderCombo?.price || 0);
+  const soldComboPrice =
+    explicitComboSum > 0 ? explicitComboSum : Number(b.billing?.comboTotal || (b.billing as any)?.soldComboPrice || 0);
   const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
   const upgradeOrPaidAmount = Number(
     b.upgradePrice && b.upgradePrice > 0 ? b.upgradePrice : isComboLive ? 0 : b.servicePrice
   );
 
-  // 3. Điểm CVL & Tip
+  // 3. Điểm CVL & Tip & Trạng thái hạch toán (Completed vs Chờ Quầy chốt Tiền mặt/POS)
   const cvPoints = Number(b.cvRotationPoints || 41);
   const tipAmount = Number(b.billing?.tipAmount || 0);
+  const settlementStatus = b.billing?.settlementStatus;
 
   return {
     timeAndDurationStr,
@@ -359,5 +362,6 @@ export function getDoneBookingSummary(b: BookingItem) {
     upgradeOrPaidAmount,
     cvPoints,
     tipAmount,
+    settlementStatus,
   };
 }

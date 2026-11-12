@@ -6,6 +6,7 @@ import {
   hasCompleteNaturalLashSet,
   validateNaturalLashConsultationSave,
   calculateCvComboTierBonus,
+  calculateDualComboTierBonus,
   calculateCvSerumTierBonus,
   resolveEffectiveServiceTotal,
   calculateActorTipBreakdown,
@@ -14,6 +15,7 @@ import {
   resolveServicingSubStatus,
   type IosBookingItem,
 } from '@mos-lab/shared';
+import { getDoneBookingSummary } from '../components/screens/incoming/incomingBookingHelpers';
 
 function makeBooking(overrides: Partial<IosBookingItem> = {}): IosBookingItem {
   return {
@@ -141,6 +143,43 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
           incomingAttributes: complete7,
         }).valid
       ).toBe(true);
+
+      // Returning client (Lần 10, CHƯA ĐO) must ALSO be gated until all 7/7 natural lash attributes are measured (OPS-003 v1.2.0)
+      const unmeasuredReturningBooking = makeBooking({
+        id: 339319,
+        customerName: 'Hà',
+        customerVisits: 10,
+        attributes: {
+          style: 'Doll',
+          curl: 'C',
+          length: '10-12 mm',
+          thickness: '0.05 mm',
+        },
+      });
+      expect(hasCompleteNaturalLashSet(unmeasuredReturningBooking)).toBe(false);
+      expect(
+        validateNaturalLashConsultationSave({
+          customerVisits: 10,
+          existingAttributes: unmeasuredReturningBooking.attributes,
+          incomingAttributes: { style: 'Doll' } as Record<string, string>,
+        }).valid
+      ).toBe(false);
+
+      const measuredReturningBooking = makeBooking({
+        ...unmeasuredReturningBooking,
+        attributes: {
+          ...unmeasuredReturningBooking.attributes!,
+          ...complete7,
+        },
+      });
+      expect(hasCompleteNaturalLashSet(measuredReturningBooking)).toBe(true);
+      expect(
+        validateNaturalLashConsultationSave({
+          customerVisits: 10,
+          existingAttributes: measuredReturningBooking.attributes,
+          incomingAttributes: {},
+        }).valid
+      ).toBe(true);
     });
   });
 
@@ -262,6 +301,68 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
       expect(tip.actorEarnedPercent).toBe(90);
       expect(tip.actorEarnedAmount).toBe(90000);
       expect(tip.fundShareAmount).toBe(10000);
+    });
+
+    it('calculates dual-combo tier bonuses by summing both packages first (<2M = 50K, +50K per next 1M) and sums both combos in Done card summary', () => {
+      const dual = calculateDualComboTierBonus(4190000, 780000);
+      expect(dual.combinedPrice).toBe(4970000);
+      expect(dual.upperBonus).toBe(200000);
+      expect(dual.underBonus).toBe(0);
+      expect(dual.totalBonus).toBe(200000);
+
+      // Linh (08/11/2026): 4.579.200 + 4.212.000 = 8.791.200 -> 400.000đ
+      expect(calculateDualComboTierBonus(4579200, 4212000).totalBonus).toBe(400000);
+      // Đoan (12/11/2026): 2.304.400 + 1.684.800 = 3.989.200 -> 150.000đ
+      expect(calculateDualComboTierBonus(2304400, 1684800).totalBonus).toBe(150000);
+
+      const customRulesDual = calculateDualComboTierBonus(4190000, 780000, {
+        comboUnder2mBonus: 60000,
+        comboStepPerMillionBonus: 60000,
+      });
+      // 4.970.000đ (4M-<5M): 60.000 + 3 * 60.000 = 240.000đ
+      expect(customRulesDual.totalBonus).toBe(240000);
+
+      const doneSummary = getDoneBookingSummary(
+        makeBooking({
+          id: 140282,
+          status: 'DONE',
+          cvRotationPoints: 64,
+          selectedCombo: {
+            id: '7+3-hyperlight-770',
+            name: 'Combo 7 tặng 3',
+            price: 4190000,
+            bonus: 200000,
+            sessions: 10,
+            todaySingleServiceWaived: true,
+          },
+          selectedUnderCombo: {
+            id: '2+1-under-390',
+            name: 'Combo 2 tặng 1 Mi Dưới',
+            price: 780000,
+            bonus: 50000,
+            sessions: 3,
+            todaySingleServiceWaived: true,
+          },
+          billing: {
+            subtotal: 4970000,
+            vatAmount: 397600,
+            serviceTotal: 0,
+            comboTotal: 4970000,
+            productTotal: 0,
+            paymentMethod: 'CASH',
+            tipAmount: 100000,
+            tipCvShare: 90000,
+            tipCcShare: 0,
+            grandTotal: 5467600,
+            settlementStatus: 'PENDING_COUNTER_SETTLEMENT',
+          },
+        })
+      );
+
+      expect(doneSummary.soldComboPrice).toBe(4970000);
+      expect(doneSummary.cvPoints).toBe(64);
+      expect(doneSummary.tipAmount).toBe(100000);
+      expect(doneSummary.settlementStatus).toBe('PENDING_COUNTER_SETTLEMENT');
     });
   });
 });

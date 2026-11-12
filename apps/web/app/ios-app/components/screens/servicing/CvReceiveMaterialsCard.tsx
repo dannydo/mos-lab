@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
 import { Edit3, MessageSquare } from 'lucide-react';
 
@@ -163,11 +164,7 @@ export function CvReceiveMaterialsCard({
             <span>👁️</span> HỒ SƠ MI THẬT (MỤC TIÊU NỐI)
           </span>
           <span className="text-[9px] text-blue-300/80 font-bold">
-            {booking.attributes?.naturalLashLength &&
-            booking.attributes?.naturalLashThickness &&
-            booking.attributes?.eyeShape
-              ? 'Đã lưu'
-              : 'Chưa đo'}
+            {hasCompleteNaturalLashSet(booking) ? 'Đã lưu' : 'Chưa đo'}
           </span>
         </span>
         <div className="grid grid-cols-[0.85fr_1.35fr_1fr] gap-1.5 text-center">

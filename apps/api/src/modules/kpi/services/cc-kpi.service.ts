@@ -12,6 +12,7 @@ import { buildComboBalanceExistsSql } from '../../customers/services/combo-recog
 import { getFalReadModelMap } from '../../fal/fal.service.js';
 import { getPreviousReportPeriod } from './report-period-comparison.js';
 import { CcKpiDailyProjectionService } from '../../projections/cc-kpi-daily-projection.service.js';
+import { buildExcludeTrainingCvlOrderSql, CvlTrainingMentorshipService } from './cvl-training-mentorship.service.js';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -614,7 +615,11 @@ export class CcKpiService {
       : null;
     const monthStartStr = `${startStr.substring(0, 7)}-01`;
     const queryEndAt = endAt || `${endStr} 23:59:59`;
-    const activeCcIds = await this.getActiveCcStaffIds(fastify);
+    const [activeCcIds, activeTrainingPairs] = await Promise.all([
+      this.getActiveCcStaffIds(fastify),
+      CvlTrainingMentorshipService.getActivePairsForRange(fastify, monthStartStr, endStr),
+    ]);
+    const excludeTrainingXoaySql = buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'ro.date');
 
     let activeCcFilter = '';
     if (activeCcIds && activeCcIds.length > 0) {
@@ -698,6 +703,7 @@ export class CcKpiService {
         ${activeCcFilter}
         ${consultantFilter}
         ${storeFilter}
+        ${excludeTrainingXoaySql}
       ORDER BY ro.actual_booking_date_start ASC, os.id ASC
     `);
 
@@ -795,6 +801,7 @@ export class CcKpiService {
         AND o.order_state = 'Completed'
         ${activeCcFilter}
         ${storeFilter}
+        ${excludeTrainingXoaySql}
       GROUP BY sb.order_service_id, sb.user_id
     `);
 
@@ -1001,10 +1008,16 @@ export class CcKpiService {
   public static async getCcLeaderboard(fastify: FastifyInstance, filters: CcKpiFilters) {
     const { dateFrom, dateTo, storeId = 'ALL' } = filters;
     const { startStr: startDateStr, endStr: endDateStr } = parseDateRange(dateFrom, dateTo);
-    const activeCcIds = await this.getActiveCcStaffIds(fastify);
     const monthStart = `${startDateStr.substring(0, 7)}-01`;
+    const [activeCcIds, activeTrainingPairs] = await Promise.all([
+      this.getActiveCcStaffIds(fastify),
+      CvlTrainingMentorshipService.getActivePairsForRange(fastify, monthStart, endDateStr),
+    ]);
     const normalizedStoreId = storeId && storeId !== 'ALL' ? String(storeId) : 'ALL';
-    const cacheKey = `${startDateStr}_${endDateStr}_${normalizedStoreId}_${activeCcIds.join(',')}`;
+    const trainingKey = activeTrainingPairs
+      .map((p) => `${p.menteeLegacyStaffId}:${p.startDate}:${p.endDate}`)
+      .join('|');
+    const cacheKey = `${startDateStr}_${endDateStr}_${normalizedStoreId}_${activeCcIds.join(',')}_${trainingKey}`;
     const cached = this.leaderboardCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < 20000) {
       return { data: cached.data, total: cached.data.length };
@@ -1078,19 +1091,24 @@ export class CcKpiService {
       (!storeId || storeId === 'ALL');
     if (canUseProjection) {
       const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
-      const activeCcIds = await this.getActiveCcStaffIds(fastify);
-      const parsedConsultantId = consultantId && consultantId !== 'ALL' ? Number(consultantId) : undefined;
-      const projected = await CcKpiDailyProjectionService.readRange(
-        fastify,
-        startStr,
-        endStr,
-        'ALL',
-        activeCcIds,
-        Number.isSafeInteger(parsedConsultantId) && Number(parsedConsultantId) > 0
-          ? Number(parsedConsultantId)
-          : undefined
-      );
-      if (projected) return projected as unknown as DailySalesBonusConsultantResponse;
+      const [activeCcIds, activeTrainingPairs] = await Promise.all([
+        this.getActiveCcStaffIds(fastify),
+        CvlTrainingMentorshipService.getActivePairsForRange(fastify, startStr, endStr),
+      ]);
+      if (activeTrainingPairs.length === 0) {
+        const parsedConsultantId = consultantId && consultantId !== 'ALL' ? Number(consultantId) : undefined;
+        const projected = await CcKpiDailyProjectionService.readRange(
+          fastify,
+          startStr,
+          endStr,
+          'ALL',
+          activeCcIds,
+          Number.isSafeInteger(parsedConsultantId) && Number(parsedConsultantId) > 0
+            ? Number(parsedConsultantId)
+            : undefined
+        );
+        if (projected) return projected as unknown as DailySalesBonusConsultantResponse;
+      }
     }
     return this.getCcDailySalesBonusCanonical(fastify, filters);
   }
@@ -1104,6 +1122,22 @@ export class CcKpiService {
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
     const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
+    const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(fastify, startStr, endStr);
+    const excludeTrainingActualSql = buildExcludeTrainingCvlOrderSql(
+      activeTrainingPairs,
+      'o.id',
+      'ro.actual_booking_date_start'
+    );
+    const excludeTrainingBookingSql = buildExcludeTrainingCvlOrderSql(
+      activeTrainingPairs,
+      'o.id',
+      'o.booking_date_start'
+    );
+    const excludeTrainingDebtSql = buildExcludeTrainingCvlOrderSql(
+      activeTrainingPairs,
+      'COALESCE(udp.order_id, ud.order_id)',
+      'COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created)'
+    );
     const comparisonWindow =
       includeComparison && comparisonMode ? getPreviousReportPeriod(startStr, endStr, comparisonMode) : null;
     const comparisonPromise: Promise<DailySalesBonusConsultantResponse> | null = comparisonWindow
@@ -1150,6 +1184,7 @@ export class CcKpiService {
           AND ro.actual_booking_date_start >= '${startStr} 00:00:00'
           AND ro.actual_booking_date_start <= '${queryEndAt}'
           ${storeFilterClause}
+          ${excludeTrainingActualSql}
         UNION ALL
         SELECT o.id AS order_id, o.user_id, o.client_store_id, o.combo_sale_required,
                o.date_created, o.booking_date_start, o.booking_date_start AS sale_at
@@ -1160,6 +1195,7 @@ export class CcKpiService {
           AND o.booking_date_start >= '${startStr} 00:00:00'
           AND o.booking_date_start <= '${queryEndAt}'
           ${storeFilterClause}
+          ${excludeTrainingBookingSql}
       )`;
 
     const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
@@ -1315,6 +1351,7 @@ export class CcKpiService {
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) >= '${startStr} 00:00:00'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) <= '${queryEndAt}'
         ${storeFilterClauseDebt}
+        ${excludeTrainingDebtSql}
     `;
 
     const [comboRows, upgradeRows, productRows, singleRows, visitRows, debtRows] = await Promise.all([
@@ -1561,6 +1598,16 @@ export class CcKpiService {
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
     const { startStr: startDateStr, endStr: endDateStr } = parseDateRange(dateFrom, dateTo);
+    const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(
+      fastify,
+      startDateStr,
+      endDateStr
+    );
+    const excludeTrainingTipSql = buildExcludeTrainingCvlOrderSql(
+      activeTrainingPairs,
+      'o.id',
+      'COALESCE(ro.actual_booking_date_start, o.booking_date_start)'
+    );
     const startStr = `${startDateStr} 00:00:00`;
     const endStr = `${endDateStr} 23:59:59`;
 
@@ -1597,6 +1644,7 @@ export class CcKpiService {
         AND ${buildCashTipCurrencyPredicate()}
         ${activeCcFilter}
         ${storeFilterClause}
+        ${excludeTrainingTipSql}
       GROUP BY st.user_id, up.full_name, up.avatar
       ORDER BY totalCcTipBonus DESC
     `);

@@ -10264,7 +10264,7 @@
         "path": "/api/gamification/daily-sales-bonus/consultant",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 95
+        "line": 113
       }
     },
     {
@@ -10278,7 +10278,7 @@
         "path": "/api/gamification/daily-sales-bonus/config",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 229
       }
     },
     {
@@ -10292,7 +10292,7 @@
         "path": "/api/gamification/daily-sales-bonus/config",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 217
+        "line": 235
       }
     },
     {
@@ -10306,7 +10306,7 @@
         "path": "/api/gamification/daily-sales-bonus/transactions",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 287
+        "line": 305
       }
     },
     {
@@ -10600,7 +10600,7 @@
         "path": "/api/ios/photos/:filename",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 27
+        "line": 23
       }
     },
     {
@@ -10614,7 +10614,7 @@
         "path": "/api/ios/bookings",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 32
+        "line": 28
       }
     },
     {
@@ -10628,7 +10628,7 @@
         "path": "/api/ios/bookings",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 68
+        "line": 64
       }
     },
     {
@@ -10642,7 +10642,7 @@
         "path": "/api/ios/print-receipt",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 94
+        "line": 90
       }
     },
     {
@@ -10950,7 +10950,7 @@
         "path": "/api/kpi/cc-paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 71
+        "line": 76
       }
     },
     {
@@ -10964,7 +10964,7 @@
         "path": "/api/kpi/cc-work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 796
+        "line": 825
       }
     },
     {
@@ -10978,7 +10978,7 @@
         "path": "/api/kpi/cc-payroll-allowance",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1078
+        "line": 1107
       }
     },
     {
@@ -10992,7 +10992,7 @@
         "path": "/api/kpi/cc-allowances",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1079
+        "line": 1108
       }
     },
     {
@@ -11006,7 +11006,7 @@
         "path": "/api/kpi/cc-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1082
+        "line": 1111
       }
     },
     {
@@ -11020,7 +11020,7 @@
         "path": "/api/kpi/cc-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1106
+        "line": 1135
       }
     },
     {
@@ -11034,7 +11034,7 @@
         "path": "/api/kpi/cc-legacy-sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1139
+        "line": 1168
       }
     },
     {
@@ -11048,7 +11048,7 @@
         "path": "/api/kpi/cc-tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 124
+        "line": 142
       }
     },
     {
@@ -11062,7 +11062,7 @@
         "path": "/api/kpi/cc-tip/records",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 288
+        "line": 311
       }
     },
     {
@@ -11160,7 +11160,7 @@
         "path": "/api/kpi/cv-seniority-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 38
+        "line": 39
       }
     },
     {
@@ -11174,7 +11174,7 @@
         "path": "/api/kpi/cv-seniority-config",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 60
+        "line": 61
       }
     },
     {
@@ -11188,7 +11188,7 @@
         "path": "/api/kpi/cv-paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 91
+        "line": 92
       }
     },
     {
@@ -11202,7 +11202,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 956
+        "line": 998
       }
     },
     {
@@ -11216,7 +11216,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1138
+        "line": 1180
       }
     },
     {
@@ -11230,7 +11230,7 @@
         "path": "/api/kpi/cv-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1184
+        "line": 1226
       }
     },
     {
@@ -11244,7 +11244,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1208
+        "line": 1250
       }
     },
     {
@@ -11258,7 +11258,7 @@
         "path": "/api/kpi/cv-tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 75
+        "line": 79
       }
     },
     {
@@ -11272,7 +11272,7 @@
         "path": "/api/kpi/cv-tip/records",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 210
+        "line": 241
       }
     },
     {
@@ -11286,7 +11286,7 @@
         "path": "/api/kpi/cv-tip/customer-history",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 464
+        "line": 526
       }
     },
     {
@@ -11329,6 +11329,34 @@
         "module": "kpi",
         "handler": "inlineHandler",
         "line": 350
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/cvl-training-mentorship/config",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/cvl-training-mentorship/config",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 7
+      }
+    },
+    {
+      "id": "route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "type": "FastifyRoute",
+      "label": "PUT /api/kpi/cvl-training-mentorship/config",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/kpi/cvl-training-mentorship/config",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 26
       }
     },
     {
@@ -11650,7 +11678,7 @@
         "path": "/api/kpi/export-booker-salary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 244
+        "line": 246
       }
     },
     {
@@ -11664,7 +11692,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 610
+        "line": 612
       }
     },
     {
@@ -11678,7 +11706,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 616
+        "line": 618
       }
     },
     {
@@ -11692,7 +11720,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 657
+        "line": 659
       }
     },
     {
@@ -11706,7 +11734,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 676
+        "line": 678
       }
     },
     {
@@ -11720,7 +11748,7 @@
         "path": "/api/kpi/summary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 714
+        "line": 716
       }
     },
     {
@@ -11734,7 +11762,7 @@
         "path": "/api/kpi/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 874
+        "line": 876
       }
     },
     {
@@ -11748,7 +11776,7 @@
         "path": "/api/kpi/booker-appointments",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1178
+        "line": 1180
       }
     },
     {
@@ -11762,7 +11790,7 @@
         "path": "/api/kpi/trends",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1496
+        "line": 1498
       }
     },
     {
@@ -24959,6 +24987,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CvlTrainingMentorshipPair",
+      "type": "SharedType",
+      "label": "CvlTrainingMentorshipPair",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvlTrainingMentorshipPair",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvlTrainingMentorshipConfig",
+      "type": "SharedType",
+      "label": "CvlTrainingMentorshipConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvlTrainingMentorshipConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CcTrainingMentorshipBreakdown",
+      "type": "SharedType",
+      "label": "CcTrainingMentorshipBreakdown",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CcTrainingMentorshipBreakdown",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvlTrainingMentorshipStaffOption",
+      "type": "SharedType",
+      "label": "CvlTrainingMentorshipStaffOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvlTrainingMentorshipStaffOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvlTrainingMentorshipConfigResponse",
+      "type": "SharedType",
+      "label": "CvlTrainingMentorshipConfigResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvlTrainingMentorshipConfigResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CalculateMentorTrainingBonusInput",
+      "type": "SharedType",
+      "label": "CalculateMentorTrainingBonusInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CalculateMentorTrainingBonusInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:DashboardStaffShift",
       "type": "SharedType",
       "label": "DashboardStaffShift",
@@ -26575,6 +26675,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosSettlementStatus",
+      "type": "SharedType",
+      "label": "IosSettlementStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosSettlementStatus",
         "package": "@mos-lab/shared"
       }
     },
@@ -33539,6 +33651,18 @@
       }
     },
     {
+      "id": "uicomp:CvlTrainingMentorshipConfigModal",
+      "type": "UIComponent",
+      "label": "<CvlTrainingMentorshipConfigModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/CvlTrainingMentorshipConfigModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CvlTrainingMentorshipConfigModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:BookingHabitsCard",
       "type": "UIComponent",
       "label": "<BookingHabitsCard />",
@@ -38228,8 +38352,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 118675,
-        "lineCount": 2971,
+        "sizeBytes": 124757,
+        "lineCount": 3106,
         "ext": ".ts"
       }
     },
@@ -38241,8 +38365,8 @@
       "filePath": "apps/api/src/modules/career/cv-plus-rewards.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2589,
-        "lineCount": 64,
+        "sizeBytes": 3834,
+        "lineCount": 87,
         "ext": ".ts"
       }
     },
@@ -39632,8 +39756,8 @@
       "filePath": "apps/api/src/modules/gamification/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38829,
-        "lineCount": 828,
+        "sizeBytes": 39896,
+        "lineCount": 859,
         "ext": ".ts"
       }
     },
@@ -39690,6 +39814,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/ios-legacy-settlement.test.ts",
+      "type": "File",
+      "label": "ios-legacy-settlement.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/ios-legacy-settlement.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 21078,
+        "lineCount": 521,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/mock-data.ts",
       "type": "File",
       "label": "mock-data.ts",
@@ -39710,8 +39847,8 @@
       "filePath": "apps/api/src/modules/ios/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16554,
-        "lineCount": 424,
+        "sizeBytes": 20915,
+        "lineCount": 548,
         "ext": ".ts"
       }
     },
@@ -39723,8 +39860,8 @@
       "filePath": "apps/api/src/modules/ios/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4570,
-        "lineCount": 129,
+        "sizeBytes": 4543,
+        "lineCount": 123,
         "ext": ".ts"
       }
     },
@@ -39749,8 +39886,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15485,
-        "lineCount": 398,
+        "sizeBytes": 20141,
+        "lineCount": 511,
         "ext": ".ts"
       }
     },
@@ -39775,8 +39912,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-formatters.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6847,
-        "lineCount": 217,
+        "sizeBytes": 8049,
+        "lineCount": 248,
         "ext": ".ts"
       }
     },
@@ -39788,8 +39925,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-mapper.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16213,
-        "lineCount": 390,
+        "sizeBytes": 20070,
+        "lineCount": 475,
         "ext": ".ts"
       }
     },
@@ -39801,8 +39938,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5113,
-        "lineCount": 163,
+        "sizeBytes": 8920,
+        "lineCount": 262,
         "ext": ".ts"
       }
     },
@@ -39814,8 +39951,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-sql.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10111,
-        "lineCount": 248,
+        "sizeBytes": 10083,
+        "lineCount": 244,
         "ext": ".ts"
       }
     },
@@ -39833,6 +39970,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
+      "type": "File",
+      "label": "ios-legacy-bridge.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20091,
+        "lineCount": 546,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-catalog.service.ts",
+      "type": "File",
+      "label": "ios-legacy-catalog.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-catalog.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 18675,
+        "lineCount": 507,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
+      "type": "File",
+      "label": "ios-legacy-payload.mapper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 22089,
+        "lineCount": 513,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-overrides.service.ts",
       "type": "File",
       "label": "ios-overrides.service.ts",
@@ -39840,8 +40016,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-overrides.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12622,
-        "lineCount": 374,
+        "sizeBytes": 17073,
+        "lineCount": 484,
         "ext": ".ts"
       }
     },
@@ -39853,8 +40029,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-photos.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2607,
-        "lineCount": 84,
+        "sizeBytes": 2599,
+        "lineCount": 80,
         "ext": ".ts"
       }
     },
@@ -39866,8 +40042,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-staff-stats.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5503,
-        "lineCount": 158,
+        "sizeBytes": 17235,
+        "lineCount": 447,
         "ext": ".ts"
       }
     },
@@ -39905,8 +40081,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 53031,
-        "lineCount": 1317,
+        "sizeBytes": 54937,
+        "lineCount": 1357,
         "ext": ".ts"
       }
     },
@@ -39918,8 +40094,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-tip.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19143,
-        "lineCount": 463,
+        "sizeBytes": 20311,
+        "lineCount": 491,
         "ext": ".ts"
       }
     },
@@ -39996,8 +40172,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51848,
-        "lineCount": 1240,
+        "sizeBytes": 54246,
+        "lineCount": 1282,
         "ext": ".ts"
       }
     },
@@ -40022,8 +40198,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-tip.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23739,
-        "lineCount": 558,
+        "sizeBytes": 26064,
+        "lineCount": 620,
         "ext": ".ts"
       }
     },
@@ -40037,6 +40213,19 @@
       "metadata": {
         "sizeBytes": 17928,
         "lineCount": 379,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
+      "type": "File",
+      "label": "cvl-training-mentorship.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2386,
+        "lineCount": 59,
         "ext": ".ts"
       }
     },
@@ -40113,8 +40302,8 @@
       "filePath": "apps/api/src/modules/kpi/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 60441,
-        "lineCount": 1621,
+        "sizeBytes": 60593,
+        "lineCount": 1623,
         "ext": ".ts"
       }
     },
@@ -40269,8 +40458,21 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-kpi.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 65085,
-        "lineCount": 1625,
+        "sizeBytes": 67160,
+        "lineCount": 1674,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cc-mentor-payout.service.ts",
+      "type": "File",
+      "label": "cc-mentor-payout.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cc-mentor-payout.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6688,
+        "lineCount": 158,
         "ext": ".ts"
       }
     },
@@ -40297,6 +40499,32 @@
       "metadata": {
         "sizeBytes": 15217,
         "lineCount": 392,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.test.ts",
+      "type": "File",
+      "label": "cvl-training-mentorship.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cvl-training-mentorship.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5892,
+        "lineCount": 161,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts",
+      "type": "File",
+      "label": "cvl-training-mentorship.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16936,
+        "lineCount": 473,
         "ext": ".ts"
       }
     },
@@ -45105,8 +45333,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20166,
-        "lineCount": 361,
+        "sizeBytes": 19640,
+        "lineCount": 345,
         "ext": ".ts"
       }
     },
@@ -45131,7 +45359,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16681,
+        "sizeBytes": 16925,
         "lineCount": 326,
         "ext": ".tsx"
       }
@@ -45144,8 +45372,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 80999,
-        "lineCount": 1554,
+        "sizeBytes": 82105,
+        "lineCount": 1565,
         "ext": ".tsx"
       }
     },
@@ -45196,8 +45424,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 153704,
-        "lineCount": 2895,
+        "sizeBytes": 153564,
+        "lineCount": 2891,
         "ext": ".tsx"
       }
     },
@@ -45495,8 +45723,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 61726,
-        "lineCount": 1546,
+        "sizeBytes": 66431,
+        "lineCount": 1656,
         "ext": ".tsx"
       }
     },
@@ -46171,8 +46399,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 150358,
-        "lineCount": 3010,
+        "sizeBytes": 151540,
+        "lineCount": 3020,
         "ext": ".tsx"
       }
     },
@@ -48771,8 +48999,8 @@
       "filePath": "apps/web/app/ios-app/__tests__/ios-agent-contract.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9292,
-        "lineCount": 237,
+        "sizeBytes": 13298,
+        "lineCount": 369,
         "ext": ".ts"
       }
     },
@@ -48953,8 +49181,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24990,
-        "lineCount": 564,
+        "sizeBytes": 24961,
+        "lineCount": 561,
         "ext": ".tsx"
       }
     },
@@ -48992,8 +49220,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen04StaffQueueAssign.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11190,
-        "lineCount": 283,
+        "sizeBytes": 11205,
+        "lineCount": 278,
         "ext": ".tsx"
       }
     },
@@ -49005,8 +49233,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen05ServicingTransfer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8293,
-        "lineCount": 183,
+        "sizeBytes": 8382,
+        "lineCount": 187,
         "ext": ".tsx"
       }
     },
@@ -49018,8 +49246,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24971,
-        "lineCount": 518,
+        "sizeBytes": 24502,
+        "lineCount": 497,
         "ext": ".tsx"
       }
     },
@@ -49096,8 +49324,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21437,
-        "lineCount": 493,
+        "sizeBytes": 26614,
+        "lineCount": 623,
         "ext": ".tsx"
       }
     },
@@ -49109,8 +49337,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14868,
-        "lineCount": 373,
+        "sizeBytes": 18022,
+        "lineCount": 429,
         "ext": ".tsx"
       }
     },
@@ -49122,8 +49350,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11184,
-        "lineCount": 238,
+        "sizeBytes": 12780,
+        "lineCount": 277,
         "ext": ".tsx"
       }
     },
@@ -49135,8 +49363,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31035,
-        "lineCount": 626,
+        "sizeBytes": 33599,
+        "lineCount": 679,
         "ext": ".tsx"
       }
     },
@@ -49148,8 +49376,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenCvPaystub.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12113,
-        "lineCount": 299,
+        "sizeBytes": 12081,
+        "lineCount": 297,
         "ext": ".tsx"
       }
     },
@@ -49161,8 +49389,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenInventoryStock.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7947,
-        "lineCount": 229,
+        "sizeBytes": 7919,
+        "lineCount": 227,
         "ext": ".tsx"
       }
     },
@@ -49200,8 +49428,21 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenStoreDashboard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13675,
-        "lineCount": 325,
+        "sizeBytes": 13657,
+        "lineCount": 322,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/DualComboConsultationToCheckout.test.tsx",
+      "type": "File",
+      "label": "DualComboConsultationToCheckout.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/DualComboConsultationToCheckout.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7683,
+        "lineCount": 186,
         "ext": ".tsx"
       }
     },
@@ -49213,8 +49454,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/Screen03ConsultationMatrix.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14555,
-        "lineCount": 327,
+        "sizeBytes": 17042,
+        "lineCount": 381,
         "ext": ".tsx"
       }
     },
@@ -49265,8 +49506,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18719,
-        "lineCount": 357,
+        "sizeBytes": 18714,
+        "lineCount": 354,
         "ext": ".tsx"
       }
     },
@@ -49278,8 +49519,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/CheckInStaffAndProfileCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24689,
-        "lineCount": 510,
+        "sizeBytes": 24494,
+        "lineCount": 498,
         "ext": ".tsx"
       }
     },
@@ -49291,8 +49532,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13744,
-        "lineCount": 302,
+        "sizeBytes": 13621,
+        "lineCount": 295,
         "ext": ".tsx"
       }
     },
@@ -49317,8 +49558,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutPaymentMethodSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9275,
-        "lineCount": 222,
+        "sizeBytes": 10063,
+        "lineCount": 235,
         "ext": ".tsx"
       }
     },
@@ -49330,8 +49571,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26436,
-        "lineCount": 599,
+        "sizeBytes": 27040,
+        "lineCount": 605,
         "ext": ".tsx"
       }
     },
@@ -49356,8 +49597,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutVietQrModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13443,
-        "lineCount": 298,
+        "sizeBytes": 13142,
+        "lineCount": 284,
         "ext": ".tsx"
       }
     },
@@ -49382,8 +49623,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationComboSelectorSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14414,
-        "lineCount": 311,
+        "sizeBytes": 14378,
+        "lineCount": 309,
         "ext": ".tsx"
       }
     },
@@ -49395,8 +49636,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationHeaderAndTabs.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16253,
-        "lineCount": 398,
+        "sizeBytes": 16213,
+        "lineCount": 390,
         "ext": ".tsx"
       }
     },
@@ -49408,8 +49649,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationModalsCluster.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22762,
-        "lineCount": 496,
+        "sizeBytes": 22753,
+        "lineCount": 492,
         "ext": ".tsx"
       }
     },
@@ -49421,8 +49662,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationNotesAndFooterPanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15409,
-        "lineCount": 349,
+        "sizeBytes": 15467,
+        "lineCount": 353,
         "ext": ".tsx"
       }
     },
@@ -49434,8 +49675,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26976,
-        "lineCount": 606,
+        "sizeBytes": 26938,
+        "lineCount": 604,
         "ext": ".tsx"
       }
     },
@@ -49473,8 +49714,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/LashMaterialAndDesignSteps.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12573,
-        "lineCount": 291,
+        "sizeBytes": 12524,
+        "lineCount": 278,
         "ext": ".tsx"
       }
     },
@@ -49486,8 +49727,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/LashTechnicalSpecsStep.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17113,
-        "lineCount": 405,
+        "sizeBytes": 17081,
+        "lineCount": 403,
         "ext": ".tsx"
       }
     },
@@ -49512,8 +49753,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/NaturalLashEyeHealthAndGoldenRatio.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18311,
-        "lineCount": 378,
+        "sizeBytes": 18391,
+        "lineCount": 382,
         "ext": ".tsx"
       }
     },
@@ -49525,8 +49766,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/NaturalLashMeasurementsCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16810,
-        "lineCount": 364,
+        "sizeBytes": 17028,
+        "lineCount": 373,
         "ext": ".tsx"
       }
     },
@@ -49551,8 +49792,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/configurator/ConfiguratorSpecsAndSummarySections.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13174,
-        "lineCount": 317,
+        "sizeBytes": 13028,
+        "lineCount": 310,
         "ext": ".tsx"
       }
     },
@@ -49590,8 +49831,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/materialCatalogData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17083,
-        "lineCount": 414,
+        "sizeBytes": 17076,
+        "lineCount": 410,
         "ext": ".ts"
       }
     },
@@ -49655,8 +49896,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationComboAndUpgrade.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16095,
-        "lineCount": 443,
+        "sizeBytes": 21213,
+        "lineCount": 572,
         "ext": ".ts"
       }
     },
@@ -49668,8 +49909,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationPricingAndSave.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13107,
-        "lineCount": 446,
+        "sizeBytes": 13487,
+        "lineCount": 454,
         "ext": ".ts"
       }
     },
@@ -49694,8 +49935,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useNaturalLashDiagnostic.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18220,
-        "lineCount": 460,
+        "sizeBytes": 16608,
+        "lineCount": 425,
         "ext": ".ts"
       }
     },
@@ -49707,8 +49948,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17232,
-        "lineCount": 394,
+        "sizeBytes": 17573,
+        "lineCount": 396,
         "ext": ".tsx"
       }
     },
@@ -49733,8 +49974,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/incomingBookingHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11902,
-        "lineCount": 364,
+        "sizeBytes": 12289,
+        "lineCount": 370,
         "ext": ".ts"
       }
     },
@@ -49746,8 +49987,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/servicing/CleanedCustomerAndSpecHeader.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7354,
-        "lineCount": 173,
+        "sizeBytes": 7323,
+        "lineCount": 171,
         "ext": ".tsx"
       }
     },
@@ -49759,8 +50000,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/servicing/CvReceiveMaterialsCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12912,
-        "lineCount": 249,
+        "sizeBytes": 12810,
+        "lineCount": 244,
         "ext": ".tsx"
       }
     },
@@ -49772,8 +50013,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/servicing/RetainLashCounterSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12289,
-        "lineCount": 303,
+        "sizeBytes": 12262,
+        "lineCount": 301,
         "ext": ".tsx"
       }
     },
@@ -49785,8 +50026,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellComboWalletAccountingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19457,
-        "lineCount": 358,
+        "sizeBytes": 19509,
+        "lineCount": 360,
         "ext": ".tsx"
       }
     },
@@ -49798,8 +50039,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellHeaderAndSerumSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15744,
-        "lineCount": 332,
+        "sizeBytes": 15721,
+        "lineCount": 330,
         "ext": ".tsx"
       }
     },
@@ -49837,8 +50078,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellUnderComboAndSummary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15349,
-        "lineCount": 343,
+        "sizeBytes": 15890,
+        "lineCount": 350,
         "ext": ".tsx"
       }
     },
@@ -49850,8 +50091,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellCheckoutHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7052,
-        "lineCount": 162,
+        "sizeBytes": 7899,
+        "lineCount": 176,
         "ext": ".ts"
       }
     },
@@ -49876,8 +50117,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerAvatarPicker.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9776,
-        "lineCount": 261,
+        "sizeBytes": 9740,
+        "lineCount": 259,
         "ext": ".tsx"
       }
     },
@@ -50097,8 +50338,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/__tests__/CustomerAvatarPicker.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3252,
-        "lineCount": 99,
+        "sizeBytes": 3210,
+        "lineCount": 93,
         "ext": ".tsx"
       }
     },
@@ -50201,8 +50442,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20783,
-        "lineCount": 553,
+        "sizeBytes": 21586,
+        "lineCount": 575,
         "ext": ".tsx"
       }
     },
@@ -50240,8 +50481,8 @@
       "filePath": "apps/web/app/ios-app/state/__tests__/useIosBillingCheckout.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7284,
-        "lineCount": 176,
+        "sizeBytes": 11071,
+        "lineCount": 268,
         "ext": ".ts"
       }
     },
@@ -50292,8 +50533,8 @@
       "filePath": "apps/web/app/ios-app/state/iosBookingMerge.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7792,
-        "lineCount": 172,
+        "sizeBytes": 10632,
+        "lineCount": 247,
         "ext": ".ts"
       }
     },
@@ -50305,8 +50546,8 @@
       "filePath": "apps/web/app/ios-app/state/mockData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 878,
-        "lineCount": 46,
+        "sizeBytes": 864,
+        "lineCount": 38,
         "ext": ".ts"
       }
     },
@@ -50344,8 +50585,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13090,
-        "lineCount": 426,
+        "sizeBytes": 13131,
+        "lineCount": 419,
         "ext": ".ts"
       }
     },
@@ -50357,8 +50598,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBillingCheckout.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14037,
-        "lineCount": 380,
+        "sizeBytes": 16483,
+        "lineCount": 432,
         "ext": ".ts"
       }
     },
@@ -50370,8 +50611,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBookingList.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7517,
-        "lineCount": 222,
+        "sizeBytes": 7572,
+        "lineCount": 231,
         "ext": ".ts"
       }
     },
@@ -50383,8 +50624,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBookingsSync.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15163,
-        "lineCount": 460,
+        "sizeBytes": 15748,
+        "lineCount": 474,
         "ext": ".ts"
       }
     },
@@ -50396,8 +50637,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15423,
-        "lineCount": 399,
+        "sizeBytes": 17622,
+        "lineCount": 449,
         "ext": ".ts"
       }
     },
@@ -50409,8 +50650,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosServicingProgress.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12570,
-        "lineCount": 352,
+        "sizeBytes": 12891,
+        "lineCount": 358,
         "ext": ".ts"
       }
     },
@@ -50851,8 +51092,8 @@
       "filePath": "apps/web/lib/api/ios.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1678,
-        "lineCount": 56,
+        "sizeBytes": 1642,
+        "lineCount": 50,
         "ext": ".ts"
       }
     },
@@ -50864,8 +51105,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21621,
-        "lineCount": 556,
+        "sizeBytes": 22182,
+        "lineCount": 568,
         "ext": ".ts"
       }
     },
@@ -51319,8 +51560,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 161490,
-        "lineCount": 2089,
+        "sizeBytes": 170969,
+        "lineCount": 2168,
         "ext": ".ts"
       }
     },
@@ -51332,8 +51573,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 233775,
-        "lineCount": 6575,
+        "sizeBytes": 237340,
+        "lineCount": 6678,
         "ext": ".ts"
       }
     },
@@ -51384,8 +51625,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3257,
-        "lineCount": 87,
+        "sizeBytes": 3338,
+        "lineCount": 88,
         "ext": ".ts"
       }
     },
@@ -51631,8 +51872,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 30053,
-        "lineCount": 723,
+        "sizeBytes": 31178,
+        "lineCount": 733,
         "ext": ".ts"
       }
     },
@@ -51800,8 +52041,34 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10168,
-        "lineCount": 421,
+        "sizeBytes": 10255,
+        "lineCount": 423,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/cvl-training-mentorship.test.ts",
+      "type": "File",
+      "label": "cvl-training-mentorship.test.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.test.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 2754,
+        "lineCount": 66,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/cvl-training-mentorship.ts",
+      "type": "File",
+      "label": "cvl-training-mentorship.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 7393,
+        "lineCount": 219,
         "ext": ".ts"
       }
     },
@@ -51930,8 +52197,8 @@
       "filePath": "packages/shared/src/types/ios-app.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 21771,
-        "lineCount": 768,
+        "sizeBytes": 26926,
+        "lineCount": 911,
         "ext": ".ts"
       }
     },
@@ -51943,8 +52210,8 @@
       "filePath": "packages/shared/src/types/kpi.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6997,
-        "lineCount": 298,
+        "sizeBytes": 7222,
+        "lineCount": 302,
         "ext": ".ts"
       }
     },
@@ -51956,8 +52223,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 28165,
-        "lineCount": 918,
+        "sizeBytes": 28404,
+        "lineCount": 923,
         "ext": ".ts"
       }
     },
@@ -57660,6 +57927,20 @@
     {
       "id": "edge:route:POST:/api/kpi/cv-config:ws:apps/api",
       "source": "route:POST:/api/kpi/cv-config",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/cvl-training-mentorship/config:ws:apps/api",
+      "source": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/kpi/cvl-training-mentorship/config:ws:apps/api",
+      "source": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -65302,6 +65583,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CvlTrainingMentorshipPair:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvlTrainingMentorshipPair",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvlTrainingMentorshipConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvlTrainingMentorshipConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CcTrainingMentorshipBreakdown:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CcTrainingMentorshipBreakdown",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvlTrainingMentorshipStaffOption:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvlTrainingMentorshipStaffOption",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvlTrainingMentorshipConfigResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvlTrainingMentorshipConfigResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CalculateMentorTrainingBonusInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CalculateMentorTrainingBonusInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:DashboardStaffShift:ws:packages/shared",
       "source": "type:@mos-lab/shared:DashboardStaffShift",
       "target": "ws:packages/shared",
@@ -66242,6 +66565,13 @@
     {
       "id": "edge:type:@mos-lab/shared:IosBookingStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosBookingStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosSettlementStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosSettlementStatus",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -70946,6 +71276,20 @@
     {
       "id": "edge:uicomp:CcXoayDetailModal:token:color:primary",
       "source": "uicomp:CcXoayDetailModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CvlTrainingMentorshipConfigModal:ws:apps/web",
+      "source": "uicomp:CvlTrainingMentorshipConfigModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CvlTrainingMentorshipConfigModal:token:color:primary",
+      "source": "uicomp:CvlTrainingMentorshipConfigModal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -75788,6 +76132,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/ios-legacy-settlement.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/ios-legacy-settlement.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/routes.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/routes.test.ts",
       "target": "ws:packages/shared",
@@ -75839,6 +76190,27 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-catalog.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-legacy-catalog.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -75949,6 +76321,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/routes/export.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/routes/export.routes.ts",
       "target": "ws:packages/shared",
@@ -76040,6 +76419,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-mentor-payout.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cc-mentor-payout.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/services/cv-speed-model.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/cv-speed-model.service.ts",
       "target": "ws:packages/shared",
@@ -76049,6 +76435,20 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/cv-speed-seed.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/cv-speed-seed.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -78868,8 +79268,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkin/CheckInStaffAndProfileCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkin/CheckInStaffAndProfileCards.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -78912,6 +79333,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/servicing/CvReceiveMaterialsCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/servicing/CvReceiveMaterialsCard.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -79038,6 +79466,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/state/useIosServicingProgress.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/useIosServicingProgress.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -81531,6 +81966,20 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi.service.ts:prisma:crm:CrmLashTypeBenchmark",
       "source": "file:apps/api/src/modules/kpi/services/cc-kpi.service.ts",
       "target": "prisma:crm:CrmLashTypeBenchmark",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/kpi/services/cvl-training-mentorship.service.ts",
+      "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -87044,6 +87493,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/architecture",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/booker-appointments",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/kpi/booker-appointments",
@@ -87628,6 +88091,20 @@
       "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/cv-config",
       "source": "page:/dashboard/career-path",
       "target": "route:POST:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "type": "API_CALL",
       "label": "CALLS career.getConfig"
     },
@@ -88363,6 +88840,20 @@
       "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/cv-config",
       "source": "page:/dashboard/cc",
       "target": "route:POST:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/cc",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -89721,6 +90212,20 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/cv-tip/customer-history",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/kpi/cv-tip/customer-history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/design-system",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -94033,6 +94538,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/cv-config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -99357,6 +99876,20 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/export-diamond",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/export-diamond",
@@ -100865,6 +101398,20 @@
       "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/cv-config",
       "source": "page:/dashboard/omicall",
       "target": "route:POST:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS omicall.deleteConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS omicall.deleteConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/omicall",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "type": "API_CALL",
       "label": "CALLS omicall.deleteConfig"
     },
@@ -103903,6 +104450,20 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/cv-tip/customer-history",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/kpi/cv-tip/customer-history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -108128,6 +108689,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/export-diamond",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/export-diamond",
@@ -109536,31 +110111,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4035,
-    "totalEdges": 8165,
+    "totalNodes": 4056,
+    "totalEdges": 8209,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
-      "FastifyRoute": 760,
+      "FastifyRoute": 762,
       "Component": 65,
-      "SharedType": 1452,
+      "SharedType": 1459,
       "DesignToken": 12,
-      "UIComponent": 362,
-      "File": 1199
+      "UIComponent": 363,
+      "File": 1210
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1646,
-      "HANDLES_ROUTE": 760,
-      "RENDERS": 427,
-      "USES_TOKEN": 364,
-      "IMPORTS": 648,
-      "QUERIES_MODEL": 428,
-      "API_CALL": 3892
+      "EXPORTS": 1653,
+      "HANDLES_ROUTE": 762,
+      "RENDERS": 428,
+      "USES_TOKEN": 365,
+      "IMPORTS": 661,
+      "QUERIES_MODEL": 430,
+      "API_CALL": 3910
     },
-    "fastifyRouteCount": 765,
+    "fastifyRouteCount": 767,
     "prismaModelCount": 182,
     "nextPageCount": 65,
-    "sharedTypeCount": 1452
+    "sharedTypeCount": 1459
   },
   "routes": [
     {
@@ -113571,6 +114146,20 @@
       "method": "POST",
       "path": "/api/kpi/cv-config",
       "filePath": "apps/api/src/modules/kpi/routes/cv.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/cvl-training-mentorship/config",
+      "filePath": "apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/kpi/cvl-training-mentorship/config",
+      "filePath": "apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"
     },

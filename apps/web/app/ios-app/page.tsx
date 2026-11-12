@@ -138,6 +138,26 @@ function IosAppInner() {
     }
   }, [roleParam]);
 
+  useEffect(() => {
+    if (!authorized || state.currentStep !== 6) return;
+    const candidate =
+      state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) ||
+      (state.activeServicingBooking
+        ? state.bookings.find((b) => Number(b.id) === Number(state.activeServicingBooking?.id))
+        : null);
+    if (!candidate || candidate.id <= 0) return;
+    if (!hasCompleteNaturalLashSet(candidate) && !candidate.progress?.startedAt) {
+      state.handleOpenConsultation(6);
+    }
+  }, [
+    authorized,
+    state.currentStep,
+    state.bookings,
+    state.activeBookingId,
+    state.activeServicingBooking,
+    state.handleOpenConsultation,
+  ]);
+
   if (!authorized) {
     return (
       <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
@@ -154,11 +174,10 @@ function IosAppInner() {
     if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
       state.setCurrentStep(15);
     } else if (target?.status === 'SERVICING') {
-      const needsNewClientLashCheck =
-        (target.customerVisits ?? 1) <= 1 && !hasCompleteNaturalLashSet(target) && !target.progress?.startedAt;
+      const needsNaturalLashCheck = !hasCompleteNaturalLashSet(target) && !target.progress?.startedAt;
       const step = target.progress?.currentStep;
-      if (needsNewClientLashCheck) {
-        state.setCurrentStep(3);
+      if (needsNaturalLashCheck) {
+        state.handleOpenConsultation(6);
       } else if (step && step >= 3 && step <= 14) {
         state.setCurrentStep(step);
       } else {
@@ -396,6 +415,7 @@ function IosAppInner() {
           <Screen12CheckoutBilling
             booking={currentBooking}
             actor={state.actor}
+            cvPlusRules={state.staffStats?.cvPlusRules}
             onBack={() => state.setCurrentStep(12)}
             onChoosePayment={state.handleChoosePaymentMethod}
             onEditService={() => state.handleOpenConsultation(13)}
@@ -406,6 +426,7 @@ function IosAppInner() {
           <Screen13CheckoutTip
             booking={currentBooking}
             actor={state.actor}
+            cvPlusRules={state.staffStats?.cvPlusRules}
             onBack={() => state.setCurrentStep(13)}
             onRecordTip={state.handleRecordTip}
           />
@@ -415,6 +436,7 @@ function IosAppInner() {
           <Screen14ThermalReceiptDone
             booking={currentBooking}
             actor={state.actor}
+            cvPlusRules={state.staffStats?.cvPlusRules}
             onFinishOrder={state.handleFinishOrder}
             onBack={() => {
               state.setActiveServicingBookingId(null);

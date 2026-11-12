@@ -25,6 +25,7 @@ export interface BuildUpsellCheckoutPayloadParams {
   selectedUnderComboPkg: MatchedComboPackageOption | null;
   underPurchaseAccounting: PurchaseAccountingResult | null;
   underComboBonus: number;
+  deductUnderTodayIntoCombo?: boolean;
 }
 
 export function buildUpsellCheckoutPayload({
@@ -42,6 +43,7 @@ export function buildUpsellCheckoutPayload({
   selectedUnderComboPkg,
   underPurchaseAccounting,
   underComboBonus,
+  deductUnderTodayIntoCombo = true,
 }: BuildUpsellCheckoutPayloadParams) {
   const cartProducts =
     yeppeumCount > 0
@@ -150,10 +152,22 @@ export function buildUpsellCheckoutPayload({
           retailTotal: selectedUnderComboPkg.retailTotal,
           savingsAmount: selectedUnderComboPkg.savingsAmount,
           avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
-          todaySingleServiceWaived: true,
-          recognizedRevenueToday: underPurchaseAccounting.recognizedRevenueToday,
-          deferredRevenueBalance: underPurchaseAccounting.deferredRevenueBalance,
-          remainingAfterToday: underPurchaseAccounting.remainingWalletAfterToday,
+          todaySingleServiceWaived: deductUnderTodayIntoCombo,
+          recognizedRevenueToday: deductUnderTodayIntoCombo ? underPurchaseAccounting.recognizedRevenueToday : 0,
+          deferredRevenueBalance: deductUnderTodayIntoCombo
+            ? underPurchaseAccounting.deferredRevenueBalance
+            : selectedUnderComboPkg.comboPrice,
+          remainingAfterToday: deductUnderTodayIntoCombo
+            ? underPurchaseAccounting.remainingWalletAfterToday
+            : {
+                paidNew: selectedUnderComboPkg.comboNewCount,
+                paidRefill: selectedUnderComboPkg.comboRefillCount,
+                bonusNew: selectedUnderComboPkg.bonusNewCount,
+                bonusRefill: selectedUnderComboPkg.bonusRefillCount,
+                totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
+                totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
+                totalRemaining: selectedUnderComboPkg.totalSessions,
+              },
         }
       : null;
 

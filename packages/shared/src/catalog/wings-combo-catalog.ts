@@ -6572,3 +6572,106 @@ export function getUnderLashComboPackages(
   const standardRuleNames = ['2 tặng 1', '4 tặng 1', '7 tặng 3', '10 tặng 6'];
   return pkgs.filter((p) => standardRuleNames.includes(p.ruleName));
 }
+
+export interface SavedComboSeed {
+  id?: string | null;
+  name?: string | null;
+  ruleName?: string | null;
+  categoryId?: string | null;
+  volume?: number | 'under' | null;
+  price?: number | null;
+}
+
+export function resolveMatchedUpperComboFromSaved(
+  savedCombo?: SavedComboSeed | null,
+  welcomeEligibility?: WelcomeComboEligibilityResult,
+  fallbackSpec?: { categoryId: WingsComboCategoryId | string; volume: number | 'under' }
+): MatchedComboPackageOption | null {
+  if (!savedCombo || (!savedCombo.id && !savedCombo.ruleName && !savedCombo.name)) {
+    return null;
+  }
+
+  const rawId = String(savedCombo.id || '').trim();
+  const idParts = rawId ? rawId.split(':') : [];
+  const catFromId = idParts[0] || '';
+  const ruleSlugFromId = idParts[1] ? idParts[1].replace(/_/g, ' ') : '';
+  const volPartFromId = idParts[2] || '';
+
+  const parsedVolFromId: number | 'under' | undefined =
+    volPartFromId === 'under_390' || volPartFromId === 'under'
+      ? 'under'
+      : Number.isFinite(Number(volPartFromId)) && Number(volPartFromId) > 0
+        ? Number(volPartFromId)
+        : undefined;
+
+  const targetCategoryId = savedCombo.categoryId || catFromId || fallbackSpec?.categoryId || 'FlawlessMink';
+  const rawVolume = savedCombo.volume ?? parsedVolFromId ?? fallbackSpec?.volume ?? 770;
+  const resolvedCategory = getWingsComboCategory(targetCategoryId);
+  const resolvedVolume =
+    resolvedCategory.id === 'VVIP'
+      ? typeof fallbackSpec?.volume === 'number'
+        ? fallbackSpec.volume
+        : 770
+      : resolveValidVolumeForCategory(resolvedCategory.id, rawVolume);
+
+  const packages = getComboPackagesForCategoryAndVolume({
+    categoryId: resolvedCategory.id,
+    volume: resolvedVolume,
+    welcomeEligibility,
+    includeVvipPass: true,
+  });
+
+  if (rawId) {
+    const exactUnlocked = packages.find((p) => p.id === rawId && !p.isLocked);
+    if (exactUnlocked) return exactUnlocked;
+  }
+
+  const desiredRule = String(savedCombo.ruleName || ruleSlugFromId || '')
+    .trim()
+    .toLowerCase();
+  if (desiredRule) {
+    const byRule = packages.find((p) => !p.isLocked && p.ruleName.toLowerCase() === desiredRule);
+    if (byRule) return byRule;
+  }
+
+  if (savedCombo.price && Number(savedCombo.price) > 0) {
+    const byPrice = packages.find((p) => !p.isLocked && p.comboPrice === Number(savedCombo.price));
+    if (byPrice) return byPrice;
+  }
+
+  return null;
+}
+
+export function resolveMatchedUnderComboFromSaved(
+  savedUnderCombo?: SavedComboSeed | null,
+  welcomeEligibility?: WelcomeComboEligibilityResult
+): MatchedComboPackageOption | null {
+  if (!savedUnderCombo || (!savedUnderCombo.id && !savedUnderCombo.ruleName && !savedUnderCombo.name)) {
+    return null;
+  }
+
+  const packages = getUnderLashComboPackages(welcomeEligibility);
+  const rawId = String(savedUnderCombo.id || '').trim();
+  const idParts = rawId ? rawId.split(':') : [];
+  const ruleSlugFromId = idParts[1] ? idParts[1].replace(/_/g, ' ') : '';
+
+  if (rawId) {
+    const exact = packages.find((p) => p.id === rawId && !p.isLocked);
+    if (exact) return exact;
+  }
+
+  const desiredRule = String(savedUnderCombo.ruleName || ruleSlugFromId || '')
+    .trim()
+    .toLowerCase();
+  if (desiredRule) {
+    const byRule = packages.find((p) => !p.isLocked && p.ruleName.toLowerCase() === desiredRule);
+    if (byRule) return byRule;
+  }
+
+  if (savedUnderCombo.price && Number(savedUnderCombo.price) > 0) {
+    const byPrice = packages.find((p) => !p.isLocked && p.comboPrice === Number(savedUnderCombo.price));
+    if (byPrice) return byPrice;
+  }
+
+  return null;
+}

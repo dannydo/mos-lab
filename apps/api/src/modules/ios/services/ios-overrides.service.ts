@@ -1,13 +1,25 @@
 import mysql from 'mysql2/promise';
-import { SafeAny } from '@mos-lab/shared';
+import { hasCompleteNaturalLashAttributes, NaturalLashConsultationAttributes, SafeAny } from '@mos-lab/shared';
 import { getCrmPool } from './db-pools.js';
 
 export const LEGACY_LIVE_OVERRIDES_KEY = 'IOS_APP_LIVE_BOOKING_OVERRIDES';
 export const LEGACY_CUSTOMER_AVATARS_KEY = 'IOS_APP_CUSTOMER_AVATARS';
 export const BOOKING_OVERRIDE_KEY_PREFIX = 'IOS_BK_OVR:';
 export const CUSTOMER_AVATAR_KEY_PREFIX = 'IOS_CUST_AVT:';
+export const CUSTOMER_NATURAL_LASH_KEY_PREFIX = 'IOS_CUST_NLASH:';
+export const LEGACY_SETTLE_KEY_PREFIX = 'IOS_LEGACY_SETTLE:';
 
 export type BookingOverrideRecord = Record<string, SafeAny>;
+
+export interface LegacySettlementReceipt {
+  bookingId: number;
+  settlementStatus: 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
+  orderState: string;
+  paymentMethod: 'CASH' | 'POS' | 'VIETQR';
+  grandTotal: number;
+  bankTransferRef?: string;
+  settledAt: string;
+}
 
 export interface CrmConfigStoreAdapter {
   getOne(key: string): Promise<string | null>;
@@ -24,6 +36,34 @@ export function getBookingOverrideKey(bookingId: number): string {
 
 export function getCustomerAvatarKey(customerId: number): string {
   return `${CUSTOMER_AVATAR_KEY_PREFIX}${customerId}`;
+}
+
+export function getCustomerNaturalLashKey(customerId: number): string {
+  return `${CUSTOMER_NATURAL_LASH_KEY_PREFIX}${customerId}`;
+}
+
+export function getLegacySettleKey(bookingId: number): string {
+  return `${LEGACY_SETTLE_KEY_PREFIX}${bookingId}`;
+}
+
+function extractCleanNaturalLashProfile(
+  raw?: Record<string, SafeAny> | null
+): NaturalLashConsultationAttributes | null {
+  if (!raw || !hasCompleteNaturalLashAttributes(raw as NaturalLashConsultationAttributes)) {
+    return null;
+  }
+  const countVal = String(raw.naturalLashCount || raw.naturalLashDensity || '').trim();
+  return {
+    naturalLashLength: String(raw.naturalLashLength || '').trim(),
+    naturalLashThickness: String(raw.naturalLashThickness || '').trim(),
+    naturalLashCount: countVal,
+    naturalLashDensity: String(raw.naturalLashDensity || countVal).trim(),
+    lashTrail: String(raw.lashTrail || '').trim(),
+    eyeShape: String(raw.eyeShape || '').trim(),
+    lashHealth: String(raw.lashHealth || '').trim(),
+    medicalProblem: String(raw.medicalProblem || '').trim(),
+    isNewClientDiagnosticDone: true,
+  };
 }
 
 function safeJsonParseObject(raw: string | null | undefined): Record<string, SafeAny> | null {
@@ -233,7 +273,7 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
   }
 
   async function deleteBookingOverride(bookingId: number): Promise<void> {
-    await store.remove(getBookingOverrideKey(bookingId));
+    await Promise.all([store.remove(getBookingOverrideKey(bookingId)), store.remove(getLegacySettleKey(bookingId))]);
     const legacyRaw = await store.getOne(LEGACY_LIVE_OVERRIDES_KEY);
     const legacyMap = safeJsonParseObject(legacyRaw);
     if (legacyMap && Object.prototype.hasOwnProperty.call(legacyMap, String(bookingId))) {
@@ -242,13 +282,26 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     }
   }
 
-  async function resetDemoOverrides(bookingIds?: number[]): Promise<void> {
+  async function resetDemoOverrides(bookingIds?: number[], customerIds?: number[]): Promise<void> {
     if (!bookingIds || bookingIds.length === 0) {
-      await store.removeByPrefix(BOOKING_OVERRIDE_KEY_PREFIX);
-      await store.remove(LEGACY_LIVE_OVERRIDES_KEY);
+      await Promise.all([
+        store.removeByPrefix(BOOKING_OVERRIDE_KEY_PREFIX),
+        store.removeByPrefix(LEGACY_SETTLE_KEY_PREFIX),
+        store.removeByPrefix(CUSTOMER_NATURAL_LASH_KEY_PREFIX),
+        store.remove(LEGACY_LIVE_OVERRIDES_KEY),
+      ]);
       return;
     }
-    await Promise.all(bookingIds.map((id) => store.remove(getBookingOverrideKey(id))));
+    const removals = bookingIds.flatMap((id) => [
+      store.remove(getBookingOverrideKey(id)),
+      store.remove(getLegacySettleKey(id)),
+    ]);
+    if (customerIds && customerIds.length > 0) {
+      for (const cid of customerIds) {
+        if (cid > 0) removals.push(store.remove(getCustomerNaturalLashKey(cid)));
+      }
+    }
+    await Promise.all(removals);
     const legacyRaw = await store.getOne(LEGACY_LIVE_OVERRIDES_KEY);
     const legacyMap = safeJsonParseObject(legacyRaw);
     if (legacyMap) {
@@ -351,6 +404,55 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     });
   }
 
+  async function loadSettlementReceipt(bookingId: number): Promise<LegacySettlementReceipt | null> {
+    const raw = await store.getOne(getLegacySettleKey(bookingId));
+    const parsed = safeJsonParseObject(raw);
+    return parsed ? (parsed as unknown as LegacySettlementReceipt) : null;
+  }
+
+  async function saveSettlementReceipt(bookingId: number, receipt: LegacySettlementReceipt): Promise<void> {
+    await store.upsert(getLegacySettleKey(bookingId), JSON.stringify(receipt));
+  }
+
+  async function saveCustomerNaturalLashProfile(
+    customerId: number,
+    attrs: NaturalLashConsultationAttributes
+  ): Promise<void> {
+    if (!customerId || customerId <= 0) return;
+    const clean = extractCleanNaturalLashProfile(attrs as Record<string, SafeAny>);
+    if (!clean) return;
+    await store.upsert(getCustomerNaturalLashKey(customerId), JSON.stringify(clean));
+  }
+
+  async function loadCustomerNaturalLashProfile(customerId: number): Promise<NaturalLashConsultationAttributes | null> {
+    if (!customerId || customerId <= 0) return null;
+    const raw = await store.getOne(getCustomerNaturalLashKey(customerId));
+    return extractCleanNaturalLashProfile(safeJsonParseObject(raw));
+  }
+
+  async function deleteCustomerNaturalLashProfile(customerId: number): Promise<void> {
+    if (!customerId || customerId <= 0) return;
+    await store.remove(getCustomerNaturalLashKey(customerId));
+  }
+
+  async function loadCustomerNaturalLashProfilesBatch(
+    customerIds: number[]
+  ): Promise<Record<string, NaturalLashConsultationAttributes>> {
+    const uniqueIds = Array.from(new Set(customerIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (uniqueIds.length === 0) return {};
+
+    const keys = uniqueIds.map((id) => getCustomerNaturalLashKey(id));
+    const atomicRows = await store.getMany(keys);
+    const result: Record<string, NaturalLashConsultationAttributes> = {};
+    for (const id of uniqueIds) {
+      const clean = extractCleanNaturalLashProfile(safeJsonParseObject(atomicRows.get(getCustomerNaturalLashKey(id))));
+      if (clean) {
+        result[String(id)] = clean;
+      }
+    }
+    return result;
+  }
+
   return {
     withBookingLock,
     loadBookingOverride,
@@ -360,7 +462,13 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     loadBookingOverridesBatch,
     saveCustomerAvatar,
     loadCustomerAvatarsBatch,
+    saveCustomerNaturalLashProfile,
+    loadCustomerNaturalLashProfile,
+    deleteCustomerNaturalLashProfile,
+    loadCustomerNaturalLashProfilesBatch,
     applyConcurrentBookingOverride,
+    loadSettlementReceipt,
+    saveSettlementReceipt,
   };
 }
 

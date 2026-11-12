@@ -3,8 +3,10 @@ import {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
   resolveEffectiveServiceTotal,
+  resolveServicePriceSplit,
   calculateActorTipBreakdown,
 } from '../useIosBillingCheckout';
+import { mergeServerBookingsWithLocalState } from '../iosBookingMerge';
 
 describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
   it('tính chính xác hoa hồng bậc gói combo (Combo Tier Bonus)', () => {
@@ -171,5 +173,95 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
     expect(ccShare).toBe(20000);
     expect(cvShare + ccShare).toBe(90000);
     expect(cvShare + checkInShare + checkOutShare).toBe(90000);
+  });
+
+  it('resolveServicePriceSplit & resolveEffectiveServiceTotal tách chuẩn xác ca làm đôi (Mi Trên 770K + Mi Dưới 390K = 1.160.000đ)', () => {
+    const split = resolveServicePriceSplit({
+      servicePrice: 1160000,
+      serviceName: '❖ HyperLight 770K (70 fan) + Mi Dưới',
+      hasUnderMink: true,
+      underMinkServiceType: 'Normal',
+      hasUnderMinkCombo: false,
+    });
+    expect(split).toEqual({ upperServicePrice: 770000, underServicePrice: 390000 });
+
+    // 1. Mua đủ 2 gói (Mi Trên + Mi Dưới) -> Miễn thu lẻ cả 2 (0đ)
+    expect(
+      resolveEffectiveServiceTotal({
+        servicePrice: 1160000,
+        serviceName: '❖ HyperLight 770K (70 fan) + Mi Dưới',
+        hasUnderMink: true,
+        underMinkServiceType: 'Normal',
+        isComboLive: false,
+        selectedCombo: { price: 4190000, todaySingleServiceWaived: true },
+        selectedUnderCombo: { price: 1560000, todaySingleServiceWaived: true },
+      })
+    ).toBe(0);
+
+    // 2. Chỉ mua gói Mi Trên (4.190.000đ), Mi Dưới làm lẻ -> Còn thu lẻ 390.000đ Mi Dưới
+    expect(
+      resolveEffectiveServiceTotal({
+        servicePrice: 1160000,
+        serviceName: '❖ HyperLight 770K (70 fan) + Mi Dưới',
+        hasUnderMink: true,
+        underMinkServiceType: 'Normal',
+        isComboLive: false,
+        selectedCombo: { price: 4190000, todaySingleServiceWaived: true },
+        selectedUnderCombo: null,
+      })
+    ).toBe(390000);
+
+    // 3. Chỉ mua gói Mi Dưới (1.560.000đ), Mi Trên làm lẻ -> Còn thu lẻ 770.000đ Mi Trên
+    expect(
+      resolveEffectiveServiceTotal({
+        servicePrice: 1160000,
+        serviceName: '❖ HyperLight 770K (70 fan) + Mi Dưới',
+        hasUnderMink: true,
+        underMinkServiceType: 'Normal',
+        isComboLive: false,
+        selectedCombo: null,
+        selectedUnderCombo: { price: 1560000, todaySingleServiceWaived: true },
+      })
+    ).toBe(770000);
+  });
+
+  it('mergeServerBookingsWithLocalState không nuốt mất selectedCombo & selectedUnderCombo từ server khi local đang là null', () => {
+    const localInitial: any = {
+      id: 140282,
+      orderNumber: 'ORD-140282',
+      customerName: 'Đoan',
+      status: 'SERVICING',
+      servicePrice: 1160000,
+      selectedCombo: null,
+      selectedUnderCombo: null,
+      cartProducts: [],
+    };
+
+    const serverWithSavedCombos: any = {
+      ...localInitial,
+      selectedCombo: { id: 'HyperLight_4X:7_tặng_3:770', name: 'Combo 7 tặng 3', price: 4190000, sessions: 10 },
+      selectedUnderCombo: {
+        id: 'FlawlessMink:4_tặng_1:under_390',
+        name: 'Combo 4 tặng 1 · Mi Dưới',
+        price: 1560000,
+        sessions: 5,
+      },
+    };
+
+    const merged = mergeServerBookingsWithLocalState([localInitial], [serverWithSavedCombos], 0);
+    expect(merged[0].selectedCombo?.id).toBe('HyperLight_4X:7_tặng_3:770');
+    expect(merged[0].selectedUnderCombo?.id).toBe('FlawlessMink:4_tặng_1:under_390');
+
+    // Khi vừa cập nhật optimistic ở local (_localComboUpdatedAt còn tươi < 10s), poll cũ từ server không được ghi đè
+    const freshLocalClear: any = {
+      ...merged[0],
+      selectedCombo: null,
+      selectedUnderCombo: serverWithSavedCombos.selectedUnderCombo,
+      _localComboUpdatedAt: Date.now(),
+    };
+    const staleServerPoll: any = { ...serverWithSavedCombos };
+    const mergedDuringOptimistic = mergeServerBookingsWithLocalState([freshLocalClear], [staleServerPoll], 0);
+    expect(mergedDuringOptimistic[0].selectedCombo).toBeNull();
+    expect(mergedDuringOptimistic[0].selectedUnderCombo?.id).toBe('FlawlessMink:4_tặng_1:under_390');
   });
 });

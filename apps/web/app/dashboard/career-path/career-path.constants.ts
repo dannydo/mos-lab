@@ -1,5 +1,7 @@
 import type { CareerProgressionConfig, StaffCareerStatus } from '@mos-lab/shared';
-import { DEFAULT_CAREER_PROGRESSION_CONFIG } from '@mos-lab/shared';
+import { DEFAULT_CAREER_PROGRESSION_CONFIG, calculateComboBonus, formatComboTierBracketLabel } from '@mos-lab/shared';
+
+export { calculateComboBonus, formatComboTierBracketLabel };
 
 export const FALLBACK_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = DEFAULT_CAREER_PROGRESSION_CONFIG;
 
@@ -89,7 +91,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Điều kiện nhận hết thưởng: Bán tối thiểu 20% Combo trên khách Not Combo Live (Combo Live bán thêm cũng cộng dồn)',
         'Trường hợp bán không được (< 20% Combo): Vẫn nhận 90% Tip, không nhận thêm bất kỳ phần thưởng nào khác (lương tăng, thưởng combo = 0đ)',
         'Quy tắc 2 Tháng Liền: 2 tháng liền không đạt chuẩn thì quay lại CV (Tip tụt về 70%, mất quyền tự tư vấn)',
-        'Hoa hồng Combo bậc thang tiền tươi: 50K - 150K - 500K/gói + Thưởng Dưỡng mi 100K/cây',
+        'Hoa hồng Combo tiền tươi: < 2M = 50K, mỗi 1M kế tiếp = +50K (mua 2 gói cùng lúc cộng gộp tổng tiền) + Thưởng Dưỡng mi 100K/cây',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
       gateText: `Duy trì CV🪶: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV!`,
@@ -231,28 +233,6 @@ export function formatCareerRoleName(role?: string | null, compact = false): str
     default:
       return role.replace(/_/g, ' ');
   }
-}
-
-/**
- * Tính tiền thưởng hoa hồng Combo bậc thang theo giá trị gói (Kinh Thánh mOS Điều răn COMBO-REWARD-001):
- * - Dưới 2M: +50K
- * - Mỗi 1M kế tiếp: +50K (2M -> 100K, 3M -> 150K, 4M -> 200K, 9M -> 450K...)
- */
-export function calculateComboBonus(
-  price: number,
-  config?: {
-    comboUnder2mBonus?: number;
-    comboStepPerMillionBonus?: number;
-    comboUnder3mBonus?: number;
-    comboUnder4mBonus?: number;
-  }
-): number {
-  if (!price || price <= 0) return 0;
-  const under2m = config?.comboUnder2mBonus ?? 50_000;
-  const step = config?.comboStepPerMillionBonus ?? 50_000;
-
-  if (price < 2_000_000) return under2m;
-  return Math.floor(price / 1_000_000) * step;
 }
 
 export interface HudMetricItem {

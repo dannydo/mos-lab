@@ -253,6 +253,11 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
     return ['__BUG_REPORT_BLOCKED_FOR_CV__'];
   }
 
+  // 2.5. Admin-Only Training Mentorship Pairing Config (Điều răn UI-010 Zero-Trust)
+  if (clean.startsWith('/kpi/cvl-training-mentorship') || clean.startsWith('/cvl-training-mentorship')) {
+    return ['__ADMIN_ONLY_DEFAULT__'];
+  }
+
   // 3. CV Report & Career Path (Allowed for CV)
   if (clean.startsWith('/kpi/cv') || clean.startsWith('/cv')) {
     return ['cv'];

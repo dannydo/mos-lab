@@ -20,6 +20,7 @@ export interface CheckoutReceiptSectionProps {
   checkOutStaff: string;
   serviceName: string;
   servicePrice: number;
+  effectiveServiceCharge: number;
   upgradePrice: number;
   isComboLive: boolean;
   selectedCombo: BookingItem['selectedCombo'] | null;
@@ -29,6 +30,9 @@ export interface CheckoutReceiptSectionProps {
   hasBothCombos: boolean;
   comboTotalRevenue: number;
   totalComboBonus: number;
+  upperComboBonus?: number;
+  underComboBonus?: number;
+  isCheckoutStaffCc?: boolean;
   subtotal: number;
   vatAmount: number;
   tipAmount: number;
@@ -50,6 +54,7 @@ export function CheckoutReceiptSection({
   checkOutStaff,
   serviceName,
   servicePrice,
+  effectiveServiceCharge,
   upgradePrice,
   isComboLive,
   selectedCombo,
@@ -59,6 +64,9 @@ export function CheckoutReceiptSection({
   hasBothCombos,
   comboTotalRevenue,
   totalComboBonus,
+  upperComboBonus = 0,
+  underComboBonus = 0,
+  isCheckoutStaffCc = false,
   subtotal,
   vatAmount,
   tipAmount,
@@ -69,6 +77,10 @@ export function CheckoutReceiptSection({
   onToggleShowStaffRewards,
   onEditService,
 }: CheckoutReceiptSectionProps) {
+  const hasNewComboWaiver =
+    !comboRedemption &&
+    (Boolean(selectedCombo && selectedCombo.todaySingleServiceWaived !== false) ||
+      Boolean(selectedUnderCombo && selectedUnderCombo.todaySingleServiceWaived !== false));
   return (
     <>
       {/* Customer & Specialist iOS Minimal Card */}
@@ -209,33 +221,7 @@ export function CheckoutReceiptSection({
                 {assignedStaff}
                 {booking?.attributes?.style ? ` · Dáng ${booking.attributes.style}` : ''}
               </div>
-              {selectedCombo ? (
-                selectedCombo.todaySingleServiceWaived ? (
-                  <div className="pt-0.5">
-                    <span
-                      className={`inline-flex items-center text-[10px] font-bold ${
-                        isDark
-                          ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
-                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                      } border px-1.5 py-0.5 rounded`}
-                    >
-                      Trừ Buổi 1 (Miễn phí ca này)
-                    </span>
-                  </div>
-                ) : (
-                  <div className="pt-0.5">
-                    <span
-                      className={`inline-flex items-center text-[10px] font-bold ${
-                        isDark
-                          ? 'text-indigo-300 bg-indigo-950/40 border-indigo-500/40'
-                          : 'text-indigo-700 bg-indigo-50 border-indigo-200'
-                      } border px-1.5 py-0.5 rounded`}
-                    >
-                      Trả lẻ ca này · Giữ trọn số buổi gói
-                    </span>
-                  </div>
-                )
-              ) : comboRedemption ? (
+              {comboRedemption ? (
                 <div className="pt-0.5 flex items-center gap-1.5 flex-wrap text-[10px]">
                   <span
                     className={`font-bold ${
@@ -246,6 +232,32 @@ export function CheckoutReceiptSection({
                   </span>
                   <span className="text-neutral-400 font-semibold tabular-nums">
                     Ví còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
+                  </span>
+                </div>
+              ) : hasNewComboWaiver ? (
+                <div className="pt-0.5">
+                  <span
+                    className={`inline-flex items-center text-[10px] font-bold ${
+                      isDark
+                        ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
+                        : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    } border px-1.5 py-0.5 rounded`}
+                  >
+                    {effectiveServiceCharge === 0
+                      ? 'Trừ Buổi 1 (Miễn phí ca này)'
+                      : 'Trừ Buổi 1 gói đã chọn · Thu lẻ phần còn lại'}
+                  </span>
+                </div>
+              ) : selectedCombo ? (
+                <div className="pt-0.5">
+                  <span
+                    className={`inline-flex items-center text-[10px] font-bold ${
+                      isDark
+                        ? 'text-indigo-300 bg-indigo-950/40 border-indigo-500/40'
+                        : 'text-indigo-700 bg-indigo-50 border-indigo-200'
+                    } border px-1.5 py-0.5 rounded`}
+                  >
+                    Trả lẻ ca này · Giữ trọn số buổi gói
                   </span>
                 </div>
               ) : (
@@ -272,9 +284,7 @@ export function CheckoutReceiptSection({
                   <span
                     className={`text-[13px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-black tabular-nums whitespace-nowrap block`}
                   >
-                    {comboRedemption.totalCustomerPayToday > 0
-                      ? `+${comboRedemption.totalCustomerPayToday.toLocaleString('vi-VN')}đ`
-                      : '0đ'}
+                    {effectiveServiceCharge > 0 ? `+${effectiveServiceCharge.toLocaleString('vi-VN')}đ` : '0đ'}
                   </span>
                   <span
                     className={`text-[10px] ${
@@ -284,37 +294,39 @@ export function CheckoutReceiptSection({
                     Trừ 1 lượt
                   </span>
                 </div>
-              ) : selectedCombo ? (
-                selectedCombo.todaySingleServiceWaived !== false ? (
-                  <div className="space-y-0.5">
-                    <span
-                      className={`text-[13px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-black tabular-nums whitespace-nowrap block`}
-                    >
-                      0đ
-                    </span>
+              ) : hasNewComboWaiver ? (
+                <div className="space-y-0.5">
+                  <span
+                    className={`text-[13px] ${
+                      effectiveServiceCharge === 0
+                        ? isDark
+                          ? 'text-emerald-400'
+                          : 'text-emerald-700'
+                        : isDark
+                          ? 'text-white'
+                          : 'text-neutral-900'
+                    } font-black tabular-nums whitespace-nowrap block`}
+                  >
+                    {effectiveServiceCharge === 0 ? '0đ' : `${effectiveServiceCharge.toLocaleString('vi-VN')}đ`}
+                  </span>
+                  {effectiveServiceCharge < servicePrice && (
                     <span
                       className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
                     >
                       {servicePrice.toLocaleString('vi-VN')}đ
                     </span>
-                  </div>
-                ) : (
-                  <span
-                    className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap block`}
-                  >
-                    {servicePrice.toLocaleString('vi-VN')}đ
-                  </span>
-                )
+                  )}
+                </div>
               ) : isComboLive ? (
                 <div className="space-y-0.5">
                   <span
                     className={`text-[13px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-black tabular-nums whitespace-nowrap block`}
                   >
-                    {upgradePrice > 0 ? `+${upgradePrice.toLocaleString('vi-VN')}đ` : '0đ'}
+                    {effectiveServiceCharge > 0 ? `+${effectiveServiceCharge.toLocaleString('vi-VN')}đ` : '0đ'}
                   </span>
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap inline-block ${
-                      upgradePrice > 0
+                      effectiveServiceCharge > 0
                         ? isDark
                           ? 'text-emerald-300 bg-emerald-950/50 border-emerald-500/40'
                           : 'text-emerald-700 bg-emerald-50 border-emerald-200'
@@ -323,14 +335,14 @@ export function CheckoutReceiptSection({
                           : 'text-sky-700 bg-sky-50 border-sky-200'
                     }`}
                   >
-                    {upgradePrice > 0 ? 'Phụ thu' : 'Trừ lượt'}
+                    {effectiveServiceCharge > 0 ? 'Phụ thu' : 'Trừ lượt'}
                   </span>
                 </div>
               ) : (
                 <span
                   className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap block`}
                 >
-                  {servicePrice.toLocaleString('vi-VN')}đ
+                  {effectiveServiceCharge.toLocaleString('vi-VN')}đ
                 </span>
               )}
             </div>
@@ -353,17 +365,20 @@ export function CheckoutReceiptSection({
                   className={`flex items-center gap-2 flex-wrap text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
                 >
                   <span>{selectedCombo.sessions || selectedCombo.remainingAfterToday?.totalRemaining || 10} buổi</span>
-                  {!hasBothCombos && showStaffRewards && (
-                    <>
-                      <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
-                      <span
-                        className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
-                      >
-                        Thưởng chốt: +{Math.round(totalComboBonus / 1000)}
-                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                      </span>
-                    </>
-                  )}
+                  {showStaffRewards &&
+                    !isCheckoutStaffCc &&
+                    !hasBothCombos &&
+                    (upperComboBonus || totalComboBonus) > 0 && (
+                      <>
+                        <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
+                        <span
+                          className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
+                        >
+                          Thưởng gói: +{Math.round((upperComboBonus || totalComboBonus) / 1000)}
+                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                        </span>
+                      </>
+                    )}
                 </div>
               </div>
               <span
@@ -391,17 +406,20 @@ export function CheckoutReceiptSection({
                   className={`flex items-center gap-2 flex-wrap text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
                 >
                   <span>{selectedUnderCombo.sessions || 10} buổi (Mi Dưới)</span>
-                  {!hasBothCombos && showStaffRewards && (
-                    <>
-                      <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
-                      <span
-                        className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
-                      >
-                        Thưởng chốt: +{Math.round(totalComboBonus / 1000)}
-                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                      </span>
-                    </>
-                  )}
+                  {showStaffRewards &&
+                    !isCheckoutStaffCc &&
+                    !hasBothCombos &&
+                    (underComboBonus || totalComboBonus) > 0 && (
+                      <>
+                        <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
+                        <span
+                          className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
+                        >
+                          Thưởng gói: +{Math.round((underComboBonus || totalComboBonus) / 1000)}
+                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                        </span>
+                      </>
+                    )}
                 </div>
               </div>
               <span
@@ -412,8 +430,8 @@ export function CheckoutReceiptSection({
             </div>
           )}
 
-          {/* Item 2C: Combined 2-Combo Bonus Tier Banner */}
-          {hasBothCombos && showStaffRewards && (
+          {/* Item 2C: Combined 2-Combo Bonus Summary Banner */}
+          {hasBothCombos && showStaffRewards && !isCheckoutStaffCc && (
             <div
               className={`px-3.5 py-2.5 flex items-center justify-between text-[11.5px] border-t ${
                 isDark
@@ -424,7 +442,7 @@ export function CheckoutReceiptSection({
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span className="font-bold truncate">
-                  Thưởng chốt Combo (Gộp 2 gói · {comboTotalRevenue.toLocaleString('vi-VN')}đ):
+                  Thưởng gộp 2 gói mua cùng lúc ({comboTotalRevenue.toLocaleString('vi-VN')}đ):
                 </span>
               </div>
               <span
@@ -451,7 +469,7 @@ export function CheckoutReceiptSection({
                   className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium inline-flex items-center gap-1`}
                 >
                   <span>SL: {p.quantity}</span>
-                  {showStaffRewards && (
+                  {showStaffRewards && !isCheckoutStaffCc && (
                     <>
                       <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
                       <span

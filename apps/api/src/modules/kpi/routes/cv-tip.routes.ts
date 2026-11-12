@@ -12,6 +12,7 @@ import {
   TipFilterType,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { buildCvTipStaffMatchSql, CvlTrainingMentorshipService } from '../services/cvl-training-mentorship.service.js';
 
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
@@ -86,7 +87,11 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
     const endPart = normalizeDatePart(dateTo, new Date().toLocaleDateString('en-CA'));
 
     try {
-      const activeCvIds = (await getActiveCvIds(fastify)) || [47510, 48026, 46092, 37790, 34295, 51659];
+      const [activeCvIdsRaw, activeTrainingPairs] = await Promise.all([
+        getActiveCvIds(fastify),
+        CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
+      ]);
+      const activeCvIds = activeCvIdsRaw || [47510, 48026, 46092, 37790, 34295, 51659];
       const activeCvStr = activeCvIds.join(',');
 
       let storeFilterClause = '';
@@ -98,6 +103,12 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
 
       const filteredOrdersCte = buildActualCheckinOrdersCte();
       const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
+      const leaderboardTipMatchSql = buildCvTipStaffMatchSql(
+        activeTrainingPairs,
+        'st_raw',
+        'os_sub.assigned_staff_id',
+        'os_sub.checkinTime'
+      );
 
       const summarySql = `
         ${filteredOrdersCte}
@@ -129,9 +140,9 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT tech.orderId) as totalVisits,
-          COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND (CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN tech.orderId END) as tippedVisits,
+          COUNT(DISTINCT CASE WHEN st.order_id IS NOT NULL AND st.customer_tip_100 >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN tech.orderId END) as tippedVisits,
           COALESCE(SUM(st.tip_amount), 0) as totalCvTipBonus,
-          COALESCE(SUM(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END), 0) as totalCustomerTipAmount
+          COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTipAmount
         FROM (
           SELECT DISTINCT fo.orderId, os.assigned_staff_id
           FROM filtered_orders fo
@@ -142,7 +153,24 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         LEFT JOIN client_store cs ON cs.id = up.client_store_id
         JOIN \`order\` o ON o.id = tech.orderId
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-        LEFT JOIN staff_tip st ON st.order_id = o.id AND st.user_id = tech.assigned_staff_id
+        LEFT JOIN (
+          SELECT
+            os_sub.orderId AS order_id,
+            os_sub.assigned_staff_id,
+            SUM(st_raw.tip_amount) AS tip_amount,
+            SUM(st_raw.tip_percentage) AS tip_percentage,
+            MAX(CASE WHEN st_raw.tip_percentage > 0 THEN st_raw.tip_amount / (st_raw.tip_percentage / 100) ELSE st_raw.tip_amount END) AS customer_tip_100
+          FROM (
+            SELECT DISTINCT fo_i.orderId, fo_i.checkinTime, os_i.assigned_staff_id
+            FROM filtered_orders fo_i
+            JOIN order_service os_i ON os_i.order_id = fo_i.orderId
+            WHERE os_i.assigned_staff_id IN (${activeCvStr})
+          ) os_sub
+          JOIN staff_tip st_raw
+            ON st_raw.order_id = os_sub.orderId
+           AND ${leaderboardTipMatchSql}
+          GROUP BY os_sub.orderId, os_sub.assigned_staff_id
+        ) st ON st.order_id = o.id AND st.assigned_staff_id = tech.assigned_staff_id
         WHERE 1 = 1
           ${storeFilterClause}
         GROUP BY tech.assigned_staff_id, up.full_name, up.avatar, store
@@ -241,7 +269,11 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
     const shouldIncludeSummary = includeSummary !== false && includeSummary !== 'false';
 
     try {
-      const activeCvIds = (await getActiveCvIds(fastify)) || [47510, 48026, 46092, 37790, 34295, 51659];
+      const [activeCvIdsRaw, activeTrainingPairs] = await Promise.all([
+        getActiveCvIds(fastify),
+        CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
+      ]);
+      const activeCvIds = activeCvIdsRaw || [47510, 48026, 46092, 37790, 34295, 51659];
       const activeCvStr = activeCvIds.join(',');
 
       const whereConditions: string[] = [];
@@ -274,8 +306,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
       }
 
       const baseWhereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-      const customerTipExpr =
-        'COALESCE(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END, 0)';
+      const customerTipExpr = 'COALESCE(st.customer_tip_100, 0)';
       const tipFilterClause =
         tipFilter === 'TIPPED'
           ? ` AND ${customerTipExpr} >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT}`
@@ -287,6 +318,18 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
       const filteredWhereClause = `${baseWhereClause}${tipFilterClause}`;
       const filteredOrdersCte = buildActualCheckinOrdersCte();
       const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
+      const recordTipMatchSql = buildCvTipStaffMatchSql(
+        activeTrainingPairs,
+        'st_raw',
+        'os_sub.assigned_staff_id',
+        'os_sub.checkinTime'
+      );
+      const summaryTipMatchSql = buildCvTipStaffMatchSql(
+        activeTrainingPairs,
+        'st',
+        'scoped.assigned_staff_id',
+        'scoped.checkinTime'
+      );
 
       const recordsFromSql = `
         FROM filtered_orders fo
@@ -297,7 +340,23 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN user_profile client_p ON o.user_id = client_p.user_id
         LEFT JOIN user_profile tech_p ON os.assigned_staff_id = tech_p.user_id
-        LEFT JOIN staff_tip st ON st.order_id = o.id AND st.user_id = os.assigned_staff_id
+        LEFT JOIN (
+          SELECT
+            os_sub.orderId AS order_id,
+            os_sub.assigned_staff_id,
+            SUM(st_raw.tip_amount) AS tip_amount,
+            SUM(st_raw.tip_percentage) AS tip_percentage,
+            MAX(CASE WHEN st_raw.tip_percentage > 0 THEN st_raw.tip_amount / (st_raw.tip_percentage / 100) ELSE st_raw.tip_amount END) AS customer_tip_100
+          FROM (
+            SELECT DISTINCT fo_i.orderId, fo_i.checkinTime, os_i.assigned_staff_id
+            FROM filtered_orders fo_i
+            JOIN order_service os_i ON os_i.order_id = fo_i.orderId
+          ) os_sub
+          JOIN staff_tip st_raw
+            ON st_raw.order_id = os_sub.orderId
+           AND ${recordTipMatchSql}
+          GROUP BY os_sub.orderId, os_sub.assigned_staff_id
+        ) st ON st.order_id = o.id AND st.assigned_staff_id = os.assigned_staff_id
       `;
 
       const rawSql = `
@@ -312,7 +371,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           COALESCE(sl.service_name, s.service_key) as serviceName,
           COALESCE(tech_p.full_name, '') as techName,
           COALESCE(tech_p.avatar, '') as avatar,
-          COALESCE(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END, 0) as totalCustomerTip,
+          COALESCE(st.customer_tip_100, 0) as totalCustomerTip,
           COALESCE(st.tip_amount, 0) as cvTipAmount,
           COALESCE(st.tip_percentage, 70) as cvTipPercentage
         ${recordsFromSql}
@@ -332,7 +391,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
       const summarySql = `
         ${filteredOrdersCte}
         , scoped_orders AS (
-          SELECT DISTINCT o.id AS orderId, os.assigned_staff_id
+          SELECT DISTINCT o.id AS orderId, fo.checkinTime, os.assigned_staff_id
           ${recordsFromSql}
           ${baseWhereClause}
         ), order_tip_summary AS (
@@ -344,7 +403,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           FROM scoped_orders scoped
           LEFT JOIN staff_tip st
             ON st.order_id = scoped.orderId
-           AND st.user_id = scoped.assigned_staff_id
+           AND ${summaryTipMatchSql}
           GROUP BY scoped.orderId
         )
         SELECT

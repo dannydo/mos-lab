@@ -467,7 +467,7 @@ export function ConsultationModalsCluster({
       <ComboCatalogConsultModal
         open={isComboCatalogModalOpen}
         onClose={() => setIsComboCatalogModalOpen(false)}
-        initialCategoryId={comboCatalogTarget === 'under' ? 'Classic_Volume' : autoMatchedCombo.categoryId}
+        initialCategoryId={comboCatalogTarget === 'under' ? 'FlawlessMink' : autoMatchedCombo.categoryId}
         initialVolume={comboCatalogTarget === 'under' ? 'under' : autoMatchedCombo.volume}
         welcomeEligibility={welcomeEligibility}
         customerName={customerName}

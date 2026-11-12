@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
@@ -61,18 +62,7 @@ export function Screen06CvDashboardReceive({
   const [showTimeRequiredWarning, setShowTimeRequiredWarning] = useState<boolean>(false);
   const timeSectionRef = React.useRef<HTMLDivElement>(null);
 
-  const hasCompleteNaturalLashSet = Boolean(
-    booking.attributes?.isNewClientDiagnosticDone === true &&
-    booking.attributes?.naturalLashLength?.trim() &&
-    booking.attributes?.naturalLashThickness?.trim() &&
-    (booking.attributes?.naturalLashCount?.trim() || booking.attributes?.naturalLashDensity?.trim()) &&
-    booking.attributes?.lashTrail?.trim() &&
-    booking.attributes?.eyeShape?.trim() &&
-    booking.attributes?.lashHealth?.trim() &&
-    booking.attributes?.medicalProblem?.trim()
-  );
-
-  const mustCheckNaturalLashFirst = (booking.customerVisits ?? 1) <= 1 && !hasCompleteNaturalLashSet;
+  const mustCheckNaturalLashFirst = !hasCompleteNaturalLashSet(booking);
 
   const handleStartTaskClick = () => {
     if (mustCheckNaturalLashFirst && onEditService) {
@@ -267,10 +257,10 @@ export function Screen06CvDashboardReceive({
                 </div>
                 <div className="min-w-0">
                   <div className="text-[11.5px] font-black text-rose-300 uppercase tracking-tight">
-                    KHÁCH MỚI · CHƯA KIỂM TRA MI THẬT
+                    CHƯA KIỂM TRA MI THẬT · BẮT BUỘC ĐO ĐỦ 7/7 MỤC
                   </div>
                   <div className="text-[11px] font-bold text-rose-100/95 leading-snug mt-0.5">
-                    Bắt buộc đo 4 thông số mi thật & dáng mắt trước khi bắt đầu làm mi!
+                    Bắt buộc đo đủ 7/7 thông số mi thật & dáng mắt trước khi nhận ca và bắt đầu làm mi!
                   </div>
                 </div>
               </div>

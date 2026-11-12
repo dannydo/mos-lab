@@ -30,6 +30,7 @@ import {
   createInMemoryConfigStore,
   createOverrideRepository,
   CUSTOMER_AVATAR_KEY_PREFIX,
+  CUSTOMER_NATURAL_LASH_KEY_PREFIX,
   LEGACY_CUSTOMER_AVATARS_KEY,
   LEGACY_LIVE_OVERRIDES_KEY,
 } from './services/ios-overrides.service.js';
@@ -211,7 +212,16 @@ test('Zero-default & mandatory 7/7 natural lash check invariants (Kinh Thánh mO
     false
   );
 
-  // 5. Valid saves: new client with all 7/7 fields confirmed, or returning client with 0/7 untouched natural lash fields
+  // 5. Unmeasured returning client (e.g. Lần 4 / Lần 10 with CHƯA ĐO 0/7) MUST ALSO be rejected (OPS-003 v1.2.0)
+  assert.equal(
+    validateNaturalLashConsultationSave({
+      customerVisits: 10,
+      incomingAttributes: {},
+    }).valid,
+    false
+  );
+
+  // 6. Valid saves: new client with all 7/7 fields confirmed, or returning client with existing saved 7/7 profile
   assert.equal(
     validateNaturalLashConsultationSave({
       customerVisits: 1,
@@ -222,11 +232,134 @@ test('Zero-default & mandatory 7/7 natural lash check invariants (Kinh Thánh mO
   );
   assert.equal(
     validateNaturalLashConsultationSave({
-      customerVisits: 4,
-      incomingAttributes: {},
+      customerVisits: 10,
+      existingAttributes: full7Attrs,
+      incomingAttributes: { style: 'Doll' } as unknown as Record<string, string>,
     }).valid,
     true
   );
+});
+
+test('OPS-003 v1.2.0: Universal 7/7 gate blocks unmeasured returning clients & persists IOS_CUST_NLASH per customer', async () => {
+  const store = createInMemoryConfigStore();
+  const repo = createOverrideRepository(store);
+  const actor = { id: 11, legacyStaffId: 46272, displayName: 'Thảo Ly', role: 'cvl', careerTier: 'CVL' as const };
+
+  // 1. Returning client Hà (order 339319, customerId 34290, Lần 10) with CHƯA ĐO (0/7) MUST be blocked on SAVE_CONSULTATION & START_SERVICE
+  const blockedSave = await executeIosBookingAction(
+    actor,
+    {
+      bookingId: 339319,
+      customerId: 34290,
+      customerVisits: 10,
+      action: 'SAVE_CONSULTATION',
+      attributes: { style: 'Doll', curl: 'C', length: '10-12 mm', thickness: '0.05 mm' },
+    },
+    repo
+  );
+  assert.equal(blockedSave.statusCode, 400);
+
+  const blockedStart = await executeIosBookingAction(
+    actor,
+    { bookingId: 339319, customerId: 34290, action: 'START_SERVICE' },
+    repo
+  );
+  assert.equal(blockedStart.statusCode, 400);
+
+  const blockedPrep = await executeIosBookingAction(
+    actor,
+    {
+      bookingId: 339319,
+      customerId: 34290,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Preparation',
+      progress: { currentStep: 7 },
+    },
+    repo
+  );
+  assert.equal(blockedPrep.statusCode, 400);
+
+  // 2. Saving consultation WITH complete 7/7 persists IOS_CUST_NLASH:34290 and unlocks subsequent visits
+  const full7 = {
+    style: 'Doll',
+    curl: 'C',
+    length: '10-12 mm',
+    thickness: '0.05 mm',
+    naturalLashLength: '9-10mm',
+    naturalLashThickness: '0.10-0.12mm',
+    naturalLashCount: '90-110',
+    lashTrail: 'Thẳng (Straight)',
+    eyeShape: 'Hai mí chuẩn (Almond)',
+    lashHealth: 'Khỏe mạnh (Healthy)',
+    medicalProblem: 'Bình thường (Good)',
+    isNewClientDiagnosticDone: true,
+  };
+  const okSave = await executeIosBookingAction(
+    actor,
+    {
+      bookingId: 339319,
+      customerId: 34290,
+      customerVisits: 10,
+      action: 'SAVE_CONSULTATION',
+      attributes: full7,
+    },
+    repo
+  );
+  assert.equal(okSave.statusCode, 200);
+  assert.ok(store.dump()[`${CUSTOMER_NATURAL_LASH_KEY_PREFIX}34290`]);
+
+  // 3. Future live order 340500 for customer 34290 automatically hydrates saved 7/7 natural lash profile
+  const custProfiles = await repo.loadCustomerNaturalLashProfilesBatch([34290]);
+  const futureOrder: RawIosOrderSnapshot = {
+    id: 340500,
+    order_number: '340500',
+    order_state: 'Confirmed',
+    booking_date_start: '2026-12-01T10:00:00',
+    booking_duration_minute: 90,
+    total_price: 550000,
+    client_store_id: 6,
+    booking_note: '11/11 chi tham gia Friday',
+    user_id: 34290,
+    combo_sale_required: 0,
+    is_new: 0,
+    promotion_id: null,
+    customer_name: 'Hà',
+    customer_phone: '0900260172',
+    customer_avatar: null,
+    booker_name: 'Ngọc Điệp',
+    booker_avatar: null,
+    service_name: 'Hyperlight 550',
+    service_key: 'hyperlight-550',
+    is_temporary: 0,
+    service_type: 'Retain',
+    staff_name: 'Thảo Ly',
+    staff_avatar: null,
+    assigned_staff_id: 46272,
+    booked_staff_id: 46272,
+    check_in_staff_id: null,
+    check_out_staff_id: null,
+    check_in_staff_name: null,
+    check_in_staff_avatar: null,
+    check_out_staff_name: null,
+    check_out_staff_avatar: null,
+    total_visits: 11,
+  };
+  const hydratedBookings = mapLiveOrdersToBookings({
+    orders: [futureOrder],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: {},
+    customerAvatarMap: {},
+    customerNaturalLashMap: custProfiles,
+    storeId: 6,
+    targetDate: '2026-12-01',
+    todayVn: '2026-12-01',
+    activeStaffId: 46272,
+    canViewFullPhone: false,
+  });
+  assert.equal(hydratedBookings.length, 1);
+  assert.equal(hasCompleteNaturalLashAttributes(hydratedBookings[0].attributes), true);
+  assert.equal(hydratedBookings[0].attributes?.isNewClientDiagnosticDone, true);
+  assert.equal(hydratedBookings[0].attributes?.naturalLashLength, '9-10mm');
 });
 
 test('BUG-01 Fix: Atomic per-booking overrides prevent concurrent lost updates & preserve legacy fallback', async () => {

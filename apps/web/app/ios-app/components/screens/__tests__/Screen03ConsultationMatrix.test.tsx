@@ -200,24 +200,76 @@ describe('Screen03ConsultationMatrix - Zero Defaults & Mandatory 7/7 Natural Las
     expect(screen.getByRole('button', { name: /LƯU TƯ VẤN & BẮT ĐẦU LÀM MI/i })).toBeInTheDocument();
   });
 
-  it('opens directly on Thiết Kế Trên Mi Thật without mandatory lock for unmeasured returning clients, but enforces 7/7 if partial measurement starts', () => {
+  it('enforces mandatory 7/7 natural lash check on unmeasured returning clients (e.g. Lần 10 CHƯA ĐO) while preserving their chosen design', () => {
     const onSave = vi.fn();
-    render(<Screen03ConsultationMatrix booking={returningClientBooking} onBack={vi.fn()} onSave={onSave} />);
+    const unmeasuredReturningHa: BookingItem = {
+      ...returningClientBooking,
+      id: 339319,
+      customerName: 'Hà',
+      customerVisits: 10,
+      attributes: {
+        material: 'HyperLight',
+        style: 'Doll',
+        volume: '4X',
+        count: '70 fan',
+        curl: 'C',
+        length: '10-12 mm',
+        thickness: '0.05 mm',
+        notes: '11/11 chi tham gia Friday',
+      },
+    };
+    render(<Screen03ConsultationMatrix booking={unmeasuredReturningHa} onBack={vi.fn()} onSave={onSave} />);
 
+    // Opens on PROFILE (Kiểm Tra Mi Thật) and locks SPECS (Thiết Kế Trên Mi Thật) when CHƯA ĐO (0/7)
     const profileTab = screen.getByRole('tab', { name: /Kiểm Tra Mi Thật/i });
+    const specsTab = screen.getByRole('tab', { name: /Thiết Kế Trên Mi Thật/i });
+    expect(profileTab).toHaveAttribute('aria-selected', 'true');
+    expect(specsTab).toHaveAttribute('aria-selected', 'false');
+    expect(specsTab).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/CHƯA CÓ HỒ SƠ MI THẬT · BẮT BUỘC KIỂM TRA ĐỦ 7 MỤC/i)).toBeInTheDocument();
+
+    // Attempt to click SPECS before measuring triggers alert
+    fireEvent.click(specsTab);
+    expect(profileTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('alert')).toHaveTextContent(/Còn thiếu 7\/7 mục/i);
+
+    // Measure & confirm all 7/7 fields -> unlocks SPECS while preserving returning client's Doll style!
+    fillAll7NaturalLashFields();
+    fireEvent.click(screen.getByRole('button', { name: /XÁC NHẬN ĐÃ KIỂM TRA MI THẬT & THIẾT KẾ MI →/i }));
+    expect(specsTab).toHaveAttribute('aria-selected', 'true');
+    expect(specsTab).toHaveAttribute('aria-disabled', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: /LƯU TƯ VẤN & BẮT ĐẦU LÀM MI/i }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [savedAttributes] = onSave.mock.calls[0];
+    expect(savedAttributes.style).toBe('Doll');
+    expect(savedAttributes.isNewClientDiagnosticDone).toBe(true);
+    expect(savedAttributes.naturalLashLength).toBeTruthy();
+  });
+
+  it('opens directly on Thiết Kế Trên Mi Thật unlocked when a returning client already has a saved 7/7 natural lash profile', () => {
+    const onSave = vi.fn();
+    const measuredReturningClient: BookingItem = {
+      ...returningClientBooking,
+      customerVisits: 10,
+      attributes: {
+        ...returningClientBooking.attributes!,
+        isNewClientDiagnosticDone: true,
+        naturalLashLength: '9 - 10mm',
+        naturalLashThickness: '0.10 - 0.12mm',
+        naturalLashCount: '90 - 110',
+        lashTrail: 'Thẳng (Straight)',
+        eyeShape: 'Hai mí chuẩn (Almond)',
+        lashHealth: 'Khỏe mạnh (Healthy)',
+        medicalProblem: 'Bình thường (Good)',
+      },
+    };
+    render(<Screen03ConsultationMatrix booking={measuredReturningClient} onBack={vi.fn()} onSave={onSave} />);
+
     const specsTab = screen.getByRole('tab', { name: /Thiết Kế Trên Mi Thật/i });
     expect(specsTab).toHaveAttribute('aria-selected', 'true');
     expect(specsTab).toHaveAttribute('aria-disabled', 'false');
-    expect(screen.getByText(/Chưa đo mi thật/i)).toBeInTheDocument();
-
-    // If staff switches to Kiểm Tra Mi Thật and sets only 1 field (1/7), partial measurement locks SPECS until 7/7 complete
-    fireEvent.click(profileTab);
-    fireEvent.click(screen.getByTitle('Chúc xuống'));
-    expect(specsTab).toHaveAttribute('aria-disabled', 'true');
-
-    fireEvent.click(specsTab);
-    expect(profileTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('alert')).toHaveTextContent(/Còn thiếu 6\/7 mục/i);
+    expect(screen.getByText(/ĐÃ KIỂM TRA MI THẬT · ĐỦ ĐIỀU KIỆN THIẾT KẾ/i)).toBeInTheDocument();
   });
 
   it('blocks Quick Check-In bypass on Screen02CheckInProfile for new clients even with an active Combo', () => {
@@ -251,19 +303,20 @@ describe('Screen03ConsultationMatrix - Zero Defaults & Mandatory 7/7 Natural Las
     expect(onCheckIn).toHaveBeenCalledWith(newComboClient.id);
   });
 
-  it('redirects Screen06CvDashboardReceive back to consultation if a new client lacks all 7/7 natural lash fields', () => {
+  it('redirects Screen06CvDashboardReceive back to consultation if any client (new or Lần 10 returning) lacks all 7/7 natural lash fields', () => {
     const onStartTask = vi.fn();
     const onEditService = vi.fn();
 
     render(
       <Screen06CvDashboardReceive
         booking={{
-          ...newClientBooking,
+          ...returningClientBooking,
+          id: 339319,
+          customerName: 'Hà',
+          customerVisits: 10,
           status: 'SERVICING',
           attributes: {
-            ...newClientBooking.attributes!,
-            isNewClientDiagnosticDone: true,
-            naturalLashLength: '8mm',
+            ...returningClientBooking.attributes!,
           },
         }}
         onStartTask={onStartTask}
@@ -271,6 +324,7 @@ describe('Screen03ConsultationMatrix - Zero Defaults & Mandatory 7/7 Natural Las
       />
     );
 
+    expect(screen.getByText(/CHƯA KIỂM TRA MI THẬT · BẮT BUỘC ĐO ĐỦ 7\/7 MỤC/i)).toBeInTheDocument();
     const requiredCheckBtn = screen.getByRole('button', { name: /KIỂM TRA MI THẬT TRƯỚC KHI BẮT ĐẦU/i });
     fireEvent.click(requiredCheckBtn);
 

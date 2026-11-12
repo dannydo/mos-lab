@@ -23,6 +23,7 @@ export interface UpsellUnderComboAndSummaryProps {
   selectedNewComboPkg: MatchedComboPackageOption | null;
   deductTodayIntoCombo: boolean;
   servicePrice: number;
+  effectiveServiceChargeToday: number;
   redemptionAccounting: RedemptionAccountingResult | null;
   newComboTotal: number;
   underComboTotal: number;
@@ -54,6 +55,7 @@ export function UpsellUnderComboAndSummary({
   selectedNewComboPkg,
   deductTodayIntoCombo,
   servicePrice,
+  effectiveServiceChargeToday,
   redemptionAccounting,
   newComboTotal,
   underComboTotal,
@@ -174,29 +176,34 @@ export function UpsellUnderComboAndSummary({
         {/* Row 1: Dịch vụ hôm nay */}
         <div className="flex items-center justify-between text-[12.5px]">
           <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium`}>Dịch vụ hôm nay:</span>
-          {selectedNewComboPkg ? (
-            deductTodayIntoCombo ? (
-              <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold tabular-nums`}>
-                0đ{' '}
-                <span className={`text-[11px] font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                  (Trừ vào gói)
-                </span>
-              </span>
-            ) : (
-              <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
-                {servicePrice.toLocaleString('vi-VN')}đ{' '}
-                <span className="text-[11px] font-semibold text-indigo-400">(Trả lẻ)</span>
-              </span>
-            )
-          ) : isExistingComboLive && redemptionAccounting ? (
+          {isExistingComboLive && redemptionAccounting ? (
             <span className={`${isDark ? 'text-sky-400' : 'text-sky-700'} font-bold tabular-nums`}>
-              {redemptionAccounting.totalCustomerPayToday > 0
-                ? `+${redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')}đ (Phụ thu)`
+              {effectiveServiceChargeToday > 0
+                ? `+${effectiveServiceChargeToday.toLocaleString('vi-VN')}đ (Phụ thu)`
                 : '0đ (Trừ ví)'}
+            </span>
+          ) : effectiveServiceChargeToday === 0 && (selectedNewComboPkg || selectedUnderComboPkg) ? (
+            <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold tabular-nums`}>
+              0đ{' '}
+              <span className={`text-[11px] font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                (Trừ vào gói)
+              </span>
+            </span>
+          ) : effectiveServiceChargeToday < servicePrice ? (
+            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+              {effectiveServiceChargeToday.toLocaleString('vi-VN')}đ{' '}
+              <span className={`text-[11px] font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                (Đã trừ gói 1 phần)
+              </span>
+            </span>
+          ) : selectedNewComboPkg && !deductTodayIntoCombo ? (
+            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+              {effectiveServiceChargeToday.toLocaleString('vi-VN')}đ{' '}
+              <span className="text-[11px] font-semibold text-indigo-400">(Trả lẻ)</span>
             </span>
           ) : (
             <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
-              {servicePrice.toLocaleString('vi-VN')}đ
+              {effectiveServiceChargeToday.toLocaleString('vi-VN')}đ
             </span>
           )}
         </div>

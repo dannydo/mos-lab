@@ -1,9 +1,10 @@
 import {
   calculateActorTipBreakdown,
-  calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
   IosBookingStatus,
   IosCartProductItem,
+  IosSettlementStatus,
   maskPhoneNumber,
   resolveEffectiveServiceTotal,
   SafeAny,
@@ -109,7 +110,11 @@ export function resolveBookingStatusFromState(
 export function computeBookingFinancials(params: {
   servicePrice: number;
   upgradePrice: number;
+  serviceName?: string;
   isComboLive: boolean;
+  hasUnderMink?: boolean;
+  underMinkServiceType?: 'Normal' | 'Retain';
+  hasUnderMinkCombo?: boolean;
   selectedCombo: SafeAny;
   selectedUnderCombo: SafeAny;
   comboRedemption: SafeAny;
@@ -119,11 +124,17 @@ export function computeBookingFinancials(params: {
   checkInStaffId?: number;
   checkOutStaffId?: number;
   activeStaffId: number;
+  dbOrderState?: string | null;
+  isTrainingCvlOrder?: boolean;
 }) {
   const {
     servicePrice,
     upgradePrice,
+    serviceName,
     isComboLive,
+    hasUnderMink,
+    underMinkServiceType,
+    hasUnderMinkCombo,
     selectedCombo,
     selectedUnderCombo,
     comboRedemption,
@@ -133,6 +144,8 @@ export function computeBookingFinancials(params: {
     checkInStaffId,
     checkOutStaffId,
     activeStaffId,
+    dbOrderState,
+    isTrainingCvlOrder,
   } = params;
 
   const productTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0) * Number(p.quantity || 1), 0);
@@ -141,12 +154,20 @@ export function computeBookingFinancials(params: {
     (selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0);
 
   const normalizedSelectedCombo = selectedCombo ? { todaySingleServiceWaived: true, ...selectedCombo } : null;
+  const normalizedSelectedUnderCombo = selectedUnderCombo
+    ? { todaySingleServiceWaived: true, ...selectedUnderCombo }
+    : null;
 
   const effectiveServiceTotal = resolveEffectiveServiceTotal({
     servicePrice,
     upgradePrice,
+    serviceName,
     isComboLive,
+    hasUnderMink,
+    underMinkServiceType,
+    hasUnderMinkCombo,
     selectedCombo: normalizedSelectedCombo,
+    selectedUnderCombo: normalizedSelectedUnderCombo,
     comboRedemption,
   });
 
@@ -157,7 +178,11 @@ export function computeBookingFinancials(params: {
   const diamondDiscountAmount = Number(overrideBilling?.diamondDiscountAmount ?? diamondUsed * 1000);
   const tipAmount = Number(overrideBilling?.tipAmount ?? 0);
 
-  const comboBonus = calculateCvComboTierBonus(comboTotal);
+  const dualCombo = calculateDualComboTierBonus(
+    Number(selectedCombo?.price || 0),
+    Number(selectedUnderCombo?.price || 0)
+  );
+  const comboBonus = dualCombo.totalBonus;
   const serumBonus = cartProducts.reduce(
     (sum, p) => sum + calculateCvSerumTierBonus(Number(p.price || 0), Number(p.quantity || 1)),
     0
@@ -172,10 +197,15 @@ export function computeBookingFinancials(params: {
       assignedStaffId,
       checkInStaffId: effectiveCheckInId,
       checkOutStaffId: effectiveCheckOutId,
+      isTrainingCvlOrder: Boolean(isTrainingCvlOrder),
     },
     { staffId: targetStaffId },
     tipAmount
   );
+
+  const rawSettlement = overrideBilling?.settlementStatus as IosSettlementStatus | undefined;
+  const settlementStatus: IosSettlementStatus | undefined =
+    dbOrderState === 'Completed' ? 'SETTLED_COMPLETED' : rawSettlement;
 
   return {
     cvRewardBreakdown: {
@@ -197,6 +227,10 @@ export function computeBookingFinancials(params: {
       comboTotal,
       productTotal,
       paymentMethod: (overrideBilling?.paymentMethod || 'VIETQR') as 'CASH' | 'POS' | 'VIETQR',
+      settlementStatus,
+      bankTransferRef: overrideBilling?.bankTransferRef,
+      posTransactionId: overrideBilling?.posTransactionId,
+      legacySyncedAt: overrideBilling?.legacySyncedAt,
       tipAmount,
       tipCvShare: tipBreakdown.techShareAmount,
       tipCheckInShare: tipBreakdown.checkInShareAmount,

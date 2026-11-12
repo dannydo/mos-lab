@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
 import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
@@ -92,7 +93,7 @@ export function Screen02CheckInProfile({
     visits <= 1 ||
     Boolean(booking?.attributes?.lashHealth?.includes('Virgin')) ||
     booking?.attributes?.isNewClientDiagnosticDone === false;
-  const requiresNaturalLashCheck = isFirstTimeClient && booking?.attributes?.isNewClientDiagnosticDone !== true;
+  const requiresNaturalLashCheck = !hasCompleteNaturalLashSet(booking);
   const customerNote = booking?.customerNote || 'Không có ghi chú đặc biệt';
   const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
   const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
@@ -379,7 +380,7 @@ export function Screen02CheckInProfile({
           booking?.attributes?.naturalLashCount ||
           resolveNaturalLashCountLabel(booking?.attributes?.naturalLashDensity) ||
           undefined,
-        isNewClientDiagnosticDone: booking?.attributes?.isNewClientDiagnosticDone,
+        isNewClientDiagnosticDone: true,
         lashHealth: booking?.attributes?.lashHealth,
         lashTrail: booking?.attributes?.lashTrail,
         medicalProblem: booking?.attributes?.medicalProblem,

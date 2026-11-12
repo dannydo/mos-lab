@@ -346,8 +346,10 @@ export function useIosAppState(
   const { handleGoToBilling, handleChoosePaymentMethod, handleRecordTip, handleFinishOrder } = useIosBillingCheckout({
     activeBookingId,
     actor,
+    cvPlusRules: staffStats?.cvPlusRules,
     updateActiveBooking,
     postAction,
+    refreshDb,
     setCurrentStep,
     setBookingSegment,
   });

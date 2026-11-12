@@ -52,7 +52,9 @@ import {
   TipFilterType,
   removeVietnameseTones,
   calculateFractionToday,
+  isAdminOrSuperAdminRole,
 } from '@mos-lab/shared';
+import { GraduationCap } from 'lucide-react';
 import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
 import CcAvatar from './CcAvatar';
@@ -65,6 +67,8 @@ import CcWorkLogDetailModal from '~/components/cc-thu-nhap/modals/CcWorkLogDetai
 import CcXoayDetailModal from '~/components/cc-thu-nhap/modals/CcXoayDetailModal';
 import CcTipDetailModal from '~/components/cc-thu-nhap/modals/CcTipDetailModal';
 import CcAllowanceModal from '~/components/cc-thu-nhap/modals/CcAllowanceModal';
+import CvlTrainingMentorshipConfigModal from '~/components/cc-thu-nhap/modals/CvlTrainingMentorshipConfigModal';
+import { CvFeather1Badge } from '~/app/ios-app/components/ui-kit/CvFeatherLabels';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { formatCompactVND, formatStoreCode, formatVND } from '../../../../lib/format-utils';
@@ -113,6 +117,8 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
   const [loading, setLoading] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isTrainingConfigOpen, setIsTrainingConfigOpen] = useState(false);
   const [paystubData, setPaystubData] = useState<CcPaystubRecord[]>([]);
   const [summary, setSummary] = useState<CcIncomeSummary>({
     totalHourlyWage: 0,
@@ -121,12 +127,26 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
     totalMinigameBonus: 0,
     totalCcTipBonus: 0,
     totalExtraSupport: 0,
+    totalTrainingMentorshipBonus: 0,
     totalHolidayBasePay: 0,
     totalHolidayPremiumPay: 0,
     totalHolidayPayrollAddition: 0,
     totalDiamondBonus: 0,
     grandTotalIncome: 0,
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('mos_user');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setIsAdminUser(isAdminOrSuperAdminRole(parsed?.role));
+      }
+    } catch {
+      setIsAdminUser(false);
+    }
+  }, []);
 
   const isDayMode = comparisonMode === 'day';
   const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
@@ -229,6 +249,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
       const projectedMinigameBonus = Math.round((record.minigameBonus || 0) / (ratio || 1));
       const projectedHolidayPay = holidayActual;
 
+      const trainingBonusActual = record.trainingMentorshipBonus || 0;
       const projectedTotalIncome = isMonthMode
         ? projectedHourlyWage +
           projectedCcXoayBonus +
@@ -236,14 +257,16 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
           projectedCcTipBonus +
           projectedDiamondBonus +
           projectedMinigameBonus +
-          projectedHolidayPay
+          projectedHolidayPay +
+          trainingBonusActual
         : projectedHourlyWage +
           (record.ccXoayBonus || 0) +
           projectedComboProductBonus +
           projectedCcTipBonus +
           projectedDiamondBonus +
           projectedMinigameBonus +
-          projectedHolidayPay;
+          projectedHolidayPay +
+          trainingBonusActual;
 
       return {
         projectedHourlyWage,
@@ -281,6 +304,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
     const projectedCcTipBonus = Math.round((summary.totalCcTipBonus || 0) / (ratio || 1));
     const projectedMinigameBonus = Math.round((summary.totalMinigameBonus || 0) / (ratio || 1));
     const holidayAddition = summary.totalHolidayPayrollAddition || summary.totalHolidayPremiumPay || 0;
+    const trainingTotal = summary.totalTrainingMentorshipBonus || 0;
 
     const projectedTotalIncome = isMonthMode
       ? projectedHourlyWage +
@@ -289,14 +313,16 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
         projectedCcTipBonus +
         projectedMinigameBonus +
         (summary.totalDiamondBonus || 0) +
-        holidayAddition
+        holidayAddition +
+        trainingTotal
       : projectedHourlyWage +
         (summary.totalCcXoayBonus || 0) +
         projectedComboProductBonus +
         projectedCcTipBonus +
         projectedMinigameBonus +
         (summary.totalDiamondBonus || 0) +
-        holidayAddition;
+        holidayAddition +
+        trainingTotal;
 
     return {
       projectedHourlyWage,
@@ -545,6 +571,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             totalMinigameBonus: res.summary.totalMinigameBonus || 0,
             totalCcTipBonus: res.summary.totalCcTipBonus || 0,
             totalExtraSupport: res.summary.totalExtraSupport || 0,
+            totalTrainingMentorshipBonus: res.summary.totalTrainingMentorshipBonus || 0,
             totalHolidayBasePay: res.summary.totalHolidayBasePay || 0,
             totalHolidayPremiumPay: res.summary.totalHolidayPremiumPay || 0,
             totalHolidayPayrollAddition: res.summary.totalHolidayPayrollAddition || 0,
@@ -1150,6 +1177,66 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
       },
     },
     {
+      title: (
+        <span className="inline-flex items-center justify-end gap-1">
+          <span>Đào Tạo</span>
+          <CvFeather1Badge className="text-[11px] text-amber-500" />
+        </span>
+      ),
+      dataIndex: 'trainingMentorshipBonus',
+      key: 'trainingMentorshipBonus',
+      align: 'right' as const,
+      render: (val: number | undefined, record: CcPaystubRecord) => {
+        const details = record.trainingMentorshipDetails || [];
+        if (details.length === 0 && (!val || val <= 0)) {
+          return <span className="text-slate-400 dark:text-slate-600">-</span>;
+        }
+        const totalMentor = val || 0;
+        const menteeSummary = details
+          .map((d) => `${d.menteeDisplayName} ${(d.actualComboRate * 100).toFixed(1)}%`)
+          .join(', ');
+        const tooltipText = details
+          .map(
+            (d) =>
+              `${d.menteeDisplayName} (${d.combosSoldCount}/${d.notComboLiveOrders} Not Live = ${(d.actualComboRate * 100).toFixed(1)}%): ${
+                d.isUnlocked
+                  ? `Đạt chuẩn -> +${formatVND(d.mentorFixedEarned)}đ + ${Math.round(d.menteeBonusShareRate * 100)}% x ${formatVND(d.menteeTotalAdditionalIncome)}đ = +${formatVND(d.mentorTotalBonus)}đ`
+                  : `Chưa đạt ${Math.round(d.minComboRateThreshold * 100)}% -> 0đ`
+              }`
+          )
+          .join(' | ');
+
+        return (
+          <Tooltip title={tooltipText}>
+            <div
+              className="text-right cursor-pointer group hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors border border-transparent hover:border-amber-500/30"
+              role="button"
+              tabIndex={0}
+              aria-label={`Xem chi tiết thưởng đào tạo Chuyên Viên Tự Chủ của ${record.displayName}`}
+              onClick={() => handleOpenDetailModal(record)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleOpenDetailModal(record);
+                }
+              }}
+            >
+              <div
+                className={`tabular-nums whitespace-nowrap font-bold text-sm group-hover:underline underline-offset-2 ${
+                  totalMentor > 0 ? (isDark ? 'text-amber-300' : 'text-amber-600') : 'text-rose-500 dark:text-rose-400'
+                }`}
+              >
+                {totalMentor > 0 ? `+${formatVND(totalMentor)}` : '0đ (<20%)'}
+              </div>
+              <div className="text-[11px] tabular-nums text-slate-500 dark:text-slate-400 truncate max-w-[145px] ml-auto">
+                {menteeSummary}
+              </div>
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: 'Phụ Cấp Extra',
       dataIndex: 'extraSupport',
       key: 'extraSupport',
@@ -1244,15 +1331,26 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               </span>
             </div>
 
-            <Input
-              placeholder="Tìm tên CC, chi nhánh..."
-              prefix={<SearchOutlined className={isDark ? 'text-slate-400' : 'text-slate-500'} />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 220 }}
-              size="small"
-              allowClear
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              {isAdminUser && (
+                <Button size="small" onClick={() => setIsTrainingConfigOpen(true)}>
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <GraduationCap className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Đào tạo</span>
+                    <CvFeather1Badge className="text-[11px] text-amber-500" />
+                  </span>
+                </Button>
+              )}
+              <Input
+                placeholder="Tìm tên CC, chi nhánh..."
+                prefix={<SearchOutlined className={isDark ? 'text-slate-400' : 'text-slate-500'} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 220 }}
+                size="small"
+                allowClear
+              />
+            </div>
           </div>
         }
         variant="outlined"
@@ -1540,6 +1638,14 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
         allowanceNote={allowanceNote}
         setAllowanceNote={setAllowanceNote}
       />
+
+      {isAdminUser && (
+        <CvlTrainingMentorshipConfigModal
+          open={isTrainingConfigOpen}
+          onClose={() => setIsTrainingConfigOpen(false)}
+          onSaved={fetchPaystubData}
+        />
+      )}
     </div>
   );
 }

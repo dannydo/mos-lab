@@ -14,6 +14,7 @@ import { TeamService } from '../../teams/team.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 import { CareerProgressionService } from '../../career/career.service.js';
+import { CvlTrainingMentorshipService } from '../services/cvl-training-mentorship.service.js';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -299,16 +300,23 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY os.assigned_staff_id
       `;
 
-      // 5. Query CV Tip (st.tip_amount is already the 70% tip bonus)
+      // 5. Query CV Tip (StaffTipRunner đã ghi thẳng 90%/80%/70%/20%/10% vào st.tip_amount & st.tip_percentage)
       const cvTipBonusQuery = `
         SELECT 
           st.user_id as staff_id,
-          COALESCE(SUM(st.tip_amount), 0) as total_cv_tip
+          COALESCE(SUM(st.tip_amount), 0) as total_cv_tip,
+          COALESCE(SUM(
+            CASE
+              WHEN COALESCE(st.tip_percentage, 70) >= 70
+                THEN ROUND(st.tip_amount * 70 / COALESCE(NULLIF(st.tip_percentage, 0), 70))
+              ELSE 0
+            END
+          ), 0) as base_tech_tip
         FROM \`staff_tip\` st
         JOIN \`order\` o ON st.order_id = o.id
-        JOIN \`report_order\` ro ON o.id = ro.order_id
+        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         WHERE st.user_id IN (${validStaffListStr})
-          AND ro.date BETWEEN '${startPart}' AND '${endPart}'
+          AND COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) BETWEEN '${startPart}' AND '${endPart}'
           AND o.order_state = 'Completed'
         GROUP BY st.user_id
       `;
@@ -372,6 +380,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         mosAllowances,
         careerConfigRecord,
         cvPlusProgressions,
+        activeTrainingPairs,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(contractRatesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(periodPayrollQuery),
@@ -400,7 +409,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           },
           include: { staff: true },
         }),
+        CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
       ]);
+
+      const transferredTrainingTipMap = await CvlTrainingMentorshipService.queryTransferredCcTipsByMentee(
+        fastify,
+        activeTrainingPairs,
+        startPart,
+        endPart
+      );
 
       const extraSupportDetailsMap = new Map<number, CvOtherAllowanceItem[]>();
       const extraSupportMap = new Map<number, number>();
@@ -527,10 +544,23 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         });
       });
 
-      const cvTipMap = new Map<number, number>();
+      const cvTipMap = new Map<number, { totalTip: number; baseTechTip: number; consultDeltaTip: number }>();
       cvTipBonusRows.forEach((r: SafeAny) => {
-        cvTipMap.set(Number(r.staff_id), Math.round(Number(r.total_cv_tip || 0)));
+        const totalTip = Math.round(Number(r.total_cv_tip || 0));
+        const baseTechTip = Math.min(totalTip, Math.round(Number(r.base_tech_tip ?? r.total_cv_tip ?? 0)));
+        const consultDeltaTip = Math.max(0, totalTip - baseTechTip);
+        cvTipMap.set(Number(r.staff_id), { totalTip, baseTechTip, consultDeltaTip });
       });
+      // Cộng hoàn trả phần Tip tư vấn/checkout (+10%/+20%) mà CC bấm giùm cho Mentee CVL trong kỳ Training (Điều răn CC-006)
+      for (const [menteeId, transferredTip] of transferredTrainingTipMap.entries()) {
+        if (transferredTip <= 0) continue;
+        const current = cvTipMap.get(menteeId) || { totalTip: 0, baseTechTip: 0, consultDeltaTip: 0 };
+        cvTipMap.set(menteeId, {
+          totalTip: current.totalTip + transferredTip,
+          baseTechTip: current.baseTechTip,
+          consultDeltaTip: current.consultDeltaTip + transferredTip,
+        });
+      }
 
       const monthOffLeavesMap = new Map<
         number,
@@ -591,8 +621,17 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           cvPlusStaffMap.set(p.staff.legacyStaffId, p);
         }
       });
+      const validStaffSet = new Set(validStaffIds);
+      for (const pair of activeTrainingPairs) {
+        if (validStaffSet.has(pair.menteeLegacyStaffId) && !cvPlusStaffMap.has(pair.menteeLegacyStaffId)) {
+          cvPlusStaffMap.set(pair.menteeLegacyStaffId, {
+            staffId: pair.menteeLegacyStaffId,
+            staff: { legacyStaffId: pair.menteeLegacyStaffId },
+          });
+        }
+      }
 
-      // Pre-calculate CV+ reward snapshots for all active 🪶 CV staff
+      // Pre-calculate CVL reward snapshots for all active CVL staff (chế độ kỳ lương thực tế ACTUAL_PAYROLL)
       const cvPlusRewardMap = new Map<number, SafeAny>();
       await Promise.all(
         Array.from(cvPlusStaffMap.entries()).map(async ([legacyStaffId, progression]) => {
@@ -601,7 +640,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
               fastify,
               progression.staffId,
               { startStr: `${startPart} 00:00:00`, endStr: `${endPart} 23:59:59` },
-              false
+              false,
+              { mode: 'ACTUAL_PAYROLL' }
             );
             cvPlusRewardMap.set(legacyStaffId, snapshot);
           } catch (err) {
@@ -670,7 +710,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const cvXoayBonus = xoayData.bonus;
         const serviceCount = xoayData.serviceCount;
 
-        const cvTipBonus = cvTipMap.get(staffId) || 0;
+        const tipData = cvTipMap.get(staffId) || { totalTip: 0, baseTechTip: 0, consultDeltaTip: 0 };
+        let cvTipBonus = tipData.totalTip;
 
         // Calculate Seniority anchored to the end date of the payroll period (endPart)
         const legacyJoinedAt = staff.date_created ? new Date(staff.date_created) : new Date();
@@ -726,7 +767,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const holidayPaidLeavePay = Number(sp?.total_off_public_holiday_amount || 0);
         const holidayPaystubAdjustment = holidayPaidLeavePay;
 
-        // Quyền lợi Chuyên Viên Tự Chủ (🪶 CV) theo Điều răn CV-002 & CAREER_PROGRESSION_RULES
+        // Quyền lợi Chuyên Viên Tự Chủ (CVL) theo Điều răn CV-002 & CAREER_PROGRESSION_RULES
         const cvPlusSnapshot = cvPlusRewardMap.get(staffId);
         let cvPlusBreakdown: CvPlusPaystubBreakdown | null = null;
         let isCvPlus = false;
@@ -739,8 +780,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           const targetWage = cvReq.hourlyWage || 27500;
           const wageDiffPerHour = Math.max(0, targetWage - hourlyRate);
           const deltaHourlyWage = isUnlocked ? Math.round(regularHours * wageDiffPerHour) : 0;
-          // Tip difference: 20% consultation tip share is always preserved per Điều răn CV-002 (90% total tip)
-          const deltaTipBonus = Math.round(cvTipBonus * (2 / 7));
+          // Tip thực nhận từ sổ staff_tip: tách phần 70% kỹ thuật cơ sở và phần +10%/+20% tư vấn/checkout thực tế (tránh nhân trùng 2/7 lên dòng 90%)
+          cvTipBonus = tipData.baseTechTip;
+          const deltaTipBonus = tipData.consultDeltaTip;
           const comboBonusTotal = isUnlocked ? cvPlusSnapshot.comboBonusTotal : 0;
           const serumBonusTotal = isUnlocked ? cvPlusSnapshot.productBonusTotal : 0;
           const totalAdditionalIncome = deltaHourlyWage + deltaTipBonus + comboBonusTotal + serumBonusTotal;

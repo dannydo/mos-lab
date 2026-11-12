@@ -54,6 +54,8 @@ import type {
   CvTipResponse,
   CvWorkLogDetailResponse,
   CvXoayReportResponse,
+  CvlTrainingMentorshipConfig,
+  CvlTrainingMentorshipConfigResponse,
   DailySalesBonusConfig,
   DailySalesBonusConsultantResponse,
   DailySalesBonusQueryParams,
@@ -165,6 +167,16 @@ export const kpiApi = {
     },
     getCcPaystub: async (params?: CcQueryParams): Promise<CcPaystubResponse> => {
       const response = await api.get('/kpi/cc-paystub', { params });
+      return response.data;
+    },
+    getCvlTrainingMentorshipConfig: async (): Promise<CvlTrainingMentorshipConfigResponse> => {
+      const response = await api.get('/kpi/cvl-training-mentorship/config');
+      return response.data;
+    },
+    updateCvlTrainingMentorshipConfig: async (
+      payload: Pick<CvlTrainingMentorshipConfig, 'pairs'>
+    ): Promise<CvlTrainingMentorshipConfigResponse> => {
+      const response = await api.put('/kpi/cvl-training-mentorship/config', payload);
       return response.data;
     },
     getCcWorkLogs: async (params: {

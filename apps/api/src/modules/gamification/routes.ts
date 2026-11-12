@@ -1,7 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { DailySalesBonusConfig, DailySalesBonusTransaction, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import {
+  CvlTrainingMentorshipPair,
+  DailySalesBonusConfig,
+  DailySalesBonusTransaction,
+  isAdminOrSuperAdminRole,
+  SafeAny,
+} from '@mos-lab/shared';
 import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
+import {
+  buildExcludeTrainingCvlOrderSql,
+  CvlTrainingMentorshipService,
+} from '../kpi/services/cvl-training-mentorship.service.js';
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -10,7 +20,9 @@ function normalizeDatePart(value: string | undefined, fallback: string): string 
   return datePart && ISO_DATE_PATTERN.test(datePart) ? datePart : fallback;
 }
 
-function buildActualCheckinOrdersCte(): string {
+function buildActualCheckinOrdersCte(activeTrainingPairs: CvlTrainingMentorshipPair[] = []): string {
+  const excludeActualSql = buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'ro.actual_booking_date_start');
+  const excludeBookingSql = buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'o.booking_date_start');
   return `
     WITH filtered_orders AS (
       SELECT ro.order_id AS orderId, ro.actual_booking_date_start AS checkinTime
@@ -19,6 +31,7 @@ function buildActualCheckinOrdersCte(): string {
       WHERE o.order_state = 'Completed'
         AND ro.actual_booking_date_start >= ?
         AND ro.actual_booking_date_start <= ?
+        ${excludeActualSql}
 
       UNION ALL
 
@@ -29,6 +42,7 @@ function buildActualCheckinOrdersCte(): string {
         AND ro.actual_booking_date_start IS NULL
         AND o.booking_date_start >= ?
         AND o.booking_date_start <= ?
+        ${excludeBookingSql}
     )
   `;
 }
@@ -323,7 +337,17 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
 
       const startPart = normalizeDatePart(startStr, startStr);
       const endPart = normalizeDatePart(endStr, endStr);
-      const filteredOrdersCte = buildActualCheckinOrdersCte();
+      const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(
+        fastify,
+        startPart,
+        endPart
+      );
+      const filteredOrdersCte = buildActualCheckinOrdersCte(activeTrainingPairs);
+      const excludeTrainingDebtSql = buildExcludeTrainingCvlOrderSql(
+        activeTrainingPairs,
+        'COALESCE(udp.order_id, ud.order_id)',
+        'COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created)'
+      );
       const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
 
       // Query Combos (Net cash value subtracts unpaid debt) with 50/50 Split for CC IN != CC OUT
@@ -674,6 +698,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             AND COALESCE(udp.is_cancelled, 0) = 0
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) >= '${startStr} 00:00:00'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) <= '${endStr} 23:59:59'
+            ${excludeTrainingDebtSql}
             AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
 
           UNION ALL
@@ -712,6 +737,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             AND COALESCE(udp.is_cancelled, 0) = 0
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) >= '${startStr} 00:00:00'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) <= '${endStr} 23:59:59'
+            ${excludeTrainingDebtSql}
             AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
 
           UNION ALL
@@ -750,6 +776,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             AND COALESCE(udp.is_cancelled, 0) = 0
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) >= '${startStr} 00:00:00'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start, udp.date_created) <= '${endStr} 23:59:59'
+            ${excludeTrainingDebtSql}
             AND (os.check_in_staff_id IS NULL OR os.check_out_staff_id IS NULL OR os.check_in_staff_id = os.check_out_staff_id)
         ) sub
         ${subStaffFilter}

@@ -4,10 +4,12 @@ import { useCallback } from 'react';
 import {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
+  resolveServicePriceSplit,
   calculateActorTipBreakdown,
 } from '@mos-lab/shared';
-import type { ActorTipBreakdown } from '@mos-lab/shared';
+import type { ActorTipBreakdown, CvToCvPlusRequirements, IosSettlementStatus } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import { ActiveActorProfile } from './iosActorProfile';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServicingStep } from './offlineSync';
@@ -15,10 +17,12 @@ import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServic
 export {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
+  resolveServicePriceSplit,
   calculateActorTipBreakdown,
 };
-export type { ActorTipBreakdown };
+export type { ActorTipBreakdown, CvToCvPlusRequirements };
 
 export type CartProductItem = NonNullable<BookingItem['cartProducts']>[number];
 
@@ -32,8 +36,10 @@ export interface UpsellPayload {
 export interface UseIosBillingCheckoutParams {
   activeBookingId: number;
   actor: ActiveActorProfile;
+  cvPlusRules?: Partial<CvToCvPlusRequirements>;
   updateActiveBooking: (updater: (prev: BookingItem) => BookingItem) => void;
   postAction: (action: string, payload?: Record<string, any>) => Promise<any>;
+  refreshDb?: () => Promise<any>;
   setCurrentStep: (step: number) => void;
   setBookingSegment: (segment: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL') => void;
 }
@@ -41,8 +47,10 @@ export interface UseIosBillingCheckoutParams {
 export function useIosBillingCheckout({
   activeBookingId,
   actor,
+  cvPlusRules,
   updateActiveBooking,
   postAction,
+  refreshDb,
   setCurrentStep,
   setBookingSegment,
 }: UseIosBillingCheckoutParams) {
@@ -63,33 +71,50 @@ export function useIosBillingCheckout({
         const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
         const comboTotal = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
 
+        const hasUnderMinkComboActive = Boolean(
+          prev.underMinkComboStatus?.hasUnderCombo && (prev.underMinkComboStatus?.remainingSessions ?? 0) > 0
+        );
         const effectiveServiceTotal = resolveEffectiveServiceTotal({
           servicePrice: prev.servicePrice,
           upgradePrice: prev.upgradePrice,
+          serviceName: prev.serviceName,
           isComboLive: Boolean(prev.comboLiveStatus?.isComboLive),
+          hasUnderMink: prev.attributes?.hasUnderMink,
+          underMinkServiceType: prev.attributes?.underMinkServiceType,
+          hasUnderMinkCombo: hasUnderMinkComboActive,
           selectedCombo: nextCombo,
+          selectedUnderCombo: nextUnderCombo,
           comboRedemption: nextRedemption,
         });
         const subtotal = effectiveServiceTotal + comboTotal + productTotal;
         const tipAmount = prev.billing?.tipAmount ?? 0;
 
-        const comboBonusAmount = calculateCvComboTierBonus(comboTotal);
-        const serumBonusAmount = nextProducts.reduce(
-          (sum, p) =>
-            sum + (p.cvBonus !== undefined ? p.cvBonus * p.quantity : calculateCvSerumTierBonus(p.price, p.quantity)),
-          0
+        const isActorCc = actor.tier === 'CC';
+        const isTrainingMenteeOrder = Boolean(prev.isTrainingCvlOrder);
+        const dualBonus = calculateDualComboTierBonus(
+          nextCombo ? Number(nextCombo.price || 0) : 0,
+          nextUnderCombo ? Number(nextUnderCombo.price || 0) : 0,
+          cvPlusRules
         );
+        const comboBonusAmount = isActorCc ? 0 : dualBonus.totalBonus;
+        const serumBonusAmount = isActorCc
+          ? 0
+          : nextProducts.reduce(
+              (sum, p) =>
+                sum +
+                (p.cvBonus !== undefined
+                  ? p.cvBonus * p.quantity
+                  : calculateCvSerumTierBonus(p.price, p.quantity, cvPlusRules)),
+              0
+            );
 
-        let resolvedNextCombo = nextCombo;
-        let resolvedNextUnderCombo = nextUnderCombo;
-        if (nextCombo && nextUnderCombo && comboTotal > 0) {
-          resolvedNextCombo = { ...nextCombo, bonus: comboBonusAmount };
-          resolvedNextUnderCombo = { ...nextUnderCombo, bonus: 0 };
-        } else if (nextCombo) {
-          resolvedNextCombo = { ...nextCombo, bonus: comboBonusAmount };
-        } else if (nextUnderCombo) {
-          resolvedNextUnderCombo = { ...nextUnderCombo, bonus: comboBonusAmount };
-        }
+        const shouldCreditComboToTech = !isActorCc || isTrainingMenteeOrder;
+        const resolvedNextCombo = nextCombo
+          ? { ...nextCombo, bonus: shouldCreditComboToTech ? dualBonus.upperBonus : 0 }
+          : null;
+        const resolvedNextUnderCombo = nextUnderCombo
+          ? { ...nextUnderCombo, bonus: shouldCreditComboToTech ? dualBonus.underBonus : 0 }
+          : null;
 
         void postAction('SAVE_UPSELL_AND_CHECKOUT', {
           cartProducts: nextProducts,
@@ -117,6 +142,7 @@ export function useIosBillingCheckout({
           selectedCombo: resolvedNextCombo,
           selectedUnderCombo: resolvedNextUnderCombo,
           comboRedemption: nextRedemption,
+          _localComboUpdatedAt: Date.now(),
           cvRewardBreakdown: {
             techTipPercent: 70,
             checkInTipPercent: 10,
@@ -145,7 +171,7 @@ export function useIosBillingCheckout({
       });
       setCurrentStep(13);
     },
-    [actor, postAction, setCurrentStep, updateActiveBooking]
+    [actor, cvPlusRules, postAction, setCurrentStep, updateActiveBooking]
   );
 
   // Step 13: Choose Payment Method & Confirm Tip Directly & Diamond Wallet (One-Stop Checkout)
@@ -172,11 +198,19 @@ export function useIosBillingCheckout({
         const checkOutShare = Math.round(tipAmount * 0.1);
         const ccShare = checkInShare + checkOutShare;
 
+        const hasUnderMinkComboActive = Boolean(
+          prev.underMinkComboStatus?.hasUnderCombo && (prev.underMinkComboStatus?.remainingSessions ?? 0) > 0
+        );
         const fallbackEffectiveService = resolveEffectiveServiceTotal({
           servicePrice: prev.servicePrice,
           upgradePrice: prev.upgradePrice,
+          serviceName: prev.serviceName,
           isComboLive: Boolean(prev.comboLiveStatus?.isComboLive),
+          hasUnderMink: prev.attributes?.hasUnderMink,
+          underMinkServiceType: prev.attributes?.underMinkServiceType,
+          hasUnderMinkCombo: hasUnderMinkComboActive,
           selectedCombo: prev.selectedCombo,
+          selectedUnderCombo: prev.selectedUnderCombo,
           comboRedemption: prev.comboRedemption,
         });
         const fallbackProductTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
@@ -213,9 +247,13 @@ export function useIosBillingCheckout({
         const grandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
         const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
 
+        const optimisticSettlement: IosSettlementStatus =
+          grandTotal <= 0 || method === 'VIETQR' ? 'SETTLED_COMPLETED' : 'PENDING_COUNTER_SETTLEMENT';
+
         const nextBilling = {
           ...currentBilling,
           paymentMethod: method,
+          settlementStatus: optimisticSettlement,
           vatRate,
           vatAmount,
           tipAmount,
@@ -253,7 +291,7 @@ export function useIosBillingCheckout({
         billing: calculatedBilling,
         status: 'DONE',
         completedAt,
-      });
+      }).then(() => refreshDb?.());
 
       setActiveServicingBookingId(null);
       setActiveServicingStep(null);
@@ -267,7 +305,7 @@ export function useIosBillingCheckout({
       setBookingSegment('DONE');
       setCurrentStep(15);
     },
-    [activeBookingId, actor, postAction, setBookingSegment, setCurrentStep, updateActiveBooking]
+    [activeBookingId, actor, postAction, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]
   );
 
   // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
@@ -295,9 +333,13 @@ export function useIosBillingCheckout({
         const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
         const diamondDiscountAmount = prev.billing?.diamondDiscountAmount ?? (prev.billing?.diamondUsed || 0) * 1000;
         const grandTotal = Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount);
+        const method = currentBilling.paymentMethod || 'VIETQR';
+        const optimisticSettlement: IosSettlementStatus =
+          grandTotal <= 0 || method === 'VIETQR' ? 'SETTLED_COMPLETED' : 'PENDING_COUNTER_SETTLEMENT';
 
         const nextBilling = {
           ...currentBilling,
+          settlementStatus: optimisticSettlement,
           vatRate,
           vatAmount,
           tipAmount,
@@ -326,7 +368,9 @@ export function useIosBillingCheckout({
         };
       });
 
-      void postAction('COMPLETE_ORDER', { billing: calculatedBilling, status: 'DONE', completedAt });
+      void postAction('COMPLETE_ORDER', { billing: calculatedBilling, status: 'DONE', completedAt }).then(() =>
+        refreshDb?.()
+      );
       setActiveServicingBookingId(null);
       setActiveServicingStep(null);
       saveLocalProgressSnapshot(activeBookingId, {
@@ -337,27 +381,31 @@ export function useIosBillingCheckout({
       setBookingSegment('DONE');
       setCurrentStep(15);
     },
-    [activeBookingId, actor, postAction, setBookingSegment, setCurrentStep, updateActiveBooking]
+    [activeBookingId, actor, postAction, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]
   );
 
   // Step 15: Finish Order
   const handleFinishOrder = useCallback(() => {
     const completedAt = new Date().toISOString();
-    updateActiveBooking((prev) => ({
-      ...prev,
-      status: 'DONE',
-      progress: {
-        ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
-        completedAt,
-        currentStep: 1,
-      },
-      billing: prev.billing
-        ? {
-            ...prev.billing,
-            completedAt: prev.billing.completedAt || completedAt,
-          }
-        : undefined,
-    }));
+    let alreadyCompleted = false;
+    updateActiveBooking((prev) => {
+      alreadyCompleted = Boolean(prev.status === 'DONE' && prev.billing?.completedAt);
+      return {
+        ...prev,
+        status: 'DONE',
+        progress: {
+          ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
+          completedAt: prev.progress?.completedAt || completedAt,
+          currentStep: 1,
+        },
+        billing: prev.billing
+          ? {
+              ...prev.billing,
+              completedAt: prev.billing.completedAt || completedAt,
+            }
+          : undefined,
+      };
+    });
     setActiveServicingBookingId(null);
     setActiveServicingStep(null);
     saveLocalProgressSnapshot(activeBookingId, {
@@ -365,10 +413,14 @@ export function useIosBillingCheckout({
       completedAt,
       currentStep: 1,
     });
-    void postAction('COMPLETE_ORDER', { status: 'DONE', completedAt });
+    if (!alreadyCompleted) {
+      void postAction('COMPLETE_ORDER', { status: 'DONE', completedAt }).then(() => refreshDb?.());
+    } else {
+      void refreshDb?.();
+    }
     setBookingSegment('DONE');
     setCurrentStep(1);
-  }, [activeBookingId, postAction, setBookingSegment, setCurrentStep, updateActiveBooking]);
+  }, [activeBookingId, postAction, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]);
 
   return {
     handleGoToBilling,

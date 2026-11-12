@@ -1,12 +1,16 @@
 import {
+  CvlTrainingMentorshipPair,
   filterBookingsForCvlScope,
+  hasCompleteNaturalLashAttributes,
   IosBookingItem,
   IosBookingStatus,
   IosCartProductItem,
   IosSegmentCounts,
+  NaturalLashConsultationAttributes,
   resolveIosCustomerTypeIcon,
   resolveIosHasDiscountTag,
 } from '@mos-lab/shared';
+import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { BookingOverrideRecord } from './ios-overrides.service.js';
 import { IosCustomerEnrichmentContext, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
@@ -20,32 +24,58 @@ import {
   resolveStaffAvatar,
 } from './ios-bookings-formatters.js';
 
+function hydrateSavedNaturalLashAttributes(
+  attrs: IosBookingItem['attributes'],
+  savedProfile?: NaturalLashConsultationAttributes
+): IosBookingItem['attributes'] {
+  if (!attrs || !savedProfile) return attrs;
+  if (attrs.isNewClientDiagnosticDone === false) return attrs;
+  if (hasCompleteNaturalLashAttributes(attrs)) return attrs;
+  return {
+    ...savedProfile,
+    ...attrs,
+    naturalLashLength: attrs.naturalLashLength || savedProfile.naturalLashLength,
+    naturalLashThickness: attrs.naturalLashThickness || savedProfile.naturalLashThickness,
+    naturalLashCount: attrs.naturalLashCount || savedProfile.naturalLashCount,
+    naturalLashDensity: attrs.naturalLashDensity || savedProfile.naturalLashDensity,
+    lashTrail: attrs.lashTrail || savedProfile.lashTrail,
+    eyeShape: attrs.eyeShape || savedProfile.eyeShape,
+    lashHealth: attrs.lashHealth || savedProfile.lashHealth,
+    medicalProblem: attrs.medicalProblem || savedProfile.medicalProblem,
+    isNewClientDiagnosticDone: true,
+  };
+}
+
 export function mapLiveOrdersToBookings(params: {
   orders: RawIosOrderSnapshot[];
   customerContext: IosCustomerEnrichmentContext;
   overrides: Record<string, BookingOverrideRecord>;
   customerAvatarMap: Record<string, string>;
+  customerNaturalLashMap?: Record<string, NaturalLashConsultationAttributes>;
   storeId: number;
   targetDate: string;
   todayVn: string;
   activeStaffId: number;
   canViewFullPhone: boolean;
+  activeTrainingPairs?: CvlTrainingMentorshipPair[];
 }): IosBookingItem[] {
   const {
     orders,
     customerContext,
     overrides,
     customerAvatarMap,
+    customerNaturalLashMap = {},
     storeId,
     targetDate,
     todayVn,
     activeStaffId,
     canViewFullPhone,
+    activeTrainingPairs = [],
   } = params;
 
   return orders.map((r, index) => {
     const override = overrides[String(r.id)] || {};
-    const state = override.orderState || r.order_state;
+    const state = r.order_state === 'Completed' ? 'Completed' : override.orderState || r.order_state;
     const status = resolveBookingStatusFromState(override.status, state, targetDate, todayVn);
 
     const duration = Number(r.booking_duration_minute) || 90;
@@ -101,10 +131,26 @@ export function mapLiveOrdersToBookings(params: {
     const cartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts) ? override.cartProducts : [];
     const upgradePrice = Number(override.upgradePrice || 0);
 
+    const underComboStatus = customerContext.underMinkComboMap.get(customerId);
+    const hasUnderMinkComboActive = Boolean(
+      underComboStatus?.hasUnderCombo && (underComboStatus?.remainingSessions ?? 0) > 0
+    );
+    const overrideAttrs = override.attributes as IosBookingItem['attributes'] | undefined;
+    const matchedTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+      activeTrainingPairs,
+      assignedStaffId,
+      targetDate
+    );
+    const isTrainingCvlOrder = Boolean(matchedTrainingPair);
+
     const { cvRewardBreakdown, billing } = computeBookingFinancials({
       servicePrice,
       upgradePrice,
+      serviceName: override.serviceName || r.service_name,
       isComboLive: Boolean(comboInfo.isComboLive),
+      hasUnderMink: overrideAttrs?.hasUnderMink,
+      underMinkServiceType: overrideAttrs?.underMinkServiceType,
+      hasUnderMinkCombo: hasUnderMinkComboActive,
       selectedCombo,
       selectedUnderCombo,
       comboRedemption,
@@ -114,6 +160,8 @@ export function mapLiveOrdersToBookings(params: {
       checkInStaffId,
       checkOutStaffId,
       activeStaffId,
+      dbOrderState: r.order_state,
+      isTrainingCvlOrder,
     });
 
     const isAnyPlaceholder = (name?: string | null) =>
@@ -224,39 +272,42 @@ export function mapLiveOrdersToBookings(params: {
       selectedCombo,
       selectedUnderCombo,
       comboRedemption,
-      attributes:
+      attributes: hydrateSavedNaturalLashAttributes(
         override.attributes ||
-        (() => {
-          const isFirstVisitClient = isNew === 1 || visits <= 1;
-          const svcLower = effectiveServiceName.toLowerCase();
-          const isHyper = svcLower.includes('hyperlight');
-          const isClassic = svcLower.includes('classic');
-          const isIvy = svcLower.includes('ivylight');
-          const isUltra = svcLower.includes('ultralight');
-          const defaultMat = isHyper
-            ? 'HyperLight'
-            : isClassic
-              ? 'New Classic'
-              : isIvy
-                ? 'Ivylight'
-                : isUltra
-                  ? 'UltraLight'
-                  : 'Flawless Mink';
-          const defaultVol = isHyper ? '2X' : isIvy ? '4L' : isUltra ? '4D' : '1D';
-          const defaultCount = isHyper ? '70 fan' : isIvy ? '90 nhịp' : '90 sợi';
-          return {
-            material: lastSpecs?.material || defaultMat,
-            style: lastSpecs?.style || 'Natural',
-            volume: lastSpecs?.volume || defaultVol,
-            count: lastSpecs?.count || defaultCount,
-            color: lastSpecs?.color,
-            curl: 'C',
-            length: '10-12 mm',
-            thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
-            isNewClientDiagnosticDone: isFirstVisitClient ? false : undefined,
-            notes: note || '',
-          };
-        })(),
+          (() => {
+            const isFirstVisitClient = isNew === 1 || visits <= 1;
+            const savedProfile = customerNaturalLashMap[String(customerId)];
+            const svcLower = effectiveServiceName.toLowerCase();
+            const isHyper = svcLower.includes('hyperlight');
+            const isClassic = svcLower.includes('classic');
+            const isIvy = svcLower.includes('ivylight');
+            const isUltra = svcLower.includes('ultralight');
+            const defaultMat = isHyper
+              ? 'HyperLight'
+              : isClassic
+                ? 'New Classic'
+                : isIvy
+                  ? 'Ivylight'
+                  : isUltra
+                    ? 'UltraLight'
+                    : 'Flawless Mink';
+            const defaultVol = isHyper ? '2X' : isIvy ? '4L' : isUltra ? '4D' : '1D';
+            const defaultCount = isHyper ? '70 fan' : isIvy ? '90 nhịp' : '90 sợi';
+            return {
+              material: lastSpecs?.material || defaultMat,
+              style: lastSpecs?.style || 'Natural',
+              volume: lastSpecs?.volume || defaultVol,
+              count: lastSpecs?.count || defaultCount,
+              color: lastSpecs?.color,
+              curl: 'C',
+              length: '10-12 mm',
+              thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
+              isNewClientDiagnosticDone: savedProfile ? true : isFirstVisitClient ? false : undefined,
+              notes: note || '',
+            };
+          })(),
+        customerNaturalLashMap[String(customerId)]
+      ),
       progress: override.progress || undefined,
       survey: override.survey || undefined,
       upgradePrice,
@@ -265,6 +316,8 @@ export function mapLiveOrdersToBookings(params: {
       cartProducts,
       cvRewardBreakdown,
       billing,
+      isTrainingCvlOrder,
+      trainingMentorName: matchedTrainingPair?.mentorDisplayName,
     };
   });
 }
@@ -272,11 +325,23 @@ export function mapLiveOrdersToBookings(params: {
 export function buildDemoModeBookings(params: {
   overrides: Record<string, BookingOverrideRecord>;
   customerAvatarMap: Record<string, string>;
+  customerNaturalLashMap?: Record<string, NaturalLashConsultationAttributes>;
   storeId: number;
   activeStaffId: number;
   canViewFullPhone: boolean;
+  targetDate?: string;
+  activeTrainingPairs?: CvlTrainingMentorshipPair[];
 }): IosBookingItem[] {
-  const { overrides, customerAvatarMap, storeId, activeStaffId, canViewFullPhone } = params;
+  const {
+    overrides,
+    customerAvatarMap,
+    customerNaturalLashMap = {},
+    storeId,
+    activeStaffId,
+    canViewFullPhone,
+    targetDate = new Date().toISOString().slice(0, 10),
+    activeTrainingPairs = [],
+  } = params;
 
   return INITIAL_BOOKINGS.filter((b) => !b.storeId || storeId <= 0 || Number(b.storeId) === storeId).map((mock) => {
     const override = overrides[String(mock.id)] || {};
@@ -305,10 +370,25 @@ export function buildDemoModeBookings(params: {
         ? mock.cartProducts
         : [];
 
+    const effectiveAttrs = (override.attributes || mock.attributes) as IosBookingItem['attributes'];
+    const hasUnderMinkComboMock = Boolean(
+      mock.underMinkComboStatus?.hasUnderCombo && (mock.underMinkComboStatus?.remainingSessions ?? 0) > 0
+    );
+    const matchedTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+      activeTrainingPairs,
+      assignedStaffId,
+      targetDate
+    );
+    const isTrainingCvlOrder = Boolean(matchedTrainingPair);
+
     const { cvRewardBreakdown, billing } = computeBookingFinancials({
       servicePrice,
       upgradePrice,
+      serviceName: override.serviceName || mock.serviceName,
       isComboLive: Boolean(mock.comboLiveStatus?.isComboLive),
+      hasUnderMink: effectiveAttrs?.hasUnderMink,
+      underMinkServiceType: effectiveAttrs?.underMinkServiceType,
+      hasUnderMinkCombo: hasUnderMinkComboMock,
       selectedCombo,
       selectedUnderCombo,
       comboRedemption,
@@ -318,6 +398,7 @@ export function buildDemoModeBookings(params: {
       checkInStaffId,
       checkOutStaffId,
       activeStaffId,
+      isTrainingCvlOrder,
     });
 
     const resolvedStoreId = Number(mock.storeId) || (storeId > 0 ? storeId : 6);
@@ -352,7 +433,10 @@ export function buildDemoModeBookings(params: {
       selectedCombo,
       selectedUnderCombo,
       comboRedemption,
-      attributes: (override.attributes || mock.attributes) as IosBookingItem['attributes'],
+      attributes: hydrateSavedNaturalLashAttributes(
+        (override.attributes || mock.attributes) as IosBookingItem['attributes'],
+        customerNaturalLashMap[String(mock.customerId)]
+      ),
       progress:
         status === 'INCOMING' ? undefined : ((override.progress || mock.progress) as IosBookingItem['progress']),
       survey: override.survey || mock.survey,
@@ -362,6 +446,8 @@ export function buildDemoModeBookings(params: {
       cartProducts,
       cvRewardBreakdown,
       billing,
+      isTrainingCvlOrder,
+      trainingMentorName: matchedTrainingPair?.mentorDisplayName,
       lashHistory: mock.lashHistory ?? [],
     };
   });

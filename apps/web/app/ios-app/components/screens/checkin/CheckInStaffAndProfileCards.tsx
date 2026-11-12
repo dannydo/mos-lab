@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { BookingItem, LashHistoryItem } from '../../../state/mockData';
 import { CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import { calculateLashPricingAndCvPoints, resolveQuickCheckInComboPreset } from '../LashMaterialConstraintMatrix';
@@ -357,7 +358,7 @@ export function CheckInStaffAndProfileCards({
       )}
 
       {/* Section 2.5: Hồ Sơ Mi Thật */}
-      {visits <= 1 ? (
+      {visits <= 1 && !hasCompleteNaturalLashSet(booking) ? (
         <div className="bg-[#1C1C1E] border border-amber-500/40 rounded-2xl p-3 shadow-xs flex items-center justify-between gap-2.5 text-white">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
@@ -368,7 +369,7 @@ export function CheckInStaffAndProfileCards({
                 MI THẬT · KHÁCH MỚI
               </div>
               <div className="text-[11px] text-neutral-400 font-medium truncate">
-                Đo độ dài, độ dày sợi & dáng mí ở bước tiếp theo
+                Bắt buộc đo đủ 7/7 thông số mi thật ở bước tiếp theo
               </div>
             </div>
           </div>
@@ -383,17 +384,14 @@ export function CheckInStaffAndProfileCards({
               <Eye className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               HỒ SƠ MI THẬT
             </span>
-            {booking?.attributes?.naturalLashLength &&
-            booking?.attributes?.naturalLashThickness &&
-            (booking?.attributes?.naturalLashCount || booking?.attributes?.naturalLashDensity) &&
-            booking?.attributes?.eyeShape ? (
+            {hasCompleteNaturalLashSet(booking) ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 leading-none">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
                 Đã lưu
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 leading-none">
-                Chưa đo
+                Chưa đo · Bắt buộc kiểm tra
               </span>
             )}
           </div>
@@ -452,7 +450,7 @@ export function CheckInStaffAndProfileCards({
                 Khách hàng mới lần đầu · Chưa có lịch sử làm mi
               </div>
               <div className="text-[11px] text-neutral-300 font-medium mt-0.5 leading-relaxed">
-                Bắt buộc kiểm tra 4 thông số mi thật & dáng mắt trước khi tư vấn thiết kế mi.
+                Bắt buộc kiểm tra đủ 7/7 thông số mi thật & dáng mắt trước khi tư vấn thiết kế mi.
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, Dispatch, SetStateAction, MutableRefObject } from 'react';
-import { resolveEffectiveServiceTotal } from '@mos-lab/shared';
+import { hasCompleteNaturalLashAttributes, resolveEffectiveServiceTotal } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import type { IosUserRole, ActiveActorProfile } from './iosActorProfile';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId } from './offlineSync';
@@ -176,6 +176,13 @@ export function useIosConsultationAndCheckIn({
       activeBookingIdRef.current = targetId;
 
       const targetBooking = bookings.find((b) => Number(b.id) === targetId) || activeBooking;
+      const targetCustomerId = Number(targetBooking?.customerId || 0);
+      const mergedAttributes = {
+        ...(targetBooking?.attributes || {}),
+        ...attributes,
+        isNewClientDiagnosticDone: true,
+      };
+      const hasFull7 = hasCompleteNaturalLashAttributes(mergedAttributes);
       const isSelfAssignedCv =
         role === 'CVL' ||
         (role === 'CVLL' &&
@@ -194,7 +201,31 @@ export function useIosConsultationAndCheckIn({
 
       setBookings((prev) =>
         prev.map((b) => {
-          if (Number(b.id) !== targetId) return b;
+          if (Number(b.id) !== targetId) {
+            if (
+              hasFull7 &&
+              targetCustomerId > 0 &&
+              Number(b.customerId) === targetCustomerId &&
+              !hasCompleteNaturalLashAttributes(b.attributes)
+            ) {
+              return {
+                ...b,
+                attributes: {
+                  ...(b.attributes || { style: 'Natural', curl: 'C', length: '10-12 mm', thickness: '0.07 mm' }),
+                  naturalLashLength: mergedAttributes.naturalLashLength,
+                  naturalLashThickness: mergedAttributes.naturalLashThickness,
+                  naturalLashCount: mergedAttributes.naturalLashCount,
+                  naturalLashDensity: mergedAttributes.naturalLashDensity,
+                  lashTrail: mergedAttributes.lashTrail,
+                  eyeShape: mergedAttributes.eyeShape,
+                  lashHealth: mergedAttributes.lashHealth,
+                  medicalProblem: mergedAttributes.medicalProblem,
+                  isNewClientDiagnosticDone: true,
+                },
+              };
+            }
+            return b;
+          }
           const nextCombo = selectedCombo !== undefined ? selectedCombo : b.selectedCombo || null;
           const nextUnderCombo = selectedUnderCombo !== undefined ? selectedUnderCombo : b.selectedUnderCombo || null;
           const nextServiceName =
@@ -209,12 +240,20 @@ export function useIosConsultationAndCheckIn({
           const originalBookedServicePrice = b.originalBookedServicePrice || b.servicePrice;
 
           const isClientComboLive = Boolean(b.comboLiveStatus?.isComboLive);
+          const hasUnderMinkComboActive = Boolean(
+            b.underMinkComboStatus?.hasUnderCombo && (b.underMinkComboStatus?.remainingSessions ?? 0) > 0
+          );
           const comboPrice = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
           const effectiveServiceTotal = resolveEffectiveServiceTotal({
             servicePrice: nextServicePrice,
             upgradePrice: nextUpgradePrice,
+            serviceName: nextServiceName,
             isComboLive: isClientComboLive,
+            hasUnderMink: attributes.hasUnderMink,
+            underMinkServiceType: attributes.underMinkServiceType,
+            hasUnderMinkCombo: hasUnderMinkComboActive,
             selectedCombo: nextCombo,
+            selectedUnderCombo: nextUnderCombo,
             comboRedemption: b.comboRedemption,
           });
           const productTotal = (b.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
@@ -239,7 +278,7 @@ export function useIosConsultationAndCheckIn({
 
           return {
             ...b,
-            attributes,
+            attributes: mergedAttributes,
             serviceType: skuPricing?.serviceType || b.serviceType || 'Normal',
             serviceName: nextServiceName,
             servicePrice: nextServicePrice,
@@ -250,6 +289,7 @@ export function useIosConsultationAndCheckIn({
             cvRotationBreakdown: skuPricing?.cvBreakdown ?? b.cvRotationBreakdown,
             selectedCombo: nextCombo,
             selectedUnderCombo: nextUnderCombo,
+            _localComboUpdatedAt: Date.now(),
             checkInStaffId: b.checkInStaffId || actor.staffId,
             checkInStaffName: b.checkInStaffName || actor.name,
             checkInStaffTier: b.checkInStaffTier || actor.tier,
@@ -281,7 +321,9 @@ export function useIosConsultationAndCheckIn({
 
       void postAction('SAVE_CONSULTATION', {
         bookingId: targetId,
-        attributes,
+        customerId: targetCustomerId || undefined,
+        customerVisits: targetBooking?.customerVisits,
+        attributes: mergedAttributes,
         selectedCombo: selectedCombo !== undefined ? selectedCombo : targetBooking.selectedCombo || null,
         selectedUnderCombo:
           selectedUnderCombo !== undefined ? selectedUnderCombo : targetBooking.selectedUnderCombo || null,
@@ -334,6 +376,7 @@ export function useIosConsultationAndCheckIn({
       notes?: string
     ) => {
       const targetId = targetBookingId !== undefined ? Number(targetBookingId) : activeBookingId;
+      const targetBooking = bookings.find((b) => Number(b.id) === targetId);
 
       // 1. Cập nhật state bookings tức thì trên client
       setBookings((prev) =>
@@ -348,6 +391,7 @@ export function useIosConsultationAndCheckIn({
               serviceType: skuPricing?.serviceType || b.serviceType,
               selectedCombo: selectedCombo !== undefined ? selectedCombo : b.selectedCombo,
               selectedUnderCombo: selectedUnderCombo !== undefined ? selectedUnderCombo : b.selectedUnderCombo,
+              _localComboUpdatedAt: Date.now(),
             };
           }
           return b;
@@ -358,6 +402,7 @@ export function useIosConsultationAndCheckIn({
       try {
         await postAction('SAVE_CONSULTATION_DRAFT', {
           bookingId: targetId,
+          customerId: targetBooking?.customerId,
           attributes,
           notes,
           selectedCombo,
@@ -368,7 +413,7 @@ export function useIosConsultationAndCheckIn({
         console.warn('[useIosConsultationAndCheckIn] Failed to autosave consultation draft:', err);
       }
     },
-    [activeBookingId, postAction, setBookings]
+    [activeBookingId, bookings, postAction, setBookings]
   );
 
   // Step 4: Assign Staff & Bed

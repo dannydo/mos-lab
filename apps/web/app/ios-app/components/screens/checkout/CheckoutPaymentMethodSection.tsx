@@ -186,7 +186,22 @@ export function CheckoutPaymentMethodSection({
       />
 
       {/* Action Button */}
-      <div className="pt-1">
+      <div className="pt-1 space-y-1.5">
+        <div
+          className={`text-[10.5px] font-medium px-3 py-1.5 rounded-xl border ${
+            finalGrandTotal === 0 || selectedMethod === 'VIETQR'
+              ? isDark
+                ? 'bg-emerald-950/30 border-emerald-800/60 text-emerald-300'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : isDark
+                ? 'bg-amber-950/30 border-amber-800/60 text-amber-300'
+                : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}
+        >
+          {finalGrandTotal === 0 || selectedMethod === 'VIETQR'
+            ? '✓ Tự động chốt Completed & ghi nhận ngay lên Báo Cáo CV / Thuế.'
+            : '⏳ Tiền mặt / POS: Khóa thưởng Checkout của bạn & chuyển Quầy thu ngân xác nhận Completed.'}
+        </div>
         <button
           type="button"
           onClick={onProceed}

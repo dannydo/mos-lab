@@ -11,6 +11,11 @@ import { CcKpiService, summarizeCcLedgerXoayForPaystub } from '../services/cc-kp
 import { TeamService } from '../../teams/team.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
+import {
+  buildExcludeTrainingCvlOrderSql,
+  CvlTrainingMentorshipService,
+} from '../services/cvl-training-mentorship.service.js';
+import { CcMentorPayoutService } from '../services/cc-mentor-payout.service.js';
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -287,18 +292,32 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           AND sdo.from_date BETWEEN '${startPart}' AND '${endPart}'
       `;
 
-      // 5. Query CC Tip Bonus (from staff_tip for the period, matching Legacy 100%)
+      const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(
+        fastify,
+        startPart,
+        endPart
+      );
+      const excludeTrainingCcTipSql = buildExcludeTrainingCvlOrderSql(
+        activeTrainingPairs,
+        'st.order_id',
+        'COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start, st.date_created_only)))'
+      );
+
+      // 5. Query CC Tip Bonus (from staff_tip for the period, matching Legacy 100%, excluding training CVL orders per CC-006)
       const ccTipBonusQuery = `
         SELECT 
           st.user_id as staff_id,
           COALESCE(SUM(st.tip_amount), 0) as cc_tip_bonus,
           COUNT(DISTINCT CASE WHEN st.tip_amount >= 4000 THEN st.id ELSE NULL END) as tipped_visits_count
         FROM \`staff_tip\` st
+        LEFT JOIN \`order\` o ON o.id = st.order_id
+        LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
         WHERE st.user_id IN (${validStaffListStr})
           AND st.date_created_only >= '${startPart}'
           AND st.date_created_only <= '${endPart}'
           AND st.is_academy = 0
           AND st.tip_currency_id IN (1, 2)
+          ${excludeTrainingCcTipSql}
         GROUP BY st.user_id
       `;
 
@@ -327,6 +346,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         ccTipRows,
         extraSupportRows,
         mosAllowances,
+        mentorBreakdownsByCc,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(contractRatesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(periodPayrollQuery),
@@ -348,6 +368,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           },
           orderBy: { id: 'asc' },
         }),
+        CcMentorPayoutService.calculateMentorBreakdownsByCc(fastify, activeTrainingPairs, startPart, endPart),
       ]);
 
       const extraSupportDetailsMap = new Map<number, CvOtherAllowanceItem[]>();
@@ -524,6 +545,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       let summaryTimeBonus = 0;
       let summaryParkingAllowance = 0;
       let summaryOffMonthWage = 0;
+      let summaryTrainingMentorship = 0;
       let summaryTotalIncome = 0;
       let summarySocialSecurity = 0;
       let summaryNetIncome = 0;
@@ -622,6 +644,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
         const otherAllowancesDetails = extraSupportDetailsMap.get(uid) || [];
         const otherAllowances = extraSupportMap.get(uid) || 0;
+        const trainingMentorshipDetails = mentorBreakdownsByCc.get(uid) || [];
+        const trainingMentorshipBonus = trainingMentorshipDetails.reduce((sum, item) => sum + item.mentorTotalBonus, 0);
 
         const totalTimeBonus = Math.round((offDaysWorkWage || 0) + (holiday.holidayPremiumPay || 0));
 
@@ -635,7 +659,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             ccTipBonus +
             otherAllowances +
             parkingAllowance +
-            holiday.holidayPaystubAdjustment
+            holiday.holidayPaystubAdjustment +
+            trainingMentorshipBonus
         );
 
         let trackingData: SafeAny = {};
@@ -701,6 +726,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         summaryTimeBonus += totalTimeBonus;
         summaryParkingAllowance += parkingAllowance;
         summaryOffMonthWage += offMonthWage;
+        summaryTrainingMentorship += trainingMentorshipBonus;
         summaryTotalIncome += totalIncome;
         summarySocialSecurity += socialSecurityAmount;
         summaryNetIncome += netIncome;
@@ -731,6 +757,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           tippedVisitsCount: ccTipInfo.count,
           extraSupport: otherAllowances,
           extraSupportNote: otherAllowancesDetails.map((d) => d.description).join('; '),
+          trainingMentorshipBonus,
+          trainingMentorshipDetails: trainingMentorshipDetails.length > 0 ? trainingMentorshipDetails : undefined,
           ...holiday,
           totalIncome,
 
@@ -779,6 +807,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           totalTimeBonus: summaryTimeBonus,
           totalParkingAllowance: summaryParkingAllowance,
           totalOffMonthWage: summaryOffMonthWage,
+          totalTrainingMentorshipBonus: summaryTrainingMentorship,
           grandTotalIncome: summaryTotalIncome,
           totalSocialSecurityAmount: summarySocialSecurity,
           grandTotalNetIncome: summaryNetIncome,
@@ -1165,6 +1194,16 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
     const endPart = normalizeDatePart(date_to || dateTo, defaultEnd);
 
     try {
+      const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(
+        fastify,
+        startPart,
+        endPart
+      );
+      const excludeTrainingLegacyTipSql = buildExcludeTrainingCvlOrderSql(
+        activeTrainingPairs,
+        'o.id',
+        'COALESCE(ro.actual_booking_date_start, o.booking_date_start)'
+      );
       const [xoayRes, dailyRes, tipRows] = await Promise.all([
         CcKpiService.getCcXoayReport(fastify, {
           dateFrom: startPart,
@@ -1190,6 +1229,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             AND st.date_created_only <= '${endPart}' + INTERVAL 2 DAY
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+            ${excludeTrainingLegacyTipSql}
         `),
       ]);
 
