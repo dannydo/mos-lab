@@ -50,7 +50,7 @@ apps/api/src/modules/ios/
 ### C. Access Control & `CVL` Customer Privacy (Kinh Thánh mOS UI-010)
 
 - Only `CVL`, `CVLL`, `CC`, and `ADMIN` (`canAccessIosConsultationApp`) may call `/api/ios/*`.
-- Non-admin `CVL` accounts are strictly locked to `effectiveRole = 'CVL'`, `scope = 'MY_CUSTOMERS'`, masked phone numbers, and `filterBookingsForCvlScope` (only their own assigned/checked-in/checked-out customers + at most **1** upcoming unassigned queue customer).
+- Non-admin `CVL` accounts are strictly locked to `effectiveRole = 'CVL'`, `scope = 'MY_CUSTOMERS'`, masked phone numbers, and `filterBookingsForCvlScope` (their own assigned/checked-in/checked-out customers + any late unassigned `INCOMING` customers + all unassigned customers sharing the next upcoming time slot).
 - `POST /ios/bookings` enforces `409 Conflict` if another `Chuyên Viên` already checked in a queue customer, and `403 Forbidden` if a `CVL` attempts to mutate another `Chuyên Viên`'s customer.
 
 ### D. Batch SQL Discipline (Zero Correlated Subqueries)

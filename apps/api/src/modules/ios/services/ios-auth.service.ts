@@ -4,6 +4,7 @@ import { isAdminOrSuperAdminRole, normalizeCvFeatherRole, SafeAny } from '@mos-l
 export interface IosAuthContext {
   id?: number;
   legacyStaffId?: number;
+  clientStoreId?: number;
   username?: string;
   displayName?: string;
   role?: string;
@@ -21,6 +22,7 @@ export async function resolveIosAuth(
       return {
         id: 1,
         legacyStaffId: 13783,
+        clientStoreId: 6,
         username: 'superadmin_dev',
         displayName: 'Khanh Cao',
         role: 'super_admin',
@@ -42,11 +44,29 @@ export async function resolveIosAuth(
     });
 
     const rawRole = String(staff?.role || payload.role || '').toLowerCase();
-    const careerTier = normalizeCvFeatherRole(rawRole) || (isAdminOrSuperAdminRole(rawRole) ? 'ADMIN' : 'CVL');
+    const careerTier: IosAuthContext['careerTier'] =
+      normalizeCvFeatherRole(rawRole) || (isAdminOrSuperAdminRole(rawRole) ? 'ADMIN' : rawRole === 'cc' ? 'CC' : 'CVL');
+
+    const legacyStaffId = staff?.legacyStaffId || payload.legacyStaffId || undefined;
+    let clientStoreId: number | undefined;
+    if (legacyStaffId) {
+      try {
+        const legacyProfile = await fastify.prisma.legacy.user_profile.findFirst({
+          where: { user_id: Number(legacyStaffId) },
+          select: { client_store_id: true },
+        });
+        if (legacyProfile?.client_store_id) {
+          clientStoreId = Number(legacyProfile.client_store_id);
+        }
+      } catch {
+        // Non-blocking fallback when legacy profile lookup is unavailable
+      }
+    }
 
     return {
       id: staff?.id || payload.id,
-      legacyStaffId: staff?.legacyStaffId || payload.legacyStaffId || undefined,
+      legacyStaffId,
+      clientStoreId,
       username: staff?.username || payload.username,
       displayName: staff?.displayName || payload.displayName,
       role: rawRole,

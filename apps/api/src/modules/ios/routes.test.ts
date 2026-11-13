@@ -22,9 +22,13 @@ import {
 } from './routes.js';
 import { registerIosPoolShutdown } from './services/db-pools.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
-import { buildDemoModeBookings, mapLiveOrdersToBookings } from './services/ios-bookings-mapper.service.js';
+import {
+  applyIosScopeAndCounts,
+  buildDemoModeBookings,
+  mapLiveOrdersToBookings,
+} from './services/ios-bookings-mapper.service.js';
 import { resolveBookingStatusFromState } from './services/ios-bookings-formatters.js';
-import { isIosDemoModeRequested } from './services/ios-bookings-query.service.js';
+import { isIosDemoModeRequested, queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { createEmptyCustomerEnrichmentContext, RawIosOrderSnapshot } from './services/ios-bookings-sql.service.js';
 import {
   BOOKING_OVERRIDE_KEY_PREFIX,
@@ -135,6 +139,52 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
   assert.equal(
     filtered.some((b) => b.id === 4),
     false
+  );
+
+  // When 2+ unassigned customers share the same upcoming slot, ALL of them in that head slot are shown; later slots stay hidden.
+  const now1045 = new Date('2026-11-13T10:45:00+07:00');
+  const sameSlotBookings = [
+    { id: 10, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
+    { id: 11, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:00' },
+    { id: 12, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:30 - 13:00' },
+    { id: 13, isUnassignedQueue: false, status: 'INCOMING', assignedStaffId: 99999, timeSlot: '11:00 - 12:30' },
+  ] as unknown as IosBookingItem[];
+  const sameSlotFiltered = filterBookingsForCvlScope(sameSlotBookings, myStaffId, {
+    targetDate: '2026-11-13',
+    todayVn: '2026-11-13',
+    now: now1045,
+  });
+  assert.deepEqual(
+    sameSlotFiltered.map((b) => b.id),
+    [10, 11]
+  );
+
+  // When a customer is past start time and still INCOMING (late), show late customer(s) AND the next upcoming slot.
+  const lateAndNextBookings = [
+    { id: 20, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '10:30 - 12:00' },
+    { id: 21, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
+    { id: 22, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
+    { id: 23, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:30 - 13:00' },
+  ] as unknown as IosBookingItem[];
+  const lateAndNextFiltered = filterBookingsForCvlScope(lateAndNextBookings, myStaffId, {
+    targetDate: '2026-11-13',
+    todayVn: '2026-11-13',
+    now: now1045,
+  });
+  assert.deepEqual(
+    lateAndNextFiltered.map((b) => b.id),
+    [20, 21, 22]
+  );
+
+  // Viewing a future date (e.g., tomorrow) must NOT treat morning slots as late.
+  const tomorrowFiltered = filterBookingsForCvlScope(lateAndNextBookings, myStaffId, {
+    targetDate: '2026-11-14',
+    todayVn: '2026-11-13',
+    now: now1045,
+  });
+  assert.deepEqual(
+    tomorrowFiltered.map((b) => b.id),
+    [20]
   );
 });
 
@@ -621,4 +671,70 @@ test('resolveBookingStatusFromState & CVL scope map legacy non-spaced servicing 
   assert.equal(cvlVisible.length, 1);
   assert.equal(cvlVisible[0].status, 'SERVICING');
   assert.equal(cvlVisible[0].bookingAccessTag, 'MY_BOOKED_CUSTOMER');
+});
+
+test('CC gets STORE_ALL visibility across INCOMING, SERVICING, DONE and anchors to clientStoreId', async () => {
+  const sampleBookings = [
+    { ...INITIAL_BOOKINGS[0], id: 901, status: 'INCOMING', assignedStaffId: 0 },
+    { ...INITIAL_BOOKINGS[0], id: 902, status: 'SERVICING', assignedStaffId: 13783 },
+    { ...INITIAL_BOOKINGS[0], id: 903, status: 'CHECKED_IN', assignedStaffId: 46272 },
+    { ...INITIAL_BOOKINGS[0], id: 904, status: 'DONE', assignedStaffId: 25337 },
+  ] as unknown as IosBookingItem[];
+
+  const scoped = applyIosScopeAndCounts(sampleBookings, {
+    effectiveRole: 'CC',
+    scope: 'STORE_ALL',
+    activeStaffId: 48026,
+    targetDate: '2026-11-13',
+    todayVn: '2026-11-13',
+  });
+
+  assert.equal(scoped.effectiveList.length, 4);
+  assert.deepEqual(scoped.counts, {
+    incoming: 1,
+    servicing: 2,
+    done: 1,
+    cancel: 0,
+  });
+
+  const store = createInMemoryConfigStore();
+  const mockFastify = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            const val = await store.getOne(where.key);
+            return val !== null ? { key: where.key, value: val } : null;
+          },
+          findMany: async () => [],
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  const res = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 42,
+      legacyStaffId: 48026,
+      clientStoreId: 16,
+      username: 'yenvy_cc',
+      displayName: 'Yến Vy',
+      role: 'cc',
+      careerTier: 'CC',
+    },
+    {
+      storeId: '6',
+      scope: 'MY_CUSTOMERS',
+      role: 'CVL',
+      segment: 'SERVICING',
+      demo: 'true',
+    }
+  );
+
+  assert.equal(res.success, true);
+  assert.equal(res.storeId, 16);
+  assert.equal(res.scope, 'STORE_ALL');
+  assert.equal(res.role, 'CC');
 });

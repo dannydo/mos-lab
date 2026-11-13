@@ -68,11 +68,24 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
       expect(resolveLockedIosRoleForUser('super_admin', 'CVLL')).toBe('CVLL');
     });
 
-    it('enforces CVL customer privacy: only 1 head-of-queue unassigned customer + own assigned/checked-in/out customers', () => {
+    it('enforces CVL customer privacy: own customers + head slot (all sharing same time) + late INCOMING with next slot', () => {
       const myStaffId = 46272;
+      const now0845 = new Date('2026-11-13T08:45:00+07:00');
       const bookings: IosBookingItem[] = [
-        makeBooking({ id: 1, isUnassignedQueue: true, assignedStaffId: 0, status: 'INCOMING' }),
-        makeBooking({ id: 2, isUnassignedQueue: true, assignedStaffId: 0, status: 'INCOMING' }),
+        makeBooking({
+          id: 1,
+          isUnassignedQueue: true,
+          assignedStaffId: 0,
+          status: 'INCOMING',
+          timeSlot: '09:00 - 10:30',
+        }),
+        makeBooking({
+          id: 2,
+          isUnassignedQueue: true,
+          assignedStaffId: 0,
+          status: 'INCOMING',
+          timeSlot: '09:30 - 11:00',
+        }),
         makeBooking({ id: 3, isUnassignedQueue: false, assignedStaffId: myStaffId, status: 'INCOMING' }),
         makeBooking({ id: 4, isUnassignedQueue: false, assignedStaffId: 99999, status: 'INCOMING' }),
         makeBooking({
@@ -84,10 +97,45 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
         }),
       ];
 
-      const scoped = filterBookingsForCvlScope(bookings, myStaffId);
+      const scoped = filterBookingsForCvlScope(bookings, myStaffId, { isToday: true, now: now0845 });
       expect(scoped.map((b) => b.id)).toEqual([1, 3, 5]);
       expect(scoped.find((b) => b.id === 1)?.isNextQueueCustomer).toBe(true);
       expect(scoped.find((b) => b.id === 3)?.bookingAccessTag).toBe('MY_BOOKED_CUSTOMER');
+
+      // 2+ unassigned customers at the same head start time (11:00) -> show all in that slot
+      const sameSlot = [
+        makeBooking({ id: 11, timeSlot: '11:00 - 12:30' }),
+        makeBooking({ id: 12, timeSlot: '11:00 - 12:00' }),
+        makeBooking({ id: 13, timeSlot: '11:30 - 13:00' }),
+      ];
+      expect(
+        filterBookingsForCvlScope(sameSlot, myStaffId, {
+          isToday: true,
+          now: new Date('2026-11-13T10:45:00+07:00'),
+        }).map((b) => b.id)
+      ).toEqual([11, 12]);
+
+      // Late unassigned INCOMING customer(s) + next upcoming slot -> show both late and next slot
+      const lateAndNext = [
+        makeBooking({ id: 21, timeSlot: '10:30 - 12:00' }),
+        makeBooking({ id: 22, timeSlot: '11:00 - 12:30' }),
+        makeBooking({ id: 23, timeSlot: '11:00 - 12:30' }),
+        makeBooking({ id: 24, timeSlot: '11:30 - 13:00' }),
+      ];
+      expect(
+        filterBookingsForCvlScope(lateAndNext, myStaffId, {
+          isToday: true,
+          now: new Date('2026-11-13T10:45:00+07:00'),
+        }).map((b) => b.id)
+      ).toEqual([21, 22, 23]);
+
+      // Non-today view (e.g. tomorrow) -> 10:30 is not considered late
+      expect(
+        filterBookingsForCvlScope(lateAndNext, myStaffId, {
+          isToday: false,
+          now: new Date('2026-11-13T10:45:00+07:00'),
+        }).map((b) => b.id)
+      ).toEqual([21]);
     });
   });
 

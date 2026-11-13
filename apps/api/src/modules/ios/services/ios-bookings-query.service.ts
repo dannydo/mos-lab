@@ -50,22 +50,22 @@ export async function queryIosBookingsList(
   authUser: IosAuthContext,
   query: Record<string, string | undefined>
 ): Promise<IosBookingListResponse> {
-  const storeId = query.storeId !== undefined && query.storeId !== '' ? Number(query.storeId) : 6;
+  const isAdmin = authUser.careerTier === 'ADMIN' || isAdminOrSuperAdminRole(authUser.role || '');
+  const requestedStoreId = query.storeId !== undefined && query.storeId !== '' ? Number(query.storeId) : undefined;
+  const storeId =
+    !isAdmin && authUser.clientStoreId ? authUser.clientStoreId : (requestedStoreId ?? authUser.clientStoreId ?? 6);
   const segment = (query.segment || 'INCOMING').toUpperCase();
   const todayVn = resolveTodayVietnamDate();
   const targetDate = query.date || todayVn;
 
-  const isAdmin = authUser.careerTier === 'ADMIN' || isAdminOrSuperAdminRole(authUser.role || '');
   const effectiveRole = resolveLockedIosRoleForUser(
     isAdmin ? 'admin' : authUser.careerTier || authUser.role,
     query.role
   );
   const canViewFullPhone = isAdmin && effectiveRole !== 'CVL' ? true : canViewUnmaskedCustomerPhone(effectiveRole);
 
-  const rawScope = (
-    query.scope || (effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : isAdmin ? 'STORE_ALL' : 'MY_CUSTOMERS')
-  ).toUpperCase();
-  const scope = effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : rawScope;
+  const rawScope = (query.scope || (effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL')).toUpperCase();
+  const scope = effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : effectiveRole === 'CC' && !isAdmin ? 'STORE_ALL' : rawScope;
 
   const explicitStaffId = query.staffId ? Number(query.staffId) : undefined;
   const activeStaffId =
@@ -73,7 +73,8 @@ export async function queryIosBookingsList(
       ? authUser.legacyStaffId || 13783
       : explicitStaffId || authUser.legacyStaffId || 13783;
 
-  const limit = Math.min(Math.max(Number(query.limit) || 40, 1), 100);
+  const defaultLimit = scope === 'STORE_ALL' ? 200 : 100;
+  const limit = Math.min(Math.max(Number(query.limit) || defaultLimit, 1), 250);
   const isDemoMode = isIosDemoModeRequested(query.demo);
   const { yearNum, monthNum } = resolveYearMonthFromDate(targetDate);
   const monthFirstDay = `${yearNum}-${String(monthNum).padStart(2, '0')}-01`;
@@ -108,6 +109,8 @@ export async function queryIosBookingsList(
       effectiveRole,
       scope,
       activeStaffId,
+      targetDate,
+      todayVn,
     });
 
     const staffStats = buildDemoStaffMonthlyStats(allDemoBookings, activeStaffId, targetDate);
@@ -240,6 +243,8 @@ export async function queryIosBookingsList(
     effectiveRole,
     scope,
     activeStaffId,
+    targetDate,
+    todayVn,
   });
 
   return {

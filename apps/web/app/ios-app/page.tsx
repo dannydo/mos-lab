@@ -219,6 +219,7 @@ function IosAppInner() {
       onSelectStoreId={state.setSelectedStoreId}
       currentBranch={state.currentBranch}
       availableBranches={state.availableBranches}
+      totalStoreBookingsCount={state.totalStoreBookingsCount}
     />
   );
 

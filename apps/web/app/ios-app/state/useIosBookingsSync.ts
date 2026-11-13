@@ -28,6 +28,7 @@ import type {
 export interface UseIosBookingsSyncParams {
   enabled: boolean;
   isDemoMode: boolean;
+  isAdmin?: boolean;
   role: IosUserRole;
   isTechnicianRole: boolean;
   effectiveStoreId: number;
@@ -50,6 +51,7 @@ export interface UseIosBookingsSyncParams {
 export function useIosBookingsSync({
   enabled,
   isDemoMode,
+  isAdmin = false,
   role,
   isTechnicianRole,
   effectiveStoreId,
@@ -228,13 +230,16 @@ export function useIosBookingsSync({
             role,
             staffId: effStaffId,
             date: targetDateStr,
-            limit: 40,
+            limit: 200,
             ...(isDemoMode ? { demo: true } : {}),
           },
           options?.isPolling ? { isPolling: true } : undefined
         );
 
         if (data?.success && Array.isArray(data.bookings)) {
+          if (!isAdmin && data.storeId && Number(data.storeId) !== effectiveStoreId) {
+            setSelectedStoreIdState(Number(data.storeId));
+          }
           setBookings((prev) => mergeServerBookingsWithLocalState(prev, data.bookings, selectedDateOffset));
           if (data.counts) {
             setCounts(data.counts);
@@ -338,12 +343,14 @@ export function useIosBookingsSync({
       activeBookingIdRef,
       setActiveBookingId,
       setBookings,
+      isAdmin,
+      setSelectedStoreIdState,
     ]
   );
 
   const setSelectedStoreId = useCallback(
     (newStoreId: number) => {
-      if (isTechnicianRole) return;
+      if (!isAdmin || isTechnicianRole) return;
       setSelectedStoreIdState(newStoreId);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('mos_ios_selected_store_id', String(newStoreId));

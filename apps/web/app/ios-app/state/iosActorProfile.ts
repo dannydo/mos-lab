@@ -72,8 +72,8 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
   const userAssignedStoreId = Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0);
 
   if (role === 'CVLL') {
-    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 25337 : 25337;
-    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Tuyết Nhi ❤️';
+    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 13783 : 13783;
+    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Chuyên Viên 2 Lông';
     const storeId = userAssignedStoreId || 6;
     return {
       staffId,
@@ -121,8 +121,9 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
       branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
-  const staffId = 37790;
-  const name = 'Diễm Hương';
+  const isActualCcUser = String(loggedInUser?.role || '').toLowerCase() === 'cc';
+  const staffId = isActualCcUser ? Number(loggedInUser?.legacyStaffId) || 37790 : 37790;
+  const name = isActualCcUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Diễm Hương';
   const storeId = userAssignedStoreId || 6;
   return {
     staffId,

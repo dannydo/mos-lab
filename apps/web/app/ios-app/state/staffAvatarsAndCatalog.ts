@@ -3,7 +3,7 @@ import type { ComboPackageOption, SerumTierOption } from '@mos-lab/shared';
 export const KNOWN_STAFF_AVATARS: Record<string, string> = {
   '13783': 'https://cdn.wingslashes.com/uploads/user/avatar/400/thumbnail/15400.png', // Khanh Cao (CVL)
   '46272': 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png', // Thảo Ly (CVL)
-  '25337': 'https://cdn.wingslashes.com/uploads/user/avatar/955/thumbnail/26955.jpg', // Tuyết Nhi ❤️ (CVLL)
+  '25337': 'https://cdn.wingslashes.com/uploads/user/avatar/955/thumbnail/26955.jpg', // Tuyết Nhi ❤️ (CV)
   '49076': 'https://cdn.wingslashes.com/uploads/user/avatar/693/thumbnail/50693.png', // Phương Nhi (CV)
   '37790': 'https://cdn.wingslashes.com/uploads/user/avatar/407/thumbnail/39407.png', // Diễm Hương (CC)
   '51540': 'https://cdn.wingslashes.com/uploads/user/avatar/157/thumbnail/53157.png', // Bảo Hân CC
@@ -120,7 +120,7 @@ export const STAFF_QUEUE = [
   {
     id: 25337,
     name: 'Tuyết Nhi ❤️',
-    role: 'CVLL · Tự Chủ Cấp Cao',
+    role: 'Chuyên Viên Mi (CV)',
     status: 'READY',
     bed: 'Giường 01',
     rating: 4.98,

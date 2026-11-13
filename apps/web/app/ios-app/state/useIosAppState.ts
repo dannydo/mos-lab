@@ -138,11 +138,17 @@ export function useIosAppState(
   const canSwitchRole = Boolean(isAdmin);
   const actor = resolveActorProfile(role, loggedInUser);
 
-  // Invariant (UI-010 & Chuyên Viên Salon Anchor):
-  // - Chuyên Viên (CV/CVL/CVLL) luôn thuộc về chi nhánh gốc của mình (Khanh Cao, Thảo Ly -> Đề Thám storeId=6).
-  // - Chỉ Admin/Quản lý ở vai trò không phải Chuyên Viên (CC/STORE/ADMIN) mới xem/đổi chi nhánh đã chọn.
+  // Invariant (UI-010 & Chuyên Viên / CC Salon Anchor):
+  // - Chuyên Viên (CV/CVL/CVLL) và CC không phải Admin luôn thuộc về chi nhánh gốc đang làm việc của mình.
+  // - Chỉ Admin/Super Admin ở vai trò không phải Chuyên Viên (CC/STORE/ADMIN) mới xem/đổi chi nhánh tùy chọn.
   const isTechnicianRole = role === 'CVL' || role === 'CVLL' || role === 'CV';
-  const effectiveStoreId = isTechnicianRole ? actor.storeId || 6 : selectedStoreId;
+  const ccAssignedStoreId =
+    !isAdmin && role === 'CC' ? Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0) : 0;
+  const effectiveStoreId = isTechnicianRole
+    ? actor.storeId || 6
+    : ccAssignedStoreId > 0
+      ? ccAssignedStoreId
+      : selectedStoreId;
 
   const currentBranch = useMemo(() => {
     return IOS_AVAILABLE_BRANCHES.find((b) => b.id === effectiveStoreId) || IOS_AVAILABLE_BRANCHES[0];
@@ -205,7 +211,9 @@ export function useIosAppState(
 
   const visibleBookings = useMemo(() => {
     const shouldFilterCvl = role === 'CVL' || scopeMode === 'MY_CUSTOMERS';
-    const list = shouldFilterCvl ? filterBookingsForCvlScope(bookings, actor.staffId) : bookings;
+    const list = shouldFilterCvl
+      ? filterBookingsForCvlScope(bookings, actor.staffId, { isToday: selectedDateOffset === 0 })
+      : bookings;
 
     return list.map((b) => {
       const tab = resolveCustomerBookingTab(b, activeServicingBooking?.id);
@@ -232,7 +240,7 @@ export function useIosAppState(
         customerPhone: maskedPhone,
       };
     });
-  }, [bookings, role, scopeMode, actor.staffId, activeServicingBooking, isAdmin]);
+  }, [bookings, role, scopeMode, actor.staffId, activeServicingBooking, isAdmin, selectedDateOffset]);
 
   const counts: SegmentCounts = useMemo(() => {
     let incoming = 0;
@@ -277,6 +285,7 @@ export function useIosAppState(
   } = useIosBookingsSync({
     enabled,
     isDemoMode,
+    isAdmin,
     role,
     isTechnicianRole,
     effectiveStoreId,
@@ -356,6 +365,7 @@ export function useIosAppState(
 
   return {
     bookings: visibleBookings,
+    totalStoreBookingsCount: bookings.length,
     activeBooking,
     activeBookingId,
     setActiveBookingId,

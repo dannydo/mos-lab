@@ -43,6 +43,7 @@ interface Screen01IncomingBookingsProps {
   onSelectStoreId?: (storeId: number) => void;
   currentBranch?: IosBranchConfig;
   availableBranches?: IosBranchConfig[];
+  totalStoreBookingsCount?: number;
 }
 
 export function Screen01IncomingBookings({
@@ -68,6 +69,7 @@ export function Screen01IncomingBookings({
   onSelectStoreId,
   currentBranch,
   availableBranches = IOS_AVAILABLE_BRANCHES,
+  totalStoreBookingsCount,
 }: Screen01IncomingBookingsProps) {
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
@@ -245,7 +247,7 @@ export function Screen01IncomingBookings({
                 scopeMode === 'STORE_ALL' ? 'bg-amber-400 text-black shadow-xs' : 'text-neutral-400 hover:text-white'
               }`}
             >
-              Toàn bộ sảnh ({bookings.length})
+              Toàn bộ sảnh ({totalStoreBookingsCount ?? bookings.length})
             </button>
             <button
               onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}

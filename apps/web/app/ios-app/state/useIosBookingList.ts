@@ -150,7 +150,7 @@ export function useIosBookingList({
           role,
           staffId: effStaffId,
           date: targetDateStr,
-          limit: 40,
+          limit: 200,
           ...(isDemoMode ? { demo: true } : {}),
         });
 
@@ -194,16 +194,16 @@ export function useIosBookingList({
 
   const visibleBookings = useMemo(() => {
     if (role === 'CVL') {
-      return filterBookingsForCvlScope(bookings, actor.staffId);
+      return filterBookingsForCvlScope(bookings, actor.staffId, { isToday: selectedDateOffset === 0 });
     }
     return bookings;
-  }, [bookings, role, actor.staffId]);
+  }, [bookings, role, actor.staffId, selectedDateOffset]);
 
   const counts = useMemo(() => {
     const list = visibleBookings;
     return {
-      incoming: list.filter((b) => b.status === 'INCOMING' || b.status === 'CHECKED_IN').length,
-      servicing: list.filter((b) => b.status === 'SERVICING').length,
+      incoming: list.filter((b) => b.status === 'INCOMING').length,
+      servicing: list.filter((b) => b.status === 'SERVICING' || b.status === 'CHECKED_IN').length,
       done: list.filter((b) => b.status === 'DONE').length,
       cancel: list.filter((b) => b.status === 'CANCELLED').length,
     };

@@ -2076,19 +2076,19 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'SYSTEM',
     title: 'Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới & Bảo Mật Phạm Vi Khách Hàng Của CV🪶 Trên /ios-app',
     summary:
-      'Mọi chức năng, màn hình hoặc API mới đưa vào mOS mặc định chỉ Admin / Super Admin được phép sử dụng (Zero-Trust Admin-Only Default). Riêng ứng dụng /ios-app chỉ mở cho CV🪶 (CVL), 🪶CV🪶 (CVLL), CC và Admin; trong đó CV🪶 tuyệt đối không được xem khách của người khác mà chỉ được xem 1 khách hàng kế tiếp (Đầu tua) và khách book của chính mình.',
+      'Mọi chức năng, màn hình hoặc API mới đưa vào mOS mặc định chỉ Admin / Super Admin được phép sử dụng (Zero-Trust Admin-Only Default). Riêng ứng dụng /ios-app chỉ mở cho CV🪶 (CVL), 🪶CV🪶 (CVLL), CC và Admin; trong đó CV🪶 tuyệt đối không được xem khách của người khác mà chỉ được xem khách hàng kế tiếp (Đầu tua — bao gồm tất cả khách cùng khung giờ kế tiếp và khách trễ giờ chưa đến kèm khung giờ kế tiếp) và khách book của chính mình.',
     commandments: [
       'Zero-Trust Admin-Only Default (4 Lớp Bảo Vệ): Khi bất kỳ tính năng, trang giao diện (/dashboard/*), mục menu hoặc API mới nào được thiết kế và đưa vào mOS, mặc định chỉ duy nhất Admin / Super Admin được quyền truy cập. Tất cả các vai trò khác đều bị chặn mặc định ở cả 4 lớp: (1) Sidebar ẩn mọi menu chưa khai báo trong MENU_ACCESS_DEFINITIONS hoặc chưa cấp quyền; (2) Route Guard chặn truy cập URL trực tiếp; (3) Backend API Guard trả về 403 Forbidden với mọi API chưa mở quyền (__ADMIN_ONLY_DEFAULT__); (4) Chỉ mở quyền khi Admin cấu hình tường minh.',
       'Khóa Cổng Truy Cập /ios-app: Chỉ duy nhất 4 nhóm tài khoản được phép vào /ios-app gồm: CV🪶 (CVL), 🪶CV🪶 (CVLL), Tư Vấn Viên (CC) và Admin / Super Admin. Toàn bộ các vai trò khác (bao gồm Chuyên Viên Kỹ Thuật tiêu chuẩn CV, Manager, FM, CHO, BOSS, Telesales, CSKH, HR, QA/QC) đều bị từ chối truy cập ở cả giao diện và API.',
-      'Khóa Cứng Vai Trò Theo Tài Khoản Đăng Nhập: Trên /ios-app, nhân sự đăng nhập vai trò nào bị khóa cứng ở đúng vai trò đó (kể cả khi tự sửa tham số ?role= trên URL). Chỉ duy nhất Admin / Super Admin mới có thanh chuyển đổi vai trò (Role Switcher) để kiểm thử.',
-      'Bảo Mật Tuyệt Đối Thông Tin Khách Hàng Của CV🪶 (CVL): Tài khoản CV🪶 bị ẩn nút "Toàn Bộ Sảnh" (STORE_ALL) và tuyệt đối không được xem hay thao tác trên khách hàng đã được phân công cho Chuyên Viên khác. CV🪶 chỉ được hiển thị đúng: (a) 1 khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua) để nhận ca, và (b) danh sách khách hàng book đích danh / được phân công cho chính mình trong ngày.',
+      'Khóa Cứng Vai Trò & Chi Nhánh Theo Tài Khoản Đăng Nhập: Trên /ios-app, nhân sự đăng nhập vai trò nào bị khóa cứng ở đúng vai trò đó (kể cả khi tự sửa tham số ?role= trên URL) và CC / Chuyên Viên không phải Admin được neo về đúng chi nhánh đang làm việc (client_store_id). Chỉ duy nhất Admin / Super Admin mới có thanh chuyển đổi vai trò (Role Switcher) và chuyển chi nhánh để kiểm thử.',
+      'Phạm Vi Dữ Liệu Theo Vai Trò — CC Xem Toàn Bộ Chi Nhánh & Bảo Mật Khách Hàng Của CV🪶 (CVL): Tư Vấn Viên (CC) được xem tất cả khách chờ đón (Chờ đón), đang làm (Đang làm) và đã xong (Đã xong) thuộc chi nhánh mình đang làm việc (STORE_ALL). Ngược lại, tài khoản CV🪶 bị ẩn nút "Toàn Bộ Sảnh" (STORE_ALL) và tuyệt đối không được xem hay thao tác trên khách hàng đã được phân công cho Chuyên Viên khác; CV🪶 chỉ được hiển thị đúng: (a) khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua) để nhận ca — nếu có 2+ khách đến cùng khung giờ kế tiếp thì hiển thị tất cả các khách cùng khung giờ đó, và nếu quá giờ hẹn mà khách vẫn chưa đến (INCOMING trễ) thì vẫn giữ hiển thị khách trễ và mở thêm khung giờ khách hàng tiếp theo; và (b) danh sách khách hàng book đích danh / được phân công cho chính mình trong ngày.',
       'Tách Bạch 100% Dữ Liệu Thật (Live Mode) & Chế Độ Demo (?demo=1) Kèm Lưu Trữ Nguyên Tử Từng Ca Làm: Ở chế độ vận hành thật mặc định, /ios-app và API /api/ios/bookings tuyệt đối không tự bịa lịch sử mi giả, không gán doanh thu mặc định giả, không tự nhảy ngầm về ngày cũ và không trộn khách mẫu INITIAL_BOOKINGS (chỉ kích hoạt khách mẫu khi truyền tường minh ?demo=1). Mọi trạng thái ca làm (check-in, tư vấn, ảnh tiến trình, checkout) được lưu nguyên tử theo từng bookingId độc lập (IOS_BK_OVR:<bookingId>), không bao giờ ghi đè mất dữ liệu khi nhiều Chuyên Viên thao tác đồng thời.',
     ],
     rationale:
-      'Đảm bảo an toàn phân quyền tuyệt đối khi phát triển tính năng mới, bảo vệ quyền riêng tư dữ liệu khách hàng tại sảnh salon, giữ độ tinh khiết 100% cho dữ liệu vận hành thật và chống mất dữ liệu khi nhiều Chuyên Viên Tự Chủ (CV🪶) thao tác song song.',
+      'Đảm bảo an toàn phân quyền tuyệt đối khi phát triển tính năng mới, bảo vệ quyền riêng tư dữ liệu khách hàng tại sảnh salon, giúp CV🪶 sẵn sàng đón khách khi nhiều khách cùng khung giờ hoặc có khách trễ giờ mà không bị kẹt hàng chờ, giữ độ tinh khiết 100% cho dữ liệu vận hành thật và chống mất dữ liệu khi nhiều Chuyên Viên Tự Chủ (CV🪶) thao tác song song.',
     examples: [
       'Một trang mới /dashboard/experimental-report vừa được tạo nhưng chưa khai báo mở quyền: Chỉ Admin nhìn thấy và truy cập được; mọi nhân sự khác gõ trực tiếp URL hoặc gọi API đều bị chặn.',
-      'Tài khoản CV🪶 (Thảo Ly) mở http://localhost:4000/ios-app?role=CVL: Chỉ nhìn thấy 1 khách kế tiếp đầu tua và các khách book thật của Thảo Ly trong ngày hôm nay; chỉ khi Admin mở /ios-app?demo=1 mới hiển thị danh sách khách mẫu kiểm thử.',
+      'Tài khoản CV🪶 (Thảo Ly) mở http://localhost:4000/ios-app?role=CVL: Chỉ nhìn thấy khách kế tiếp đầu tua (cả 2 khách nếu cùng khung giờ 11:00, hoặc khách trễ 10:30 kèm khung giờ 11:00 kế tiếp) và các khách book thật của Thảo Ly trong ngày hôm nay; chỉ khi Admin mở /ios-app?demo=1 mới hiển thị danh sách khách mẫu kiểm thử.',
     ],
     tags: [
       'admin-only',
@@ -2108,8 +2108,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/ios-app', '/dashboard', '/dashboard/settings'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-11-12',
+    version: '1.2.0',
+    effectiveFrom: '2026-11-13',
     sources: [
       { label: 'Shared Auth & Role Guards', reference: 'packages/shared/src/types/auth.ts' },
       { label: 'Shared iOS Domain DTOs & Rules', reference: 'packages/shared/src/types/ios-app.ts' },

@@ -63,8 +63,8 @@ export function ScreenSettingsRoleSwitch({
       ),
       desc: (
         <>
-          Chỉ xem 1 khách kế tiếp (Đầu tua) & khách book của mình, tự Check-in, Tư vấn gói Combo, bán Dưỡng mi & tự
-          Checkout (Hưởng 90% Tip + Thưởng bậc thang <CvFeather1Badge />)
+          Xem khách kế tiếp (Đầu tua) & khách book của mình, tự Check-in, Tư vấn gói Combo, bán Dưỡng mi & tự Checkout
+          (Hưởng 90% Tip + Thưởng bậc thang <CvFeather1Badge />)
         </>
       ),
       icon: Sparkles,
@@ -74,7 +74,7 @@ export function ScreenSettingsRoleSwitch({
       name: (
         <span className="inline-flex items-center gap-1">
           <CvFeather2Badge />
-          <span>· Chuyên Viên Tự Chủ Cấp Cao (Tuyết Nhi)</span>
+          <span>· Chuyên Viên Tự Chủ Cấp Cao</span>
         </span>
       ),
       desc: 'Xem khách của mình & toàn chi nhánh để hỗ trợ Check-in / Tư vấn / Checkout chéo giùm CV khác (Ai Checkout người đó hưởng)',
@@ -83,7 +83,7 @@ export function ScreenSettingsRoleSwitch({
     {
       id: 'CC',
       name: 'Tư Vấn Viên (Client Consultant · Diễm Hương)',
-      desc: 'Tiếp đón khách sảnh, Check-in, Bán Combo & POS theo quy chế CC',
+      desc: 'Xem tất cả khách chờ đón, đang làm & đã xong tại chi nhánh đang làm việc; tiếp đón, Check-in, Bán Combo & POS theo quy chế CC',
       icon: Sparkles,
     },
     {

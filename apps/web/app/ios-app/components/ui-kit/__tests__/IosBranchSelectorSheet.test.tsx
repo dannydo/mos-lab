@@ -65,8 +65,8 @@ describe('IosBranchSelectorSheet', () => {
     expect(handleClose).toHaveBeenCalled();
   });
 
-  it('verifies technician profiles (Khanh Cao, Tuyết Nhi) are anchored to Đề Thám (DT - storeId: 6)', () => {
-    // 1. Khanh Cao as CVL
+  it('verifies technician and CC profiles (Khanh Cao CVL, Tuyết Nhi CV, Yến Vy CC) anchor to their assigned branches', () => {
+    // 1. Khanh Cao as CVL -> Đề Thám (6)
     const khanhCaoActor = resolveActorProfile('CVL', {
       displayName: 'Khanh Cao',
       legacyStaffId: 13783,
@@ -76,14 +76,29 @@ describe('IosBranchSelectorSheet', () => {
     expect(khanhCaoActor.branchCode).toBe('DT');
     expect(khanhCaoActor.branchName).toBe('Chi nhánh Đề Thám');
 
-    // 2. Tuyết Nhi as CVLL
-    const tuyetNhiActor = resolveActorProfile('CVLL', {
-      displayName: 'Tuyết Nhi',
+    // 2. Tuyết Nhi is regular CV (role lt), NOT CVLL -> Đề Thám (6)
+    const tuyetNhiActor = resolveActorProfile('CV', {
+      displayName: 'Tuyết Nhi ❤️',
       legacyStaffId: 25337,
-      role: 'cv_plus_plus',
+      role: 'lt',
+      clientStoreId: 6,
     });
+    expect(tuyetNhiActor.tier).toBe('CV');
     expect(tuyetNhiActor.storeId).toBe(6);
     expect(tuyetNhiActor.branchCode).toBe('DT');
     expect(tuyetNhiActor.branchName).toBe('Chi nhánh Đề Thám');
+
+    // 3. Yến Vy as CC at Estella Place -> Estella (16)
+    const yenVyActor = resolveActorProfile('CC', {
+      displayName: 'Yến Vy',
+      legacyStaffId: 48026,
+      role: 'cc',
+      clientStoreId: 16,
+    });
+    expect(yenVyActor.tier).toBe('CC');
+    expect(yenVyActor.staffId).toBe(48026);
+    expect(yenVyActor.storeId).toBe(16);
+    expect(yenVyActor.branchCode).toBe('EP');
+    expect(yenVyActor.branchName).toBe('Chi nhánh Estella Place');
   });
 });

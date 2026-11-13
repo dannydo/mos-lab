@@ -739,44 +739,147 @@ export function calculateActorTipBreakdown(
   };
 }
 
+export interface FilterBookingsForCvlScopeOptions {
+  /**
+   * Whether the bookings list is for today in Asia/Ho_Chi_Minh.
+   * Only today's unassigned INCOMING bookings whose start time has passed are treated as late.
+   * Defaults to `targetDate === todayVn` when both are provided, otherwise `true`.
+   */
+  isToday?: boolean;
+  targetDate?: string;
+  todayVn?: string;
+  now?: Date;
+}
+
+export function parseBookingStartMinutes(b: Pick<IosBookingItem, 'time12h' | 'timeSlot'>): number | null {
+  const candidates = [b.time12h, b.timeSlot];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const match = String(raw)
+      .trim()
+      .match(/^(\d{1,2}):(\d{2})(?:\s*(am|pm))?/i);
+    if (!match) continue;
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes < 0 || minutes >= 60) continue;
+    const period = match[3]?.toLowerCase();
+    if (period === 'pm' && hours < 12) hours += 12;
+    else if (period === 'am' && hours === 12) hours = 0;
+    if (hours < 0 || hours > 23) continue;
+    return hours * 60 + minutes;
+  }
+  return null;
+}
+
+function getVietnamNowMinutes(now: Date = new Date()): number {
+  try {
+    const hhmm = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(now);
+    const [hhStr, mmStr] = hhmm.split(':');
+    const hh = parseInt(hhStr, 10) % 24;
+    const mm = parseInt(mmStr, 10);
+    if (!Number.isNaN(hh) && !Number.isNaN(mm)) {
+      return hh * 60 + mm;
+    }
+  } catch {
+    // Fallback to local clock when Intl timeZone is unavailable
+  }
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+function isBookingServicing(b: IosBookingItem): boolean {
+  return (
+    b.status === 'SERVICING' ||
+    (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt)
+  );
+}
+
+function isBookingAssignedToStaff(b: IosBookingItem, activeStaffId: number): boolean {
+  return Boolean(
+    (b.assignedStaffId && b.assignedStaffId === activeStaffId) ||
+    (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
+    (b.checkOutStaffId && b.checkOutStaffId === activeStaffId)
+  );
+}
+
 /**
  * Strict CVL (Chuyên Viên Tự Chủ) Customer Visibility Filter (Kinh Thánh mOS Điều răn UI-010):
  * CVL is strictly forbidden from viewing customers assigned to other Chuyên Viên.
  * CVL may ONLY view:
  * 1. Customers booked/assigned/checked-in/checked-out by this CVL.
- * 2. The 1 next upcoming unassigned customer at the head of the salon queue (Đầu tua).
+ * 2. Unassigned lobby queue customers (Đầu tua):
+ *    - Any late unassigned INCOMING customers (today, start time < now, not yet arrived).
+ *    - Plus ALL unassigned customers in the next upcoming time slot (so 2+ customers at the same start time are all shown).
  */
-export function filterBookingsForCvlScope<T extends IosBookingItem>(bookings: T[], activeStaffId: number): T[] {
-  let nextUnassignedIncluded = false;
+export function filterBookingsForCvlScope<T extends IosBookingItem>(
+  bookings: T[],
+  activeStaffId: number,
+  options?: FilterBookingsForCvlScopeOptions
+): T[] {
+  const isToday =
+    options?.isToday !== undefined
+      ? options.isToday
+      : options?.targetDate && options?.todayVn
+        ? options.targetDate === options.todayVn
+        : true;
+  const nowMinutes = getVietnamNowMinutes(options?.now);
+
+  const unassignedCandidates = bookings
+    .map((b, index) => {
+      const isServicing = isBookingServicing(b);
+      const isStaffAssigned = isBookingAssignedToStaff(b, activeStaffId);
+      const isUnassignedIncoming =
+        !isStaffAssigned &&
+        !isServicing &&
+        (b.status === 'INCOMING' || b.status === 'CHECKED_IN') &&
+        (b.isUnassignedQueue === true || !b.assignedStaffId || b.assignedStaffId === 0);
+
+      if (!isUnassignedIncoming) return null;
+
+      const startMinutes = parseBookingStartMinutes(b);
+      const isLate = isToday && b.status === 'INCOMING' && startMinutes !== null && startMinutes < nowMinutes;
+      return { index, startMinutes, isLate };
+    })
+    .filter((item): item is { index: number; startMinutes: number | null; isLate: boolean } => item !== null);
+
+  const nonLateCandidates = unassignedCandidates.filter((c) => !c.isLate);
+  const nonLateStartMinutes = nonLateCandidates.map((c) => c.startMinutes).filter((m): m is number => m !== null);
+  const nextUpcomingSlotMinutes = nonLateStartMinutes.length > 0 ? Math.min(...nonLateStartMinutes) : null;
+  const firstFallbackUpcomingIndex =
+    nextUpcomingSlotMinutes === null && nonLateCandidates.length > 0 ? nonLateCandidates[0].index : null;
+
+  const includedUnassignedIndexes = new Set<number>();
+  for (const c of unassignedCandidates) {
+    if (c.isLate) {
+      includedUnassignedIndexes.add(c.index);
+    } else if (nextUpcomingSlotMinutes !== null) {
+      if (c.startMinutes === nextUpcomingSlotMinutes) {
+        includedUnassignedIndexes.add(c.index);
+      }
+    } else if (c.index === firstFallbackUpcomingIndex) {
+      includedUnassignedIndexes.add(c.index);
+    }
+  }
+
   const result: T[] = [];
 
-  for (const b of bookings) {
-    const isServicing =
-      b.status === 'SERVICING' ||
-      (b.status === 'CHECKED_IN' && Boolean(b.progress?.startedAt) && !b.progress?.completedAt);
-
-    const isStaffAssigned =
-      (b.assignedStaffId && b.assignedStaffId === activeStaffId) ||
-      (b.checkInStaffId && b.checkInStaffId === activeStaffId) ||
-      (b.checkOutStaffId && b.checkOutStaffId === activeStaffId);
-
-    if (isStaffAssigned) {
+  for (let i = 0; i < bookings.length; i++) {
+    const b = bookings[i];
+    if (isBookingAssignedToStaff(b, activeStaffId)) {
       result.push({
         ...b,
-        status: isServicing ? 'SERVICING' : b.status,
+        status: isBookingServicing(b) ? 'SERVICING' : b.status,
         isNextQueueCustomer: false,
         bookingAccessTag: 'MY_BOOKED_CUSTOMER',
       });
       continue;
     }
 
-    const isUnassignedIncoming =
-      !isServicing &&
-      (b.status === 'INCOMING' || b.status === 'CHECKED_IN') &&
-      (b.isUnassignedQueue === true || !b.assignedStaffId || b.assignedStaffId === 0);
-
-    if (isUnassignedIncoming && !nextUnassignedIncluded) {
-      nextUnassignedIncluded = true;
+    if (includedUnassignedIndexes.has(i)) {
       result.push({
         ...b,
         isUnassignedQueue: true,
