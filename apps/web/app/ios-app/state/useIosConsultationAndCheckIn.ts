@@ -381,7 +381,7 @@ export function useIosConsultationAndCheckIn({
       const targetId = targetBookingId !== undefined ? Number(targetBookingId) : activeBookingIdRef.current;
       const targetBooking = bookingsRef.current.find((b) => Number(b.id) === targetId);
 
-      // 1. Cập nhật state bookings tức thì trên client
+      // 1. Cập nhật state bookings tức thì trên client (chỉ lưu nháp thuộc tính & combo, không ghi đè tên dịch vụ gốc đặt lịch)
       setBookings((prev) =>
         prev.map((b) => {
           if (Number(b.id) === targetId) {
@@ -389,9 +389,6 @@ export function useIosConsultationAndCheckIn({
               ...b,
               attributes: { ...(b.attributes || {}), ...attributes } as BookingItem['attributes'],
               customerNote: notes !== undefined ? notes : b.customerNote,
-              serviceName: skuPricing?.skuName || b.serviceName,
-              servicePrice: skuPricing?.skuPrice ?? b.servicePrice,
-              serviceType: skuPricing?.serviceType || b.serviceType,
               selectedCombo: selectedCombo !== undefined ? selectedCombo : b.selectedCombo,
               selectedUnderCombo: selectedUnderCombo !== undefined ? selectedUnderCombo : b.selectedUnderCombo,
               _localComboUpdatedAt: Date.now(),

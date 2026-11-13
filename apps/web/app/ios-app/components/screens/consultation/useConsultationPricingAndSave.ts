@@ -411,6 +411,9 @@ export function useConsultationPricingAndSave({
     ]
   );
 
+  const latestSignatureRef = useRef<string>(autoSaveDraftSignature);
+  latestSignatureRef.current = autoSaveDraftSignature;
+
   useEffect(() => {
     const currentBookingId = booking?.id;
     if (!syncedDraftRef.current || syncedDraftRef.current.bookingId !== currentBookingId) {
@@ -434,10 +437,14 @@ export function useConsultationPricingAndSave({
     }
 
     autoSaveTimerRef.current = setTimeout(async () => {
+      // Mark as synced immediately when debounce timer fires before awaiting async call,
+      // so concurrent re-renders during HTTP transport see the in-flight signature as already accounted for.
+      syncedDraftRef.current = { bookingId: currentBookingId, signature: targetSignature };
       try {
         await performAutoSaveRef.current();
-        syncedDraftRef.current = { bookingId: currentBookingId, signature: targetSignature };
-        setSaveStatus('saved');
+        if (latestSignatureRef.current === targetSignature) {
+          setSaveStatus('saved');
+        }
       } catch (err) {
         console.warn('[Screen03] Autosave error:', err);
         setSaveStatus('error');
@@ -453,12 +460,19 @@ export function useConsultationPricingAndSave({
 
   const handleManualSaveClick = async () => {
     if (saveStatus === 'saving') return;
+    const currentSignature = autoSaveDraftSignature;
+    syncedDraftRef.current = { bookingId: booking?.id, signature: currentSignature };
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
     setSaveStatus('saving');
     try {
       await performAutoSaveRef.current();
-      syncedDraftRef.current = { bookingId: booking?.id, signature: autoSaveDraftSignature };
-      setSaveStatus('saved');
-    } catch {
+      if (latestSignatureRef.current === currentSignature) {
+        setSaveStatus('saved');
+      }
+    } catch (err) {
+      console.warn('[Screen03] Manual save error:', err);
       setSaveStatus('error');
     }
   };
