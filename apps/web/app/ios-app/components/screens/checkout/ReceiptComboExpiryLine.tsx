@@ -54,7 +54,7 @@ export function ReceiptComboExpiryLine({
         )}
       </div>
       {showFormula && expiryFormulaSummary && (
-        <div className={`text-[9.5px] font-medium leading-snug ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+        <div className={`text-[9.5px] font-medium leading-snug text-[var(--mos-text-muted)]`}>
           {expiryFormulaSummary}
         </div>
       )}
@@ -90,7 +90,7 @@ export function ThermalReceiptComboItemsSection({
               {cleanComboTitle(selectedCombo.name)}
             </span>
             <span
-              className={`tabular-nums ${isDark ? 'text-white' : 'text-black'} font-extrabold whitespace-nowrap shrink-0 text-[12.5px]`}
+              className={`tabular-nums text-[var(--mos-text)] font-extrabold whitespace-nowrap shrink-0 text-[12.5px]`}
             >
               {selectedCombo.price.toLocaleString('vi-VN')} đ
             </span>
@@ -128,7 +128,7 @@ export function ThermalReceiptComboItemsSection({
               {cleanComboTitle(selectedUnderCombo.name)}
             </span>
             <span
-              className={`tabular-nums ${isDark ? 'text-white' : 'text-black'} font-extrabold whitespace-nowrap shrink-0 text-[12.5px]`}
+              className={`tabular-nums text-[var(--mos-text)] font-extrabold whitespace-nowrap shrink-0 text-[12.5px]`}
             >
               {selectedUnderCombo.price.toLocaleString('vi-VN')} đ
             </span>

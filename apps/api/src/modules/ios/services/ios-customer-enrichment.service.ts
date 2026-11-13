@@ -408,7 +408,13 @@ export async function fetchCustomerEnrichmentContext(
     for (const hr of historyRows) {
       const uid = Number(hr.user_id);
       const list = ctx.lashHistoryMap.get(uid) || [];
-      const svcName = String(hr.service_name || 'Nối mi');
+      const svcName = String(hr.service_name || 'Nối mi')
+        .replace(
+          /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+          ''
+        )
+        .replace(/\s{2,}/g, ' ')
+        .trim();
       const svcKey = String(hr.service_key || '');
       if (list.length < 3) {
         list.push({
@@ -431,7 +437,7 @@ export async function fetchCustomerEnrichmentContext(
         let mat = 'Flawless Mink';
         if (combinedLower.includes('hyperlight') || combinedLower.includes('hyper light')) mat = 'HyperLight';
         else if (combinedLower.includes('ivylight') || combinedLower.includes('ivy light')) mat = 'Ivylight';
-        else if (combinedLower.includes('classic')) mat = 'New Classic';
+        else if (combinedLower.includes('classic')) mat = 'Classic 1D';
         else if (combinedLower.includes('volume')) mat = 'Volume';
         else if (combinedLower.includes('ultralight') || combinedLower.includes('ultra light')) mat = 'UltraLight';
 
@@ -446,7 +452,7 @@ export async function fetchCustomerEnrichmentContext(
         const roVolNormalized = /^\d+[DXL]$/.test(rawRoVol) ? rawRoVol : undefined;
         const defaultVol =
           roVolNormalized ||
-          (mat === 'New Classic' || mat === 'Flawless Mink'
+          (mat === 'Classic 1D' || mat === 'Classic' || mat === 'Flawless Mink'
             ? '1D'
             : mat === 'Volume'
               ? inferred.categoryId === 'Volume_3D'
@@ -455,7 +461,12 @@ export async function fetchCustomerEnrichmentContext(
               : inferred.categoryId.includes('_')
                 ? inferred.categoryId.split('_')[1]
                 : undefined);
-        const unit = mat === 'Flawless Mink' || mat === 'New Classic' ? 'sợi' : mat === 'Ivylight' ? 'nhịp' : 'fan';
+        const unit =
+          mat === 'Flawless Mink' || mat === 'Classic 1D' || mat === 'Classic'
+            ? 'sợi'
+            : mat === 'Ivylight'
+              ? 'nhịp'
+              : 'fan';
         const defaultCount =
           inferred.volumeMeta?.countPerEye && inferred.volume !== 'under'
             ? `${inferred.volumeMeta.countPerEye} ${unit}`

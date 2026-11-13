@@ -44,7 +44,7 @@ export function resolveStaffAvatarUrl(
 export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
   {
     id: 'combo-flawless-5',
-    name: 'Combo 5 lần New Flawless Mink',
+    name: 'Combo 5 lần Flawless Mink',
     sessions: 5,
     price: 4500000,
     cvBonus: 200000,
@@ -52,7 +52,7 @@ export const COMBO_PACKAGES_CVL: ComboPackageOption[] = [
   },
   {
     id: 'combo-hyperlight-5',
-    name: 'Combo 5 lần New HyperLight',
+    name: 'Combo 5 lần HyperLight',
     sessions: 5,
     price: 3500000,
     cvBonus: 150000,

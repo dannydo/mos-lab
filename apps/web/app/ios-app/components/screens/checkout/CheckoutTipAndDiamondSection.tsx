@@ -123,7 +123,7 @@ export function CheckoutTipAndDiamondSection({
 
           {/* Hàng 2: Gợi ý làm tròn chẵn tổng thanh toán */}
           {roundUpSuggestions.length > 0 && (
-            <div className={`pt-1 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+            <div className={`pt-1 border-t border-[var(--mos-surface-border)]`}>
               <div
                 className={`text-[10.5px] ${isDark ? 'text-amber-400' : 'text-amber-700'} font-bold mb-1 flex items-center gap-1`}
               >
@@ -318,7 +318,7 @@ export function CheckoutTipAndDiamondSection({
       {/* Section 1C: Ví Kim Cương (1 💎 = 1.000 VNĐ) */}
       <div>
         <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider px-1 mb-1.5">
-          <span className={`flex items-center gap-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+          <span className={`flex items-center gap-1 text-[var(--mos-text-muted)]`}>
             <span>💎</span> VÍ KIM CƯƠNG
           </span>
           <span
@@ -336,7 +336,7 @@ export function CheckoutTipAndDiamondSection({
         >
           {customerDiamondBalance > 0 ? (
             <>
-              <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium`}>
+              <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
                 Chọn số Kim Cương dùng để cấn trừ (1 💎 = 1.000đ):
               </div>
 

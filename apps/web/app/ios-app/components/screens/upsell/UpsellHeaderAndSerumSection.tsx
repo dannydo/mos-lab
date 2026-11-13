@@ -65,7 +65,7 @@ export function UpsellHeaderAndSerumSection({
     <>
       {/* 0. Customer & Lash Service Identity Card (Nhận diện khách hàng & Ca phục vụ) */}
       <div
-        className={`${isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3 shadow-2xs border flex items-center gap-3`}
+        className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-2xs border flex items-center gap-3`}
       >
         {/* Customer Avatar */}
         <div className="relative w-11 h-11 flex-shrink-0">
@@ -99,21 +99,17 @@ export function UpsellHeaderAndSerumSection({
         <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 truncate">
-              <span
-                className={`text-[15px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight truncate`}
-              >
+              <span className={`text-[15px] font-black text-[var(--mos-text)] tracking-tight truncate`}>
                 {customerName}
               </span>
               {customerPhone && (
-                <span
-                  className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-500'} tabular-nums`}
-                >
+                <span className={`text-[11.5px] font-bold text-[var(--mos-text-muted)] tabular-nums`}>
                   · {customerPhone}
                 </span>
               )}
             </div>
             <div
-              className={`text-[11.5px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} mt-0.5 font-medium flex items-center gap-1.5 flex-wrap`}
+              className={`text-[11.5px] text-[var(--mos-text-muted)] mt-0.5 font-medium flex items-center gap-1.5 flex-wrap`}
             >
               <span className="truncate">
                 Dịch vụ:{' '}
@@ -237,7 +233,7 @@ export function UpsellHeaderAndSerumSection({
               className={`p-2.5 ${isDark ? 'bg-black/60 border-sky-500/20 text-neutral-300' : 'bg-white border-sky-200/80 text-neutral-600'} rounded-xl border flex items-center justify-between gap-2 text-[11.5px]`}
             >
               <div className="flex items-center gap-1.5">
-                <span className={`font-semibold ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>Trước ca:</span>
+                <span className={`font-semibold text-[var(--mos-text-muted)]`}>Trước ca:</span>
                 <ComboSessionBadge
                   normalRemaining={
                     redemptionAccounting.walletBefore.paidNew + redemptionAccounting.walletBefore.bonusNew
@@ -313,7 +309,7 @@ export function UpsellHeaderAndSerumSection({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-1">
-                <span className={`text-[14px] font-bold ${isDark ? 'text-white' : 'text-black'} leading-snug`}>
+                <span className={`text-[14px] font-bold text-[var(--mos-text)] leading-snug`}>
                   Dưỡng Mi Yeppeum Korea
                 </span>
                 <div
@@ -341,7 +337,7 @@ export function UpsellHeaderAndSerumSection({
           </div>
 
           {/* Compact Tier Selector Bar & (i) Info Button (Full Width) */}
-          <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'} flex items-center gap-2`}>
+          <div className={`pt-2 border-t border-[var(--mos-surface-border)] flex items-center gap-2`}>
             <button
               type="button"
               onClick={onOpenSerumInfoModal}

@@ -628,7 +628,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Gắn kết quyền lợi tài chính đột phá với năng lực trực tiếp bán combo tại giường, đơn giản hóa công thức thưởng minh bạch dễ nhớ (<2M = 50K, mỗi 1M kế tiếp = +50K, gộp tổng tiền khi khách mua 2 gói cùng lúc), công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
     examples: [
       'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 10 combo (tỷ lệ 25% ≥ ngưỡng 20% hoặc 21% trong config): Nhận đủ lương 27.5k/h, 90% Tip, thưởng combo và thưởng dưỡng mi (+2.000.000đ hoa hồng bán hàng).',
-      'Khách Đoan mua cùng lúc 2 gói trong 1 đơn: New Hyperlight 770 (2.304.400đ) + New Flawless Under Mink 390 (1.684.800đ) ➔ Cộng gộp tổng = 3.989.200đ (bậc 3M-<4M) ➔ Thưởng +150.000đ. Khách Linh mua cùng lúc 2 gói: 4.579.200đ + 4.212.000đ = 8.791.200đ (bậc 8M-<9M) ➔ Thưởng +400.000đ. Khách mua 4.190.000đ + 780.000đ = 4.970.000đ (bậc 4M-<5M) ➔ Thưởng +200.000đ.',
+      'Khách Đoan mua cùng lúc 2 gói trong 1 đơn: Hyperlight 770 (2.304.400đ) + Flawless Under Mink 390 (1.684.800đ) ➔ Cộng gộp tổng = 3.989.200đ (bậc 3M-<4M) ➔ Thưởng +150.000đ. Khách Linh mua cùng lúc 2 gói: 4.579.200đ + 4.212.000đ = 8.791.200đ (bậc 8M-<9M) ➔ Thưởng +400.000đ. Khách mua 4.190.000đ + 780.000đ = 4.970.000đ (bậc 4M-<5M) ➔ Thưởng +200.000đ.',
       'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < ngưỡng config): Vẫn nhận đủ 90% Tip (+560.120đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn dưới ngưỡng (2 tháng liền), nhân viên sẽ bị giáng cấp về CV.',
     ],
     tags: [
@@ -1072,7 +1072,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary:
       'Toàn bộ hệ sinh thái mOS bắt buộc dùng ký hiệu ❖ (Gói Combo, thay thế chữ "Combo"), ✦ (Nối mới) và ↻ (Dặm); cấm tuyệt đối dùng biểu tượng 💎 cho Combo để tránh nhầm lẫn với Ví Kim Cương.',
     commandments: [
-      '1. Ký hiệu Gói Combo (❖ · Unicode U+2756 · Hoa thoi 4 cánh): Biểu tượng duy nhất đại diện cho Gói Combo (thay thế hoàn toàn chữ "Combo" dài dòng gây tràn dòng trên màn hình hẹp, card và hóa đơn). Ví dụ: "❖ 5 lần New HyperLight 770", "❖ (10+6) · New Volume".',
+      '1. Ký hiệu Gói Combo (❖ · Unicode U+2756 · Hoa thoi 4 cánh): Biểu tượng duy nhất đại diện cho Gói Combo (thay thế hoàn toàn chữ "Combo" dài dòng gây tràn dòng trên màn hình hẹp, card và hóa đơn). Ví dụ: "❖ 5 lần HyperLight 770", "❖ (10+6) · Volume".',
       '2. Ký hiệu Nối Mới (✦ · Full Set): Đại diện duy nhất cho số suất Nối mới (normal_count / paid_new / bonus_new).',
       '3. Ký hiệu Dặm Mi (↻ · Retouch / Refill): Đại diện duy nhất cho số suất Dặm bảo hành/Dặm định kỳ (retain_count / paid_refill / bonus_refill).',
       '4. Cấm tuyệt đối dùng icon 💎 cho Combo: Biểu tượng 💎 chỉ được phép sử dụng duy nhất cho Ví Kim Cương (Loyalty Points, quy đổi 1 💎 = 1.000 VNĐ dùng để cấn trừ thanh toán hóa đơn). Mọi giao diện, bảng biểu, thẻ card và hóa đơn tuyệt đối không được gán 💎 vào số lượt Combo.',
@@ -1081,7 +1081,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '7. Quy tắc số 0 màu xám trung tính (Gray Zero Invariant): Khi một trong hai vế không có lượt làm (normal = 0 hoặc retain = 0), bắt buộc vẫn ghi rõ số 0 và áp dụng màu xám trung tính (text-neutral-500 font-bold) để biểu thị rõ ràng đã hết hoặc không có, trong khi vế còn lại (> 0) giữ màu sắc nhận diện nổi bật (✦ Vàng Gold / ↻ Xanh Cyan).',
     ],
     rationale:
-      'Chữ "Combo" chiếm diện tích ngang lớn làm cắt cụt tên dịch vụ trên màn hình di động ("Combo 5 lần New HyperLi..."). Đồng thời khách hàng và nhân viên thường xuyên nhầm lẫn giữa số lượt làm mi trong gói Combo và điểm số dư trong Ví Kim Cương. Bộ ba ký hiệu ❖ Gói Combo · ✦ Nối mới · ↻ Dặm tạo ra ngôn ngữ thị giác đẳng cấp, tinh gọn và chuẩn mực nhất trên toàn hệ sinh thái mOS. Việc luôn hiển thị đủ bộ cặp [✦ Nối · ↻ Dặm] với màu xám cho số 0 triệt tiêu hoàn toàn sự bối rối khi đọc số dư.',
+      'Chữ "Combo" chiếm diện tích ngang lớn làm cắt cụt tên dịch vụ trên màn hình di động ("Combo 5 lần HyperLi..."). Đồng thời khách hàng và nhân viên thường xuyên nhầm lẫn giữa số lượt làm mi trong gói Combo và điểm số dư trong Ví Kim Cương. Bộ ba ký hiệu ❖ Gói Combo · ✦ Nối mới · ↻ Dặm tạo ra ngôn ngữ thị giác đẳng cấp, tinh gọn và chuẩn mực nhất trên toàn hệ sinh thái mOS. Việc luôn hiển thị đủ bộ cặp [✦ Nối · ↻ Dặm] với màu xám cho số 0 triệt tiêu hoàn toàn sự bối rối khi đọc số dư.',
     tags: [
       'Combo Canon',
       '❖ Gói Combo',

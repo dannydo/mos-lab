@@ -480,7 +480,7 @@ export function useConsultationPricingAndSave({
   const customerName = (booking?.customerName || 'Chị Trúc').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const rawCustomerPhone = booking?.customerPhone || '0933.779.207';
   const customerPhone = rawCustomerPhone.replace(/\*+\s*/g, '').trim();
-  const serviceName = resolveDisplayServiceName(booking) || 'New Flawless Mink';
+  const serviceName = resolveDisplayServiceName(booking) || 'Flawless Mink';
   const actorName = actor?.name || 'Thảo Ly';
 
   let avatarRingClass = 'border-[2px] border-[#34C759]';

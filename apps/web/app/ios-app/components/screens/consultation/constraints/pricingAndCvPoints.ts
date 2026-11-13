@@ -143,20 +143,26 @@ export function resolveLashSkuPricing(
         : matSpec.code === 'IVYLIGHT'
           ? 'nhịp'
           : 'fan';
-    const actionPrefix = alwaysFullSet ? (isRetain ? 'Nối Mới (Giá Dặm)' : 'New') : isRetain ? 'Dặm' : 'New';
-    const skuName = `${actionPrefix} ${matSpec.shortLabel} ${kPrice}K (${menuDetail.countNum} ${unit})`;
+    const actionPrefix = alwaysFullSet ? (isRetain ? 'Nối Mới (Giá Dặm)' : '') : isRetain ? 'Dặm' : '';
+    const skuName = `${actionPrefix ? `${actionPrefix} ` : ''}${matSpec.shortLabel} ${kPrice}K (${menuDetail.countNum} ${unit})`;
     return { skuName, price, classPts, lashPts, fanPts, isRetain, isAlwaysFullSet: alwaysFullSet };
   }
 
   // Fallback price resolution if menuDetail not matched directly
   if (mid.includes('dưới') || mid.includes('under')) {
     const price = isRetain ? 250000 : 390000;
-    const skuName = isRetain ? 'Dặm Mi Dưới 250K' : 'New Flawless Under Mink 390K';
+    const skuName = isRetain ? 'Dặm Mi Dưới 250K' : 'Flawless Under Mink 390K';
     return { skuName, price, classPts: 5, lashPts: 17, fanPts: 0, isRetain };
   }
 
   const fallbackPrice = isRetain ? 350000 : 550000;
-  const fallbackSkuName = `${isRetain ? 'Dặm' : 'New'} ${materialId} ${Math.round(fallbackPrice / 1000)}K`;
+  const cleanMaterialLabel = materialId
+    .replace(
+      /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+      ''
+    )
+    .trim();
+  const fallbackSkuName = `${isRetain ? 'Dặm ' : ''}${cleanMaterialLabel} ${Math.round(fallbackPrice / 1000)}K`;
   return {
     skuName: fallbackSkuName,
     price: fallbackPrice,
@@ -221,7 +227,14 @@ export function resolveDisplayServiceName(booking?: {
   attributes?: { material?: string; count?: string; volume?: string; style?: string };
   customerVisits?: number;
 }): string {
-  const cleanPriceSuffix = (str: string) => str.replace(/\s*\(\s*[\d.,]+\s*đ?\s*\)/gi, '').trim();
+  const stripNewLashPrefix = (str: string) =>
+    str
+      .replace(
+        /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+        ''
+      )
+      .trim();
+  const cleanPriceSuffix = (str: string) => stripNewLashPrefix(str.replace(/\s*\(\s*[\d.,]+\s*đ?\s*\)/gi, '').trim());
   const s = String(booking?.serviceName || '').trim();
   const pkgKey = booking?.packageKey || booking?.comboLiveStatus?.packageKey;
   if (s && !s.toLowerCase().includes('any')) {
@@ -243,7 +256,7 @@ export function resolveDisplayServiceName(booking?: {
   if (sku?.skuName && !sku.skuName.toLowerCase().includes('any')) {
     return cleanPriceSuffix(sku.skuName);
   }
-  return booking?.customerVisits && booking.customerVisits > 1 ? 'New Hyperlight 550' : 'Chưa chọn mẫu mi';
+  return booking?.customerVisits && booking.customerVisits > 1 ? 'HyperLight 550' : 'Chưa chọn mẫu mi';
 }
 
 /**

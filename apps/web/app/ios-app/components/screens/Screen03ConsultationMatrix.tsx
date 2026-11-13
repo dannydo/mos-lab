@@ -55,9 +55,7 @@ export function Screen03ConsultationMatrix({
 
   return (
     <div
-      className={`flex-1 flex flex-col overflow-hidden select-none transition-colors ${
-        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'
-      }`}
+      className={`flex-1 flex flex-col overflow-hidden select-none transition-colors ${'bg-[var(--background)] text-[var(--mos-text)]'}`}
     >
       <IosNavigationBar
         title="Tư Vấn Dáng Mi"

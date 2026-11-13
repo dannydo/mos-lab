@@ -86,9 +86,7 @@ export function CheckoutVietQrModal({
             } rounded-2xl p-2.5 border space-y-1.5 text-[12px]`}
           >
             <div className="flex items-center justify-between">
-              <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-bold text-[11px]`}>
-                Nội Dung:
-              </span>
+              <span className={`text-[var(--mos-text-muted)] font-bold text-[11px]`}>Nội Dung:</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[#E11D48] font-black text-[13px] tracking-wide tabular-nums">
                   {qrTransferContent}
@@ -117,32 +115,26 @@ export function CheckoutVietQrModal({
             </div>
 
             <div className="flex items-center justify-between">
-              <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-bold text-[11px]`}>Số Tiền:</span>
+              <span className={`text-[var(--mos-text-muted)] font-bold text-[11px]`}>Số Tiền:</span>
               <span className="text-[#E11D48] font-black text-[15px] tabular-nums">
                 {finalGrandTotal.toLocaleString('vi-VN')} VNĐ
               </span>
             </div>
 
             <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-              <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium text-[11px]`}>
-                Ngân Hàng:
-              </span>
+              <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Ngân Hàng:</span>
               <span className={`font-bold ${isDark ? 'text-neutral-100' : 'text-gray-900'}`}>Vietcombank (VCB)</span>
             </div>
 
             <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-              <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium text-[11px]`}>
-                Tên Tài Khoản:
-              </span>
+              <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Tên Tài Khoản:</span>
               <span className={`font-black ${isDark ? 'text-neutral-100' : 'text-gray-900'} text-[11px] uppercase`}>
                 CÔNG TY TNHH WINGS&apos; LIFE
               </span>
             </div>
 
             <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-              <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium text-[11px]`}>
-                Số Tài Khoản:
-              </span>
+              <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Số Tài Khoản:</span>
               <div className="flex items-center gap-1.5">
                 <span
                   className={`font-black ${isDark ? 'text-neutral-100' : 'text-gray-900'} tabular-nums text-[13px]`}
@@ -209,9 +201,7 @@ export function CheckoutVietQrModal({
                   <div className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-800'} truncate`}>
                     ✓ Đã lưu ảnh bill chuyển khoản
                   </div>
-                  <div className={`text-[9.5px] ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                    Chạm vào ảnh để chụp lại
-                  </div>
+                  <div className={`text-[9.5px] text-[var(--mos-text-muted)]`}>Chạm vào ảnh để chụp lại</div>
                 </div>
                 <button
                   type="button"
@@ -243,9 +233,7 @@ export function CheckoutVietQrModal({
         </div>
 
         {/* Sticky Action Footer */}
-        <div
-          className={`p-3 ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-100'} border-t space-y-2 shrink-0`}
-        >
+        <div className={`p-3 bg-[var(--mos-surface)] border-[var(--mos-surface-border)] border-t space-y-2 shrink-0`}>
           <button
             type="button"
             onClick={onConfirmQrPaid}

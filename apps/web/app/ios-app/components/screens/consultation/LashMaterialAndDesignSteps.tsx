@@ -81,9 +81,7 @@ export function LashMaterialAndDesignSteps({
         </div>
 
         <div
-          className={`rounded-2xl p-2.5 shadow-xs border transition-colors ${
-            isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-          }`}
+          className={`rounded-2xl p-2.5 shadow-xs border transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
         >
           <div className="grid grid-cols-2 gap-2">
             {materialCatalog
@@ -176,9 +174,7 @@ export function LashMaterialAndDesignSteps({
                           </span>
                         );
                       })()}
-                      <span
-                        className={`text-[10.5px] font-bold tabular-nums ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}
-                      >
+                      <span className={`text-[10.5px] font-bold tabular-nums text-[var(--mos-text-muted)]`}>
                         từ {startingPrice}
                       </span>
                     </div>
@@ -219,9 +215,7 @@ export function LashMaterialAndDesignSteps({
         </div>
 
         <div
-          className={`rounded-2xl p-2.5 shadow-xs border transition-colors ${
-            isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-          }`}
+          className={`rounded-2xl p-2.5 shadow-xs border transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
         >
           <div
             className={`grid gap-2 ${currentMaterialSpec.allowedDesigns.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}

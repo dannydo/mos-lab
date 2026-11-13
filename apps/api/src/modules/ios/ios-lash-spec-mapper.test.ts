@@ -68,13 +68,13 @@ test('Any - Lashes temporary order for Classic 1D 70 customer never falls back t
     canViewFullPhone: true,
   });
 
-  assert.equal(mapped.serviceName, 'New Classic 1D 440');
-  assert.equal(mapped.attributes?.material, 'New Classic');
+  assert.equal(mapped.serviceName, 'Classic 1D 440');
+  assert.equal(mapped.attributes?.material, 'Classic 1D');
   assert.equal(mapped.attributes?.volume, '1D');
   assert.equal(mapped.attributes?.count, '70 sợi');
 });
 
-test('Temporary order preserves valid customerHistory and consultation override.serviceName', () => {
+test('Temporary order preserves valid customerHistory and consultation override.serviceName (stripping stale New prefixes)', () => {
   const ctx = createEmptyCustomerEnrichmentContext();
   ctx.lashHistoryMap.set(50123, [{ date: '05/09/2026', serviceName: 'New Classic 440', staffName: 'Khanh Cao' }]);
   ctx.lastVisitSpecsMap.set(50123, {
@@ -95,13 +95,24 @@ test('Temporary order preserves valid customerHistory and consultation override.
     activeStaffId: 13783,
     canViewFullPhone: true,
   });
-  assert.equal(fromHistory.serviceName, 'New Classic 440');
+  assert.equal(fromHistory.serviceName, 'Classic 440');
 
   const [fromOverride] = mapLiveOrdersToBookings({
     orders: [createBaseOrder()],
     customerContext: ctx,
     overrides: {
-      '806834': { serviceName: 'New Classic 1D 440K (70 sợi)' },
+      '806834': {
+        serviceName: 'New New Classic 1D 440K (70 sợi)',
+        attributes: {
+          material: 'New Classic 1D',
+          volume: '1D',
+          count: '70 sợi',
+          lashDesign: 'Natural',
+          curl: 'C',
+          thickness: '0.10',
+          lengthMix: '10-12',
+        },
+      },
     },
     customerAvatarMap: {},
     storeId: 6,
@@ -110,7 +121,8 @@ test('Temporary order preserves valid customerHistory and consultation override.
     activeStaffId: 13783,
     canViewFullPhone: true,
   });
-  assert.equal(fromOverride.serviceName, 'New Classic 1D 440K (70 sợi)');
+  assert.equal(fromOverride.serviceName, 'Classic 1D 440K (70 sợi)');
+  assert.equal(fromOverride.attributes?.material, 'Classic 1D');
 });
 
 test('Concrete booked SKU does not mix cross-family lastVisitSpecs attributes', () => {
@@ -140,7 +152,7 @@ test('Concrete booked SKU does not mix cross-family lastVisitSpecs attributes', 
     canViewFullPhone: true,
   });
 
-  assert.equal(mapped.serviceName, 'New Flawless Mink 770');
+  assert.equal(mapped.serviceName, 'Flawless Mink 770');
   assert.equal(mapped.attributes?.material, 'Flawless Mink');
   assert.equal(mapped.attributes?.volume, '1D');
   assert.equal(mapped.attributes?.count, '60 sợi');

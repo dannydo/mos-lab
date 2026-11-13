@@ -333,9 +333,7 @@ export function Screen07bLashProgressCleaned({
   const isDark = themeMode === 'dark';
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
-    >
+    <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       {/* 1. Header Navigation */}
       <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ảnh Before" />
 
@@ -364,9 +362,7 @@ export function Screen07bLashProgressCleaned({
 
         {/* Section title */}
         <div className="flex items-center justify-between px-1 pt-0.5">
-          <div
-            className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider`}
-          >
+          <div className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider`}>
             CHỤP ẢNH VỆ SINH NHẮM (BẮT BUỘC)
           </div>
           {!detectedRefill && (
@@ -388,7 +384,7 @@ export function Screen07bLashProgressCleaned({
 
         {/* 4. Camera Viewfinder Card with Real Capture & Photo Upload */}
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3.5 shadow-sm border space-y-3`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border space-y-3`}
         >
           <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#1C1C1E] flex flex-col items-center justify-center border border-neutral-800 shadow-inner group">
             {photoPreview ? (
@@ -432,7 +428,7 @@ export function Screen07bLashProgressCleaned({
 
           {/* Nút ngoại lệ: Khách từ chối chụp ảnh */}
           {!photoPreview && (
-            <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-neutral-100'} space-y-2`}>
+            <div className={`pt-2 border-t border-[var(--mos-surface-border)] space-y-2`}>
               <label className="flex items-center justify-between cursor-pointer">
                 <span className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
                   Khách từ chối chụp ảnh (Có lý do)

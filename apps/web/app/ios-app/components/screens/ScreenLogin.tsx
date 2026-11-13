@@ -27,17 +27,17 @@ export function ScreenLogin({ onLoginSuccess }: ScreenLoginProps) {
   }> = [
     {
       role: 'CC',
-      name: 'Thùy Trang (CC)',
+      name: 'Diễm Hương (CC)',
       phone: '0908123456',
       store: 'Chi Nhánh Đề Thám, Q.1',
-      roleLabel: 'Tư Vấn Viên',
+      roleLabel: 'Tư Vấn Viên (CC)',
     },
     {
       role: 'CV',
-      name: 'Diễm Hương (CVL)',
+      name: 'Thảo Ly (CVL)',
       displayName: (
         <span className="inline-flex items-center gap-0.5">
-          Diễm Hương (<CvFeather1Badge />)
+          Thảo Ly (<CvFeather1Badge />)
         </span>
       ),
       phone: '0937554430',

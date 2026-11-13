@@ -161,6 +161,8 @@ describe('Dual Combo Persistence & Hydration (Consultation -> Upsell -> Checkout
 
     // Render Screen14ThermalReceiptDone
     render(<Screen14ThermalReceiptDone booking={checkoutBooking} onFinishOrder={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: 'Chi Tiết Hoá Đơn' })).toBeInTheDocument();
+    expect(screen.queryByText(/Ghi Nhận Thưởng/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Combo 7 tặng 3 · HyperLight 4X 770/i)).toBeInTheDocument();
     expect(screen.getByText(/Combo 4 tặng 1 · Mi Dưới/i)).toBeInTheDocument();
     expect(screen.getByText(/Còn 4 buổi sau ca hôm nay/i)).toBeInTheDocument();

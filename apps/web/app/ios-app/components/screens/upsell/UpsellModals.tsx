@@ -40,9 +40,7 @@ export function UpsellModals({
             className={`relative ${isDark ? 'bg-[#1C1C1E] text-white border-neutral-800' : 'bg-white border-neutral-200'} rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto z-10 border`}
           >
             {/* Header: Title on Left, Close [✕] on Right */}
-            <div
-              className={`flex items-start justify-between gap-3 pb-3 border-b ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
-            >
+            <div className={`flex items-start justify-between gap-3 pb-3 border-b border-[var(--mos-surface-border)]`}>
               <div>
                 <div
                   className={`flex items-center gap-1.5 ${isDark ? 'text-amber-300' : 'text-amber-900'} font-extrabold text-[15px]`}
@@ -50,7 +48,7 @@ export function UpsellModals({
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   <h3>Thang Thưởng Dưỡng Mi Yeppeum Korea</h3>
                 </div>
-                <p className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} mt-0.5`}>
+                <p className={`text-[11px] text-[var(--mos-text-muted)] mt-0.5`}>
                   Quy tắc Điều răn CV-002 · Bán đúng giá niêm yết hoặc chọn mức ưu đãi áp dụng
                 </p>
               </div>
@@ -85,9 +83,7 @@ export function UpsellModals({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[14px] font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {t.label}
-                        </span>
+                        <span className={`text-[14px] font-black text-[var(--mos-text)]`}>{t.label}</span>
                         {isSelected && (
                           <span className="bg-[#FF9500] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md">
                             Đang chọn
@@ -154,9 +150,7 @@ export function UpsellModals({
                 <Lock className="w-6 h-6 text-amber-500" />
               </div>
               <div>
-                <h3 className={`text-[16px] font-black ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-                  Đặc Quyền Gói Welcome (2 Tặng 1)
-                </h3>
+                <h3 className={`text-[16px] font-black text-[var(--mos-text)]`}>Đặc Quyền Gói Welcome (2 Tặng 1)</h3>
                 <p
                   className={`text-[11.5px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-700'} mt-0.5 inline-flex items-center justify-center gap-1`}
                 >

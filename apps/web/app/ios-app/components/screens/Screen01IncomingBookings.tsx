@@ -147,6 +147,7 @@ export function Screen01IncomingBookings({
 
   const actorName = actor?.name || 'Thảo Ly';
   const isCvll = role === 'CVLL';
+  const canMultiCheckIn = Boolean(isAdmin || role === 'CC' || role === 'CVLL' || role === 'STORE');
 
   return (
     <div className="flex-1 flex flex-col bg-black text-white overflow-hidden select-none">
@@ -226,8 +227,8 @@ export function Screen01IncomingBookings({
           className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 hover:border-amber-400/50 active:scale-95 transition-all cursor-pointer shadow-xs"
           title="Mở hồ sơ & chuyển vai trò"
         >
-          <span className="text-[10.5px] font-black text-amber-400">
-            {isCvll ? <CvFeather2Badge /> : <CvFeather1Badge />}
+          <span className="text-[10.5px] font-black text-amber-400 inline-flex items-center leading-none">
+            {role === 'CVLL' ? <CvFeather2Badge /> : role === 'CVL' ? <CvFeather1Badge /> : role}
           </span>
           <div className="w-6 h-6 rounded-full overflow-hidden border border-amber-400/80 bg-neutral-800 shrink-0">
             <img
@@ -266,7 +267,7 @@ export function Screen01IncomingBookings({
               }`}
             >
               <span>Lọc</span>
-              <CvFeather1Badge />
+              {role === 'CVLL' ? <CvFeather2Badge /> : <span>{role}</span>}
               <span>({actor?.name || 'Thảo Ly'})</span>
             </button>
           </div>
@@ -366,6 +367,7 @@ export function Screen01IncomingBookings({
               dateOffset={dateOffset}
               now={now}
               isCvll={isCvll}
+              canMultiCheckIn={canMultiCheckIn}
               isAdmin={isAdmin}
               actor={actor}
               onSelectBooking={onSelectBooking}

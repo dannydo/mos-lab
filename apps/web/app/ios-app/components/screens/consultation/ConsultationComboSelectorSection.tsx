@@ -102,7 +102,7 @@ export function ConsultationComboSelectorSection({
 
       {/* NÚT MUA THÊM GÓI COMBO — iOS Inset Grouped Cell */}
       {!selectedNewComboPkg && !selectedUnderComboPkg && (
-        <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-neutral-100'}`}>
+        <div className={`pt-2 border-t border-[var(--mos-surface-border)]`}>
           <button
             type="button"
             onClick={() => handleOpenComboModal('upper')}
@@ -187,7 +187,7 @@ export function ConsultationComboSelectorSection({
                     Combo {selectedNewComboPkg.ruleName}
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0 font-variant-numeric tabular-nums">
-                    <span className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                    <span className={`font-black text-[13px] text-[var(--mos-text)]`}>
                       {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')}đ
                     </span>
                     <button
@@ -328,7 +328,7 @@ export function ConsultationComboSelectorSection({
                     Combo {selectedUnderComboPkg.ruleName} · Mi Dưới
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0 font-variant-numeric tabular-nums">
-                    <span className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                    <span className={`font-black text-[13px] text-[var(--mos-text)]`}>
                       {selectedUnderComboPkg.comboPrice.toLocaleString('vi-VN')}đ
                     </span>
                     <button

@@ -297,6 +297,45 @@ export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
   }
 }
 
+function sanitizeProgressSnapshot<T extends Record<string, unknown>>(snap: T): T {
+  const draft = snap?.consultationDraft as Record<string, unknown> | undefined;
+  if (!draft || typeof draft !== 'object') return snap;
+  const attrs = draft.attributes as Record<string, unknown> | undefined;
+  const stripNew = (val: unknown) =>
+    typeof val === 'string'
+      ? val
+          .replace(
+            /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+            ''
+          )
+          .trim()
+      : val;
+  let changed = false;
+  let nextDraft = draft;
+  if (typeof draft.serviceName === 'string') {
+    const cleaned = stripNew(draft.serviceName) as string;
+    if (cleaned !== draft.serviceName) {
+      nextDraft = { ...nextDraft, serviceName: cleaned };
+      changed = true;
+    }
+  }
+  if (attrs && typeof attrs.material === 'string') {
+    let cleanedMat = stripNew(attrs.material) as string;
+    if (/^Classic$/i.test(cleanedMat)) cleanedMat = 'Classic 1D';
+    if (cleanedMat !== attrs.material) {
+      nextDraft = { ...nextDraft, attributes: { ...attrs, material: cleanedMat } };
+      changed = true;
+    }
+  }
+  if (typeof snap.serviceName === 'string') {
+    const cleanedTop = stripNew(snap.serviceName) as string;
+    if (cleanedTop !== snap.serviceName) {
+      return { ...snap, serviceName: cleanedTop, ...(changed ? { consultationDraft: nextDraft } : {}) };
+    }
+  }
+  return changed ? { ...snap, consultationDraft: nextDraft } : snap;
+}
+
 /**
  * Đọc snapshot tiến độ ca làm từ RAM cache hoặc local storage
  */
@@ -304,11 +343,11 @@ export function getLocalProgressSnapshot(bookingId: number) {
   if (typeof window === 'undefined' || !bookingId) return null;
   // Ưu tiên đọc từ RAM cache trước
   const inMem = progressMemoryCache.get(bookingId);
-  if (inMem) return inMem;
+  if (inMem) return sanitizeProgressSnapshot(inMem);
   try {
     const raw = window.localStorage.getItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`);
     if (raw) {
-      const parsed = JSON.parse(raw);
+      const parsed = sanitizeProgressSnapshot(JSON.parse(raw));
       if (parsed.beforePhotoUrl === '[persisted_in_idb]') delete parsed.beforePhotoUrl;
       if (parsed.cleanedPhotoUrl === '[persisted_in_idb]') delete parsed.cleanedPhotoUrl;
       if (parsed.afterPhotoUrl === '[persisted_in_idb]') delete parsed.afterPhotoUrl;
@@ -329,10 +368,10 @@ export async function getLocalProgressSnapshotAsync(bookingId: number) {
   try {
     const idbSnap = await getFromIndexedDb(`${PROGRESS_STORAGE_PREFIX}${bookingId}`);
     if (idbSnap) {
-      const merged = {
+      const merged = sanitizeProgressSnapshot({
         ...memOrLs,
         ...idbSnap,
-      };
+      });
       progressMemoryCache.set(bookingId, merged);
       return merged;
     }

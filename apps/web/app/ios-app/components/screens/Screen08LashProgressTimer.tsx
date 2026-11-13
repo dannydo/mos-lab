@@ -197,9 +197,7 @@ export function Screen08LashProgressTimer({
   const isDark = themeMode === 'dark';
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
-    >
+    <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       {/* 1. Header Navigation: Bỏ thông tin Giường và Online */}
       <IosNavigationBar
         title="Tiến Trình Nối Mi"
@@ -270,7 +268,7 @@ export function Screen08LashProgressTimer({
         {/* Big Circular Timer (Dinamically colored by speed / countdown state) */}
         <div className="flex flex-col justify-center items-center my-1">
           <div
-            className={`w-[250px] h-[250px] rounded-full border-[7px] ${speedEvaluation.ringColor} ${isDark ? 'bg-[#1C1C1E]' : 'bg-white'} flex flex-col items-center justify-center shadow-xl transition-all duration-300 relative`}
+            className={`w-[250px] h-[250px] rounded-full border-[7px] ${speedEvaluation.ringColor} bg-[var(--mos-surface)] flex flex-col items-center justify-center shadow-xl transition-all duration-300 relative`}
           >
             {/* Speed Pill on top of clock */}
             <span
@@ -305,7 +303,7 @@ export function Screen08LashProgressTimer({
 
             {/* Sub info: Dual indicator */}
             <div
-              className={`flex items-center gap-1 mt-1 text-[11px] font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'} tabular-nums`}
+              className={`flex items-center gap-1 mt-1 text-[11px] font-mono text-[var(--mos-text-muted)] tabular-nums`}
             >
               <span>Đã làm: {formatTime(seconds)}</span>
               <span>/</span>
@@ -333,7 +331,7 @@ export function Screen08LashProgressTimer({
               <Zap className="w-3.5 h-3.5" />
               <span>{speedEvaluation.title}</span>
             </span>
-            <span className={`text-[11px] font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'} tabular-nums`}>
+            <span className={`text-[11px] font-mono text-[var(--mos-text-muted)] tabular-nums`}>
               Tiến độ {progressPercent}%
             </span>
           </div>
@@ -370,12 +368,12 @@ export function Screen08LashProgressTimer({
 
         {/* Progress Card (Lash Specs) */}
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3.5 shadow-sm border space-y-2 mx-1`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border space-y-2 mx-1`}
         >
           <div className="flex items-center justify-between text-[13.5px]">
-            <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium`}>Dịch vụ đang làm</span>
+            <span className={`text-[var(--mos-text-muted)] font-medium`}>Dịch vụ đang làm</span>
             <div className="flex items-center gap-2">
-              <span className={`${isDark ? 'text-white' : 'text-black'} font-extrabold`}>{displayServiceName}</span>
+              <span className={`text-[var(--mos-text)] font-extrabold`}>{displayServiceName}</span>
               {onEditService && (
                 <button
                   type="button"
@@ -391,7 +389,7 @@ export function Screen08LashProgressTimer({
           </div>
 
           <div className="space-y-1 text-[11.5px]">
-            <div className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+            <div className={`flex items-center justify-between text-[var(--mos-text-muted)]`}>
               <span>Mi trên:</span>
               <span className={`font-bold ${isDark ? 'text-neutral-200' : 'text-gray-900'}`}>
                 {[

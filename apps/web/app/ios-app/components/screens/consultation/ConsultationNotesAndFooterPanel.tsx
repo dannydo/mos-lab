@@ -68,13 +68,11 @@ export function ConsultationNotesAndFooterPanel({
             isDark ? 'text-neutral-400' : 'text-gray-600'
           }`}
         >
-          <FileText className={`w-3.5 h-3.5 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`} />
+          <FileText className={`w-3.5 h-3.5 text-[var(--mos-text-muted)]`} />
           <span>GHI CHÚ KỸ THUẬT & CAM KẾT VỚI KHÁCH</span>
         </div>
         <div
-          className={`rounded-2xl p-3 shadow-xs border ${
-            isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-          }`}
+          className={`rounded-2xl p-3 shadow-xs border ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
         >
           <textarea
             value={notes}
@@ -159,9 +157,7 @@ export function ConsultationNotesAndFooterPanel({
         <>
           {/* BÁO GIÁ DỊCH VỤ GỌN GÀNG & DỄ HIỂU */}
           <div
-            className={`rounded-2xl p-3.5 shadow-xs border space-y-2.5 ${
-              isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-            }`}
+            className={`rounded-2xl p-3.5 shadow-xs border space-y-2.5 ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -172,9 +168,7 @@ export function ConsultationNotesAndFooterPanel({
                 >
                   Báo giá dịch vụ
                 </div>
-                <div
-                  className={`text-[14.5px] font-black leading-snug mt-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                >
+                <div className={`text-[14.5px] font-black leading-snug mt-0.5 text-[var(--mos-text)]`}>
                   {cleanServiceName}
                 </div>
                 <div
@@ -200,9 +194,7 @@ export function ConsultationNotesAndFooterPanel({
             </div>
 
             {(livePricingAndCvPoints.upgradePrice > 0 || hasUnderMink) && (
-              <div
-                className={`pt-2 border-t space-y-1 text-[11px] ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
-              >
+              <div className={`pt-2 border-t space-y-1 text-[11px] border-[var(--mos-surface-border)]`}>
                 {livePricingAndCvPoints.upgradePrice > 0 && (
                   <div className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
                     <span>Phụ thu nâng cấp:</span>
@@ -231,7 +223,7 @@ export function ConsultationNotesAndFooterPanel({
                 isDark ? 'border-neutral-800' : 'border-gray-100'
               }`}
             >
-              <span className={`font-medium ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Vòng xoay:</span>
+              <span className={`font-medium text-[var(--mos-text-muted)]`}>Vòng xoay:</span>
               <span
                 className={`px-2 py-0.5 rounded-full border font-bold tabular-nums text-[11px] ${
                   isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200'
@@ -254,9 +246,7 @@ export function ConsultationNotesAndFooterPanel({
                   <CvFeather2Badge />
                   <span className={isDark ? 'text-amber-300' : 'text-amber-900'}>CHẾ ĐỘ ĐIỀU PHỐI CA SAU TƯ VẤN:</span>
                 </span>
-                <span className={`text-[10px] font-semibold ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                  Check-in +10% Tip
-                </span>
+                <span className={`text-[10px] font-semibold text-[var(--mos-text-muted)]`}>Check-in +10% Tip</span>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <button

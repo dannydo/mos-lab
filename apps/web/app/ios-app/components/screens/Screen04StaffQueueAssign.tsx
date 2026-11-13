@@ -111,9 +111,7 @@ export function Screen04StaffQueueAssign({ booking, currentBranch, onBack, onAss
 
   return (
     <div
-      className={`flex-1 flex flex-col ${
-        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'
-      } overflow-y-auto select-none`}
+      className={`flex-1 flex flex-col ${'bg-[var(--background)] text-[var(--mos-text)]'} overflow-y-auto select-none`}
     >
       <IosNavigationBar
         title="Assign Specialist"

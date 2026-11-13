@@ -157,7 +157,7 @@ export function ScreenCvPaystub({
   }, [staffStats, myCompletedBookings, actor, isDemoMode]);
 
   return (
-    <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
+    <div className={`flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)]`}>
       <IosNavigationBar
         title="Thu Nhập Tạm Tính (Live Paystub)"
         leftAction={onBack ? { label: 'Quay lại', onClick: onBack } : undefined}
@@ -230,15 +230,13 @@ export function ScreenCvPaystub({
                       <Icon className={`w-5 h-5 ${item.color} stroke-[2]`} />
                     </div>
                     <div>
-                      <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>
-                        {item.title}
-                      </div>
+                      <div className={`text-xs font-bold text-[var(--mos-text)]`}>{item.title}</div>
                       <div className="text-[11px] text-[#8E8E93] mt-0.5 tabular-nums">{item.desc}</div>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <div className={`text-sm font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'} tabular-nums`}>
+                    <div className={`text-sm font-bold text-[var(--mos-text)] tabular-nums`}>
                       {new Intl.NumberFormat('vi-VN').format(item.amount)}đ
                     </div>
                   </div>
@@ -270,9 +268,7 @@ export function ScreenCvPaystub({
               liveStats.recentTippedOrders.map((tip, idx) => (
                 <div key={idx} className="p-3 flex items-center justify-between">
                   <div>
-                    <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>
-                      {tip.customer}
-                    </div>
+                    <div className={`text-xs font-bold text-[var(--mos-text)]`}>{tip.customer}</div>
                     <div className="text-[11px] text-[#8E8E93] tabular-nums">
                       {tip.service} · {tip.time}
                     </div>

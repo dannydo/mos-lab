@@ -113,10 +113,8 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
         <div className={`w-12 h-1 ${isDark ? 'bg-neutral-700' : 'bg-gray-300'} rounded-full mx-auto`} />
 
         <div className="text-center">
-          <h2 className={`text-[17px] font-black ${isDark ? 'text-white' : 'text-black'}`}>
-            Ghi Nhận Tiền Tip & Tổng Kết Thưởng
-          </h2>
-          <div className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} mt-0.5 font-medium`}>
+          <h2 className={`text-[17px] font-black text-[var(--mos-text)]`}>Ghi Nhận Tiền Tip & Tổng Kết Thưởng</h2>
+          <div className={`text-[12px] text-[var(--mos-text-muted)] mt-0.5 font-medium`}>
             Khách hàng: {booking?.customerName || 'Khách hàng'} · {booking?.orderNumber || `#BK-${booking?.id || ''}`}
           </div>
         </div>
@@ -190,7 +188,7 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
                 1. Chuyên Viên làm mi ·{' '}
                 <strong className={isDark ? 'text-white' : 'text-black'}>{assignedStaffName}</strong>:
               </span>
-              <span className={`font-bold ${isDark ? 'text-white' : 'text-black'} tabular-nums`}>
+              <span className={`font-bold text-[var(--mos-text)] tabular-nums`}>
                 {techShare70.toLocaleString('vi-VN')} đ
               </span>
             </div>
@@ -212,7 +210,7 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
                 +{checkOutShare10.toLocaleString('vi-VN')} đ
               </span>
             </div>
-            <div className={`flex justify-between items-center ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+            <div className={`flex justify-between items-center text-[var(--mos-text-muted)]`}>
               <span>4. Quỹ chung / CS:</span>
               <span className="font-semibold tabular-nums">{fundShare10.toLocaleString('vi-VN')} đ</span>
             </div>
@@ -248,14 +246,14 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
             <span className={`text-[13px] font-semibold ${isDark ? 'text-neutral-200' : 'text-gray-700'} block`}>
               Tổng thanh toán sau tip:
             </span>
-            <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium tabular-nums`}>
+            <span className={`text-[10px] text-[var(--mos-text-muted)] font-medium tabular-nums`}>
               Đã bao gồm 8% thuế VAT
               {diamondDiscountAmount > 0 ? ` · Đã cấn trừ -${diamondDiscountAmount.toLocaleString('vi-VN')}đ 💎` : ''}
             </span>
           </div>
           <span
             data-testid="checkout-tip-grand-total"
-            className={`text-[19px] font-black ${isDark ? 'text-white' : 'text-black'} tabular-nums`}
+            className={`text-[19px] font-black text-[var(--mos-text)] tabular-nums`}
           >
             {grandTotalWithVatAndTip.toLocaleString('vi-VN')} đ
           </span>

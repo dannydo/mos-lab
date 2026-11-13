@@ -271,7 +271,7 @@ export function RetainLashCounterSection({
             }`}
           >
             <span>Rụng ~{dailyShedRate} sợi/ngày</span>
-            <span className={`text-[9.5px] font-normal opacity-70 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+            <span className={`text-[9.5px] font-normal opacity-70 text-[var(--mos-text-muted)]`}>
               ({daysSinceLastVisit}N)
             </span>
           </span>

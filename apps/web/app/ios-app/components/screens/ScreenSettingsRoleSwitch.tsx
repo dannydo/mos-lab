@@ -118,8 +118,8 @@ export function ScreenSettingsRoleSwitch({
       storePhone: '1800 8154',
       dateStr: new Date().toLocaleString('vi-VN'),
       services: [
-        { name: 'New Flawless Mink', price: 770000, qty: 1 },
-        { name: 'Combo 5 lần New Flawless', price: 4500000, qty: 1 },
+        { name: 'Flawless Mink', price: 770000, qty: 1 },
+        { name: 'Combo 5 lần Flawless Mink', price: 4500000, qty: 1 },
         { name: 'Dưỡng Mi Yeppeum Korea', price: 1100000, qty: 1 },
       ],
       subtotal: 6370000,
@@ -136,7 +136,7 @@ export function ScreenSettingsRoleSwitch({
   };
 
   return (
-    <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
+    <div className={`flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)]`}>
       <IosNavigationBar title="Cài Đặt & Chuyển Vai Trò" leftAction={{ label: 'Xong', onClick: onBack }} />
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
@@ -185,7 +185,7 @@ export function ScreenSettingsRoleSwitch({
                       <Icon className="w-5 h-5 stroke-[2]" />
                     </div>
                     <div>
-                      <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>{r.name}</div>
+                      <div className={`text-xs font-bold text-[var(--mos-text)]`}>{r.name}</div>
                       <div className="text-[11px] text-[#8E8E93] mt-0.5 leading-snug">{r.desc}</div>
                     </div>
                   </div>
@@ -209,9 +209,7 @@ export function ScreenSettingsRoleSwitch({
           </h3>
 
           <div
-            className={`${
-              isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-[#E5E5EA]'
-            } rounded-xl border p-3.5 space-y-3 shadow-xs`}
+            className={`${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'} rounded-xl border p-3.5 space-y-3 shadow-xs`}
           >
             <div>
               <label className="text-xs font-medium text-[#8E8E93] block mb-1">Phương thức kết nối</label>
@@ -303,9 +301,7 @@ export function ScreenSettingsRoleSwitch({
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Database className="w-4 h-4 text-[#FF9500]" />
-                <span className={`font-medium ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>
-                  Chia Tip Tư Vấn (In / Out)
-                </span>
+                <span className={`font-medium text-[var(--mos-text)]`}>Chia Tip Tư Vấn (In / Out)</span>
               </div>
               <span className="text-emerald-500 font-bold">Theo ca trực Check-in / Out</span>
             </div>
@@ -313,9 +309,7 @@ export function ScreenSettingsRoleSwitch({
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Smartphone className="w-4 h-4 text-blue-500" />
-                <span className={`font-medium ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>
-                  Thưởng Combo & Dưỡng mi
-                </span>
+                <span className={`font-medium text-[var(--mos-text)]`}>Thưởng Combo & Dưỡng mi</span>
               </div>
               <span className="text-[#FF9500] font-bold">Ai Checkout người đó nhận</span>
             </div>
@@ -323,7 +317,7 @@ export function ScreenSettingsRoleSwitch({
             <div className="p-3.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-purple-500" />
-                <span className={`font-medium ${isDark ? 'text-white' : 'text-[#1C1C1E]'} flex items-center gap-1`}>
+                <span className={`font-medium text-[var(--mos-text)] flex items-center gap-1`}>
                   <span>Thang thưởng</span>
                   <CvFeather1Badge />
                   <span>(Khác CC)</span>

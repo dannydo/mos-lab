@@ -16,7 +16,7 @@ export function getFallbackLashHistory(assignedStaff: string): LashHistoryItem[]
     {
       orderId: 338846,
       date: '19/10/2026',
-      serviceName: 'New Flawless Mink 880',
+      serviceName: 'Flawless Mink 880',
       staffName: assignedStaff,
       rating: 5.0,
       review: 'Khách khen nối rất êm, mi giữ form bền đẹp.',
@@ -77,7 +77,7 @@ export function getFallbackLashHistory(assignedStaff: string): LashHistoryItem[]
     {
       orderId: 338845,
       date: '02/10/2026',
-      serviceName: 'Dặm New Flawless',
+      serviceName: 'Dặm Flawless Mink',
       staffName: assignedStaff,
       rating: 5.0,
       review: 'Dáng tự nhiên hài hòa khuôn mặt.',

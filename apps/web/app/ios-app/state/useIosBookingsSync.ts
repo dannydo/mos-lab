@@ -259,8 +259,8 @@ export function useIosBookingsSync({
           // Đồng bộ đa thiết bị tức thì (Real-time Cross-Device Session Sync)
           const serverActiveServicing = data.bookings
             ?.filter((b: BookingItem) => {
+              if (!['CVL', 'CVLL', 'CV'].includes(role)) return false;
               const belongsToActor =
-                !['CVL', 'CVLL', 'CV'].includes(role) ||
                 b.assignedStaffId === actor.staffId ||
                 b.checkInStaffId === actor.staffId ||
                 b.checkOutStaffId === actor.staffId;

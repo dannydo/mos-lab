@@ -284,9 +284,7 @@ export function ComboCatalogConsultModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs select-none overflow-hidden animate-in fade-in duration-200">
       <div
-        className={`w-full max-w-[430px] h-full max-h-[100dvh] flex flex-col relative overflow-hidden shadow-2xl ${
-          isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'
-        }`}
+        className={`w-full max-w-[430px] h-full max-h-[100dvh] flex flex-col relative overflow-hidden shadow-2xl ${'bg-[var(--background)] text-[var(--mos-text)]'}`}
       >
         {/* iOS Minimal Navigation Bar */}
         <div className="bg-[#1C1C1E] text-white px-3.5 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2.5 flex items-center justify-between border-b border-white/10 shrink-0">

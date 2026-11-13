@@ -143,9 +143,7 @@ export function UpsellComboWalletAccountingCard({
                 </div>
               )}
               {showStaffRewards && (
-                <div
-                  className={`flex justify-between items-center pt-1 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
-                >
+                <div className={`flex justify-between items-center pt-1 border-t border-[var(--mos-surface-border)]`}>
                   <span className={`${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                     Thưởng chốt cho {actorName}:
                   </span>

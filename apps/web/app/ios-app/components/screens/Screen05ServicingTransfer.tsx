@@ -37,9 +37,7 @@ export function Screen05ServicingTransfer({
 
   return (
     <div
-      className={`flex-1 flex flex-col ${
-        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'
-      } overflow-y-auto select-none`}
+      className={`flex-1 flex flex-col ${'bg-[var(--background)] text-[var(--mos-text)]'} overflow-y-auto select-none`}
     >
       {/* Top Navigation Bar on Black */}
       <header className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-2.5 px-4 flex items-center justify-between bg-black border-b border-neutral-900 select-none z-40 relative min-h-[50px] shrink-0">
@@ -130,15 +128,11 @@ export function Screen05ServicingTransfer({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className={`text-[15px] font-bold ${isDark ? 'text-white' : 'text-black'} truncate`}>
-                      {rowName}
-                    </span>
+                    <span className={`text-[15px] font-bold text-[var(--mos-text)] truncate`}>{rowName}</span>
                     <span className="text-[13px] font-bold text-[#FF3B30] tabular-nums">{rowTime}</span>
                   </div>
                   {rowPhone && (
-                    <div
-                      className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-normal tabular-nums`}
-                    >
+                    <div className={`text-[12px] text-[var(--mos-text-muted)] font-normal tabular-nums`}>
                       {rowPhone}
                     </div>
                   )}

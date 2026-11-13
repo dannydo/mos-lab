@@ -64,9 +64,7 @@ export function LashTechnicalSpecsStep({
           </span>
           <span>BƯỚC 3: THÔNG SỐ KỸ THUẬT</span>
         </div>
-        <span className={`text-[10px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-          {currentMaterialSpec.shortLabel}
-        </span>
+        <span className={`text-[10px] font-bold text-[var(--mos-text-muted)]`}>{currentMaterialSpec.shortLabel}</span>
       </div>
 
       {/* Thẻ ghim thông số mi thật để đối chiếu an toàn */}
@@ -81,7 +79,7 @@ export function LashTechnicalSpecsStep({
           <Activity className="w-3.5 h-3.5 text-blue-500 shrink-0" />
           <span className={`font-medium ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>Mi thật:</span>
           {naturalLengthLabel && naturalThicknessLabel ? (
-            <strong className={`font-extrabold truncate tabular-nums ${isDark ? 'text-white' : 'text-black'}`}>
+            <strong className={`font-extrabold truncate tabular-nums text-[var(--mos-text)]`}>
               {naturalCountLabel ? `${naturalCountLabel} sợi · ` : ''}
               {naturalLengthLabel}mm · {naturalThicknessLabel}mm
             </strong>
@@ -111,15 +109,11 @@ export function LashTechnicalSpecsStep({
 
       {/* 3.1 ĐỘ CONG CỦA CHẤT LIỆU (CURL) */}
       <div
-        className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${
-          isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-        }`}
+        className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
-              3.1 Độ Cong
-            </span>
+            <span className={`text-[11px] font-extrabold uppercase text-[var(--mos-text)]`}>3.1 Độ Cong</span>
             <button
               type="button"
               onClick={() => setInfoModalKey('CURL')}
@@ -240,15 +234,11 @@ export function LashTechnicalSpecsStep({
 
       {/* 3.2 ĐỘ DÀY CỦA CHẤT LIỆU (THICKNESS) */}
       <div
-        className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${
-          isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-        }`}
+        className={`rounded-2xl p-2.5 shadow-xs border space-y-2 transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
-              3.2 Độ Dày Sợi
-            </span>
+            <span className={`text-[11px] font-extrabold uppercase text-[var(--mos-text)]`}>3.2 Độ Dày Sợi</span>
             <button
               type="button"
               onClick={() => setInfoModalKey('THICKNESS')}
@@ -314,15 +304,11 @@ export function LashTechnicalSpecsStep({
 
       {/* 3.3 CHIỀU DÀI & BẢNG NÚT SIZE TỰ CHỌN TỐI ĐA 5 SIZE */}
       <div
-        className={`rounded-2xl p-2.5 shadow-xs border space-y-2.5 ${
-          isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-        }`}
+        className={`rounded-2xl p-2.5 shadow-xs border space-y-2.5 ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
-              3.3 Chiều Dài
-            </span>
+            <span className={`text-[11px] font-extrabold uppercase text-[var(--mos-text)]`}>3.3 Chiều Dài</span>
             <button
               type="button"
               onClick={() => setInfoModalKey('LENGTH')}

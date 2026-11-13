@@ -65,12 +65,10 @@ export function LashVolumeColorAndUnderMinkSection({
     <>
       {/* 3.4 KỸ THUẬT FAN / SỐ SỢI & MÀU SẮC CỦA CHẤT LIỆU */}
       <div
-        className={`rounded-2xl p-3 shadow-xs border space-y-2.5 transition-colors ${
-          isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-        }`}
+        className={`rounded-2xl p-3 shadow-xs border space-y-2.5 transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
       >
         <div className="flex items-center justify-between">
-          <span className={`text-[11px] font-extrabold uppercase ${isDark ? 'text-white' : 'text-black'}`}>
+          <span className={`text-[11px] font-extrabold uppercase text-[var(--mos-text)]`}>
             3.4 Kỹ Thuật Volume · Mật Độ & Màu Sắc
           </span>
           <span className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
@@ -80,9 +78,7 @@ export function LashVolumeColorAndUnderMinkSection({
 
         {currentMaterialSpec.allowedVolumes.length > 1 && (
           <div>
-            <div className={`text-[10px] font-semibold mb-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-              Kỹ thuật fan cho phép:
-            </div>
+            <div className={`text-[10px] font-semibold mb-1 text-[var(--mos-text-muted)]`}>Kỹ thuật fan cho phép:</div>
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               {currentMaterialSpec.allowedVolumes.map((vol) => (
                 <button
@@ -105,7 +101,7 @@ export function LashVolumeColorAndUnderMinkSection({
         )}
 
         {/* Mật độ sợi / fan hoàn thành theo Menu Wings Lashes */}
-        <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+        <div className={`pt-2 border-t border-[var(--mos-surface-border)]`}>
           <div className="flex items-center justify-between mb-2">
             <span className={`text-[10.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
               BẬC SỐ LƯỢNG SỢI / FAN (MENU WINGS):
@@ -255,11 +251,9 @@ export function LashVolumeColorAndUnderMinkSection({
         </div>
 
         {/* Màu sắc sợi mi */}
-        <div className={`pt-1.5 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+        <div className={`pt-1.5 border-t border-[var(--mos-surface-border)]`}>
           <div className="flex items-center justify-between mb-1.5">
-            <div className={`text-[10px] font-semibold ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-              Màu sắc sợi mi:
-            </div>
+            <div className={`text-[10px] font-semibold text-[var(--mos-text-muted)]`}>Màu sắc sợi mi:</div>
             <span
               className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full border ${
                 isDark

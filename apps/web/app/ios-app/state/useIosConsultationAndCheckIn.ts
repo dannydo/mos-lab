@@ -233,7 +233,7 @@ export function useIosConsultationAndCheckIn({
           const nextUnderCombo = selectedUnderCombo !== undefined ? selectedUnderCombo : b.selectedUnderCombo || null;
           const nextServiceName =
             skuPricing?.skuName ||
-            (b.serviceName && !b.serviceName.toLowerCase().includes('any') ? b.serviceName : 'New Hyperlight 550');
+            (b.serviceName && !b.serviceName.toLowerCase().includes('any') ? b.serviceName : 'HyperLight 550');
           const nextServicePrice = skuPricing?.skuPrice || b.servicePrice;
           const nextUpgradePrice = skuPricing?.upgradePrice ?? b.upgradePrice ?? 0;
           const originalBookedServiceName =

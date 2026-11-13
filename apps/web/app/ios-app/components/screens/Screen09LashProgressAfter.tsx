@@ -247,9 +247,7 @@ export function Screen09LashProgressAfter({
   const isDark = themeMode === 'dark';
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
-    >
+    <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       {/* 1. Header Navigation */}
       <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Giờ Phục Vụ" />
 
@@ -306,9 +304,7 @@ export function Screen09LashProgressAfter({
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
         {/* KHỐI 1: CHỤP ẢNH AFTER (ƯU TIÊN LÊN TRÊN CÙNG TO RÕ THEO YÊU CẦU) */}
-        <div
-          className={`${isDark ? 'bg-[#1C1C1E]' : 'bg-white'} rounded-2xl p-3.5 shadow-sm border-2 border-[#22C55E] space-y-2.5`}
-        >
+        <div className={`bg-[var(--mos-surface)] rounded-2xl p-3.5 shadow-sm border-2 border-[#22C55E] space-y-2.5`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-black shadow-xs">
@@ -376,7 +372,7 @@ export function Screen09LashProgressAfter({
 
           {/* Nút ngoại lệ: Khách từ chối chụp ảnh */}
           {!afterPhotoPreview && (
-            <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-neutral-100'} space-y-2`}>
+            <div className={`pt-2 border-t border-[var(--mos-surface-border)] space-y-2`}>
               <label className="flex items-center justify-between cursor-pointer">
                 <span className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
                   Khách từ chối chụp ảnh (Có lý do)
@@ -414,12 +410,10 @@ export function Screen09LashProgressAfter({
 
         {/* KHỐI 2: ĐỐI CHIẾU NHANH VỚI 2 ẢNH TRƯỚC (THU GỌN THÀNH 2 THUMBNAIL PHÍA DƯỚI) */}
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3 shadow-sm border space-y-2`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border space-y-2`}
         >
           <div className="flex items-center justify-between px-0.5">
-            <span
-              className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider`}
-            >
+            <span className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider`}>
               ĐỐI CHIẾU NHANH VỚI ẢNH TRƯỚC ĐÓ
             </span>
             <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-gray-400'} font-medium`}>
@@ -484,12 +478,10 @@ export function Screen09LashProgressAfter({
 
         {/* KHỐI 3: BÁO CÁO THỜI GIAN CA LÀM & KHEN KHÍCH LỆ TINH THẦN (KHÔNG THƯỞNG ĐIỂM) */}
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border space-y-2.5`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border space-y-2.5`}
         >
           {/* Header Báo Cáo Thời Gian */}
-          <div
-            className={`flex items-center justify-between pb-1 border-b ${isDark ? 'border-neutral-800' : 'border-neutral-100'}`}
-          >
+          <div className={`flex items-center justify-between pb-1 border-b border-[var(--mos-surface-border)]`}>
             <div className="flex items-center gap-1.5">
               <Clock className={`w-4 h-4 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`} />
               <span
@@ -511,18 +503,13 @@ export function Screen09LashProgressAfter({
             <div
               className={`${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200/70'} rounded-xl p-2.5 border`}
             >
-              <div
-                className={`text-[10px] font-semibold ${isDark ? 'text-neutral-400' : 'text-neutral-500'} uppercase tracking-tight`}
-              >
+              <div className={`text-[10px] font-semibold text-[var(--mos-text-muted)] uppercase tracking-tight`}>
                 Cam kết định mức
               </div>
               <div
                 className={`text-[17px] font-black ${isDark ? 'text-white' : 'text-neutral-800'} tabular-nums mt-0.5`}
               >
-                {targetMinutes}{' '}
-                <span className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                  phút
-                </span>
+                {targetMinutes} <span className={`text-[11px] font-bold text-[var(--mos-text-muted)]`}>phút</span>
               </div>
               <div className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-neutral-400'} mt-0.5`}>
                 Tiêu chuẩn dịch vụ
@@ -538,13 +525,8 @@ export function Screen09LashProgressAfter({
               >
                 Hoàn tất thực tế
               </div>
-              <div
-                className={`text-[17px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tabular-nums mt-0.5`}
-              >
-                {actualMinutes}{' '}
-                <span className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                  phút
-                </span>
+              <div className={`text-[17px] font-black text-[var(--mos-text)] tabular-nums mt-0.5`}>
+                {actualMinutes} <span className={`text-[11px] font-bold text-[var(--mos-text-muted)]`}>phút</span>
               </div>
               <div className={`text-[10.5px] font-extrabold mt-0.5 tabular-nums ${performanceMeta.diffTextColor}`}>
                 {performanceMeta.diffText}

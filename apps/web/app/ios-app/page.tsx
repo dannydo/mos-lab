@@ -10,9 +10,11 @@ import {
   resolveLockedIosRoleForUser,
 } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
+import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
+import './ios-typography.css';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
 
@@ -111,6 +113,7 @@ function IosAppInner() {
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
 
   const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId, isDemoMode);
+  useIosFontScale(state.actor?.staffId);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -160,7 +163,7 @@ function IosAppInner() {
 
   if (!authorized) {
     return (
-      <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
+      <div className="ios-app-font-scope w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
         <span>Đang mở ứng dụng Tư vấn & Checkout</span>
         <CvFeather1Badge />
       </div>
@@ -301,7 +304,10 @@ function IosAppInner() {
             isAdmin={state.isAdmin}
             onRefreshDb={() => state.refreshDb()}
             isCheckInLocked={Boolean(
-              !state.isAdmin && state.activeServicingBooking && currentBooking.id !== state.activeServicingBooking.id
+              !state.isAdmin &&
+              (state.role === 'CVL' || state.role === 'CV') &&
+              state.activeServicingBooking &&
+              currentBooking.id !== state.activeServicingBooking.id
             )}
             activeServicingCustomerName={state.activeServicingBooking?.customerName}
             onResumeServicing={() => state.handleResumeServicing()}
@@ -481,7 +487,7 @@ function IosAppInner() {
   };
 
   return (
-    <div className="w-full h-[100dvh] max-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-hidden">
+    <div className="ios-app-font-scope w-full h-[100dvh] max-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-hidden">
       <div className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col bg-black relative overflow-hidden">
         {/* Screen Body */}
         <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-black">{renderActiveScreen()}</div>
@@ -569,7 +575,7 @@ export default function IosAppPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
+        <div className="ios-app-font-scope w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
           <span>Đang tải ứng dụng Tư vấn & Checkout</span>
           <CvFeather1Badge />
         </div>

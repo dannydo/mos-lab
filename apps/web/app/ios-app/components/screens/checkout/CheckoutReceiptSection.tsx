@@ -119,9 +119,7 @@ export function CheckoutReceiptSection({
 
         <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div
-              className={`text-[15px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight truncate`}
-            >
+            <div className={`text-[15px] font-black text-[var(--mos-text)] tracking-tight truncate`}>
               {customerName} ·{' '}
               <span className={`tabular-nums font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 {customerPhone}
@@ -197,9 +195,7 @@ export function CheckoutReceiptSection({
           <div className="p-3.5 flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-0.5">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span
-                  className={`text-[13px] font-extrabold ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight`}
-                >
+                <span className={`text-[13px] font-extrabold text-[var(--mos-text)] tracking-tight`}>
                   {serviceName}
                 </span>
                 {onEditService && (
@@ -218,7 +214,7 @@ export function CheckoutReceiptSection({
                   </button>
                 )}
               </div>
-              <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}>
+              <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
                 {assignedStaff}
                 {booking?.attributes?.style ? ` · Dáng ${booking.attributes.style}` : ''}
               </div>
@@ -350,9 +346,7 @@ export function CheckoutReceiptSection({
                   </span>
                 </div>
               ) : (
-                <span
-                  className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap block`}
-                >
+                <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap block`}>
                   {effectiveServiceCharge.toLocaleString('vi-VN')}đ
                 </span>
               )}
@@ -366,14 +360,12 @@ export function CheckoutReceiptSection({
             >
               <div className="min-w-0 flex-1 space-y-0.5">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span
-                    className={`text-[13px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight`}
-                  >
+                  <span className={`text-[13px] font-black text-[var(--mos-text)] tracking-tight`}>
                     {cleanComboTitle(selectedCombo.name)}
                   </span>
                 </div>
                 <div
-                  className={`flex items-center gap-2 flex-wrap text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
+                  className={`flex items-center gap-2 flex-wrap text-[11px] text-[var(--mos-text-muted)] font-medium`}
                 >
                   <span>{selectedCombo.sessions || selectedCombo.remainingAfterToday?.totalRemaining || 10} buổi</span>
                   {showStaffRewards &&
@@ -401,9 +393,7 @@ export function CheckoutReceiptSection({
                   showFormula
                 />
               </div>
-              <span
-                className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
-              >
+              <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap shrink-0`}>
                 {selectedCombo.price.toLocaleString('vi-VN')}đ
               </span>
             </div>
@@ -416,14 +406,12 @@ export function CheckoutReceiptSection({
             >
               <div className="min-w-0 flex-1 space-y-0.5">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span
-                    className={`text-[13px] font-black ${isDark ? 'text-white' : 'text-neutral-900'} tracking-tight`}
-                  >
+                  <span className={`text-[13px] font-black text-[var(--mos-text)] tracking-tight`}>
                     {cleanComboTitle(selectedUnderCombo.name)}
                   </span>
                 </div>
                 <div
-                  className={`flex items-center gap-2 flex-wrap text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
+                  className={`flex items-center gap-2 flex-wrap text-[11px] text-[var(--mos-text-muted)] font-medium`}
                 >
                   <span>{selectedUnderCombo.sessions || 10} buổi (Mi Dưới)</span>
                   {showStaffRewards &&
@@ -451,9 +439,7 @@ export function CheckoutReceiptSection({
                   showFormula
                 />
               </div>
-              <span
-                className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
-              >
+              <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap shrink-0`}>
                 {selectedUnderCombo.price.toLocaleString('vi-VN')}đ
               </span>
             </div>
@@ -491,12 +477,8 @@ export function CheckoutReceiptSection({
           {cartProducts.map((p, idx) => (
             <div key={idx} className="p-3.5 flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-0.5">
-                <div className={`text-[13px] font-bold ${isDark ? 'text-white' : 'text-neutral-900'} truncate`}>
-                  {p.productName}
-                </div>
-                <div
-                  className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium inline-flex items-center gap-1`}
-                >
+                <div className={`text-[13px] font-bold text-[var(--mos-text)] truncate`}>{p.productName}</div>
+                <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium inline-flex items-center gap-1`}>
                   <span>SL: {p.quantity}</span>
                   {showStaffRewards && !isCheckoutStaffCc && (
                     <>
@@ -511,9 +493,7 @@ export function CheckoutReceiptSection({
                   )}
                 </div>
               </div>
-              <span
-                className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
-              >
+              <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap shrink-0`}>
                 {(p.price * p.quantity).toLocaleString('vi-VN')}đ
               </span>
             </div>
@@ -523,9 +503,7 @@ export function CheckoutReceiptSection({
           <div
             className={`p-3.5 ${isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-neutral-50/50 border-neutral-100'} space-y-1.5 border-t text-[12px]`}
           >
-            <div
-              className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
-            >
+            <div className={`flex items-center justify-between text-[var(--mos-text-muted)] font-medium`}>
               <span>Tạm tính dịch vụ & SP:</span>
               <span
                 className={`${isDark ? 'text-neutral-200' : 'text-neutral-900'} font-bold tabular-nums whitespace-nowrap shrink-0`}
@@ -533,9 +511,7 @@ export function CheckoutReceiptSection({
                 {subtotal.toLocaleString('vi-VN')}đ
               </span>
             </div>
-            <div
-              className={`flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}
-            >
+            <div className={`flex items-center justify-between text-[var(--mos-text-muted)] font-medium`}>
               <span>Thuế VAT (8%):</span>
               <span
                 className={`${isDark ? 'text-neutral-200' : 'text-neutral-900'} font-bold tabular-nums whitespace-nowrap shrink-0`}
@@ -593,7 +569,7 @@ export function CheckoutReceiptSection({
               >
                 TỔNG TIỀN THANH TOÁN
               </span>
-              <span className={`text-[10.5px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-medium`}>
+              <span className={`text-[10.5px] text-[var(--mos-text-muted)] font-medium`}>
                 {effectiveDiamondUsed > 0
                   ? `Đã cấn trừ ${effectiveDiamondUsed} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ)`
                   : tipAmount > 0

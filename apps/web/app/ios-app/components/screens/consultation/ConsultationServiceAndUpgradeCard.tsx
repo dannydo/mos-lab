@@ -157,9 +157,7 @@ export function ConsultationServiceAndUpgradeCard({
   const isOldComboExpired = Boolean(comboLiveStatus?.isExpired && (comboLiveStatus?.remainingSessions || 0) > 0);
   return (
     <div
-      className={`rounded-2xl p-3 shadow-xs border space-y-2 transition-colors ${
-        isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-      }`}
+      className={`rounded-2xl p-3 shadow-xs border space-y-2 transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
     >
       {/* Header gọn: Tên gói / Single + Badge Ngày ghé cuối & Tổng lượt */}
       <div className="flex items-center justify-between gap-2">
@@ -171,7 +169,7 @@ export function ConsultationServiceAndUpgradeCard({
           >
             <Zap className="w-3 h-3 fill-current" />
           </span>
-          <span className={`text-[12px] font-extrabold truncate ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+          <span className={`text-[12px] font-extrabold truncate text-[var(--mos-text)]`}>
             {isComboLive || isOldComboExpired ? formatComboName(comboName) : 'Khách Lẻ'}
           </span>
         </div>
@@ -225,7 +223,7 @@ export function ConsultationServiceAndUpgradeCard({
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className={`text-[12px] font-extrabold truncate ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+              <span className={`text-[12px] font-extrabold truncate text-[var(--mos-text)]`}>
                 {currentMaterialSpec.shortLabel} · {selectedVolume} · {selectedCount}
               </span>
               {lastVisitDate && (

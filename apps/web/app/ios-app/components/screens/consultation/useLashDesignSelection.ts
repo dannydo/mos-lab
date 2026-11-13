@@ -60,8 +60,8 @@ export function useLashDesignSelection(booking?: BookingItem) {
       ? booking?.comboLiveStatus?.serviceKey || booking?.comboLiveStatus?.comboName || booking?.serviceName
       : booking?.attributes?.material || booking?.lashHistory?.[0]?.serviceName || booking?.serviceName;
     return (
-      resolveServiceSpecsFromComboOrHistory(sourceText || 'New Flawless Mink 880', materialCatalog) || {
-        materialId: 'New Flawless Mink',
+      resolveServiceSpecsFromComboOrHistory(sourceText || 'Flawless Mink 880', materialCatalog) || {
+        materialId: 'Flawless Mink',
         materialCode: 'FLAWLESS_MINK',
         materialShortLabel: 'Flawless Mink',
         volume: '1D',
