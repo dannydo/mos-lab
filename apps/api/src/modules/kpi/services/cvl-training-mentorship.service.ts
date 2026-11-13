@@ -324,6 +324,7 @@ export class CvlTrainingMentorshipService {
     }
     if (effectiveWindows.length === 0) return result;
 
+    const menteeIds = Array.from(new Set(effectiveWindows.map((w) => w.menteeId)));
     const clauses = effectiveWindows.map(
       (w) =>
         `(os_p.assigned_staff_id = ${w.menteeId} AND COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) BETWEEN '${w.startDate}' AND '${w.endDate}')`
@@ -333,15 +334,21 @@ export class CvlTrainingMentorshipService {
       SELECT
         os_p.assigned_staff_id AS mentee_id,
         COALESCE(SUM(st.tip_amount), 0) AS transferred_tip
-      FROM \`staff_tip\` st
-      JOIN \`order\` o ON o.id = st.order_id
+      FROM (
+        SELECT DISTINCT os.order_id, os.assigned_staff_id
+        FROM \`order_service\` os
+        WHERE os.assigned_staff_id IN (${menteeIds.join(',')})
+          AND NOT EXISTS (
+            SELECT 1 FROM \`order_service\` os2
+            WHERE os2.order_id = os.order_id
+              AND os2.assigned_staff_id IS NOT NULL
+              AND os2.assigned_staff_id > 0
+              AND os2.assigned_staff_id < os.assigned_staff_id
+          )
+      ) os_p
+      JOIN \`order\` o ON o.id = os_p.order_id
       LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
-      JOIN (
-        SELECT order_id, MIN(assigned_staff_id) AS assigned_staff_id
-        FROM \`order_service\`
-        WHERE assigned_staff_id IS NOT NULL AND assigned_staff_id > 0
-        GROUP BY order_id
-      ) os_p ON os_p.order_id = o.id
+      JOIN \`staff_tip\` st ON st.order_id = o.id
       WHERE o.order_state = 'Completed'
         AND st.user_id <> os_p.assigned_staff_id
         AND COALESCE(st.tip_percentage, 0) > 0

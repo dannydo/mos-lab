@@ -12,6 +12,7 @@ import {
   resolveEffectiveAssignedStaffId,
   createRouteHelpers,
   buildSearchCondition,
+  resolveOrderCountsFilter,
 } from './helpers.js';
 import { daysSinceVisit } from '../../projections/customer-visit-projection.service.js';
 
@@ -161,7 +162,6 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       const needSpentFilter =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
-      const needSpent = needSpentFilter || sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc';
 
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
@@ -182,8 +182,6 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         (referralUsed !== undefined && referralUsed !== 'all') ||
         (referralCountMin !== undefined && referralCountMin !== '') ||
         (referralCountMax !== undefined && referralCountMax !== '');
-
-      const needOrderCounts = needSpent || needVisits;
 
       // Pre-compute allowedUserIds before constructing innerJoins to push down predicates
       let allowedUserIds: number[] | null = null;
@@ -641,6 +639,28 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         }
       }
 
+      if (needSpentFilter || needVisits) {
+        const orderCountsRes = await resolveOrderCountsFilter(
+          fastify,
+          { totalSpentMin, totalSpentMax, totalVisitsMin, totalVisitsMax },
+          allowedUserIds,
+          excludedUserIds
+        );
+        if (orderCountsRes.isEmpty) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        allowedUserIds = orderCountsRes.allowedUserIds;
+        excludedUserIds = orderCountsRes.excludedUserIds;
+      }
+
       const usbUserFilter =
         allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE user_id IN (${allowedUserIds.join(',')})` : '';
       const comboUserFilter =
@@ -689,7 +709,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerJoins += usbJoinSql;
         countJoins += usbJoinSql;
       }
-      if (needOrderCounts) {
+      if (sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc') {
         const orderCountsJoinSql = ` LEFT JOIN (
           SELECT 
             user_id, 
@@ -701,9 +721,6 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         ) as order_counts ON u.id = order_counts.user_id`;
 
         innerJoins += orderCountsJoinSql;
-        if (needSpentFilter || needVisits) {
-          countJoins += orderCountsJoinSql;
-        }
       }
       if (needServiceUsage) {
         const serviceUsageJoinSql = buildCompletedServiceUsageJoin(selectedServiceIds);
@@ -911,25 +928,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         )`);
       }
 
-      // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
-      if (totalSpentMin !== undefined && totalSpentMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) >= ?');
-        innerParams.push(parseFloat(totalSpentMin));
-      }
-      if (totalSpentMax !== undefined && totalSpentMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) <= ?');
-        innerParams.push(parseFloat(totalSpentMax));
-      }
-
-      if (totalVisitsMin !== undefined && totalVisitsMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) >= ?');
-        innerParams.push(parseInt(totalVisitsMin, 10));
-      }
-      if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
-        innerParams.push(parseInt(totalVisitsMax, 10));
-      }
-
+      // 4. Service usage filters (totalSpent & totalVisits already resolved via standalone query)
       if (selectedServiceIds.length > 0) {
         innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= 1');
       }
