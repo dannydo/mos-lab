@@ -87,8 +87,11 @@ export function resolveBookingStatusFromState(
       'Preparation',
       'ServiceStart',
       'Service Start',
+      'ServiceCleaned',
       'Service Cleaned',
+      'ServiceEnd',
       'Service End',
+      'ServiceCompleted',
       'Service Completed',
       'In-progress',
     ].includes(String(state || ''))

@@ -23,6 +23,7 @@ import {
 import { registerIosPoolShutdown } from './services/db-pools.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { buildDemoModeBookings, mapLiveOrdersToBookings } from './services/ios-bookings-mapper.service.js';
+import { resolveBookingStatusFromState } from './services/ios-bookings-formatters.js';
 import { isIosDemoModeRequested } from './services/ios-bookings-query.service.js';
 import { createEmptyCustomerEnrichmentContext, RawIosOrderSnapshot } from './services/ios-bookings-sql.service.js';
 import {
@@ -544,4 +545,80 @@ test('DB pool shutdown hook registers idempotently per Fastify instance', () => 
   registerIosPoolShutdown(fakeFastify);
   registerIosPoolShutdown(fakeFastify);
   assert.equal(hookCount, 1);
+});
+
+test('resolveBookingStatusFromState & CVL scope map legacy non-spaced servicing states to SERVICING', () => {
+  for (const legacyState of [
+    'Preparation',
+    'ServiceStart',
+    'Service Start',
+    'ServiceCleaned',
+    'Service Cleaned',
+    'ServiceEnd',
+    'Service End',
+    'ServiceCompleted',
+    'Service Completed',
+    'In-progress',
+  ]) {
+    assert.equal(
+      resolveBookingStatusFromState(undefined, legacyState, '2026-11-13', '2026-11-13'),
+      'SERVICING',
+      `Expected ${legacyState} to map to SERVICING`
+    );
+  }
+
+  const serviceCleanedOrder: RawIosOrderSnapshot = {
+    id: 339389,
+    order_number: null,
+    order_state: 'ServiceCleaned',
+    booking_date_start: '2026-11-13T09:30:00',
+    booking_duration_minute: 97,
+    total_price: 660000,
+    client_store_id: 6,
+    booking_note: '13/11 chị dời sớm',
+    user_id: 21563,
+    combo_sale_required: 0,
+    is_new: 0,
+    promotion_id: null,
+    customer_name: 'Hằng',
+    customer_phone: '0909123456',
+    customer_avatar: null,
+    booker_name: 'Diễm Hương',
+    booker_avatar: null,
+    service_name: 'New Flawless Mink 770',
+    service_key: 'new-flawless-mink-770',
+    is_temporary: 0,
+    service_type: 'Normal',
+    staff_name: 'Khanh Cao',
+    staff_avatar: null,
+    assigned_staff_id: 13783,
+    booked_staff_id: null,
+    check_in_staff_id: 37790,
+    check_out_staff_id: null,
+    check_in_staff_name: 'Diễm Hương',
+    check_in_staff_avatar: null,
+    check_out_staff_name: null,
+    check_out_staff_avatar: null,
+    total_visits: 12,
+  };
+
+  const mapped = mapLiveOrdersToBookings({
+    orders: [serviceCleanedOrder],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: {},
+    customerAvatarMap: {},
+    storeId: 6,
+    targetDate: '2026-11-13',
+    todayVn: '2026-11-13',
+    activeStaffId: 13783,
+    canViewFullPhone: false,
+  });
+
+  assert.equal(mapped.length, 1);
+  assert.equal(mapped[0].status, 'SERVICING');
+
+  const cvlVisible = filterBookingsForCvlScope(mapped, 13783);
+  assert.equal(cvlVisible.length, 1);
+  assert.equal(cvlVisible[0].status, 'SERVICING');
+  assert.equal(cvlVisible[0].bookingAccessTag, 'MY_BOOKED_CUSTOMER');
 });
