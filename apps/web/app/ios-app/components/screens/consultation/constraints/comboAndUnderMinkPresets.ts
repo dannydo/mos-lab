@@ -179,11 +179,15 @@ export function resolveServiceSpecsFromComboOrHistory(
     else count = '80 fan';
   } else if (mat.code === 'NEW_CLASSIC') {
     volume = '1D';
-    if (kPrice === 390) count = '60 sợi';
-    else if (kPrice === 440) count = '70 sợi';
-    else if (kPrice === 550) count = '90 sợi';
+    const explicitClassicCount = s.match(/\b(60|70|90|110|130)\s*sợi\b/);
+    const refillMatch = s.match(/\b(250|280|340|530)k?\b/);
+    const refillCode = refillMatch ? Number(refillMatch[1]) : undefined;
+    if (explicitClassicCount) count = `${explicitClassicCount[1]} sợi`;
+    else if (kPrice === 390 || refillCode === 250) count = '60 sợi';
+    else if (kPrice === 440 || refillCode === 280) count = '70 sợi';
+    else if (kPrice === 550 || refillCode === 340) count = '90 sợi';
     else if (kPrice === 660) count = '110 sợi';
-    else if (kPrice === 880) count = '130 sợi';
+    else if (kPrice === 880 || refillCode === 530) count = '130 sợi';
     else count = '90 sợi';
   }
 

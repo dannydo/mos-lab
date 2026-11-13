@@ -44,6 +44,8 @@ export interface ConsultationSkuPricingPayload {
 export interface Screen03ConsultationMatrixProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
+  isAdmin?: boolean;
+  onRefreshDb?: () => Promise<any> | void;
   onBack: () => void;
   onSave: (
     attributes: ConsultationSavedAttributes,

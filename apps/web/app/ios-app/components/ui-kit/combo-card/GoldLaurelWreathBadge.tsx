@@ -11,12 +11,14 @@ export function GoldLaurelWreathBadge({
   discountPct,
   ribbonLabel,
   validityMonths,
+  expiryDateLabel,
   cvBonus,
   compact,
 }: {
   discountPct: number;
   ribbonLabel: string;
   validityMonths: number;
+  expiryDateLabel?: string;
   cvBonus?: number;
   compact?: boolean;
 }) {
@@ -203,6 +205,27 @@ export function GoldLaurelWreathBadge({
       >
         {validityMonths} MONTHS
       </div>
+
+      {/* Live Computed Expiry Date Pill (HSD: dd/MM/yyyy) */}
+      {expiryDateLabel && (
+        <div
+          style={{
+            marginTop: 2,
+            padding: '1px 6px',
+            borderRadius: 999,
+            background: 'rgba(0, 0, 0, 0.52)',
+            border: '1px solid rgba(243, 206, 104, 0.55)',
+            color: '#FFE27A',
+            fontSize: compact ? 8.5 : 9,
+            fontWeight: 800,
+            letterSpacing: '0.02em',
+            whiteSpace: 'nowrap',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          HSD {expiryDateLabel}
+        </div>
+      )}
 
       {/* Shortened CV Bonus Badge under Laurel Wreath: 150 Feather */}
       {typeof cvBonus === 'number' && cvBonus > 0 && (

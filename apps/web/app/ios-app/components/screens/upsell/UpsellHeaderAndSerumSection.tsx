@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Wallet, Info } from 'lucide-react';
-import { calculateComboRedemptionAccounting } from '@mos-lab/shared';
+import { Wallet, Info, AlertTriangle } from 'lucide-react';
+import { calculateComboRedemptionAccounting, formatExpiryDateDdMmYyyy } from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { CvFeather2Badge, CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
+import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { formatComboName } from '../LashMaterialConstraintMatrix';
 
 type RedemptionAccountingResult = ReturnType<typeof calculateComboRedemptionAccounting>;
@@ -31,6 +32,7 @@ export interface UpsellHeaderAndSerumSectionProps {
   selectedSerumTier: SerumTierItem;
   showStaffRewards: boolean;
   onOpenSerumInfoModal: () => void;
+  onOpenWalletModal?: () => void;
 }
 
 export function UpsellHeaderAndSerumSection({
@@ -53,7 +55,12 @@ export function UpsellHeaderAndSerumSection({
   selectedSerumTier,
   showStaffRewards,
   onOpenSerumInfoModal,
+  onOpenWalletModal,
 }: UpsellHeaderAndSerumSectionProps) {
+  const isOldComboExpired = Boolean(
+    booking?.comboLiveStatus?.isExpired && (booking?.comboLiveStatus?.remainingSessions ?? 0) > 0
+  );
+  const expiredDateLabel = formatExpiryDateDdMmYyyy(booking?.comboLiveStatus?.dateExpired);
   return (
     <>
       {/* 0. Customer & Lash Service Identity Card (Nhận diện khách hàng & Ca phục vụ) */}
@@ -63,7 +70,13 @@ export function UpsellHeaderAndSerumSection({
         {/* Customer Avatar */}
         <div className="relative w-11 h-11 flex-shrink-0">
           <div
-            className={`w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 border ${isDark ? 'border-neutral-700' : 'border-neutral-200'} shadow-xs`}
+            className={`w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 border ${
+              isOldComboExpired
+                ? 'border-2 border-rose-500 ring-2 ring-rose-500/40'
+                : isDark
+                  ? 'border-neutral-700'
+                  : 'border-neutral-200'
+            } shadow-xs`}
           >
             {booking?.customerAvatar ? (
               <img
@@ -136,16 +149,63 @@ export function UpsellHeaderAndSerumSection({
         </div>
       </div>
 
+      {/* Section 1A-Expired: GÓI CŨ ĐÃ HẾT HẠN — KHÓA TRỪ 0Đ & GỢI Ý MUA MỚI ĐỂ CỨU BUỔI */}
+      {isOldComboExpired && (
+        <div
+          className={`rounded-2xl p-3 border-2 space-y-2 shadow-xs ${
+            isDark ? 'bg-rose-950/35 border-rose-600/80 text-rose-100' : 'bg-rose-50/90 border-rose-400 text-rose-950'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center justify-center gap-1 leading-none py-1 px-2.5 rounded-full bg-rose-600 text-white text-[10.5px] font-black uppercase tracking-wide tabular-nums">
+              <AlertTriangle className="w-3 h-3 shrink-0 stroke-[2.5]" />
+              <span>HẾT HẠN {expiredDateLabel}</span>
+            </span>
+            {onOpenWalletModal && (
+              <button
+                type="button"
+                onClick={onOpenWalletModal}
+                className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                  isDark
+                    ? 'bg-neutral-900 border-rose-500/50 text-rose-200 hover:bg-neutral-800'
+                    : 'bg-white border-rose-300 text-rose-700 hover:bg-rose-100'
+                }`}
+              >
+                Chi tiết Combo
+              </button>
+            )}
+          </div>
+          <div className="text-[12.5px] font-black leading-snug">
+            {formatComboName(booking?.comboLiveStatus?.comboName, booking?.comboLiveStatus?.packageKey) ||
+              'Gói Combo Cũ'}{' '}
+            · Còn {booking?.comboLiveStatus?.remainingSessions} buổi đang khóa 0đ
+          </div>
+          <div
+            className={`text-[11px] font-semibold leading-snug tabular-nums ${isDark ? 'text-rose-200/95' : 'text-rose-900'}`}
+          >
+            Chọn <strong>Mua gói Combo</strong> bên dưới để tự động <strong>cứu toàn bộ buổi tồn</strong> (✦
+            {booking?.comboLiveStatus?.normalRemaining ?? 0} Mới +1T/buổi · ↻
+            {booking?.comboLiveStatus?.retainRemaining ?? 0} Dặm +25N/buổi).
+          </div>
+        </div>
+      )}
+
       {/* Section 1A: CA HÔM NAY · TRỪ VÀO GÓI COMBO ĐANG CÓ (Chỉ hiện khi khách có combo đang chạy) */}
       {isExistingComboLive && redemptionAccounting && (
         <div>
           <div
-            className={`text-[11px] font-extrabold ${isDark ? 'text-sky-400' : 'text-sky-900'} uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between`}
+            className={`text-[11px] font-extrabold ${isDark ? 'text-sky-400' : 'text-sky-900'} uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between gap-2`}
           >
             <span className="flex items-center gap-1.5">
               <Wallet className={`w-3.5 h-3.5 ${isDark ? 'text-sky-400' : 'text-sky-700'}`} />
               1. CA HÔM NAY · TRỪ GÓI ❖ ĐANG CÓ
             </span>
+            <ComboExpiryStatusBadge
+              status={booking?.comboLiveStatus}
+              showPace
+              theme={isDark ? 'dark' : 'light'}
+              onClick={onOpenWalletModal ? () => onOpenWalletModal() : undefined}
+            />
           </div>
 
           <div

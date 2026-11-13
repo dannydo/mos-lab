@@ -16,6 +16,7 @@ import {
 } from './LashMaterialConstraintMatrix';
 import { resolveNaturalLashCountLabel } from './NaturalLashAssessmentData';
 import { CustomerAvatarPicker } from '../ui-kit/CustomerAvatarPicker';
+import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import { QuickCheckInComboCard } from './checkin/QuickCheckInComboCard';
 import { CheckInStaffAndProfileCards } from './checkin/CheckInStaffAndProfileCards';
 import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
@@ -24,6 +25,8 @@ import { CheckInModals, PendingComboNewConfirmationState, PendingOverrideState }
 interface Screen02CheckInProfileProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
+  isAdmin?: boolean;
+  onRefreshDb?: () => void;
   isCheckInLocked?: boolean;
   activeServicingCustomerName?: string;
   onResumeServicing?: () => void;
@@ -75,6 +78,8 @@ interface Screen02CheckInProfileProps {
 export function Screen02CheckInProfile({
   booking,
   actor,
+  isAdmin = false,
+  onRefreshDb,
   isCheckInLocked = false,
   activeServicingCustomerName,
   onResumeServicing,
@@ -133,9 +138,11 @@ export function Screen02CheckInProfile({
 
   // Quy tắc màu viền avatar (Avatar Ring Color Invariant theo chỉ đạo Danny):
   let avatarRingClass = 'border-[2.5px] border-[#34C759]'; // Vòng xanh (Not combo live)
-  if (isComboLive && remainingSessions > 0) {
-    if (remainingSessions <= 2) {
-      avatarRingClass = 'border-[2.5px] border-[#FF9500] ring-1 ring-[#FF9500]/40'; // Vòng vàng (Còn 1-2 lần)
+  if (booking?.comboLiveStatus?.isExpired) {
+    avatarRingClass = 'border-[2.5px] border-rose-500 ring-2 ring-rose-500/35'; // Vòng đỏ (Combo đã hết hạn)
+  } else if (isComboLive && remainingSessions > 0) {
+    if (remainingSessions <= 2 || booking?.comboLiveStatus?.isExpiringSoon) {
+      avatarRingClass = 'border-[2.5px] border-[#FF9500] ring-1 ring-[#FF9500]/40'; // Vòng vàng (Còn 1-2 lần hoặc sắp hết hạn)
     } else {
       avatarRingClass = 'border-[2.5px] border-[#8E8E93]'; // Vòng xám (Combo live)
     }
@@ -162,6 +169,7 @@ export function Screen02CheckInProfile({
   const [isRotationInfoOpen, setIsRotationInfoOpen] = useState<boolean>(false);
   const [selectedLashHistory, setSelectedLashHistory] = useState<LashHistoryItem | null>(null);
   const [isLashHistoryOpen, setIsLashHistoryOpen] = useState<boolean>(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
 
   const handleOpenLashHistory = (item: LashHistoryItem) => {
     setSelectedLashHistory(item);
@@ -488,6 +496,7 @@ export function Screen02CheckInProfile({
             setOverrideReason('');
           }}
           onRequestServiceTypeChange={handleRequestQuickServiceTypeChange}
+          onOpenWalletModal={() => setIsWalletModalOpen(true)}
         />
 
         {/* Cards 3, 3.5, Technical Notes, Natural Lash Profile & Lash History */}
@@ -554,6 +563,14 @@ export function Screen02CheckInProfile({
         isOpen={isLashHistoryOpen}
         onClose={() => setIsLashHistoryOpen(false)}
         onApplySpecs={() => setIsLashHistoryOpen(false)}
+      />
+
+      <ComboWalletDetailModal
+        booking={booking}
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        isAdmin={isAdmin}
+        onUpdated={() => onRefreshDb?.()}
       />
     </div>
   );

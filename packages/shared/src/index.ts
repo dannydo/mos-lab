@@ -82,6 +82,7 @@ export * from './types/fund.js';
 export * from './types/financial-goals.js';
 export * from './utils/cv-role-aliases.js';
 export * from './catalog/wings-combo-catalog.js';
+export * from './catalog/combo-expiry.js';
 export * from './types/cv-discipline.js';
 export * from './types/cvl-training-mentorship.js';
 export * from './types/ios-app.js';

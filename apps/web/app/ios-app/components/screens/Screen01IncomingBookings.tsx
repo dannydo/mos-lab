@@ -11,6 +11,7 @@ import {
 } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { IosBranchSelectorSheet } from '../ui-kit/IosBranchSelectorSheet';
+import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import { SegmentCounts } from './incoming/incomingBookingHelpers';
 import { IncomingBookingCard } from './incoming/IncomingBookingCard';
 import { IncomingBookingsModals } from './incoming/IncomingBookingsModals';
@@ -97,6 +98,15 @@ export function Screen01IncomingBookings({
 
   // Modal / Bottom Sheet xem đầy đủ ghi chú và thông tin khách hàng
   const [selectedCustomerDetail, setSelectedCustomerDetail] = useState<BookingItem | null>(null);
+  const [walletModalBookingId, setWalletModalBookingId] = useState<number | null>(null);
+
+  const activeWalletBooking = useMemo(
+    () =>
+      walletModalBookingId !== null
+        ? bookings.find((b) => Number(b.id) === Number(walletModalBookingId)) || null
+        : null,
+    [bookings, walletModalBookingId]
+  );
 
   // Đồng hồ thực tế đếm ngược thời gian khách đến (in mins)
   const [now, setNow] = useState(() => new Date());
@@ -364,6 +374,7 @@ export function Screen01IncomingBookings({
                 setLockedCustomerModal({ isOpen: true, attemptedCustomerName })
               }
               onOpenCustomerDetail={(bookingItem) => setSelectedCustomerDetail(bookingItem)}
+              onOpenWalletModal={(bookingItem) => setWalletModalBookingId(bookingItem.id)}
               onOpenRevertModal={(bookingId, customerName) =>
                 setRevertConfirmModal({ isOpen: true, bookingId, customerName })
               }
@@ -371,6 +382,14 @@ export function Screen01IncomingBookings({
           ))
         )}
       </div>
+
+      <ComboWalletDetailModal
+        booking={activeWalletBooking}
+        isOpen={Boolean(activeWalletBooking)}
+        onClose={() => setWalletModalBookingId(null)}
+        isAdmin={isAdmin}
+        onUpdated={() => onRefreshDb?.()}
+      />
 
       <IncomingBookingsModals
         lockedCustomerModal={lockedCustomerModal}

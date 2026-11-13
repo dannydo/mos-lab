@@ -4,6 +4,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { MatchedComboPackageOption } from '@mos-lab/shared';
 import { WingsComboCard, type WingsTierOption } from './WingsComboCard';
 
+export interface ComboExpiryPreviewItem {
+  dateExpiredDisplay: string;
+  bonusBadge?: string;
+  formulaSummary?: string;
+}
+
 export interface WingsUnifiedComboCardProps {
   packages: MatchedComboPackageOption[];
   customerName?: string;
@@ -13,6 +19,7 @@ export interface WingsUnifiedComboCardProps {
   dimmed?: boolean;
   includeVat?: boolean;
   showStaffRewards?: boolean;
+  expiryPreviewByPkgId?: Record<string, ComboExpiryPreviewItem>;
   onSelectPackage: (pkg: MatchedComboPackageOption) => void;
   onSelectLocked?: () => void;
 }
@@ -31,6 +38,7 @@ export function WingsUnifiedComboCard({
   dimmed = false,
   includeVat = false,
   showStaffRewards = false,
+  expiryPreviewByPkgId,
   onSelectPackage,
   onSelectLocked,
 }: WingsUnifiedComboCardProps) {
@@ -88,12 +96,15 @@ export function WingsUnifiedComboCard({
       ? Math.round(pkg.comboPriceWithVat / (pkg.totalSessions || 1))
       : pkg.avgPerSessionPrice;
 
+    const preview = expiryPreviewByPkgId?.[pkg.id];
     return {
       label: getTierShortLabel(pkg),
       fullLabel: pkg.ruleName || `Gói ${pkg.totalSessions} buổi`,
       comboPrice: effectiveComboPrice,
       avgPerSessionPrice: effectiveAvgSessionPrice,
       discountPct: typeof pkg.discountPct === 'number' && pkg.discountPct > 0 ? pkg.discountPct : undefined,
+      expiryDateDisplay: preview?.dateExpiredDisplay,
+      expiryBonusBadge: preview?.bonusBadge,
       isActive:
         selectedPackageId !== undefined
           ? Boolean(selectedPackageId && selectedPackageId === pkg.id)
@@ -109,6 +120,8 @@ export function WingsUnifiedComboCard({
     };
   });
 
+  const activePreview = expiryPreviewByPkgId?.[activePkg.id];
+
   return (
     <WingsComboCard
       pkg={activePkg}
@@ -122,6 +135,8 @@ export function WingsUnifiedComboCard({
       compact
       showActionFooter={!activePkg.isLocked}
       allTiers={allTiers}
+      expiryDateLabel={activePreview?.dateExpiredDisplay}
+      expiryFormulaSummary={activePreview?.formulaSummary}
       onSelect={() => {
         if (!activePkg.isLocked) {
           onSelectPackage(activePkg);

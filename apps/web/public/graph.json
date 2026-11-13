@@ -10600,7 +10600,7 @@
         "path": "/api/ios/photos/:filename",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 23
+        "line": 24
       }
     },
     {
@@ -10614,7 +10614,7 @@
         "path": "/api/ios/bookings",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 28
+        "line": 29
       }
     },
     {
@@ -10628,7 +10628,21 @@
         "path": "/api/ios/bookings",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 64
+        "line": 65
+      }
+    },
+    {
+      "id": "route:POST:/api/ios/combo-balances/expiry",
+      "type": "FastifyRoute",
+      "label": "POST /api/ios/combo-balances/expiry",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/ios/combo-balances/expiry",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 91
       }
     },
     {
@@ -10642,7 +10656,7 @@
         "path": "/api/ios/print-receipt",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 90
+        "line": 109
       }
     },
     {
@@ -26991,6 +27005,42 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:IosAdminComboExpiryAction",
+      "type": "SharedType",
+      "label": "IosAdminComboExpiryAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosAdminComboExpiryAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosAdminComboExpiryActionPayload",
+      "type": "SharedType",
+      "label": "IosAdminComboExpiryActionPayload",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosAdminComboExpiryActionPayload",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosAdminComboExpiryActionResponse",
+      "type": "SharedType",
+      "label": "IosAdminComboExpiryActionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosAdminComboExpiryActionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:ActorTipBreakdown",
       "type": "SharedType",
       "label": "ActorTipBreakdown",
@@ -39826,6 +39876,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/ios-combo-expiry.test.ts",
+      "type": "File",
+      "label": "ios-combo-expiry.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/ios-combo-expiry.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6150,
+        "lineCount": 185,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/ios-lash-spec-mapper.test.ts",
+      "type": "File",
+      "label": "ios-lash-spec-mapper.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/ios-lash-spec-mapper.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9699,
+        "lineCount": 323,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/ios-legacy-settlement.test.ts",
       "type": "File",
       "label": "ios-legacy-settlement.test.ts",
@@ -39846,8 +39922,8 @@
       "filePath": "apps/api/src/modules/ios/mock-data.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6403,
-        "lineCount": 221,
+        "sizeBytes": 7331,
+        "lineCount": 252,
         "ext": ".ts"
       }
     },
@@ -39872,8 +39948,8 @@
       "filePath": "apps/api/src/modules/ios/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4543,
-        "lineCount": 123,
+        "sizeBytes": 5414,
+        "lineCount": 142,
         "ext": ".ts"
       }
     },
@@ -39937,8 +40013,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-mapper.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20178,
-        "lineCount": 481,
+        "sizeBytes": 25100,
+        "lineCount": 595,
         "ext": ".ts"
       }
     },
@@ -39950,8 +40026,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9222,
-        "lineCount": 268,
+        "sizeBytes": 9511,
+        "lineCount": 273,
         "ext": ".ts"
       }
     },
@@ -39963,8 +40039,21 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-sql.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10083,
-        "lineCount": 244,
+        "sizeBytes": 13371,
+        "lineCount": 314,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
+      "type": "File",
+      "label": "ios-combo-expiry.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17027,
+        "lineCount": 448,
         "ext": ".ts"
       }
     },
@@ -39976,8 +40065,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10957,
-        "lineCount": 267,
+        "sizeBytes": 20933,
+        "lineCount": 540,
         "ext": ".ts"
       }
     },
@@ -39989,8 +40078,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20159,
-        "lineCount": 555,
+        "sizeBytes": 20707,
+        "lineCount": 565,
         "ext": ".ts"
       }
     },
@@ -40028,8 +40117,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-overrides.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17042,
-        "lineCount": 476,
+        "sizeBytes": 19001,
+        "lineCount": 527,
         "ext": ".ts"
       }
     },
@@ -49024,8 +49113,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ComboCatalogConsultModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25065,
-        "lineCount": 585,
+        "sizeBytes": 26463,
+        "lineCount": 621,
         "ext": ".tsx"
       }
     },
@@ -49180,8 +49269,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17514,
-        "lineCount": 403,
+        "sizeBytes": 18225,
+        "lineCount": 419,
         "ext": ".tsx"
       }
     },
@@ -49193,8 +49282,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24961,
-        "lineCount": 561,
+        "sizeBytes": 25722,
+        "lineCount": 578,
         "ext": ".tsx"
       }
     },
@@ -49219,8 +49308,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17884,
-        "lineCount": 349,
+        "sizeBytes": 19222,
+        "lineCount": 376,
         "ext": ".tsx"
       }
     },
@@ -49336,8 +49425,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26630,
-        "lineCount": 625,
+        "sizeBytes": 28269,
+        "lineCount": 680,
         "ext": ".tsx"
       }
     },
@@ -49349,8 +49438,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18022,
-        "lineCount": 429,
+        "sizeBytes": 18141,
+        "lineCount": 432,
         "ext": ".tsx"
       }
     },
@@ -49375,8 +49464,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 33655,
-        "lineCount": 681,
+        "sizeBytes": 30360,
+        "lineCount": 617,
         "ext": ".tsx"
       }
     },
@@ -49446,6 +49535,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/ComboExpiryFlow.test.tsx",
+      "type": "File",
+      "label": "ComboExpiryFlow.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/ComboExpiryFlow.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12315,
+        "lineCount": 312,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/__tests__/DualComboConsultationToCheckout.test.tsx",
       "type": "File",
       "label": "DualComboConsultationToCheckout.test.tsx",
@@ -49459,6 +49561,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/IncomingLashSpecFormat.test.ts",
+      "type": "File",
+      "label": "IncomingLashSpecFormat.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/IncomingLashSpecFormat.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6354,
+        "lineCount": 172,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/__tests__/Screen03ConsultationMatrix.test.tsx",
       "type": "File",
       "label": "Screen03ConsultationMatrix.test.tsx",
@@ -49466,8 +49581,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/Screen03ConsultationMatrix.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17042,
-        "lineCount": 381,
+        "sizeBytes": 19387,
+        "lineCount": 445,
         "ext": ".tsx"
       }
     },
@@ -49544,8 +49659,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13621,
-        "lineCount": 295,
+        "sizeBytes": 17648,
+        "lineCount": 373,
         "ext": ".tsx"
       }
     },
@@ -49583,8 +49698,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27200,
-        "lineCount": 611,
+        "sizeBytes": 28587,
+        "lineCount": 638,
         "ext": ".tsx"
       }
     },
@@ -49628,6 +49743,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/checkout/ReceiptComboExpiryLine.tsx",
+      "type": "File",
+      "label": "ReceiptComboExpiryLine.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/checkout/ReceiptComboExpiryLine.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6563,
+        "lineCount": 171,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/consultation/ConsultationComboSelectorSection.tsx",
       "type": "File",
       "label": "ConsultationComboSelectorSection.tsx",
@@ -49635,8 +49763,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationComboSelectorSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14378,
-        "lineCount": 309,
+        "sizeBytes": 25769,
+        "lineCount": 526,
         "ext": ".tsx"
       }
     },
@@ -49648,7 +49776,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationHeaderAndTabs.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16213,
+        "sizeBytes": 16222,
         "lineCount": 390,
         "ext": ".tsx"
       }
@@ -49661,8 +49789,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationModalsCluster.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22753,
-        "lineCount": 492,
+        "sizeBytes": 23602,
+        "lineCount": 516,
         "ext": ".tsx"
       }
     },
@@ -49687,8 +49815,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26938,
-        "lineCount": 604,
+        "sizeBytes": 28935,
+        "lineCount": 649,
         "ext": ".tsx"
       }
     },
@@ -49700,8 +49828,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationTypes.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2699,
-        "lineCount": 99,
+        "sizeBytes": 2763,
+        "lineCount": 101,
         "ext": ".ts"
       }
     },
@@ -49784,6 +49912,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
+      "type": "File",
+      "label": "comboExpiryConsultHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7087,
+        "lineCount": 206,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/consultation/configurator/ConfiguratorDesignAndCurlSections.tsx",
       "type": "File",
       "label": "ConfiguratorDesignAndCurlSections.tsx",
@@ -49817,8 +49958,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17595,
-        "lineCount": 486,
+        "sizeBytes": 17971,
+        "lineCount": 490,
         "ext": ".ts"
       }
     },
@@ -49856,8 +49997,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/pricingAndCvPoints.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15655,
-        "lineCount": 425,
+        "sizeBytes": 15931,
+        "lineCount": 428,
         "ext": ".ts"
       }
     },
@@ -49869,8 +50010,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/wingsMenuClassicAndMink.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4673,
-        "lineCount": 198,
+        "sizeBytes": 5811,
+        "lineCount": 240,
         "ext": ".ts"
       }
     },
@@ -49895,7 +50036,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/wingsMenuLookup.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 705,
+        "sizeBytes": 708,
         "lineCount": 19,
         "ext": ".ts"
       }
@@ -49908,8 +50049,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationComboAndUpgrade.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21221,
-        "lineCount": 573,
+        "sizeBytes": 25956,
+        "lineCount": 670,
         "ext": ".ts"
       }
     },
@@ -49921,8 +50062,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationPricingAndSave.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13487,
-        "lineCount": 454,
+        "sizeBytes": 16472,
+        "lineCount": 532,
         "ext": ".ts"
       }
     },
@@ -49960,8 +50101,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17573,
-        "lineCount": 396,
+        "sizeBytes": 18921,
+        "lineCount": 420,
         "ext": ".tsx"
       }
     },
@@ -49973,8 +50114,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingsModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18918,
-        "lineCount": 350,
+        "sizeBytes": 19749,
+        "lineCount": 365,
         "ext": ".tsx"
       }
     },
@@ -49986,8 +50127,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/incomingBookingHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12277,
-        "lineCount": 368,
+        "sizeBytes": 14378,
+        "lineCount": 419,
         "ext": ".ts"
       }
     },
@@ -50038,8 +50179,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellComboWalletAccountingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19509,
-        "lineCount": 360,
+        "sizeBytes": 24571,
+        "lineCount": 453,
         "ext": ".tsx"
       }
     },
@@ -50051,8 +50192,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellHeaderAndSerumSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15721,
-        "lineCount": 330,
+        "sizeBytes": 18742,
+        "lineCount": 390,
         "ext": ".tsx"
       }
     },
@@ -50064,8 +50205,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellMainComboSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19338,
-        "lineCount": 411,
+        "sizeBytes": 20224,
+        "lineCount": 427,
         "ext": ".tsx"
       }
     },
@@ -50090,8 +50231,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellUnderComboAndSummary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15890,
-        "lineCount": 350,
+        "sizeBytes": 17097,
+        "lineCount": 377,
         "ext": ".tsx"
       }
     },
@@ -50103,9 +50244,35 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellCheckoutHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7899,
-        "lineCount": 176,
+        "sizeBytes": 9626,
+        "lineCount": 214,
         "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/upsell/useUpsellComboExpiry.ts",
+      "type": "File",
+      "label": "useUpsellComboExpiry.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/upsell/useUpsellComboExpiry.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5574,
+        "lineCount": 164,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/ComboExpiryStatusBadge.tsx",
+      "type": "File",
+      "label": "ComboExpiryStatusBadge.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/ComboExpiryStatusBadge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4347,
+        "lineCount": 137,
+        "ext": ".tsx"
       }
     },
     {
@@ -50118,6 +50285,19 @@
       "metadata": {
         "sizeBytes": 5051,
         "lineCount": 152,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx",
+      "type": "File",
+      "label": "ComboWalletDetailModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21648,
+        "lineCount": 460,
         "ext": ".tsx"
       }
     },
@@ -50311,8 +50491,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/WingsComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16074,
-        "lineCount": 436,
+        "sizeBytes": 16535,
+        "lineCount": 448,
         "ext": ".tsx"
       }
     },
@@ -50324,8 +50504,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/WingsUnifiedComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4683,
-        "lineCount": 134,
+        "sizeBytes": 5228,
+        "lineCount": 149,
         "ext": ".tsx"
       }
     },
@@ -50402,8 +50582,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/combo-card/ComboCardBodySections.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18840,
-        "lineCount": 529,
+        "sizeBytes": 20597,
+        "lineCount": 574,
         "ext": ".tsx"
       }
     },
@@ -50428,8 +50608,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/combo-card/GoldLaurelWreathBadge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8307,
-        "lineCount": 258,
+        "sizeBytes": 8971,
+        "lineCount": 281,
         "ext": ".tsx"
       }
     },
@@ -50454,8 +50634,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21648,
-        "lineCount": 576,
+        "sizeBytes": 21906,
+        "lineCount": 582,
         "ext": ".tsx"
       }
     },
@@ -50506,8 +50686,8 @@
       "filePath": "apps/web/app/ios-app/state/__tests__/wings-combo-catalog.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2950,
-        "lineCount": 82,
+        "sizeBytes": 3356,
+        "lineCount": 92,
         "ext": ".ts"
       }
     },
@@ -50519,8 +50699,8 @@
       "filePath": "apps/web/app/ios-app/state/demoBookingsData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11239,
-        "lineCount": 364,
+        "sizeBytes": 12300,
+        "lineCount": 401,
         "ext": ".ts"
       }
     },
@@ -50610,8 +50790,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBillingCheckout.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16483,
-        "lineCount": 432,
+        "sizeBytes": 16930,
+        "lineCount": 442,
         "ext": ".ts"
       }
     },
@@ -50649,8 +50829,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17692,
-        "lineCount": 454,
+        "sizeBytes": 17805,
+        "lineCount": 457,
         "ext": ".ts"
       }
     },
@@ -51104,8 +51284,8 @@
       "filePath": "apps/web/lib/api/ios.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1642,
-        "lineCount": 50,
+        "sizeBytes": 2141,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -51572,8 +51752,34 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 172094,
-        "lineCount": 2176,
+        "sizeBytes": 177840,
+        "lineCount": 2230,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/combo-expiry.test.ts",
+      "type": "File",
+      "label": "combo-expiry.test.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/combo-expiry.test.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8436,
+        "lineCount": 228,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/combo-expiry.ts",
+      "type": "File",
+      "label": "combo-expiry.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/combo-expiry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 22171,
+        "lineCount": 542,
         "ext": ".ts"
       }
     },
@@ -51585,8 +51791,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 237340,
-        "lineCount": 6678,
+        "sizeBytes": 237671,
+        "lineCount": 6693,
         "ext": ".ts"
       }
     },
@@ -51637,8 +51843,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3338,
-        "lineCount": 88,
+        "sizeBytes": 3381,
+        "lineCount": 89,
         "ext": ".ts"
       }
     },
@@ -52209,8 +52415,8 @@
       "filePath": "packages/shared/src/types/ios-app.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 30639,
-        "lineCount": 997,
+        "sizeBytes": 32266,
+        "lineCount": 1054,
         "ext": ".ts"
       }
     },
@@ -57589,6 +57795,13 @@
     {
       "id": "edge:route:POST:/api/ios/bookings:ws:apps/api",
       "source": "route:POST:/api/ios/bookings",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/ios/combo-balances/expiry:ws:apps/api",
+      "source": "route:POST:/api/ios/combo-balances/expiry",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -66759,6 +66972,27 @@
     {
       "id": "edge:type:@mos-lab/shared:IosPrintReceiptResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosPrintReceiptResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosAdminComboExpiryAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryActionPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosAdminComboExpiryActionPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosAdminComboExpiryActionResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -76151,6 +76385,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/ios-combo-expiry.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/ios-combo-expiry.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/ios-legacy-settlement.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/ios-legacy-settlement.test.ts",
       "target": "ws:packages/shared",
@@ -76202,6 +76443,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-bookings-query.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-bookings-query.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-combo-expiry.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -79315,6 +79563,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkout/ReceiptComboExpiryLine.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkout/ReceiptComboExpiryLine.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/ConsultationComboSelectorSection.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/ConsultationComboSelectorSection.tsx",
       "target": "ws:packages/shared",
@@ -79331,6 +79586,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -79394,6 +79656,27 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/upsell/upsellCheckoutHelpers.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/upsell/upsellCheckoutHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/upsell/useUpsellComboExpiry.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/upsell/useUpsellComboExpiry.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/ComboExpiryStatusBadge.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/ComboExpiryStatusBadge.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -88506,6 +88789,13 @@
       "label": "CALLS catalog.updateService"
     },
     {
+      "id": "edge:page:/dashboard/catalog:route:POST:/api/ios/combo-balances/expiry",
+      "source": "page:/dashboard/catalog",
+      "target": "route:POST:/api/ios/combo-balances/expiry",
+      "type": "API_CALL",
+      "label": "CALLS catalog.updateCombo"
+    },
+    {
       "id": "edge:page:/dashboard/catalog:route:PUT:/api/menu-access/role-groups/:roleGroupId",
       "source": "page:/dashboard/catalog",
       "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
@@ -94218,6 +94508,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ios/combo-balances/expiry",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/ios/combo-balances/expiry",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ios/print-receipt",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/ios/print-receipt",
@@ -99548,6 +99845,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ios/bookings",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/ios/bookings",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ios/combo-balances/expiry",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/ios/combo-balances/expiry",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -108365,6 +108669,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ios/combo-balances/expiry",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/ios/combo-balances/expiry",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ios/print-receipt",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/ios/print-receipt",
@@ -110137,31 +110448,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4057,
-    "totalEdges": 8211,
+    "totalNodes": 4073,
+    "totalEdges": 8226,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
-      "FastifyRoute": 762,
+      "FastifyRoute": 763,
       "Component": 65,
-      "SharedType": 1460,
+      "SharedType": 1463,
       "DesignToken": 12,
       "UIComponent": 363,
-      "File": 1210
+      "File": 1222
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1654,
-      "HANDLES_ROUTE": 762,
+      "EXPORTS": 1657,
+      "HANDLES_ROUTE": 763,
       "RENDERS": 428,
       "USES_TOKEN": 365,
-      "IMPORTS": 661,
+      "IMPORTS": 668,
       "QUERIES_MODEL": 431,
-      "API_CALL": 3910
+      "API_CALL": 3914
     },
-    "fastifyRouteCount": 767,
+    "fastifyRouteCount": 768,
     "prismaModelCount": 182,
     "nextPageCount": 65,
-    "sharedTypeCount": 1460
+    "sharedTypeCount": 1463
   },
   "routes": [
     {
@@ -113821,6 +114132,13 @@
     {
       "method": "POST",
       "path": "/api/ios/bookings",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ios/combo-balances/expiry",
       "filePath": "apps/api/src/modules/ios/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ios"

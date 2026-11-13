@@ -1,8 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, CheckCircle2, Wallet, ChevronUp } from 'lucide-react';
-import { MatchedComboPackageOption, calculateComboPurchaseAccounting } from '@mos-lab/shared';
+import { Sparkles, CheckCircle2, Wallet, ChevronUp, CalendarClock } from 'lucide-react';
+import {
+  MatchedComboPackageOption,
+  calculateComboPurchaseAccounting,
+  type ComboPurchaseExpiryResult,
+  type ComboTodayUsageMode,
+} from '@mos-lab/shared';
 import { FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 
 type PurchaseAccountingResult = ReturnType<typeof calculateComboPurchaseAccounting>;
@@ -14,6 +19,9 @@ export interface UpsellComboWalletAccountingCardProps {
   purchaseAccounting: PurchaseAccountingResult | null;
   deductTodayIntoCombo: boolean;
   onSetDeductTodayIntoCombo: (deduct: boolean) => void;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  onSetUpperTodayUsageMode?: (mode: ComboTodayUsageMode) => void;
+  selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
   servicePrice: number;
   showStaffRewards: boolean;
   actorName: string;
@@ -27,6 +35,13 @@ export function UpsellComboWalletAccountingCard({
   purchaseAccounting,
   deductTodayIntoCombo,
   onSetDeductTodayIntoCombo,
+  upperTodayUsageMode = isExistingComboLive
+    ? 'USE_OLD_COMBO'
+    : deductTodayIntoCombo
+      ? 'USE_NEW_COMBO'
+      : 'RETAIL_OR_VOUCHER',
+  onSetUpperTodayUsageMode,
+  selectedUpperExpiry,
   servicePrice,
   showStaffRewards,
   actorName,
@@ -51,25 +66,82 @@ export function UpsellComboWalletAccountingCard({
                 {selectedNewComboPkg.comboPrice.toLocaleString('vi-VN')} đ
               </span>
             </div>
+            {onSetUpperTodayUsageMode && (
+              <div
+                className={`grid grid-cols-3 gap-1 p-1 rounded-xl border ${
+                  isDark ? 'bg-neutral-900 border-amber-500/30' : 'bg-white border-amber-200'
+                }`}
+              >
+                {(
+                  [
+                    { mode: 'USE_OLD_COMBO' as const, label: 'Trừ gói cũ (+1T)' },
+                    { mode: 'USE_NEW_COMBO' as const, label: 'Trừ gói mới' },
+                    { mode: 'RETAIL_OR_VOUCHER' as const, label: 'Đi lẻ (+1T+21N)' },
+                  ] as const
+                ).map((opt) => {
+                  const active = upperTodayUsageMode === opt.mode;
+                  return (
+                    <button
+                      key={opt.mode}
+                      type="button"
+                      onClick={() => onSetUpperTodayUsageMode(opt.mode)}
+                      className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-extrabold leading-tight text-center transition-all cursor-pointer tabular-nums ${
+                        active
+                          ? 'bg-[#FFB400] text-black shadow-2xs'
+                          : isDark
+                            ? 'text-neutral-400 hover:text-neutral-200'
+                            : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <div
               className={`p-2.5 ${isDark ? 'bg-neutral-900/90 border-amber-500/30 text-neutral-200' : 'bg-white border-amber-200 text-gray-700'} rounded-lg border text-[11px] space-y-1.5`}
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <span className={`${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>Buổi làm hôm nay:</span>
-                <strong className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold`}>
-                  ✓ Đã trừ vào Gói cũ (0đ)
+                <strong className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold text-right`}>
+                  {upperTodayUsageMode === 'USE_NEW_COMBO'
+                    ? '✓ Trừ vào Gói mới (0đ)'
+                    : upperTodayUsageMode === 'RETAIL_OR_VOUCHER'
+                      ? 'Thanh toán lẻ / Voucher (+1T +21N)'
+                      : '✓ Trừ vào Gói cũ (+1T mua sớm)'}
                 </strong>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <span className={`${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                  Số buổi Gói mới cộng vào ví:
+                  Tổng Combo Mi Trên sau hôm nay:
                 </span>
                 <span className={`font-extrabold ${isDark ? 'text-indigo-300' : 'text-indigo-900'} tabular-nums`}>
-                  ✦ {selectedNewComboPkg.comboNewCount + selectedNewComboPkg.bonusNewCount} · ↻{' '}
-                  {selectedNewComboPkg.comboRefillCount + selectedNewComboPkg.bonusRefillCount} (Đủ{' '}
-                  {selectedNewComboPkg.totalSessions} buổi)
+                  {selectedUpperExpiry
+                    ? `✦ ${selectedUpperExpiry.combinedNormalAfterToday} · ↻ ${selectedUpperExpiry.combinedRetainAfterToday} (${selectedUpperExpiry.combinedTotalAfterToday} buổi)`
+                    : `✦ ${selectedNewComboPkg.comboNewCount + selectedNewComboPkg.bonusNewCount} · ↻ ${selectedNewComboPkg.comboRefillCount + selectedNewComboPkg.bonusRefillCount} (Đủ ${selectedNewComboPkg.totalSessions} buổi)`}
                 </span>
               </div>
+              {selectedUpperExpiry && (
+                <div
+                  className={`pt-1.5 border-t ${isDark ? 'border-neutral-800' : 'border-amber-100'} space-y-0.5 tabular-nums`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 font-bold ${isDark ? 'text-amber-300' : 'text-amber-900'}`}
+                    >
+                      <CalendarClock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Hạn sử dụng mới:</span>
+                    </span>
+                    <span className={`font-black text-[12px] ${isDark ? 'text-amber-300' : 'text-amber-950'}`}>
+                      {selectedUpperExpiry.dateExpiredDisplay}
+                    </span>
+                  </div>
+                  <div className={`text-[10px] font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                    {selectedUpperExpiry.formulaSummaryVi}
+                  </div>
+                </div>
+              )}
               {showStaffRewards && (
                 <div
                   className={`flex justify-between items-center pt-1 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
@@ -95,9 +167,14 @@ export function UpsellComboWalletAccountingCard({
               : selectedNewComboPkg.bonusNewCount * (selectedNewComboPkg.newUnitPrice || 0) +
                 selectedNewComboPkg.bonusRefillCount * (selectedNewComboPkg.refillUnitPrice || 0);
 
-            const walletRemainingDisplay = deductTodayIntoCombo
-              ? purchaseAccounting.remainingWalletAfterToday.totalRemaining
-              : selectedNewComboPkg.totalSessions;
+            const revivedSessions = selectedUpperExpiry?.revivedExpiredSessions || 0;
+            const walletRemainingDisplay =
+              revivedSessions > 0 && selectedUpperExpiry
+                ? selectedUpperExpiry.combinedTotalAfterToday
+                : deductTodayIntoCombo
+                  ? purchaseAccounting.remainingWalletAfterToday.totalRemaining
+                  : selectedNewComboPkg.totalSessions;
+            const totalPooledSessionsDisplay = selectedNewComboPkg.totalSessions + revivedSessions;
             const paidRemainingDisplay = deductTodayIntoCombo
               ? purchaseAccounting.remainingWalletAfterToday.totalPaidRemaining
               : selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount;
@@ -122,8 +199,11 @@ export function UpsellComboWalletAccountingCard({
                   >
                     <button
                       type="button"
-                      onClick={() => onSetDeductTodayIntoCombo(true)}
-                      className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
+                      onClick={() => {
+                        onSetDeductTodayIntoCombo(true);
+                        onSetUpperTodayUsageMode?.('USE_NEW_COMBO');
+                      }}
+                      className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                         deductTodayIntoCombo
                           ? isDark
                             ? 'bg-neutral-900 text-emerald-400 shadow-xs font-black'
@@ -138,8 +218,11 @@ export function UpsellComboWalletAccountingCard({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onSetDeductTodayIntoCombo(false)}
-                      className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${
+                      onClick={() => {
+                        onSetDeductTodayIntoCombo(false);
+                        onSetUpperTodayUsageMode?.('RETAIL_OR_VOUCHER');
+                      }}
+                      className={`py-2 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                         !deductTodayIntoCombo
                           ? isDark
                             ? 'bg-neutral-900 text-indigo-400 shadow-xs font-black'
@@ -150,7 +233,7 @@ export function UpsellComboWalletAccountingCard({
                       }`}
                     >
                       {!deductTodayIntoCombo && <span>✓</span>}
-                      <span>Tách trả lẻ ca này</span>
+                      <span>Đi lẻ / Voucher (+21N)</span>
                     </button>
                   </div>
                 </div>
@@ -238,7 +321,7 @@ export function UpsellComboWalletAccountingCard({
                     </div>
                   </div>
 
-                  {/* Box 2: Ví còn lại */}
+                  {/* Box 2: Combo Mi Trên còn lại */}
                   <div
                     className={`${isDark ? 'bg-black/60 border-neutral-800' : 'bg-white/95 border-slate-200/80'} rounded-xl p-2.5 border shadow-2xs flex flex-col justify-between space-y-2`}
                   >
@@ -247,7 +330,7 @@ export function UpsellComboWalletAccountingCard({
                         className={`text-[9.5px] font-extrabold uppercase tracking-wider ${isDark ? 'text-neutral-400' : 'text-slate-500'} flex items-center gap-1`}
                       >
                         <Wallet className="w-3 h-3 text-indigo-400" />
-                        <span>{deductTodayIntoCombo ? 'Ví còn lại sau ca này' : 'Ví nguyên vẹn cho lần sau'}</span>
+                        <span>{deductTodayIntoCombo ? 'Combo Mi Trên sau ca này' : 'Combo Mi Trên cho lần sau'}</span>
                       </div>
                       <div
                         className={`mt-1 flex items-baseline gap-1 ${isDark ? 'text-white' : 'text-slate-900'} leading-tight`}
@@ -258,7 +341,7 @@ export function UpsellComboWalletAccountingCard({
                           {walletRemainingDisplay}
                         </span>
                         <span className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                          /{selectedNewComboPkg.totalSessions} buổi
+                          /{totalPooledSessionsDisplay} buổi
                         </span>
                       </div>
                       <div
@@ -279,19 +362,34 @@ export function UpsellComboWalletAccountingCard({
                             </span>
                           </div>
                         )}
+                        {revivedSessions > 0 && selectedUpperExpiry && (
+                          <div className={`${isDark ? 'text-amber-300' : 'text-amber-800'} font-extrabold`}>
+                            • Cứu <strong>{revivedSessions}</strong> buổi gói cũ (✦
+                            {selectedUpperExpiry.revivedNormalSessions} · ↻{selectedUpperExpiry.revivedRetainSessions})
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div
-                      className={`pt-1.5 border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'} flex items-center justify-between text-[10px]`}
+                      className={`pt-1.5 border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'} space-y-0.5 text-[10px]`}
                     >
-                      <span className={`${isDark ? 'text-neutral-400' : 'text-slate-500'} font-medium`}>
-                        Hạn sử dụng:
-                      </span>
-                      <span className={`font-black ${isDark ? 'text-neutral-300' : 'text-slate-700'} tabular-nums`}>
-                        {selectedNewComboPkg.validityMonths
-                          ? `${selectedNewComboPkg.validityMonths} tháng`
-                          : '36 tháng'}
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className={`${isDark ? 'text-neutral-400' : 'text-slate-500'} font-medium`}>
+                          HSD mới:
+                        </span>
+                        <span className={`font-black ${isDark ? 'text-amber-300' : 'text-amber-800'} tabular-nums`}>
+                          {selectedUpperExpiry
+                            ? selectedUpperExpiry.dateExpiredDisplay
+                            : selectedNewComboPkg.validityMonths
+                              ? `${selectedNewComboPkg.validityMonths} tháng`
+                              : '36 tháng'}
+                        </span>
+                      </div>
+                      {selectedUpperExpiry && (
+                        <div className={`text-[9px] leading-snug ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                          {selectedUpperExpiry.formulaSummaryVi}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { Eye, EyeOff } from 'lucide-react';
@@ -30,10 +31,13 @@ import { UpsellMainComboSelector } from './upsell/UpsellMainComboSelector';
 import { UpsellUnderComboAndSummary } from './upsell/UpsellUnderComboAndSummary';
 import { UpsellModals } from './upsell/UpsellModals';
 import { buildUpsellCheckoutPayload } from './upsell/upsellCheckoutHelpers';
+import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
 
 interface Screen11ProductUpsellProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
+  isAdmin?: boolean;
+  onRefreshDb?: () => Promise<any> | void;
   onBack: () => void;
   onGoToBilling: (payload?: {
     cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
@@ -43,7 +47,14 @@ interface Screen11ProductUpsellProps {
   }) => void;
 }
 
-export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }: Screen11ProductUpsellProps) {
+export function Screen11ProductUpsell({
+  booking,
+  actor,
+  isAdmin = false,
+  onRefreshDb,
+  onBack,
+  onGoToBilling,
+}: Screen11ProductUpsellProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(SERUM_TIERS_CVL[0].id);
@@ -150,9 +161,15 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
   );
   const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
 
-  // Nếu khách có combo và còn > 2 lần (và chưa chủ động chọn mua thêm gói ở bước Tư Vấn): mặc định ẨN phần mua thêm combo
+  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn và chưa chọn sẵn gói ở Tư Vấn): mặc định ẨN phần mua thêm combo
   const hasPreselectedAnyCombo = Boolean(booking?.selectedCombo || booking?.selectedUnderCombo);
-  const shouldCollapseNewComboByDefault = isExistingComboLive && remainingSessions > 2 && !hasPreselectedAnyCombo;
+  const shouldAutoExpandRenewal = Boolean(
+    booking?.comboLiveStatus?.isExpired ||
+    booking?.comboLiveStatus?.isExpiringSoon ||
+    remainingSessions <= 2 ||
+    hasPreselectedAnyCombo
+  );
+  const shouldCollapseNewComboByDefault = isExistingComboLive && !shouldAutoExpandRenewal;
   const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!shouldCollapseNewComboByDefault);
 
   React.useEffect(() => {
@@ -208,23 +225,6 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
       });
     },
     [booking?.id, selectedNewComboId]
-  );
-
-  const hydratedDeductToday =
-    booking?.selectedCombo?.todaySingleServiceWaived !== undefined
-      ? Boolean(booking.selectedCombo.todaySingleServiceWaived)
-      : true;
-  const [manualDeductEdit, setManualDeductEdit] = useState<{
-    bookingId: number | undefined;
-    deduct: boolean;
-  } | null>(null);
-  const deductTodayIntoCombo =
-    manualDeductEdit && manualDeductEdit.bookingId === booking?.id ? manualDeductEdit.deduct : hydratedDeductToday;
-  const setDeductTodayIntoCombo = React.useCallback(
-    (deduct: boolean) => {
-      setManualDeductEdit({ bookingId: booking?.id, deduct });
-    },
-    [booking?.id]
   );
 
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
@@ -315,9 +315,34 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         : null,
     [selectedUnderComboPkg, underServicePrice]
   );
-  const shouldWaiveUnderToday = Boolean(
-    underServicePrice > 0 || (booking?.attributes?.hasUnderMink && !hasUnderMinkComboActive)
-  );
+  const {
+    isWalletModalOpen,
+    setIsWalletModalOpen,
+    existingUpperExpirySnapshot,
+    existingUnderExpirySnapshot,
+    upperTodayUsageMode,
+    setUpperTodayUsageMode,
+    underTodayUsageMode,
+    todayServiceType,
+    underServiceType,
+    deductTodayIntoCombo,
+    setDeductTodayIntoCombo,
+    upperExpiryPreviewMap,
+    underExpiryPreviewMap,
+    selectedUpperExpiry,
+    selectedUnderExpiry,
+    shouldUseOldUpperComboToday,
+    shouldWaiveUnderToday,
+  } = useUpsellComboExpiry({
+    booking,
+    matchedPackages,
+    underLashPackages,
+    selectedNewComboPkg,
+    selectedUnderComboPkg,
+    isExistingComboLive,
+    hasUnderMinkComboActive,
+    underServicePrice,
+  });
 
   // 5. Tính hạch toán khi TRỪ GÓI COMBO ĐANG CÓ (FIFO Lượt Mua -> Lượt Tặng 0đ + Phụ thu Refill->New hoặc Up-size Volume)
   const [simulateOnlyRefillLeft, setSimulateOnlyRefillLeft] = useState<boolean>(false);
@@ -400,14 +425,14 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
     servicePrice,
     upgradePrice: booking?.upgradePrice,
     serviceName: booking?.serviceName,
-    isComboLive: isExistingComboLive,
+    isComboLive: shouldUseOldUpperComboToday,
     hasUnderMink: booking?.attributes?.hasUnderMink,
     underMinkServiceType: booking?.attributes?.underMinkServiceType,
     hasUnderMinkCombo: hasUnderMinkComboActive,
     selectedCombo: selectedNewComboPkg
       ? {
           price: selectedNewComboPkg.comboPrice,
-          todaySingleServiceWaived: isExistingComboLive ? false : deductTodayIntoCombo,
+          todaySingleServiceWaived: upperTodayUsageMode === 'USE_NEW_COMBO',
         }
       : null,
     selectedUnderCombo: selectedUnderComboPkg
@@ -416,9 +441,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           todaySingleServiceWaived: shouldWaiveUnderToday,
         }
       : null,
-    comboRedemption: redemptionAccounting
-      ? { totalCustomerPayToday: redemptionAccounting.totalCustomerPayToday }
-      : null,
+    comboRedemption:
+      shouldUseOldUpperComboToday && redemptionAccounting
+        ? { totalCustomerPayToday: redemptionAccounting.totalCustomerPayToday }
+        : null,
   });
 
   const subtotal = effectiveServiceChargeToday + newComboTotal + underComboTotal + serumTotal;
@@ -435,8 +461,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         yeppeumCount,
         selectedSerumTier,
         isExistingComboLive,
+        shouldUseOldUpperComboToday,
         selectedNewComboPkg,
         deductTodayIntoCombo,
+        upperTodayUsageMode,
+        selectedUpperExpiry,
+        existingUpperComboDateExpired: booking?.comboLiveStatus?.dateExpired,
         purchaseAccounting,
         newComboBonus,
         isUpTierPackage,
@@ -447,6 +477,8 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         underPurchaseAccounting,
         underComboBonus,
         deductUnderTodayIntoCombo: shouldWaiveUnderToday,
+        underTodayUsageMode,
+        selectedUnderExpiry,
       })
     );
   };
@@ -506,6 +538,7 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           selectedSerumTier={selectedSerumTier}
           showStaffRewards={showStaffRewards}
           onOpenSerumInfoModal={() => setIsSerumInfoModalOpen(true)}
+          onOpenWalletModal={() => setIsWalletModalOpen(true)}
         />
 
         <UpsellMainComboSelector
@@ -535,6 +568,10 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           purchaseAccounting={purchaseAccounting}
           deductTodayIntoCombo={deductTodayIntoCombo}
           onSetDeductTodayIntoCombo={setDeductTodayIntoCombo}
+          upperExpiryPreviewMap={upperExpiryPreviewMap}
+          upperTodayUsageMode={upperTodayUsageMode}
+          onSetUpperTodayUsageMode={setUpperTodayUsageMode}
+          selectedUpperExpiry={selectedUpperExpiry}
           showStaffRewards={showStaffRewards}
           actorName={actorName}
           onOpenLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(true)}
@@ -552,6 +589,9 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
           selectedUnderComboPkg={selectedUnderComboPkg}
           selectedNewComboPkg={selectedNewComboPkg}
           deductTodayIntoCombo={deductTodayIntoCombo}
+          underExpiryPreviewMap={underExpiryPreviewMap}
+          selectedUpperExpiry={selectedUpperExpiry}
+          selectedUnderExpiry={selectedUnderExpiry}
           servicePrice={servicePrice}
           effectiveServiceChargeToday={effectiveServiceChargeToday}
           redemptionAccounting={redemptionAccounting}
@@ -582,6 +622,12 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         welcomeEligibility={welcomeEligibility}
         selectedPackageId={selectedNewComboPkg?.id || null}
         todaySingleServicePrice={effectiveUpperSinglePrice}
+        existingUpperExpirySnapshot={existingUpperExpirySnapshot}
+        existingUnderExpirySnapshot={existingUnderExpirySnapshot}
+        upperTodayUsageMode={upperTodayUsageMode}
+        underTodayUsageMode={underTodayUsageMode}
+        todayServiceType={todayServiceType}
+        underServiceType={underServiceType}
         initialSelectedUpperPkg={selectedNewComboPkg}
         initialSelectedUnderPkg={selectedUnderComboPkg}
         onSelectPackage={(pkg) => {
@@ -618,6 +664,15 @@ export function Screen11ProductUpsell({ booking, actor, onBack, onGoToBilling }:
         }}
         isLockedWelcomeModalOpen={isLockedWelcomeModalOpen}
         onCloseLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(false)}
+      />
+
+      <ComboWalletDetailModal
+        booking={booking || null}
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        isAdmin={isAdmin}
+        theme={isDark ? 'dark' : 'light'}
+        onUpdated={onRefreshDb}
       />
     </div>
   );

@@ -6,6 +6,8 @@ import type {
   IosBookingActionResponse,
   IosPrintReceiptPayload,
   IosPrintReceiptResponse,
+  IosAdminComboExpiryActionPayload,
+  IosAdminComboExpiryActionResponse,
 } from '@mos-lab/shared';
 
 export const iosApi = {
@@ -42,6 +44,18 @@ export const iosApi = {
         signal: options?.signal,
         priority: options?.priority,
         timeout: options?.timeout ?? 8000,
+      });
+      return res.data;
+    },
+
+    async updateComboBalanceExpiry(
+      payload: IosAdminComboExpiryActionPayload,
+      options?: ApiRequestOptions
+    ): Promise<IosAdminComboExpiryActionResponse> {
+      const res = await api.post<IosAdminComboExpiryActionResponse>('/ios/combo-balances/expiry', payload, {
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
       });
       return res.data;
     },

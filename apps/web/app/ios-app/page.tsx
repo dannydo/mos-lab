@@ -298,6 +298,8 @@ function IosAppInner() {
           <Screen02CheckInProfile
             booking={currentBooking}
             actor={state.actor}
+            isAdmin={state.isAdmin}
+            onRefreshDb={() => state.refreshDb()}
             isCheckInLocked={Boolean(
               !state.isAdmin && state.activeServicingBooking && currentBooking.id !== state.activeServicingBooking.id
             )}
@@ -314,6 +316,8 @@ function IosAppInner() {
           <Screen03ConsultationMatrix
             booking={currentBooking}
             actor={state.actor}
+            isAdmin={state.isAdmin}
+            onRefreshDb={() => state.refreshDb()}
             onBack={() => state.setCurrentStep(2)}
             onSave={state.handleSaveConsultation}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
@@ -407,6 +411,8 @@ function IosAppInner() {
           <Screen11ProductUpsell
             booking={currentBooking}
             actor={state.actor}
+            isAdmin={state.isAdmin}
+            onRefreshDb={() => state.refreshDb()}
             onBack={state.handleBackToAfterPhoto}
             onGoToBilling={state.handleGoToBilling}
           />

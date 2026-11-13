@@ -3,8 +3,12 @@ import {
   MatchedComboPackageOption,
   calculateComboPurchaseAccounting,
   calculateComboRedemptionAccounting,
+  formatExpiryDateDdMmYyyy,
+  type ComboPurchaseExpiryResult,
+  type ComboTodayUsageMode,
 } from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
+import { mergeExpiryIntoRemainingWallet } from '../consultation/comboExpiryConsultHelpers';
 
 type PurchaseAccountingResult = ReturnType<typeof calculateComboPurchaseAccounting>;
 type RedemptionAccountingResult = ReturnType<typeof calculateComboRedemptionAccounting>;
@@ -14,8 +18,12 @@ export interface BuildUpsellCheckoutPayloadParams {
   yeppeumCount: number;
   selectedSerumTier: SerumTierItem;
   isExistingComboLive: boolean;
+  shouldUseOldUpperComboToday?: boolean;
   selectedNewComboPkg: MatchedComboPackageOption | null;
   deductTodayIntoCombo: boolean;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
+  existingUpperComboDateExpired?: string | null;
   purchaseAccounting: PurchaseAccountingResult | null;
   newComboBonus: number;
   isUpTierPackage: boolean;
@@ -26,14 +34,20 @@ export interface BuildUpsellCheckoutPayloadParams {
   underPurchaseAccounting: PurchaseAccountingResult | null;
   underComboBonus: number;
   deductUnderTodayIntoCombo?: boolean;
+  underTodayUsageMode?: ComboTodayUsageMode;
+  selectedUnderExpiry?: ComboPurchaseExpiryResult | null;
 }
 
 export function buildUpsellCheckoutPayload({
   yeppeumCount,
   selectedSerumTier,
   isExistingComboLive,
+  shouldUseOldUpperComboToday,
   selectedNewComboPkg,
   deductTodayIntoCombo,
+  upperTodayUsageMode,
+  selectedUpperExpiry,
+  existingUpperComboDateExpired,
   purchaseAccounting,
   newComboBonus,
   isUpTierPackage,
@@ -44,6 +58,8 @@ export function buildUpsellCheckoutPayload({
   underPurchaseAccounting,
   underComboBonus,
   deductUnderTodayIntoCombo = true,
+  underTodayUsageMode,
+  selectedUnderExpiry,
 }: BuildUpsellCheckoutPayloadParams) {
   const cartProducts =
     yeppeumCount > 0
@@ -58,9 +74,16 @@ export function buildUpsellCheckoutPayload({
         ]
       : [];
 
-  const remainingWallet = isExistingComboLive
-    ? selectedNewComboPkg
-      ? {
+  const effectiveUseOldComboToday =
+    shouldUseOldUpperComboToday !== undefined ? shouldUseOldUpperComboToday : isExistingComboLive;
+  const waiveByNewUpperCombo = upperTodayUsageMode
+    ? upperTodayUsageMode === 'USE_NEW_COMBO'
+    : !isExistingComboLive && deductTodayIntoCombo;
+
+  const rawRemainingWallet = selectedNewComboPkg
+    ? waiveByNewUpperCombo && purchaseAccounting
+      ? purchaseAccounting.remainingWalletAfterToday
+      : {
           paidNew: selectedNewComboPkg.comboNewCount,
           paidRefill: selectedNewComboPkg.comboRefillCount,
           bonusNew: selectedNewComboPkg.bonusNewCount,
@@ -69,20 +92,12 @@ export function buildUpsellCheckoutPayload({
           totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
           totalRemaining: selectedNewComboPkg.totalSessions,
         }
-      : undefined
-    : deductTodayIntoCombo && purchaseAccounting
-      ? purchaseAccounting.remainingWalletAfterToday
-      : selectedNewComboPkg
-        ? {
-            paidNew: selectedNewComboPkg.comboNewCount,
-            paidRefill: selectedNewComboPkg.comboRefillCount,
-            bonusNew: selectedNewComboPkg.bonusNewCount,
-            bonusRefill: selectedNewComboPkg.bonusRefillCount,
-            totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
-            totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
-            totalRemaining: selectedNewComboPkg.totalSessions,
-          }
-        : undefined;
+    : undefined;
+
+  const remainingWallet =
+    rawRemainingWallet && selectedUpperExpiry
+      ? mergeExpiryIntoRemainingWallet(rawRemainingWallet, selectedUpperExpiry)
+      : rawRemainingWallet;
 
   const selectedCombo: NonNullable<BookingItem['selectedCombo']> | null =
     selectedNewComboPkg && (isExistingComboLive || purchaseAccounting)
@@ -104,21 +119,31 @@ export function buildUpsellCheckoutPayload({
           retailTotal: selectedNewComboPkg.retailTotal,
           savingsAmount: selectedNewComboPkg.savingsAmount,
           avgPerSessionPrice: selectedNewComboPkg.avgPerSessionPrice,
-          todaySingleServiceWaived: isExistingComboLive ? false : deductTodayIntoCombo,
+          todaySingleServiceWaived: waiveByNewUpperCombo,
+          todayUsageMode: upperTodayUsageMode,
+          dateExpired: selectedUpperExpiry?.dateExpired,
+          dateExpiredDisplay: selectedUpperExpiry?.dateExpiredDisplay,
+          expiryFormulaSummary: selectedUpperExpiry?.formulaSummaryVi,
+          revivedExpiredSessions: selectedUpperExpiry?.revivedExpiredSessions || 0,
           isUpTierUpgrade: isUpTierPackage,
           originalServiceCategory: autoMatchedCategoryId,
-          recognizedRevenueToday: isExistingComboLive
-            ? 0
-            : deductTodayIntoCombo && purchaseAccounting
+          recognizedRevenueToday:
+            waiveByNewUpperCombo && purchaseAccounting
               ? purchaseAccounting.recognizedRevenueToday
-              : servicePrice,
-          deferredRevenueBalance: selectedNewComboPkg.comboPrice,
+              : effectiveUseOldComboToday
+                ? 0
+                : servicePrice,
+          deferredRevenueBalance:
+            waiveByNewUpperCombo && purchaseAccounting
+              ? purchaseAccounting.deferredRevenueBalance
+              : selectedNewComboPkg.comboPrice,
           remainingAfterToday: remainingWallet,
         }
       : null;
 
+  const effectiveRedemptionExpiry = selectedUpperExpiry?.dateExpired || existingUpperComboDateExpired || null;
   const comboRedemption: NonNullable<BookingItem['comboRedemption']> | null =
-    isExistingComboLive && redemptionAccounting
+    effectiveUseOldComboToday && redemptionAccounting
       ? {
           comboName: redemptionAccounting.comboName,
           deductedBucket: redemptionAccounting.deductedBucket,
@@ -136,8 +161,24 @@ export function buildUpsellCheckoutPayload({
             1,
           paidRemaining: redemptionAccounting.walletAfter.paidNew + redemptionAccounting.walletAfter.paidRefill,
           bonusRemaining: redemptionAccounting.walletAfter.bonusNew + redemptionAccounting.walletAfter.bonusRefill,
+          dateExpired: effectiveRedemptionExpiry,
+          dateExpiredDisplay: formatExpiryDateDdMmYyyy(effectiveRedemptionExpiry) || null,
         }
       : null;
+
+  const rawUnderRemaining = selectedUnderComboPkg
+    ? deductUnderTodayIntoCombo && underPurchaseAccounting
+      ? underPurchaseAccounting.remainingWalletAfterToday
+      : {
+          paidNew: selectedUnderComboPkg.comboNewCount,
+          paidRefill: selectedUnderComboPkg.comboRefillCount,
+          bonusNew: selectedUnderComboPkg.bonusNewCount,
+          bonusRefill: selectedUnderComboPkg.bonusRefillCount,
+          totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
+          totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
+          totalRemaining: selectedUnderComboPkg.totalSessions,
+        }
+    : undefined;
 
   const selectedUnderCombo: NonNullable<BookingItem['selectedUnderCombo']> | null =
     selectedUnderComboPkg && underPurchaseAccounting
@@ -153,21 +194,19 @@ export function buildUpsellCheckoutPayload({
           savingsAmount: selectedUnderComboPkg.savingsAmount,
           avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
           todaySingleServiceWaived: deductUnderTodayIntoCombo,
+          todayUsageMode: underTodayUsageMode,
+          dateExpired: selectedUnderExpiry?.dateExpired,
+          dateExpiredDisplay: selectedUnderExpiry?.dateExpiredDisplay,
+          expiryFormulaSummary: selectedUnderExpiry?.formulaSummaryVi,
+          revivedExpiredSessions: selectedUnderExpiry?.revivedExpiredSessions || 0,
           recognizedRevenueToday: deductUnderTodayIntoCombo ? underPurchaseAccounting.recognizedRevenueToday : 0,
           deferredRevenueBalance: deductUnderTodayIntoCombo
             ? underPurchaseAccounting.deferredRevenueBalance
             : selectedUnderComboPkg.comboPrice,
-          remainingAfterToday: deductUnderTodayIntoCombo
-            ? underPurchaseAccounting.remainingWalletAfterToday
-            : {
-                paidNew: selectedUnderComboPkg.comboNewCount,
-                paidRefill: selectedUnderComboPkg.comboRefillCount,
-                bonusNew: selectedUnderComboPkg.bonusNewCount,
-                bonusRefill: selectedUnderComboPkg.bonusRefillCount,
-                totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
-                totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
-                totalRemaining: selectedUnderComboPkg.totalSessions,
-              },
+          remainingAfterToday:
+            rawUnderRemaining && selectedUnderExpiry
+              ? mergeExpiryIntoRemainingWallet(rawUnderRemaining, selectedUnderExpiry)
+              : rawUnderRemaining,
         }
       : null;
 

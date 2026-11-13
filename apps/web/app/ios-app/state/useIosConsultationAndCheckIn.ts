@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, Dispatch, SetStateAction, MutableRefObject } from 'react';
+import { useCallback, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import { hasCompleteNaturalLashAttributes, resolveEffectiveServiceTotal } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import type { IosUserRole, ActiveActorProfile } from './iosActorProfile';
@@ -39,6 +39,9 @@ export function useIosConsultationAndCheckIn({
   consultationReturnStep,
   setConsultationReturnStep,
 }: UseIosConsultationAndCheckInParams) {
+  const bookingsRef = useRef<BookingItem[]>(bookings);
+  bookingsRef.current = bookings;
+
   // Cập nhật ảnh đại diện khách hàng (đồng bộ tức thì client & server)
   const handleUpdateCustomerAvatar = useCallback(
     async (avatarUrl: string, targetBookingId?: number) => {
@@ -375,8 +378,8 @@ export function useIosConsultationAndCheckIn({
       selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null,
       notes?: string
     ) => {
-      const targetId = targetBookingId !== undefined ? Number(targetBookingId) : activeBookingId;
-      const targetBooking = bookings.find((b) => Number(b.id) === targetId);
+      const targetId = targetBookingId !== undefined ? Number(targetBookingId) : activeBookingIdRef.current;
+      const targetBooking = bookingsRef.current.find((b) => Number(b.id) === targetId);
 
       // 1. Cập nhật state bookings tức thì trên client
       setBookings((prev) =>
@@ -413,7 +416,7 @@ export function useIosConsultationAndCheckIn({
         console.warn('[useIosConsultationAndCheckIn] Failed to autosave consultation draft:', err);
       }
     },
-    [activeBookingId, bookings, postAction, setBookings]
+    [activeBookingIdRef, postAction, setBookings]
   );
 
   // Step 4: Assign Staff & Bed

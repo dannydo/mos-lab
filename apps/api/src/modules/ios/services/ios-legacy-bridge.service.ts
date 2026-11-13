@@ -5,6 +5,7 @@ import { IosSettlementStatus, SafeAny } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { getLegacyPool } from './db-pools.js';
 import { BookingOverrideRecord, LegacySettlementReceipt } from './ios-overrides.service.js';
+import { syncSettledComboExpiryInLegacyDb } from './ios-combo-expiry.service.js';
 import {
   buildLegacyOrderPayloads,
   LegacyOrderCatalogSnapshot,
@@ -436,6 +437,15 @@ export async function settleIosOrderWithLegacyPhp(
       };
     }
     await syncOrderServiceIds();
+
+    // Đồng bộ chính xác hạn sử dụng (date_expired) & cứu buổi gói hết hạn theo Kinh Thánh COMBO-004
+    await syncSettledComboExpiryInLegacyDb(pool, {
+      customerUserId: catalog.customerUserId,
+      staffId: checkOutStaffId || checkInStaffId || assignedStaffId,
+      selectedCombo: mergedOverride.selectedCombo,
+      selectedUnderCombo: mergedOverride.selectedUnderCombo,
+      comboRedemption: mergedOverride.comboRedemption,
+    });
 
     // Bước 3: Đồng bộ sản phẩm Dưỡng mi Yeppeum vào giỏ order_product (nếu có)
     for (const prod of catalog.products) {

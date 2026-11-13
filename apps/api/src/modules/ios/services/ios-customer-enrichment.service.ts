@@ -1,5 +1,13 @@
 import mysql from 'mysql2/promise';
-import { formatComboName, IosBookingItem, LashHistoryItem } from '@mos-lab/shared';
+import {
+  evaluateComboWalletStatus,
+  formatComboName,
+  getVietnamDateYmd,
+  IosBookingItem,
+  IosCustomerComboWalletItem,
+  LashHistoryItem,
+  matchComboCategoryAndVolumeFromBooking,
+} from '@mos-lab/shared';
 
 export interface LastVisitSpecSummary {
   serviceKey?: string;
@@ -13,6 +21,7 @@ export interface LastVisitSpecSummary {
 export interface IosCustomerEnrichmentContext {
   comboBalanceMap: Map<number, NonNullable<IosBookingItem['comboLiveStatus']>>;
   underMinkComboMap: Map<number, NonNullable<IosBookingItem['underMinkComboStatus']>>;
+  comboWalletsMap: Map<number, IosCustomerComboWalletItem[]>;
   diamondBalanceMap: Map<number, number>;
   lashHistoryMap: Map<number, LashHistoryItem[]>;
   lastVisitSpecsMap: Map<number, LastVisitSpecSummary>;
@@ -22,10 +31,233 @@ export function createEmptyCustomerEnrichmentContext(): IosCustomerEnrichmentCon
   return {
     comboBalanceMap: new Map(),
     underMinkComboMap: new Map(),
+    comboWalletsMap: new Map(),
     diamondBalanceMap: new Map(),
     lashHistoryMap: new Map(),
     lastVisitSpecsMap: new Map(),
   };
+}
+
+export interface RawComboBalanceRowInput {
+  id?: number | null;
+  user_id: number;
+  remaining_sessions?: number | null;
+  normal_remaining?: number | null;
+  retain_remaining?: number | null;
+  combo_name?: string | null;
+  service_key?: string | null;
+  package_key?: string | null;
+  retain_days_limit?: number | null;
+  expiry_after_day?: number | null;
+  date_expired?: Date | string | null;
+  note?: string | null;
+}
+
+export function buildWalletItemFromBalanceRow(
+  row: RawComboBalanceRowInput,
+  serviceGroup: 'upper' | 'under',
+  todayYmd: string
+): IosCustomerComboWalletItem | null {
+  const normalRemaining = Math.max(0, Number(row.normal_remaining) || 0);
+  const retainRemaining = Math.max(0, Number(row.retain_remaining) || 0);
+  const remainingSessions =
+    row.remaining_sessions !== undefined && row.remaining_sessions !== null
+      ? Math.max(0, Number(row.remaining_sessions))
+      : normalRemaining + retainRemaining;
+
+  if (remainingSessions <= 0) return null;
+
+  const pkgKey = String(row.package_key || '').trim();
+  const fallbackName = serviceGroup === 'under' ? 'Under Mink 390' : 'Gói Combo Mi';
+  const rawServiceName = String(row.combo_name || fallbackName);
+  const comboName = formatComboName(rawServiceName, pkgKey);
+
+  const status = evaluateComboWalletStatus({
+    normalRemaining,
+    retainRemaining,
+    remainingSessions,
+    dateExpired: row.date_expired,
+    todayYmd,
+  });
+
+  return {
+    balanceId: Number(row.id) || 0,
+    serviceGroup,
+    comboName,
+    serviceKey: row.service_key ? String(row.service_key) : undefined,
+    packageKey: pkgKey || undefined,
+    normalRemaining,
+    retainRemaining,
+    remainingSessions,
+    dateExpired: status.dateExpired,
+    isFrozen: status.isFrozen,
+    isExpired: status.isExpired,
+    isExpiringSoon: status.isExpiringSoon,
+    daysRemaining: status.daysRemaining,
+    avgDaysPerSession: status.avgDaysPerSession,
+    expiryState: status.expiryState,
+    retainDaysLimit: Number(row.retain_days_limit) || 25,
+    expiryAfterDay: row.expiry_after_day ? Number(row.expiry_after_day) : undefined,
+    note: row.note ? String(row.note) : undefined,
+  };
+}
+
+export function isUnderMinkComboDescriptor(comboName?: string | null, serviceKey?: string | null): boolean {
+  const combined = `${comboName || ''} ${serviceKey || ''}`.toLowerCase();
+  return (
+    combined.includes('under') ||
+    combined.includes('mi dưới') ||
+    combined.includes('flawless.mink-390') ||
+    combined.includes('flawless-mink-390')
+  );
+}
+
+export function enrichCustomerComboMapsFromRows(params: {
+  ctx: IosCustomerEnrichmentContext;
+  upperRows: RawComboBalanceRowInput[];
+  underRows: RawComboBalanceRowInput[];
+  todayYmd?: string;
+}): void {
+  const { ctx, upperRows, underRows } = params;
+  const todayYmd = params.todayYmd || getVietnamDateYmd();
+
+  const normalizedUpperRows: RawComboBalanceRowInput[] = [];
+  const normalizedUnderRows: RawComboBalanceRowInput[] = [...underRows];
+  for (const row of upperRows) {
+    if (isUnderMinkComboDescriptor(row.combo_name, row.service_key)) {
+      normalizedUnderRows.push(row);
+    } else {
+      normalizedUpperRows.push(row);
+    }
+  }
+
+  const upperWalletsByUser = new Map<number, IosCustomerComboWalletItem[]>();
+  for (const row of normalizedUpperRows) {
+    const uid = Number(row.user_id);
+    if (!uid) continue;
+    const wallet = buildWalletItemFromBalanceRow(row, 'upper', todayYmd);
+    if (!wallet) continue;
+    const list = upperWalletsByUser.get(uid) || [];
+    list.push(wallet);
+    upperWalletsByUser.set(uid, list);
+
+    const allWallets = ctx.comboWalletsMap.get(uid) || [];
+    allWallets.push(wallet);
+    ctx.comboWalletsMap.set(uid, allWallets);
+  }
+
+  for (const [uid, wallets] of upperWalletsByUser.entries()) {
+    const lastVisitSvcKey = (ctx.lastVisitSpecsMap.get(uid)?.serviceKey || '').replace(/-refill$/i, '');
+    const liveWallets = wallets.filter((w) => !w.isExpired);
+    const poolToPick = liveWallets.length > 0 ? liveWallets : wallets;
+
+    const primary =
+      (lastVisitSvcKey &&
+        poolToPick.find((w) => String(w.serviceKey || '').replace(/-refill$/i, '') === lastVisitSvcKey)) ||
+      poolToPick[0];
+
+    if (!primary) continue;
+    const isComboLive = !primary.isExpired && primary.remainingSessions > 0;
+    const upsellOpportunity =
+      !isComboLive || primary.remainingSessions <= 2 || primary.isExpiringSoon || primary.isExpired;
+
+    ctx.comboBalanceMap.set(uid, {
+      balanceId: primary.balanceId,
+      isComboLive,
+      remainingSessions: primary.remainingSessions,
+      normalRemaining: primary.normalRemaining,
+      retainRemaining: primary.retainRemaining,
+      comboName: primary.comboName,
+      serviceKey: primary.serviceKey,
+      packageKey: primary.packageKey,
+      retainDaysLimit: primary.retainDaysLimit ?? 25,
+      upsellOpportunity,
+      dateExpired: primary.dateExpired,
+      isExpired: primary.isExpired,
+      isFrozen: primary.isFrozen,
+      isExpiringSoon: primary.isExpiringSoon,
+      daysRemaining: primary.daysRemaining,
+      avgDaysPerSession: primary.avgDaysPerSession,
+      expiryState: primary.expiryState,
+    });
+  }
+
+  const underWalletsByUser = new Map<number, IosCustomerComboWalletItem[]>();
+  for (const row of normalizedUnderRows) {
+    const uid = Number(row.user_id);
+    if (!uid) continue;
+    const wallet = buildWalletItemFromBalanceRow(row, 'under', todayYmd);
+    if (!wallet) continue;
+    const list = underWalletsByUser.get(uid) || [];
+    list.push(wallet);
+    underWalletsByUser.set(uid, list);
+
+    const allWallets = ctx.comboWalletsMap.get(uid) || [];
+    allWallets.push(wallet);
+    ctx.comboWalletsMap.set(uid, allWallets);
+  }
+
+  for (const [uid, wallets] of underWalletsByUser.entries()) {
+    const liveWallets = wallets.filter((w) => !w.isExpired);
+    if (liveWallets.length > 0) {
+      const primary = liveWallets[0];
+      const totalNormal = liveWallets.reduce((sum, w) => sum + w.normalRemaining, 0);
+      const totalRetain = liveWallets.reduce((sum, w) => sum + w.retainRemaining, 0);
+      const totalRem = totalNormal + totalRetain;
+      const anyFrozen = liveWallets.some((w) => w.isFrozen);
+      const latestDate = anyFrozen
+        ? null
+        : liveWallets
+            .map((w) => w.dateExpired)
+            .filter((d): d is string => Boolean(d))
+            .sort()
+            .at(-1) || primary.dateExpired;
+      const evaluated = evaluateComboWalletStatus({
+        normalRemaining: totalNormal,
+        retainRemaining: totalRetain,
+        remainingSessions: totalRem,
+        dateExpired: anyFrozen ? null : latestDate,
+        todayYmd,
+      });
+
+      ctx.underMinkComboMap.set(uid, {
+        balanceId: primary.balanceId,
+        hasUnderCombo: evaluated.isComboLive,
+        remainingSessions: totalRem,
+        normalRemaining: totalNormal,
+        retainRemaining: totalRetain,
+        comboName: primary.comboName,
+        packageKey: primary.packageKey,
+        dateExpired: evaluated.dateExpired,
+        isExpired: evaluated.isExpired,
+        isFrozen: evaluated.isFrozen,
+        isExpiringSoon: evaluated.isExpiringSoon,
+        daysRemaining: evaluated.daysRemaining,
+        avgDaysPerSession: evaluated.avgDaysPerSession,
+        expiryState: evaluated.expiryState,
+      });
+    } else if (wallets.length > 0) {
+      const expiredPrimary = wallets[0];
+      const totalNormal = wallets.reduce((sum, w) => sum + w.normalRemaining, 0);
+      const totalRetain = wallets.reduce((sum, w) => sum + w.retainRemaining, 0);
+      ctx.underMinkComboMap.set(uid, {
+        balanceId: expiredPrimary.balanceId,
+        hasUnderCombo: false,
+        remainingSessions: totalNormal + totalRetain,
+        normalRemaining: totalNormal,
+        retainRemaining: totalRetain,
+        comboName: expiredPrimary.comboName,
+        packageKey: expiredPrimary.packageKey,
+        dateExpired: expiredPrimary.dateExpired,
+        isExpired: true,
+        isFrozen: false,
+        isExpiringSoon: false,
+        daysRemaining: expiredPrimary.daysRemaining,
+        avgDaysPerSession: null,
+        expiryState: 'EXPIRED',
+      });
+    }
+  }
 }
 
 export async function fetchCustomerEnrichmentContext(
@@ -42,22 +274,53 @@ export async function fetchCustomerEnrichmentContext(
 
     const historyPromise = pool.query<mysql.RowDataPacket[]>(
       `SELECT
-         o.user_id,
-         os.id AS os_id,
-         DATE_FORMAT(o.booking_date_start, '%d/%m/%Y') AS visit_date,
-         s.service_key,
-         COALESCE(sl.service_name, s.service_key, 'Nối mi') AS service_name,
-         COALESCE(up.full_name, 'Chuyên Viên') AS staff_name
-       FROM \`order\` o
-       JOIN order_service os ON os.order_id = o.id
-       LEFT JOIN service s ON s.id = os.service_id
-       LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
-       LEFT JOIN user_profile up ON up.user_id = os.assigned_staff_id
-       WHERE o.user_id IN (${placeholders})
-         AND o.order_state = 'Completed'
-       ORDER BY o.booking_date_start DESC, os.id ASC
+         h.user_id,
+         h.os_id,
+         h.visit_date,
+         h.service_key,
+         h.service_name,
+         h.staff_name,
+         h.ro_attr_volume
+       FROM (
+         SELECT
+           o.user_id,
+           os.id AS os_id,
+           o.booking_date_start AS sort_dt,
+           DATE_FORMAT(o.booking_date_start, '%d/%m/%Y') AS visit_date,
+           s.service_key,
+           COALESCE(sl.service_name, s.service_key, 'Nối mi') AS service_name,
+           COALESCE(up.full_name, 'Chuyên Viên') AS staff_name,
+           NULL AS ro_attr_volume
+         FROM \`order\` o
+         JOIN order_service os ON os.order_id = o.id
+         LEFT JOIN service s ON s.id = os.service_id
+         LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+         LEFT JOIN user_profile up ON up.user_id = os.assigned_staff_id
+         WHERE o.user_id IN (${placeholders})
+           AND o.order_state = 'Completed'
+         UNION ALL
+         SELECT
+           ro.user_id,
+           ros.order_service_id AS os_id,
+           ro.booking_date_start AS sort_dt,
+           DATE_FORMAT(ro.booking_date_start, '%d/%m/%Y') AS visit_date,
+           s.service_key,
+           COALESCE(sl.service_name, s.service_key, 'Nối mi') AS service_name,
+           COALESCE(up.full_name, 'Chuyên Viên') AS staff_name,
+           ros.attribute_volume AS ro_attr_volume
+         FROM report_order ro
+         JOIN report_order_service ros ON ros.order_id = ro.order_id
+         LEFT JOIN service s ON s.id = ros.service_id
+         LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+         LEFT JOIN user_profile up ON up.user_id = ros.assigned_staff_id
+         WHERE ro.user_id IN (${placeholders})
+           AND NOT EXISTS (
+             SELECT 1 FROM \`order\` o2 WHERE o2.id = ro.order_id
+           )
+       ) h
+       ORDER BY h.sort_dt DESC, h.os_id ASC
        LIMIT 800`,
-      customerIds
+      [...customerIds, ...customerIds]
     );
 
     const balancePromise = pool.query<mysql.RowDataPacket[]>(
@@ -67,10 +330,13 @@ export async function fetchCustomerEnrichmentContext(
          (usb.normal_count + usb.retain_count) AS remaining_sessions,
          usb.normal_count AS normal_remaining,
          usb.retain_count AS retain_remaining,
+         usb.date_expired,
+         usb.note,
          COALESCE(sl.service_name, s.service_key, 'Gói Combo Mi') AS combo_name,
          s.service_key AS service_key,
          sp.service_price_package_key AS package_key,
-         sp.retain_last_day_required AS retain_days_limit
+         sp.retain_last_day_required AS retain_days_limit,
+         sp.expiry_after_day AS expiry_after_day
        FROM user_service_balance usb
        LEFT JOIN service s ON s.id = usb.service_id
        LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
@@ -79,27 +345,45 @@ export async function fetchCustomerEnrichmentContext(
          AND (usb.normal_count > 0 OR usb.retain_count > 0)
          AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
          AND (s.service_type IS NULL OR s.service_type != 'LashesUnder')
-         AND (s.service_key IS NULL OR s.service_key NOT LIKE '%under%')
-       ORDER BY usb.id DESC`,
+         AND (s.service_key IS NULL OR (s.service_key NOT LIKE '%under%' AND s.service_key NOT LIKE '%flawless.mink-390%'))
+         AND (sl.service_name IS NULL OR (sl.service_name NOT LIKE '%under%' AND sl.service_name NOT LIKE '%mi dưới%'))
+       ORDER BY
+         (usb.date_expired IS NULL OR DATE(usb.date_expired) >= CURDATE()) DESC,
+         usb.id DESC`,
       customerIds
     );
 
     const underBalancePromise = pool.query<mysql.RowDataPacket[]>(
       `SELECT
+         usb.id,
          usb.user_id,
-         SUM(usb.normal_count + usb.retain_count) AS remaining_sessions,
-         SUM(usb.normal_count) AS normal_remaining,
-         SUM(usb.retain_count) AS retain_remaining,
-         MAX(COALESCE(sl.service_name, s.service_key, 'Under Mink 390')) AS combo_name,
-         MAX(sp.service_price_package_key) AS package_key
+         (usb.normal_count + usb.retain_count) AS remaining_sessions,
+         usb.normal_count AS normal_remaining,
+         usb.retain_count AS retain_remaining,
+         usb.date_expired,
+         usb.note,
+         COALESCE(sl.service_name, s.service_key, 'Under Mink 390') AS combo_name,
+         s.service_key AS service_key,
+         sp.service_price_package_key AS package_key,
+         sp.retain_last_day_required AS retain_days_limit,
+         sp.expiry_after_day AS expiry_after_day
        FROM user_service_balance usb
        LEFT JOIN service s ON s.id = usb.service_id
        LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
        LEFT JOIN service_price sp ON sp.id = usb.service_price_id
        WHERE usb.user_id IN (${placeholders})
          AND (usb.normal_count > 0 OR usb.retain_count > 0)
-         AND (usb.service_group = 'LashesUnder' OR s.service_type = 'LashesUnder' OR s.service_key LIKE '%under%')
-       GROUP BY usb.user_id`,
+         AND (
+           usb.service_group = 'LashesUnder'
+           OR s.service_type = 'LashesUnder'
+           OR s.service_key LIKE '%under%'
+           OR s.service_key LIKE '%flawless.mink-390%'
+           OR sl.service_name LIKE '%under%'
+           OR sl.service_name LIKE '%mi dưới%'
+         )
+       ORDER BY
+         (usb.date_expired IS NULL OR DATE(usb.date_expired) >= CURDATE()) DESC,
+         usb.id DESC`,
       customerIds
     );
 
@@ -140,16 +424,49 @@ export async function fetchCustomerEnrichmentContext(
         svcKey.toLowerCase().includes('flawless.mink-390') ||
         svcName.toLowerCase().includes('under') ||
         svcName.toLowerCase().includes('mi dưới');
-      if (!isUnder && !ctx.lastVisitSpecsMap.has(uid) && hr.os_id) {
+      const isAnyHistory = svcKey.toLowerCase().includes('any') || svcName.toLowerCase().includes('any');
+      if (!isUnder && !isAnyHistory && !ctx.lastVisitSpecsMap.has(uid) && hr.os_id) {
         const osId = Number(hr.os_id);
-        const svcLower = svcKey.toLowerCase();
+        const combinedLower = `${svcKey} ${svcName}`.toLowerCase();
         let mat = 'Flawless Mink';
-        if (svcLower.includes('hyperlight')) mat = 'HyperLight';
-        else if (svcLower.includes('ivylight')) mat = 'Ivylight';
-        else if (svcLower.includes('classic')) mat = 'New Classic';
-        else if (svcLower.includes('volume')) mat = 'Volume';
-        else if (svcLower.includes('ultralight')) mat = 'UltraLight';
-        ctx.lastVisitSpecsMap.set(uid, { serviceKey: svcKey, material: mat });
+        if (combinedLower.includes('hyperlight') || combinedLower.includes('hyper light')) mat = 'HyperLight';
+        else if (combinedLower.includes('ivylight') || combinedLower.includes('ivy light')) mat = 'Ivylight';
+        else if (combinedLower.includes('classic')) mat = 'New Classic';
+        else if (combinedLower.includes('volume')) mat = 'Volume';
+        else if (combinedLower.includes('ultralight') || combinedLower.includes('ultra light')) mat = 'UltraLight';
+
+        const inferred = matchComboCategoryAndVolumeFromBooking({
+          material: mat,
+          serviceName: svcName,
+          serviceKey: svcKey,
+        });
+        const rawRoVol = String(hr.ro_attr_volume || '')
+          .trim()
+          .toUpperCase();
+        const roVolNormalized = /^\d+[DXL]$/.test(rawRoVol) ? rawRoVol : undefined;
+        const defaultVol =
+          roVolNormalized ||
+          (mat === 'New Classic' || mat === 'Flawless Mink'
+            ? '1D'
+            : mat === 'Volume'
+              ? inferred.categoryId === 'Volume_3D'
+                ? '3D'
+                : '2D'
+              : inferred.categoryId.includes('_')
+                ? inferred.categoryId.split('_')[1]
+                : undefined);
+        const unit = mat === 'Flawless Mink' || mat === 'New Classic' ? 'sợi' : mat === 'Ivylight' ? 'nhịp' : 'fan';
+        const defaultCount =
+          inferred.volumeMeta?.countPerEye && inferred.volume !== 'under'
+            ? `${inferred.volumeMeta.countPerEye} ${unit}`
+            : undefined;
+
+        ctx.lastVisitSpecsMap.set(uid, {
+          serviceKey: svcKey,
+          material: mat,
+          volume: defaultVol,
+          count: defaultCount,
+        });
         latestUpperOsIds.push(osId);
         osToUserMap.set(osId, { userId: uid, serviceKey: svcKey });
       }
@@ -209,55 +526,12 @@ export async function fetchCustomerEnrichmentContext(
       }
     }
 
-    const groupedByUser = new Map<number, mysql.RowDataPacket[]>();
-    for (const br of balanceRows) {
-      const uid = Number(br.user_id);
-      const arr = groupedByUser.get(uid) || [];
-      arr.push(br);
-      groupedByUser.set(uid, arr);
-    }
-
-    for (const [uid, userRows] of groupedByUser.entries()) {
-      const lastVisitSvcKey = (ctx.lastVisitSpecsMap.get(uid)?.serviceKey || '').replace(/-refill$/i, '');
-      const primaryRow =
-        (lastVisitSvcKey &&
-          userRows.find((r) => String(r.service_key || '').replace(/-refill$/i, '') === lastVisitSvcKey)) ||
-        userRows[0];
-      const rem = Number(primaryRow.remaining_sessions) || 0;
-      if (rem > 0) {
-        const rawServiceName = String(primaryRow.combo_name || 'Gói Combo Mi');
-        const pkgKey = String(primaryRow.package_key || '').trim();
-        const displayComboName = formatComboName(rawServiceName, pkgKey);
-        ctx.comboBalanceMap.set(uid, {
-          isComboLive: true,
-          remainingSessions: rem,
-          normalRemaining: Number(primaryRow.normal_remaining) || 0,
-          retainRemaining: Number(primaryRow.retain_remaining) || 0,
-          comboName: displayComboName,
-          serviceKey: primaryRow.service_key ? String(primaryRow.service_key) : undefined,
-          packageKey: pkgKey || undefined,
-          retainDaysLimit: Number(primaryRow.retain_days_limit) || 25,
-          upsellOpportunity: false,
-        });
-      }
-    }
-
-    for (const ubr of underBalanceRows) {
-      const uid = Number(ubr.user_id);
-      const rem = Number(ubr.remaining_sessions) || 0;
-      if (rem > 0) {
-        const pkgKey = String(ubr.package_key || '').trim();
-        const rawName = String(ubr.combo_name || 'Under Mink 390');
-        ctx.underMinkComboMap.set(uid, {
-          hasUnderCombo: true,
-          remainingSessions: rem,
-          normalRemaining: Number(ubr.normal_remaining) || 0,
-          retainRemaining: Number(ubr.retain_remaining) || 0,
-          comboName: formatComboName(rawName, pkgKey),
-          packageKey: pkgKey || undefined,
-        });
-      }
-    }
+    enrichCustomerComboMapsFromRows({
+      ctx,
+      upperRows: balanceRows as unknown as RawComboBalanceRowInput[],
+      underRows: underBalanceRows as unknown as RawComboBalanceRowInput[],
+      todayYmd: getVietnamDateYmd(),
+    });
   } catch {
     // Non-blocking enrichment fallback to empty maps
   }

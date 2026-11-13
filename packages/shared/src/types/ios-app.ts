@@ -1,4 +1,5 @@
 import { calculateComboBonus, type CvToCvPlusRequirements } from './career-progression.js';
+import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem } from '../catalog/combo-expiry.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -161,6 +162,11 @@ export interface IosSelectedCombo {
   savingsAmount?: number;
   avgPerSessionPrice?: number;
   todaySingleServiceWaived?: boolean;
+  todayUsageMode?: ComboTodayUsageMode;
+  dateExpired?: string;
+  dateExpiredDisplay?: string;
+  expiryFormulaSummary?: string;
+  revivedExpiredSessions?: number;
   isUpTierUpgrade?: boolean;
   originalServiceCategory?: string;
   recognizedRevenueToday?: number;
@@ -180,6 +186,11 @@ export interface IosSelectedUnderCombo {
   savingsAmount?: number;
   avgPerSessionPrice?: number;
   todaySingleServiceWaived?: boolean;
+  todayUsageMode?: ComboTodayUsageMode;
+  dateExpired?: string;
+  dateExpiredDisplay?: string;
+  expiryFormulaSummary?: string;
+  revivedExpiredSessions?: number;
   recognizedRevenueToday?: number;
   deferredRevenueBalance?: number;
   remainingAfterToday?: IosSelectedComboRemaining;
@@ -197,6 +208,8 @@ export interface IosComboRedemption {
   totalSessions: number;
   paidRemaining: number;
   bonusRemaining: number;
+  dateExpired?: string | null;
+  dateExpiredDisplay?: string | null;
 }
 
 export interface IosBookingAttributes extends NaturalLashConsultationAttributes {
@@ -293,6 +306,7 @@ export interface IosBookingItem {
   bookingAccessTag?: 'NEXT_CUSTOMER' | 'NEXT_QUEUE_CUSTOMER' | 'MY_BOOKED_CUSTOMER' | 'STORE_CUSTOMER';
   status: IosBookingStatus;
   comboLiveStatus?: {
+    balanceId?: number;
     isComboLive: boolean;
     remainingSessions: number;
     normalRemaining?: number;
@@ -302,15 +316,31 @@ export interface IosBookingItem {
     packageKey?: string;
     retainDaysLimit?: number;
     upsellOpportunity: boolean;
+    dateExpired?: string | null;
+    isExpired?: boolean;
+    isFrozen?: boolean;
+    isExpiringSoon?: boolean;
+    daysRemaining?: number | null;
+    avgDaysPerSession?: number | null;
+    expiryState?: ComboExpiryState;
   };
   underMinkComboStatus?: {
+    balanceId?: number;
     hasUnderCombo: boolean;
     remainingSessions: number;
     normalRemaining: number;
     retainRemaining: number;
     comboName: string;
     packageKey?: string;
+    dateExpired?: string | null;
+    isExpired?: boolean;
+    isFrozen?: boolean;
+    isExpiringSoon?: boolean;
+    daysRemaining?: number | null;
+    avgDaysPerSession?: number | null;
+    expiryState?: ComboExpiryState;
   };
+  comboWallets?: IosCustomerComboWalletItem[];
   diamondBalance?: number;
   debtAmount?: number;
   storeId?: number;
@@ -442,6 +472,29 @@ export interface IosPrintReceiptResponse {
   printerIp?: string;
   printerPort?: number;
   bytesWritten?: number;
+  error?: string;
+}
+
+export type IosAdminComboExpiryAction = 'EXTEND_DATE' | 'ADD_DAYS' | 'FREEZE' | 'UNFREEZE';
+
+export interface IosAdminComboExpiryActionPayload {
+  action: IosAdminComboExpiryAction;
+  balanceId: number;
+  customerId: number;
+  bookingId?: number;
+  serviceGroup?: 'upper' | 'under';
+  targetDateExpired?: string;
+  extendDays?: number;
+  reason: string;
+}
+
+export interface IosAdminComboExpiryActionResponse {
+  success: boolean;
+  balanceId?: number;
+  customerId?: number;
+  dateExpired?: string | null;
+  isFrozen?: boolean;
+  message?: string;
   error?: string;
 }
 

@@ -1121,6 +1121,60 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'COMBO-004',
+    book: 'CUSTOMER',
+    title: 'Hạn Sử Dụng Gói Combo (HSD), Cộng Dồn Gia Hạn Sớm, Cứu Gói Hết Hạn & Bảo Lưu Admin',
+    summary:
+      'Mọi gói Combo (Combo Mi Trên & Combo Mi Dưới) đều quản lý chặt chẽ Hạn sử dụng (date_expired), nhịp độ (Avg: X ngày/buổi), khóa trừ 0đ khi hết hạn, tự động cộng dồn/thưởng gia hạn hoặc cứu buổi tồn khi mua gói mới, và chỉ Admin được phép Gia hạn / Bảo lưu.',
+    commandments: [
+      '1. Công Thức Tính HSD Khi Khách KHÔNG CÒN Combo & Mua Gói Mới: (a) Nếu trừ ngay 1 buổi vào gói mới hôm nay (USE_NEW_COMBO): HSD mới = Hôm nay + Thời hạn gói mới; (b) Nếu gói mới dùng 0 lần (hôm nay đi lẻ hoặc dùng Voucher - RETAIL_OR_VOUCHER): HSD mới = Hôm nay + Thời hạn gói mới + 21 ngày.',
+      '2. Công Thức Tính HSD Khi Khách ĐANG CÒN Combo Còn Hạn & Mua Thêm Gói Mới: (a) Nếu gói mới dùng 1 lần (USE_NEW_COMBO): HSD mới = Thời hạn gói mới + Thời gian còn lại của gói cũ (= HSD cũ + Thời hạn gói mới); (b) Nếu gói mới dùng 0 lần và trừ 1 buổi vào gói cũ khi gói cũ còn >= 2 buổi (USE_OLD_COMBO): HSD mới = Thời hạn gói mới + Thời gian còn lại của gói cũ + 1 tháng thưởng mua sớm; (c) Nếu gói mới dùng 0 lần và gói cũ dùng 0 lần, hôm nay đi lẻ hoặc dùng Voucher (RETAIL_OR_VOUCHER): HSD mới = Thời hạn gói mới + Thời gian còn lại của gói cũ + 1 tháng + 21 ngày; (d) Nhánh buổi cuối (combo_last): Khi gói cũ còn hạn chỉ còn đúng 1 buổi cuối và hôm nay trừ nốt về 0 rồi mua nối tiếp gói mới, thời gian dư gói cũ kết thúc và HSD mới = Hôm nay + Thời hạn gói mới + 1 tháng thưởng mua nối tiếp sớm.',
+      '3. Xử Lý Gói Combo ĐÃ HẾT HẠN (date_expired < Hôm nay, còn buổi tồn > 0): (a) Nếu khách KHÔNG mua gói mới hôm nay: Khóa cứng trừ buổi 0đ (isComboLive = false, isExpired = true), khách bắt buộc đi lẻ hoặc dùng Voucher, hiển thị thẻ cảnh báo ĐỎ rõ ràng trên mOS iOS App; (b) Nếu khách MUA thêm gói Combo mới hôm nay: Tự động cứu toàn bộ buổi tồn của gói hết hạn cộng dồn vào gói Combo chung, quy đổi thời gian tính từ Hôm nay theo công thức [Nối mới = +1 tháng/buổi] và [Dặm = +25 ngày/buổi], sau đó cộng Thời hạn gói mới (tuyệt đối KHÔNG cộng +1 tháng thưởng gia hạn sớm vì gói cũ đã để trễ hạn; nếu hôm nay đi lẻ hoặc dùng Voucher thì vẫn cộng thêm +21 ngày).',
+      '4. Đồng Nhất 100% Combo Mi Trên & Combo Mi Dưới + Nhịp Độ Sử Dụng: Toàn bộ công thức HSD, cộng dồn, thưởng mua sớm và cứu gói hết hạn áp dụng đồng nhất và độc lập cho cả Combo Mi Trên và Combo Mi Dưới. Trên Chi tiết Gói Combo luôn hiển thị nhãn Combo Mi Trên / Combo Mi Dưới, HSD: dd/MM/yyyy và nhịp độ tiêu thụ (Avg: X.X ngày/buổi) để khách hàng và Chuyên Viên dễ dàng theo dõi.',
+      '5. Bảo Lưu (date_expired = NULL) & Đặc Quyền Admin Duy Nhất: Gói đang Bảo lưu (date_expired = NULL khi còn buổi > 0) hiển thị trạng thái "Đang bảo lưu" và tự kích hoạt lại HSD khi dùng buổi tiếp theo. Trên /ios-app, chỉ duy nhất Admin / Super Admin mới có quyền bấm Gia hạn ngày (Extend) hoặc Bảo lưu đóng băng / Kích hoạt lại (Freeze / Unfreeze) kèm lý do bắt buộc; khóa tuyệt đối quyền này với CV🪶 (CVL), 🪶CV🪶 (CVLL), CC và CV.',
+    ],
+    rationale:
+      'Đảm bảo tính công bằng tài chính, khuyến khích khách hàng gia hạn gói đúng hạn (+1 tháng thưởng mua sớm), đồng thời tạo cơ chế nhân văn và hấp dẫn để Chuyên Viên tư vấn cứu lại các buổi tồn bị quá hạn khi khách mua gói mới, tránh thất thoát doanh thu do trừ 0đ vô thời hạn.',
+    examples: [
+      'Khách có gói cũ hết hạn còn 1 Mới + 2 Dặm, hôm nay mua gói mới 3 tháng và trừ 1 buổi vào gói: HSD mới = Hôm nay + 3 tháng (gói mới) + 1 tháng (1 Mới cũ) + 50 ngày (2 Dặm cũ).',
+      'Khách còn gói cũ HSD còn 40 ngày (còn 3 buổi), hôm nay mua tiếp gói mới 6 tháng và trừ 1 buổi vào gói cũ: HSD mới = HSD gói cũ + 6 tháng + 1 tháng thưởng mua sớm.',
+    ],
+    tags: [
+      'HSD Combo',
+      'hạn sử dụng combo',
+      'date_expired',
+      'cộng dồn hạn sử dụng',
+      'cứu gói hết hạn',
+      'bảo lưu combo',
+      'Avg ngày/buổi',
+      'gia hạn sớm',
+      '21 ngày',
+      '25 ngày',
+    ],
+    routeScopes: ['/ios-app', '/dashboard/customers', '/dashboard/appointments', '/dashboard/catalog'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-13',
+    sources: [
+      {
+        label: 'Canonical Combo Expiry & Revival Engine',
+        reference: 'packages/shared/src/catalog/combo-expiry.ts',
+      },
+      {
+        label: 'iOS Customer Combo Enrichment & Expiry Guard',
+        reference: 'apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts',
+      },
+      {
+        label: 'Admin Combo Expiry & Freeze Service',
+        reference: 'apps/api/src/modules/ios/services/ios-combo-expiry.service.ts',
+      },
+      {
+        label: 'Chi tiết Gói Combo & Bàn Tư Vấn (/ios-app)',
+        reference: 'apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx',
+      },
+    ],
+  },
+  {
     id: 'CARE-001',
     book: 'CUSTOMER',
     title: 'Dặm mi có hạn, tình thương thì không',

@@ -5667,109 +5667,110 @@ export function matchComboCategoryAndVolumeFromBooking(input?: {
   volume: number | 'under';
   volumeMeta: VolumeFiberMetadata;
 } {
-  const combinedText = [
-    input?.material || '',
-    input?.serviceName || '',
-    input?.comboName || '',
-    input?.serviceKey || '',
-  ]
+  const explicitMaterialText = String(input?.material || '')
+    .trim()
+    .toLowerCase();
+  const combinedText = [explicitMaterialText, input?.serviceName || '', input?.comboName || '', input?.serviceKey || '']
     .join(' ')
     .toLowerCase();
 
   const volText = String(input?.volume || '').toLowerCase();
   const countNum = parseInt(String(input?.count || '').replace(/\D+/g, ''), 10) || 0;
 
-  let categoryId: WingsComboCategoryId = 'FlawlessMink';
+  const detectCategoryFromText = (text: string, allowVolFallback: boolean): WingsComboCategoryId | null => {
+    if (!text || text.includes('any')) return null;
+    if (text.includes('vvip')) {
+      return 'VVIP';
+    }
+    if (text.includes('flawless') || (text.includes('mink') && !text.includes('under'))) {
+      return 'FlawlessMink';
+    }
+    if (text.includes('hyperlight') || text.includes('hyper light') || text.includes('hyper_light')) {
+      if (
+        volText.includes('2x') ||
+        volText.includes('2𝒙') ||
+        volText.includes('2𝑿') ||
+        text.includes('2x') ||
+        text.includes('2𝒙') ||
+        text.includes('2𝑿')
+      ) {
+        return 'HyperLight_2X';
+      }
+      if (
+        volText.includes('3x') ||
+        volText.includes('3𝒙') ||
+        volText.includes('3𝑿') ||
+        text.includes('3x') ||
+        text.includes('3𝒙') ||
+        text.includes('3𝑿')
+      ) {
+        return 'HyperLight_3X';
+      }
+      if (
+        volText.includes('5x') ||
+        volText.includes('5𝒙') ||
+        volText.includes('5𝑿') ||
+        text.includes('5x') ||
+        text.includes('5𝒙') ||
+        text.includes('5𝑿')
+      ) {
+        return 'HyperLight_5X';
+      }
+      return 'HyperLight_4X';
+    }
+    if (text.includes('ivylight') || text.includes('ivy light') || text.includes('ivy_light')) {
+      if (
+        volText.includes('3l') ||
+        volText.includes('3ℓ') ||
+        volText.includes('3𝓵') ||
+        volText.includes('3𝓛') ||
+        text.includes('3l') ||
+        text.includes('3ℓ') ||
+        text.includes('3𝓵') ||
+        text.includes('3𝓛')
+      ) {
+        return 'IvyLight_3L';
+      }
+      if (
+        volText.includes('5l') ||
+        volText.includes('5ℓ') ||
+        volText.includes('5𝓵') ||
+        volText.includes('5𝓛') ||
+        text.includes('5l') ||
+        text.includes('5ℓ') ||
+        text.includes('5𝓵') ||
+        text.includes('5𝓛')
+      ) {
+        return 'IvyLight_5L';
+      }
+      return 'IvyLight_4L';
+    }
+    if (text.includes('ultralight') || text.includes('ultra light') || text.includes('ultra_light')) {
+      if (volText.includes('3d') || text.includes('3d')) return 'UltraLight_3D';
+      if (volText.includes('5d') || text.includes('5d')) return 'UltraLight_5D';
+      return 'UltraLight_4D';
+    }
+    if (text.includes('volume')) {
+      if (volText.includes('3d') || text.includes('3d') || volText.includes('3 fan') || text.includes('3 fan')) {
+        return 'Volume_3D';
+      }
+      return 'Volume_2D';
+    }
+    if (text.includes('classic') || text.includes('1d') || (allowVolFallback && volText.includes('1d'))) {
+      return 'Classic_1D';
+    }
+    return null;
+  };
 
-  if (combinedText.includes('vvip')) {
-    categoryId = 'VVIP';
-  } else if (combinedText.includes('flawless') || (combinedText.includes('mink') && !combinedText.includes('under'))) {
-    categoryId = 'FlawlessMink';
-  } else if (
-    combinedText.includes('hyperlight') ||
-    combinedText.includes('hyper light') ||
-    combinedText.includes('hyper_light')
-  ) {
-    if (
-      volText.includes('2x') ||
-      volText.includes('2𝒙') ||
-      volText.includes('2𝑿') ||
-      combinedText.includes('2x') ||
-      combinedText.includes('2𝒙') ||
-      combinedText.includes('2𝑿')
-    )
-      categoryId = 'HyperLight_2X';
-    else if (
-      volText.includes('3x') ||
-      volText.includes('3𝒙') ||
-      volText.includes('3𝑿') ||
-      combinedText.includes('3x') ||
-      combinedText.includes('3𝒙') ||
-      combinedText.includes('3𝑿')
-    )
-      categoryId = 'HyperLight_3X';
-    else if (
-      volText.includes('5x') ||
-      volText.includes('5𝒙') ||
-      volText.includes('5𝑿') ||
-      combinedText.includes('5x') ||
-      combinedText.includes('5𝒙') ||
-      combinedText.includes('5𝑿')
-    )
-      categoryId = 'HyperLight_5X';
-    else categoryId = 'HyperLight_4X';
-  } else if (
-    combinedText.includes('ivylight') ||
-    combinedText.includes('ivy light') ||
-    combinedText.includes('ivy_light')
-  ) {
-    if (
-      volText.includes('3l') ||
-      volText.includes('3ℓ') ||
-      volText.includes('3𝓵') ||
-      volText.includes('3𝓛') ||
-      combinedText.includes('3l') ||
-      combinedText.includes('3ℓ') ||
-      combinedText.includes('3𝓵') ||
-      combinedText.includes('3𝓛')
-    ) {
-      categoryId = 'IvyLight_3L';
-    } else if (
-      volText.includes('5l') ||
-      volText.includes('5ℓ') ||
-      volText.includes('5𝓵') ||
-      volText.includes('5𝓛') ||
-      combinedText.includes('5l') ||
-      combinedText.includes('5ℓ') ||
-      combinedText.includes('5𝓵') ||
-      combinedText.includes('5𝓛')
-    ) {
-      categoryId = 'IvyLight_5L';
-    } else {
-      categoryId = 'IvyLight_4L';
-    }
-  } else if (
-    combinedText.includes('ultralight') ||
-    combinedText.includes('ultra light') ||
-    combinedText.includes('ultra_light')
-  ) {
-    if (volText.includes('3d') || combinedText.includes('3d')) categoryId = 'UltraLight_3D';
-    else if (volText.includes('5d') || combinedText.includes('5d')) categoryId = 'UltraLight_5D';
-    else categoryId = 'UltraLight_4D';
-  } else if (combinedText.includes('volume')) {
-    if (
-      volText.includes('3d') ||
-      combinedText.includes('3d') ||
-      volText.includes('3 fan') ||
-      combinedText.includes('3 fan')
-    ) {
-      categoryId = 'Volume_3D';
-    } else {
-      categoryId = 'Volume_2D';
-    }
-  } else if (combinedText.includes('classic') || combinedText.includes('1d') || volText.includes('1d')) {
-    categoryId = 'Classic_1D';
-  }
+  const fallbackTextWithoutAny = [input?.serviceName || '', input?.comboName || '', input?.serviceKey || '']
+    .filter((s) => !String(s).toLowerCase().includes('any'))
+    .join(' ')
+    .toLowerCase();
+
+  const categoryId: WingsComboCategoryId =
+    detectCategoryFromText(explicitMaterialText, false) ||
+    detectCategoryFromText(fallbackTextWithoutAny, true) ||
+    'FlawlessMink';
 
   const category = getWingsComboCategory(categoryId);
   const availableVolumes = category.unitPrices

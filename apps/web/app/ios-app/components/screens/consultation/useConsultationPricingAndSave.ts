@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { BookingItem } from '../../../state/mockData';
 import type { ActiveActorProfile } from '../../../state/useIosAppState';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../../state/offlineSync';
@@ -28,7 +28,7 @@ export function useConsultationPricingAndSave({
   diagnostic,
 }: UseConsultationPricingAndSaveParams) {
   const [saveStatus, setSaveStatus] = useState<ConsultationSaveStatus>('saved');
-  const isInitialMount = useRef<boolean>(true);
+  const syncedDraftRef = useRef<{ bookingId: number | undefined; signature: string } | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const comboAndUpgrade = useConsultationComboAndUpgrade({ booking, design });
@@ -58,6 +58,14 @@ export function useConsultationPricingAndSave({
     comboPurchaseTotal,
     selectedComboObject,
     selectedUnderComboObject,
+    existingUpperExpirySnapshot,
+    existingUnderExpirySnapshot,
+    upperTodayUsageMode,
+    setUpperTodayUsageMode,
+    underTodayUsageMode,
+    setUnderTodayUsageMode,
+    selectedUpperExpiry,
+    selectedUnderExpiry,
     livePricingAndCvPoints,
     cleanServiceName,
     specsSummaryString,
@@ -327,12 +335,98 @@ export function useConsultationPricingAndSave({
     notes,
   ]);
 
+  const performAutoSaveRef = useRef(performAutoSave);
+  performAutoSaveRef.current = performAutoSave;
+
+  // Deterministic value-based signature of user-editable consultation fields.
+  // Prevents background `bookings` polling, `CHECK_IN` responses, or `onAutoSaveDraft` `setBookings`
+  // updates from re-triggering autosave in an infinite loop when the user has not edited anything.
+  const autoSaveDraftSignature = useMemo(
+    () =>
+      JSON.stringify({
+        naturalLengthRange,
+        naturalThicknessRange,
+        naturalCountRange,
+        selectedLashTrail,
+        selectedEyeShape,
+        selectedLashHealth,
+        selectedMedicalProblem,
+        notes,
+        selectedStyle,
+        selectedCurl,
+        selectedThickness,
+        selectedLength,
+        selectedLengths,
+        selectedMaterial,
+        selectedColor,
+        selectedVolume,
+        selectedCount,
+        serviceType,
+        hasUnderMink,
+        underMinkServiceType: hasUnderMink ? underMinkServiceType : null,
+        underMinkCurl: hasUnderMink ? underMinkCurl : null,
+        underMinkLength: hasUnderMink ? underMinkLength : null,
+        underMinkCount: hasUnderMink ? underMinkCount : null,
+        upperComboId: selectedNewComboPkg?.id || null,
+        underComboId: selectedUnderComboPkg?.id || null,
+        upperTodayUsageMode,
+        underTodayUsageMode,
+        upgradeScope,
+        retainUpgradeMode,
+        isOverridden,
+        overrideReason: isOverridden ? overrideReason : '',
+      }),
+    [
+      naturalLengthRange,
+      naturalThicknessRange,
+      naturalCountRange,
+      selectedLashTrail,
+      selectedEyeShape,
+      selectedLashHealth,
+      selectedMedicalProblem,
+      notes,
+      selectedStyle,
+      selectedCurl,
+      selectedThickness,
+      selectedLength,
+      selectedLengths,
+      selectedMaterial,
+      selectedColor,
+      selectedVolume,
+      selectedCount,
+      serviceType,
+      hasUnderMink,
+      underMinkServiceType,
+      underMinkCurl,
+      underMinkLength,
+      underMinkCount,
+      selectedNewComboPkg?.id,
+      selectedUnderComboPkg?.id,
+      upperTodayUsageMode,
+      underTodayUsageMode,
+      upgradeScope,
+      retainUpgradeMode,
+      isOverridden,
+      overrideReason,
+    ]
+  );
+
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+    const currentBookingId = booking?.id;
+    if (!syncedDraftRef.current || syncedDraftRef.current.bookingId !== currentBookingId) {
+      syncedDraftRef.current = { bookingId: currentBookingId, signature: autoSaveDraftSignature };
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      setSaveStatus('saved');
       return;
     }
 
+    if (syncedDraftRef.current.signature === autoSaveDraftSignature) {
+      return;
+    }
+
+    const targetSignature = autoSaveDraftSignature;
     setSaveStatus('saving');
 
     if (autoSaveTimerRef.current) {
@@ -341,7 +435,8 @@ export function useConsultationPricingAndSave({
 
     autoSaveTimerRef.current = setTimeout(async () => {
       try {
-        await performAutoSave();
+        await performAutoSaveRef.current();
+        syncedDraftRef.current = { bookingId: currentBookingId, signature: targetSignature };
         setSaveStatus('saved');
       } catch (err) {
         console.warn('[Screen03] Autosave error:', err);
@@ -354,41 +449,14 @@ export function useConsultationPricingAndSave({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [
-    naturalLengthRange,
-    naturalThicknessRange,
-    naturalCountRange,
-    selectedLashTrail,
-    selectedEyeShape,
-    selectedLashHealth,
-    selectedMedicalProblem,
-    notes,
-    selectedStyle,
-    selectedCurl,
-    selectedThickness,
-    selectedLength,
-    selectedLengths,
-    selectedMaterial,
-    selectedColor,
-    selectedVolume,
-    selectedCount,
-    hasUnderMink,
-    underMinkServiceType,
-    underMinkCurl,
-    underMinkLength,
-    underMinkCount,
-    selectedNewComboPkg,
-    selectedUnderComboPkg,
-    isOverridden,
-    overrideReason,
-    performAutoSave,
-  ]);
+  }, [booking?.id, autoSaveDraftSignature]);
 
   const handleManualSaveClick = async () => {
     if (saveStatus === 'saving') return;
     setSaveStatus('saving');
     try {
-      await performAutoSave();
+      await performAutoSaveRef.current();
+      syncedDraftRef.current = { bookingId: booking?.id, signature: autoSaveDraftSignature };
       setSaveStatus('saved');
     } catch {
       setSaveStatus('error');
@@ -402,7 +470,9 @@ export function useConsultationPricingAndSave({
   const actorName = actor?.name || 'Thảo Ly';
 
   let avatarRingClass = 'border-[2px] border-[#34C759]';
-  if (isComboLive && comboRemainingSessions > 0) {
+  if (booking?.comboLiveStatus?.isExpired) {
+    avatarRingClass = 'border-[2px] border-rose-500 ring-2 ring-rose-500/40';
+  } else if (isComboLive && comboRemainingSessions > 0) {
     if (comboRemainingSessions <= 2) {
       avatarRingClass = 'border-[2px] border-[#FF9500] ring-1 ring-[#FF9500]/40';
     } else {
@@ -433,6 +503,14 @@ export function useConsultationPricingAndSave({
     handleOpenComboModal,
     handleSelectComboPackage,
     comboPurchaseTotal,
+    existingUpperExpirySnapshot,
+    existingUnderExpirySnapshot,
+    upperTodayUsageMode,
+    setUpperTodayUsageMode,
+    underTodayUsageMode,
+    setUnderTodayUsageMode,
+    selectedUpperExpiry,
+    selectedUnderExpiry,
     livePricingAndCvPoints,
     cleanServiceName,
     specsSummaryString,

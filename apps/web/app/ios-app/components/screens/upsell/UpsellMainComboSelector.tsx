@@ -9,9 +9,12 @@ import {
   getVolumeFiberMeta,
   getLashFamilyInfo,
   calculateComboPurchaseAccounting,
+  type ComboPurchaseExpiryResult,
+  type ComboTodayUsageMode,
 } from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
-import { WingsUnifiedComboCard } from '../../ui-kit/WingsUnifiedComboCard';
+import { WingsUnifiedComboCard, type ComboExpiryPreviewItem } from '../../ui-kit/WingsUnifiedComboCard';
+import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { UpsellComboWalletAccountingCard } from './UpsellComboWalletAccountingCard';
 
 type CategoryInfo = ReturnType<typeof getWingsComboCategory>;
@@ -45,6 +48,10 @@ export interface UpsellMainComboSelectorProps {
   purchaseAccounting: PurchaseAccountingResult | null;
   deductTodayIntoCombo: boolean;
   onSetDeductTodayIntoCombo: (deduct: boolean) => void;
+  upperExpiryPreviewMap?: Record<string, ComboExpiryPreviewItem>;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  onSetUpperTodayUsageMode?: (mode: ComboTodayUsageMode) => void;
+  selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
   showStaffRewards: boolean;
   actorName: string;
   onOpenLockedWelcomeModal: () => void;
@@ -77,6 +84,10 @@ export function UpsellMainComboSelector({
   purchaseAccounting,
   deductTodayIntoCombo,
   onSetDeductTodayIntoCombo,
+  upperExpiryPreviewMap,
+  upperTodayUsageMode,
+  onSetUpperTodayUsageMode,
+  selectedUpperExpiry,
   showStaffRewards,
   actorName,
   onOpenLockedWelcomeModal,
@@ -87,7 +98,7 @@ export function UpsellMainComboSelector({
         className={`text-[11px] font-extrabold ${isDark ? 'text-amber-400' : 'text-amber-800'} uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between`}
       >
         <span>
-          {isExistingComboLive ? '2. MUA THÊM GÓI ❖ (GỐI ĐẦU / RENEW)' : '1. GÓI ❖ ĐÚNG DÒNG MI & HẠCH TOÁN VÍ'}
+          {isExistingComboLive ? '2. MUA THÊM GÓI ❖ (GỐI ĐẦU / RENEW)' : '1. GÓI ❖ ĐÚNG DÒNG MI & HẠN SỬ DỤNG'}
         </span>
         <div className="flex items-center gap-1.5">
           {isExistingComboLive && showNewComboSection && (
@@ -115,10 +126,11 @@ export function UpsellMainComboSelector({
             >
               ❖
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
               <div className={`text-[13px] font-extrabold ${isDark ? 'text-white' : 'text-neutral-900'} truncate`}>
                 Khách còn {remainingSessions} lượt
               </div>
+              <ComboExpiryStatusBadge status={booking?.comboLiveStatus} compact theme={isDark ? 'dark' : 'light'} />
             </div>
           </div>
           <button
@@ -385,6 +397,7 @@ export function UpsellMainComboSelector({
             selectedPackageId={selectedNewComboId === 'NONE' ? null : selectedNewComboId}
             dimmed={selectedNewComboId === 'NONE'}
             showStaffRewards={showStaffRewards}
+            expiryPreviewByPkgId={upperExpiryPreviewMap}
             onSelectPackage={(pkg) => {
               onSetSelectedNewComboId((prev) => (prev === pkg.id ? 'NONE' : pkg.id));
             }}
@@ -398,6 +411,9 @@ export function UpsellMainComboSelector({
             purchaseAccounting={purchaseAccounting}
             deductTodayIntoCombo={deductTodayIntoCombo}
             onSetDeductTodayIntoCombo={onSetDeductTodayIntoCombo}
+            upperTodayUsageMode={upperTodayUsageMode}
+            onSetUpperTodayUsageMode={onSetUpperTodayUsageMode}
+            selectedUpperExpiry={selectedUpperExpiry}
             servicePrice={servicePrice}
             showStaffRewards={showStaffRewards}
             actorName={actorName}

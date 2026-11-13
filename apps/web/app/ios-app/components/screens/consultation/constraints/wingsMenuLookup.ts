@@ -14,5 +14,5 @@ export function getWingsMenuDetail(
   const cNum = parseInt(String(countStr || '').replace(/\D+/g, ''), 10) || 0;
   const v = String(volumeStr || '').toLowerCase();
 
-  return lookupClassicVolumeAndMinkMenu(mid, cNum) || lookupLightSeriesMenu(mid, cNum, v);
+  return lookupClassicVolumeAndMinkMenu(mid, cNum, v) || lookupLightSeriesMenu(mid, cNum, v);
 }

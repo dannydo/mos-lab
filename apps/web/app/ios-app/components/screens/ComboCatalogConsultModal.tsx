@@ -12,10 +12,13 @@ import {
   calculateComboPurchaseAccounting,
   getLashFamilyInfo,
   resolveValidVolumeForCategory,
+  type ComboTodayUsageMode,
+  type ExistingComboSnapshotForExpiry,
 } from '@mos-lab/shared';
 import { X, Sparkles, Eye, Lock, Info, Leaf, Zap, Crown, Check, Layers, Feather } from 'lucide-react';
 import { WingsUnifiedComboCard } from '../ui-kit/WingsUnifiedComboCard';
 import { useTheme } from '../../../../context/ThemeContext';
+import { buildPackagesExpiryPreviewMap } from './consultation/comboExpiryConsultHelpers';
 
 export interface ComboCatalogConsultModalProps {
   open: boolean;
@@ -25,6 +28,12 @@ export interface ComboCatalogConsultModalProps {
   welcomeEligibility: WelcomeComboEligibilityResult;
   selectedPackageId?: string | null;
   todaySingleServicePrice?: number;
+  existingUpperExpirySnapshot?: ExistingComboSnapshotForExpiry | null;
+  existingUnderExpirySnapshot?: ExistingComboSnapshotForExpiry | null;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  underTodayUsageMode?: ComboTodayUsageMode;
+  todayServiceType?: 'Normal' | 'Retain';
+  underServiceType?: 'Normal' | 'Retain';
   onSelectPackage?: (pkg: MatchedComboPackageOption) => void;
   initialSelectedUpperPkg?: MatchedComboPackageOption | null;
   initialSelectedUnderPkg?: MatchedComboPackageOption | null;
@@ -126,6 +135,12 @@ export function ComboCatalogConsultModal({
   welcomeEligibility,
   selectedPackageId,
   todaySingleServicePrice,
+  existingUpperExpirySnapshot = null,
+  existingUnderExpirySnapshot = null,
+  upperTodayUsageMode = 'USE_NEW_COMBO',
+  underTodayUsageMode = 'USE_NEW_COMBO',
+  todayServiceType = 'Normal',
+  underServiceType = 'Normal',
   onSelectPackage,
   initialSelectedUpperPkg,
   initialSelectedUnderPkg,
@@ -202,6 +217,26 @@ export function ComboCatalogConsultModal({
             includeVvipPass: activeCategoryId !== 'VVIP',
           }),
     [activeCategoryId, effectiveVolume, welcomeEligibility]
+  );
+
+  const expiryPreviewByPkgId = useMemo(
+    () =>
+      buildPackagesExpiryPreviewMap({
+        packages,
+        todayUsageMode: effectiveVolume === 'under' ? underTodayUsageMode : upperTodayUsageMode,
+        todayServiceType: effectiveVolume === 'under' ? underServiceType : todayServiceType,
+        existingCombo: effectiveVolume === 'under' ? existingUnderExpirySnapshot : existingUpperExpirySnapshot,
+      }),
+    [
+      packages,
+      effectiveVolume,
+      underTodayUsageMode,
+      upperTodayUsageMode,
+      underServiceType,
+      todayServiceType,
+      existingUnderExpirySnapshot,
+      existingUpperExpirySnapshot,
+    ]
   );
 
   if (!open) return null;
@@ -482,6 +517,7 @@ export function ComboCatalogConsultModal({
               customerAvatar={customerAvatar}
               selectedPackageId={currentSelectedPkgId}
               includeVat={includeVat}
+              expiryPreviewByPkgId={expiryPreviewByPkgId}
               onSelectPackage={(pkg) => {
                 if (pkg.volume === 'under') {
                   setTempSelectedUnder((prev) => (prev?.id === pkg.id ? null : pkg));

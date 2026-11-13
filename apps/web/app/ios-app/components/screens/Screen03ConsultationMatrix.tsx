@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import type { Screen03ConsultationMatrixProps } from './consultation/ConsultationTypes';
 import { useLashDesignSelection } from './consultation/useLashDesignSelection';
 import { useNaturalLashDiagnostic } from './consultation/useNaturalLashDiagnostic';
@@ -22,6 +23,8 @@ export type { Screen03ConsultationMatrixProps } from './consultation/Consultatio
 export function Screen03ConsultationMatrix({
   booking,
   actor,
+  isAdmin = false,
+  onRefreshDb,
   onBack,
   onSave,
   onUpdateAvatar,
@@ -29,6 +32,7 @@ export function Screen03ConsultationMatrix({
 }: Screen03ConsultationMatrixProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   const design = useLashDesignSelection(booking);
   const diagnostic = useNaturalLashDiagnostic({
@@ -148,6 +152,14 @@ export function Screen03ConsultationMatrix({
               setSelectedNewComboPkg={pricing.setSelectedNewComboPkg}
               selectedUnderComboPkg={pricing.selectedUnderComboPkg}
               setSelectedUnderComboPkg={pricing.setSelectedUnderComboPkg}
+              comboLiveStatus={booking?.comboLiveStatus}
+              onOpenWalletModal={() => setIsWalletModalOpen(true)}
+              upperTodayUsageMode={pricing.upperTodayUsageMode}
+              setUpperTodayUsageMode={pricing.setUpperTodayUsageMode}
+              underTodayUsageMode={pricing.underTodayUsageMode}
+              setUnderTodayUsageMode={pricing.setUnderTodayUsageMode}
+              selectedUpperExpiry={pricing.selectedUpperExpiry}
+              selectedUnderExpiry={pricing.selectedUnderExpiry}
               showStaffRewards={design.showStaffRewards}
               setShowStaffRewards={design.setShowStaffRewards}
               handleOpenComboModal={pricing.handleOpenComboModal}
@@ -340,8 +352,23 @@ export function Screen03ConsultationMatrix({
         selectedUnderComboPkg={pricing.selectedUnderComboPkg}
         setSelectedUnderComboPkg={pricing.setSelectedUnderComboPkg}
         todaySingleServicePrice={booking?.servicePrice || 770000}
+        existingUpperExpirySnapshot={pricing.existingUpperExpirySnapshot}
+        existingUnderExpirySnapshot={pricing.existingUnderExpirySnapshot}
+        upperTodayUsageMode={pricing.upperTodayUsageMode}
+        underTodayUsageMode={pricing.underTodayUsageMode}
+        todayServiceType={design.serviceType}
+        underServiceType={design.underMinkServiceType}
         handleSelectComboPackage={pricing.handleSelectComboPackage}
         setHasUnderMink={design.setHasUnderMink}
+      />
+
+      <ComboWalletDetailModal
+        booking={booking || null}
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        isAdmin={isAdmin}
+        theme={isDark ? 'dark' : 'light'}
+        onUpdated={onRefreshDb}
       />
     </div>
   );

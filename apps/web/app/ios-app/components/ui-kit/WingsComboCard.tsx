@@ -14,9 +14,12 @@ import { ComboCardDecorativeFrame } from './combo-card/ComboCardDecorativeFrame'
 
 export interface WingsTierOption {
   label: string; // e.g. "Mua 2 Tặng 1"
+  fullLabel?: string;
   comboPrice: number;
   avgPerSessionPrice: number;
   discountPct?: number;
+  expiryDateDisplay?: string;
+  expiryBonusBadge?: string;
   isActive: boolean;
   isLocked: boolean;
   onSelect: () => void;
@@ -43,6 +46,10 @@ export interface WingsComboCardProps {
   showStaffRewards?: boolean;
   /** Nếu có: thay thế bảng volume (390/770/880) bằng vertical tier selector bên trong card */
   allTiers?: WingsTierOption[];
+  /** Ngày hết hạn dự kiến (dd/MM/yyyy) tính theo công thức chuẩn */
+  expiryDateLabel?: string;
+  /** Mô tả ngắn công thức tính HSD */
+  expiryFormulaSummary?: string;
 }
 
 export function WingsComboCard({
@@ -62,6 +69,8 @@ export function WingsComboCard({
   copiedQuote = false,
   showStaffRewards = false,
   allTiers,
+  expiryDateLabel,
+  expiryFormulaSummary,
 }: WingsComboCardProps) {
   const bgStyle = getCardBackgroundStyle(pkg.categoryId, pkg.theme);
   const brandSubtitle = formatCardBrandSubtitle(pkg.categoryId, pkg.categoryName);
@@ -398,6 +407,7 @@ export function WingsComboCard({
             discountPct={pkg.discountPct}
             ribbonLabel={pkg.packageKind === 'vvip_pass' ? '20 LẦN VIP' : pkg.ruleName}
             validityMonths={pkg.validityMonths}
+            expiryDateLabel={expiryDateLabel}
             cvBonus={showStaffRewards ? pkg.cvBonus : undefined}
             compact={compact}
           />
@@ -425,6 +435,8 @@ export function WingsComboCard({
           displayRetailTotal={displayRetailTotal}
           displayAvgPerSession={displayAvgPerSession}
           allTiers={allTiers}
+          expiryDateLabel={expiryDateLabel}
+          expiryFormulaSummary={expiryFormulaSummary}
           onZoomOriginalCard={onZoomOriginalCard}
           onCopyQuote={onCopyQuote}
           copiedQuote={copiedQuote}

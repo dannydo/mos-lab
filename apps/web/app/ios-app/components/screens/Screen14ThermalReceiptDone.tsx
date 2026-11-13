@@ -7,6 +7,7 @@ import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
+import { ThermalReceiptComboItemsSection } from './checkout/ReceiptComboExpiryLine';
 import {
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
@@ -21,11 +22,6 @@ interface Screen14ThermalReceiptDoneProps {
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
   onFinishOrder: () => void;
   onBack?: () => void;
-}
-
-function cleanComboTitle(name?: string | null): string {
-  if (!name) return '';
-  return name.replace(/\s*\(\d+\s*lần\)/gi, '').trim();
 }
 
 export function Screen14ThermalReceiptDone({
@@ -59,7 +55,10 @@ export function Screen14ThermalReceiptDone({
     servicePrice,
     upgradePrice: booking?.upgradePrice || 0,
     serviceName: booking?.serviceName,
-    isComboLive: Boolean(booking?.comboLiveStatus?.isComboLive),
+    isComboLive: Boolean(
+      booking?.comboLiveStatus?.isComboLive &&
+      (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
+    ),
     hasUnderMink: booking?.attributes?.hasUnderMink,
     underMinkServiceType: booking?.attributes?.underMinkServiceType,
     hasUnderMinkCombo,
@@ -239,7 +238,7 @@ export function Screen14ThermalReceiptDone({
               <span className={`font-bold ${isDark ? 'text-white' : 'text-black'}`}>1. {serviceName}</span>
               {comboRedemption ? (
                 <div className={`text-[10.5px] ${isDark ? 'text-sky-400' : 'text-sky-700'} font-bold`}>
-                  ✓ Trừ 1 lượt gói · Ví còn{' '}
+                  ✓ Trừ 1 lượt gói · Combo còn{' '}
                   <span className={`tabular-nums font-black ${isDark ? 'text-sky-300' : 'text-sky-900'}`}>
                     ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
                   </span>
@@ -271,76 +270,13 @@ export function Screen14ThermalReceiptDone({
             </div>
           </div>
 
-          {/* Item 2: Gói Combo mua mới nếu có */}
-          {selectedCombo && (
-            <div className="space-y-1">
-              <div
-                className={`flex justify-between items-baseline gap-2 ${isDark ? 'text-neutral-200' : 'text-black'}`}
-              >
-                <span className="font-bold text-[12.5px] flex-1 min-w-0">
-                  {comboRedemption ? '2. Mua thêm: ' : '2. '}
-                  {cleanComboTitle(selectedCombo.name)}
-                </span>
-                <span
-                  className={`tabular-nums ${isDark ? 'text-white' : 'text-black'} font-extrabold whitespace-nowrap shrink-0 text-[12.5px]`}
-                >
-                  {selectedCombo.price.toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-              {selectedCombo.remainingAfterToday && (
-                <div
-                  className={`text-[10px] ${isDark ? 'text-indigo-300 bg-indigo-950/50 border-indigo-800' : 'text-indigo-900 bg-indigo-50/80 border-indigo-200'} px-2 py-1 rounded-md border tabular-nums`}
-                >
-                  ✨ Ví gói mới: ✦{' '}
-                  <strong>
-                    {selectedCombo.remainingAfterToday.paidNew + selectedCombo.remainingAfterToday.bonusNew}
-                  </strong>{' '}
-                  · ↻{' '}
-                  <strong>
-                    {selectedCombo.remainingAfterToday.paidRefill + selectedCombo.remainingAfterToday.bonusRefill}
-                  </strong>{' '}
-                  (Đủ {selectedCombo.remainingAfterToday.totalRemaining} buổi)
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Item 2B: Gói Combo Mi Dưới nếu có */}
-          {selectedUnderCombo && (
-            <div className="space-y-1">
-              <div
-                className={`flex justify-between items-baseline gap-2 ${isDark ? 'text-neutral-200' : 'text-black'}`}
-              >
-                <span className="font-bold text-[12.5px] flex-1 min-w-0">
-                  {selectedCombo ? '2B. ' : '2. '}
-                  {cleanComboTitle(selectedUnderCombo.name)}
-                </span>
-                <span
-                  className={`tabular-nums ${isDark ? 'text-white' : 'text-black'} font-extrabold whitespace-nowrap shrink-0 text-[12.5px]`}
-                >
-                  {selectedUnderCombo.price.toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-              <div
-                className={`text-[10px] ${isDark ? 'text-purple-300 bg-purple-950/50 border-purple-800' : 'text-purple-900 bg-purple-50/80 border-purple-200'} px-2 py-1 rounded-md border tabular-nums`}
-              >
-                ✨ Ví gói mi dưới:{' '}
-                {selectedUnderCombo.remainingAfterToday
-                  ? `Còn ${selectedUnderCombo.remainingAfterToday.totalRemaining} buổi sau ca hôm nay (Gói ${selectedUnderCombo.sessions || 5} buổi)`
-                  : `Đủ ${selectedUnderCombo.sessions || 5} buổi (Mi Dưới)`}
-              </div>
-            </div>
-          )}
-
-          {/* Item nếu trừ gói cũ */}
-          {comboRedemption && (
-            <div
-              className={`text-[10.5px] ${isDark ? 'text-sky-300 bg-sky-950/50 border-sky-800' : 'text-sky-900 bg-sky-50 border-sky-200'} p-2 rounded-lg border tabular-nums`}
-            >
-              • {comboRedemption.explanation} · Ví cũ sau ca còn ✦ <strong>{comboRedemption.paidRemaining ?? 0}</strong>{' '}
-              · ↻ <strong>{comboRedemption.bonusRemaining ?? 0}</strong>
-            </div>
-          )}
+          <ThermalReceiptComboItemsSection
+            isDark={isDark}
+            booking={booking}
+            selectedCombo={selectedCombo}
+            selectedUnderCombo={selectedUnderCombo}
+            comboRedemption={comboRedemption}
+          />
 
           {/* Item 3+: Sản phẩm dưỡng mi Yeppeum bán kèm */}
           {cartProducts.map((p, idx) => (

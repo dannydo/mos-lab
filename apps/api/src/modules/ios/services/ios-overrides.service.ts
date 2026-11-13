@@ -7,7 +7,18 @@ export const LEGACY_CUSTOMER_AVATARS_KEY = 'IOS_APP_CUSTOMER_AVATARS';
 export const BOOKING_OVERRIDE_KEY_PREFIX = 'IOS_BK_OVR:';
 export const CUSTOMER_AVATAR_KEY_PREFIX = 'IOS_CUST_AVT:';
 export const CUSTOMER_NATURAL_LASH_KEY_PREFIX = 'IOS_CUST_NLASH:';
+export const CUSTOMER_COMBO_EXPIRY_KEY_PREFIX = 'IOS_CUST_COMBO_EXP:';
 export const LEGACY_SETTLE_KEY_PREFIX = 'IOS_LEGACY_SETTLE:';
+
+export interface CustomerComboExpiryOverrideEntry {
+  balanceId: number;
+  serviceGroup: 'upper' | 'under';
+  dateExpired: string | null;
+  isFrozen: boolean;
+  reason: string;
+  updatedByStaffId?: number;
+  updatedAt: string;
+}
 
 export type BookingOverrideRecord = Record<string, SafeAny>;
 
@@ -40,6 +51,10 @@ export function getCustomerAvatarKey(customerId: number): string {
 
 export function getCustomerNaturalLashKey(customerId: number): string {
   return `${CUSTOMER_NATURAL_LASH_KEY_PREFIX}${customerId}`;
+}
+
+export function getCustomerComboExpiryKey(customerId: number): string {
+  return `${CUSTOMER_COMBO_EXPIRY_KEY_PREFIX}${customerId}`;
 }
 
 export function getLegacySettleKey(bookingId: number): string {
@@ -288,6 +303,7 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
         store.removeByPrefix(BOOKING_OVERRIDE_KEY_PREFIX),
         store.removeByPrefix(LEGACY_SETTLE_KEY_PREFIX),
         store.removeByPrefix(CUSTOMER_NATURAL_LASH_KEY_PREFIX),
+        store.removeByPrefix(CUSTOMER_COMBO_EXPIRY_KEY_PREFIX),
         store.remove(LEGACY_LIVE_OVERRIDES_KEY),
       ]);
       return;
@@ -298,7 +314,10 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     ]);
     if (customerIds && customerIds.length > 0) {
       for (const cid of customerIds) {
-        if (cid > 0) removals.push(store.remove(getCustomerNaturalLashKey(cid)));
+        if (cid > 0) {
+          removals.push(store.remove(getCustomerNaturalLashKey(cid)));
+          removals.push(store.remove(getCustomerComboExpiryKey(cid)));
+        }
       }
     }
     await Promise.all(removals);
@@ -453,6 +472,36 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     return result;
   }
 
+  async function saveCustomerComboExpiryOverride(
+    customerId: number,
+    entry: CustomerComboExpiryOverrideEntry
+  ): Promise<void> {
+    if (!customerId || customerId <= 0) return;
+    const key = getCustomerComboExpiryKey(customerId);
+    const existing = safeJsonParseObject(await store.getOne(key)) || {};
+    const entryKey = entry.balanceId > 0 ? String(entry.balanceId) : entry.serviceGroup;
+    existing[entryKey] = entry;
+    await store.upsert(key, JSON.stringify(existing));
+  }
+
+  async function loadCustomerComboExpiryOverridesBatch(
+    customerIds: number[]
+  ): Promise<Record<string, Record<string, CustomerComboExpiryOverrideEntry>>> {
+    const uniqueIds = Array.from(new Set(customerIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (uniqueIds.length === 0) return {};
+
+    const keys = uniqueIds.map((id) => getCustomerComboExpiryKey(id));
+    const atomicRows = await store.getMany(keys);
+    const result: Record<string, Record<string, CustomerComboExpiryOverrideEntry>> = {};
+    for (const id of uniqueIds) {
+      const parsed = safeJsonParseObject(atomicRows.get(getCustomerComboExpiryKey(id)));
+      if (parsed) {
+        result[String(id)] = parsed as Record<string, CustomerComboExpiryOverrideEntry>;
+      }
+    }
+    return result;
+  }
+
   return {
     withBookingLock,
     loadBookingOverride,
@@ -466,6 +515,8 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     loadCustomerNaturalLashProfile,
     deleteCustomerNaturalLashProfile,
     loadCustomerNaturalLashProfilesBatch,
+    saveCustomerComboExpiryOverride,
+    loadCustomerComboExpiryOverridesBatch,
     applyConcurrentBookingOverride,
     loadSettlementReceipt,
     saveSettlementReceipt,

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { BookingItem } from '../../../state/mockData';
+import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { getLashDetailSpecs } from './incomingBookingHelpers';
 import { RotateCcw, X, Lock, FileText, Eye, Users, Sparkles } from 'lucide-react';
 
@@ -299,19 +300,33 @@ export function IncomingBookingsModals({
                 </div>
               </div>
 
-              {/* Section 4: Gói Combo Live nếu có */}
-              {selectedCustomerDetail.comboLiveStatus?.isComboLive && (
-                <div className="rounded-2xl bg-[#252528] border border-amber-400/30 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              {/* Section 4: Gói Combo Live hoặc Gói Hết Hạn nếu có */}
+              {(selectedCustomerDetail.comboLiveStatus?.isComboLive ||
+                selectedCustomerDetail.comboLiveStatus?.isExpired) && (
+                <div
+                  className={`rounded-2xl bg-[#252528] p-3.5 space-y-2 border ${
+                    selectedCustomerDetail.comboLiveStatus?.isExpired ? 'border-rose-500/60' : 'border-amber-400/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span
+                      className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                        selectedCustomerDetail.comboLiveStatus?.isExpired ? 'text-rose-400' : 'text-amber-400'
+                      }`}
+                    >
                       <Sparkles className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
-                      <span>GÓI COMBO LIVE</span>
+                      <span>
+                        {selectedCustomerDetail.comboLiveStatus?.isExpired
+                          ? 'GÓI COMBO HẾT HẠN (CHỜ CỨU GÓI)'
+                          : 'GÓI COMBO LIVE'}
+                      </span>
                     </span>
-                    <span className="text-[11px] font-black text-amber-400">
+                    <span className="text-[11px] font-black text-amber-400 tabular-nums">
                       Còn {selectedCustomerDetail.comboLiveStatus.remainingSessions} buổi
                     </span>
                   </div>
                   <div className="text-[12px] text-neutral-200">{selectedCustomerDetail.comboLiveStatus.comboName}</div>
+                  <ComboExpiryStatusBadge status={selectedCustomerDetail.comboLiveStatus} showPace />
                 </div>
               )}
             </div>

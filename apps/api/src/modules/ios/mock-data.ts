@@ -53,6 +53,7 @@ export interface BookingItem {
   status: 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
   diamondBalance?: number;
   comboLiveStatus?: {
+    balanceId?: number;
     isComboLive: boolean;
     remainingSessions: number;
     normalRemaining?: number;
@@ -62,14 +63,29 @@ export interface BookingItem {
     packageKey?: string;
     retainDaysLimit?: number;
     upsellOpportunity?: boolean;
+    dateExpired?: string | null;
+    isExpired?: boolean;
+    isFrozen?: boolean;
+    isExpiringSoon?: boolean;
+    daysRemaining?: number | null;
+    avgDaysPerSession?: number | null;
+    expiryState?: string;
   };
   underMinkComboStatus?: {
+    balanceId?: number;
     hasUnderCombo: boolean;
     remainingSessions: number;
     normalRemaining: number;
     retainRemaining: number;
     comboName: string;
     packageKey?: string;
+    dateExpired?: string | null;
+    isExpired?: boolean;
+    isFrozen?: boolean;
+    isExpiringSoon?: boolean;
+    daysRemaining?: number | null;
+    avgDaysPerSession?: number | null;
+    expiryState?: string;
   };
   lashHistory?: Array<{ date: string; serviceName: string; staffName: string }>;
   selectedCombo?: any;
@@ -110,6 +126,7 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     status: 'INCOMING',
     diamondBalance: 320,
     comboLiveStatus: {
+      balanceId: 90101,
       isComboLive: true,
       remainingSessions: 3,
       normalRemaining: 1,
@@ -119,6 +136,10 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
       packageKey: '4+1-hyperlight-770',
       retainDaysLimit: 25,
       upsellOpportunity: false,
+      dateExpired: '2027-02-28',
+      isExpired: false,
+      isFrozen: false,
+      expiryState: 'ACTIVE',
     },
     lashHistory: [{ date: '05/10/2026', serviceName: 'HyperLight 550', staffName: 'Thảo Ly' }],
     attributes: {
@@ -203,10 +224,20 @@ export const INITIAL_BOOKINGS: BookingItem[] = [
     status: 'INCOMING',
     diamondBalance: 190,
     comboLiveStatus: {
+      balanceId: 90102,
       isComboLive: false,
-      remainingSessions: 0,
-      comboName: '',
+      remainingSessions: 3,
+      normalRemaining: 1,
+      retainRemaining: 2,
+      comboName: '❖ 5 lần New Classic 1D (70 sợi)',
+      serviceKey: 'new-classic-390',
+      packageKey: '4+1-classic-390',
+      retainDaysLimit: 25,
       upsellOpportunity: true,
+      dateExpired: '2026-10-01',
+      isExpired: true,
+      isFrozen: false,
+      expiryState: 'EXPIRED',
     },
     lashHistory: [{ date: '15/10/2026', serviceName: 'Classic 1D', staffName: 'Khanh Cao' }],
     attributes: {

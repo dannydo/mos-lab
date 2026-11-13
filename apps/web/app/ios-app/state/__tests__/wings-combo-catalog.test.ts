@@ -61,6 +61,16 @@ describe('Wings Combo Catalog Refactoring - Classic 1D, Volume 2D/3D, Mink 𝓜'
       serviceName: 'Flawless Mink Cao Cấp',
     });
     expect(minkMatch.categoryId).toBe('FlawlessMink');
+
+    const explicitClassicOverridesFallbackService = matchComboCategoryAndVolumeFromBooking({
+      material: 'New Classic 1D',
+      volume: '1D',
+      count: '70 sợi',
+      serviceName: 'New Flawless Mink 770',
+      servicePrice: 770000,
+    });
+    expect(explicitClassicOverridesFallbackService.categoryId).toBe('Classic_1D');
+    expect(explicitClassicOverridesFallbackService.volume).toBe(440);
   });
 
   it('generates combo packages with VIP 20 for all categories', () => {

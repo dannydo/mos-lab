@@ -19,6 +19,8 @@ interface ComboCardBodySectionsProps {
   displayRetailTotal: number;
   displayAvgPerSession: number;
   allTiers?: WingsTierOption[];
+  expiryDateLabel?: string;
+  expiryFormulaSummary?: string;
   onZoomOriginalCard?: (e: React.MouseEvent) => void;
   onCopyQuote?: (e: React.MouseEvent) => void;
   copiedQuote: boolean;
@@ -36,6 +38,8 @@ export function ComboCardBodySections({
   displayRetailTotal,
   displayAvgPerSession,
   allTiers,
+  expiryDateLabel,
+  expiryFormulaSummary,
   onZoomOriginalCard,
   onCopyQuote,
   copiedQuote,
@@ -148,6 +152,22 @@ export function ComboCardBodySections({
                     }}
                   >
                     +{tier.discountPct}%
+                  </span>
+                )}
+                {tier.expiryDateDisplay && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 800,
+                      color: tier.isActive ? '#A7F3D0' : 'rgba(255,255,255,0.75)',
+                      background: 'rgba(16, 185, 129, 0.18)',
+                      border: '1px solid rgba(52, 211, 153, 0.35)',
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    HSD {tier.expiryDateDisplay}
                   </span>
                 )}
               </div>
@@ -521,6 +541,31 @@ export function ComboCardBodySections({
               );
             })()}
           </div>
+
+          {/* Row 3: HSD dự kiến & công thức cộng dồn (nếu có) */}
+          {expiryDateLabel && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 6,
+                flexWrap: 'wrap',
+                marginTop: 2,
+                padding: '3px 7px',
+                borderRadius: 6,
+                background: 'rgba(16, 185, 129, 0.14)',
+                border: '1px solid rgba(52, 211, 153, 0.32)',
+                fontSize: compact ? 9.5 : 10,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              <span style={{ color: '#A7F3D0', fontWeight: 800 }}>HSD dự kiến: {expiryDateLabel}</span>
+              {expiryFormulaSummary && (
+                <span style={{ color: 'rgba(255, 246, 214, 0.85)', fontWeight: 600 }}>{expiryFormulaSummary}</span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </>

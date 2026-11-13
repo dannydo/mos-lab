@@ -88,20 +88,23 @@ export async function queryIosBookingsList(
   if (isDemoMode) {
     const demoBookingIds = INITIAL_BOOKINGS.map((b) => b.id);
     const demoCustomerIds = INITIAL_BOOKINGS.map((b) => b.customerId).filter((id) => id > 0);
-    const [overrides, customerAvatarMap, customerNaturalLashMap] = await Promise.all([
+    const [overrides, customerAvatarMap, customerNaturalLashMap, customerComboExpiryMap] = await Promise.all([
       defaultIosOverrideRepo.loadBookingOverridesBatch(demoBookingIds),
       defaultIosOverrideRepo.loadCustomerAvatarsBatch(demoCustomerIds),
       defaultIosOverrideRepo.loadCustomerNaturalLashProfilesBatch(demoCustomerIds),
+      defaultIosOverrideRepo.loadCustomerComboExpiryOverridesBatch(demoCustomerIds),
     ]);
 
     const allDemoBookings = buildDemoModeBookings({
       overrides,
       customerAvatarMap,
       customerNaturalLashMap,
+      customerComboExpiryMap,
       storeId,
       activeStaffId,
       canViewFullPhone,
       targetDate,
+      todayVn,
       activeTrainingPairs,
     });
 
@@ -148,10 +151,11 @@ export async function queryIosBookingsList(
   const liveOrderIds = orders.map((o) => o.id);
   const liveCustomerIds = Array.from(new Set(orders.map((o) => Number(o.user_id)).filter((id) => id > 0)));
 
-  const [overrides, customerAvatarMap, customerNaturalLashMap] = await Promise.all([
+  const [overrides, customerAvatarMap, customerNaturalLashMap, customerComboExpiryMap] = await Promise.all([
     defaultIosOverrideRepo.loadBookingOverridesBatch(liveOrderIds),
     defaultIosOverrideRepo.loadCustomerAvatarsBatch(liveCustomerIds),
     defaultIosOverrideRepo.loadCustomerNaturalLashProfilesBatch(liveCustomerIds),
+    defaultIosOverrideRepo.loadCustomerComboExpiryOverridesBatch(liveCustomerIds),
   ]);
 
   // Tự động đối soát & hạch toán bù (Idempotent Backfill) cho các ca đã DONE trên /ios-app nhưng chưa chốt Legacy DB
@@ -231,6 +235,7 @@ export async function queryIosBookingsList(
     overrides,
     customerAvatarMap,
     customerNaturalLashMap,
+    customerComboExpiryMap,
     storeId,
     targetDate,
     todayVn,

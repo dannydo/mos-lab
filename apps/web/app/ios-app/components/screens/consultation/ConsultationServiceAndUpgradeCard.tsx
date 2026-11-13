@@ -2,8 +2,10 @@
 
 import React from 'react';
 import { Zap, Check, Sparkles, RotateCw } from 'lucide-react';
-import type { MatchedComboPackageOption } from '@mos-lab/shared';
+import type { ComboPurchaseExpiryResult, ComboTodayUsageMode, MatchedComboPackageOption } from '@mos-lab/shared';
+import type { BookingItem } from '../../../state/mockData';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
+import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import {
   formatComboName,
@@ -71,6 +73,14 @@ interface ConsultationServiceAndUpgradeCardProps {
   setSelectedNewComboPkg: (pkg: MatchedComboPackageOption | null) => void;
   selectedUnderComboPkg: MatchedComboPackageOption | null;
   setSelectedUnderComboPkg: (pkg: MatchedComboPackageOption | null) => void;
+  comboLiveStatus?: BookingItem['comboLiveStatus'];
+  onOpenWalletModal?: () => void;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  setUpperTodayUsageMode?: (mode: ComboTodayUsageMode) => void;
+  underTodayUsageMode?: ComboTodayUsageMode;
+  setUnderTodayUsageMode?: (mode: ComboTodayUsageMode) => void;
+  selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
+  selectedUnderExpiry?: ComboPurchaseExpiryResult | null;
   showStaffRewards: boolean;
   setShowStaffRewards: (show: boolean) => void;
   handleOpenComboModal: (target: 'upper' | 'under') => void;
@@ -131,11 +141,20 @@ export function ConsultationServiceAndUpgradeCard({
   setSelectedNewComboPkg,
   selectedUnderComboPkg,
   setSelectedUnderComboPkg,
+  comboLiveStatus,
+  onOpenWalletModal,
+  upperTodayUsageMode,
+  setUpperTodayUsageMode,
+  underTodayUsageMode,
+  setUnderTodayUsageMode,
+  selectedUpperExpiry,
+  selectedUnderExpiry,
   showStaffRewards,
   setShowStaffRewards,
   handleOpenComboModal,
   handleSubmit,
 }: ConsultationServiceAndUpgradeCardProps) {
+  const isOldComboExpired = Boolean(comboLiveStatus?.isExpired && (comboLiveStatus?.remainingSessions || 0) > 0);
   return (
     <div
       className={`rounded-2xl p-3 shadow-xs border space-y-2 transition-colors ${
@@ -145,11 +164,15 @@ export function ConsultationServiceAndUpgradeCard({
       {/* Header gọn: Tên gói / Single + Badge Ngày ghé cuối & Tổng lượt */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="w-5 h-5 rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
+          <span
+            className={`w-5 h-5 rounded-full text-white inline-flex items-center justify-center shrink-0 ${
+              isOldComboExpired ? 'bg-rose-600' : 'bg-emerald-600'
+            }`}
+          >
             <Zap className="w-3 h-3 fill-current" />
           </span>
           <span className={`text-[12px] font-extrabold truncate ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-            {isComboLive ? formatComboName(comboName) : 'Khách Lẻ'}
+            {isComboLive || isOldComboExpired ? formatComboName(comboName) : 'Khách Lẻ'}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0 tabular-nums">
@@ -169,14 +192,27 @@ export function ConsultationServiceAndUpgradeCard({
             </span>
           )}
           {isComboLive && (
-            <ComboSessionBadge
-              normalRemaining={comboNormalRemaining}
-              retainRemaining={comboRetainRemaining}
-              remainingSessions={comboRemainingSessions}
-              comboName={comboName}
-              size="xs"
-            />
+            <button
+              type="button"
+              onClick={onOpenWalletModal}
+              className="inline-flex items-center cursor-pointer bg-transparent border-0 p-0"
+              title="Xem chi tiết Gói Combo & Hạn sử dụng"
+            >
+              <ComboSessionBadge
+                normalRemaining={comboNormalRemaining}
+                retainRemaining={comboRetainRemaining}
+                remainingSessions={comboRemainingSessions}
+                comboName={comboName}
+                size="xs"
+              />
+            </button>
           )}
+          <ComboExpiryStatusBadge
+            status={comboLiveStatus}
+            compact
+            theme={isDark ? 'dark' : 'light'}
+            onClick={onOpenWalletModal ? () => onOpenWalletModal() : undefined}
+          />
         </div>
       </div>
 
@@ -587,6 +623,15 @@ export function ConsultationServiceAndUpgradeCard({
       <ConsultationComboSelectorSection
         isDark={isDark}
         isComboLive={isComboLive}
+        hasUnderMinkCombo={hasUnderMinkCombo}
+        comboLiveStatus={comboLiveStatus}
+        onOpenWalletModal={onOpenWalletModal}
+        upperTodayUsageMode={upperTodayUsageMode}
+        setUpperTodayUsageMode={setUpperTodayUsageMode}
+        underTodayUsageMode={underTodayUsageMode}
+        setUnderTodayUsageMode={setUnderTodayUsageMode}
+        selectedUpperExpiry={selectedUpperExpiry}
+        selectedUnderExpiry={selectedUnderExpiry}
         totalUpgradeAmount={totalUpgradeAmount}
         comboPurchaseTotal={comboPurchaseTotal}
         selectedNewComboPkg={selectedNewComboPkg}

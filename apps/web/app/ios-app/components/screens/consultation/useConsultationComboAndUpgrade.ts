@@ -11,11 +11,20 @@ import {
   resolveMatchedUpperComboFromSaved,
   resolveMatchedUnderComboFromSaved,
   resolveServicePriceSplit,
+  type ComboTodayUsageMode,
   type MatchedComboPackageOption,
 } from '@mos-lab/shared';
 import type { BookingItem } from '../../../state/mockData';
 import { getLocalProgressSnapshot } from '../../../state/offlineSync';
 import { calculateLashPricingAndCvPoints } from '../LashMaterialConstraintMatrix';
+import {
+  computePackageExpiry,
+  extractExistingUnderExpirySnapshot,
+  extractExistingUpperExpirySnapshot,
+  mergeExpiryIntoRemainingWallet,
+  resolveDefaultUnderTodayUsageMode,
+  resolveDefaultUpperTodayUsageMode,
+} from './comboExpiryConsultHelpers';
 import type { PendingUpgradeConfirmationState } from './ConsultationTypes';
 import type { useLashDesignSelection } from './useLashDesignSelection';
 
@@ -241,20 +250,94 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
 
   const autoMatchedCategoryId = autoMatchedCombo.categoryId;
 
+  const upperSnapKey = `${booking?.id || 0}:${booking?.comboLiveStatus?.isComboLive ? 1 : 0}:${booking?.comboLiveStatus?.isExpired ? 1 : 0}:${booking?.comboLiveStatus?.isFrozen ? 1 : 0}:${booking?.comboLiveStatus?.remainingSessions ?? 0}:${booking?.comboLiveStatus?.normalRemaining ?? ''}:${booking?.comboLiveStatus?.retainRemaining ?? ''}:${booking?.comboLiveStatus?.dateExpired || ''}`;
+  const underSnapKey = `${booking?.id || 0}:${booking?.underMinkComboStatus?.hasUnderCombo ? 1 : 0}:${booking?.underMinkComboStatus?.isExpired ? 1 : 0}:${booking?.underMinkComboStatus?.isFrozen ? 1 : 0}:${booking?.underMinkComboStatus?.remainingSessions ?? 0}:${booking?.underMinkComboStatus?.normalRemaining ?? ''}:${booking?.underMinkComboStatus?.retainRemaining ?? ''}:${booking?.underMinkComboStatus?.dateExpired || ''}`;
+  const savedUsageKey = `${booking?.selectedCombo?.todayUsageMode || ''}:${booking?.selectedCombo?.todaySingleServiceWaived ?? ''}:${booking?.selectedUnderCombo?.todayUsageMode || ''}:${booking?.selectedUnderCombo?.todaySingleServiceWaived ?? ''}`;
+
+  const existingUpperExpirySnapshot = useMemo(() => extractExistingUpperExpirySnapshot(booking), [upperSnapKey]);
+  const existingUnderExpirySnapshot = useMemo(() => extractExistingUnderExpirySnapshot(booking), [underSnapKey]);
+  const defaultUpperUsageMode = useMemo(
+    () => resolveDefaultUpperTodayUsageMode(booking),
+    [upperSnapKey, savedUsageKey]
+  );
+  const defaultUnderUsageMode = useMemo(
+    () => resolveDefaultUnderTodayUsageMode(booking, hasUnderMink),
+    [underSnapKey, savedUsageKey, hasUnderMink]
+  );
+
+  const [manualUpperUsageEdit, setManualUpperUsageEdit] = useState<{
+    bookingId: number | undefined;
+    mode: ComboTodayUsageMode;
+  } | null>(null);
+  const [manualUnderUsageEdit, setManualUnderUsageEdit] = useState<{
+    bookingId: number | undefined;
+    mode: ComboTodayUsageMode;
+  } | null>(null);
+
+  const upperTodayUsageMode: ComboTodayUsageMode =
+    manualUpperUsageEdit && manualUpperUsageEdit.bookingId === booking?.id
+      ? manualUpperUsageEdit.mode
+      : defaultUpperUsageMode;
+  const underTodayUsageMode: ComboTodayUsageMode =
+    manualUnderUsageEdit && manualUnderUsageEdit.bookingId === booking?.id
+      ? manualUnderUsageEdit.mode
+      : defaultUnderUsageMode;
+
+  const setUpperTodayUsageMode = useCallback(
+    (mode: ComboTodayUsageMode) => {
+      setManualUpperUsageEdit({ bookingId: booking?.id, mode });
+    },
+    [booking?.id]
+  );
+  const setUnderTodayUsageMode = useCallback(
+    (mode: ComboTodayUsageMode) => {
+      setManualUnderUsageEdit({ bookingId: booking?.id, mode });
+    },
+    [booking?.id]
+  );
+
+  const selectedUpperExpiry = useMemo(() => {
+    if (!selectedNewComboPkg) return null;
+    return computePackageExpiry({
+      pkg: selectedNewComboPkg,
+      todayUsageMode: upperTodayUsageMode,
+      todayServiceType: serviceType,
+      existingCombo: existingUpperExpirySnapshot,
+    });
+  }, [selectedNewComboPkg, upperTodayUsageMode, serviceType, existingUpperExpirySnapshot]);
+
+  const selectedUnderExpiry = useMemo(() => {
+    if (!selectedUnderComboPkg) return null;
+    return computePackageExpiry({
+      pkg: selectedUnderComboPkg,
+      todayUsageMode: underTodayUsageMode,
+      todayServiceType: underMinkServiceType,
+      existingCombo: existingUnderExpirySnapshot,
+    });
+  }, [selectedUnderComboPkg, underTodayUsageMode, underMinkServiceType, existingUnderExpirySnapshot]);
+
   const selectedComboObject: NonNullable<BookingItem['selectedCombo']> | null = useMemo(() => {
     if (!selectedNewComboPkg) return null;
     const hasBoth = Boolean(selectedNewComboPkg && selectedUnderComboPkg && comboPurchaseTotal > 0);
     const effectiveBonus = hasBoth
       ? calculateCvComboTierBonus(comboPurchaseTotal)
       : calculateCvComboTierBonus(selectedNewComboPkg.comboPrice);
-    const shouldWaiveToday =
-      savedSelectedCombo?.id === selectedNewComboPkg.id && savedSelectedCombo.todaySingleServiceWaived !== undefined
-        ? Boolean(savedSelectedCombo.todaySingleServiceWaived)
-        : !isComboLive;
+    const shouldWaiveToday = upperTodayUsageMode === 'USE_NEW_COMBO';
     const acct = calculateComboPurchaseAccounting(
       selectedNewComboPkg,
       upperServicePrice || selectedNewComboPkg.newUnitPrice || 770000
     );
+    const rawRemaining = shouldWaiveToday
+      ? acct.remainingWalletAfterToday
+      : {
+          paidNew: selectedNewComboPkg.comboNewCount,
+          paidRefill: selectedNewComboPkg.comboRefillCount,
+          bonusNew: selectedNewComboPkg.bonusNewCount,
+          bonusRefill: selectedNewComboPkg.bonusRefillCount,
+          totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
+          totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
+          totalRemaining: selectedNewComboPkg.totalSessions,
+        };
 
     return {
       id: selectedNewComboPkg.id,
@@ -275,29 +358,29 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
       savingsAmount: selectedNewComboPkg.savingsAmount,
       avgPerSessionPrice: selectedNewComboPkg.avgPerSessionPrice,
       todaySingleServiceWaived: shouldWaiveToday,
+      todayUsageMode: upperTodayUsageMode,
+      dateExpired: selectedUpperExpiry?.dateExpired,
+      dateExpiredDisplay: selectedUpperExpiry?.dateExpiredDisplay,
+      expiryFormulaSummary: selectedUpperExpiry?.formulaSummaryVi,
+      revivedExpiredSessions: selectedUpperExpiry?.revivedExpiredSessions || 0,
       isUpTierUpgrade: selectedNewComboPkg.categoryId !== autoMatchedCategoryId,
       originalServiceCategory: autoMatchedCategoryId,
-      recognizedRevenueToday: isComboLive ? 0 : shouldWaiveToday ? acct.recognizedRevenueToday : upperServicePrice,
-      deferredRevenueBalance:
-        isComboLive || !shouldWaiveToday ? selectedNewComboPkg.comboPrice : acct.deferredRevenueBalance,
-      remainingAfterToday:
-        !isComboLive && shouldWaiveToday
-          ? acct.remainingWalletAfterToday
-          : {
-              paidNew: selectedNewComboPkg.comboNewCount,
-              paidRefill: selectedNewComboPkg.comboRefillCount,
-              bonusNew: selectedNewComboPkg.bonusNewCount,
-              bonusRefill: selectedNewComboPkg.bonusRefillCount,
-              totalPaidRemaining: selectedNewComboPkg.comboNewCount + selectedNewComboPkg.comboRefillCount,
-              totalBonusRemaining: selectedNewComboPkg.bonusNewCount + selectedNewComboPkg.bonusRefillCount,
-              totalRemaining: selectedNewComboPkg.totalSessions,
-            },
+      recognizedRevenueToday: shouldWaiveToday
+        ? acct.recognizedRevenueToday
+        : isComboLive && upperTodayUsageMode === 'USE_OLD_COMBO'
+          ? 0
+          : upperServicePrice,
+      deferredRevenueBalance: shouldWaiveToday ? acct.deferredRevenueBalance : selectedNewComboPkg.comboPrice,
+      remainingAfterToday: selectedUpperExpiry
+        ? mergeExpiryIntoRemainingWallet(rawRemaining, selectedUpperExpiry)
+        : rawRemaining,
     };
   }, [
     selectedNewComboPkg,
     selectedUnderComboPkg,
     comboPurchaseTotal,
-    savedSelectedCombo,
+    upperTodayUsageMode,
+    selectedUpperExpiry,
     isComboLive,
     upperServicePrice,
     autoMatchedCategoryId,
@@ -308,7 +391,18 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     const hasBoth = Boolean(selectedNewComboPkg && selectedUnderComboPkg && comboPurchaseTotal > 0);
     const effectiveUnderBonus = hasBoth ? 0 : calculateCvComboTierBonus(selectedUnderComboPkg.comboPrice);
     const underAcct = calculateComboPurchaseAccounting(selectedUnderComboPkg, underServicePrice || 390000);
-    const shouldWaiveUnderToday = Boolean(hasUnderMink && !hasUnderMinkCombo);
+    const shouldWaiveUnderToday = Boolean(hasUnderMink && underTodayUsageMode === 'USE_NEW_COMBO');
+    const rawUnderRemaining = shouldWaiveUnderToday
+      ? underAcct.remainingWalletAfterToday
+      : {
+          paidNew: selectedUnderComboPkg.comboNewCount,
+          paidRefill: selectedUnderComboPkg.comboRefillCount,
+          bonusNew: selectedUnderComboPkg.bonusNewCount,
+          bonusRefill: selectedUnderComboPkg.bonusRefillCount,
+          totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
+          totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
+          totalRemaining: selectedUnderComboPkg.totalSessions,
+        };
 
     return {
       id: selectedUnderComboPkg.id,
@@ -322,21 +416,18 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
       savingsAmount: selectedUnderComboPkg.savingsAmount,
       avgPerSessionPrice: selectedUnderComboPkg.avgPerSessionPrice,
       todaySingleServiceWaived: shouldWaiveUnderToday,
+      todayUsageMode: underTodayUsageMode,
+      dateExpired: selectedUnderExpiry?.dateExpired,
+      dateExpiredDisplay: selectedUnderExpiry?.dateExpiredDisplay,
+      expiryFormulaSummary: selectedUnderExpiry?.formulaSummaryVi,
+      revivedExpiredSessions: selectedUnderExpiry?.revivedExpiredSessions || 0,
       recognizedRevenueToday: shouldWaiveUnderToday ? underAcct.recognizedRevenueToday : 0,
       deferredRevenueBalance: shouldWaiveUnderToday
         ? underAcct.deferredRevenueBalance
         : selectedUnderComboPkg.comboPrice,
-      remainingAfterToday: shouldWaiveUnderToday
-        ? underAcct.remainingWalletAfterToday
-        : {
-            paidNew: selectedUnderComboPkg.comboNewCount,
-            paidRefill: selectedUnderComboPkg.comboRefillCount,
-            bonusNew: selectedUnderComboPkg.bonusNewCount,
-            bonusRefill: selectedUnderComboPkg.bonusRefillCount,
-            totalPaidRemaining: selectedUnderComboPkg.comboNewCount + selectedUnderComboPkg.comboRefillCount,
-            totalBonusRemaining: selectedUnderComboPkg.bonusNewCount + selectedUnderComboPkg.bonusRefillCount,
-            totalRemaining: selectedUnderComboPkg.totalSessions,
-          },
+      remainingAfterToday: selectedUnderExpiry
+        ? mergeExpiryIntoRemainingWallet(rawUnderRemaining, selectedUnderExpiry)
+        : rawUnderRemaining,
     };
   }, [
     selectedUnderComboPkg,
@@ -344,7 +435,8 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     comboPurchaseTotal,
     underServicePrice,
     hasUnderMink,
-    hasUnderMinkCombo,
+    underTodayUsageMode,
+    selectedUnderExpiry,
   ]);
 
   useEffect(() => {
@@ -559,6 +651,14 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     comboPurchaseTotal,
     selectedComboObject,
     selectedUnderComboObject,
+    existingUpperExpirySnapshot,
+    existingUnderExpirySnapshot,
+    upperTodayUsageMode,
+    setUpperTodayUsageMode,
+    underTodayUsageMode,
+    setUnderTodayUsageMode,
+    selectedUpperExpiry,
+    selectedUnderExpiry,
     livePricingAndCvPoints,
     cleanServiceName,
     specsSummaryString,

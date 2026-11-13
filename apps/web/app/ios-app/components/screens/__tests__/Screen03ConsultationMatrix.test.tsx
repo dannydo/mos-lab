@@ -377,4 +377,68 @@ describe('Screen03ConsultationMatrix - Zero Defaults & Mandatory 7/7 Natural Las
 
     vi.useRealTimers();
   });
+
+  it('never flickers or loops autosave when idle even if parent refreshes booking object and recreates onAutoSaveDraft', async () => {
+    vi.useFakeTimers();
+    const saveCalls = vi.fn();
+
+    function StatefulHost() {
+      const [liveBooking, setLiveBooking] = React.useState<BookingItem>(() => ({ ...newClientBooking }));
+      const [, setPollTick] = React.useState(0);
+
+      React.useEffect(() => {
+        const timer = setInterval(() => {
+          setPollTick((t) => t + 1);
+          setLiveBooking((prev) => ({
+            ...prev,
+            comboLiveStatus: prev.comboLiveStatus ? { ...prev.comboLiveStatus } : undefined,
+          }));
+        }, 600);
+        return () => clearInterval(timer);
+      }, []);
+
+      // Intentionally un-memoized closure + state update on save to mirror worst-case parent re-renders
+      const handleAutoSaveDraft = async (attrs: Record<string, any>) => {
+        saveCalls(attrs);
+        setLiveBooking((prev) => ({
+          ...prev,
+          attributes: { ...(prev.attributes || {}), ...attrs } as BookingItem['attributes'],
+          _localComboUpdatedAt: Date.now(),
+        }));
+      };
+
+      return (
+        <Screen03ConsultationMatrix
+          booking={liveBooking}
+          onBack={vi.fn()}
+          onSave={vi.fn()}
+          onAutoSaveDraft={handleAutoSaveDraft}
+        />
+      );
+    }
+
+    render(<StatefulHost />);
+
+    const saveIndicator = screen.getByRole('button', { name: /Trạng thái tự động lưu/i });
+    expect(saveIndicator).toHaveTextContent(/Đã lưu/i);
+
+    // Advance 3 seconds while completely idle across multiple parent poll refreshes -> 0 autosaves, stays "Đã lưu"
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(saveCalls).toHaveBeenCalledTimes(0);
+    expect(saveIndicator).toHaveTextContent(/Đã lưu/i);
+
+    // Make 1 real edit -> fires autosave ONCE and NEVER enters a feedback loop afterwards
+    fireEvent.change(screen.getByRole('slider', { name: 'Dài tối thiểu' }), { target: { value: '9' } });
+    expect(saveIndicator).toHaveTextContent(/Đang lưu/i);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(saveCalls).toHaveBeenCalledTimes(1);
+    expect(saveIndicator).toHaveTextContent(/Đã lưu/i);
+
+    vi.useRealTimers();
+  });
 });

@@ -1,14 +1,29 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, ChevronRight, Eye, EyeOff, Zap } from 'lucide-react';
-import type { MatchedComboPackageOption } from '@mos-lab/shared';
+import { Sparkles, ChevronRight, Eye, EyeOff, Zap, AlertTriangle, CalendarClock } from 'lucide-react';
+import {
+  formatExpiryDateDdMmYyyy,
+  type ComboPurchaseExpiryResult,
+  type ComboTodayUsageMode,
+  type MatchedComboPackageOption,
+} from '@mos-lab/shared';
+import type { BookingItem } from '../../../state/mockData';
 import { FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { calculateCvComboTierBonus } from '../../../state/useIosBillingCheckout';
 
 interface ConsultationComboSelectorSectionProps {
   isDark: boolean;
   isComboLive: boolean;
+  hasUnderMinkCombo?: boolean;
+  comboLiveStatus?: BookingItem['comboLiveStatus'];
+  onOpenWalletModal?: () => void;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  setUpperTodayUsageMode?: (mode: ComboTodayUsageMode) => void;
+  underTodayUsageMode?: ComboTodayUsageMode;
+  setUnderTodayUsageMode?: (mode: ComboTodayUsageMode) => void;
+  selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
+  selectedUnderExpiry?: ComboPurchaseExpiryResult | null;
   totalUpgradeAmount: number;
   comboPurchaseTotal: number;
   selectedNewComboPkg: MatchedComboPackageOption | null;
@@ -24,6 +39,15 @@ interface ConsultationComboSelectorSectionProps {
 export function ConsultationComboSelectorSection({
   isDark,
   isComboLive,
+  hasUnderMinkCombo = false,
+  comboLiveStatus,
+  onOpenWalletModal,
+  upperTodayUsageMode = 'USE_NEW_COMBO',
+  setUpperTodayUsageMode,
+  underTodayUsageMode = 'USE_NEW_COMBO',
+  setUnderTodayUsageMode,
+  selectedUpperExpiry,
+  selectedUnderExpiry,
   totalUpgradeAmount,
   comboPurchaseTotal,
   selectedNewComboPkg,
@@ -35,8 +59,47 @@ export function ConsultationComboSelectorSection({
   handleOpenComboModal,
   handleSubmit,
 }: ConsultationComboSelectorSectionProps) {
+  const isOldUpperExpired = Boolean(comboLiveStatus?.isExpired && (comboLiveStatus?.remainingSessions || 0) > 0);
+  const expiredDateLabel = formatExpiryDateDdMmYyyy(comboLiveStatus?.dateExpired);
+
   return (
     <>
+      {/* CẢNH BÁO GÓI CŨ HẾT HẠN & CỨU BUỔI KHI MUA NỐI TIẾP */}
+      {isOldUpperExpired && (
+        <div
+          className={`rounded-2xl p-3 border-2 space-y-2 transition-colors ${
+            isDark ? 'bg-rose-950/35 border-rose-600/80 text-rose-100' : 'bg-rose-50/90 border-rose-400 text-rose-950'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center justify-center gap-1 leading-none py-1 px-2.5 rounded-full bg-rose-600 text-white text-[10.5px] font-black uppercase tracking-wide tabular-nums">
+              <AlertTriangle className="w-3 h-3 shrink-0 stroke-[2.5]" />
+              <span>HẾT HẠN {expiredDateLabel}</span>
+            </span>
+            {onOpenWalletModal && (
+              <button
+                type="button"
+                onClick={onOpenWalletModal}
+                className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                  isDark
+                    ? 'bg-neutral-900 border-rose-500/50 text-rose-200 hover:bg-neutral-800'
+                    : 'bg-white border-rose-300 text-rose-700 hover:bg-rose-100'
+                }`}
+              >
+                Chi tiết Combo
+              </button>
+            )}
+          </div>
+          <div
+            className={`text-[11.5px] font-semibold leading-snug tabular-nums ${isDark ? 'text-rose-200/95' : 'text-rose-900'}`}
+          >
+            Đang khóa trừ 0đ (<strong>{comboLiveStatus?.remainingSessions}</strong> buổi tồn: ✦
+            {comboLiveStatus?.normalRemaining ?? 0} · ↻{comboLiveStatus?.retainRemaining ?? 0}). Mua gói mới hôm nay sẽ{' '}
+            <strong>cứu toàn bộ buổi tồn</strong> (+1T/Mới · +25N/Dặm).
+          </div>
+        </div>
+      )}
+
       {/* NÚT MUA THÊM GÓI COMBO — iOS Inset Grouped Cell */}
       {!selectedNewComboPkg && !selectedUnderComboPkg && (
         <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-neutral-100'}`}>
@@ -155,6 +218,102 @@ export function ConsultationComboSelectorSection({
                   {selectedNewComboPkg.comboRefillCount + selectedNewComboPkg.bonusRefillCount} Dặm (
                   {selectedNewComboPkg.totalSessions} buổi)
                 </div>
+
+                {setUpperTodayUsageMode && (
+                  <div className="pt-1.5 space-y-1.5">
+                    <div
+                      className={`grid ${isComboLive ? 'grid-cols-3' : 'grid-cols-2'} gap-1 p-1 rounded-xl border ${
+                        isDark ? 'bg-[#121214] border-neutral-800' : 'bg-neutral-100/80 border-neutral-200/80'
+                      }`}
+                    >
+                      {isComboLive ? (
+                        <>
+                          {(
+                            [
+                              { mode: 'USE_OLD_COMBO' as const, label: 'Trừ gói cũ (+1T)' },
+                              { mode: 'USE_NEW_COMBO' as const, label: 'Trừ gói mới' },
+                              { mode: 'RETAIL_OR_VOUCHER' as const, label: 'Đi lẻ (+1T+21N)' },
+                            ] as const
+                          ).map((opt) => {
+                            const active = upperTodayUsageMode === opt.mode;
+                            return (
+                              <button
+                                key={opt.mode}
+                                type="button"
+                                onClick={() => setUpperTodayUsageMode(opt.mode)}
+                                className={`py-1.5 px-1.5 rounded-lg text-[10px] font-extrabold leading-tight text-center transition-all cursor-pointer tabular-nums ${
+                                  active
+                                    ? 'bg-[#FFB400] text-black shadow-2xs'
+                                    : isDark
+                                      ? 'text-neutral-400 hover:text-neutral-200'
+                                      : 'text-neutral-600 hover:text-neutral-900'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </>
+                      ) : (
+                        <>
+                          {(
+                            [
+                              { mode: 'USE_NEW_COMBO' as const, label: 'Trừ vào gói (0đ)' },
+                              { mode: 'RETAIL_OR_VOUCHER' as const, label: 'Đi lẻ / Voucher (+21N)' },
+                            ] as const
+                          ).map((opt) => {
+                            const active = upperTodayUsageMode === opt.mode;
+                            return (
+                              <button
+                                key={opt.mode}
+                                type="button"
+                                onClick={() => setUpperTodayUsageMode(opt.mode)}
+                                className={`py-1.5 px-2 rounded-lg text-[10.5px] font-extrabold leading-tight text-center transition-all cursor-pointer tabular-nums ${
+                                  active
+                                    ? 'bg-[#FFB400] text-black shadow-2xs'
+                                    : isDark
+                                      ? 'text-neutral-400 hover:text-neutral-200'
+                                      : 'text-neutral-600 hover:text-neutral-900'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+
+                    {selectedUpperExpiry && (
+                      <div
+                        className={`rounded-xl px-2.5 py-2 border text-[11px] space-y-0.5 tabular-nums ${
+                          selectedUpperExpiry.revivedExpiredSessions > 0
+                            ? isDark
+                              ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-200'
+                              : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                            : isDark
+                              ? 'bg-neutral-900/90 border-neutral-800 text-neutral-200'
+                              : 'bg-amber-50/60 border-amber-200/80 text-neutral-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1 font-extrabold">
+                            <CalendarClock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span>HSD mới: {selectedUpperExpiry.dateExpiredDisplay}</span>
+                          </span>
+                          <span className="text-[10px] font-black text-amber-500">
+                            Combo Mi Trên: {selectedUpperExpiry.combinedTotalAfterToday} buổi
+                          </span>
+                        </div>
+                        <div
+                          className={`text-[10px] font-medium leading-snug ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}
+                        >
+                          {selectedUpperExpiry.formulaSummaryVi}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -199,6 +358,68 @@ export function ConsultationComboSelectorSection({
                   {selectedUnderComboPkg.comboRefillCount + selectedUnderComboPkg.bonusRefillCount} Dặm (
                   {selectedUnderComboPkg.totalSessions} buổi)
                 </div>
+
+                {setUnderTodayUsageMode && (
+                  <div className="pt-1.5 space-y-1.5">
+                    <div
+                      className={`grid ${hasUnderMinkCombo ? 'grid-cols-3' : 'grid-cols-2'} gap-1 p-1 rounded-xl border ${
+                        isDark ? 'bg-[#121214] border-neutral-800' : 'bg-neutral-100/80 border-neutral-200/80'
+                      }`}
+                    >
+                      {(hasUnderMinkCombo
+                        ? [
+                            { mode: 'USE_OLD_COMBO' as const, label: 'Trừ gói cũ (+1T)' },
+                            { mode: 'USE_NEW_COMBO' as const, label: 'Trừ gói mới' },
+                            { mode: 'RETAIL_OR_VOUCHER' as const, label: 'Đi lẻ (+1T+21N)' },
+                          ]
+                        : [
+                            { mode: 'USE_NEW_COMBO' as const, label: 'Trừ vào gói (0đ)' },
+                            { mode: 'RETAIL_OR_VOUCHER' as const, label: 'Đi lẻ / Voucher (+21N)' },
+                          ]
+                      ).map((opt) => {
+                        const active = underTodayUsageMode === opt.mode;
+                        return (
+                          <button
+                            key={opt.mode}
+                            type="button"
+                            onClick={() => setUnderTodayUsageMode(opt.mode)}
+                            className={`py-1.5 px-1.5 rounded-lg text-[10px] font-extrabold leading-tight text-center transition-all cursor-pointer tabular-nums ${
+                              active
+                                ? 'bg-purple-500 text-white shadow-2xs'
+                                : isDark
+                                  ? 'text-neutral-400 hover:text-neutral-200'
+                                  : 'text-neutral-600 hover:text-neutral-900'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {selectedUnderExpiry && (
+                      <div
+                        className={`rounded-xl px-2.5 py-1.5 border text-[10.5px] space-y-0.5 tabular-nums ${
+                          isDark
+                            ? 'bg-neutral-900/90 border-neutral-800 text-neutral-200'
+                            : 'bg-purple-50/60 border-purple-200/80 text-neutral-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 font-extrabold">
+                          <span>HSD Mi Dưới: {selectedUnderExpiry.dateExpiredDisplay}</span>
+                          <span className="text-[10px] text-purple-400">
+                            Combo Mi Dưới: {selectedUnderExpiry.combinedTotalAfterToday} buổi
+                          </span>
+                        </div>
+                        <div
+                          className={`text-[10px] font-medium leading-snug ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}
+                        >
+                          {selectedUnderExpiry.formulaSummaryVi}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

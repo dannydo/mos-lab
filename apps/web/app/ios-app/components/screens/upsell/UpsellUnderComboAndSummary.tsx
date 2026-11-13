@@ -2,10 +2,14 @@
 
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-import { MatchedComboPackageOption, calculateComboRedemptionAccounting } from '@mos-lab/shared';
+import {
+  MatchedComboPackageOption,
+  calculateComboRedemptionAccounting,
+  type ComboPurchaseExpiryResult,
+} from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { FeatherSvg } from '../../ui-kit/CvFeatherLabels';
-import { WingsUnifiedComboCard } from '../../ui-kit/WingsUnifiedComboCard';
+import { WingsUnifiedComboCard, type ComboExpiryPreviewItem } from '../../ui-kit/WingsUnifiedComboCard';
 
 type RedemptionAccountingResult = ReturnType<typeof calculateComboRedemptionAccounting>;
 type SerumTierItem = (typeof SERUM_TIERS_CVL)[number];
@@ -22,6 +26,9 @@ export interface UpsellUnderComboAndSummaryProps {
   selectedUnderComboPkg: MatchedComboPackageOption | null;
   selectedNewComboPkg: MatchedComboPackageOption | null;
   deductTodayIntoCombo: boolean;
+  underExpiryPreviewMap?: Record<string, ComboExpiryPreviewItem>;
+  selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
+  selectedUnderExpiry?: ComboPurchaseExpiryResult | null;
   servicePrice: number;
   effectiveServiceChargeToday: number;
   redemptionAccounting: RedemptionAccountingResult | null;
@@ -54,6 +61,9 @@ export function UpsellUnderComboAndSummary({
   selectedUnderComboPkg,
   selectedNewComboPkg,
   deductTodayIntoCombo,
+  underExpiryPreviewMap,
+  selectedUpperExpiry,
+  selectedUnderExpiry,
   servicePrice,
   effectiveServiceChargeToday,
   redemptionAccounting,
@@ -124,6 +134,7 @@ export function UpsellUnderComboAndSummary({
                 selectedPackageId={selectedUnderComboId !== 'NONE' ? selectedUnderComboId : null}
                 dimmed={selectedUnderComboId === 'NONE'}
                 showStaffRewards={showStaffRewards}
+                expiryPreviewByPkgId={underExpiryPreviewMap}
                 onSelectPackage={(pkg) => {
                   onSetSelectedUnderComboId((prev) => (prev === pkg.id ? 'NONE' : pkg.id));
                 }}
@@ -180,7 +191,7 @@ export function UpsellUnderComboAndSummary({
             <span className={`${isDark ? 'text-sky-400' : 'text-sky-700'} font-bold tabular-nums`}>
               {effectiveServiceChargeToday > 0
                 ? `+${effectiveServiceChargeToday.toLocaleString('vi-VN')}đ (Phụ thu)`
-                : '0đ (Trừ ví)'}
+                : '0đ (Trừ gói)'}
             </span>
           ) : effectiveServiceChargeToday === 0 && (selectedNewComboPkg || selectedUnderComboPkg) ? (
             <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold tabular-nums`}>
@@ -210,25 +221,41 @@ export function UpsellUnderComboAndSummary({
 
         {/* Row 2: Gói Combo đã chọn */}
         {selectedNewComboPkg && (
-          <div className="flex items-center justify-between text-[12.5px]">
-            <span className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium`}>
-              Gói {selectedNewComboPkg.shortRuleLabel || selectedNewComboPkg.ruleName}:
-            </span>
-            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
-              {newComboTotal.toLocaleString('vi-VN')}đ
-            </span>
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium`}>
+                Gói {selectedNewComboPkg.shortRuleLabel || selectedNewComboPkg.ruleName}:
+              </span>
+              <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+                {newComboTotal.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+            {selectedUpperExpiry && (
+              <div className={`text-[10.5px] font-bold tabular-nums ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>
+                HSD: {selectedUpperExpiry.dateExpiredDisplay}
+                {selectedUpperExpiry.revivedExpiredSessions > 0 &&
+                  ` · Cứu ${selectedUpperExpiry.revivedExpiredSessions} buổi cũ`}
+              </div>
+            )}
           </div>
         )}
 
         {/* Row 2B: Gói Mi Dưới nếu có */}
         {selectedUnderComboPkg && (
-          <div className="flex items-center justify-between text-[12.5px]">
-            <span className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium`}>
-              Gói Mi Dưới ({selectedUnderComboPkg.shortRuleLabel || selectedUnderComboPkg.ruleName}):
-            </span>
-            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
-              {underComboTotal.toLocaleString('vi-VN')}đ
-            </span>
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium`}>
+                Gói Mi Dưới ({selectedUnderComboPkg.shortRuleLabel || selectedUnderComboPkg.ruleName}):
+              </span>
+              <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+                {underComboTotal.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+            {selectedUnderExpiry && (
+              <div className={`text-[10.5px] font-bold tabular-nums ${isDark ? 'text-purple-300' : 'text-purple-800'}`}>
+                HSD Mi Dưới: {selectedUnderExpiry.dateExpiredDisplay}
+              </div>
+            )}
           </div>
         )}
 

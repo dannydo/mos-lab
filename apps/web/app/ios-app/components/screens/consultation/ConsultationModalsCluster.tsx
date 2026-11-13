@@ -2,7 +2,13 @@
 
 import React from 'react';
 import { AlertTriangle, CheckCircle2, Info, X, Sparkles } from 'lucide-react';
-import type { MatchedComboPackageOption, WelcomeComboEligibilityResult, WingsComboCategoryId } from '@mos-lab/shared';
+import type {
+  ComboTodayUsageMode,
+  ExistingComboSnapshotForExpiry,
+  MatchedComboPackageOption,
+  WelcomeComboEligibilityResult,
+  WingsComboCategoryId,
+} from '@mos-lab/shared';
 import { CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import { ComboCatalogConsultModal } from '../ComboCatalogConsultModal';
 import { LashCurlZoomModal } from '../LashCurlZoomModal';
@@ -64,6 +70,12 @@ interface ConsultationModalsClusterProps {
   selectedUnderComboPkg: MatchedComboPackageOption | null;
   setSelectedUnderComboPkg: (pkg: MatchedComboPackageOption | null) => void;
   todaySingleServicePrice: number;
+  existingUpperExpirySnapshot?: ExistingComboSnapshotForExpiry | null;
+  existingUnderExpirySnapshot?: ExistingComboSnapshotForExpiry | null;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  underTodayUsageMode?: ComboTodayUsageMode;
+  todayServiceType?: 'Normal' | 'Retain';
+  underServiceType?: 'Normal' | 'Retain';
   handleSelectComboPackage: (pkg: MatchedComboPackageOption) => void;
   setHasUnderMink: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -115,6 +127,12 @@ export function ConsultationModalsCluster({
   selectedUnderComboPkg,
   setSelectedUnderComboPkg,
   todaySingleServicePrice,
+  existingUpperExpirySnapshot,
+  existingUnderExpirySnapshot,
+  upperTodayUsageMode,
+  underTodayUsageMode,
+  todayServiceType,
+  underServiceType,
   handleSelectComboPackage,
   setHasUnderMink,
 }: ConsultationModalsClusterProps) {
@@ -429,7 +447,7 @@ export function ConsultationModalsCluster({
                   <div className="flex flex-col">
                     <span className="font-extrabold text-white text-[12.5px]">Phụ thu thanh toán:</span>
                     <span className="text-[10px] text-neutral-400">
-                      (Trừ 1 suất {pendingUpgradeConfirmation.serviceType === 'Normal' ? 'Mới' : 'Dặm'} trong ví)
+                      (Trừ 1 suất {pendingUpgradeConfirmation.serviceType === 'Normal' ? 'Mới' : 'Dặm'} trong gói)
                     </span>
                   </div>
                   <span className="text-[17px] font-black text-emerald-400 tabular-nums tracking-tight">
@@ -477,6 +495,12 @@ export function ConsultationModalsCluster({
         initialSelectedUpperPkg={selectedNewComboPkg}
         initialSelectedUnderPkg={selectedUnderComboPkg}
         todaySingleServicePrice={todaySingleServicePrice}
+        existingUpperExpirySnapshot={existingUpperExpirySnapshot}
+        existingUnderExpirySnapshot={existingUnderExpirySnapshot}
+        upperTodayUsageMode={upperTodayUsageMode}
+        underTodayUsageMode={underTodayUsageMode}
+        todayServiceType={todayServiceType}
+        underServiceType={underServiceType}
         onSelectPackage={handleSelectComboPackage}
         onApplyPackages={({ upperPkg, underPkg }) => {
           setSelectedNewComboPkg(upperPkg);

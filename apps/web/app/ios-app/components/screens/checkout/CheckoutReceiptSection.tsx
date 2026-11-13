@@ -4,6 +4,7 @@ import React from 'react';
 import { Heart, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { BookingItem } from '../../../state/mockData';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
+import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
 
 function cleanComboTitle(name?: string | null): string {
   if (!name) return '';
@@ -222,17 +223,27 @@ export function CheckoutReceiptSection({
                 {booking?.attributes?.style ? ` · Dáng ${booking.attributes.style}` : ''}
               </div>
               {comboRedemption ? (
-                <div className="pt-0.5 flex items-center gap-1.5 flex-wrap text-[10px]">
-                  <span
-                    className={`font-bold ${
-                      isDark ? 'text-sky-300 bg-sky-950/40 border-sky-500/40' : 'text-sky-700 bg-sky-50 border-sky-200'
-                    } border px-1.5 py-0.5 rounded`}
-                  >
-                    Trừ 1 lượt gói ({comboRedemption.comboName || 'Gói cũ'})
-                  </span>
-                  <span className="text-neutral-400 font-semibold tabular-nums">
-                    Ví còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
-                  </span>
+                <div className="pt-0.5 space-y-0.5 text-[10px]">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className={`font-bold ${
+                        isDark
+                          ? 'text-sky-300 bg-sky-950/40 border-sky-500/40'
+                          : 'text-sky-700 bg-sky-50 border-sky-200'
+                      } border px-1.5 py-0.5 rounded`}
+                    >
+                      Trừ 1 lượt gói ({comboRedemption.comboName || 'Gói cũ'})
+                    </span>
+                    <span className="text-neutral-400 font-semibold tabular-nums">
+                      Combo còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
+                    </span>
+                  </div>
+                  <ReceiptComboExpiryLine
+                    dateExpired={comboRedemption.dateExpired ?? booking?.comboLiveStatus?.dateExpired}
+                    dateExpiredDisplay={comboRedemption.dateExpiredDisplay}
+                    isDark={isDark}
+                    variant="redemption"
+                  />
                 </div>
               ) : hasNewComboWaiver ? (
                 <div className="pt-0.5">
@@ -380,6 +391,15 @@ export function CheckoutReceiptSection({
                       </>
                     )}
                 </div>
+                <ReceiptComboExpiryLine
+                  dateExpired={selectedCombo.dateExpired}
+                  dateExpiredDisplay={selectedCombo.dateExpiredDisplay}
+                  expiryFormulaSummary={selectedCombo.expiryFormulaSummary}
+                  revivedExpiredSessions={selectedCombo.revivedExpiredSessions}
+                  isDark={isDark}
+                  variant="combo"
+                  showFormula
+                />
               </div>
               <span
                 className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}
@@ -421,6 +441,15 @@ export function CheckoutReceiptSection({
                       </>
                     )}
                 </div>
+                <ReceiptComboExpiryLine
+                  dateExpired={selectedUnderCombo.dateExpired}
+                  dateExpiredDisplay={selectedUnderCombo.dateExpiredDisplay}
+                  expiryFormulaSummary={selectedUnderCombo.expiryFormulaSummary}
+                  revivedExpiredSessions={selectedUnderCombo.revivedExpiredSessions}
+                  isDark={isDark}
+                  variant="under"
+                  showFormula
+                />
               </div>
               <span
                 className={`text-[13px] ${isDark ? 'text-white' : 'text-neutral-900'} font-black tabular-nums whitespace-nowrap shrink-0`}

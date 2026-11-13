@@ -9,6 +9,7 @@ import {
 } from '../../../state/mockData';
 import { ActiveActorProfile } from '../../../state/useIosAppState';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
+import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { parseDaysSinceLastVisit, resolveCustomerTypeMeta } from '../LashMaterialConstraintMatrix';
 import {
   formatLashSpecLine,
@@ -35,6 +36,7 @@ interface IncomingBookingCardProps {
   onOpenLockedModal: (attemptedCustomerName: string) => void;
   onOpenCustomerDetail: (b: BookingItem) => void;
   onOpenRevertModal: (bookingId: number, customerName: string) => void;
+  onOpenWalletModal?: (b: BookingItem) => void;
 }
 
 export function IncomingBookingCard({
@@ -52,8 +54,10 @@ export function IncomingBookingCard({
   onOpenLockedModal,
   onOpenCustomerDetail,
   onOpenRevertModal,
+  onOpenWalletModal,
 }: IncomingBookingCardProps) {
   const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
+  const isComboExpired = Boolean(b.comboLiveStatus?.isExpired);
   const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
 
   const cleanCustomerName = (b.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
@@ -61,7 +65,9 @@ export function IncomingBookingCard({
   const visits = b.customerVisits || 1;
   const typeMeta = resolveCustomerTypeMeta(b);
   const lastVisitDateStr = b.lastVisitDate || b.lashHistory?.[0]?.date;
-  const daysSinceLastVisit = parseDaysSinceLastVisit(lastVisitDateStr);
+  const viewRefDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dateOffset, 12, 0, 0);
+  const viewRefDateStr = `${String(viewRefDate.getDate()).padStart(2, '0')}/${String(viewRefDate.getMonth() + 1).padStart(2, '0')}/${viewRefDate.getFullYear()}`;
+  const daysSinceLastVisit = parseDaysSinceLastVisit(lastVisitDateStr, viewRefDateStr);
   const daysText = visits > 1 && daysSinceLastVisit !== null ? ` · ${daysSinceLastVisit}N` : '';
   const isServicingActive = b.status === 'SERVICING' || bookingSegment === 'SERVICING';
   const countdown = formatArrivalCountdownInMins(b.time12h || b.timeSlot, dateOffset, now);
@@ -78,10 +84,12 @@ export function IncomingBookingCard({
 
   // Avatar Ring Indicator
   let avatarRingClass = 'border-2 border-emerald-500'; // Not Combo Live
-  if (isComboLive && remainingSessions > 0) {
+  if (isComboExpired) {
+    avatarRingClass = 'border-2 border-rose-500 ring-2 ring-rose-500/35'; // Combo đã hết hạn
+  } else if (isComboLive && remainingSessions > 0) {
     avatarRingClass =
-      remainingSessions <= 2
-        ? 'border-2 border-amber-400 ring-2 ring-amber-400/30' // Còn 1-2 lần
+      remainingSessions <= 2 || b.comboLiveStatus?.isExpiringSoon
+        ? 'border-2 border-amber-400 ring-2 ring-amber-400/30' // Còn 1-2 lần hoặc sắp hết hạn
         : 'border-2 border-neutral-500'; // Combo Live bình thường
   }
 
@@ -250,17 +258,33 @@ export function IncomingBookingCard({
           {formatLashSpecLine(b)}
         </div>
 
-        {/* LINE 3: [Combo Info nếu có] Lần X · 23N */}
+        {/* LINE 3: [Combo Info + HSD nếu có] Lần X · 23N */}
         <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-          {isComboLive && remainingSessions > 0 && (
-            <div className="shrink-0 flex items-center">
+          {((isComboLive && remainingSessions > 0) || (isComboExpired && remainingSessions > 0)) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenWalletModal?.(b);
+              }}
+              title="Bấm để xem Chi tiết Gói Combo & Hạn sử dụng"
+              className="shrink-0 inline-flex items-center cursor-pointer active:scale-95 transition-transform"
+            >
               <ComboSessionBadge
                 normalRemaining={b.comboLiveStatus?.normalRemaining}
                 retainRemaining={b.comboLiveStatus?.retainRemaining}
                 remainingSessions={remainingSessions}
                 comboName={b.comboLiveStatus?.comboName}
               />
-            </div>
+            </button>
+          )}
+
+          {(isComboLive || isComboExpired) && b.comboLiveStatus && (
+            <ComboExpiryStatusBadge
+              status={b.comboLiveStatus}
+              compact
+              onClick={onOpenWalletModal ? () => onOpenWalletModal(b) : undefined}
+            />
           )}
 
           <span className="text-[11px] text-neutral-400 font-medium tabular-nums">

@@ -1,4 +1,6 @@
 import { BookingItem } from '../../../state/mockData';
+import { resolveServiceSpecsFromComboOrHistory } from '../consultation/constraints/comboAndUnderMinkPresets';
+import { getWingsMenuDetail } from '../consultation/constraints/wingsMenuLookup';
 
 export interface SegmentCounts {
   incoming: number;
@@ -34,94 +36,138 @@ export function getStepShortTitle(step?: number): string {
   }
 }
 
+function resolveCanonicalBookingLashSpec(b: BookingItem): {
+  material: string;
+  volume: string;
+  priceCode: string;
+  countNum: string;
+  countUnit: 'sợi' | 'fan' | 'nhịp';
+} {
+  const rawAttrMat = String(b.attributes?.material || '').trim();
+  const hasExplicitAttrMat = Boolean(rawAttrMat && !rawAttrMat.toLowerCase().includes('any'));
+
+  const primaryServiceText =
+    [b.serviceName, b.comboLiveStatus?.comboName, b.lashHistory?.[0]?.serviceName].find((s) =>
+      Boolean(s && !String(s).toLowerCase().includes('any'))
+    ) || '';
+
+  const matSource = (hasExplicitAttrMat ? rawAttrMat : primaryServiceText).toLowerCase();
+
+  let material = 'HyperLight';
+  let menuLookupCode = 'HYPERLIGHT';
+  let countUnit: 'sợi' | 'fan' | 'nhịp' = 'fan';
+
+  if (matSource.includes('under') || matSource.includes('mi dưới')) {
+    material = 'Under Mink';
+    menuLookupCode = 'UNDER_MINK';
+    countUnit = 'sợi';
+  } else if (matSource.includes('classic')) {
+    material = 'Classic';
+    menuLookupCode = 'NEW_CLASSIC';
+    countUnit = 'sợi';
+  } else if (matSource.includes('hyper')) {
+    material = 'HyperLight';
+    menuLookupCode = 'HYPERLIGHT';
+    countUnit = 'fan';
+  } else if (matSource.includes('ultra')) {
+    material = 'UltraLight';
+    menuLookupCode = 'ULTRALIGHT';
+    countUnit = 'fan';
+  } else if (matSource.includes('ivy')) {
+    material = 'Ivylight';
+    menuLookupCode = 'IVYLIGHT';
+    countUnit = 'nhịp';
+  } else if (matSource.includes('volume')) {
+    material = 'Volume';
+    menuLookupCode = 'NEW_VOLUME';
+    countUnit = 'fan';
+  } else if (matSource.includes('mink') || matSource.includes('flawless')) {
+    material = 'Flawless Mink';
+    menuLookupCode = 'FLAWLESS_MINK';
+    countUnit = 'sợi';
+  }
+
+  const inferredFromService = primaryServiceText ? resolveServiceSpecsFromComboOrHistory(primaryServiceText) : null;
+  const serviceMatchesMaterial = inferredFromService?.materialCode === menuLookupCode;
+
+  const rawVol = String(
+    b.attributes?.volume || (serviceMatchesMaterial ? inferredFromService?.volume : '') || ''
+  ).trim();
+  const volUpper = rawVol.toUpperCase();
+
+  let volume = '4X';
+  if (menuLookupCode === 'NEW_CLASSIC' || menuLookupCode === 'FLAWLESS_MINK' || menuLookupCode === 'UNDER_MINK') {
+    volume = '1D';
+  } else if (menuLookupCode === 'NEW_VOLUME') {
+    volume = volUpper.includes('3') || matSource.includes('3d') ? '3D' : '2D';
+  } else if (menuLookupCode === 'IVYLIGHT') {
+    if (rawVol.includes('3') || matSource.includes('3l')) volume = '3L';
+    else if (rawVol.includes('5') || matSource.includes('5l')) volume = '5L';
+    else volume = '4L';
+  } else if (menuLookupCode === 'ULTRALIGHT') {
+    if (volUpper.includes('3')) volume = '3D';
+    else if (volUpper.includes('5')) volume = '5D';
+    else volume = '4D';
+  } else {
+    if (volUpper.includes('2')) volume = '2X';
+    else if (volUpper.includes('3')) volume = '3X';
+    else if (volUpper.includes('5')) volume = '5X';
+    else volume = '4X';
+  }
+
+  const attrCountMatch = String(b.attributes?.count || '').match(/\d+/);
+  const serviceExplicitCountMatch = serviceMatchesMaterial
+    ? primaryServiceText.match(/\b(\d{2,3})\s*(?:sợi|fan|nhịp|trụ)\b/i)
+    : null;
+  const inferredCountMatch = serviceMatchesMaterial ? String(inferredFromService?.count || '').match(/\d+/) : null;
+
+  const defaultCountByCode: Record<string, string> = {
+    NEW_CLASSIC: '90',
+    FLAWLESS_MINK: '70',
+    UNDER_MINK: '70',
+    IVYLIGHT: '90',
+    ULTRALIGHT: '80',
+    NEW_VOLUME: '80',
+    HYPERLIGHT: '70',
+  };
+
+  const countNum =
+    attrCountMatch?.[0] ||
+    serviceExplicitCountMatch?.[1] ||
+    inferredCountMatch?.[0] ||
+    defaultCountByCode[menuLookupCode] ||
+    '70';
+
+  // Mã số hiển thị luôn là mã SKU Nối Mới chuẩn Menu Wings (PriceCode * 1000 = newPrice)
+  // khớp chính xác 100% với bộ ba (Material, Volume, Count) — tuyệt đối không ghép lệch mã!
+  const menuDetail = getWingsMenuDetail(menuLookupCode, countNum, volume);
+  const resolvedCountNum = menuDetail ? String(menuDetail.countNum) : countNum;
+  const priceCode = menuDetail ? String(Math.round(menuDetail.newPrice / 1000)) : '550';
+
+  return {
+    material,
+    volume,
+    priceCode,
+    countNum: resolvedCountNum,
+    countUnit,
+  };
+}
+
 /**
  * Format thông số mi chuẩn Danny:
- * LINE 2: HyperLight 5X 770 60
- * (curl, thickness, length được chuyển vào Detail Popup)
+ * LINE 2: [Material] [Volume] [PriceCode] [Count] (VD: Classic 1D 440 70, HyperLight 5X 770 50)
+ * Trong đó PriceCode luôn là mã và giá Nối Mới chuẩn Menu Wings (PriceCode * 1000 VNĐ) của đúng (Material, Volume, Count).
  */
 export function formatLashSpecLine(b: BookingItem): string {
-  // 1. Dòng mi (Material)
-  let mat = b.attributes?.material || '';
-  const sName = b.serviceName || '';
-  if (!mat || mat.toLowerCase().includes('any')) {
-    if (sName.includes('Classic')) mat = 'Classic';
-    else if (sName.includes('Hyperlight') || sName.includes('HyperLight')) mat = 'HyperLight';
-    else if (sName.includes('Ultralight') || sName.includes('UltraLight')) mat = 'UltraLight';
-    else if (sName.includes('Ivylight')) mat = 'Ivylight';
-    else if (sName.includes('Mink') || sName.includes('Flawless')) mat = 'Flawless Mink';
-    else mat = 'HyperLight';
-  }
-  if (mat === 'New Classic') mat = 'Classic';
-
-  // 2. Độ dày (Volume): 5X, 1D, 2X, 3X, 4D, 5D...
-  let vol = b.attributes?.volume || '';
-  if (!vol) {
-    vol = mat === 'Classic' ? '1D' : '2X';
-  }
-  if (mat === 'Classic' && !vol.includes('D')) vol = '1D';
-
-  // 3. Mức giá (Price k): 770, 550, 440, 660, 1220...
-  let priceNum = '';
-  const priceMatch = sName.match(/\b(390|440|550|660|770|880|1020|1220)\b/);
-  if (priceMatch) {
-    priceNum = priceMatch[1];
-  } else if (b.servicePrice && b.servicePrice > 0) {
-    priceNum = String(Math.round(b.servicePrice / 1000));
-  } else {
-    priceNum = '550';
-  }
-
-  // 4. Số lượng sợi/fan (Count): 60, 70, 90...
-  let countNum = '';
-  const countMatch = (b.attributes?.count || '').match(/\d+/);
-  if (countMatch) {
-    countNum = countMatch[0];
-  } else {
-    countNum = mat === 'Classic' ? '90' : '60';
-  }
-
-  return [mat, vol, priceNum, countNum].filter(Boolean).join(' ');
+  const spec = resolveCanonicalBookingLashSpec(b);
+  return [spec.material, spec.volume, spec.priceCode, spec.countNum].filter(Boolean).join(' ');
 }
 
 /**
  * Trích xuất toàn bộ thông số nối mi chi tiết cho Detail Popup
  */
 export function getLashDetailSpecs(b: BookingItem) {
-  let mat = b.attributes?.material || '';
-  const sName = b.serviceName || '';
-  if (!mat || mat.toLowerCase().includes('any')) {
-    if (sName.includes('Classic')) mat = 'Classic';
-    else if (sName.includes('Hyperlight') || sName.includes('HyperLight')) mat = 'HyperLight';
-    else if (sName.includes('Ultralight') || sName.includes('UltraLight')) mat = 'UltraLight';
-    else if (sName.includes('Ivylight')) mat = 'Ivylight';
-    else if (sName.includes('Mink') || sName.includes('Flawless')) mat = 'Flawless Mink';
-    else mat = 'HyperLight';
-  }
-  if (mat === 'New Classic') mat = 'Classic';
-
-  let vol = b.attributes?.volume || '';
-  if (!vol) {
-    vol = mat === 'Classic' ? '1D' : '2X';
-  }
-  if (mat === 'Classic' && !vol.includes('D')) vol = '1D';
-
-  let priceNum = '';
-  const priceMatch = sName.match(/\b(390|440|550|660|770|880|1020|1220)\b/);
-  if (priceMatch) {
-    priceNum = priceMatch[1];
-  } else if (b.servicePrice && b.servicePrice > 0) {
-    priceNum = String(Math.round(b.servicePrice / 1000));
-  } else {
-    priceNum = '550';
-  }
-
-  let countNum = '';
-  const countMatch = (b.attributes?.count || '').match(/\d+/);
-  if (countMatch) {
-    countNum = countMatch[0];
-  } else {
-    countNum = mat === 'Classic' ? '90' : '60';
-  }
+  const spec = resolveCanonicalBookingLashSpec(b);
 
   const curl = (b.attributes?.curl || 'C').trim();
   let thick = (b.attributes?.thickness || '0.07')
@@ -140,10 +186,10 @@ export function getLashDetailSpecs(b: BookingItem) {
   const design = b.attributes?.style || 'Tự nhiên';
 
   return {
-    material: mat,
-    volume: vol,
-    price: `${priceNum}.000đ`,
-    count: `${countNum} sợi`,
+    material: spec.material,
+    volume: spec.volume,
+    price: `${spec.priceCode}.000đ`,
+    count: `${spec.countNum} ${spec.countUnit}`,
     curl: `${curl} (Cong)`,
     thickness: `${thick}mm`,
     length: `${len}mm`,

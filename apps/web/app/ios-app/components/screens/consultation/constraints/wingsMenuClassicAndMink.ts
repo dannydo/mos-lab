@@ -1,6 +1,6 @@
 import type { WingsMenuItemMeta } from './constraintTypesAndOptions';
 
-export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number): WingsMenuItemMeta | null {
+export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number, v: string = ''): WingsMenuItemMeta | null {
   // 1. Classic 1D
   if (mid.includes('classic') || mid === 'new_classic') {
     if (cNum === 60)
@@ -61,8 +61,9 @@ export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number): Wings
     };
   }
 
-  // 2. Volume 2D
+  // 2. Volume 2D / 3D
   if (mid.includes('volume') || mid === 'new_volume' || mid.includes('2d')) {
+    const is3D = v.includes('3d') || mid.includes('3d');
     if (cNum === 50)
       return {
         materialCode: 'NEW_VOLUME',
@@ -82,6 +83,15 @@ export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number): Wings
         refillPrice: 280000,
         badge: 'MOST POPULAR',
       };
+    if (cNum === 70)
+      return {
+        materialCode: 'NEW_VOLUME',
+        countNum: 70,
+        totalFibers: is3D ? 420 : 280,
+        durationMin: 60,
+        newPrice: is3D ? 660000 : 550000,
+        refillPrice: is3D ? 390000 : 340000,
+      };
     if (cNum === 80)
       return {
         materialCode: 'NEW_VOLUME',
@@ -90,6 +100,16 @@ export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number): Wings
         durationMin: 70,
         newPrice: 550000,
         refillPrice: 340000,
+        badge: 'BEST SELLER',
+      };
+    if (cNum === 90)
+      return {
+        materialCode: 'NEW_VOLUME',
+        countNum: 90,
+        totalFibers: is3D ? 540 : 360,
+        durationMin: 75,
+        newPrice: is3D ? 770000 : 660000,
+        refillPrice: is3D ? 470000 : 390000,
         badge: 'BEST SELLER',
       };
     if (cNum === 100)
@@ -101,6 +121,15 @@ export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number): Wings
         newPrice: 660000,
         refillPrice: 390000,
       };
+    if (cNum === 110)
+      return {
+        materialCode: 'NEW_VOLUME',
+        countNum: 110,
+        totalFibers: is3D ? 660 : 440,
+        durationMin: 95,
+        newPrice: is3D ? 880000 : 770000,
+        refillPrice: is3D ? 530000 : 470000,
+      };
     if (cNum === 120)
       return {
         materialCode: 'NEW_VOLUME',
@@ -109,6 +138,15 @@ export function lookupClassicVolumeAndMinkMenu(mid: string, cNum: number): Wings
         durationMin: 115,
         newPrice: 880000,
         refillPrice: 530000,
+      };
+    if (cNum === 130)
+      return {
+        materialCode: 'NEW_VOLUME',
+        countNum: 130,
+        totalFibers: is3D ? 780 : 520,
+        durationMin: 115,
+        newPrice: is3D ? 1110000 : 880000,
+        refillPrice: is3D ? 680000 : 530000,
       };
     return {
       materialCode: 'NEW_VOLUME',

@@ -3,6 +3,7 @@
 import React from 'react';
 import { BookingItem } from '../../../state/mockData';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
+import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import {
   formatComboName,
   parseUnderMinkCountFibers,
@@ -12,7 +13,7 @@ import {
   stepUnderMinkLength,
   UNDER_MINK_PREP_SPEC,
 } from '../LashMaterialConstraintMatrix';
-import { Check, Sparkles, RotateCw, Zap, AlertTriangle } from 'lucide-react';
+import { Check, Sparkles, RotateCw, Zap, AlertTriangle, Lock, Wallet } from 'lucide-react';
 
 type QuickCheckInPreset = ReturnType<typeof resolveQuickCheckInComboPreset>;
 
@@ -36,6 +37,7 @@ interface QuickCheckInComboCardProps {
   overrideReason: string;
   onResetOverride: () => void;
   onRequestServiceTypeChange: (targetType: 'Normal' | 'Retain') => void;
+  onOpenWalletModal?: () => void;
 }
 
 export function QuickCheckInComboCard({
@@ -58,8 +60,60 @@ export function QuickCheckInComboCard({
   overrideReason,
   onResetOverride,
   onRequestServiceTypeChange,
+  onOpenWalletModal,
 }: QuickCheckInComboCardProps) {
   if (!isComboLive) {
+    if (booking?.comboLiveStatus?.isExpired) {
+      const expNormal = booking.comboLiveStatus.normalRemaining ?? 0;
+      const expRetain = booking.comboLiveStatus.retainRemaining ?? 0;
+      const expTotal = booking.comboLiveStatus.remainingSessions ?? expNormal + expRetain;
+
+      return (
+        <div className="rounded-2xl p-3.5 shadow-sm border-2 border-rose-500/80 bg-[#221316] text-white space-y-2.5">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-5 h-5 rounded-full bg-rose-600 text-white inline-flex items-center justify-center shrink-0">
+                <Lock className="w-3 h-3 stroke-[2.5]" />
+              </span>
+              <span className="text-[12.5px] font-black text-rose-200 truncate">
+                {formatComboName(booking.comboLiveStatus.comboName) || 'Gói Combo Đã Hết Hạn'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0 tabular-nums">
+              <ComboSessionBadge
+                normalRemaining={expNormal}
+                retainRemaining={expRetain}
+                remainingSessions={expTotal}
+                comboName={booking.comboLiveStatus.comboName}
+                size="xs"
+              />
+              {onOpenWalletModal && (
+                <button
+                  type="button"
+                  onClick={onOpenWalletModal}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-950/90 hover:bg-rose-900 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold leading-none cursor-pointer"
+                >
+                  <Wallet className="w-3 h-3 shrink-0" />
+                  <span>Chi tiết Combo</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <ComboExpiryStatusBadge status={booking.comboLiveStatus} onClick={onOpenWalletModal} />
+            <span className="text-[10.5px] font-bold text-rose-200/90">Đã khóa trừ 0đ · Check-in đi lẻ / Voucher</span>
+          </div>
+
+          <div className="rounded-xl bg-black/35 border border-rose-500/35 px-2.5 py-2 text-[11px] text-rose-100 leading-relaxed">
+            Mua thêm gói Combo mới hôm nay sẽ <strong>cứu toàn bộ {expTotal} buổi tồn</strong> cộng dồn thời hạn từ hôm
+            nay: <strong className="text-amber-300">Nối mới +1 tháng/buổi</strong> ·{' '}
+            <strong className="text-emerald-300">Dặm +25 ngày/buổi</strong>.
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-2xl p-3 shadow-sm border border-amber-500/40 bg-[#1C1C1E] text-white flex items-center justify-between">
         <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
@@ -97,15 +151,39 @@ export function QuickCheckInComboCard({
               {preset.daysSinceLastVisit} ngày
             </span>
           )}
-          <ComboSessionBadge
-            normalRemaining={preset.normalRemaining}
-            retainRemaining={preset.retainRemaining}
-            remainingSessions={remainingSessions}
-            comboName={booking?.comboLiveStatus?.comboName}
-            size="xs"
-          />
+          <button
+            type="button"
+            onClick={onOpenWalletModal}
+            className="inline-flex items-center cursor-pointer active:scale-95 transition-transform"
+            title="Bấm để xem Chi tiết Gói Combo & Hạn sử dụng"
+          >
+            <ComboSessionBadge
+              normalRemaining={preset.normalRemaining}
+              retainRemaining={preset.retainRemaining}
+              remainingSessions={remainingSessions}
+              comboName={booking?.comboLiveStatus?.comboName}
+              size="xs"
+            />
+          </button>
         </div>
       </div>
+
+      {/* Hàng HSD + Tốc độ đi trung bình (Avg: X.X ngày/buổi) + Nút mở Chi tiết Combo */}
+      {booking?.comboLiveStatus && (
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <ComboExpiryStatusBadge status={booking.comboLiveStatus} showPace onClick={onOpenWalletModal} />
+          {onOpenWalletModal && (
+            <button
+              type="button"
+              onClick={onOpenWalletModal}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#2C2C2E] hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-[10px] font-bold leading-none cursor-pointer"
+            >
+              <Wallet className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>Chi tiết Combo</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Khối Thông số Mi Trên + Mi Dưới tối giản */}
       <div className="bg-[#2C2C2E] rounded-xl p-2.5 border border-neutral-700/80 space-y-2">

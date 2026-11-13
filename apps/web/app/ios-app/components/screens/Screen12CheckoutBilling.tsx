@@ -119,7 +119,10 @@ export function Screen12CheckoutBilling({
   const selectedUnderCombo = booking?.selectedUnderCombo || null;
   const comboRedemption = booking?.comboRedemption || null;
   const cartProducts = booking?.cartProducts || [];
-  const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
+  const isComboLive = Boolean(
+    booking?.comboLiveStatus?.isComboLive &&
+    (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
+  );
   const hasUnderMinkCombo = Boolean(
     booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
   );

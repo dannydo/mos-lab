@@ -44,6 +44,37 @@ export interface RawIosOrderSnapshot {
   total_visits: number;
 }
 
+/**
+ * Tính chính xác số thứ tự lần ghé ("Lần X") cho một ca đặt lịch tại Wings:
+ * - Gộp lịch sử trọn đời từ `report_order` (không bị cắt 6 tháng khi refresh DB nhanh)
+ *   và `order` (`order_state = 'Completed'`), lấy ngưỡng cao nhất với `MAX(report_order.order_number)`.
+ * - Nếu ca hiện tại đã `Completed`, bản thân ca đó đã nằm trong tập đơn hoàn tất -> `Math.max(1, lifetimeCompleted)`.
+ * - Nếu ca hiện tại chưa `Completed` (`New`, `Confirmed`, `CheckIn`, `ServiceStart`...), ca hôm nay là lần ghé kế tiếp -> `lifetimeCompleted + 1`.
+ * - Chốt chặn an toàn: nếu `is_new = 0` và hồ sơ khách đã ghi nhận `last_order_booking` trước đó, tuyệt đối không bao giờ trả về `Lần 1`.
+ */
+export function resolveCustomerVisitNumber(params: {
+  completedOrdersCount: number;
+  maxReportOrderNumber?: number;
+  orderState?: string | null;
+  isNew?: number | null;
+  hasPriorOrderBooking?: boolean;
+}): number {
+  const lifetimeCompleted = Math.max(
+    0,
+    Number(params.completedOrdersCount) || 0,
+    Number(params.maxReportOrderNumber) || 0
+  );
+  const isDbOrderCompleted =
+    String(params.orderState || '')
+      .trim()
+      .toLowerCase() === 'completed';
+  let visitNumber = isDbOrderCompleted ? Math.max(1, lifetimeCompleted) : lifetimeCompleted + 1;
+  if (visitNumber <= 1 && params.isNew === 0 && params.hasPriorOrderBooking) {
+    visitNumber = 2;
+  }
+  return visitNumber;
+}
+
 export async function fetchLiveOrderSnapshots(
   pool: mysql.Pool,
   params: { storeId: number; targetDate: string; limit: number }
@@ -72,6 +103,7 @@ export async function fetchLiveOrderSnapshots(
        o.promotion_id,
        up.full_name AS customer_name,
        up.avatar AS customer_avatar,
+       up.last_order_booking AS customer_last_order_booking,
        direct_uc.phone_number AS direct_contact_phone,
        order_booker_up.full_name AS order_booker_name,
        order_booker_up.avatar AS order_booker_avatar
@@ -153,12 +185,22 @@ export async function fetchLiveOrderSnapshots(
   const visitCountsPromise =
     customerIds.length > 0
       ? pool.query<mysql.RowDataPacket[]>(
-          `SELECT user_id, COUNT(*) AS total_visits
-           FROM \`order\`
-           WHERE user_id IN (${customerIds.map(() => '?').join(',')})
-             AND order_state = 'Completed'
-           GROUP BY user_id`,
-          customerIds
+          `SELECT
+             t.user_id,
+             COUNT(DISTINCT t.order_id) AS completed_orders_count,
+             COALESCE(MAX(t.ro_order_number), 0) AS max_ro_order_number
+           FROM (
+             SELECT ro.user_id, ro.order_id, ro.order_number AS ro_order_number
+             FROM report_order ro
+             WHERE ro.user_id IN (${customerIds.map(() => '?').join(',')})
+             UNION ALL
+             SELECT o.user_id, o.id AS order_id, NULL AS ro_order_number
+             FROM \`order\` o
+             WHERE o.user_id IN (${customerIds.map(() => '?').join(',')})
+               AND o.order_state = 'Completed'
+           ) t
+           GROUP BY t.user_id`,
+          [...customerIds, ...customerIds]
         )
       : emptyQueryResult;
 
@@ -169,10 +211,27 @@ export async function fetchLiveOrderSnapshots(
     fetchCustomerEnrichmentContext(pool, customerIds),
   ]);
 
+  const isPlaceholderOrAuxRow = (row: mysql.RowDataPacket): boolean => {
+    const key = String(row.service_key || '').toLowerCase();
+    const name = String(row.service_name || '').toLowerCase();
+    return (
+      Number(row.is_temporary) === 1 ||
+      key.includes('any') ||
+      name.includes('any') ||
+      key.includes('under') ||
+      name.includes('under') ||
+      name.includes('mi dưới') ||
+      key.includes('remove') ||
+      name.includes('tháo')
+    );
+  };
+
   const primaryOsByOrderId = new Map<number, mysql.RowDataPacket>();
   for (const row of osRows) {
     const oid = Number(row.order_id);
-    if (oid > 0 && !primaryOsByOrderId.has(oid)) {
+    if (oid <= 0) continue;
+    const existing = primaryOsByOrderId.get(oid);
+    if (!existing || (isPlaceholderOrAuxRow(existing) && !isPlaceholderOrAuxRow(row))) {
       primaryOsByOrderId.set(oid, row);
     }
   }
@@ -185,11 +244,14 @@ export async function fetchLiveOrderSnapshots(
     }
   }
 
-  const totalVisitsByUserId = new Map<number, number>();
+  const visitSummaryByUserId = new Map<number, { completedOrdersCount: number; maxRoOrderNumber: number }>();
   for (const row of visitRows) {
     const uid = Number(row.user_id);
     if (uid > 0) {
-      totalVisitsByUserId.set(uid, Number(row.total_visits) || 0);
+      visitSummaryByUserId.set(uid, {
+        completedOrdersCount: Number(row.completed_orders_count) || 0,
+        maxRoOrderNumber: Number(row.max_ro_order_number) || 0,
+      });
     }
   }
 
@@ -199,11 +261,14 @@ export async function fetchLiveOrderSnapshots(
     const os = primaryOsByOrderId.get(orderId);
     const resolvedBookerName = os?.os_created_staff_id ? os.os_booker_name : r.order_booker_name;
     const resolvedBookerAvatar = os?.os_created_staff_id ? os.os_booker_avatar : r.order_booker_avatar;
+    const visitSummary = userId ? visitSummaryByUserId.get(userId) : undefined;
+    const resolvedOrderState = r.order_state ? String(r.order_state) : null;
+    const resolvedIsNew = r.is_new !== null ? Number(r.is_new) : null;
 
     return {
       id: orderId,
       order_number: r.order_number ? String(r.order_number) : null,
-      order_state: r.order_state ? String(r.order_state) : null,
+      order_state: resolvedOrderState,
       booking_date_start: r.booking_date_start ?? null,
       booking_duration_minute: r.booking_duration_minute !== null ? Number(r.booking_duration_minute) : null,
       total_price: r.total_price !== null ? Number(r.total_price) : null,
@@ -211,7 +276,7 @@ export async function fetchLiveOrderSnapshots(
       booking_note: r.booking_note ? String(r.booking_note) : null,
       user_id: userId,
       combo_sale_required: r.combo_sale_required !== null ? Number(r.combo_sale_required) : null,
-      is_new: r.is_new !== null ? Number(r.is_new) : null,
+      is_new: resolvedIsNew,
       promotion_id: r.promotion_id,
       customer_name: r.customer_name ? String(r.customer_name) : 'Khách Vãng Lai',
       customer_phone:
@@ -221,7 +286,7 @@ export async function fetchLiveOrderSnapshots(
       customer_avatar: r.customer_avatar ? String(r.customer_avatar) : null,
       booker_name: resolvedBookerName ? String(resolvedBookerName) : 'Tư vấn',
       booker_avatar: resolvedBookerAvatar ? String(resolvedBookerAvatar) : null,
-      service_name: String(os?.service_name || os?.service_key || 'New Flawless Mink 770'),
+      service_name: String(os?.service_name || os?.service_key || 'Any - Lashes'),
       service_key: os?.service_key ? String(os.service_key) : null,
       is_temporary: os?.is_temporary !== undefined && os?.is_temporary !== null ? Number(os.is_temporary) : null,
       service_type: os?.service_type ? String(os.service_type) : 'Normal',
@@ -235,7 +300,15 @@ export async function fetchLiveOrderSnapshots(
       check_in_staff_avatar: os?.check_in_staff_avatar ? String(os.check_in_staff_avatar) : null,
       check_out_staff_name: os?.check_out_staff_name ? String(os.check_out_staff_name) : null,
       check_out_staff_avatar: os?.check_out_staff_avatar ? String(os.check_out_staff_avatar) : null,
-      total_visits: userId ? (totalVisitsByUserId.get(userId) ?? 0) : 0,
+      total_visits: userId
+        ? resolveCustomerVisitNumber({
+            completedOrdersCount: visitSummary?.completedOrdersCount ?? 0,
+            maxReportOrderNumber: visitSummary?.maxRoOrderNumber ?? 0,
+            orderState: resolvedOrderState,
+            isNew: resolvedIsNew,
+            hasPriorOrderBooking: Boolean(r.customer_last_order_booking),
+          })
+        : 1,
     };
   });
 

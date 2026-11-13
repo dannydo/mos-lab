@@ -74,11 +74,15 @@ export function useIosBillingCheckout({
         const hasUnderMinkComboActive = Boolean(
           prev.underMinkComboStatus?.hasUnderCombo && (prev.underMinkComboStatus?.remainingSessions ?? 0) > 0
         );
+        const shouldUseOldUpperCombo = Boolean(
+          prev.comboLiveStatus?.isComboLive &&
+          (!nextCombo || !nextCombo.todayUsageMode || nextCombo.todayUsageMode === 'USE_OLD_COMBO')
+        );
         const effectiveServiceTotal = resolveEffectiveServiceTotal({
           servicePrice: prev.servicePrice,
           upgradePrice: prev.upgradePrice,
           serviceName: prev.serviceName,
-          isComboLive: Boolean(prev.comboLiveStatus?.isComboLive),
+          isComboLive: shouldUseOldUpperCombo,
           hasUnderMink: prev.attributes?.hasUnderMink,
           underMinkServiceType: prev.attributes?.underMinkServiceType,
           hasUnderMinkCombo: hasUnderMinkComboActive,
@@ -201,11 +205,17 @@ export function useIosBillingCheckout({
         const hasUnderMinkComboActive = Boolean(
           prev.underMinkComboStatus?.hasUnderCombo && (prev.underMinkComboStatus?.remainingSessions ?? 0) > 0
         );
+        const shouldUseOldUpperComboFallback = Boolean(
+          prev.comboLiveStatus?.isComboLive &&
+          (!prev.selectedCombo ||
+            !prev.selectedCombo.todayUsageMode ||
+            prev.selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
+        );
         const fallbackEffectiveService = resolveEffectiveServiceTotal({
           servicePrice: prev.servicePrice,
           upgradePrice: prev.upgradePrice,
           serviceName: prev.serviceName,
-          isComboLive: Boolean(prev.comboLiveStatus?.isComboLive),
+          isComboLive: shouldUseOldUpperComboFallback,
           hasUnderMink: prev.attributes?.hasUnderMink,
           underMinkServiceType: prev.attributes?.underMinkServiceType,
           hasUnderMinkCombo: hasUnderMinkComboActive,

@@ -17,7 +17,7 @@ export function ConsultationAutoSaveButton({ saveStatus, isDark, onManualSaveCli
     <button
       type="button"
       onClick={onManualSaveClick}
-      className={`py-1 px-2.5 rounded-full inline-flex items-center gap-1.5 transition-all duration-300 cursor-pointer active:scale-95 ${
+      className={`py-1 px-2.5 min-w-[78px] rounded-full inline-flex items-center justify-center leading-none gap-1.5 transition-colors duration-200 cursor-pointer active:scale-95 ${
         saveStatus === 'saving'
           ? 'bg-amber-500/15 border border-amber-500/30 text-[#FFB400] shadow-[0_0_10px_rgba(255,180,0,0.2)]'
           : saveStatus === 'saved'
@@ -46,7 +46,7 @@ export function ConsultationAutoSaveButton({ saveStatus, isDark, onManualSaveCli
         </>
       ) : saveStatus === 'saved' ? (
         <>
-          <Check className="w-3.5 h-3.5 stroke-[2.5] shrink-0 text-emerald-400 animate-in zoom-in-50 duration-200" />
+          <Check className="w-3.5 h-3.5 stroke-[2.5] shrink-0 text-emerald-400" />
           <span className="text-[11.5px] font-bold text-emerald-400">Đã lưu</span>
         </>
       ) : saveStatus === 'error' ? (
