@@ -31,6 +31,7 @@ import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMoveThreadModal } from './MosChatMobileMoveThreadModal';
 import { MosChatMobileSearchSheet, type FilterScope } from './MosChatMobileSearchSheet';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
+import { MosChatRichEditorModal } from '../MosChatRichEditorModal';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
 import { MosChatSpaceMembersModal } from '../MosChatSpaceMembersModal';
@@ -99,6 +100,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   const [spaceConfigModalOpen, setSpaceConfigModalOpen] = useState<boolean>(false);
   const [spaceMembersModalOpen, setSpaceMembersModalOpen] = useState<boolean>(false);
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
+  const [ckEditorOpen, setCkEditorOpen] = useState<boolean>(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
   const [composerText, setComposerText] = useState<string>('');
@@ -898,6 +900,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         open={actionSheetOpen}
         onClose={() => setActionSheetOpen(false)}
         onSelectCustomer={() => setCustomerPickerOpen(true)}
+        onSelectCKEditor={() => setCkEditorOpen(true)}
         onSelectFile={() => fileInputRef.current?.click()}
         onSelectImage={() => fileInputRef.current?.click()}
         onSelectVideo={() => videoInputRef.current?.click()}
@@ -915,6 +918,29 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           setActiveConvId(AI_COPILOT_CONV_ID);
           setMobileView('room');
           setActiveSubtab('chat');
+        }}
+      />
+
+      {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile */}
+      <MosChatRichEditorModal
+        open={ckEditorOpen}
+        onClose={() => setCkEditorOpen(false)}
+        initialValue={composerText}
+        initialMode="compact"
+        title="Soạn thảo phong phú (CKEditor)"
+        onApply={(text) => {
+          setComposerText(text);
+        }}
+        onSend={async (text) => {
+          if (text.trim()) {
+            await sendMessage(text, {
+              attachments: attachedImages.length > 0 ? attachedImages : undefined,
+              customerCard: stagedCustomerCard || undefined,
+            });
+            setComposerText('');
+            setAttachedImages([]);
+            setStagedCustomerCard(null);
+          }
         }}
       />
 
