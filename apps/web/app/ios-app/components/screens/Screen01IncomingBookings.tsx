@@ -150,6 +150,7 @@ export function Screen01IncomingBookings({
   const isDark = themeMode === 'dark';
   const actorName = actor?.name || 'Thảo Ly';
   const isCvll = role === 'CVLL';
+  const canMultiCheckIn = Boolean(isAdmin || role === 'CC' || role === 'CVLL' || role === 'STORE');
 
   return (
     <div
@@ -260,8 +261,11 @@ export function Screen01IncomingBookings({
           }}
           title="Mở hồ sơ & chuyển vai trò"
         >
-          <span className="text-[10.5px] font-black" style={{ color: 'var(--mos-accent)' }}>
-            {isCvll ? <CvFeather2Badge /> : <CvFeather1Badge />}
+          <span
+            className="text-[10.5px] font-black inline-flex items-center leading-none"
+            style={{ color: 'var(--mos-accent)' }}
+          >
+            {role === 'CVLL' ? <CvFeather2Badge /> : role === 'CVL' ? <CvFeather1Badge /> : role}
           </span>
           <div
             className="w-6 h-6 rounded-full overflow-hidden border shrink-0"
@@ -321,7 +325,7 @@ export function Screen01IncomingBookings({
               }
             >
               <span>Lọc</span>
-              <CvFeather1Badge />
+              {role === 'CVLL' ? <CvFeather2Badge /> : <span>{role}</span>}
               <span>({actor?.name || 'Thảo Ly'})</span>
             </button>
           </div>
@@ -417,6 +421,7 @@ export function Screen01IncomingBookings({
               dateOffset={dateOffset}
               now={now}
               isCvll={isCvll}
+              canMultiCheckIn={canMultiCheckIn}
               isAdmin={isAdmin}
               actor={actor}
               onSelectBooking={onSelectBooking}

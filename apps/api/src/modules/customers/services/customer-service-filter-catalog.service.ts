@@ -144,6 +144,8 @@ const normalizeCatalogName = (value: string | null | undefined): string =>
     .toLocaleLowerCase('en-US')
     .replace(/\s+/g, ' ');
 
+const stripCatalogEraPrefix = (value: string): string => value.replace(/^(?:(?:new|old)\s+)+/i, '').trim();
+
 const hasFamilyPrefix = (value: string, prefixes: readonly string[]): boolean =>
   prefixes.some((prefix) => value === prefix || value.startsWith(`${prefix} `));
 
@@ -185,8 +187,13 @@ export class CustomerServiceFilterCatalogService {
       const serviceIds = rows
         .filter((row) => {
           const displayName = normalizeCatalogName(row.name);
+          const displayWithoutEra = stripCatalogEraPrefix(displayName);
           const catalogKey = normalizeCatalogName(row.serviceKey);
-          return hasFamilyPrefix(displayName, family.namePrefixes) || hasFamilyPrefix(catalogKey, family.namePrefixes);
+          return (
+            hasFamilyPrefix(displayName, family.namePrefixes) ||
+            hasFamilyPrefix(displayWithoutEra, family.namePrefixes) ||
+            hasFamilyPrefix(catalogKey, family.namePrefixes)
+          );
         })
         .map((row) => Number(row.id));
 

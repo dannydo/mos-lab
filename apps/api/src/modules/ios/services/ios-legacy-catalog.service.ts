@@ -203,7 +203,7 @@ async function resolveUpperServiceId(
        LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id IN (1, 2)
        WHERE s.is_disabled = 0 AND s.is_temporary = 0 AND s.id > 1
          AND (sl.service_name = ? OR s.service_key = ?)
-       ORDER BY s.id ASC
+       ORDER BY s.position ASC, s.id DESC
        LIMIT 1`,
       [upperDisplayName, upperDisplayName.toLowerCase()]
     );

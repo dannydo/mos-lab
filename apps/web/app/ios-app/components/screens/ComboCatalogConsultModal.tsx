@@ -282,7 +282,7 @@ export function ComboCatalogConsultModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs select-none overflow-hidden animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs select-none overflow-hidden animate-in fade-in duration-200">
       <div className="w-full max-w-[430px] h-full max-h-[100dvh] flex flex-col relative overflow-hidden shadow-2xl bg-[var(--background)] text-[var(--mos-text)]">
         {/* iOS Minimal Navigation Bar */}
         <div className="bg-[var(--mos-surface)] text-[var(--mos-text)] px-3.5 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2.5 flex items-center justify-between border-b border-[var(--mos-surface-border)] shrink-0">

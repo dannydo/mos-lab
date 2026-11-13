@@ -34,7 +34,7 @@ export const LashMaterialConfiguratorModal: React.FC<LashMaterialConfiguratorMod
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
   const [draftCatalog, setDraftCatalog] = useState<LashMaterialSpec[]>(catalog);
-  const [activeId, setActiveId] = useState<string>(initialMaterialId || catalog[0]?.id || 'New Flawless Mink');
+  const [activeId, setActiveId] = useState<string>(initialMaterialId || catalog[0]?.id || 'Flawless Mink');
   const [newMaterialName, setNewMaterialName] = useState('');
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [savedToast, setSavedToast] = useState<string | null>(null);

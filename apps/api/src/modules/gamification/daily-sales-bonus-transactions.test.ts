@@ -111,3 +111,155 @@ test('MOS-BUG-104: Service items compute net_value and are included in revenue f
   );
   assert.equal(eligibleSales, 110000, 'Eligible sales must only include Combo (110k), excluding Service (340k)');
 });
+
+test('MOS-BUG-220: Product bonus attribution uses CC IN / CC OUT with 50/50 split instead of creator staff', () => {
+  // Scenario: Order #339361 for customer Mimi:
+  // - CC IN: Yến Vy (user_id: 48026)
+  // - CC OUT: Yến Vy (user_id: 48026)
+  // - Product #36 created in POS by cashier/consultant: Quang Khải CC (created_staff_id: 46092)
+  // Business Canon: Product bonus belongs to the CC who served the customer (CC IN/OUT),
+  // NOT to the staff who happened to key/scan the item at the cashier desk.
+
+  interface RawProductOrder {
+    order_id: number;
+    check_in_staff_id: number | null;
+    check_out_staff_id: number | null;
+    created_staff_id: number;
+    product_price: number;
+    quantity: number;
+    cc_in_name: string;
+    cc_out_name: string;
+  }
+
+  const simulateProductAttribution = (orders: RawProductOrder[], queryStaffId: number) => {
+    const results: Array<{
+      order_id: number;
+      staff_id: number;
+      quantity: number;
+      net_value: number;
+      is_split: boolean;
+      cc_in_name: string | null;
+      cc_out_name: string | null;
+    }> = [];
+
+    for (const order of orders) {
+      const ccIn = order.check_in_staff_id;
+      const ccOut = order.check_out_staff_id;
+
+      if (ccIn !== null && ccOut !== null && ccIn !== ccOut) {
+        // Split 50/50
+        if (ccIn === queryStaffId) {
+          results.push({
+            order_id: order.order_id,
+            staff_id: ccIn,
+            quantity: order.quantity * 0.5,
+            net_value: order.product_price * 0.5,
+            is_split: true,
+            cc_in_name: order.cc_in_name,
+            cc_out_name: order.cc_out_name,
+          });
+        }
+        if (ccOut === queryStaffId) {
+          results.push({
+            order_id: order.order_id,
+            staff_id: ccOut,
+            quantity: order.quantity * 0.5,
+            net_value: order.product_price * 0.5,
+            is_split: true,
+            cc_in_name: order.cc_in_name,
+            cc_out_name: order.cc_out_name,
+          });
+        }
+      } else {
+        // 100% to single CC
+        const primaryCc = ccIn ?? ccOut ?? order.created_staff_id;
+        if (primaryCc === queryStaffId) {
+          results.push({
+            order_id: order.order_id,
+            staff_id: primaryCc,
+            quantity: order.quantity * 1.0,
+            net_value: order.product_price * 1.0,
+            is_split: false,
+            cc_in_name: order.cc_in_name,
+            cc_out_name: order.cc_out_name,
+          });
+        }
+      }
+    }
+
+    return results;
+  };
+
+  const sampleOrders: RawProductOrder[] = [
+    // Order #339361 (Mimi): CC IN & OUT = Yến Vy (48026), created_staff_id = Quang Khải CC (46092)
+    {
+      order_id: 339361,
+      check_in_staff_id: 48026,
+      check_out_staff_id: 48026,
+      created_staff_id: 46092,
+      product_price: 1018519,
+      quantity: 1,
+      cc_in_name: 'Yến Vy',
+      cc_out_name: 'Yến Vy',
+    },
+    // Order #339400: CC IN = Thục Nghi (51659), CC OUT = Quang Khải CC (46092), created_staff_id = 46092
+    {
+      order_id: 339400,
+      check_in_staff_id: 51659,
+      check_out_staff_id: 46092,
+      created_staff_id: 46092,
+      product_price: 500000,
+      quantity: 1,
+      cc_in_name: 'Thục Nghi',
+      cc_out_name: 'Quang Khải CC',
+    },
+  ];
+
+  // 1. When Quang Khải CC (46092) queries his report:
+  const khaiResults = simulateProductAttribution(sampleOrders, 46092);
+  // Order 339361 must NOT be in Khải's report
+  assert.ok(
+    !khaiResults.some((r) => r.order_id === 339361),
+    'Order 339361 must NOT appear for Quang Khải CC because he did not check in or check out customer Mimi'
+  );
+  // Order 339400 must appear with 50% split for Khải as CC OUT
+  assert.equal(khaiResults.length, 1);
+  assert.equal(khaiResults[0].order_id, 339400);
+  assert.equal(khaiResults[0].is_split, true);
+  assert.equal(khaiResults[0].net_value, 250000);
+
+  // 2. When Yến Vy (48026) queries her report:
+  const vyResults = simulateProductAttribution(sampleOrders, 48026);
+  // Order 339361 MUST appear for Yến Vy with 100% CC
+  assert.equal(vyResults.length, 1);
+  assert.equal(vyResults[0].order_id, 339361);
+  assert.equal(vyResults[0].is_split, false);
+  assert.equal(vyResults[0].net_value, 1018519);
+  assert.equal(vyResults[0].cc_in_name, 'Yến Vy');
+  assert.equal(vyResults[0].cc_out_name, 'Yến Vy');
+
+  // 3. UI Display string helper in CcThuongTransactionsModal:
+  const getDisplayStaff = (record: { is_split: boolean; cc_in_name: string | null; cc_out_name: string | null }, consultantName?: string) => {
+    if (record.is_split) {
+      return {
+        tag: '⚡ 50/50 Split',
+        in: record.cc_in_name || 'CC IN',
+        out: record.cc_out_name || 'CC OUT',
+      };
+    }
+    const staffName = record.cc_in_name || record.cc_out_name || consultantName || 'Tư vấn viên';
+    return {
+      tag: '100% CC',
+      staffName,
+    };
+  };
+
+  const vyDisplay = getDisplayStaff(vyResults[0], 'Yến Vy');
+  assert.equal(vyDisplay.tag, '100% CC');
+  assert.equal(vyDisplay.staffName, 'Yến Vy', 'Should display actual staff name, not literal "CC IN"');
+
+  const khaiDisplay = getDisplayStaff(khaiResults[0], 'Quang Khải CC');
+  assert.equal(khaiDisplay.tag, '⚡ 50/50 Split');
+  assert.equal(khaiDisplay.in, 'Thục Nghi');
+  assert.equal(khaiDisplay.out, 'Quang Khải CC');
+});

@@ -94,7 +94,17 @@ export function Screen02CheckInProfile({
   const customerName = (booking?.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const customerPhone = (booking?.customerPhone || '0901.xxx.xxx').replace(/\*+\s*/g, '').trim();
   const serviceName = resolveDisplayServiceName(booking);
-  const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
+  const hasAssignedStaff = Boolean(
+    booking?.assignedStaffName &&
+    booking.assignedStaffName !== 'Chưa phân công' &&
+    booking.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+  );
+  const actorName = actor?.name || 'Khanh Cao';
+  const assignedStaff = hasAssignedStaff
+    ? booking!.assignedStaffName!
+    : actor?.tier === 'CVL'
+      ? actorName
+      : 'Chờ phân công';
   const bookerName = booking?.bookerName || 'Hệ thống';
   const visits = booking?.customerVisits || 1;
   const isFirstTimeClient =
@@ -105,19 +115,17 @@ export function Screen02CheckInProfile({
   const customerNote = booking?.customerNote || 'Không có ghi chú đặc biệt';
   const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
   const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
-  const actorName = actor?.name || 'Khanh Cao';
   const actorTierLabel =
     actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? <CvFeather1Badge /> : 'CC';
 
   // CVL (Khanh Cao / Thảo Ly): Checkin by và Lashed by là 1 người tự chủ đón tiếp & làm mi cho khách
-  const isCvlStaff =
-    assignedStaff.toLowerCase().includes('khanh') ||
-    assignedStaff.toLowerCase().includes('thảo ly') ||
-    booking?.assignedStaffId === 13783 ||
-    booking?.assignedStaffId === 46272 ||
-    actor?.tier === 'CVL' ||
-    actorName.toLowerCase().includes('khanh') ||
-    actorName.toLowerCase().includes('thảo ly');
+  const isCvlStaff = booking?.checkInStaffName
+    ? booking?.checkInStaffTier === 'CVL' ||
+      booking?.checkInStaffId === 13783 ||
+      booking?.checkInStaffId === 46272 ||
+      booking.checkInStaffName.toLowerCase().includes('khanh') ||
+      booking.checkInStaffName.toLowerCase().includes('thảo ly')
+    : actor?.tier === 'CVL';
 
   const defaultCvlAvatar =
     actor?.avatar ||
@@ -128,9 +136,9 @@ export function Screen02CheckInProfile({
   const checkInStaffAvatar =
     resolveStaffAvatarUrl(
       isCvlStaff ? booking?.checkInStaffAvatar || booking?.assignedStaffAvatar : booking?.checkInStaffAvatar,
-      isCvlStaff ? booking?.assignedStaffId || actor?.staffId || 13783 : booking?.checkInStaffId,
+      isCvlStaff ? booking?.assignedStaffId || actor?.staffId || 13783 : booking?.checkInStaffId || actor?.staffId,
       checkInStaffName
-    ) || (isCvlStaff ? defaultCvlAvatar : undefined);
+    ) || (isCvlStaff ? defaultCvlAvatar : actor?.avatar);
 
   const assignedStaffAvatar =
     resolveStaffAvatarUrl(
@@ -347,7 +355,7 @@ export function Screen02CheckInProfile({
     const initialServiceType =
       booking?.serviceType || (booking?.serviceName?.toLowerCase().includes('dặm') ? 'Retain' : 'Normal');
     return calculateLashPricingAndCvPoints({
-      materialId: booking?.attributes?.material || 'New Classic',
+      materialId: booking?.attributes?.material || 'Classic 1D',
       countStr: booking?.attributes?.count || '90 sợi',
       volumeStr: booking?.attributes?.volume || '1D',
       designId: booking?.attributes?.style || 'Natural',

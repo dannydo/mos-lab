@@ -11,6 +11,7 @@ import {
   resolveEffectiveAssignedStaffId,
   createRouteHelpers,
   buildSearchCondition,
+  resolveOrderCountsFilter,
 } from './helpers.js';
 
 export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
@@ -403,50 +404,143 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (allowedUserIds !== null && allowedUserIds.length === 0) {
-        return {
-          total: 0,
-          comboLive: 0,
-          comboDead: 0,
-          single: 0,
-          notComboLive: 0,
-        };
+      const emptyStatsResponse = {
+        total: 0,
+        comboLive: 0,
+        comboDead: 0,
+        single: 0,
+        comboElsa: 0,
+        notComboLive: 0,
+        hsd30: 0,
+        lsd1: 0,
+      };
+
+      if (needOrderCounts) {
+        const orderCountsRes = await resolveOrderCountsFilter(
+          fastify,
+          { totalSpentMin, totalSpentMax, totalVisitsMin, totalVisitsMax },
+          allowedUserIds,
+          excludedUserIds
+        );
+        if (orderCountsRes.isEmpty) {
+          return emptyStatsResponse;
+        }
+        allowedUserIds = orderCountsRes.allowedUserIds;
+        excludedUserIds = orderCountsRes.excludedUserIds;
       }
 
-      const usbUserFilter =
-        allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : '';
+      if (allowedUserIds !== null && excludedUserIds !== null && excludedUserIds.length > 0) {
+        const exSet = new Set(excludedUserIds);
+        allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
+        if (allowedUserIds.length === 0) {
+          return emptyStatsResponse;
+        }
+      }
+
+      if (allowedUserIds !== null && allowedUserIds.length === 0) {
+        return emptyStatsResponse;
+      }
+
+      const bStrStats = bucket as string;
+      const needAnyUsb =
+        bStrStats !== 'COMBO_ELSA' && bStrStats !== 'COMBO_LIVE' && hsd30 !== 'true' && lsd1 !== 'true';
+      const scopedUsbFilter =
+        allowedUserIds !== null && allowedUserIds.length > 0 && allowedUserIds.length <= 5000
+          ? `user_id IN (${allowedUserIds.join(',')})`
+          : '';
+
+      // Fetch active ELSA reservations, live combos, and historical combo holders standalone
+      // so MariaDB 10.3 never joins multiple derived GROUP BY/DISTINCT tables across 40k+ users.
+      const [elsaRows, liveUsbRows, anyUsbRows] = await Promise.all([
+        fastify.prisma.crm.$queryRawUnsafe<{ legacy_user_id: number | bigint }[]>(
+          `SELECT DISTINCT legacy_user_id
+           FROM crm_customer_elsa_reservations
+           WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())`
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<
+          {
+            user_id: number | bigint;
+            normalCount: SafeAny;
+            retainCount: SafeAny;
+            expiryDaysDiff: number | bigint | null;
+          }[]
+        >(
+          `SELECT
+             user_id,
+             SUM(normal_count) as normalCount,
+             SUM(retain_count) as retainCount,
+             CASE
+               WHEN MAX(date_expired) IS NULL THEN NULL
+               ELSE DATEDIFF(MAX(date_expired), NOW())
+             END as expiryDaysDiff
+           FROM user_service_balance
+           WHERE (normal_count > 0 OR retain_count > 0)
+             AND (service_group IS NULL OR service_group != 'LashesUnder')
+             AND (date_expired IS NULL OR date_expired > NOW())
+             ${scopedUsbFilter ? `AND ${scopedUsbFilter}` : ''}
+           GROUP BY user_id`
+        ),
+        needAnyUsb
+          ? fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number | bigint }[]>(
+              `SELECT DISTINCT user_id
+               FROM user_service_balance
+               ${scopedUsbFilter ? `WHERE ${scopedUsbFilter}` : ''}`
+            )
+          : Promise.resolve([]),
+      ]);
+
+      const elsaSet = new Set<number>(elsaRows.map((r) => Number(r.legacy_user_id)));
+      const liveUsbMap = new Map<number, { normalTotal: number; expiryDaysDiff: number | null }>();
+      for (const r of liveUsbRows) {
+        const uid = Number(r.user_id);
+        const normalTotal = Number(r.normalCount || 0) + Number(r.retainCount || 0);
+        const expiryDaysDiff =
+          r.expiryDaysDiff !== null && r.expiryDaysDiff !== undefined ? Number(r.expiryDaysDiff) : null;
+        liveUsbMap.set(uid, { normalTotal, expiryDaysDiff });
+      }
+      const anyUsbSet = new Set<number>(anyUsbRows.map((r) => Number(r.user_id)));
+
+      // Narrow allowedUserIds upfront when bucket / hsd30 / lsd1 restricts to a tiny positive set
+      let preNarrowIds: number[] | null = null;
+      if (hsd30 === 'true' || lsd1 === 'true') {
+        if (bStrStats === 'SINGLE' || bStrStats === 'COMBO_DEAD' || bStrStats === 'NOT_COMBO_LIVE') {
+          return emptyStatsResponse;
+        }
+        preNarrowIds = [];
+        for (const [uid, info] of liveUsbMap.entries()) {
+          if (bStrStats === 'COMBO_ELSA' && !elsaSet.has(uid)) continue;
+          if (bStrStats === 'COMBO_LIVE' && elsaSet.has(uid)) continue;
+          if (
+            hsd30 === 'true' &&
+            (info.expiryDaysDiff === null || info.expiryDaysDiff < 0 || info.expiryDaysDiff > 30)
+          ) {
+            continue;
+          }
+          if (lsd1 === 'true' && info.normalTotal !== 1) continue;
+          preNarrowIds.push(uid);
+        }
+      } else if (bStrStats === 'COMBO_ELSA') {
+        preNarrowIds = Array.from(elsaSet);
+      } else if (bStrStats === 'COMBO_LIVE') {
+        preNarrowIds = Array.from(liveUsbMap.keys()).filter((uid) => !elsaSet.has(uid));
+      }
+
+      if (preNarrowIds !== null) {
+        if (preNarrowIds.length === 0) {
+          return emptyStatsResponse;
+        }
+        if (allowedUserIds !== null) {
+          const preSet = new Set(preNarrowIds);
+          allowedUserIds = allowedUserIds.filter((id) => preSet.has(id));
+        } else {
+          allowedUserIds = preNarrowIds;
+        }
+        if (allowedUserIds.length === 0) {
+          return emptyStatsResponse;
+        }
+      }
 
       let statsInnerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
-      statsInnerJoins += ` LEFT JOIN mos_lab.crm_customer_elsa_reservations elsa_res ON elsa_res.legacy_user_id = u.id AND elsa_res.status = 'ACTIVE' AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())`;
-      statsInnerJoins += ` LEFT JOIN (
-        SELECT 
-          user_id,
-          SUM(normal_count) as normalCount,
-          SUM(retain_count) as retainCount,
-          MAX(date_expired) as expiryDate
-        FROM user_service_balance
-        WHERE (normal_count > 0 OR retain_count > 0)
-          AND (service_group IS NULL OR service_group != 'LashesUnder')
-          AND (date_expired IS NULL OR date_expired > NOW())
-          ${usbUserFilter}
-        GROUP BY user_id
-      ) as live_usb ON u.id = live_usb.user_id`;
-      statsInnerJoins += ` LEFT JOIN (
-        SELECT DISTINCT user_id
-        FROM user_service_balance
-        ${allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE user_id IN (${allowedUserIds.join(',')})` : ''}
-      ) as any_usb ON u.id = any_usb.user_id`;
-      if (needOrderCounts) {
-        statsInnerJoins += ` LEFT JOIN (
-          SELECT 
-            user_id, 
-            COALESCE(SUM(total_price), 0) as totalSpent, 
-            COUNT(*) as totalVisits
-          FROM \`order\`
-          WHERE order_state = 'Completed' ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
-          GROUP BY user_id
-        ) as order_counts ON u.id = order_counts.user_id`;
-      }
       if (needServiceUsage) {
         statsInnerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
       }
@@ -477,23 +571,6 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
       }
 
-      if (allowedUserIds !== null && excludedUserIds !== null && excludedUserIds.length > 0) {
-        const exSet = new Set(excludedUserIds);
-        allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
-        if (allowedUserIds.length === 0) {
-          return {
-            total: 0,
-            single: 0,
-            comboLive: 0,
-            comboDead: 0,
-            notComboLive: 0,
-            newLoca: 0,
-            allocation: 0,
-            trash: 0,
-          };
-        }
-      }
-
       if (allowedUserIds !== null) {
         innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
       }
@@ -513,34 +590,22 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         innerParams.push(...params);
       }
 
-      // 2. Filter by Bucket (Optimized using fast live_usb and any_usb index lookups)
-      const bStrStats = bucket as string;
-      if (bStrStats && bStrStats !== 'ALL') {
-        if (bStrStats === 'COMBO_ELSA') {
-          innerWhereClauses.push('elsa_res.id IS NOT NULL');
-        } else if (bStrStats === 'SINGLE') {
-          innerWhereClauses.push('elsa_res.id IS NULL AND any_usb.user_id IS NULL');
-        } else if (bStrStats === 'COMBO_LIVE') {
-          innerWhereClauses.push('elsa_res.id IS NULL AND live_usb.user_id IS NOT NULL');
-        } else if (bStrStats === 'COMBO_DEAD') {
-          innerWhereClauses.push('elsa_res.id IS NULL AND any_usb.user_id IS NOT NULL AND live_usb.user_id IS NULL');
-        } else if (bStrStats === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('elsa_res.id IS NULL AND live_usb.user_id IS NULL');
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM user_contact uc_v
-            WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
-          )`);
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM \`order\` o_v
-            WHERE o_v.user_id = u.id
-          )`);
-        } else if (bStrStats === 'NEW_LOCA') {
-          const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
-          if (newLocaUserIds.length === 0) {
-            innerWhereClauses.push('1 = 0');
-          } else {
-            innerWhereClauses.push(`u.id IN (${newLocaUserIds.join(',')})`);
-          }
+      // 2. Filter by Bucket (NEW_LOCA and NOT_COMBO_LIVE phone/order predicates stay in SQL; bucket membership classified in Node)
+      if (bStrStats === 'NOT_COMBO_LIVE') {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM user_contact uc_v
+          WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
+        )`);
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_v
+          WHERE o_v.user_id = u.id
+        )`);
+      } else if (bStrStats === 'NEW_LOCA') {
+        const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
+        if (newLocaUserIds.length === 0) {
+          innerWhereClauses.push('1 = 0');
+        } else {
+          innerWhereClauses.push(`u.id IN (${newLocaUserIds.join(',')})`);
         }
       }
 
@@ -567,25 +632,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         )`);
       }
 
-      // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
-      if (totalSpentMin !== undefined && totalSpentMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) >= ?');
-        innerParams.push(parseFloat(totalSpentMin));
-      }
-      if (totalSpentMax !== undefined && totalSpentMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) <= ?');
-        innerParams.push(parseFloat(totalSpentMax));
-      }
-
-      if (totalVisitsMin !== undefined && totalVisitsMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) >= ?');
-        innerParams.push(parseInt(totalVisitsMin, 10));
-      }
-      if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
-        innerParams.push(parseInt(totalVisitsMax, 10));
-      }
-
+      // 4. Service usage filters (totalSpent & totalVisits already resolved via standalone query)
       if (selectedServiceIds.length > 0) {
         innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= 1');
       }
@@ -658,15 +705,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         innerParams.push(parseInt(String(ageMax), 10));
       }
 
-      // LoCa Campaign Filters
-      if (hsd30 === 'true') {
-        innerWhereClauses.push(
-          'live_usb.expiryDate IS NOT NULL AND DATEDIFF(live_usb.expiryDate, NOW()) BETWEEN 0 AND 30'
-        );
-      }
-      if (lsd1 === 'true') {
-        innerWhereClauses.push('(COALESCE(live_usb.normalCount, 0) + COALESCE(live_usb.retainCount, 0)) = 1');
-      }
+      // LoCa Campaign Filters (hsd30 / lsd1 resolved via standalone liveUsbMap)
       if (hasProduct === 'true') {
         innerWhereClauses.push(`u.id IN (
           SELECT DISTINCT user_id FROM order_service 
@@ -770,24 +809,17 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
-      const statsSql = `
-        SELECT 
-          CASE
-            WHEN elsa_res.id IS NOT NULL THEN 'COMBO_ELSA'
-            WHEN live_usb.user_id IS NOT NULL THEN 'COMBO_LIVE'
-            WHEN any_usb.user_id IS NOT NULL THEN 'COMBO_DEAD'
-            ELSE 'SINGLE'
-          END as bucket,
-          COUNT(*) as count,
-          SUM(CASE WHEN elsa_res.id IS NULL AND live_usb.user_id IS NOT NULL AND live_usb.expiryDate IS NOT NULL AND DATEDIFF(live_usb.expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) as hsd30Count,
-          SUM(CASE WHEN elsa_res.id IS NULL AND live_usb.user_id IS NOT NULL AND (COALESCE(live_usb.normalCount, 0) + COALESCE(live_usb.retainCount, 0)) = 1 THEN 1 ELSE 0 END) as lsd1Count
+      const matchingUsersSql = `
+        SELECT u.id
         FROM user u
         ${statsInnerJoins}
         ${innerWhereString}
-        GROUP BY bucket
       `;
 
-      const statsResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(statsSql, ...innerParams);
+      const matchingRows = await fastify.prisma.legacy.$queryRawUnsafe<{ id: number | bigint }[]>(
+        matchingUsersSql,
+        ...innerParams
+      );
 
       const stats = {
         total: 0,
@@ -800,18 +832,45 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         lsd1: 0,
       };
 
-      statsResult.forEach((row: SafeAny) => {
-        const count = Number(row.count || 0);
-        stats.total += count;
-        if (row.bucket === 'COMBO_LIVE') {
-          stats.comboLive = count;
-          stats.hsd30 = Number(row.hsd30Count || 0);
-          stats.lsd1 = Number(row.lsd1Count || 0);
+      for (const row of matchingRows) {
+        const id = Number(row.id);
+        const isElsa = elsaSet.has(id);
+        const live = liveUsbMap.get(id);
+        const isAnyUsb = anyUsbSet.has(id);
+
+        if (bStrStats === 'COMBO_ELSA' && !isElsa) continue;
+        if (bStrStats === 'SINGLE' && (isElsa || isAnyUsb)) continue;
+        if (bStrStats === 'COMBO_LIVE' && (isElsa || !live)) continue;
+        if (bStrStats === 'COMBO_DEAD' && (isElsa || !isAnyUsb || Boolean(live))) continue;
+        if (bStrStats === 'NOT_COMBO_LIVE' && (isElsa || Boolean(live))) continue;
+
+        if (
+          hsd30 === 'true' &&
+          (!live || live.expiryDaysDiff === null || live.expiryDaysDiff < 0 || live.expiryDaysDiff > 30)
+        ) {
+          continue;
         }
-        if (row.bucket === 'COMBO_DEAD') stats.comboDead = count;
-        if (row.bucket === 'SINGLE') stats.single = count;
-        if (row.bucket === 'COMBO_ELSA') stats.comboElsa = count;
-      });
+        if (lsd1 === 'true' && (!live || live.normalTotal !== 1)) {
+          continue;
+        }
+
+        stats.total += 1;
+        if (isElsa) {
+          stats.comboElsa += 1;
+        } else if (live) {
+          stats.comboLive += 1;
+          if (live.expiryDaysDiff !== null && live.expiryDaysDiff >= 0 && live.expiryDaysDiff <= 30) {
+            stats.hsd30 += 1;
+          }
+          if (live.normalTotal === 1) {
+            stats.lsd1 += 1;
+          }
+        } else if (isAnyUsb) {
+          stats.comboDead += 1;
+        } else {
+          stats.single += 1;
+        }
+      }
 
       stats.notComboLive = stats.total - stats.comboLive - stats.comboElsa;
 

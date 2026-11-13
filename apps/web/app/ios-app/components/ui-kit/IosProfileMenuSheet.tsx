@@ -3,6 +3,7 @@
 import React from 'react';
 import { ActiveActorProfile, IosUserRole, IosBranchConfig } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from './CvFeatherLabels';
+import { IosFontSizeControl } from './IosFontSizeControl';
 import {
   Wallet,
   MessageSquare,
@@ -86,7 +87,7 @@ export function IosProfileMenuSheet({
       <div className="w-full max-w-[420px] z-10 flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom duration-200">
         {/* Main Content Box */}
         <div
-          className="backdrop-blur-2xl rounded-3xl p-4 border space-y-3.5 shadow-2xl transition-colors max-h-[82vh] overflow-y-auto no-scrollbar"
+          className="backdrop-blur-2xl rounded-3xl p-4 border space-y-3.5 shadow-2xl transition-colors max-h-[88vh] overflow-y-auto no-scrollbar"
           style={{
             backgroundColor: 'var(--mos-surface)',
             borderColor: 'var(--mos-surface-border)',
@@ -102,7 +103,7 @@ export function IosProfileMenuSheet({
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400 bg-amber-400 text-black font-black text-lg flex items-center justify-center shrink-0 shadow-md">
                 <img
-                  src="https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png"
+                  src={actor?.avatar || 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png'}
                   alt={actorName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -142,6 +143,7 @@ export function IosProfileMenuSheet({
             <button
               type="button"
               onClick={onClose}
+              aria-label="Đóng menu hồ sơ"
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                 isDark
                   ? 'bg-neutral-800/80 hover:bg-neutral-700 text-neutral-400 hover:text-white'
@@ -152,7 +154,7 @@ export function IosProfileMenuSheet({
             </button>
           </div>
 
-          {/* Privacy Scope Info */}
+          {/* Privacy / Operational Scope Info */}
           <div
             className={`border rounded-2xl p-2.5 flex items-center gap-2 text-xs ${
               isDark
@@ -163,16 +165,25 @@ export function IosProfileMenuSheet({
             <Lock className="w-4 h-4 text-amber-500 shrink-0" />
             <div className="min-w-0 text-[11.5px] leading-tight">
               <span className={isDark ? 'text-neutral-300 font-medium' : 'text-amber-800 font-medium'}>
-                Phạm vi bảo mật:{' '}
+                {isCvl ? 'Phạm vi bảo mật: ' : 'Phạm vi vận hành: '}
               </span>
               <span className={isDark ? 'text-amber-400 font-bold' : 'text-amber-900 font-bold'}>
-                1 khách đầu tua + khách book đích danh
+                {isCvl
+                  ? '1 khách đầu tua + khách book đích danh'
+                  : isCvll
+                    ? 'Khách của mình & hỗ trợ toàn chi nhánh'
+                    : role === 'CC'
+                      ? 'Toàn bộ khách hàng tại chi nhánh'
+                      : 'Toàn bộ dữ liệu vận hành chi nhánh'}
               </span>
             </div>
           </div>
 
           {/* Giao diện & Tông màu (Appearance & Theme) */}
-          <MobileThemeSelectorBlock compact />
+          <MobileThemeSelectorBlock
+            compact
+            fontControl={<IosFontSizeControl isDark={isDark} staffId={actor?.staffId} />}
+          />
 
           {/* Admin Test Role Switcher (Hidden in menu as requested by Danny) */}
           {canSwitchRole && (
@@ -380,29 +391,6 @@ export function IosProfileMenuSheet({
               <ChevronRight className="w-4 h-4 text-rose-400/50 group-hover:text-rose-500 transition-colors" />
             </button>
           </div>
-        </div>
-
-        {/* Actions Bottom Bar: Đăng xuất & Đóng */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="py-3.5 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 font-bold text-sm border border-rose-500/30 active:scale-[0.98] transition-all shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span>Đăng xuất</span>
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`py-3.5 rounded-2xl font-bold text-sm transition-colors shadow-lg cursor-pointer text-center ${
-              isDark
-                ? 'bg-[#1C1C1E] text-amber-400 active:bg-neutral-800 border border-neutral-800'
-                : 'bg-neutral-100 text-amber-600 active:bg-neutral-200 border border-neutral-200'
-            }`}
-          >
-            Đóng (Close)
-          </button>
         </div>
       </div>
     </div>

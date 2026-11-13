@@ -127,7 +127,7 @@ export function UpsellMainComboSelector({
               ❖
             </div>
             <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
-              <div className={`text-[13px] font-extrabold ${isDark ? 'text-white' : 'text-neutral-900'} truncate`}>
+              <div className={`text-[13px] font-extrabold text-[var(--mos-text)] truncate`}>
                 Khách còn {remainingSessions} lượt
               </div>
               <ComboExpiryStatusBadge status={booking?.comboLiveStatus} compact theme={isDark ? 'dark' : 'light'} />
@@ -143,7 +143,7 @@ export function UpsellMainComboSelector({
         </div>
       ) : (
         <div
-          className={`${isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-200'} rounded-2xl p-3 shadow-sm border space-y-2.5`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border space-y-2.5`}
         >
           {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
           <div className="bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border)] rounded-xl p-2.5 flex items-center justify-between gap-2">

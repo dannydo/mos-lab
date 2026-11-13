@@ -10,9 +10,11 @@ import {
   resolveLockedIosRoleForUser,
 } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
+import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
+import './ios-typography.css';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
 
@@ -119,6 +121,7 @@ function IosAppInner() {
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
 
   const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId, isDemoMode);
+  useIosFontScale(state.actor?.staffId);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -169,7 +172,7 @@ function IosAppInner() {
   if (!authorized) {
     return (
       <div
-        className="w-full min-h-[100dvh] flex items-center justify-center font-bold gap-1.5"
+        className="ios-app-font-scope w-full min-h-[100dvh] flex items-center justify-center font-bold gap-1.5"
         style={{ backgroundColor: 'var(--background)', color: 'var(--mos-accent)' }}
       >
         <span>Đang mở ứng dụng Tư vấn & Checkout</span>
@@ -312,7 +315,10 @@ function IosAppInner() {
             isAdmin={state.isAdmin}
             onRefreshDb={() => state.refreshDb()}
             isCheckInLocked={Boolean(
-              !state.isAdmin && state.activeServicingBooking && currentBooking.id !== state.activeServicingBooking.id
+              !state.isAdmin &&
+              (state.role === 'CVL' || state.role === 'CV') &&
+              state.activeServicingBooking &&
+              currentBooking.id !== state.activeServicingBooking.id
             )}
             activeServicingCustomerName={state.activeServicingBooking?.customerName}
             onResumeServicing={() => state.handleResumeServicing()}
@@ -493,7 +499,7 @@ function IosAppInner() {
 
   return (
     <div
-      className="w-full h-[100dvh] max-h-[100dvh] flex justify-center font-sans select-none overflow-hidden transition-colors"
+      className="ios-app-font-scope w-full h-[100dvh] max-h-[100dvh] flex justify-center font-sans select-none overflow-hidden transition-colors"
       style={{ backgroundColor: 'var(--background)', color: 'var(--mos-text)' }}
     >
       <div
@@ -592,7 +598,7 @@ export default function IosAppPage() {
     <Suspense
       fallback={
         <div
-          className="w-full min-h-[100dvh] flex items-center justify-center font-bold gap-1.5"
+          className="ios-app-font-scope w-full min-h-[100dvh] flex items-center justify-center font-bold gap-1.5"
           style={{ backgroundColor: 'var(--background)', color: 'var(--mos-accent)' }}
         >
           <span>Đang tải ứng dụng Tư vấn & Checkout</span>

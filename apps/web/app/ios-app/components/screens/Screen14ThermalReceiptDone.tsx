@@ -114,7 +114,7 @@ export function Screen14ThermalReceiptDone({
 
   return (
     <div
-      className={`flex-1 flex flex-col justify-between ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} select-none px-4 pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] overflow-y-auto`}
+      className={`flex-1 flex flex-col justify-between bg-[var(--background)] text-[var(--mos-text)] select-none px-4 pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] overflow-y-auto`}
     >
       {/* Top Header */}
       <div className="relative flex items-center justify-center pb-2">
@@ -131,16 +131,8 @@ export function Screen14ThermalReceiptDone({
             <span>Quay lại</span>
           </button>
         )}
-        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight flex items-center justify-center gap-1">
-          {booking?.status === 'DONE' ? (
-            'Chi Tiết Hóa Đơn & Ghi Nhận Thưởng'
-          ) : isCheckoutStaffCc ? (
-            'Hoàn Tất Ca Làm & Ghi Nhận Thưởng CC'
-          ) : (
-            <span className="inline-flex items-center gap-1">
-              Hoàn Tất Ca Làm & Ghi Nhận Thưởng <CvFeather1Badge />
-            </span>
-          )}
+        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight flex items-center justify-center gap-1 px-20 text-center">
+          Chi Tiết Hoá Đơn
         </h1>
       </div>
 
@@ -169,10 +161,10 @@ export function Screen14ThermalReceiptDone({
         <div className={`border-b border-dashed ${isDark ? 'border-neutral-700' : 'border-gray-300'}`} />
 
         <div className="text-center space-y-1">
-          <div className={`text-[13px] font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-black'}`}>
+          <div className={`text-[13px] font-black uppercase tracking-wider text-[var(--mos-text)]`}>
             PHIẾU THANH TOÁN & GHI NHẬN CA
           </div>
-          <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-mono`}>
+          <div className={`text-[11px] text-[var(--mos-text-muted)] font-mono`}>
             HĐ: #{booking?.orderNumber || 'BK-336925'} · {isPendingCounter ? 'Chờ Quầy thu ngân chốt' : 'Hoàn tất'}
           </div>
           <div>
@@ -199,18 +191,18 @@ export function Screen14ThermalReceiptDone({
         >
           <div className="flex items-center justify-between">
             <span>Khách hàng:</span>
-            <strong className={`font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+            <strong className={`font-bold text-[var(--mos-text)]`}>
               {customerName} ({customerPhone})
             </strong>
           </div>
           <div className="flex items-center justify-between">
             <span>Chuyên Viên làm mi:</span>
-            <strong className={`font-bold ${isDark ? 'text-white' : 'text-black'} inline-flex items-center gap-1`}>
+            <strong className={`font-bold text-[var(--mos-text)] inline-flex items-center gap-1`}>
               {assignedStaff} (<CvFeather1Badge />)
             </strong>
           </div>
           <div
-            className={`flex items-center justify-between border-t ${isDark ? 'border-neutral-800' : 'border-gray-200'} pt-1 text-[10.5px]`}
+            className={`flex items-center justify-between border-t border-[var(--mos-surface-border)] pt-1 text-[10.5px]`}
           >
             <span>
               Check-in: <strong className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>{checkInStaff}</strong>
@@ -235,7 +227,7 @@ export function Screen14ThermalReceiptDone({
           {/* Item 1: Dịch vụ làm mi */}
           <div className={`flex justify-between items-start ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
             <div className="space-y-0.5">
-              <span className={`font-bold ${isDark ? 'text-white' : 'text-black'}`}>1. {serviceName}</span>
+              <span className={`font-bold text-[var(--mos-text)]`}>1. {serviceName}</span>
               {comboRedemption ? (
                 <div className={`text-[10.5px] ${isDark ? 'text-sky-400' : 'text-sky-700'} font-bold`}>
                   ✓ Trừ 1 lượt gói · Combo còn{' '}
@@ -257,7 +249,7 @@ export function Screen14ThermalReceiptDone({
               ) : null}
             </div>
             <div className="text-right shrink-0">
-              <span className={`tabular-nums font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+              <span className={`tabular-nums font-bold text-[var(--mos-text)]`}>
                 {effectiveServiceCharge.toLocaleString('vi-VN')} đ
               </span>
               {!comboRedemption && effectiveServiceCharge < servicePrice && (
@@ -287,7 +279,7 @@ export function Screen14ThermalReceiptDone({
               <span>
                 {selectedCombo ? idx + 3 : idx + 2}. {p.productName} (x{p.quantity})
               </span>
-              <span className={`tabular-nums font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+              <span className={`tabular-nums font-bold text-[var(--mos-text)]`}>
                 {(p.price * p.quantity).toLocaleString('vi-VN')} đ
               </span>
             </div>
@@ -299,7 +291,7 @@ export function Screen14ThermalReceiptDone({
               className={`flex justify-between items-center ${isDark ? 'text-neutral-400 border-neutral-800' : 'text-gray-700 border-gray-100'} font-semibold pt-1 border-t`}
             >
               <span>Thuế VAT ({(vatRate * 100).toFixed(0)}%)</span>
-              <span className={`tabular-nums font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+              <span className={`tabular-nums font-bold text-[var(--mos-text)]`}>
                 +{vatAmount.toLocaleString('vi-VN')} đ
               </span>
             </div>
@@ -338,9 +330,7 @@ export function Screen14ThermalReceiptDone({
 
         {/* Total & Payment Method */}
         <div className="space-y-1.5">
-          <div
-            className={`flex justify-between items-center text-[15px] font-black ${isDark ? 'text-white' : 'text-black'}`}
-          >
+          <div className={`flex justify-between items-center text-[15px] font-black text-[var(--mos-text)]`}>
             <span>TỔNG THANH TOÁN:</span>
             <span className="tabular-nums text-[18px] text-[#FF9500]">{grandTotal.toLocaleString('vi-VN')} đ</span>
           </div>
@@ -523,7 +513,7 @@ export function Screen14ThermalReceiptDone({
                       </div>
                       {tipAmount > 0 && (
                         <div
-                          className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} flex items-center justify-between flex-wrap gap-1 tabular-nums`}
+                          className={`text-[10px] text-[var(--mos-text-muted)] flex items-center justify-between flex-wrap gap-1 tabular-nums`}
                         >
                           <span>
                             • Làm mi ({actorTipBreakdown.techStaffName} · 70%): +

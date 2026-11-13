@@ -441,4 +441,98 @@ describe('Screen03ConsultationMatrix - Zero Defaults & Mandatory 7/7 Natural Las
 
     vi.useRealTimers();
   });
+
+  it('reproduces MOS-BUG-221: does not auto-spin or infinite loop on unmeasured returning client with retain service', async () => {
+    vi.useFakeTimers();
+    const saveCalls = vi.fn();
+
+    const minhThoBooking: BookingItem = {
+      id: 828688,
+      orderNumber: 'ORD-828688',
+      customerName: 'Nguyễn Minh Thơ',
+      customerPhone: '828688',
+      customerId: 828688,
+      customerVisits: 77,
+      customerNote: '12/11 c dời sớm\n11/10 c book PNHI, báo bạn off chị oki sx bạn khác, có nhờ',
+      serviceDuration: 60,
+      serviceName: 'Dặm HyperLight 340K 7+3',
+      serviceType: 'Retain',
+      servicePrice: 340000,
+      timeSlot: '10:00 - 11:00',
+      time12h: '10:00 am',
+      status: 'CHECKED_IN',
+      lashHistory: [
+        {
+          date: '11/10/2026',
+          serviceName: 'Dặm HyperLight 340K 7+3',
+          staffName: 'Khanh Cao',
+        },
+      ],
+      attributes: {
+        style: 'Natural',
+        curl: 'C',
+        length: '10-12 mm',
+        thickness: '0.07 mm',
+        isNewClientDiagnosticDone: false,
+      },
+    };
+
+    function MinhThoHost() {
+      const [liveBooking, setLiveBooking] = React.useState<BookingItem>(() => ({ ...minhThoBooking }));
+
+      const handleAutoSaveDraft = async (
+        attrs: Record<string, any>,
+        selectedCombo?: any,
+        skuPricing?: any,
+        targetBookingId?: number,
+        selectedUnderCombo?: any,
+        notes?: string
+      ) => {
+        saveCalls(attrs, skuPricing);
+        setLiveBooking((prev) => ({
+          ...prev,
+          attributes: { ...(prev.attributes || {}), ...attrs } as BookingItem['attributes'],
+          customerNote: notes !== undefined ? notes : prev.customerNote,
+          serviceName: skuPricing?.skuName || prev.serviceName,
+          servicePrice: skuPricing?.skuPrice ?? prev.servicePrice,
+          serviceType: skuPricing?.serviceType || prev.serviceType,
+          selectedCombo: selectedCombo !== undefined ? selectedCombo : prev.selectedCombo,
+          selectedUnderCombo: selectedUnderCombo !== undefined ? selectedUnderCombo : prev.selectedUnderCombo,
+          _localComboUpdatedAt: Date.now(),
+        }));
+      };
+
+      return (
+        <Screen03ConsultationMatrix
+          booking={liveBooking}
+          onBack={vi.fn()}
+          onSave={vi.fn()}
+          onAutoSaveDraft={handleAutoSaveDraft}
+        />
+      );
+    }
+
+    render(<MinhThoHost />);
+
+    const saveIndicator = screen.getByRole('button', { name: /Trạng thái tự động lưu/i });
+
+    // Step 1: Initial state MUST NOT be spinning "Đang lưu"
+    console.log('Initial indicator text:', saveIndicator.textContent);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    console.log('After 1s indicator text:', saveIndicator.textContent);
+    console.log('Save calls count after 1s:', saveCalls.mock.calls.length);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+
+    console.log('After 4s indicator text:', saveIndicator.textContent);
+    console.log('Save calls count after 4s:', saveCalls.mock.calls.length);
+
+    vi.useRealTimers();
+  });
 });

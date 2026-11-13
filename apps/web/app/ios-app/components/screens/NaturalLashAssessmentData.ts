@@ -122,7 +122,7 @@ export const NATURAL_LASH_THICKNESS_OPTIONS: NaturalLashThicknessOption[] = [
     strength: 'WEAK',
     strengthLabel: 'Mảnh / Yếu',
     colorTag: 'bg-rose-50 text-rose-700 border-rose-200',
-    recommendedMaterial: 'New Flawless Mink (0.07mm) hoặc Ivy Light siêu nhẹ',
+    recommendedMaterial: 'Flawless Mink (0.07mm) hoặc Ivy Light siêu nhẹ',
     safetyRule: 'Chỉ nối mi sợi siêu nhẹ 0.05mm - 0.07mm. Tuyệt đối KHÔNG nối sợi Classic thô 0.15mm vì dễ xệ nang mi.',
     forbiddenThicknesses: ['0.15 mm'],
   },
@@ -134,7 +134,7 @@ export const NATURAL_LASH_THICKNESS_OPTIONS: NaturalLashThicknessOption[] = [
     strength: 'MEDIUM',
     strengthLabel: 'Tiêu chuẩn',
     colorTag: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    recommendedMaterial: 'New HyperLight, Flawless Mink hoặc Classic Design',
+    recommendedMaterial: 'HyperLight, Flawless Mink hoặc Classic Design',
     safetyRule: 'Độ chịu lực cân bằng lý tưởng. Nối được sợi 0.07mm, 0.10mm, hoặc Fan 2D-3D nhẹ nhàng.',
     forbiddenThicknesses: [],
   },
@@ -397,16 +397,16 @@ export function computeLashRecommendation(params: {
   }
 
   // 5. Dòng mi phù hợp
-  let recommendedMaterial = 'New Flawless Mink';
+  let recommendedMaterial = 'Flawless Mink';
   let recommendedMaterialId = 'flawless-mink';
   if (healthId.includes('yếu') || thicknessId.includes('0.05')) {
-    recommendedMaterial = 'New Flawless Mink (0.07mm Siêu Nhẹ)';
+    recommendedMaterial = 'Flawless Mink (0.07mm Siêu Nhẹ)';
     recommendedMaterialId = 'flawless-mink';
   } else if (thicknessId.includes('0.12')) {
     recommendedMaterial = 'Classic Design (Bền Đẹp)';
     recommendedMaterialId = 'classic-design';
   } else {
-    recommendedMaterial = 'New Flawless Mink';
+    recommendedMaterial = 'Flawless Mink';
     recommendedMaterialId = 'flawless-mink';
   }
 

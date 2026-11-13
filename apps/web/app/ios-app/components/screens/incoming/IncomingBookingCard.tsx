@@ -30,6 +30,7 @@ interface IncomingBookingCardProps {
   dateOffset: number;
   now: Date;
   isCvll: boolean;
+  canMultiCheckIn?: boolean;
   isAdmin: boolean;
   actor?: ActiveActorProfile;
   onSelectBooking: (bookingId: number) => void;
@@ -48,6 +49,7 @@ export function IncomingBookingCard({
   dateOffset,
   now,
   isCvll,
+  canMultiCheckIn = false,
   isAdmin,
   actor,
   onSelectBooking,
@@ -82,7 +84,11 @@ export function IncomingBookingCard({
     activeServicingBooking && Number(b.id) === Number(activeServicingBooking.id)
   );
   const isOtherCustomerLocked = Boolean(
-    activeServicingBooking && Number(b.id) !== Number(activeServicingBooking.id) && !isCvll && !isAdmin
+    activeServicingBooking &&
+    Number(b.id) !== Number(activeServicingBooking.id) &&
+    !isCvll &&
+    !isAdmin &&
+    !canMultiCheckIn
   );
 
   // Avatar Ring Indicator

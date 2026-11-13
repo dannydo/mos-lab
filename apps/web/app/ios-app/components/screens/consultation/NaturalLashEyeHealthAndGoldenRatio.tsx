@@ -46,9 +46,7 @@ export function NaturalLashEyeHealthAndGoldenRatio({
     <>
       {/* CARD 2: DÁNG MẮT & SỨC KHỎE NANG MI */}
       <div
-        className={`rounded-2xl p-3 shadow-xs border space-y-3 ${
-          isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-        }`}
+        className={`rounded-2xl p-3 shadow-xs border space-y-3 ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
       >
         <div
           className={`flex items-center justify-between pb-1 border-b ${
@@ -59,9 +57,7 @@ export function NaturalLashEyeHealthAndGoldenRatio({
             <span className="w-5 h-5 rounded-full bg-black text-[#FFB400] text-[10.5px] font-black inline-flex items-center justify-center">
               2
             </span>
-            <span
-              className={`text-[11.5px] font-extrabold uppercase tracking-tight ${isDark ? 'text-white' : 'text-black'}`}
-            >
+            <span className={`text-[11.5px] font-extrabold uppercase tracking-tight text-[var(--mos-text)]`}>
               Dáng mắt & sức khỏe
             </span>
           </div>
@@ -152,7 +148,7 @@ export function NaturalLashEyeHealthAndGoldenRatio({
           </div>
 
           {/* Nang mi */}
-          <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+          <div className={`pt-2 border-t border-[var(--mos-surface-border)]`}>
             <div
               className={`text-[11px] font-extrabold mb-1.5 flex items-center justify-between ${
                 isDark ? 'text-neutral-400' : 'text-gray-700'
@@ -230,7 +226,7 @@ export function NaturalLashEyeHealthAndGoldenRatio({
           </div>
 
           {/* Độ nhạy cảm mắt */}
-          <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+          <div className={`pt-2 border-t border-[var(--mos-surface-border)]`}>
             <div
               className={`text-[11px] font-extrabold mb-1.5 flex items-center justify-between ${
                 isDark ? 'text-neutral-400' : 'text-gray-700'

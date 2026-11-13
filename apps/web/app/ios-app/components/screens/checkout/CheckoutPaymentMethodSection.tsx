@@ -152,9 +152,7 @@ export function CheckoutPaymentMethodSection({
                   <div className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-800'} truncate`}>
                     ✓ Đã lưu ảnh biên lai POS
                   </div>
-                  <div className={`text-[9.5px] ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                    Chạm vào ảnh để chụp lại
-                  </div>
+                  <div className={`text-[9.5px] text-[var(--mos-text-muted)]`}>Chạm vào ảnh để chụp lại</div>
                 </div>
               </div>
             ) : (

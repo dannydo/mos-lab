@@ -94,9 +94,7 @@ export function Screen10CustomerSurvey({
   const isDark = themeMode === 'dark';
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
-    >
+    <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       {/* Top Navbar on Black with Working Native Back Button */}
       <IosNavigationBar title="Wings Beauty Survey" onBack={onBack} backTitle="Ảnh After" />
 
@@ -142,11 +140,11 @@ export function Screen10CustomerSurvey({
         <div className="space-y-4">
           {/* Main Greeting */}
           <div className="text-center pt-1">
-            <h2 className={`text-[20px] font-black ${isDark ? 'text-white' : 'text-black'} leading-tight px-2`}>
+            <h2 className={`text-[20px] font-black text-[var(--mos-text)] leading-tight px-2`}>
               {customerName} ơi, Chị cảm nhận ca làm hôm nay thế nào ạ?
             </h2>
             <div
-              className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium mt-1.5 inline-flex items-center justify-center gap-1`}
+              className={`text-[12px] text-[var(--mos-text-muted)] font-medium mt-1.5 inline-flex items-center justify-center gap-1`}
             >
               <span>Chuyên viên phục vụ:</span>
               <span
@@ -160,14 +158,12 @@ export function Screen10CustomerSurvey({
 
           {/* GƯƠNG SOI FORM MI CHO KHÁCH (Before & After Mirror Showcase: 2 Hàng Dọc Trên/Dưới) */}
           <div
-            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border space-y-3`}
+            className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border space-y-3`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-[#FFB400]" />
-                <span
-                  className={`text-[12px] font-black ${isDark ? 'text-white' : 'text-black'} uppercase tracking-wider`}
-                >
+                <span className={`text-[12px] font-black text-[var(--mos-text)] uppercase tracking-wider`}>
                   GƯƠNG SOI FORM MI · ĐỐI CHIẾU TRƯỚC & SAU
                 </span>
               </div>
@@ -187,7 +183,7 @@ export function Screen10CustomerSurvey({
                     <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center text-[10px] font-black">
                       1
                     </span>
-                    <span className={`text-[12px] font-black ${isDark ? 'text-white' : 'text-black'}`}>
+                    <span className={`text-[12px] font-black text-[var(--mos-text)]`}>
                       1. ẢNH TRƯỚC KHI NỐI · MẮT MỘC
                     </span>
                   </div>
@@ -286,11 +282,9 @@ export function Screen10CustomerSurvey({
 
           {/* 5 Yellow Stars (Interactive) */}
           <div
-            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border text-center`}
+            className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border text-center`}
           >
-            <div
-              className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider mb-2`}
-            >
+            <div className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider mb-2`}>
               ĐÁNH GIÁ SỰ HÀI LÒNG CỦA CHỊ
             </div>
             <div className="flex justify-center items-center gap-2">
@@ -407,11 +401,9 @@ export function Screen10CustomerSurvey({
 
           {/* Điểm chị ưng ý nhất (Interactive Toggle Chips) */}
           <div
-            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-200/80'} rounded-2xl p-3.5 shadow-sm border`}
+            className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border`}
           >
-            <div
-              className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider px-1 mb-2`}
-            >
+            <div className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider px-1 mb-2`}>
               ĐIỂM CHỊ ƯNG Ý NHẤT (CHẠM ĐỂ CHỌN)
             </div>
             <div className="space-y-2">

@@ -57,20 +57,14 @@ export function NaturalLashMeasurementsCard({
 }: NaturalLashMeasurementsCardProps) {
   return (
     <div
-      className={`rounded-2xl p-3 shadow-xs border space-y-3 transition-colors ${
-        isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'
-      }`}
+      className={`rounded-2xl p-3 shadow-xs border space-y-3 transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
     >
-      <div
-        className={`flex items-center justify-between pb-1 border-b ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
-      >
+      <div className={`flex items-center justify-between pb-1 border-b border-[var(--mos-surface-border)]`}>
         <div className="flex items-center gap-1.5">
           <span className="w-5 h-5 rounded-full bg-black text-[#FFB400] text-[10.5px] font-black inline-flex items-center justify-center">
             1
           </span>
-          <span
-            className={`text-[11.5px] font-extrabold uppercase tracking-tight ${isDark ? 'text-white' : 'text-black'}`}
-          >
+          <span className={`text-[11.5px] font-extrabold uppercase tracking-tight text-[var(--mos-text)]`}>
             Đo 4 thông số mi thật
           </span>
         </div>
@@ -157,7 +151,7 @@ export function NaturalLashMeasurementsCard({
         </div>
 
         {/* Dòng 2: Độ Dày (Dual Slider 0.05 - 0.20, step 0.01) */}
-        <div className={`space-y-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+        <div className={`space-y-1 pt-2 border-t border-[var(--mos-surface-border)]`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
@@ -227,7 +221,7 @@ export function NaturalLashMeasurementsCard({
         </div>
 
         {/* Dòng 3: Số Sợi / Mật Độ (Dual Slider 40 - 200, step 5) */}
-        <div className={`space-y-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+        <div className={`space-y-1 pt-2 border-t border-[var(--mos-surface-border)]`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
@@ -289,9 +283,7 @@ export function NaturalLashMeasurementsCard({
         </div>
 
         {/* Dòng 4: Hướng Mọc (Dùng UNICODE toàn bộ) */}
-        <div
-          className={`flex items-center justify-between gap-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}
-        >
+        <div className={`flex items-center justify-between gap-1 pt-2 border-t border-[var(--mos-surface-border)]`}>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className={`text-[11.5px] font-extrabold ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
               Hướng

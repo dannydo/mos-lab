@@ -25,7 +25,7 @@ export function CleanedCustomerAndSpecHeader({
     <>
       {/* 3. Customer Info Header Card: Refactored chuẩn iOS kèm Avatar & 3 dòng thông tin */}
       <div
-        className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3.5 shadow-sm border flex items-center gap-3`}
+        className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border flex items-center gap-3`}
       >
         <div className="relative w-11 h-11 flex-shrink-0">
           <div
@@ -51,9 +51,7 @@ export function CleanedCustomerAndSpecHeader({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span
-              className={`text-[15px] font-extrabold ${isDark ? 'text-white' : 'text-black'} truncate tracking-tight`}
-            >
+            <span className={`text-[15px] font-extrabold text-[var(--mos-text)] truncate tracking-tight`}>
               {customerName}
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[9.5px] font-black leading-none shrink-0 shadow-xs">
@@ -66,9 +64,7 @@ export function CleanedCustomerAndSpecHeader({
           </div>
 
           {lashSpecDetail && (
-            <div
-              className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-semibold truncate mt-0.5 tabular-nums`}
-            >
+            <div className={`text-[11px] text-[var(--mos-text-muted)] font-semibold truncate mt-0.5 tabular-nums`}>
               {lashSpecDetail}
             </div>
           )}
@@ -78,7 +74,7 @@ export function CleanedCustomerAndSpecHeader({
       {/* Tech Spec Card: Thông số kỹ thuật mi */}
       {booking && (
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3 shadow-sm border space-y-2`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border space-y-2`}
         >
           <div className="flex items-center justify-between gap-1.5">
             <div className="flex items-center gap-1.5">
@@ -109,13 +105,9 @@ export function CleanedCustomerAndSpecHeader({
           </div>
           <div className="grid grid-cols-4 gap-1.5">
             <div
-              className={`${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'} border rounded-xl py-1.5 px-1 text-center min-w-0`}
+              className={`bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] border rounded-xl py-1.5 px-1 text-center min-w-0`}
             >
-              <span
-                className={`text-[8.5px] font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-500'} uppercase block`}
-              >
-                Dáng
-              </span>
+              <span className={`text-[8.5px] font-bold text-[var(--mos-text-muted)] uppercase block`}>Dáng</span>
               <span
                 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-neutral-800'} block mt-0.5 truncate`}
               >

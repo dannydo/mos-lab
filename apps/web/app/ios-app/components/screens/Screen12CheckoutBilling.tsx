@@ -279,9 +279,7 @@ export function Screen12CheckoutBilling({
   };
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
-    >
+    <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       <IosNavigationBar
         title="Thanh Toán"
         onBack={onBack}

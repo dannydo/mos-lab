@@ -57,10 +57,10 @@ export function CheckoutZaloConsentModal({
         {/* Modal Body */}
         <div className="p-4 space-y-3 max-h-[calc(85vh-130px)] overflow-y-auto">
           <div className="text-center space-y-0.5">
-            <div className={`text-[15px] font-black ${isDark ? 'text-white' : 'text-gray-900'} tracking-tight`}>
+            <div className={`text-[15px] font-black text-[var(--mos-text)] tracking-tight`}>
               KẾT NỐI ZALO NHẬN HÓA ĐƠN
             </div>
-            <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium`}>
+            <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
               Bảo hành dặm mi 3 ngày & Tặng Voucher 50K
             </div>
           </div>
@@ -209,7 +209,7 @@ export function CheckoutZaloConsentModal({
               <div className="font-bold text-[#0068FF] flex items-center gap-1">
                 <span>Mã QR Zalo OA Wings Lashes</span>
               </div>
-              <div className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} leading-snug`}>
+              <div className={`text-[var(--mos-text-muted)] leading-snug`}>
                 Khách có thể quét camera để bấm <strong>Quan tâm OA</strong> và nhận tin nhắn kèm hình ảnh hóa đơn ngay.
               </div>
             </div>
@@ -217,9 +217,7 @@ export function CheckoutZaloConsentModal({
         </div>
 
         {/* Sticky Action Footer */}
-        <div
-          className={`p-3 ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-100'} border-t space-y-2 shrink-0`}
-        >
+        <div className={`p-3 bg-[var(--mos-surface)] border-[var(--mos-surface-border)] border-t space-y-2 shrink-0`}>
           <button
             type="button"
             onClick={onConfirmZaloSend}

@@ -90,7 +90,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
   });
 
   return (
-    <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
+    <div className={`flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)]`}>
       <IosNavigationBar
         title="Quản Lý Kho (Inventory)"
         rightAction={{
@@ -100,7 +100,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
       />
 
       {/* Search Bar */}
-      <div className={`px-4 py-2 ${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-[#E5E5EA]'} border-b`}>
+      <div className={`px-4 py-2 bg-[var(--mos-surface)] border-[var(--mos-surface-border)] border-b`}>
         <div
           className={`flex items-center ${
             isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-[#F2F2F7] text-[#8E8E93]'
@@ -110,7 +110,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
           <input
             type="text"
             placeholder="Tìm mã vật tư, khay mi, keo..."
-            className={`w-full bg-transparent ${isDark ? 'text-white' : 'text-[#1C1C1E]'} focus:outline-none text-xs`}
+            className={`w-full bg-transparent text-[var(--mos-text)] focus:outline-none text-xs`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -169,9 +169,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
       {/* Inventory List */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         <div
-          className={`${
-            isDark ? 'bg-[#1C1C1E] border-neutral-800 divide-neutral-800' : 'bg-white border-[#E5E5EA] divide-[#E5E5EA]'
-          } rounded-xl border divide-y overflow-hidden shadow-xs`}
+          className={`${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)] divide-[var(--mos-surface-border)]'} rounded-xl border divide-y overflow-hidden shadow-xs`}
         >
           {filteredItems.map((item) => (
             <div
@@ -195,7 +193,7 @@ export function ScreenInventoryStock({ onOpenSettings }: ScreenInventoryStockPro
                   <Package className="w-5 h-5 stroke-[2]" />
                 </div>
                 <div>
-                  <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>{item.name}</div>
+                  <div className={`text-xs font-bold text-[var(--mos-text)]`}>{item.name}</div>
                   <div className="text-[11px] text-[#8E8E93] mt-0.5 tabular-nums">
                     Mã: {item.id} · Tối thiểu: {item.minStock} {item.unit}
                   </div>

@@ -13,6 +13,7 @@ import {
   X,
   Paperclip,
   UserRoundPlus,
+  FilePenLine,
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 
@@ -29,6 +30,7 @@ export interface MosChatMobileActionSheetProps {
   onSelectSticker: () => void;
   onSelectVoice: () => void;
   onSelectAiCopilot?: () => void;
+  onSelectCKEditor?: () => void;
 }
 
 export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> = ({
@@ -44,6 +46,7 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
   onSelectSticker,
   onSelectVoice,
   onSelectAiCopilot,
+  onSelectCKEditor,
 }) => {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -91,6 +94,16 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
         onClose();
         if (onSelectFile) onSelectFile();
         else onSelectImage();
+      },
+    },
+    {
+      id: 'ckeditor',
+      label: 'Soạn thảo CKEditor',
+      icon: <FilePenLine className="w-6 h-6 text-amber-400" />,
+      bg: 'bg-amber-500/15 border-amber-500/30',
+      onClick: () => {
+        onClose();
+        onSelectCKEditor?.();
       },
     },
     {

@@ -98,7 +98,7 @@ export function UpsellUnderComboAndSummary({
           </div>
 
           <div
-            className={`${isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-200'} rounded-2xl p-3 shadow-sm border space-y-2.5`}
+            className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border space-y-2.5`}
           >
             {/* Không lấy combo mi dưới pill */}
             <div className="flex items-center gap-2">
@@ -182,11 +182,11 @@ export function UpsellUnderComboAndSummary({
 
       {/* Section 3: Summary card */}
       <div
-        className={`${isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3.5 shadow-sm border space-y-2`}
+        className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border space-y-2`}
       >
         {/* Row 1: Dịch vụ hôm nay */}
         <div className="flex items-center justify-between text-[12.5px]">
-          <span className={`${isDark ? 'text-neutral-400' : 'text-gray-500'} font-medium`}>Dịch vụ hôm nay:</span>
+          <span className={`text-[var(--mos-text-muted)] font-medium`}>Dịch vụ hôm nay:</span>
           {isExistingComboLive && redemptionAccounting ? (
             <span className={`${isDark ? 'text-sky-400' : 'text-sky-700'} font-bold tabular-nums`}>
               {effectiveServiceChargeToday > 0
@@ -201,19 +201,19 @@ export function UpsellUnderComboAndSummary({
               </span>
             </span>
           ) : effectiveServiceChargeToday < servicePrice ? (
-            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+            <span className={`text-[var(--mos-text)] font-bold tabular-nums`}>
               {effectiveServiceChargeToday.toLocaleString('vi-VN')}đ{' '}
               <span className={`text-[11px] font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                 (Đã trừ gói 1 phần)
               </span>
             </span>
           ) : selectedNewComboPkg && !deductTodayIntoCombo ? (
-            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+            <span className={`text-[var(--mos-text)] font-bold tabular-nums`}>
               {effectiveServiceChargeToday.toLocaleString('vi-VN')}đ{' '}
               <span className="text-[11px] font-semibold text-indigo-400">(Trả lẻ)</span>
             </span>
           ) : (
-            <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+            <span className={`text-[var(--mos-text)] font-bold tabular-nums`}>
               {effectiveServiceChargeToday.toLocaleString('vi-VN')}đ
             </span>
           )}
@@ -226,7 +226,7 @@ export function UpsellUnderComboAndSummary({
               <span className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium`}>
                 Gói {selectedNewComboPkg.shortRuleLabel || selectedNewComboPkg.ruleName}:
               </span>
-              <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+              <span className={`text-[var(--mos-text)] font-bold tabular-nums`}>
                 {newComboTotal.toLocaleString('vi-VN')}đ
               </span>
             </div>
@@ -247,7 +247,7 @@ export function UpsellUnderComboAndSummary({
               <span className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} font-medium`}>
                 Gói Mi Dưới ({selectedUnderComboPkg.shortRuleLabel || selectedUnderComboPkg.ruleName}):
               </span>
-              <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+              <span className={`text-[var(--mos-text)] font-bold tabular-nums`}>
                 {underComboTotal.toLocaleString('vi-VN')}đ
               </span>
             </div>
@@ -273,7 +273,7 @@ export function UpsellUnderComboAndSummary({
                 </span>
               </span>
             ) : (
-              <span className={`${isDark ? 'text-white' : 'text-gray-900'} font-bold tabular-nums`}>
+              <span className={`text-[var(--mos-text)] font-bold tabular-nums`}>
                 {serumTotal.toLocaleString('vi-VN')}đ
               </span>
             )}
@@ -281,12 +281,8 @@ export function UpsellUnderComboAndSummary({
         )}
 
         {/* Row 3: Tổng tạm tính */}
-        <div
-          className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'} flex items-center justify-between`}
-        >
-          <span className={`text-[14px] font-extrabold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Tổng thanh toán:
-          </span>
+        <div className={`pt-2 border-t border-[var(--mos-surface-border)] flex items-center justify-between`}>
+          <span className={`text-[14px] font-extrabold text-[var(--mos-text)]`}>Tổng thanh toán:</span>
           <span className="text-[18px] font-black text-[#FF9500] tabular-nums">
             {subtotal.toLocaleString('vi-VN')}đ
           </span>

@@ -1,3 +1,4 @@
+import { isCcRole } from '@mos-lab/shared';
 import type {
   IosUserRole,
   BookingScopeMode,
@@ -121,7 +122,7 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
       branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
-  const isActualCcUser = String(loggedInUser?.role || '').toLowerCase() === 'cc';
+  const isActualCcUser = isCcRole(loggedInUser?.role);
   const staffId = isActualCcUser ? Number(loggedInUser?.legacyStaffId) || 37790 : 37790;
   const name = isActualCcUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Diễm Hương';
   const storeId = userAssignedStoreId || 6;

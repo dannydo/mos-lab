@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --port 8000",
-    "build": "next build",
+    "build": "next build --webpack",
     "clean": "rm -rf .next out",
     "start": "next start",
     "lint": "eslint",

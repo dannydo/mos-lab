@@ -6,13 +6,17 @@ import { useTheme, type ThemePreference } from '../../context/ThemeContext';
 
 interface MobileThemeSelectorBlockProps {
   compact?: boolean;
+  fontControl?: React.ReactNode;
 }
 
 /**
  * Shared 3-mode (Light / Dark / Auto) + Core Theme Palette selector block
  * reused across /ios-app (IosProfileMenuSheet) and /chat mobile (MobileThemeSheet).
  */
-export const MobileThemeSelectorBlock: React.FC<MobileThemeSelectorBlockProps> = ({ compact = false }) => {
+export const MobileThemeSelectorBlock: React.FC<MobileThemeSelectorBlockProps> = ({
+  compact = false,
+  fontControl,
+}) => {
   const {
     coreThemeId,
     themeId,
@@ -143,6 +147,8 @@ export const MobileThemeSelectorBlock: React.FC<MobileThemeSelectorBlockProps> =
           <span>Tự động</span>
         </button>
       </div>
+
+      {fontControl ? <div className="pt-0.5">{fontControl}</div> : null}
 
       {/* 2. Bộ chọn Phong Cách Màu (Theme Palettes) */}
       <div className="space-y-1.5 pt-0.5">

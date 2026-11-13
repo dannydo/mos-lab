@@ -207,9 +207,7 @@ export function Screen07LashProgressBefore({
   }, [booking]);
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'} overflow-y-auto select-none`}
-    >
+    <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       {/* 1. Header Navigation: Bỏ hoàn toàn thông tin Giường và Online theo yêu cầu */}
       <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ca Làm" />
 
@@ -229,7 +227,7 @@ export function Screen07LashProgressBefore({
       <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
         {/* 3. Header Card: Refactored chuẩn iOS kèm Avatar & 3 dòng thông tin */}
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3.5 shadow-sm border flex items-center gap-3`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border flex items-center gap-3`}
         >
           <div className="relative w-11 h-11 flex-shrink-0">
             <div
@@ -255,9 +253,7 @@ export function Screen07LashProgressBefore({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span
-                className={`text-[15px] font-extrabold ${isDark ? 'text-white' : 'text-black'} truncate tracking-tight`}
-              >
+              <span className={`text-[15px] font-extrabold text-[var(--mos-text)] truncate tracking-tight`}>
                 {customerName}
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[9.5px] font-black leading-none shrink-0 shadow-xs">
@@ -270,9 +266,7 @@ export function Screen07LashProgressBefore({
             </div>
 
             {lashSpecDetail && (
-              <div
-                className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'} font-semibold truncate mt-0.5 tabular-nums`}
-              >
+              <div className={`text-[11px] text-[var(--mos-text-muted)] font-semibold truncate mt-0.5 tabular-nums`}>
                 {lashSpecDetail}
               </div>
             )}
@@ -282,7 +276,7 @@ export function Screen07LashProgressBefore({
         {/* Tech Spec Card: Thông số kỹ thuật mi */}
         {booking && (
           <div
-            className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-3 shadow-sm border space-y-2`}
+            className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border space-y-2`}
           >
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5">
@@ -313,13 +307,9 @@ export function Screen07LashProgressBefore({
             </div>
             <div className="grid grid-cols-4 gap-1.5">
               <div
-                className={`${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'} border rounded-xl py-1.5 px-1 text-center min-w-0`}
+                className={`bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] border rounded-xl py-1.5 px-1 text-center min-w-0`}
               >
-                <span
-                  className={`text-[8.5px] font-bold ${isDark ? 'text-neutral-400' : 'text-neutral-500'} uppercase block`}
-                >
-                  Dáng
-                </span>
+                <span className={`text-[8.5px] font-bold text-[var(--mos-text-muted)] uppercase block`}>Dáng</span>
                 <span
                   className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-neutral-800'} block mt-0.5 truncate`}
                 >
@@ -373,15 +363,13 @@ export function Screen07LashProgressBefore({
         )}
 
         {/* Section title */}
-        <div
-          className={`text-[11px] font-bold ${isDark ? 'text-neutral-400' : 'text-gray-500'} uppercase tracking-wider px-1 pt-0.5`}
-        >
+        <div className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider px-1 pt-0.5`}>
           CHỤP ẢNH BEFORE MẮT MỘC (BẮT BUỘC)
         </div>
 
         {/* 4. Camera Viewfinder Card with Real Capture & Photo Upload */}
         <div
-          className={`${isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-neutral-100'} rounded-2xl p-4 shadow-sm border space-y-3.5`}
+          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-4 shadow-sm border space-y-3.5`}
         >
           <div className="relative w-full aspect-[4/3] rounded-2xl bg-[#1C1C1E] flex flex-col items-center justify-center overflow-hidden border border-neutral-800 shadow-inner group">
             {photoPreview ? (
@@ -421,7 +409,7 @@ export function Screen07LashProgressBefore({
 
           {/* Nút ngoại lệ: Khách từ chối chụp ảnh */}
           {!photoPreview && (
-            <div className={`pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-neutral-100'} space-y-2`}>
+            <div className={`pt-2 border-t border-[var(--mos-surface-border)] space-y-2`}>
               <label className="flex items-center justify-between cursor-pointer">
                 <span className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
                   Khách từ chối chụp ảnh (Có lý do)

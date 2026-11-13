@@ -186,7 +186,7 @@ export function ScreenStoreDashboard({
               <span className="text-[11px] font-medium">Doanh thu hôm nay</span>
               <DollarSign className="w-4 h-4 text-[#FF9500]" />
             </div>
-            <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'} tabular-nums`}>
+            <div className={`text-lg font-bold text-[var(--mos-text)] tabular-nums`}>
               {new Intl.NumberFormat('vi-VN').format(storeMetrics.todayRevenue)}đ
             </div>
             <div className="text-[10px] text-emerald-500 font-medium flex items-center mt-1 tabular-nums">
@@ -199,7 +199,7 @@ export function ScreenStoreDashboard({
               <span className="text-[11px] font-medium">Số ca hoàn tất</span>
               <Users className="w-4 h-4 text-blue-500" />
             </div>
-            <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'} tabular-nums`}>
+            <div className={`text-lg font-bold text-[var(--mos-text)] tabular-nums`}>
               {storeMetrics.totalCompleted} ca
             </div>
             <div className="text-[10px] text-[#8E8E93] mt-1 tabular-nums">
@@ -221,7 +221,7 @@ export function ScreenStoreDashboard({
               <span className="text-[11px] font-medium">Chuyên Viên có lịch</span>
               <Clock className="w-4 h-4 text-purple-500" />
             </div>
-            <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'} tabular-nums`}>
+            <div className={`text-lg font-bold text-[var(--mos-text)] tabular-nums`}>
               {storeMetrics.activeStaffCount} bạn
             </div>
             <div className="text-[10px] text-[#8E8E93] mt-1">Theo lịch ca trực thực tế</div>
@@ -280,7 +280,7 @@ export function ScreenStoreDashboard({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#1C1C1E]'}`}>{b.bed}</span>
+                      <span className={`text-xs font-bold text-[var(--mos-text)]`}>{b.bed}</span>
                       <span className="text-[11px] text-[#8E8E93] inline-flex items-center gap-0.5 truncate">
                         · {b.cv}
                       </span>

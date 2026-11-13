@@ -342,8 +342,8 @@ export function resolveQuickCheckInComboPreset(
       booking?.serviceName
     : booking?.attributes?.material || historyUpperEntry?.serviceName || booking?.serviceName;
 
-  const resolved = resolveServiceSpecsFromComboOrHistory(sourceText || 'New Flawless Mink 880', catalog) || {
-    materialId: 'New Flawless Mink',
+  const resolved = resolveServiceSpecsFromComboOrHistory(sourceText || 'Flawless Mink 880', catalog) || {
+    materialId: 'Flawless Mink',
     materialCode: 'FLAWLESS_MINK',
     materialShortLabel: 'Flawless Mink',
     volume: '1D',

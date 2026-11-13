@@ -5570,10 +5570,10 @@ export function formatReadableComboContent(
  * Chuẩn hóa tên combo hiển thị theo quy chuẩn Kinh Thánh mOS:
  * Hàng 1: ❖ <Tên dòng mi> <Mức giá> <Tỷ lệ Mua+Tặng>
  * Ví dụ:
- * - "10+6-volume-550" + "New Volume 550" -> "❖ Volume 550 10+6"
- * - "10+10-flawless-mink-990" + "New Flawless Mink 990" -> "❖ Flawless Mink 990 10+10"
- * - "4+1-hyperlight-770" + "New HyperLight 770" -> "❖ HyperLight 770 4+1"
- * - "7+3-flawless-mink-880" + "New Flawless Mink 880" -> "❖ Flawless Mink 880 7+3"
+ * - "10+6-volume-550" + "Volume 550" -> "❖ Volume 550 10+6"
+ * - "10+10-flawless-mink-990" + "Flawless Mink 990" -> "❖ Flawless Mink 990 10+10"
+ * - "4+1-hyperlight-770" + "HyperLight 770" -> "❖ HyperLight 770 4+1"
+ * - "7+3-flawless-mink-880" + "Flawless Mink 880" -> "❖ Flawless Mink 880 7+3"
  * - "7+3-ivylight-1220" + "Ivylight 4L 1220" -> "❖ Ivylight 1220 7+3"
  */
 export function formatComboName(name?: string, packageKey?: string): string {
@@ -5599,8 +5599,14 @@ export function formatComboName(name?: string, packageKey?: string): string {
   cleanName = cleanName.replace(/\b\d+\s*lần\b/gi, '').trim();
   cleanName = cleanName.replace(/\b\d+\+\d+\b/g, '').trim();
 
-  // Bỏ từ "New " hoặc "Gói " ở đầu tên theo chuẩn: "New Volume 550" -> "Volume 550"
-  cleanName = cleanName.replace(/^(New|Gói)\s+/i, '').trim();
+  // Bỏ từ "New " hoặc "Gói " (kể cả lặp "New New Classic...") theo chuẩn danh mục mới: "Volume 550" -> "Volume 550"
+  cleanName = cleanName
+    .replace(/^(?:(?:New|Gói)\s+)+/i, '')
+    .replace(
+      /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+      ''
+    )
+    .trim();
   cleanName = cleanName.replace(/\s{2,}/g, ' ');
 
   // Ghép lại chuẩn: ❖ <Tên dòng mi> <Tỷ lệ>

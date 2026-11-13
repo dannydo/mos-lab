@@ -2,9 +2,9 @@ import { ALL_LENGTH_MAPPINGS, STANDARD_COLORS, type LashMaterialSpec } from './c
 
 export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
   {
-    id: 'New Flawless Mink',
+    id: 'Flawless Mink',
     code: 'FLAWLESS_MINK',
-    name: 'New Flawless Mink (Tơ Lụa Độc Quyền)',
+    name: 'Flawless Mink (Tơ Lụa Độc Quyền)',
     shortLabel: 'Flawless Mink',
     badge: 'BEST SELLER · 770K+',
     priceRange: '770.000đ – 1.770.000đ',
@@ -128,20 +128,20 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     allowedColors: [STANDARD_COLORS[0], STANDARD_COLORS[1]],
   },
   {
-    id: 'New Volume 2D',
+    id: 'Volume 2D',
     code: 'NEW_VOLUME',
-    name: 'New Volume 2D (Nhung Đen Đan Đôi)',
-    shortLabel: 'New Volume 2D',
+    name: 'Volume 2D (Nhung Đen Đan Đôi)',
+    shortLabel: 'Volume 2D',
     badge: '2D TỰ NHIÊN · 390K+',
     priceRange: '390.000đ – 880.000đ',
     summary: 'Sợi Nhung Đen lì đan đôi 2D giúp chân mi đen rõ nét như kẻ eyeliner nhẹ nhàng.',
-    constraintReason: 'Dòng New Volume 2D mở 4 thiết kế, sử dụng 4 độ cong J, B, C, D và độ dày 0.07mm – 0.12mm.',
+    constraintReason: 'Dòng Volume 2D mở 4 thiết kế, sử dụng 4 độ cong J, B, C, D và độ dày 0.07mm – 0.12mm.',
     allowedDesigns: ['Natural', 'Doll', 'Wing', 'Kim - K'],
     defaultDesign: 'Wing',
     lockedDesignReasons: {},
     allowedCurls: ['J', 'B', 'C', 'D'],
     defaultCurl: 'C',
-    lockedCurlReason: 'New Volume 2D chỉ sử dụng 4 độ cong J, B, C, D',
+    lockedCurlReason: 'Volume 2D chỉ sử dụng 4 độ cong J, B, C, D',
     allowedThicknesses: ['0.07 mm', '0.10 mm', '0.12 mm'],
     defaultThickness: '0.10 mm',
     lockedThicknessReason: 'Kỹ thuật 2D dùng sợi 0.07mm – 0.12mm để giữ độ tơi và không quá nặng',
@@ -157,10 +157,10 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     allowedColors: STANDARD_COLORS,
   },
   {
-    id: 'New Classic 1D',
+    id: 'Classic 1D',
     code: 'NEW_CLASSIC',
-    name: 'New Classic 1D (Sợi Đơn Truyền Thống)',
-    shortLabel: 'New Classic 1D',
+    name: 'Classic 1D (Sợi Đơn Truyền Thống)',
+    shortLabel: 'Classic 1D',
     badge: '1D CỔ ĐIỂN · 390K+',
     priceRange: '390.000đ – 880.000đ',
     summary: 'Nối 1 sợi mi giả trên 1 sợi mi thật, tạo hiệu ứng rõ từng sợi như chuốt mascara.',
@@ -169,11 +169,11 @@ export const DEFAULT_LASH_MATERIAL_CATALOG: LashMaterialSpec[] = [
     allowedDesigns: ['Natural', 'Doll', 'Wing'],
     defaultDesign: 'Doll',
     lockedDesignReasons: {
-      'Kim - K': 'New Classic nối 1 sợi đơn đều nhau, không chập trụ Katun Kim-K',
+      'Kim - K': 'Classic 1D nối 1 sợi đơn đều nhau, không chập trụ Katun Kim-K',
     },
     allowedCurls: ['J', 'B', 'C', 'D'],
     defaultCurl: 'C',
-    lockedCurlReason: 'New Classic 1D chỉ sử dụng 4 độ cong J, B, C, D',
+    lockedCurlReason: 'Classic 1D chỉ sử dụng 4 độ cong J, B, C, D',
     allowedThicknesses: ['0.10 mm', '0.12 mm', '0.15 mm'],
     defaultThickness: '0.10 mm',
     lockedThicknessReason: 'Đi 1 sợi đơn (1D) chỉ dùng độ dày 0.10mm, 0.12mm hoặc 0.15mm để lên rõ dáng mi',
@@ -231,6 +231,52 @@ export const LASH_MATERIAL_CATALOG: LashMaterialSpec[] = DEFAULT_LASH_MATERIAL_C
 export const MATERIAL_MATRIX_STORAGE_KEY = 'mos_lash_material_constraint_matrix_v8';
 export const MATERIAL_MATRIX_UPDATED_EVENT = 'mos-lash-material-catalog-updated';
 
+function stripNewMaterialLabel(text: string): string {
+  return text
+    .replace(
+      /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+      ''
+    )
+    .trim();
+}
+
+function normalizeMaterialCatalogItem(spec: LashMaterialSpec): { item: LashMaterialSpec; changed: boolean } {
+  let nextId = stripNewMaterialLabel(spec.id);
+  if (/^Classic$/i.test(nextId)) nextId = 'Classic 1D';
+  const nextName = stripNewMaterialLabel(spec.name);
+  const nextShortLabel = stripNewMaterialLabel(spec.shortLabel);
+  const nextConstraintReason = stripNewMaterialLabel(spec.constraintReason);
+  const nextLockedCurlReason = stripNewMaterialLabel(spec.lockedCurlReason);
+  const nextLockedDesignReasons: Record<string, string> = {};
+  let reasonsChanged = false;
+  for (const [k, v] of Object.entries(spec.lockedDesignReasons || {})) {
+    const cleaned = stripNewMaterialLabel(String(v || ''));
+    if (cleaned !== v) reasonsChanged = true;
+    nextLockedDesignReasons[k] = cleaned;
+  }
+  const changed =
+    nextId !== spec.id ||
+    nextName !== spec.name ||
+    nextShortLabel !== spec.shortLabel ||
+    nextConstraintReason !== spec.constraintReason ||
+    nextLockedCurlReason !== spec.lockedCurlReason ||
+    reasonsChanged;
+  return {
+    changed,
+    item: changed
+      ? {
+          ...spec,
+          id: nextId,
+          name: nextName,
+          shortLabel: nextShortLabel,
+          constraintReason: nextConstraintReason,
+          lockedCurlReason: nextLockedCurlReason,
+          lockedDesignReasons: nextLockedDesignReasons,
+        }
+      : spec,
+  };
+}
+
 /**
  * Load material constraint catalog from localStorage (if customized by Danny) or fall back to DEFAULT_LASH_MATERIAL_CATALOG
  */
@@ -243,7 +289,20 @@ export function loadMaterialCatalog(): LashMaterialSpec[] {
     if (!raw) return DEFAULT_LASH_MATERIAL_CATALOG;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+      let anyChanged = false;
+      const normalized = parsed.map((entry: LashMaterialSpec) => {
+        const res = normalizeMaterialCatalogItem(entry);
+        if (res.changed) anyChanged = true;
+        return res.item;
+      });
+      if (anyChanged) {
+        try {
+          window.localStorage.setItem(MATERIAL_MATRIX_STORAGE_KEY, JSON.stringify(normalized));
+        } catch {
+          // ignore storage quota errors
+        }
+      }
+      return normalized;
     }
   } catch {
     // ignore parse error
@@ -287,10 +346,10 @@ export function resolveMaterialSpec(
   catalog: LashMaterialSpec[] = DEFAULT_LASH_MATERIAL_CATALOG
 ): LashMaterialSpec {
   const list = catalog.length > 0 ? catalog : DEFAULT_LASH_MATERIAL_CATALOG;
+  const rawInput = (materialOrServiceName || '').trim().toLowerCase();
+  const strippedInput = rawInput.replace(/\b(?:new\s+)+/gi, '').trim();
   const exact = list.find(
-    (m) =>
-      m.id.toLowerCase() === (materialOrServiceName || '').trim().toLowerCase() ||
-      m.code.toLowerCase() === (materialOrServiceName || '').trim().toLowerCase()
+    (m) => m.id.toLowerCase() === rawInput || m.id.toLowerCase() === strippedInput || m.code.toLowerCase() === rawInput
   );
   if (exact) return exact;
 

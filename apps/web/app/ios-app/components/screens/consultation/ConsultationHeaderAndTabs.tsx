@@ -131,9 +131,7 @@ export function ConsultationHeaderAndTabs({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 truncate">
-            <span className={`text-[14px] font-bold truncate ${isDark ? 'text-white' : 'text-black'}`}>
-              {customerName}
-            </span>
+            <span className={`text-[14px] font-bold truncate text-[var(--mos-text)]`}>{customerName}</span>
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold tabular-nums ${
                 isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-neutral-100 text-gray-700'
@@ -155,7 +153,7 @@ export function ConsultationHeaderAndTabs({
               {isNewClient ? 'KHÁCH MỚI' : `LẦN ${booking?.customerVisits || 2}`}
             </span>
           </div>
-          <div className={`text-[11.5px] mt-0.5 font-medium truncate ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+          <div className={`text-[11.5px] mt-0.5 font-medium truncate text-[var(--mos-text-muted)]`}>
             Dịch vụ:{' '}
             <strong className={isDark ? 'text-white' : 'text-black'}>
               {serviceName.toLowerCase().includes('any') ? 'Chưa chọn mẫu mi' : serviceName}
@@ -284,9 +282,9 @@ export function ConsultationHeaderAndTabs({
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <Eye className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-            <span className={`font-medium shrink-0 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Mi Thật:</span>
+            <span className={`font-medium shrink-0 text-[var(--mos-text-muted)]`}>Mi Thật:</span>
             {isNaturalLashComplete ? (
-              <strong className={`font-extrabold truncate tabular-nums ${isDark ? 'text-white' : 'text-black'}`}>
+              <strong className={`font-extrabold truncate tabular-nums text-[var(--mos-text)]`}>
                 {naturalCountLabel} sợi · {naturalLengthLabel}mm · {naturalThicknessLabel}mm
               </strong>
             ) : (

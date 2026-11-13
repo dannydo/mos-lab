@@ -122,15 +122,11 @@ export function Screen05ServicingTransfer({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className={`text-[15px] font-bold ${isDark ? 'text-white' : 'text-black'} truncate`}>
-                      {rowName}
-                    </span>
+                    <span className={`text-[15px] font-bold text-[var(--mos-text)] truncate`}>{rowName}</span>
                     <span className="text-[13px] font-bold text-[#FF3B30] tabular-nums">{rowTime}</span>
                   </div>
                   {rowPhone && (
-                    <div
-                      className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-gray-500'} font-normal tabular-nums`}
-                    >
+                    <div className={`text-[12px] text-[var(--mos-text-muted)] font-normal tabular-nums`}>
                       {rowPhone}
                     </div>
                   )}

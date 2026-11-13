@@ -26,9 +26,24 @@ import {
   resolveStaffAvatar,
 } from './ios-bookings-formatters.js';
 
+function stripNewLashLabel(value: string): string {
+  return value
+    .replace(
+      /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+      ''
+    )
+    .trim();
+}
+
+function normalizeLashMaterialLabel(value?: string): string | undefined {
+  if (!value) return value;
+  const cleaned = stripNewLashLabel(value);
+  return /^Classic$/i.test(cleaned) ? 'Classic 1D' : cleaned;
+}
+
 function buildCanonicalServiceNameFromSpecs(specs?: LastVisitSpecSummary, visits = 0): string {
   if (!specs?.material) {
-    return visits > 1 ? 'New HyperLight 4X 770' : 'Chưa chọn mẫu mi (Tư vấn)';
+    return visits > 1 ? 'HyperLight 4X 770' : 'Chưa chọn mẫu mi (Tư vấn)';
   }
   const matched = matchComboCategoryAndVolumeFromBooking({
     material: specs.material,
@@ -40,18 +55,18 @@ function buildCanonicalServiceNameFromSpecs(specs?: LastVisitSpecSummary, visits
   switch (matched.categoryId) {
     case 'Classic_1D':
     case 'Classic_Volume':
-      return `New Classic 1D ${sku}`;
+      return `Classic 1D ${sku}`;
     case 'Volume_2D':
-      return `New Volume 2D ${sku}`;
+      return `Volume 2D ${sku}`;
     case 'Volume_3D':
       return `Volume 3D ${sku}`;
     case 'FlawlessMink':
-      return `New Flawless Mink ${sku}`;
+      return `Flawless Mink ${sku}`;
     case 'HyperLight_2X':
     case 'HyperLight_3X':
     case 'HyperLight_4X':
     case 'HyperLight_5X':
-      return `New HyperLight ${matched.categoryId.split('_')[1]} ${sku}`;
+      return `HyperLight ${matched.categoryId.split('_')[1]} ${sku}`;
     case 'IvyLight_3L':
     case 'IvyLight_4L':
     case 'IvyLight_5L':
@@ -61,7 +76,7 @@ function buildCanonicalServiceNameFromSpecs(specs?: LastVisitSpecSummary, visits
     case 'UltraLight_5D':
       return `UltraLight ${matched.categoryId.split('_')[1]} ${sku}`;
     default:
-      return visits > 1 ? `New HyperLight 4X ${sku}` : 'Chưa chọn mẫu mi (Tư vấn)';
+      return visits > 1 ? `HyperLight 4X ${sku}` : 'Chưa chọn mẫu mi (Tư vấn)';
   }
 }
 
@@ -253,6 +268,7 @@ export function mapLiveOrdersToBookings(params: {
       if (!effectiveServiceName) {
         effectiveServiceName = buildCanonicalServiceNameFromSpecs(lastSpecs, visits);
       }
+      effectiveServiceName = stripNewLashLabel(effectiveServiceName);
       const resolvedStoreId = Number(r.client_store_id) || storeId;
       const bookingDdMmYyyy = (() => {
         if (!r.booking_date_start) return '';
@@ -332,7 +348,12 @@ export function mapLiveOrdersToBookings(params: {
         selectedUnderCombo,
         comboRedemption,
         attributes: hydrateSavedNaturalLashAttributes(
-          override.attributes ||
+          (override.attributes
+            ? {
+                ...override.attributes,
+                material: normalizeLashMaterialLabel(override.attributes.material) || override.attributes.material,
+              }
+            : null) ||
             (() => {
               const isFirstVisitClient = effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship);
               const savedProfile = customerNaturalLashMap[String(customerId)];
@@ -347,7 +368,7 @@ export function mapLiveOrdersToBookings(params: {
               const catId = matchedSpec.categoryId;
               const defaultMat =
                 catId === 'Classic_1D' || catId === 'Classic_Volume'
-                  ? 'New Classic'
+                  ? 'Classic 1D'
                   : catId === 'Volume_2D' || catId === 'Volume_3D'
                     ? 'Volume'
                     : catId.startsWith('HyperLight')
@@ -358,7 +379,7 @@ export function mapLiveOrdersToBookings(params: {
                           ? 'UltraLight'
                           : 'Flawless Mink';
               const defaultVol =
-                defaultMat === 'New Classic' || defaultMat === 'Flawless Mink'
+                defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
                   ? '1D'
                   : catId === 'Volume_3D'
                     ? '3D'
@@ -368,13 +389,13 @@ export function mapLiveOrdersToBookings(params: {
                         ? catId.split('_')[1]
                         : '4X';
               const unit =
-                defaultMat === 'New Classic' || defaultMat === 'Flawless Mink'
+                defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
                   ? 'sợi'
                   : defaultMat === 'Ivylight'
                     ? 'nhịp'
                     : 'fan';
               const fallbackCountPerEye =
-                defaultMat === 'New Classic' || defaultMat === 'Ivylight'
+                defaultMat === 'Classic 1D' || defaultMat === 'Ivylight'
                   ? 90
                   : defaultMat === 'Flawless Mink'
                     ? 60
@@ -386,10 +407,11 @@ export function mapLiveOrdersToBookings(params: {
                   ? matchedSpec.volumeMeta.countPerEye
                   : fallbackCountPerEye;
               const defaultCount = `${resolvedCountPerEye} ${unit}`;
-              const canInheritLastSpecs = isRawOrderPlaceholder || lastSpecs?.material === defaultMat;
+              const normalizedLastMaterial = normalizeLashMaterialLabel(lastSpecs?.material);
+              const canInheritLastSpecs = isRawOrderPlaceholder || normalizedLastMaterial === defaultMat;
 
               return {
-                material: canInheritLastSpecs ? lastSpecs?.material || defaultMat : defaultMat,
+                material: canInheritLastSpecs ? normalizedLastMaterial || defaultMat : defaultMat,
                 style: lastSpecs?.style || 'Natural',
                 volume: canInheritLastSpecs ? lastSpecs?.volume || defaultVol : defaultVol,
                 count: canInheritLastSpecs ? lastSpecs?.count || defaultCount : defaultCount,
@@ -524,7 +546,7 @@ export function buildDemoModeBookings(params: {
       branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
       branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
       status,
-      serviceName: override.serviceName || mock.serviceName,
+      serviceName: stripNewLashLabel(override.serviceName || mock.serviceName),
       serviceType: override.serviceType || mock.serviceType,
       servicePrice,
       assignedStaffId,
@@ -542,7 +564,15 @@ export function buildDemoModeBookings(params: {
       selectedUnderCombo,
       comboRedemption,
       attributes: hydrateSavedNaturalLashAttributes(
-        (override.attributes || mock.attributes) as IosBookingItem['attributes'],
+        (() => {
+          const baseAttr = (override.attributes || mock.attributes) as IosBookingItem['attributes'];
+          return baseAttr
+            ? {
+                ...baseAttr,
+                material: normalizeLashMaterialLabel(baseAttr.material) || baseAttr.material,
+              }
+            : baseAttr;
+        })(),
         customerNaturalLashMap[String(mock.customerId)]
       ),
       progress:

@@ -12,6 +12,12 @@ import {
   resolveEffectiveAssignedStaffId,
   createRouteHelpers,
   buildSearchCondition,
+  resolveOrderCountsFilter,
+  LIVE_COMBO_NOT_EXISTS_SQL,
+  ACTIVE_ELSA_NOT_EXISTS_SQL,
+  subtractExcludedUserIds,
+  buildUserScopeWhereClauses,
+  buildNotComboLiveWhereClauses,
 } from './helpers.js';
 import { daysSinceVisit } from '../../projections/customer-visit-projection.service.js';
 
@@ -161,7 +167,6 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       const needSpentFilter =
         (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
-      const needSpent = needSpentFilter || sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc';
 
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
@@ -183,12 +188,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         (referralCountMin !== undefined && referralCountMin !== '') ||
         (referralCountMax !== undefined && referralCountMax !== '');
 
-      const needOrderCounts = needSpent || needVisits;
-
       // Pre-compute allowedUserIds before constructing innerJoins to push down predicates
       let allowedUserIds: number[] | null = null;
       let excludedUserIds: number[] | null = null;
-      let excludedNotComboLiveIds: number[] | null = null;
+      let notComboLiveExcludedInMemory = false;
       // A NEW_LOCA request needs this set both while narrowing pre-filters and while
       // building the final SQL predicate. Resolve it once to avoid repeating its UNION query.
       let newLocaUserIdsForRequest: number[] | null = null;
@@ -349,6 +352,40 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         };
       }
 
+      // Narrow by spend/visits before bucket resolution so bucket queries scan only matching IDs.
+      if (needSpentFilter || needVisits) {
+        const orderCountsRes = await resolveOrderCountsFilter(
+          fastify,
+          { totalSpentMin, totalSpentMax, totalVisitsMin, totalVisitsMax },
+          allowedUserIds,
+          excludedUserIds
+        );
+        if (orderCountsRes.isEmpty) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        allowedUserIds = subtractExcludedUserIds(orderCountsRes.allowedUserIds, orderCountsRes.excludedUserIds);
+        excludedUserIds = orderCountsRes.excludedUserIds;
+        if (allowedUserIds !== null && allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+      }
+
       if (bucket === 'NEW_LOCA') {
         const newLocaUserIds = await resolveNewLocaUserIds();
         if (newLocaUserIds.length === 0) {
@@ -388,9 +425,11 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
              WHERE (normal_count + retain_count) > 0
                AND (service_group IS NULL OR service_group != 'LashesUnder')
                AND (date_expired IS NULL OR date_expired > NOW())
-               AND user_id NOT IN (
-                 SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-                 WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+               AND NOT EXISTS (
+                 SELECT 1 FROM mos_lab.crm_customer_elsa_reservations elsa_res
+                 WHERE elsa_res.legacy_user_id = user_service_balance.user_id
+                   AND elsa_res.status = 'ACTIVE'
+                   AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())
                )
                ${usbScopeFilter}`
           )
@@ -466,9 +505,8 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         } else {
           allowedUserIds = elsaUserIds;
         }
-      } else if (bucket === 'NOT_COMBO_LIVE') {
-        const usbScopeFilter =
-          allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : '';
+      } else if (bucket === 'NOT_COMBO_LIVE' && allowedUserIds !== null) {
+        const scopedList = allowedUserIds.join(',');
         const [comboLiveRows, elsaRows] = await Promise.all([
           fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
             `SELECT DISTINCT user_id
@@ -476,12 +514,14 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
              WHERE (normal_count > 0 OR retain_count > 0)
                AND (service_group IS NULL OR service_group != 'LashesUnder')
                AND (date_expired IS NULL OR date_expired > NOW())
-               ${usbScopeFilter}`
+               AND user_id IN (${scopedList})`
           ),
           fastify.prisma.crm.$queryRawUnsafe<{ legacy_user_id: number }[]>(
             `SELECT DISTINCT legacy_user_id
              FROM crm_customer_elsa_reservations
-             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())`
+             WHERE status = 'ACTIVE'
+               AND (end_date IS NULL OR end_date >= NOW())
+               AND legacy_user_id IN (${scopedList})`
           ),
         ]);
         const excludedUserIdsSet = new Set([
@@ -489,21 +529,18 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           ...elsaRows.map((r) => Number(r.legacy_user_id)),
         ]);
 
-        if (allowedUserIds !== null) {
-          allowedUserIds = allowedUserIds.filter((id) => !excludedUserIdsSet.has(id));
-          if (allowedUserIds.length === 0) {
-            return {
-              data: [],
-              pagination: {
-                total: 0,
-                page: pageNum,
-                limit: limitNum,
-                pages: 0,
-              },
-            };
-          }
-        } else {
-          excludedNotComboLiveIds = Array.from(excludedUserIdsSet);
+        allowedUserIds = allowedUserIds.filter((id) => !excludedUserIdsSet.has(id));
+        notComboLiveExcludedInMemory = true;
+        if (allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
         }
       }
 
@@ -592,11 +629,13 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       }
 
       if (hasFutureBooking === 'true') {
+        const bookedScopeFilter =
+          allowedUserIds !== null && allowedUserIds.length > 0 ? ` AND user_id IN (${allowedUserIds.join(',')})` : '';
         const bookedUserIds = (
           await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
             `SELECT DISTINCT user_id
              FROM \`order\`
-             WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')`
+             WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')${bookedScopeFilter}`
           )
         ).map((r) => Number(r.user_id));
 
@@ -612,7 +651,8 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           };
         }
         if (allowedUserIds !== null) {
-          allowedUserIds = allowedUserIds.filter((id) => bookedUserIds.includes(id));
+          const bookedSet = new Set(bookedUserIds);
+          allowedUserIds = allowedUserIds.filter((id) => bookedSet.has(id));
         } else {
           allowedUserIds = bookedUserIds;
         }
@@ -627,17 +667,31 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             },
           };
         }
-      } else if (hasFutureBooking === 'false') {
+      } else if (hasFutureBooking === 'false' && allowedUserIds !== null && allowedUserIds.length > 0) {
         const bookedUserIds = (
           await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
             `SELECT DISTINCT user_id
              FROM \`order\`
-             WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')`
+             WHERE booking_date_start > NOW()
+               AND order_state IN ('New', 'Confirmed')
+               AND user_id IN (${allowedUserIds.join(',')})`
           )
         ).map((r) => Number(r.user_id));
 
-        if (bookedUserIds.length > 0 && allowedUserIds !== null) {
-          allowedUserIds = allowedUserIds.filter((id) => !bookedUserIds.includes(id));
+        if (bookedUserIds.length > 0) {
+          const bookedSet = new Set(bookedUserIds);
+          allowedUserIds = allowedUserIds.filter((id) => !bookedSet.has(id));
+          if (allowedUserIds.length === 0) {
+            return {
+              data: [],
+              pagination: {
+                total: 0,
+                page: pageNum,
+                limit: limitNum,
+                pages: 0,
+              },
+            };
+          }
         }
       }
 
@@ -689,7 +743,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerJoins += usbJoinSql;
         countJoins += usbJoinSql;
       }
-      if (needOrderCounts) {
+      if (sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc') {
         const orderCountsJoinSql = ` LEFT JOIN (
           SELECT 
             user_id, 
@@ -701,9 +755,6 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         ) as order_counts ON u.id = order_counts.user_id`;
 
         innerJoins += orderCountsJoinSql;
-        if (needSpentFilter || needVisits) {
-          countJoins += orderCountsJoinSql;
-        }
       }
       if (needServiceUsage) {
         const serviceUsageJoinSql = buildCompletedServiceUsageJoin(selectedServiceIds);
@@ -782,28 +833,20 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
       }
 
-      if (allowedUserIds !== null && excludedUserIds !== null && excludedUserIds.length > 0) {
-        const exSet = new Set(excludedUserIds);
-        allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
-        if (allowedUserIds.length === 0) {
-          return {
-            data: [],
-            pagination: {
-              total: 0,
-              page: pageNum,
-              limit: limitNum,
-              pages: 0,
-            },
-          };
-        }
+      allowedUserIds = subtractExcludedUserIds(allowedUserIds, excludedUserIds);
+      if (allowedUserIds !== null && allowedUserIds.length === 0) {
+        return {
+          data: [],
+          pagination: {
+            total: 0,
+            page: pageNum,
+            limit: limitNum,
+            pages: 0,
+          },
+        };
       }
 
-      if (allowedUserIds !== null) {
-        innerWhereClauses.push(`u.id IN (${allowedUserIds.join(',')})`);
-      }
-      if (excludedUserIds !== null && excludedUserIds.length > 0) {
-        innerWhereClauses.push(`u.id NOT IN (${excludedUserIds.join(',')})`);
-      }
+      innerWhereClauses.push(...buildUserScopeWhereClauses(allowedUserIds, excludedUserIds));
 
       const foreignFilterSql = getForeignSqlFilter(isForeign);
       if (foreignFilterSql) {
@@ -819,60 +862,32 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       // 2. Filter by Bucket (Optimized using indexed lookups and fast excluded IDs)
       const bStr = bucket as string;
+      const hasDaysSinceLastVisitFilter =
+        (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') ||
+        (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '');
       if (bStr && bStr !== 'ALL') {
         if (bStr === 'SINGLE') {
-          innerWhereClauses.push('NOT EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)');
-          innerWhereClauses.push(`u.id NOT IN (
-            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-          )`);
+          innerWhereClauses.push(
+            'NOT EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)',
+            ACTIVE_ELSA_NOT_EXISTS_SQL
+          );
         } else if (bStr === 'COMBO_LIVE') {
           if (needServiceBalance) {
-            innerWhereClauses.push('usb_agg.live_count > 0');
-            innerWhereClauses.push(`u.id NOT IN (
-              SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-              WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-            )`);
+            innerWhereClauses.push('usb_agg.live_count > 0', ACTIVE_ELSA_NOT_EXISTS_SQL);
           }
         } else if (bStr === 'COMBO_DEAD') {
-          innerWhereClauses.push('EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)');
-          if (excludedNotComboLiveIds && excludedNotComboLiveIds.length > 0) {
-            innerWhereClauses.push(`u.id NOT IN (${excludedNotComboLiveIds.join(',')})`);
-          } else {
-            innerWhereClauses.push(`u.id NOT IN (
-              SELECT DISTINCT user_id FROM user_service_balance
-              WHERE (normal_count > 0 OR retain_count > 0)
-                AND (service_group IS NULL OR service_group != 'LashesUnder')
-                AND (date_expired IS NULL OR date_expired > NOW())
-            )`);
-            innerWhereClauses.push(`u.id NOT IN (
-              SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-              WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-            )`);
-          }
+          innerWhereClauses.push(
+            'EXISTS (SELECT 1 FROM user_service_balance usb WHERE usb.user_id = u.id)',
+            LIVE_COMBO_NOT_EXISTS_SQL,
+            ACTIVE_ELSA_NOT_EXISTS_SQL
+          );
         } else if (bStr === 'NOT_COMBO_LIVE') {
-          if (excludedNotComboLiveIds && excludedNotComboLiveIds.length > 0) {
-            innerWhereClauses.push(`u.id NOT IN (${excludedNotComboLiveIds.join(',')})`);
-          } else {
-            innerWhereClauses.push(`u.id NOT IN (
-              SELECT DISTINCT user_id FROM user_service_balance
-              WHERE (normal_count > 0 OR retain_count > 0)
-                AND (service_group IS NULL OR service_group != 'LashesUnder')
-                AND (date_expired IS NULL OR date_expired > NOW())
-            )`);
-            innerWhereClauses.push(`u.id NOT IN (
-              SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-              WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-            )`);
-          }
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM user_contact uc_v
-            WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
-          )`);
-          innerWhereClauses.push(`EXISTS (
-            SELECT 1 FROM \`order\` o_v
-            WHERE o_v.user_id = u.id
-          )`);
+          innerWhereClauses.push(
+            ...buildNotComboLiveWhereClauses({
+              liveExcludedInMemory: notComboLiveExcludedInMemory,
+              hasDaysSinceLastVisitFilter,
+            })
+          );
         } else if (bStr === 'COMBO_ELSA') {
           innerWhereClauses.push(`u.id IN (
             SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
@@ -911,25 +926,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         )`);
       }
 
-      // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
-      if (totalSpentMin !== undefined && totalSpentMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) >= ?');
-        innerParams.push(parseFloat(totalSpentMin));
-      }
-      if (totalSpentMax !== undefined && totalSpentMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) <= ?');
-        innerParams.push(parseFloat(totalSpentMax));
-      }
-
-      if (totalVisitsMin !== undefined && totalVisitsMin !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) >= ?');
-        innerParams.push(parseInt(totalVisitsMin, 10));
-      }
-      if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
-        innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
-        innerParams.push(parseInt(totalVisitsMax, 10));
-      }
-
+      // 4. Service usage filters (totalSpent & totalVisits already resolved via standalone query)
       if (selectedServiceIds.length > 0) {
         innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= 1');
       }
@@ -1116,13 +1113,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       // Sorting
       let innerOrderBy = 'ORDER BY u.id DESC';
-      let outerOrderBy = 'ORDER BY id DESC';
       if (sortParam === 'assignedAt_desc') {
         innerOrderBy = 'ORDER BY assignment_sort.assigned_at DESC, u.id DESC';
-        outerOrderBy = 'ORDER BY assignmentSortAt DESC, id DESC';
       } else if (sortParam === 'assignedAt_asc') {
         innerOrderBy = 'ORDER BY assignment_sort.assigned_at ASC, u.id ASC';
-        outerOrderBy = 'ORDER BY assignmentSortAt ASC, id ASC';
       } else if (
         sortParam === 'purchaseDate_desc' ||
         sortParam === 'comboPurchaseDate_desc' ||
@@ -1130,45 +1124,33 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           (sortParam === 'daysSinceLastVisit_desc' || sortParam === 'daysSinceLastVisit' || !sortParam))
       ) {
         innerOrderBy = 'ORDER BY COALESCE(combo_dates.latest_combo_date, u.date_created) DESC';
-        outerOrderBy = '';
       } else if (sortParam === 'purchaseDate_asc' || sortParam === 'comboPurchaseDate_asc') {
         innerOrderBy = 'ORDER BY COALESCE(combo_dates.latest_combo_date, u.date_created) ASC';
-        outerOrderBy = '';
       } else if (
         hasFutureBooking === 'true' &&
         (sortParam === 'daysSinceLastVisit_asc' || sortParam === 'daysSinceLastVisit_desc')
       ) {
         if (sortParam === 'daysSinceLastVisit_desc') {
           innerOrderBy = 'ORDER BY fb_agg.nextBookingDate DESC';
-          outerOrderBy = 'ORDER BY fb_agg.nextBookingDate DESC';
         } else {
           innerOrderBy = 'ORDER BY fb_agg.nextBookingDate ASC';
-          outerOrderBy = 'ORDER BY fb_agg.nextBookingDate ASC';
         }
       } else if (sortParam === 'daysSinceLastVisit_desc') {
         innerOrderBy = 'ORDER BY up.last_order_booking ASC';
-        outerOrderBy = 'ORDER BY daysSinceLastVisit DESC';
       } else if (sortParam === 'daysSinceLastVisit_asc') {
         innerOrderBy = 'ORDER BY up.last_order_booking DESC';
-        outerOrderBy = 'ORDER BY daysSinceLastVisit ASC';
       } else if (sortParam === 'id_asc') {
         innerOrderBy = 'ORDER BY u.id ASC';
-        outerOrderBy = 'ORDER BY id ASC';
       } else if (sortParam === 'id_desc') {
         innerOrderBy = 'ORDER BY u.id DESC';
-        outerOrderBy = 'ORDER BY id DESC';
       } else if (sortParam === 'totalSpent_desc') {
-        innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) DESC';
-        outerOrderBy = 'ORDER BY totalSpent DESC';
+        innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) DESC, u.id DESC';
       } else if (sortParam === 'totalSpent_asc') {
-        innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) ASC';
-        outerOrderBy = 'ORDER BY totalSpent ASC';
+        innerOrderBy = 'ORDER BY COALESCE(order_counts.totalSpent, 0) ASC, u.id ASC';
       } else if (sortParam === 'name_asc') {
         innerOrderBy = 'ORDER BY up.full_name ASC';
-        outerOrderBy = 'ORDER BY name ASC';
       } else if (sortParam === 'name_desc') {
         innerOrderBy = 'ORDER BY up.full_name DESC';
-        outerOrderBy = 'ORDER BY name DESC';
       }
 
       const innerQuerySql = `
@@ -1179,73 +1161,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         ${innerOrderBy}
       `;
 
-      // The total-spent sort must preserve its aggregate in the outer query: SQL may
-      // otherwise discard the derived page ordering. All other display-only metrics
-      // are hydrated below from the page IDs, rather than grouping their full tables
-      // on every paginated request.
-      const requiresOuterOrderCounts = sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc';
-      const outerOrderCountsSelect = requiresOuterOrderCounts
-        ? `COALESCE(order_counts.totalSpent, 0) as totalSpent,
-          COALESCE(order_counts.totalVisits, 0) as totalVisits,`
-        : `0 as totalSpent,
-          0 as totalVisits,`;
-      const outerOrderCountsJoin = requiresOuterOrderCounts
-        ? `LEFT JOIN (
-          SELECT
-            user_id,
-            COALESCE(SUM(total_price), 0) as totalSpent,
-            COUNT(*) as totalVisits
-          FROM \`order\`
-          WHERE order_state = 'Completed'
-          GROUP BY user_id
-        ) as order_counts ON u.id = order_counts.user_id`
-        : '';
-      const outerAssignmentSortSelect = needsAssignmentTimeSort
-        ? 'assignment_sort.assigned_at as assignmentSortAt,'
-        : 'NULL as assignmentSortAt,';
-      const outerAssignmentSortJoin = needsAssignmentTimeSort
-        ? 'LEFT JOIN mos_lab.crm_customer_assignments assignment_sort ON assignment_sort.legacy_user_id = u.id'
-        : '';
+      // 4. Main Query: fetch ordered page IDs + total count first, then hydrate the <= limitNum
+      // rows directly by primary key so MariaDB/MySQL never re-joins full-table aggregates.
+      const pageIdsSql = `${innerQuerySql}\n        LIMIT ? OFFSET ?`;
 
-      // 4. Main Query (deferred pagination; page-scoped metrics are hydrated below)
-      const querySql = `
-        SELECT 
-          u.id, 
-          COALESCE(up.full_name, 'No Name') as name, 
-          up.avatar as avatar, 
-          up.is_foreign as isForeign,
-          up.is_foreign_overridden as isForeignOverridden,
-          (
-            SELECT COALESCE(MAX(uc.phone_number), '') 
-            FROM user_contact uc 
-            WHERE uc.user_id = u.id AND uc.is_disabled = 0
-          ) as phone, 
-          u.email,
-          u.gender,
-          u.date_of_birth as dob,
-          TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) as age,
-          up.last_order_booking as lastVisit,
-          DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
-          ${outerAssignmentSortSelect}
-          ${outerOrderCountsSelect}
-          0 as totalPromotionsUsed,
-          0 as totalReferrals,
-          'SINGLE' as bucket,
-          0 as normalCount,
-          0 as retainCount,
-          NULL as expiryDate
-        FROM (
-          ${innerQuerySql}
-          LIMIT ? OFFSET ?
-        ) as p
-        JOIN user u ON u.id = p.id
-        LEFT JOIN user_profile up ON u.id = up.user_id
-        ${outerAssignmentSortJoin}
-        ${outerOrderCountsJoin}
-        ${outerOrderBy}
-      `;
-
-      // Count Query for Pagination using subquery (without expensive inner ORDER BY)
       const countSql = `
         SELECT COUNT(*) as total FROM (
           SELECT u.id
@@ -1255,16 +1174,57 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         ) as p
       `;
 
-      // Add LIMIT and OFFSET parameters
       const dataParams = [...innerParams, limitNum, offsetNum];
       const countParams = [...innerParams];
 
-      const [dataResult, countResult] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(querySql, ...dataParams),
+      const [pageIdRows, countResult] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<Array<{ id: number | bigint }>>(pageIdsSql, ...dataParams),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams),
       ]);
 
       const total = Number(countResult[0]?.total || 0);
+      const pageIds = pageIdRows.map((row) => Number(row.id));
+
+      const dataResult =
+        pageIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT
+                u.id,
+                COALESCE(up.full_name, 'No Name') as name,
+                up.avatar as avatar,
+                up.is_foreign as isForeign,
+                up.is_foreign_overridden as isForeignOverridden,
+                (
+                  SELECT COALESCE(MAX(uc.phone_number), '')
+                  FROM user_contact uc
+                  WHERE uc.user_id = u.id AND uc.is_disabled = 0
+                ) as phone,
+                u.email,
+                u.gender,
+                u.date_of_birth as dob,
+                TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) as age,
+                up.last_order_booking as lastVisit,
+                DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
+                0 as totalSpent,
+                0 as totalVisits,
+                0 as totalPromotionsUsed,
+                0 as totalReferrals,
+                'SINGLE' as bucket,
+                0 as normalCount,
+                0 as retainCount,
+                NULL as expiryDate
+              FROM user u
+              LEFT JOIN user_profile up ON u.id = up.user_id
+              WHERE u.id IN (${pageIds.join(',')})`
+            )
+          : [];
+
+      if (dataResult.length > 1) {
+        const pageOrderIndex = new Map(pageIds.map((id, idx) => [id, idx]));
+        dataResult.sort(
+          (a: SafeAny, b: SafeAny) => (pageOrderIndex.get(Number(a.id)) ?? 0) - (pageOrderIndex.get(Number(b.id)) ?? 0)
+        );
+      }
 
       const customerIds = dataResult.map((row: SafeAny) => Number(row.id));
       const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
