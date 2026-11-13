@@ -209,6 +209,66 @@ export const resolveOrderCountsFilter = async (
   };
 };
 
+export const LIVE_COMBO_NOT_EXISTS_SQL = `NOT EXISTS (
+  SELECT 1 FROM user_service_balance usb_live
+  WHERE usb_live.user_id = u.id
+    AND (usb_live.normal_count > 0 OR usb_live.retain_count > 0)
+    AND (usb_live.service_group IS NULL OR usb_live.service_group != 'LashesUnder')
+    AND (usb_live.date_expired IS NULL OR usb_live.date_expired > NOW())
+)`;
+
+export const ACTIVE_ELSA_NOT_EXISTS_SQL = `NOT EXISTS (
+  SELECT 1 FROM mos_lab.crm_customer_elsa_reservations elsa_res
+  WHERE elsa_res.legacy_user_id = u.id
+    AND elsa_res.status = 'ACTIVE'
+    AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())
+)`;
+
+export function subtractExcludedUserIds(
+  allowedUserIds: number[] | null,
+  excludedUserIds: number[] | null
+): number[] | null {
+  if (allowedUserIds === null || excludedUserIds === null || excludedUserIds.length === 0) {
+    return allowedUserIds;
+  }
+  const excludedSet = new Set(excludedUserIds);
+  return allowedUserIds.filter((id) => !excludedSet.has(id));
+}
+
+export function buildUserScopeWhereClauses(
+  allowedUserIds: number[] | null,
+  excludedUserIds: number[] | null
+): string[] {
+  if (allowedUserIds !== null) {
+    return allowedUserIds.length > 0 ? [`u.id IN (${allowedUserIds.join(',')})`] : ['1 = 0'];
+  }
+  if (excludedUserIds !== null && excludedUserIds.length > 0) {
+    return [`u.id NOT IN (${excludedUserIds.join(',')})`];
+  }
+  return [];
+}
+
+export function buildNotComboLiveWhereClauses(options: {
+  liveExcludedInMemory: boolean;
+  hasDaysSinceLastVisitFilter: boolean;
+}): string[] {
+  const clauses: string[] = [];
+  if (!options.liveExcludedInMemory) {
+    clauses.push(LIVE_COMBO_NOT_EXISTS_SQL, ACTIVE_ELSA_NOT_EXISTS_SQL);
+  }
+  clauses.push(`EXISTS (
+    SELECT 1 FROM user_contact uc_v
+    WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
+  )`);
+  if (!options.hasDaysSinceLastVisitFilter) {
+    clauses.push(`EXISTS (
+      SELECT 1 FROM \`order\` o_v
+      WHERE o_v.user_id = u.id
+    )`);
+  }
+  return clauses;
+}
+
 export interface SearchConditionResult {
   sql: string;
   params: string[];
