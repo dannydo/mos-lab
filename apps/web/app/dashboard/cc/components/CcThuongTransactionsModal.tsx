@@ -286,28 +286,32 @@ export default function CcThuongTransactionsModal({
       width: 170,
       render: (_: unknown, record: DailySalesBonusTransaction) => {
         const isSplit = record.is_split;
-        const ccIn = record.cc_in_name || 'CC IN';
-        const ccOut = record.cc_out_name || 'CC OUT';
+        const ccIn = record.cc_in_name;
+        const ccOut = record.cc_out_name;
 
         if (isSplit) {
+          const displayIn = ccIn || 'CC IN';
+          const displayOut = ccOut || 'CC OUT';
           return (
             <Tooltip
-              title={`Đơn hàng có CC In (${ccIn}) khác CC Out (${ccOut}). Doanh số được chia đôi 50/50 cho cả 2 CC.`}
+              title={`Đơn hàng có CC In (${displayIn}) khác CC Out (${displayOut}). Doanh số được chia đôi 50/50 cho cả 2 CC.`}
             >
               <div className="flex flex-col gap-0.5">
                 <Tag color="blue" className="m-0 text-[10px] font-bold w-fit py-0 px-1 border-blue-500/30">
                   ⚡ 50/50 Split
                 </Tag>
                 <div className="text-[11px] text-slate-300 font-medium truncate max-w-[150px]">
-                  <span className="text-amber-400 font-semibold">IN:</span> {ccIn}
+                  <span className="text-amber-400 font-semibold">IN:</span> {displayIn}
                 </div>
                 <div className="text-[11px] text-slate-400 truncate max-w-[150px]">
-                  <span className="text-purple-400 font-semibold">OUT:</span> {ccOut}
+                  <span className="text-purple-400 font-semibold">OUT:</span> {displayOut}
                 </div>
               </div>
             </Tooltip>
           );
         }
+
+        const staffName = ccIn || ccOut || consultantName || 'Tư vấn viên';
 
         return (
           <div className="flex flex-col gap-0.5">
@@ -318,7 +322,7 @@ export default function CcThuongTransactionsModal({
               100% CC
             </Tag>
             <div className="text-xs text-slate-300 font-medium truncate max-w-[150px]">
-              {ccIn || ccOut || consultantName || 'Tư vấn viên'}
+              {staffName}
             </div>
           </div>
         );

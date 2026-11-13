@@ -1,11 +1,19 @@
-import { defineConfig, globalIgnores } from 'eslint/config';
+import { defineConfig } from 'eslint/config';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 
 const eslintConfig = defineConfig([
+  {
+    ignores: ['*.config.mjs', '.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'public/**/*.js'],
+  },
   ...nextVitals,
   ...nextTs,
   {
+    settings: {
+      react: {
+        version: '19.0.0',
+      },
+    },
     rules: {
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/immutability': 'off',
@@ -18,7 +26,6 @@ const eslintConfig = defineConfig([
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'public/**/*.js']),
 ]);
 
 export default eslintConfig;
