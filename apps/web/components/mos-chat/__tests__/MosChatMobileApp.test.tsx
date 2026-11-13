@@ -1801,6 +1801,8 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(blushBtn!);
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe('blush');
+    });
+  });
 
   it('allows opening CKEditor on mobile from action sheet, formatting rich text and applying back to composer (MOS-BUG-222)', async () => {
     render(
