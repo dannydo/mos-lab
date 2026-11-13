@@ -1772,4 +1772,54 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
 
     expect(screen.getByText(/Chuông báo Cuộc gọi khi Khóa máy/i)).toBeTruthy();
   });
+
+  it('allows opening CKEditor on mobile from action sheet, formatting rich text and applying back to composer (MOS-BUG-222)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
+    });
+
+    // Open action sheet (+)
+    const plusBtn = screen.getByRole('button', { name: 'Tác vụ đính kèm' });
+    fireEvent.click(plusBtn);
+
+    // Verify "Soạn thảo CKEditor" is present in Action Sheet
+    await waitFor(() => {
+      expect(screen.getByText('Soạn thảo CKEditor')).toBeTruthy();
+    });
+
+    // Tap "Soạn thảo CKEditor"
+    fireEvent.click(screen.getByText('Soạn thảo CKEditor'));
+
+    // Verify CKEditor modal opens
+    await waitFor(() => {
+      expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeTruthy();
+      expect(screen.getByText('CKEditor Mode')).toBeTruthy();
+    });
+
+    // Enter formatted content in CKEditor textarea
+    const textarea = screen.getByTestId('rich-editor-compact-textarea');
+    fireEvent.change(textarea, { target: { value: '**Thông báo quan trọng từ mobile CKEditor**' } });
+
+    // Click "Áp dụng vào chat"
+    const applyBtn = screen.getByText('Áp dụng vào chat');
+    fireEvent.click(applyBtn);
+
+    // Verify content is applied back to mobile composer textarea
+    await waitFor(() => {
+      const composerInput = screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i) as HTMLTextAreaElement;
+      expect(composerInput.value).toBe('**Thông báo quan trọng từ mobile CKEditor**');
+    });
+  });
 });

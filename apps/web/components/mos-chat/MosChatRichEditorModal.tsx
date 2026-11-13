@@ -644,8 +644,8 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         open={open}
         onCancel={onClose}
         footer={null}
-        width={isFullscreen ? '98vw' : isCompactMode ? 580 : 1000}
-        style={{ top: isFullscreen ? 10 : isCompactMode ? 60 : 28, maxWidth: '100vw' }}
+        width={isFullscreen ? '98vw' : isCompactMode ? 'min(580px, calc(100vw - 16px))' : 'min(1000px, calc(100vw - 16px))'}
+        style={{ top: isFullscreen ? 10 : isCompactMode ? 16 : 28, maxWidth: 'calc(100vw - 16px)', margin: '0 auto' }}
         styles={{
           content: {
             padding: 0,
@@ -1207,6 +1207,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     }
                   }
                 }}
+                data-testid="rich-editor-compact-textarea"
                 placeholder="Gõ nhanh nội dung... (Bấm • để tạo danh sách, nhấn Enter tự động xuống dòng • tiếp theo, ⌘+Enter để gửi ngay)"
                 className="flex-1 w-full p-4 bg-transparent border-0 outline-none resize-none text-[14px] leading-relaxed select-text min-h-[140px]"
                 style={{ color: token.colorText }}

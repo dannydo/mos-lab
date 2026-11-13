@@ -628,6 +628,7 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     expect(screen.getByText('Thẻ khách / Booking')).toBeTruthy();
     expect(screen.getByText('Đính kèm tệp / PDF')).toBeTruthy();
     expect(screen.getByText('Gửi hình ảnh')).toBeTruthy();
+    expect(screen.getByText('Soạn thảo CKEditor')).toBeTruthy();
     expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
     expect(screen.getByText('Quy trình công việc')).toBeTruthy();
     expect(screen.getByText('Nhãn dán Wings')).toBeTruthy();
@@ -638,6 +639,68 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     // Click Giao việc & Hạn chót in the action sheet
     fireEvent.click(screen.getByText('Giao việc & Hạn chót'));
     expect(mockOnOpenTaskModal).toHaveBeenCalled();
+  });
+
+  it('allows opening CKEditor and applying formatted text in mobile subthread (MOS-BUG-222)', async () => {
+    const mockOnOpenTaskModal = vi.fn();
+    const mockParentMsg222 = {
+      id: 'msg-parent-ckeditor-222',
+      conversationId: 'dm-pair-1-6',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'super_admin',
+      text: 'Tin nhắn thảo luận cần kiểm tra CKEditor',
+      timeLabel: '10:00',
+      createdAt: new Date().toISOString(),
+      thread: [],
+    };
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockParentMsg222 as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet onOpenTaskModal={mockOnOpenTaskModal} />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Tác vụ đính kèm')).toBeTruthy();
+    });
+
+    // Open action sheet
+    fireEvent.click(screen.getByLabelText('Tác vụ đính kèm'));
+
+    // Tap "Soạn thảo CKEditor"
+    await waitFor(() => {
+      expect(screen.getByText('Soạn thảo CKEditor')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('Soạn thảo CKEditor'));
+
+    // Verify CKEditor modal opens
+    await waitFor(() => {
+      expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeTruthy();
+    });
+
+    // Enter content in CKEditor
+    const textarea = screen.getByTestId('rich-editor-compact-textarea');
+    fireEvent.change(textarea, { target: { value: '**Phản hồi luồng thảo luận từ CKEditor**' } });
+
+    // Click "Áp dụng vào chat"
+    fireEvent.click(screen.getByText('Áp dụng vào chat'));
+
+    // Verify content is applied back to subthread textarea
+    await waitFor(() => {
+      const threadTextarea = screen.getByPlaceholderText('Trả lời trong luồng...') as HTMLTextAreaElement;
+      expect(threadTextarea.value).toBe('**Phản hồi luồng thảo luận từ CKEditor**');
+    });
   });
 
   it('does NOT trigger edit Main Task modal when interacting with subtask checklist (MOS-BUG-190)', async () => {

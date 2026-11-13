@@ -43,7 +43,7 @@ import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomp
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
+import { MosChatRichEditorModal, handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { syncTextareaHeightSmart } from '../components/MosChatComposer';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
@@ -324,6 +324,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
   // Bottom Action Sheet (Tác vụ đính kèm & Tiện ích)
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
+  const [ckEditorOpen, setCkEditorOpen] = useState<boolean>(false);
 
   // Sticker & Emoji Sheet
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
@@ -2367,6 +2368,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         open={actionSheetOpen}
         onClose={() => setActionSheetOpen(false)}
         onSelectCustomer={() => setCustomerPickerOpen(true)}
+        onSelectCKEditor={() => setCkEditorOpen(true)}
         onSelectFile={() => fileInputRef.current?.click()}
         onSelectImage={() => fileInputRef.current?.click()}
         onSelectVideo={() => videoInputRef.current?.click()}
@@ -2392,6 +2394,34 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         onSelectAiCopilot={() => {
           setText((prev) => (prev ? `${prev} @MAI ` : '@MAI '));
           textareaRef.current?.focus();
+        }}
+      />
+
+      {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile Thread */}
+      <MosChatRichEditorModal
+        open={ckEditorOpen}
+        onClose={() => setCkEditorOpen(false)}
+        initialValue={text}
+        initialMode="compact"
+        title="Soạn thảo phong phú (CKEditor)"
+        onApply={(newText) => {
+          setText(newText);
+        }}
+        onSend={async (textToSend) => {
+          if (textToSend.trim()) {
+            setIsSending(true);
+            const success = await sendThreadReply(textToSend, {
+              attachments: attachedImages.length > 0 ? attachedImages : undefined,
+              customerCard: stagedCustomerCard || undefined,
+            });
+            setIsSending(false);
+            if (success) {
+              setText('');
+              setAttachedImages([]);
+              setStagedCustomerCard(null);
+              setReplyingToReply(null);
+            }
+          }
         }}
       />
     </div>
