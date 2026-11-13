@@ -38,13 +38,20 @@ export function IosCircularTimer({
       <div className="relative w-56 h-56 flex items-center justify-center">
         <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 220 220">
           {/* Background track */}
-          <circle cx="110" cy="110" r={radius} stroke="#262626" strokeWidth="10" fill="transparent" />
+          <circle
+            cx="110"
+            cy="110"
+            r={radius}
+            stroke="var(--mos-surface-border-strong, #262626)"
+            strokeWidth="10"
+            fill="transparent"
+          />
           {/* Active progress */}
           <circle
             cx="110"
             cy="110"
             r={radius}
-            stroke="#FFB400"
+            stroke="var(--mos-accent, #FFB400)"
             strokeWidth="10"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -56,11 +63,21 @@ export function IosCircularTimer({
 
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-neutral-400 text-xs uppercase tracking-wider font-semibold mb-1">
+          <span
+            className="text-xs uppercase tracking-wider font-semibold mb-1"
+            style={{ color: 'var(--mos-text-muted)' }}
+          >
             Thời Gian Thực Tế
           </span>
-          <span className="text-3xl font-bold text-white tabular-nums tracking-tight font-mono">{timeFormatted}</span>
-          <span className="text-xs text-amber-400/90 mt-1 font-medium">Mục tiêu: {targetMinutes} phút</span>
+          <span
+            className="text-3xl font-bold tabular-nums tracking-tight font-mono"
+            style={{ color: 'var(--mos-text)' }}
+          >
+            {timeFormatted}
+          </span>
+          <span className="text-xs mt-1 font-medium" style={{ color: 'var(--mos-accent)' }}>
+            Mục tiêu: {targetMinutes} phút
+          </span>
         </div>
       </div>
 
@@ -68,11 +85,21 @@ export function IosCircularTimer({
       <div className="flex items-center space-x-4 w-full max-w-xs">
         <button
           onClick={onToggle}
-          className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 transition-all active:scale-95 ${
+          className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 transition-all active:scale-95 cursor-pointer border"
+          style={
             isRunning
-              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-              : 'bg-[#FFB400] text-black shadow-lg shadow-[#FFB400]/20'
-          }`}
+              ? {
+                  backgroundColor: 'var(--mos-focus-ring)',
+                  color: 'var(--mos-accent)',
+                  borderColor: 'var(--mos-accent)',
+                }
+              : {
+                  backgroundColor: 'var(--mos-accent)',
+                  color: 'var(--mos-accent-contrast)',
+                  borderColor: 'var(--mos-accent)',
+                  boxShadow: 'var(--mos-shadow)',
+                }
+          }
         >
           {isRunning ? (
             <>

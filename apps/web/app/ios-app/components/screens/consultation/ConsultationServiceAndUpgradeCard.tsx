@@ -418,12 +418,12 @@ export function ConsultationServiceAndUpgradeCard({
       )}
 
       {/* 2 Nút chọn chế độ tối giản */}
-      <div className="bg-neutral-900 p-1 rounded-xl grid grid-cols-2 gap-1">
+      <div className="bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] p-1 rounded-xl grid grid-cols-2 gap-1">
         <button
           type="button"
           onClick={() => handleRequestServiceTypeChange('Normal')}
           className={`py-1.5 px-2 rounded-lg font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition-all cursor-pointer tabular-nums ${
-            serviceType === 'Normal' ? 'bg-[#FFB400] text-black shadow-xs' : 'text-neutral-400 hover:text-white'
+            serviceType === 'Normal' ? 'bg-[#FFB400] text-black shadow-xs' : 'text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -438,8 +438,8 @@ export function ConsultationServiceAndUpgradeCard({
             serviceType === 'Retain'
               ? 'bg-[#34C759] text-white shadow-xs'
               : isComboLive && !hasComboRetainRemaining
-                ? 'text-neutral-600 opacity-30 cursor-not-allowed'
-                : 'text-neutral-400 hover:text-white cursor-pointer'
+                ? 'text-[var(--mos-text-muted)] opacity-30 cursor-not-allowed'
+                : 'text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] cursor-pointer'
           }`}
           title={isComboLive && !hasComboRetainRemaining ? 'Gói đã hết lần Dặm' : undefined}
         >

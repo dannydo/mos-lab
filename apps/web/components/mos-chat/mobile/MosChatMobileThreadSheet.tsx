@@ -35,6 +35,7 @@ import {
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
@@ -88,6 +89,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   onOpenTaskModal,
   onOpenMoveReply,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const {
     activeConversation,
     staffDirectory,
@@ -744,7 +747,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)] overflow-hidden select-none">
       {/* Hidden File Input for Multi-File & Image Upload */}
       <input
         ref={fileInputRef}
@@ -776,7 +779,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             transition: parentSwipeOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
             touchAction: 'pan-y',
           }}
-          className="relative bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm active:scale-[0.99] transition-transform cursor-pointer select-none"
+          data-testid="mos-thread-parent-card"
+          className="relative bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm active:scale-[0.99] transition-transform cursor-pointer select-none"
         >
           {/* Swipe Right Indicator */}
           {parentSwipeOffset > 10 && (
@@ -785,7 +789,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 opacity: Math.min(1, parentSwipeOffset / 35),
                 transform: `scale(${Math.min(1, 0.5 + parentSwipeOffset / 70)}) translateY(-50%)`,
               }}
-              className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-md z-30 pointer-events-none"
+              className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-md z-30 pointer-events-none"
             >
               <MessageSquareReply className="w-4 h-4" />
             </div>
@@ -798,7 +802,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 opacity: Math.min(1, Math.abs(parentSwipeOffset) / 35),
                 transform: `scale(${Math.min(1, 0.5 + Math.abs(parentSwipeOffset) / 70)}) translateY(-50%)`,
               }}
-              className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-md z-30 pointer-events-none"
+              className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-md z-30 pointer-events-none"
             >
               <MessageSquareReply className="w-4 h-4" />
             </div>
@@ -825,34 +829,34 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 staffDirectory={staffDirectory}
               />
             )}
-            <span className="text-xs font-bold text-white">{activeThreadMsg.senderName}</span>
+            <span className="text-xs font-bold text-[var(--mos-text)]">{activeThreadMsg.senderName}</span>
             {activeThreadMsg.senderRole && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-medium uppercase border border-[var(--mos-surface-border)]">
                 {activeThreadMsg.senderRole}
               </span>
             )}
-            <span className="text-[10px] text-slate-500 tabular-nums flex items-center gap-1">
-              {activeThreadMsg.editedAt && <span className="italic text-slate-400">đã sửa</span>}
+            <span className="text-[10px] text-[var(--mos-text-muted)] tabular-nums flex items-center gap-1">
+              {activeThreadMsg.editedAt && <span className="italic">đã sửa</span>}
               <span>{dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}</span>
             </span>
           </div>
 
           {/* Parent Message Content */}
           {activeThreadMsg.isDeleted ? (
-            <div className="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-slate-950/40 border border-dashed border-slate-700/60 text-xs italic text-slate-400 select-none">
-              <Trash2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-[var(--mos-surface-muted)] border border-dashed border-[var(--mos-surface-border)] text-xs italic text-[var(--mos-text-muted)] select-none">
+              <Trash2 className="w-3.5 h-3.5 opacity-60 shrink-0" />
               <span>Tin nhắn gốc đã bị xoá</span>
               {activeThreadMsg.deletedByName && <span className="opacity-75">({activeThreadMsg.deletedByName})</span>}
             </div>
           ) : (
-            <div className="text-sm text-slate-200 select-text">
+            <div className="text-sm text-[var(--mos-text)] select-text">
               <MosChatRichText
                 content={activeThreadMsg.text}
                 isMe={
                   String(activeThreadMsg.senderId) === String(currentUser?.id) ||
                   String(activeThreadMsg.senderName) === String(currentUser?.fullName || currentUser?.name)
                 }
-                isDark={true}
+                isDark={isDark}
               />
             </div>
           )}
@@ -894,7 +898,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         e.stopPropagation();
                         handleOpenGallery(parentImages[0].url, parentImages[0].id);
                       }}
-                      className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                      className="rounded-xl overflow-hidden bg-[var(--mos-surface-muted)] cursor-pointer active:opacity-90 transition-opacity"
                     >
                       <img
                         src={resolveMediaUrl(parentImages[0].url)}
@@ -956,18 +960,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                               e.stopPropagation();
                               window.open(fullUrl, '_blank');
                             }}
-                            className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-700/60 text-slate-100 cursor-pointer active:scale-[0.98] transition-transform"
+                            className="flex items-center gap-2 p-2 rounded-xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text)] cursor-pointer active:scale-[0.98] transition-transform"
                           >
                             <div
                               className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
-                                isPdf ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+                                isPdf
+                                  ? `bg-rose-500/20 ${isDark ? 'text-rose-400' : 'text-rose-600'}`
+                                  : `bg-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`
                               }`}
                             >
                               {isPdf ? <FileText size={16} /> : <File size={16} />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold truncate leading-tight">{att.name}</p>
-                              <span className="text-[10px] text-slate-400 uppercase font-bold">{ext}</span>
+                              <span className="text-[10px] text-[var(--mos-text-muted)] uppercase font-bold">{ext}</span>
                             </div>
                           </div>
                         );
@@ -982,7 +988,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           {!activeThreadMsg.isDeleted &&
             activeThreadMsg.reactions &&
             Object.keys(activeThreadMsg.reactions).length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-800/80">
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-[var(--mos-surface-border)]">
                 {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
                   if (count <= 0) return null;
                   const isReacted = hasUserReacted(activeThreadMsg, emoji);
@@ -1001,14 +1007,18 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       }}
                       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium active:scale-95 transition-all shadow-sm ${
                         isReacted
-                          ? 'bg-amber-500/20 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40 font-semibold'
-                          : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200'
+                          ? `bg-amber-500/20 border border-amber-500/60 ring-1 ring-amber-500/40 font-semibold ${
+                              isDark ? 'text-amber-300' : 'text-amber-800'
+                            }`
+                          : 'bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] text-[var(--mos-text)]'
                       }`}
                       title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                     >
                       <span>{emoji}</span>
                       <span
-                        className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}
+                        className={`tabular-nums text-[11px] font-semibold ${
+                          isReacted ? (isDark ? 'text-amber-400' : 'text-amber-700') : 'text-[var(--mos-text-muted)]'
+                        }`}
                       >
                         {count}
                       </span>
@@ -1022,7 +1032,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     e.stopPropagation();
                     openReactionUsersSheet(activeThreadMsg);
                   }}
-                  className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 active:scale-95 transition-all shadow-sm"
+                  className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-95 transition-all shadow-sm"
                   title="Xem người đã thả cảm xúc"
                   aria-label="Xem người thả cảm xúc"
                 >
@@ -1033,7 +1043,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
           {/* Interactive Main Task Card embedded in Parent Message */}
           {linkedTask ? (
-            <div className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 hover:border-slate-600 transition-colors shadow-sm">
+            <div className="mt-3 p-2.5 rounded-xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:border-[var(--mos-surface-border-strong)] transition-colors shadow-sm">
               <div
                 className="flex items-start gap-2.5 cursor-pointer"
                 onClick={(e) => {
@@ -1050,29 +1060,35 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     e.stopPropagation();
                     toggleTaskDone(linkedTask.id, !linkedTask.done);
                   }}
-                  className="mt-0.5 p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-emerald-400 active:scale-90 transition-transform"
+                  className={`mt-0.5 p-1 rounded-lg hover:bg-[var(--mos-surface)] text-[var(--mos-text-muted)] active:scale-90 transition-transform ${
+                    isDark ? 'hover:text-emerald-400' : 'hover:text-emerald-600'
+                  }`}
                   aria-label={linkedTask.done ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
                 >
                   {linkedTask.done ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 fill-emerald-500/20" />
+                    <CheckCircle2 className={`w-5 h-5 fill-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                   ) : (
-                    <Square className="w-5 h-5 text-slate-400" />
+                    <Square className="w-5 h-5 text-[var(--mos-text-muted)]" />
                   )}
                 </button>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1.5 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                        isDark ? 'text-amber-400' : 'text-amber-700'
+                      }`}
+                    >
                       <CheckSquare className="w-3 h-3" />
                       <span>Main Task</span>
                     </span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                         linkedTask.priority === 'URGENT'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          ? `bg-rose-500/20 border border-rose-500/30 ${isDark ? 'text-rose-300' : 'text-rose-700'}`
                           : linkedTask.priority === 'HIGH'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-slate-700/50 text-slate-300'
+                            ? `bg-amber-500/20 border border-amber-500/30 ${isDark ? 'text-amber-300' : 'text-amber-800'}`
+                            : 'bg-[var(--mos-surface)] text-[var(--mos-text-muted)] border border-[var(--mos-surface-border)]'
                       }`}
                     >
                       {linkedTask.priority === 'URGENT' ? 'Khẩn' : linkedTask.priority === 'HIGH' ? 'Cao' : 'Thường'}
@@ -1081,14 +1097,14 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   <p
                     className={`text-xs font-semibold leading-snug line-clamp-2 ${
-                      linkedTask.done ? 'line-through text-slate-500' : 'text-slate-100'
+                      linkedTask.done ? 'line-through text-[var(--mos-text-muted)]' : 'text-[var(--mos-text)]'
                     }`}
                   >
                     {linkedTask.title}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1.5 text-slate-300 font-medium">
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-[var(--mos-text-muted)]">
+                    <span className="flex items-center gap-1.5 text-[var(--mos-text)] font-medium">
                       <MosChatAvatar
                         size="xs"
                         staffId={linkedTask.assigneeId}
@@ -1101,8 +1117,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       <span
                         className={`tabular-nums ${
                           !linkedTask.done && dayjs(linkedTask.dueAt || linkedTask.deadline).isBefore(dayjs())
-                            ? 'text-rose-400 font-semibold'
-                            : 'text-slate-400'
+                            ? `${isDark ? 'text-rose-400' : 'text-rose-600'} font-semibold`
+                            : 'text-[var(--mos-text-muted)]'
                         }`}
                       >
                         ⏱️ {dayjs(linkedTask.dueAt || linkedTask.deadline).format('HH:mm DD/MM')}
@@ -1120,7 +1136,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       existingTask: linkedTask,
                     });
                   }}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-amber-400 active:scale-95 transition-all"
+                  className="p-1 rounded-lg hover:bg-[var(--mos-surface)] text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-95 transition-all"
                   aria-label="Chỉnh sửa Main Task"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -1166,15 +1182,15 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         setTimeout(() => el.classList.remove('ring-2', 'ring-amber-500'), 2000);
                       }
                     }}
-                    isDark={true}
+                    isDark={isDark}
                     isMobile={true}
                   />
                 </div>
               )}
             </div>
           ) : (
-            <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">Chưa gắn công việc chính</span>
+            <div className="mt-2.5 pt-2 border-t border-[var(--mos-surface-border)] flex items-center justify-between">
+              <span className="text-[11px] text-[var(--mos-text-muted)]">Chưa gắn công việc chính</span>
               <button
                 type="button"
                 onClick={(e) => {
@@ -1185,7 +1201,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     existingTask: null,
                   });
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 active:scale-95 transition-all"
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 active:scale-95 transition-all ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-700'
+                }`}
               >
                 <CheckSquare className="w-3.5 h-3.5" />
                 <span>+ Giao việc cho tin nhắn này</span>
@@ -1196,27 +1214,43 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
         {/* Pinned Live mOS Mission Card in Thread */}
         {mission && (
-          <div className="my-2 p-3 rounded-2xl bg-purple-950/30 border border-purple-800/50 space-y-2.5 shadow-sm">
+          <div
+            className={`my-2 p-3 rounded-2xl border space-y-2.5 shadow-sm ${
+              isDark ? 'bg-purple-950/30 border-purple-800/50' : 'bg-purple-500/10 border-purple-500/30'
+            }`}
+          >
             {/* Mission header, badge, external link */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Rocket className="w-4 h-4 text-purple-400 shrink-0" />
-                <span className="text-xs font-black text-purple-200 truncate">
+                <Rocket className={`w-4 h-4 shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                <span className={`text-xs font-black truncate ${isDark ? 'text-purple-200' : 'text-purple-900'}`}>
                   mOS Mission #{mission.missionKey || `MSN-${mission.reportId}`}
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 border border-purple-500/30 shrink-0 ${
+                    isDark ? 'text-purple-300' : 'text-purple-800'
+                  }`}
+                >
                   {mission.requestType || 'FEATURE'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                <span
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border border-purple-400/30 ${
+                    isDark ? 'bg-purple-500/30 text-purple-200' : 'bg-purple-500/20 text-purple-800'
+                  }`}
+                >
                   {mission.stageLabel || mission.humanBadge || mission.status}
                 </span>
                 <a
                   href={`/dashboard/bug-reports?reportId=${mission.reportId}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-1 rounded text-purple-300 hover:text-white bg-purple-900/40 border border-purple-500/30 active:scale-95 transition-transform cursor-pointer"
+                  className={`p-1 rounded border border-purple-500/30 active:scale-95 transition-transform cursor-pointer ${
+                    isDark
+                      ? 'text-purple-300 hover:text-white bg-purple-900/40'
+                      : 'text-purple-700 hover:text-purple-900 bg-purple-500/15'
+                  }`}
                   aria-label="Xem chi tiết trên mOS Mission"
                 >
                   <ExternalLink className="w-3 h-3" />
@@ -1225,7 +1259,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             </div>
 
             {/* Title */}
-            <p className="text-xs font-bold text-white line-clamp-2 leading-snug">{mission.title}</p>
+            <p className="text-xs font-bold text-[var(--mos-text)] line-clamp-2 leading-snug">{mission.title}</p>
 
             {/* 4-Step Progress Bar */}
             <div className="grid grid-cols-4 gap-1 pt-0.5">
@@ -1241,12 +1275,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   <div key={s.idx} className="space-y-1">
                     <div
                       className={`h-1.5 rounded-full transition-all ${
-                        active ? 'bg-purple-500' : 'bg-slate-800'
+                        active ? 'bg-purple-500' : 'bg-[var(--mos-surface-muted)]'
                       } ${current ? 'ring-2 ring-purple-400/60 shadow-sm shadow-purple-500/50' : ''}`}
                     />
                     <div
                       className={`text-[9.5px] truncate font-medium ${
-                        active ? 'text-purple-300 font-bold' : 'text-slate-500'
+                        active ? (isDark ? 'text-purple-300 font-bold' : 'text-purple-700 font-bold') : 'text-[var(--mos-text-muted)]'
                       }`}
                     >
                       {s.label}
@@ -1257,7 +1291,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             </div>
 
             {/* Human Explanation Box */}
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+            <div className="p-2.5 rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] text-[11px] text-[var(--mos-text)] leading-relaxed">
               {mission.humanStatusSummary ||
                 mission.humanSummary ||
                 'Nhiệm vụ đang được triển khai trên hệ thống mOS Mission.'}
@@ -1342,14 +1376,16 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   <button
                     type="button"
                     onClick={() => setIsReopenOpen(true)}
-                    className="w-full py-1.5 px-3 rounded-xl bg-slate-800/80 border border-slate-700 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform cursor-pointer"
+                    className={`w-full py-1.5 px-3 rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform cursor-pointer ${
+                      isDark ? 'text-amber-300' : 'text-amber-700'
+                    }`}
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>🔄 Yêu cầu chỉnh sửa thêm / Nâng cấp tiếp</span>
                   </button>
                 ) : (
-                  <div className="space-y-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800">
-                    <label className="text-[11px] font-semibold text-slate-300 block">
+                  <div className="space-y-2 p-2.5 rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)]">
+                    <label className="text-[11px] font-semibold text-[var(--mos-text)] block">
                       Nội dung cần chỉnh thêm hoặc nâng cấp:
                     </label>
                     <textarea
@@ -1357,7 +1393,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       value={reopenFeedback}
                       onChange={(e) => setReopenFeedback(e.target.value)}
                       placeholder="Nhập nội dung cần điều chỉnh thêm..."
-                      className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                      className="w-full p-2 bg-[var(--background)] border border-[var(--mos-surface-border)] rounded-lg text-xs text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] focus:outline-none focus:border-[var(--mos-accent)]"
                     />
                     <div className="flex items-center justify-end gap-2">
                       <button
@@ -1366,7 +1402,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           setIsReopenOpen(false);
                           setReopenFeedback('');
                         }}
-                        className="px-2.5 py-1 rounded-lg text-xs text-slate-400 hover:text-white cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg text-xs text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] cursor-pointer"
                       >
                         Hủy
                       </button>
@@ -1374,7 +1410,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         type="button"
                         disabled={!reopenFeedback.trim() || actionLoading === 'REPORTER_REOPEN'}
                         onClick={() => handleExecuteMissionAction('REPORTER_REOPEN', reopenFeedback.trim())}
-                        className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-1 rounded-lg bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] text-xs font-bold disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                       >
                         {actionLoading === 'REPORTER_REOPEN' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                         <span>Gửi yêu cầu</span>
@@ -1388,10 +1424,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         )}
 
         {/* Divider */}
-        <div className="flex items-center gap-2 my-2 text-slate-500 text-xs font-medium">
-          <span className="h-px flex-1 bg-slate-800" />
+        <div className="flex items-center gap-2 my-2 text-[var(--mos-text-muted)] text-xs font-medium">
+          <span className="h-px flex-1 bg-[var(--mos-surface-border)]" />
           <span>{threadReplies.length} phản hồi</span>
-          <span className="h-px flex-1 bg-slate-800" />
+          <span className="h-px flex-1 bg-[var(--mos-surface-border)]" />
         </div>
 
         {/* Replies List */}
@@ -1480,16 +1516,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   <span
                     className={`text-[11px] font-semibold ${
                       reply.isAiBot || reply.senderId === 'wings-ai-copilot'
-                        ? 'text-purple-300'
+                        ? isDark
+                          ? 'text-purple-300'
+                          : 'text-purple-700'
                         : isMe
-                          ? 'text-amber-300'
-                          : 'text-slate-300'
+                          ? isDark
+                            ? 'text-amber-300'
+                            : 'text-[var(--mos-text)]'
+                          : 'text-[var(--mos-text)]'
                     }`}
                   >
                     {reply.senderName}
                   </span>
                   {reply.senderRole && (
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-medium uppercase border border-[var(--mos-surface-border)]">
                       {reply.senderRole}
                     </span>
                   )}
@@ -1500,8 +1540,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <div
                   className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs italic break-words flex items-center gap-2 select-none ${
                     isMe
-                      ? 'bg-amber-500/10 text-amber-300/80 border border-dashed border-amber-500/30 rounded-tr-sm self-end'
-                      : 'bg-slate-800/60 text-slate-400 border border-dashed border-slate-700/60 rounded-tl-sm self-start'
+                      ? `bg-amber-500/10 border border-dashed border-amber-500/30 rounded-tr-sm self-end ${
+                          isDark ? 'text-amber-300/80' : 'text-amber-800/80'
+                        }`
+                      : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border border-dashed border-[var(--mos-surface-border)] rounded-tl-sm self-start'
                   }`}
                 >
                   <Trash2 className="w-3.5 h-3.5 opacity-60 shrink-0" />
@@ -1512,8 +1554,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <div
                   className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm ${
                     isMe
-                      ? 'bg-amber-500/20 text-slate-100 border border-amber-500/40 font-normal rounded-tr-sm'
-                      : 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm'
+                      ? 'mos-accent-bubble-ink bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] border border-black/10 font-normal rounded-tr-sm'
+                      : 'bg-[var(--mos-surface)] text-[var(--mos-text)] border border-[var(--mos-surface-border)] rounded-tl-sm'
                   }`}
                 >
                   {/* Attachments (Video, Images, Files) */}
@@ -1546,7 +1588,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                                 e.stopPropagation();
                                 handleOpenGallery(replyImages[0].url, replyImages[0].id);
                               }}
-                              className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                              className="rounded-xl overflow-hidden bg-black/15 cursor-pointer active:opacity-90 transition-opacity"
                             >
                               <img
                                 src={resolveMediaUrl(replyImages[0].url)}
@@ -1605,18 +1647,24 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                                       e.stopPropagation();
                                       window.open(fullUrl, '_blank');
                                     }}
-                                    className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-slate-100 cursor-pointer active:scale-[0.98] transition-transform"
+                                    className={`flex items-center gap-2 p-1.5 rounded-lg border cursor-pointer active:scale-[0.98] transition-transform ${
+                                      isMe
+                                        ? 'bg-black/15 border-current/25 text-[var(--mos-accent-contrast)]'
+                                        : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)]'
+                                    }`}
                                   >
                                     <div
                                       className={`w-7 h-7 rounded flex items-center justify-center shrink-0 font-bold text-[10px] ${
-                                        isPdf ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+                                        isPdf
+                                          ? `bg-rose-500/20 ${isDark ? 'text-rose-400' : 'text-rose-600'}`
+                                          : `bg-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`
                                       }`}
                                     >
                                       {isPdf ? <FileText size={14} /> : <File size={14} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-[11px] font-semibold truncate leading-tight">{att.name}</p>
-                                      <span className="text-[9px] text-slate-400 uppercase font-bold">{ext}</span>
+                                      <span className="text-[9px] opacity-75 uppercase font-bold">{ext}</span>
                                     </div>
                                   </div>
                                 );
@@ -1628,7 +1676,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     })()}
 
                   <div className="select-text">
-                    <MosChatRichText content={reply.text} isMe={isMe} isDark={true} />
+                    <MosChatRichText content={reply.text} isMe={isMe} isDark={isDark} />
                   </div>
 
                   {/* Customer Card Attachment for Reply */}
@@ -1642,12 +1690,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   <div
                     className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                      isMe ? 'text-amber-300/80' : 'text-slate-400'
+                      isMe ? 'text-[var(--mos-accent-contrast)] opacity-75' : 'text-[var(--mos-text-muted)]'
                     }`}
                   >
                     {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
                     <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
-                    {isMe && <CheckCheck className="w-3.5 h-3.5 text-amber-400" />}
+                    {isMe && <CheckCheck className="w-3.5 h-3.5 text-[var(--mos-accent-contrast)]" />}
                   </div>
                 </div>
               )}
@@ -1681,14 +1729,18 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         }}
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium active:scale-95 transition-all shadow-sm ${
                           isReacted
-                            ? 'bg-amber-500/20 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40 font-semibold'
-                            : 'bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200'
+                            ? `bg-amber-500/20 border border-amber-500/60 ring-1 ring-amber-500/40 font-semibold ${
+                                isDark ? 'text-amber-300' : 'text-amber-800'
+                              }`
+                            : 'bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text)]'
                         }`}
                         title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                       >
                         <span>{emoji}</span>
                         <span
-                          className={`tabular-nums text-[11px] font-semibold ${isReacted ? 'text-amber-400' : 'text-slate-400'}`}
+                          className={`tabular-nums text-[11px] font-semibold ${
+                            isReacted ? (isDark ? 'text-amber-400' : 'text-amber-700') : 'text-[var(--mos-text-muted)]'
+                          }`}
                         >
                           {count}
                         </span>
@@ -1707,7 +1759,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         reactionUsers: reply.reactionUsers,
                       });
                     }}
-                    className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 active:scale-95 transition-all shadow-sm"
+                    className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-95 transition-all shadow-sm"
                     title="Xem người đã thả cảm xúc"
                     aria-label="Xem người thả cảm xúc"
                   >
@@ -1721,15 +1773,21 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
         {/* MAI Copilot Thinking Shimmer Pill */}
         {isAiThinking && (
-          <div className="flex items-center gap-2.5 p-3 my-2 rounded-2xl bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-950/70 border border-purple-500/40 text-xs text-purple-200 animate-pulse shadow-lg">
+          <div
+            className={`flex items-center gap-2.5 p-3 my-2 rounded-2xl border text-xs animate-pulse shadow-lg ${
+              isDark
+                ? 'bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-950/70 border-purple-500/40 text-purple-200'
+                : 'bg-gradient-to-r from-purple-500/15 via-indigo-500/10 to-purple-500/15 border-purple-500/35 text-purple-900'
+            }`}
+          >
             <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
               🤖
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-semibold text-purple-300">MAI Copilot:</span> Đang suy nghĩ và phân tích luồng thảo
+              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span> Đang suy nghĩ và phân tích luồng thảo
               luận...
             </div>
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400 shrink-0" />
+            <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
           </div>
         )}
 
@@ -1743,19 +1801,23 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           transition: 'transform 0.15s ease-out',
           paddingBottom: keyboardOffset > 50 ? '8px' : 'max(env(safe-area-inset-bottom, 14px), 12px)',
         }}
-        className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 shadow-lg"
+        className="sticky bottom-0 z-30 bg-[var(--mos-surface)] backdrop-blur-md border-t border-[var(--mos-surface-border)] px-3 pt-2 shadow-lg"
       >
         {/* Sticky Action Bar for mOS Mission Gate Controls & Acceptance */}
         {hasAnyPendingAction && mission && (
-          <div className="mb-2 p-2 rounded-xl bg-purple-950/40 border border-purple-800/50 shadow-md backdrop-blur-md">
+          <div
+            className={`mb-2 p-2 rounded-xl border shadow-md backdrop-blur-md ${
+              isDark ? 'bg-purple-950/40 border-purple-800/50' : 'bg-purple-500/10 border-purple-500/30'
+            }`}
+          >
             <div className="flex items-center justify-between gap-1.5 mb-1.5 px-0.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Rocket className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                <span className="text-[11px] font-bold text-purple-200 truncate">
+                <Rocket className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                <span className={`text-[11px] font-bold truncate ${isDark ? 'text-purple-200' : 'text-purple-900'}`}>
                   {mission.stageLabel || mission.humanBadge || 'Chờ duyệt'}
                 </span>
               </div>
-              <span className="text-[10px] text-purple-300 font-semibold truncate">
+              <span className={`text-[10px] font-semibold truncate ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
                 #{mission.missionKey || `MSN-${mission.reportId}`}
               </span>
             </div>
@@ -1837,18 +1899,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
         {/* Quoting Preview Banner */}
         {replyingToReply && (
-          <div className="flex items-center justify-between bg-slate-800/90 border border-amber-500/30 rounded-xl px-3 py-1.5 mb-2 text-xs">
+          <div className="flex items-center justify-between bg-[var(--mos-surface-muted)] border border-amber-500/30 rounded-xl px-3 py-1.5 mb-2 text-xs">
             <div className="flex items-center gap-2 truncate">
-              <MessageSquareReply className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <MessageSquareReply className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
               <div className="truncate">
-                <span className="font-semibold text-amber-300">Trả lời {replyingToReply.senderName}:</span>{' '}
-                <span className="text-slate-300 truncate">{replyingToReply.text}</span>
+                <span className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                  Trả lời {replyingToReply.senderName}:
+                </span>{' '}
+                <span className="text-[var(--mos-text)] truncate">{replyingToReply.text}</span>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setReplyingToReply(null)}
-              className="p-0.5 text-slate-400 hover:text-white"
+              className="p-0.5 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]"
               aria-label="Hủy trích dẫn"
             >
               <X className="w-3.5 h-3.5" />
@@ -1869,12 +1933,16 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 return (
                   <div
                     key={att.id || idx}
-                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/50 shrink-0 group bg-slate-900 shadow-sm flex items-center justify-center"
+                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/50 shrink-0 group bg-[var(--mos-surface-raised)] shadow-sm flex items-center justify-center"
                   >
                     {att.posterUrl ? (
                       <img src={att.posterUrl} alt={att.name || 'Video'} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-slate-950 flex items-center justify-center text-purple-400">
+                      <div
+                        className={`w-full h-full bg-[var(--background)] flex items-center justify-center ${
+                          isDark ? 'text-purple-400' : 'text-purple-600'
+                        }`}
+                      >
                         <Film size={22} />
                       </div>
                     )}
@@ -1891,7 +1959,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     <button
                       type="button"
                       onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
                       aria-label={`Xóa video ${idx + 1}`}
                     >
                       <X className="w-2.5 h-2.5" />
@@ -1904,13 +1972,13 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 return (
                   <div
                     key={att.id || idx}
-                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 bg-slate-800 shadow-sm"
+                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 bg-[var(--mos-surface-raised)] shadow-sm"
                   >
                     <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px]"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[10px]"
                       aria-label="Xóa ảnh đính kèm"
                     >
                       <X className="w-2.5 h-2.5" />
@@ -1922,27 +1990,27 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               return (
                 <div
                   key={att.id || idx}
-                  className="relative h-14 min-w-[120px] max-w-[170px] px-2.5 rounded-xl border border-amber-500/40 shrink-0 flex items-center gap-2 bg-slate-800 shadow-sm"
+                  className="relative h-14 min-w-[120px] max-w-[170px] px-2.5 rounded-xl border border-amber-500/40 shrink-0 flex items-center gap-2 bg-[var(--mos-surface-raised)] shadow-sm"
                 >
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-[10px] ${
                       isPdf
-                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        ? `bg-rose-500/20 border border-rose-500/30 ${isDark ? 'text-rose-400' : 'text-rose-600'}`
+                        : `bg-emerald-500/20 border border-emerald-500/30 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`
                     }`}
                   >
                     {isPdf ? <FileText size={16} /> : <File size={16} />}
                   </div>
                   <div className="flex-1 min-w-0 pr-3">
-                    <p className="text-[11px] font-semibold text-slate-100 truncate" title={att.name}>
+                    <p className="text-[11px] font-semibold text-[var(--mos-text)] truncate" title={att.name}>
                       {att.name}
                     </p>
-                    <span className="text-[9.5px] text-slate-400 uppercase font-extrabold">{ext}</span>
+                    <span className="text-[9.5px] text-[var(--mos-text-muted)] uppercase font-extrabold">{ext}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
-                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
                     aria-label={`Xóa tệp ${idx + 1}`}
                   >
                     <X className="w-2.5 h-2.5" />
@@ -1952,8 +2020,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             })}
             {isUploadingImages && (
               <div className="w-14 h-14 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 flex flex-col items-center justify-center shrink-0">
-                <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-                <span className="text-[9px] text-amber-300 mt-0.5 font-medium">Tải...</span>
+                <Loader2 className={`w-4 h-4 animate-spin ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                <span className={`text-[9px] mt-0.5 font-medium ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                  Tải...
+                </span>
               </div>
             )}
           </div>
@@ -1961,8 +2031,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
         {/* Uploading Banner when no images are ready yet */}
         {isUploadingImages && attachedImages.length === 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
-            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-amber-400" />
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs ${
+              isDark ? 'text-amber-300' : 'text-amber-800'
+            }`}
+          >
+            <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
             <span>Đang tải hình ảnh lên...</span>
           </div>
         )}
@@ -1992,16 +2066,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   .join('')
                   .toUpperCase()}
               </Avatar>
-              <span className="font-bold text-white truncate">{stagedCustomerCard.name}</span>
-              <span className="text-amber-400 font-medium truncate">({stagedCustomerCard.meta})</span>
+              <span className="font-bold text-[var(--mos-text)] truncate">{stagedCustomerCard.name}</span>
+              <span className={`font-medium truncate ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                ({stagedCustomerCard.meta})
+              </span>
               {stagedCustomerCard.cvName && (
-                <span className="text-slate-400 truncate hidden sm:inline">· {stagedCustomerCard.cvName}</span>
+                <span className="text-[var(--mos-text-muted)] truncate hidden sm:inline">
+                  · {stagedCustomerCard.cvName}
+                </span>
               )}
             </div>
             <button
               type="button"
               onClick={() => setStagedCustomerCard(null)}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all shrink-0"
+              className="text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] p-1 rounded-lg hover:bg-[var(--mos-surface-muted)] active:scale-95 transition-all shrink-0"
               title="Bỏ đính kèm thẻ khách hàng"
               aria-label="Bỏ đính kèm thẻ khách hàng"
             >
@@ -2016,15 +2094,15 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           <button
             type="button"
             onClick={() => setActionSheetOpen(true)}
-            className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer"
+            className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text)] active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer"
             aria-label="Tác vụ đính kèm"
             title="Tác vụ đính kèm & Tiện ích"
           >
-            <Plus className="w-5 h-5 text-amber-400" />
+            <Plus className="w-5 h-5 text-[var(--mos-accent)]" />
           </button>
 
           {/* Text Area */}
-          <div className="flex-1 min-w-0 min-h-[38px] max-h-[120px] bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex items-center gap-1.5 focus-within:border-amber-400/80 transition-colors">
+          <div className="flex-1 min-w-0 min-h-[38px] max-h-[120px] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-2xl px-3 py-1.5 flex items-center gap-1.5 focus-within:border-[var(--mos-accent)] transition-colors">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -2032,7 +2110,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Trả lời trong luồng..."
-              className="flex-1 min-w-0 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] resize-none max-h-[100px] py-1 leading-snug"
               style={{ outline: 'none', boxShadow: 'none' }}
             />
             {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
@@ -2040,7 +2118,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={handleInsertNewline}
-              className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-90 transition-transform shrink-0"
               aria-label="Xuống dòng (Shift+Enter)"
               title="Xuống dòng (Shift+Enter)"
             >
@@ -2051,7 +2129,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setStickerPickerOpen(true)}
-              className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-90 transition-transform shrink-0"
               aria-label="Biểu cảm & Nhãn dán"
               title="Biểu cảm & Nhãn dán"
             >
@@ -2068,18 +2146,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             }
             className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer ${
               (text.trim() || attachedImages.length > 0 || stagedCustomerCard) && !isSending && !isUploadingImages
-                ? 'bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/30'
-                : 'bg-slate-800 text-slate-500 border border-slate-700/80 opacity-40 cursor-not-allowed'
+                ? 'bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] shadow-md'
+                : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border border-[var(--mos-surface-border)] opacity-40 cursor-not-allowed'
             }`}
             aria-label="Gửi phản hồi luồng"
             title="Gửi phản hồi luồng"
           >
             {isSending || isUploadingImages ? (
-              <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+              <Loader2 className="w-4 h-4 text-[var(--mos-accent-contrast)] animate-spin" />
             ) : (
               <SendHorizontal
                 className={`w-4 h-4 font-bold ${
-                  text.trim() || attachedImages.length > 0 || stagedCustomerCard ? 'text-slate-950' : 'text-slate-500'
+                  text.trim() || attachedImages.length > 0 || stagedCustomerCard
+                    ? 'text-[var(--mos-accent-contrast)]'
+                    : 'text-[var(--mos-text-muted)]'
                 }`}
               />
             )}
@@ -2095,11 +2175,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
           />
 
-          <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200">
-            <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-3" />
+          <div className="relative bg-[var(--mos-surface-raised)] border-t border-[var(--mos-surface-border)] rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200">
+            <div className="w-10 h-1 bg-[var(--mos-surface-border-strong)] rounded-full mx-auto mb-3" />
 
             {/* Quick Reactions */}
-            <div className="flex items-center justify-around bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
+            <div className="flex items-center justify-around bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-2xl py-2 px-3 mb-4 shadow-sm">
               {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
                 const isReacted = hasUserReacted(actionSheetReply, emoji);
                 return (
@@ -2111,7 +2191,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       setActionSheetReply(null);
                     }}
                     className={`text-2xl p-1.5 rounded-xl active:scale-125 transition-all ${
-                      isReacted ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm' : 'hover:bg-slate-700/50'
+                      isReacted ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm' : 'hover:bg-[var(--mos-surface)]'
                     }`}
                     title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                   >
@@ -2122,7 +2202,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             </div>
 
             {/* Actions List */}
-            <div className="space-y-1 divide-y divide-slate-800/60">
+            <div className="space-y-1 divide-y divide-[var(--mos-surface-border)]">
               {Object.values(actionSheetReply.reactions || {}).reduce((s, c) => s + c, 0) > 0 && (
                 <button
                   type="button"
@@ -2136,17 +2216,19 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                       reactionUsers: replyObj.reactionUsers,
                     });
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-slate-200 bg-slate-800/50 hover:bg-slate-800 rounded-xl transition-colors active:scale-98 border border-slate-700/40 mb-1"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface-muted)] hover:opacity-90 rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
                 >
                   <div className="flex items-center gap-3">
-                    <Users className="w-4 h-4 text-amber-400" />
-                    <span className="font-semibold text-amber-300">Xem người đã thả cảm xúc</span>
+                    <Users className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                    <span className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                      Xem người đã thả cảm xúc
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <span className="tabular-nums font-bold text-amber-400">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
+                    <span className={`tabular-nums font-bold ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                       {Object.values(actionSheetReply.reactions || {}).reduce((s, c) => s + c, 0)}
                     </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
                   </div>
                 </button>
               )}
@@ -2159,9 +2241,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   });
                   setActionSheetReply(null);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <MessageSquareReply className="w-4 h-4 text-amber-400" />
+                <MessageSquareReply className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                 <span className="font-medium">Trả lời trích dẫn trong luồng</span>
               </button>
 
@@ -2177,9 +2259,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     sourceReply: actionSheetReply,
                   });
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <CheckSquare className="w-4 h-4 text-emerald-400" />
+                <CheckSquare className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 <span className="font-medium">
                   {linkedTask ? 'Cập nhật Main Task từ phản hồi này' : 'Giao việc cho Main Task'}
                 </span>
@@ -2198,9 +2280,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     });
                     antdMessage.success('Đã thêm phản hồi vào Checklist của Task');
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
                 >
-                  <ListTodo className="w-4 h-4 text-amber-400" />
+                  <ListTodo className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                   <span className="font-medium">Thêm vào Checklist của Task</span>
                 </button>
               )}
@@ -2214,9 +2296,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   }
                   setActionSheetReply(null);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <Copy className="w-4 h-4 text-sky-400" />
+                <Copy className={`w-4 h-4 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
                 <span className="font-medium">Sao chép phản hồi</span>
               </button>
 
@@ -2244,9 +2326,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                             replyId: replyToMove.id,
                           });
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-indigo-300 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98 ${
+                          isDark ? 'text-indigo-300' : 'text-indigo-700'
+                        }`}
                       >
-                        <CornerDownRight className="w-4 h-4 text-indigo-400" />
+                        <CornerDownRight className={`w-4 h-4 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
                         <span className="font-medium">Tách ra tin nhắn độc lập ở luồng chính</span>
                       </button>
                     )}
@@ -2259,9 +2343,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           setActionSheetReply(null);
                           onOpenMoveReply(activeThreadMsg, replyToMove.id);
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-300 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98 ${
+                          isDark ? 'text-amber-300' : 'text-amber-700'
+                        }`}
                       >
-                        <CornerDownRight className="w-4 h-4 text-amber-400" />
+                        <CornerDownRight className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                         <span className="font-medium">Chuyển sang luồng khác...</span>
                       </button>
                     )}
@@ -2273,7 +2359,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           setEditingReply(actionSheetReply);
                           setActionSheetReply(null);
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors active:scale-98"
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-amber-500/10 rounded-xl transition-colors active:scale-98 ${
+                          isDark ? 'text-amber-400' : 'text-amber-700'
+                        }`}
                       >
                         <Pencil className="w-4 h-4" />
                         <span className="font-medium">Chỉnh sửa phản hồi</span>
@@ -2293,7 +2381,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                             antdMessage.error('Không thể xoá phản hồi');
                           }
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98"
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98 ${
+                          isDark ? 'text-rose-400' : 'text-rose-600'
+                        }`}
                       >
                         <Trash2 className="w-4 h-4" />
                         <span className="font-medium">Xóa phản hồi</span>

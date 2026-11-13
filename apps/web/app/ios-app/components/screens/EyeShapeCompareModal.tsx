@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Wrench,
 } from 'lucide-react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { NATURAL_EYE_SHAPES, type EyeShapeOption } from './NaturalLashAssessmentData';
 
 export interface EyeShapeDetailedInfo extends EyeShapeOption {
@@ -95,6 +96,8 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
   onClose,
   onSelectEyeShape,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const targetId = initialEyeShapeId || selectedEyeShapeId || NATURAL_EYE_SHAPES[0].id;
   const initialIndex = Math.max(
     0,
@@ -213,16 +216,20 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Thước đo và so sánh dáng mắt"
-      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between text-white select-none overflow-hidden h-[100dvh]"
+      className="fixed inset-0 z-50 bg-[var(--background)]/95 backdrop-blur-xl flex flex-col justify-between text-[var(--mos-text)] select-none overflow-hidden h-[100dvh]"
     >
       {/* 1. Header Bar: Minimalist with Close button strictly placed at top right */}
-      <div className="flex items-center justify-between px-3.5 pt-2.5 pb-2 border-b border-white/10 shrink-0">
+      <div className="flex items-center justify-between px-3.5 pt-2.5 pb-2 border-b border-[var(--mos-surface-border)] bg-[var(--mos-surface)]/85 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase font-black tracking-widest text-[#FFB400] bg-[#FFB400]/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <span
+            className={`text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 ${
+              isDark ? 'text-[#FFB400] bg-[#FFB400]/20' : 'text-amber-700 bg-amber-100 border border-amber-300'
+            }`}
+          >
             <Eye className="w-3 h-3" />
             Dáng Mắt Khách
           </span>
-          <span className="text-[11px] text-gray-400 font-mono">
+          <span className="text-[11px] text-[var(--mos-text-muted)] font-mono">
             ({currentIndex + 1}/{EYE_SHAPES_EXTENDED_DETAILS.length})
           </span>
         </div>
@@ -232,14 +239,14 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
           type="button"
           onClick={onClose}
           aria-label="Đóng so sánh dáng mắt"
-          className="w-9 h-9 rounded-full bg-white/10 active:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-all cursor-pointer"
+          className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-85 flex items-center justify-center text-[var(--mos-text)] transition-all cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* 2. Top Fast-Switch Pill Tab Bar */}
-      <div className="px-3 py-1.5 bg-white/[0.03] border-b border-white/5 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+      <div className="px-3 py-1.5 bg-[var(--mos-surface-raised)] border-b border-[var(--mos-surface-border)] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
         {EYE_SHAPES_EXTENDED_DETAILS.map((eye, idx) => {
           const active = idx === currentIndex;
           return (
@@ -253,15 +260,17 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
               style={{ touchAction: 'manipulation' }}
               className={`flex-1 min-w-[62px] py-1 px-1.5 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 border relative cursor-pointer active:scale-95 ${
                 active
-                  ? 'bg-[#FFB400] border-[#FFB400] text-black shadow-md ring-2 ring-[#FFB400]/40'
-                  : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'
+                  ? 'bg-[var(--mos-accent)] border-[var(--mos-accent)] text-[var(--mos-accent-contrast)] shadow-md ring-2 ring-[var(--mos-accent)]/40'
+                  : 'bg-[var(--mos-surface)] border-[var(--mos-surface-border)] text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)]'
               }`}
             >
               <div className="w-6 h-6 rounded-full overflow-hidden bg-black/50 border border-black/20 shrink-0">
                 <img src={eye.image} alt={eye.name} className="w-full h-full object-cover" />
               </div>
               <span
-                className={`text-[9.5px] truncate max-w-full leading-tight ${active ? 'font-black text-black' : 'font-bold text-gray-300'}`}
+                className={`text-[9.5px] truncate max-w-full leading-tight ${
+                  active ? 'font-black text-[var(--mos-accent-contrast)]' : 'font-bold text-[var(--mos-text-muted)]'
+                }`}
               >
                 {eye.shortName}
               </span>
@@ -278,15 +287,19 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchCancel}
-          className="flex-1 w-full bg-gradient-to-b from-white/10 via-white/5 to-transparent rounded-3xl p-3 border border-white/10 shadow-2xl relative flex flex-col justify-between items-center overflow-hidden"
+          className="flex-1 w-full bg-[var(--mos-surface)] rounded-3xl p-3 border border-[var(--mos-surface-border)] shadow-2xl relative flex flex-col justify-between items-center overflow-hidden"
         >
           {/* Top Bar inside Canvas: Eye Shape Name + Info Trigger (i) */}
           <div className="w-full flex items-center justify-between px-1 mb-1 z-10 shrink-0">
             <div className="flex flex-col min-w-0 pr-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/90 truncate">
+              <span
+                className={`text-[10px] font-black uppercase tracking-wider truncate ${
+                  isDark ? 'text-amber-400/90' : 'text-amber-700'
+                }`}
+              >
                 {currentEye.categoryTitle}
               </span>
-              <h3 className="text-xl font-black text-[#FFB400] tracking-tight leading-tight truncate">
+              <h3 className="text-xl font-black text-[var(--mos-accent)] tracking-tight leading-tight truncate">
                 {currentEye.name}
               </h3>
             </div>
@@ -300,7 +313,11 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
               }}
               aria-label="Xem giải thích sâu về dáng mắt"
               style={{ touchAction: 'manipulation' }}
-              className="w-10 h-10 rounded-full bg-amber-500/15 hover:bg-amber-500/25 active:bg-[#FFB400] active:text-black border border-amber-400/40 text-[#FFB400] flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-90 shrink-0"
+              className={`w-10 h-10 rounded-full border flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-90 shrink-0 ${
+                isDark
+                  ? 'bg-amber-500/15 hover:bg-amber-500/25 active:bg-[#FFB400] active:text-black border-amber-400/40 text-[#FFB400]'
+                  : 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-700'
+              }`}
               title="Nhấn để xem giải thích chuyên sâu"
             >
               <Info className="w-5 h-5 stroke-[2.5]" />
@@ -312,7 +329,7 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
             onClick={() => setIsInfoSheetOpen(true)}
             className="w-full flex-1 flex flex-col items-center justify-center my-auto min-h-0 relative px-1 cursor-pointer group"
           >
-            <div className="relative w-full h-full max-h-[360px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-neutral-950 flex items-center justify-center">
+            <div className="relative w-full h-full max-h-[360px] rounded-2xl overflow-hidden border border-[var(--mos-surface-border)] shadow-2xl bg-neutral-950 flex items-center justify-center">
               <img
                 src={currentEye.image}
                 alt={currentEye.name}
@@ -344,7 +361,7 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
               }}
               aria-label="Dáng mắt trước"
               style={{ touchAction: 'manipulation' }}
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-[#FFB400] active:text-black border border-white/10 text-gray-200 flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-90"
+              className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-85 active:bg-[var(--mos-accent)] active:text-[var(--mos-accent-contrast)] border border-[var(--mos-surface-border)] text-[var(--mos-text)] flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-90"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -364,8 +381,8 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
                     aria-label={`Chuyển đến dáng mắt ${eye.name}`}
                     className={`transition-all duration-200 cursor-pointer ${
                       isDotActive
-                        ? 'w-7 h-2 rounded-full bg-[#FFB400] shadow-sm'
-                        : 'w-2 h-2 rounded-full bg-white/30 hover:bg-white/60 active:scale-125'
+                        ? 'w-7 h-2 rounded-full bg-[var(--mos-accent)] shadow-sm'
+                        : 'w-2 h-2 rounded-full bg-[var(--mos-surface-border-strong)] hover:opacity-80 active:scale-125'
                     }`}
                   />
                 );
@@ -380,7 +397,7 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
               }}
               aria-label="Dáng mắt kế tiếp"
               style={{ touchAction: 'manipulation' }}
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-[#FFB400] active:text-black border border-white/10 text-gray-200 flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-90"
+              className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-85 active:bg-[var(--mos-accent)] active:text-[var(--mos-accent-contrast)] border border-[var(--mos-surface-border)] text-[var(--mos-text)] flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-90"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -389,11 +406,11 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
       </div>
 
       {/* 4. Bottom Action Footer */}
-      <div className="p-3 bg-black/95 border-t border-white/10 flex items-center gap-2 shrink-0">
+      <div className="p-3 bg-[var(--mos-surface)]/95 border-t border-[var(--mos-surface-border)] flex items-center gap-2 shrink-0">
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 py-3 px-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-[13px] active:scale-98 transition-all cursor-pointer"
+          className="flex-1 py-3 px-3 rounded-2xl bg-[var(--mos-surface-muted)] hover:opacity-90 text-[var(--mos-text)] font-bold text-[13px] active:scale-98 transition-all cursor-pointer"
         >
           Đóng
         </button>
@@ -404,7 +421,7 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
             onSelectEyeShape(currentEye.id);
             onClose();
           }}
-          className="flex-2 py-3 px-4 rounded-2xl bg-[#FFB400] active:bg-[#e09e00] text-black font-black text-[14px] flex items-center justify-center gap-1.5 shadow-lg active:scale-98 transition-all cursor-pointer"
+          className="flex-2 py-3 px-4 rounded-2xl bg-[var(--mos-accent)] hover:opacity-95 text-[var(--mos-accent-contrast)] font-black text-[14px] flex items-center justify-center gap-1.5 shadow-lg active:scale-98 transition-all cursor-pointer"
         >
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span className="truncate">Chọn Dáng {currentEye.shortName}</span>
@@ -416,23 +433,23 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
         <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-md flex flex-col justify-end animate-in fade-in duration-200">
           <div className="flex-1 w-full" onClick={() => setIsInfoSheetOpen(false)} />
 
-          <div className="w-full bg-neutral-900 border-t border-white/20 rounded-t-3xl p-4 flex flex-col max-h-[80vh] shadow-2xl animate-in slide-in-from-bottom duration-250">
+          <div className="w-full bg-[var(--mos-surface)] text-[var(--mos-text)] border-t border-[var(--mos-surface-border)] rounded-t-3xl p-4 flex flex-col max-h-[80vh] shadow-2xl animate-in slide-in-from-bottom duration-250">
             {/* Top Swipe Drag Pill */}
-            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-3 shrink-0" />
+            <div className="w-12 h-1.5 bg-[var(--mos-surface-border-strong)] rounded-full mx-auto mb-3 shrink-0" />
 
             {/* Sheet Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--mos-surface-border)] shrink-0">
               <div>
-                <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">
+                <span className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                   Phân Tích Giải Phẫu Bờ Mí & Kịch Bản Tư Vấn
                 </span>
-                <h4 className="text-base font-black text-white">{currentEye.name}</h4>
+                <h4 className="text-base font-black text-[var(--mos-text)]">{currentEye.name}</h4>
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsInfoSheetOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white cursor-pointer"
+                className="w-8 h-8 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-80 flex items-center justify-center text-[var(--mos-text)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -441,69 +458,89 @@ export const EyeShapeCompareModal: React.FC<EyeShapeCompareModalProps> = ({
             {/* Sheet Scrollable Content */}
             <div className="flex-1 overflow-y-auto pt-3 space-y-3 pr-1 text-[12px]">
               {/* Technical Specifications */}
-              <div className="grid grid-cols-2 gap-2 bg-white/5 rounded-2xl p-2.5 border border-white/10 text-center">
+              <div className="grid grid-cols-2 gap-2 bg-[var(--mos-surface-raised)] rounded-2xl p-2.5 border border-[var(--mos-surface-border)] text-center">
                 <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Dáng mi khuyên dùng</span>
-                  <strong className="text-[#FFB400] text-sm font-black">Dáng {currentEye.recommendedDesign}</strong>
+                  <span className="text-[10px] text-[var(--mos-text-muted)] block font-medium">Dáng mi khuyên dùng</span>
+                  <strong className="text-[var(--mos-accent)] text-sm font-black">Dáng {currentEye.recommendedDesign}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Độ cong an toàn</span>
-                  <strong className="text-emerald-400 text-sm font-black">Độ Cong {currentEye.recommendedCurl}</strong>
+                  <span className="text-[10px] text-[var(--mos-text-muted)] block font-medium">Độ cong an toàn</span>
+                  <strong className={`text-sm font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                    Độ Cong {currentEye.recommendedCurl}
+                  </strong>
                 </div>
               </div>
 
               {/* Đặc điểm nhận diện cốt lõi */}
-              <div className="flex items-start gap-2.5 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <Eye className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 bg-[var(--mos-surface-raised)] p-3 rounded-2xl border border-[var(--mos-surface-border)]">
+                <Eye className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                 <div>
-                  <strong className="text-amber-300 block text-[11px] uppercase tracking-wide">
+                  <strong className={`block text-[11px] uppercase tracking-wide ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
                     Đặc Điểm Nhận Diện Cốt Lõi
                   </strong>
-                  <p className="text-gray-200 mt-0.5 leading-relaxed">{currentEye.keyFeature}</p>
+                  <p className="text-[var(--mos-text)] mt-0.5 leading-relaxed">{currentEye.keyFeature}</p>
                 </div>
               </div>
 
               {/* Cấu trúc giải phẫu bờ mí */}
-              <div className="flex items-start gap-2.5 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <Layers className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 bg-[var(--mos-surface-raised)] p-3 rounded-2xl border border-[var(--mos-surface-border)]">
+                <Layers className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                 <div>
-                  <strong className="text-blue-300 block text-[11px] uppercase tracking-wide">
+                  <strong className={`block text-[11px] uppercase tracking-wide ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
                     Cấu Trúc Giải Phẫu Bờ Mí
                   </strong>
-                  <p className="text-gray-200 mt-0.5 leading-relaxed">{currentEye.desc}</p>
+                  <p className="text-[var(--mos-text)] mt-0.5 leading-relaxed">{currentEye.desc}</p>
                 </div>
               </div>
 
               {/* Kịch bản tư vấn khoa học Wings */}
-              <div className="flex items-start gap-2.5 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
-                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div
+                className={`flex items-start gap-2.5 p-3 rounded-2xl border ${
+                  isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'
+                }`}
+              >
+                <Sparkles className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 <div>
-                  <strong className="text-emerald-300 block text-[11px] uppercase tracking-wide">
+                  <strong className={`block text-[11px] uppercase tracking-wide ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
                     Lời Khuyên Khoa Học Wings
                   </strong>
-                  <p className="text-emerald-100 mt-0.5 leading-relaxed">{currentEye.lashAdvice}</p>
+                  <p className={`mt-0.5 leading-relaxed ${isDark ? 'text-emerald-100' : 'text-emerald-900'}`}>
+                    {currentEye.lashAdvice}
+                  </p>
                 </div>
               </div>
 
               {/* Cảnh báo rủi ro an toàn */}
-              <div className="flex items-start gap-2.5 bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div
+                className={`flex items-start gap-2.5 p-3 rounded-2xl border ${
+                  isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'
+                }`}
+              >
+                <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
                 <div>
-                  <strong className="text-rose-300 block text-[11px] uppercase tracking-wide">
+                  <strong className={`block text-[11px] uppercase tracking-wide ${isDark ? 'text-rose-300' : 'text-rose-800'}`}>
                     Rủi Ro Cần Tránh Khi Nối Mi
                   </strong>
-                  <p className="text-rose-100 mt-0.5 leading-relaxed">{currentEye.dangerRisk}</p>
+                  <p className={`mt-0.5 leading-relaxed ${isDark ? 'text-rose-100' : 'text-rose-900'}`}>
+                    {currentEye.dangerRisk}
+                  </p>
                 </div>
               </div>
 
               {/* Lưu ý kỹ thuật cho Chuyên Viên */}
-              <div className="flex items-start gap-2.5 bg-amber-500/10 p-3 rounded-2xl border border-amber-500/20">
-                <Wrench className="w-4 h-4 text-[#FFB400] shrink-0 mt-0.5" />
+              <div
+                className={`flex items-start gap-2.5 p-3 rounded-2xl border ${
+                  isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-200'
+                }`}
+              >
+                <Wrench className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-[#FFB400]' : 'text-amber-600'}`} />
                 <div>
-                  <strong className="text-[#FFB400] block text-[11px] uppercase tracking-wide">
+                  <strong className={`block text-[11px] uppercase tracking-wide ${isDark ? 'text-[#FFB400]' : 'text-amber-800'}`}>
                     Lưu Ý Kỹ Thuật Dành Cho Chuyên Viên
                   </strong>
-                  <p className="text-amber-100 mt-0.5 leading-relaxed">{currentEye.technicianTip}</p>
+                  <p className={`mt-0.5 leading-relaxed ${isDark ? 'text-amber-100' : 'text-amber-900'}`}>
+                    {currentEye.technicianTip}
+                  </p>
                 </div>
               </div>
             </div>

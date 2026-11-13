@@ -146,22 +146,22 @@ export function UpsellMainComboSelector({
           className={`${isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-200'} rounded-2xl p-3 shadow-sm border space-y-2.5`}
         >
           {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
-          <div className="bg-[#1C1C1E] text-white rounded-xl p-2.5 flex items-center justify-between gap-2">
+          <div className="bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border)] rounded-xl p-2.5 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-[10px] font-bold text-[#FFB400] uppercase tracking-wider flex items-center gap-1">
+              <div className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}>
                 {isUpTierPackage ? (
                   <>
-                    <Sparkles className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-400">Nâng cấp gói</span>
+                    <Sparkles className={`w-3 h-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <span className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>Nâng cấp gói</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3 h-3 text-[#FFB400]" />
+                    <Sparkles className={`w-3 h-3 ${isDark ? 'text-[#FFB400]' : 'text-amber-600'}`} />
                     <span>Dịch vụ hôm nay</span>
                   </>
                 )}
               </div>
-              <div className="text-[13px] font-black text-white leading-snug">
+              <div className="text-[13px] font-black text-[var(--mos-text)] leading-snug">
                 {currentCategory.name} {activeVolume === 'under' ? 'Mi Dưới 390' : activeVolume}
               </div>
               <div className="mt-1 flex items-center gap-1.5 flex-wrap">

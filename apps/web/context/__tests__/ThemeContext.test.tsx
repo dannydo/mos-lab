@@ -10,7 +10,13 @@ vi.mock('../../hooks/useResponsiveTier', () => ({
   useResponsiveTier: () => responsiveTier,
 }));
 
-import { DESKTOP_DENSITY_STORAGE_KEY, ThemeProvider, useTheme } from '../ThemeContext';
+import {
+  CORE_THEME_STORAGE_KEY,
+  DESKTOP_DENSITY_STORAGE_KEY,
+  THEME_MODE_STORAGE_KEY,
+  ThemeProvider,
+  useTheme,
+} from '../ThemeContext';
 
 function DensityProbe() {
   const { desktopDensity, effectiveDensity, setDesktopDensity } = useTheme();
@@ -117,13 +123,25 @@ describe('ThemeProvider display density', () => {
 });
 
 function ThemeProbe() {
-  const { themeId, themeMode, setCoreThemeId, toggleTheme, availableCoreThemes, saveCustomTheme, canManageThemes } =
-    useTheme();
+  const {
+    themeId,
+    themeMode,
+    themePreference,
+    systemThemeMode,
+    setCoreThemeId,
+    setThemePreference,
+    toggleTheme,
+    availableCoreThemes,
+    saveCustomTheme,
+    canManageThemes,
+  } = useTheme();
 
   return (
     <div>
       <output data-testid="theme-id">{themeId}</output>
       <output data-testid="theme-mode">{themeMode}</output>
+      <output data-testid="theme-preference">{themePreference}</output>
+      <output data-testid="system-theme-mode">{systemThemeMode}</output>
       <output data-testid="theme-count">{availableCoreThemes.length}</output>
       <output data-testid="can-manage-themes">{String(canManageThemes)}</output>
       <button type="button" onClick={() => setCoreThemeId('ivory')}>
@@ -137,6 +155,12 @@ function ThemeProbe() {
       </button>
       <button type="button" onClick={() => setCoreThemeId('wings')}>
         Set Wings
+      </button>
+      <button type="button" onClick={() => setThemePreference('auto')}>
+        Set Auto
+      </button>
+      <button type="button" onClick={() => setThemePreference('light')}>
+        Set Light
       </button>
       <button type="button" onClick={toggleTheme}>
         Toggle Mode
@@ -337,5 +361,98 @@ describe('ThemeProvider multi-theme engine', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Set Midnight' }));
     expect(screen.getByTestId('theme-id')).toHaveTextContent('midnight');
     expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
+  });
+
+  it('follows matchMedia system changes when set to auto and updates theme-color meta tags', async () => {
+    let darkMatches = false;
+    const listeners = new Set<(event: MediaQueryListEvent) => void>();
+    const originalMatchMedia = window.matchMedia;
+
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('prefers-color-scheme: dark') ? darkMatches : false,
+      media: query,
+      onchange: null,
+      addEventListener: (_type: string, cb: (event: MediaQueryListEvent) => void) => {
+        listeners.add(cb);
+      },
+      removeEventListener: (_type: string, cb: (event: MediaQueryListEvent) => void) => {
+        listeners.delete(cb);
+      },
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+
+    try {
+      render(
+        <ThemeProvider>
+          <ThemeProbe />
+        </ThemeProvider>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Set Auto' }));
+      expect(screen.getByTestId('theme-preference')).toHaveTextContent('auto');
+      expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+
+      await waitFor(() => {
+        expect(document.documentElement.dataset.themePreference).toBe('auto');
+        expect(document.documentElement.dataset.themeBase).toBe('light');
+        const metaTheme = document.head.querySelector('meta[name="theme-color"]');
+        expect(metaTheme?.getAttribute('content')).toBeTruthy();
+        const metaScheme = document.head.querySelector('meta[name="color-scheme"]');
+        expect(metaScheme?.getAttribute('content')).toBe('light dark');
+      });
+
+      // Simulate iOS switching appearance from Light -> Dark
+      darkMatches = true;
+      act(() => {
+        listeners.forEach((cb) => cb({ matches: true, media: '(prefers-color-scheme: dark)' } as MediaQueryListEvent));
+      });
+
+      expect(screen.getByTestId('system-theme-mode')).toHaveTextContent('dark');
+      expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
+      await waitFor(() => {
+        expect(document.documentElement.dataset.themeBase).toBe('dark');
+        const metaScheme = document.head.querySelector('meta[name="color-scheme"]');
+        expect(metaScheme?.getAttribute('content')).toBe('light dark');
+      });
+
+      // Explicit light preference updates meta[name="color-scheme"] to "light"
+      fireEvent.click(screen.getByRole('button', { name: 'Set Light' }));
+      await waitFor(() => {
+        const metaScheme = document.head.querySelector('meta[name="color-scheme"]');
+        expect(metaScheme?.getAttribute('content')).toBe('light');
+      });
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
+  it('syncs theme preference and core theme across tabs via storage events', async () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: THEME_MODE_STORAGE_KEY,
+          newValue: 'light',
+        })
+      );
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: CORE_THEME_STORAGE_KEY,
+          newValue: 'ivory',
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+      expect(screen.getByTestId('theme-id')).toHaveTextContent('ivory');
+    });
   });
 });

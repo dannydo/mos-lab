@@ -13,12 +13,9 @@ import {
   Shield,
   LogOut,
   Building2,
-  Palette,
-  Sun,
-  Moon,
-  Check,
 } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
+import { MobileThemeSelectorBlock } from '../../../../components/theme/MobileThemeSheet';
 
 interface IosProfileMenuSheetProps {
   isOpen: boolean;
@@ -55,7 +52,7 @@ export function IosProfileMenuSheet({
   availableBranches = [],
   isAdmin = false,
 }: IosProfileMenuSheetProps) {
-  const { coreThemeId, themeId, themeMode, toggleTheme, availableCoreThemes, setCoreThemeId } = useTheme();
+  const { themeMode } = useTheme();
 
   if (!isOpen) return null;
 
@@ -63,13 +60,6 @@ export function IosProfileMenuSheet({
   const isCvl = role === 'CVL';
   const isCvll = role === 'CVLL';
   const isDark = themeMode === 'dark';
-  const currentThemeItem = availableCoreThemes.find((t) => t.id === (coreThemeId || themeId));
-
-  const handleSelectThemeMode = (targetMode: 'light' | 'dark') => {
-    if (themeMode !== targetMode) {
-      toggleTheme();
-    }
-  };
 
   const handleLogout = () => {
     onClose();
@@ -96,9 +86,12 @@ export function IosProfileMenuSheet({
       <div className="w-full max-w-[420px] z-10 flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom duration-200">
         {/* Main Content Box */}
         <div
-          className={`backdrop-blur-2xl rounded-3xl p-4 border space-y-3.5 shadow-2xl transition-colors max-h-[82vh] overflow-y-auto no-scrollbar ${
-            isDark ? 'bg-[#1C1C1E]/95 border-neutral-800 text-white' : 'bg-white/95 border-neutral-200 text-neutral-900'
-          }`}
+          className="backdrop-blur-2xl rounded-3xl p-4 border space-y-3.5 shadow-2xl transition-colors max-h-[82vh] overflow-y-auto no-scrollbar"
+          style={{
+            backgroundColor: 'var(--mos-surface)',
+            borderColor: 'var(--mos-surface-border)',
+            color: 'var(--mos-text)',
+          }}
         >
           {/* Header Staff Identity */}
           <div
@@ -179,96 +172,7 @@ export function IosProfileMenuSheet({
           </div>
 
           {/* Giao diện & Tông màu (Appearance & Theme) */}
-          <div
-            className={`p-3 rounded-2xl border space-y-2.5 transition-colors ${
-              isDark ? 'bg-neutral-900/70 border-neutral-800/90' : 'bg-neutral-50/90 border-neutral-200'
-            }`}
-          >
-            {/* Header: Icon & Active Indicator */}
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider px-0.5">
-              <span className={`flex items-center gap-1.5 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                <Palette className="w-3.5 h-3.5 text-amber-500" />
-                <span>Giao diện & Tông màu</span>
-              </span>
-              <span className="text-[10.5px] font-black text-amber-500">{isDark ? '🌙 Nền Tối' : '☀️ Nền Sáng'}</span>
-            </div>
-
-            {/* 1. Tông Sáng / Tối Segmented Control */}
-            <div
-              className={`grid grid-cols-2 gap-1 p-1 rounded-xl border ${
-                isDark ? 'bg-black/50 border-neutral-800' : 'bg-neutral-200/80 border-neutral-300/80'
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => handleSelectThemeMode('light')}
-                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
-                  themeMode === 'light'
-                    ? 'bg-white text-black shadow-xs font-black ring-1 ring-black/10'
-                    : isDark
-                      ? 'text-neutral-400 hover:text-white'
-                      : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span>Nền Sáng</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectThemeMode('dark')}
-                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
-                  themeMode === 'dark'
-                    ? 'bg-[#1C1C1E] text-amber-400 shadow-xs font-black border border-neutral-700/80'
-                    : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Nền Tối</span>
-              </button>
-            </div>
-
-            {/* 2. Bộ chọn Phong Cách Màu (Theme Palettes) */}
-            <div className="space-y-1.5 pt-0.5">
-              <div className="flex items-center justify-between px-0.5 text-[10.5px]">
-                <span className={isDark ? 'text-neutral-400 font-medium' : 'text-neutral-600 font-medium'}>
-                  Chủ đề màu ({availableCoreThemes.length} phong cách):
-                </span>
-                <span className="text-amber-500 font-extrabold truncate max-w-[170px]">
-                  {currentThemeItem?.label || 'Wings Gold'}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 max-h-[145px] overflow-y-auto no-scrollbar p-0.5">
-                {availableCoreThemes.map((t) => {
-                  const active = t.id === (coreThemeId || themeId);
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setCoreThemeId(t.id)}
-                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col gap-1 active:scale-95 ${
-                        active
-                          ? isDark
-                            ? 'bg-neutral-800/95 border-amber-400 text-white shadow-xs ring-1 ring-amber-400/60'
-                            : 'bg-white border-amber-500 text-black shadow-xs ring-1 ring-amber-400/60'
-                          : isDark
-                            ? 'bg-neutral-900/70 border-neutral-800/80 text-neutral-400 hover:bg-neutral-800/80 hover:text-white'
-                            : 'bg-white/90 border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-black'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span
-                          className="w-3.5 h-3.5 rounded-full shadow-xs shrink-0 border border-black/20"
-                          style={{ backgroundColor: t.colors.primary }}
-                        />
-                        {active && <Check className="w-3 h-3 text-amber-500 stroke-[3]" />}
-                      </div>
-                      <div className="text-[11px] font-extrabold truncate leading-tight">{t.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <MobileThemeSelectorBlock compact />
 
           {/* Admin Test Role Switcher (Hidden in menu as requested by Danny) */}
           {canSwitchRole && (

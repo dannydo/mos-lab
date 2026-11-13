@@ -50,6 +50,8 @@ import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../componen
 import { useMosChatWebPush } from '../utils/useMosChatWebPush';
 import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
 import { BellRing } from 'lucide-react';
+import { useTheme } from '../../../context/ThemeContext';
+import { MobileThemeSheet } from '../../theme/MobileThemeSheet';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -71,6 +73,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   onClose,
   initialNavTarget,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
+
   const {
     currentUser,
     activeConversation,
@@ -153,6 +158,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [searchInitialScope, setSearchInitialScope] = useState<FilterScope>('ALL');
   const [pushModalOpen, setPushModalOpen] = useState(false);
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
 
   const pendingPushTargetRef = useRef<{
     convId: string;
@@ -736,7 +742,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     <div
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`flex flex-col bg-slate-950 text-slate-100 overflow-hidden ${
+      className={`flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-hidden ${
         standalone ? 'h-[100dvh] w-screen fixed inset-0 z-50' : 'h-full w-full'
       }`}
     >
@@ -772,6 +778,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           setSearchSheetOpen(true);
         }}
         onOpenPushSettings={() => setPushModalOpen(true)}
+        onOpenThemeSheet={() => setThemeSheetOpen(true)}
         isPushSubscribed={webPush.isSubscribed}
         onCallRoom={handleCallCurrentRoom}
         onClose={onClose}
@@ -781,11 +788,15 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       {!webPush.isSubscribed && (
         <div
           data-testid="mos-chat-mobile-push-banner"
-          className="bg-amber-500/15 border-b border-amber-500/30 px-3.5 py-2 flex items-center justify-between gap-2.5 text-xs text-amber-200 z-30 shrink-0"
+          className={`border-b px-3.5 py-2 flex items-center justify-between gap-2.5 text-xs z-30 shrink-0 ${
+            isDark
+              ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}
           role="alert"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <BellRing className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+            <BellRing className={`w-4 h-4 shrink-0 animate-bounce ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
             <span className="truncate">
               {webPush.needsIosHomeScreen
                 ? 'Thêm vào Màn hình chính để bật chuông khi khóa máy'
@@ -819,7 +830,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
             <MosChatActiveCallRoomBanner
               call={standaloneVoiceCall.getActiveCallForConversation(activeConversation?.id)}
               currentCallId={standaloneVoiceCall.currentCall?.callId}
-              isDark={true}
+              isDark={isDark}
               onJoinCall={(cid) => void standaloneVoiceCall.startOrJoinVoiceCall(cid)}
             />
           )}
@@ -1024,7 +1035,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       >
         <div className="space-y-3.5 py-2">
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Nội dung công việc *</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Nội dung công việc *</label>
             <Input.TextArea
               rows={3}
               value={taskTitle}
@@ -1034,7 +1045,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Người thực hiện</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Người thực hiện</label>
             <Select
               className="w-full"
               placeholder="Chọn người được giao (Mặc định: Chính tôi)"
@@ -1084,7 +1095,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Thời hạn hoàn thành (Deadline)</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1.5">Thời hạn hoàn thành (Deadline)</label>
             <MosChatMobileDateTimePicker
               value={taskDueAt}
               onChange={(d) => setTaskDueAt(d)}
@@ -1093,7 +1104,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Mức độ ưu tiên</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Mức độ ưu tiên</label>
             <Select
               className="w-full"
               value={taskPriority}
@@ -1215,7 +1226,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           speakingStaffIds={standaloneVoiceCall.speakingStaffIds}
           audioWarning={standaloneVoiceCall.audioWarning}
           isConnecting={standaloneVoiceCall.isConnecting}
-          isDark={true}
+          isDark={isDark}
           onAcceptIncoming={(callId) => void standaloneVoiceCall.acceptIncomingCall(callId)}
           onDeclineIncoming={(callId) => void standaloneVoiceCall.declineIncomingCall(callId)}
           onToggleMute={() => void standaloneVoiceCall.toggleMute()}
@@ -1223,6 +1234,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           onEndCall={() => void standaloneVoiceCall.endCurrentCall()}
         />
       )}
+
+      <MobileThemeSheet open={themeSheetOpen} onClose={() => setThemeSheetOpen(false)} />
     </div>
   );
 };

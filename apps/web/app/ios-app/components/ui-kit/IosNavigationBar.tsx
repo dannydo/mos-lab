@@ -35,7 +35,8 @@ export function IosNavigationBar({
       return (
         <button
           onClick={action.onClick}
-          className="text-[#FFB400] text-[15px] font-medium active:opacity-60 transition-opacity py-1 px-1"
+          className="text-[15px] font-medium active:opacity-60 transition-opacity py-1 px-1"
+          style={{ color: 'var(--mos-accent)' }}
         >
           {action.label}
         </button>
@@ -45,7 +46,14 @@ export function IosNavigationBar({
   };
 
   return (
-    <header className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-2.5 px-4 flex items-center justify-between bg-black border-b border-neutral-900 select-none z-40 relative min-h-[50px] shrink-0">
+    <header
+      className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-2.5 px-4 flex items-center justify-between border-b select-none z-40 relative min-h-[50px] shrink-0 transition-colors"
+      style={{
+        backgroundColor: 'var(--mos-surface)',
+        borderColor: 'var(--mos-surface-border)',
+        color: 'var(--mos-text)',
+      }}
+    >
       {/* Left Item */}
       <div className="z-10 flex items-center justify-start">
         {leftAction ? (
@@ -53,7 +61,8 @@ export function IosNavigationBar({
         ) : onBack ? (
           <button
             onClick={onBack}
-            className="flex items-center text-[#FFB400] active:opacity-60 transition-opacity text-[15px] font-medium -ml-1 py-1"
+            className="flex items-center active:opacity-60 transition-opacity text-[15px] font-medium -ml-1 py-1"
+            style={{ color: 'var(--mos-accent)' }}
           >
             <ChevronLeft className="w-4 h-4 -mr-0.5 shrink-0" />
             <span className="truncate max-w-[110px]">{backTitle || 'Back'}</span>
@@ -63,11 +72,17 @@ export function IosNavigationBar({
 
       {/* Center Title - Perfectly centered */}
       <div className="absolute inset-x-0 bottom-2.5 top-[calc(env(safe-area-inset-top,0px)+10px)] flex flex-col items-center justify-center pointer-events-none px-28">
-        <h1 className="text-white font-bold text-[15.5px] tracking-tight truncate leading-tight pointer-events-auto">
+        <h1
+          className="font-bold text-[15.5px] tracking-tight truncate leading-tight pointer-events-auto"
+          style={{ color: 'var(--mos-text)' }}
+        >
           {title}
         </h1>
         {subtitle && (
-          <span className="text-neutral-400 text-[11px] font-normal truncate leading-tight pointer-events-auto">
+          <span
+            className="text-[11px] font-normal truncate leading-tight pointer-events-auto"
+            style={{ color: 'var(--mos-text-muted)' }}
+          >
             {subtitle}
           </span>
         )}

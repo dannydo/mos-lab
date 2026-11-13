@@ -33,6 +33,7 @@ import 'dayjs/locale/vi';
 import type { MosChatTaskItem, MosChatMissionActionType, SafeAny } from '@mos-lab/shared';
 import { isCanonicalSuperAdminIdentity, isCvRole, isSuperAdminRole } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { Popconfirm, message as antdMessage } from 'antd';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatTaskInlineChecklist } from '../components/MosChatTaskInlineChecklist';
@@ -59,6 +60,8 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
   onDispatchMission,
   onGoToSourceMessage,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const {
     currentUser,
     toggleTaskDone,
@@ -191,7 +194,11 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-200">
+    <div
+      className={`fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm transition-opacity duration-200 ${
+        isDark ? 'bg-black/70' : 'bg-slate-900/45'
+      }`}
+    >
       {/* Background dismissal overlay */}
       <div
         className="absolute inset-0"
@@ -203,26 +210,30 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
 
       {/* iOS Bottom Sheet Container */}
       <div
-        className="relative w-full max-w-lg bg-slate-900 border-t border-slate-800 rounded-t-3xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden select-none animate-in slide-in-from-bottom duration-300"
+        className="relative w-full max-w-lg bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border-t border-[var(--mos-surface-border)] rounded-t-3xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden select-none animate-in slide-in-from-bottom duration-300"
         role="dialog"
         aria-modal="true"
         aria-label="Chi tiết công việc mOS"
       >
         {/* Drag handle pill */}
         <div className="pt-3 pb-1 flex justify-center">
-          <div className="w-10 h-1 rounded-full bg-slate-700/80" />
+          <div className="w-10 h-1 rounded-full bg-[var(--mos-surface-border-strong)]" />
         </div>
 
         {/* Sheet Header */}
-        <div className="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-[var(--mos-surface-border)] flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-800 text-amber-400 border border-amber-500/20 flex items-center gap-1 shrink-0">
-              <Hash className="w-3 h-3 text-amber-500" />
+            <span
+              className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-[var(--mos-surface-muted)] border border-amber-500/25 flex items-center gap-1 shrink-0 ${
+                isDark ? 'text-amber-400' : 'text-amber-700'
+              }`}
+            >
+              <Hash className={`w-3 h-3 ${isDark ? 'text-amber-500' : 'text-amber-600'}`} />
               <span>{taskCode}</span>
             </span>
 
             {task.conversationName && (
-              <span className="text-[11px] font-medium text-slate-400 truncate max-w-[140px]">
+              <span className="text-[11px] font-medium text-[var(--mos-text-muted)] truncate max-w-[140px]">
                 {task.conversationName}
               </span>
             )}
@@ -231,17 +242,25 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           <div className="flex items-center gap-2">
             {/* Priority Badge */}
             {task.priority === 'URGENT' && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border border-rose-500/30 ${
+                  isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-50 text-rose-700'
+                }`}
+              >
                 P0 · Khẩn cấp
               </span>
             )}
             {task.priority === 'HIGH' && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border border-amber-500/30 ${
+                  isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-700'
+                }`}
+              >
                 P1 · Ưu tiên cao
               </span>
             )}
             {(!task.priority || task.priority === 'NORMAL') && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border border-[var(--mos-surface-border)]">
                 P2 · Bình thường
               </span>
             )}
@@ -249,7 +268,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700 active:scale-95 transition-transform"
+              className="p-1 rounded-full text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] active:scale-95 transition-transform"
               aria-label="Đóng"
             >
               <X className="w-4 h-4" />
@@ -266,33 +285,43 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
             tabIndex={0}
             className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-colors active:scale-[0.99] ${
               task.done
-                ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-300'
-                : 'bg-slate-800/60 border-slate-700/80 text-slate-200'
+                ? isDark
+                  ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-300'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)]'
             }`}
           >
             <div className="flex items-center gap-3">
               {task.done ? (
-                <CheckSquare className="w-6 h-6 text-emerald-400 fill-emerald-400/20 shrink-0" />
+                <CheckSquare className={`w-6 h-6 shrink-0 ${isDark ? 'text-emerald-400 fill-emerald-400/20' : 'text-emerald-600 fill-emerald-500/15'}`} />
               ) : (
-                <Square className="w-6 h-6 text-slate-400 shrink-0" />
+                <Square className="w-6 h-6 text-[var(--mos-text-muted)] shrink-0" />
               )}
               <div>
                 <p className="text-sm font-bold">{task.done ? 'Đã hoàn thành công việc' : 'Đang thực hiện'}</p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-[var(--mos-text-muted)]">
                   {task.done ? 'Chạm vào đây để mở lại công việc' : 'Chạm vào đây để đánh dấu hoàn thành'}
                 </p>
               </div>
             </div>
 
             <span
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
                 task.done
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  ? isDark
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    : 'bg-emerald-100 text-emerald-700 border-emerald-300'
                   : isOverdue
-                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    ? isDark
+                      ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
                     : isDueSoon
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      ? isDark
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                      : isDark
+                        ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
               }`}
             >
               {task.done ? 'Hoàn thành' : isOverdue ? 'Quá hạn' : isDueSoon ? 'Sắp đến hạn' : 'Đang làm'}
@@ -303,7 +332,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           <div>
             <h3
               className={`text-base font-bold leading-relaxed break-words ${
-                task.done ? 'line-through text-slate-400' : 'text-white'
+                task.done ? 'line-through text-[var(--mos-text-muted)]' : 'text-[var(--mos-text)]'
               }`}
             >
               {task.title}
@@ -317,14 +346,14 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
             const assignee = task.assigneeName || 'Chính tôi';
 
             return (
-              <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 text-xs">
+              <div className="grid grid-cols-3 gap-2 bg-[var(--mos-surface)] p-3 rounded-2xl border border-[var(--mos-surface-border)] text-xs">
                 {/* Người tạo */}
                 <div className="space-y-1 min-w-0" title={`Người tạo: ${creator}`}>
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
+                  <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
                     <PenLine className="w-2.5 h-2.5 shrink-0" />
                     <span>Người tạo</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-200 font-medium min-w-0">
+                  <div className="flex items-center gap-1.5 text-[var(--mos-text)] font-medium min-w-0">
                     <MosChatAvatar size="xs" name={creator} staffDirectory={staffDirectory} />
                     <span className="truncate text-[11px]">{creator}</span>
                   </div>
@@ -332,11 +361,11 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
 
                 {/* Người giao (Giao bởi) */}
                 <div className="space-y-1 min-w-0" title={`Người giao: ${assigner}`}>
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-sky-400 uppercase tracking-wider">
+                  <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>
                     <Send className="w-2.5 h-2.5 shrink-0" />
                     <span>Giao bởi</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-200 font-medium min-w-0">
+                  <div className="flex items-center gap-1.5 text-[var(--mos-text)] font-medium min-w-0">
                     <MosChatAvatar size="xs" name={assigner} staffDirectory={staffDirectory} />
                     <span className="truncate text-[11px]">{assigner}</span>
                   </div>
@@ -344,31 +373,39 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
 
                 {/* Người nhận */}
                 <div className="space-y-1 min-w-0" title={`Người nhận: ${assignee}`}>
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 uppercase tracking-wider">
+                  <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                     <UserCheck className="w-2.5 h-2.5 shrink-0" />
                     <span>Người nhận</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-200 font-medium min-w-0">
+                  <div className="flex items-center gap-1.5 text-[var(--mos-text)] font-medium min-w-0">
                     <MosChatAvatar
                       size="xs"
                       name={assignee}
                       staffId={task.assigneeId}
                       staffDirectory={staffDirectory}
                     />
-                    <span className="truncate text-[11px] text-amber-300">{assignee}</span>
+                    <span className={`truncate text-[11px] ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>{assignee}</span>
                   </div>
                 </div>
 
                 {/* Deadline */}
-                <div className="space-y-1 col-span-3 pt-2 border-t border-slate-800/60">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                <div className="space-y-1 col-span-3 pt-2 border-t border-[var(--mos-surface-border)]">
+                  <span className="text-[10px] font-semibold text-[var(--mos-text-muted)] uppercase tracking-wider">
                     Hạn hoàn thành (Deadline)
                   </span>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-slate-200 font-medium tabular-nums">
+                    <div className="flex items-center gap-1.5 text-[var(--mos-text)] font-medium tabular-nums">
                       <Clock
                         className={`w-3.5 h-3.5 shrink-0 ${
-                          isOverdue ? 'text-rose-400' : isDueSoon ? 'text-amber-400' : 'text-slate-400'
+                          isOverdue
+                            ? isDark
+                              ? 'text-rose-400'
+                              : 'text-rose-600'
+                            : isDueSoon
+                              ? isDark
+                                ? 'text-amber-400'
+                                : 'text-amber-600'
+                              : 'text-[var(--mos-text-muted)]'
                         }`}
                       />
                       <span>{deadlineDate ? dayjs(deadlineDate).format('HH:mm DD/MM/YYYY') : 'Không giới hạn'}</span>
@@ -376,7 +413,15 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                     {deadlineDate && !task.done && (
                       <span
                         className={`text-[11px] font-bold ${
-                          isOverdue ? 'text-rose-400' : isDueSoon ? 'text-amber-400' : 'text-slate-400'
+                          isOverdue
+                            ? isDark
+                              ? 'text-rose-400'
+                              : 'text-rose-600'
+                            : isDueSoon
+                              ? isDark
+                                ? 'text-amber-400'
+                                : 'text-amber-600'
+                              : 'text-[var(--mos-text-muted)]'
                         }`}
                       >
                         ({formatCountdown(deadlineDate)})
@@ -386,11 +431,11 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                 </div>
 
                 {/* Created At */}
-                <div className="space-y-1 col-span-3 pt-1 border-t border-slate-800/60">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                <div className="space-y-1 col-span-3 pt-1 border-t border-[var(--mos-surface-border)]">
+                  <span className="text-[10px] font-semibold text-[var(--mos-text-muted)] uppercase tracking-wider">
                     Ngày tạo việc
                   </span>
-                  <div className="flex items-center gap-1.5 text-slate-400 tabular-nums">
+                  <div className="flex items-center gap-1.5 text-[var(--mos-text-muted)] tabular-nums">
                     <Calendar className="w-3.5 h-3.5 shrink-0" />
                     <span>{dayjs(task.createdAt).format('HH:mm DD/MM/YYYY')}</span>
                   </div>
@@ -403,35 +448,39 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           <MosChatTaskInlineChecklist
             task={task}
             onUpdateTask={updateTask}
-            isDark={true}
+            isDark={isDark}
             staffList={staffDirectory || []}
           />
 
           {/* Negotiation Banner if requested */}
           {hasNegotiation && (
-            <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/40 space-y-2.5">
-              <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+            <div
+              className={`p-3.5 rounded-2xl border space-y-2.5 ${
+                isDark ? 'bg-amber-950/30 border-amber-500/40' : 'bg-amber-50 border-amber-300'
+              }`}
+            >
+              <div className={`flex items-center gap-2 font-bold text-xs ${isDark ? 'text-amber-400' : 'text-amber-800'}`}>
                 <Handshake className="w-4 h-4 shrink-0" />
                 <span>Yêu cầu thương lượng dời hạn chót</span>
               </div>
 
               <div className="space-y-1 text-xs">
-                <p className="text-slate-300">
-                  <span className="text-slate-400">Đề xuất hạn mới:</span>{' '}
-                  <strong className="text-amber-300 tabular-nums font-bold">
+                <p className="text-[var(--mos-text)]">
+                  <span className="text-[var(--mos-text-muted)]">Đề xuất hạn mới:</span>{' '}
+                  <strong className={`tabular-nums font-bold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>
                     {dayjs(task.negotiatedDeadline).format('HH:mm DD/MM/YYYY')}
                   </strong>{' '}
-                  <span className="text-[11px] text-slate-400">({formatCountdown(task.negotiatedDeadline!)})</span>
+                  <span className="text-[11px] text-[var(--mos-text-muted)]">({formatCountdown(task.negotiatedDeadline!)})</span>
                 </p>
 
                 {task.negotiationNote && (
-                  <p className="text-slate-300 bg-slate-900/80 p-2 rounded-xl border border-slate-800 italic text-[11px]">
+                  <p className="text-[var(--mos-text)] bg-[var(--mos-surface)] p-2 rounded-xl border border-[var(--mos-surface-border)] italic text-[11px]">
                     &ldquo;{task.negotiationNote}&rdquo;
                   </p>
                 )}
 
-                <p className="text-[10px] text-slate-400">
-                  Gửi bởi <strong className="text-slate-300">{task.negotiatedBy || 'Người nhận'}</strong>
+                <p className="text-[10px] text-[var(--mos-text-muted)]">
+                  Gửi bởi <strong className="text-[var(--mos-text)]">{task.negotiatedBy || 'Người nhận'}</strong>
                   {task.negotiatedAt && <span> vào lúc {dayjs(task.negotiatedAt).format('HH:mm DD/MM')}</span>}
                 </p>
               </div>
@@ -451,14 +500,16 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                   <button
                     type="button"
                     onClick={handleRejectNegotiation}
-                    className="flex-1 py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform"
+                    className={`flex-1 py-1.5 px-3 rounded-xl bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform ${
+                      isDark ? 'text-rose-400' : 'text-rose-600'
+                    }`}
                   >
                     <XCircle className="w-3.5 h-3.5" />
                     <span>Từ chối</span>
                   </button>
                 </div>
               ) : (
-                <p className="text-[10px] text-amber-400/90 font-medium">
+                <p className={`text-[10px] font-medium ${isDark ? 'text-amber-400/90' : 'text-amber-700'}`}>
                   ⏳ Đang chờ người giao việc ({task.creatorName || 'người tạo'}) phê duyệt đề xuất này.
                 </p>
               )}
@@ -467,28 +518,48 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
 
           {/* mOS Mission Card & Gate Controls (if linked) */}
           {mission && !isCvRole(currentUser?.role) && (
-            <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 space-y-2.5">
+            <div
+              className={`p-3.5 rounded-2xl border space-y-2.5 ${
+                isDark ? 'bg-purple-950/40 border-purple-500/40' : 'bg-purple-50 border-purple-200'
+              }`}
+            >
               {/* Top Row: Mission Key, Type, Stage Badge, Link */}
               <div className="flex items-center justify-between gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <span className="flex items-center gap-1 text-xs font-bold text-purple-300">
-                    <Rocket className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className={`flex items-center gap-1 text-xs font-bold ${isDark ? 'text-purple-300' : 'text-purple-800'}`}>
+                    <Rocket className={`w-4 h-4 shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
                     <span>mOS Mission #{mission.missionKey}</span>
                   </span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                      isDark
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                        : 'bg-purple-100 text-purple-700 border-purple-200'
+                    }`}
+                  >
                     {mission.requestType || 'FEATURE'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                      isDark
+                        ? 'bg-purple-500/30 text-purple-200 border-purple-400/30'
+                        : 'bg-purple-100 text-purple-800 border-purple-300'
+                    }`}
+                  >
                     {mission.stageLabel || mission.humanBadge || mission.status}
                   </span>
                   <a
                     href={`/dashboard/bug-reports?reportId=${mission.reportId}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-1 rounded text-purple-300 hover:text-white bg-purple-900/40 border border-purple-500/30"
+                    className={`p-1 rounded border ${
+                      isDark
+                        ? 'text-purple-300 hover:text-white bg-purple-900/40 border-purple-500/30'
+                        : 'text-purple-700 hover:text-purple-900 bg-white border-purple-200'
+                    }`}
                     aria-label="Xem chi tiết trên mOS Mission"
                   >
                     <ExternalLink className="w-3 h-3" />
@@ -497,7 +568,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               </div>
 
               {/* Title */}
-              <p className="text-xs font-bold text-white line-clamp-2 leading-snug">{mission.title}</p>
+              <p className="text-xs font-bold text-[var(--mos-text)] line-clamp-2 leading-snug">{mission.title}</p>
 
               {/* 4-Step Progress Bar */}
               <div className="grid grid-cols-4 gap-1 pt-0.5">
@@ -513,12 +584,12 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                     <div key={s.idx} className="space-y-1">
                       <div
                         className={`h-1.5 rounded-full transition-all ${
-                          active ? 'bg-purple-500' : 'bg-slate-800'
+                          active ? 'bg-purple-500' : 'bg-[var(--mos-surface-border)]'
                         } ${current ? 'ring-2 ring-purple-400/60 shadow-sm shadow-purple-500/50' : ''}`}
                       />
                       <div
                         className={`text-[9.5px] truncate font-medium ${
-                          active ? 'text-purple-300 font-bold' : 'text-slate-500'
+                          active ? (isDark ? 'text-purple-300 font-bold' : 'text-purple-700 font-bold') : 'text-[var(--mos-text-muted)]'
                         }`}
                       >
                         {s.label}
@@ -529,7 +600,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               </div>
 
               {/* Human Explanation Box */}
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+              <div className="p-2.5 rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] text-[11px] text-[var(--mos-text)] leading-relaxed">
                 {mission.humanStatusSummary ||
                   mission.humanSummary ||
                   'Nhiệm vụ đang được triển khai trên hệ thống mOS Mission.'}
@@ -544,7 +615,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                       type="button"
                       disabled={actionLoading === 'APPROVE_IMPLEMENTATION'}
                       onClick={() => handleExecuteMissionAction('APPROVE_IMPLEMENTATION')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-purple-950/40 active:scale-98 transition-transform disabled:opacity-50"
+                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-purple-950/30 active:scale-98 transition-transform disabled:opacity-50"
                     >
                       {actionLoading === 'APPROVE_IMPLEMENTATION' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -597,7 +668,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                   type="button"
                   disabled={actionLoading === 'REPORTER_ACCEPT'}
                   onClick={() => handleExecuteMissionAction('REPORTER_ACCEPT')}
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 active:scale-98 transition-transform disabled:opacity-50"
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/30 active:scale-98 transition-transform disabled:opacity-50"
                 >
                   {actionLoading === 'REPORTER_ACCEPT' ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -614,14 +685,16 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                     <button
                       type="button"
                       onClick={() => setIsReopenOpen(true)}
-                      className="w-full py-1.5 px-3 rounded-xl bg-slate-800/80 border border-slate-700 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform"
+                      className={`w-full py-1.5 px-3 rounded-xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform ${
+                        isDark ? 'text-amber-300' : 'text-amber-700'
+                      }`}
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>🔄 Yêu cầu chỉnh sửa thêm / Nâng cấp tiếp</span>
                     </button>
                   ) : (
-                    <div className="space-y-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800">
-                      <label className="text-[11px] font-semibold text-slate-300 block">
+                    <div className="space-y-2 p-2.5 rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)]">
+                      <label className="text-[11px] font-semibold text-[var(--mos-text)] block">
                         Nội dung cần chỉnh thêm hoặc nâng cấp:
                       </label>
                       <textarea
@@ -629,21 +702,21 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
                         value={reopenFeedback}
                         onChange={(e) => setReopenFeedback(e.target.value)}
                         placeholder="Nhập chi tiết cần chỉnh sửa..."
-                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
+                        className="w-full p-2 rounded-lg bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-xs text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] focus:outline-none focus:border-[var(--mos-accent)]"
                       />
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           disabled={actionLoading === 'REPORTER_REOPEN' || !reopenFeedback.trim()}
                           onClick={() => handleExecuteMissionAction('REPORTER_REOPEN', reopenFeedback.trim())}
-                          className="flex-1 py-1.5 px-3 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold disabled:opacity-50 active:scale-95 transition-transform"
+                          className="flex-1 py-1.5 px-3 rounded-lg bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] text-xs font-bold disabled:opacity-50 active:scale-95 transition-transform"
                         >
                           Gửi yêu cầu
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsReopenOpen(false)}
-                          className="py-1.5 px-3 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium active:scale-95 transition-transform"
+                          className="py-1.5 px-3 rounded-lg bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] text-xs font-medium active:scale-95 transition-transform"
                         >
                           Hủy
                         </button>
@@ -656,7 +729,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           )}
 
           {/* Primary Action Buttons */}
-          <div className="space-y-2 pt-2 border-t border-slate-800">
+          <div className="space-y-2 pt-2 border-t border-[var(--mos-surface-border)]">
             {/* Super Admin Danny: Dispatch to mOS Mission (Điều răn UI-009) */}
             {isStrictDannySuperAdmin && !task.mission && (
               <button
@@ -674,7 +747,9 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               <button
                 type="button"
                 onClick={() => onNegotiateDeadline(task)}
-                className="py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                className={`py-2 px-3 rounded-xl border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform ${
+                  isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-50 text-amber-700'
+                }`}
               >
                 <Handshake className="w-3.5 h-3.5" />
                 <span>{hasNegotiation ? 'Sửa đề xuất hạn' : 'Xin dời hạn'}</span>
@@ -684,9 +759,9 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               <button
                 type="button"
                 onClick={() => onEditTask(task)}
-                className="py-2 px-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                className="py-2 px-3 rounded-xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text)] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
               >
-                <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                <Edit3 className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                 <span>Chỉnh sửa</span>
               </button>
             </div>
@@ -696,7 +771,9 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               <button
                 type="button"
                 onClick={() => onGoToSourceMessage(task)}
-                className="w-full py-2 px-3 rounded-xl bg-slate-800/80 border border-slate-700 text-blue-400 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform"
+                className={`w-full py-2 px-3 rounded-xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform ${
+                  isDark ? 'text-blue-400' : 'text-blue-600'
+                }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Mở luồng tin nhắn gốc</span>
@@ -708,16 +785,16 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               <button
                 type="button"
                 onClick={handleToggleArchive}
-                className="py-1.5 px-3 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5 active:scale-95 transition-transform"
+                className="py-1.5 px-3 rounded-xl text-xs font-medium text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] flex items-center gap-1.5 active:scale-95 transition-transform"
               >
                 {task.archived ? (
                   <>
-                    <ArchiveRestore className="w-3.5 h-3.5 text-blue-400" />
+                    <ArchiveRestore className={`w-3.5 h-3.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                     <span>Khôi phục việc</span>
                   </>
                 ) : (
                   <>
-                    <Archive className="w-3.5 h-3.5 text-slate-500" />
+                    <Archive className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
                     <span>Lưu trữ việc</span>
                   </>
                 )}
@@ -733,7 +810,9 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
               >
                 <button
                   type="button"
-                  className="py-1.5 px-3 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 flex items-center gap-1.5 active:scale-95 transition-transform"
+                  className={`py-1.5 px-3 rounded-xl text-xs font-medium flex items-center gap-1.5 active:scale-95 transition-transform ${
+                    isDark ? 'text-rose-400 hover:text-rose-300' : 'text-rose-600 hover:text-rose-700'
+                  }`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Xoá việc</span>

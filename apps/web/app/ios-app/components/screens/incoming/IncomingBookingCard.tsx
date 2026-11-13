@@ -20,6 +20,7 @@ import {
   formatTime24h,
 } from './incomingBookingHelpers';
 import { RotateCcw, Info, Package, Heart, Lock } from 'lucide-react';
+import { useTheme } from '../../../../../context/ThemeContext';
 
 interface IncomingBookingCardProps {
   booking: BookingItem;
@@ -56,6 +57,8 @@ export function IncomingBookingCard({
   onOpenRevertModal,
   onOpenWalletModal,
 }: IncomingBookingCardProps) {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
   const isComboLive = Boolean(b.comboLiveStatus?.isComboLive);
   const isComboExpired = Boolean(b.comboLiveStatus?.isExpired);
   const remainingSessions = b.comboLiveStatus?.remainingSessions ?? 0;
@@ -136,11 +139,23 @@ export function IncomingBookingCard({
     (effectiveStaffId ? KNOWN_STAFF_AVATARS[String(effectiveStaffId)] : undefined) ||
     (isServicingOrDone ? actor?.avatar || KNOWN_STAFF_AVATARS['46272'] : undefined);
 
-  const cardBgStyle = isCurrentActiveServicing
-    ? 'bg-[#221C0E] border-2 border-amber-400 ring-2 ring-amber-400/30'
+  const cardInlineStyle: React.CSSProperties = isCurrentActiveServicing
+    ? {
+        backgroundColor: isDark ? '#221C0E' : 'rgba(245, 158, 11, 0.12)',
+        borderColor: 'var(--mos-accent)',
+        boxShadow: '0 0 0 2px var(--mos-focus-ring)',
+      }
     : isOtherCustomerLocked
-      ? 'bg-[#18181A] opacity-60 border-neutral-800/80 cursor-not-allowed'
-      : 'bg-[#1C1C1E] active:bg-[#2C2C2E] border border-neutral-800/90 hover:border-neutral-700';
+      ? {
+          backgroundColor: 'var(--mos-surface-muted)',
+          borderColor: 'var(--mos-surface-border)',
+          opacity: 0.6,
+          cursor: 'not-allowed',
+        }
+      : {
+          backgroundColor: 'var(--mos-surface)',
+          borderColor: 'var(--mos-surface-border)',
+        };
 
   const servicingSubStatus = resolveServicingSubStatus(b);
 
@@ -158,17 +173,28 @@ export function IncomingBookingCard({
         }
         onSelectBooking(b.id);
       }}
-      className={`rounded-2xl p-3 flex items-start gap-3 transition-all cursor-pointer shadow-xs select-none ${cardBgStyle}`}
+      className={`rounded-2xl p-3 flex items-start gap-3 transition-all cursor-pointer shadow-xs select-none ${
+        isCurrentActiveServicing ? 'border-2' : 'border active:opacity-90'
+      }`}
+      style={cardInlineStyle}
     >
       {/* 3.1 Avatar with Number Badge & Dual Corner Badges (Booker bottom-left & CV bottom-right) */}
       <div className="relative w-12 h-12 flex-shrink-0">
         {/* Badge số thứ tự 1, 2, 3... gắn ở góc trên bên trái của Avatar */}
-        <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#2C2C2E] border border-neutral-700 text-[9.5px] font-black text-amber-400 flex items-center justify-center tabular-nums shadow-sm leading-none z-10">
+        <span
+          className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full border text-[9.5px] font-black flex items-center justify-center tabular-nums shadow-sm leading-none z-10"
+          style={{
+            backgroundColor: 'var(--mos-surface-raised, var(--mos-surface))',
+            borderColor: 'var(--mos-surface-border-strong)',
+            color: 'var(--mos-accent)',
+          }}
+        >
           {idx + 1}
         </span>
 
         <div
-          className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-neutral-900 shadow-sm ${avatarRingClass}`}
+          className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-sm ${avatarRingClass}`}
+          style={{ backgroundColor: 'var(--mos-surface-muted)' }}
         >
           {b.customerAvatar ? (
             <img
@@ -248,13 +274,20 @@ export function IncomingBookingCard({
             {typeMeta.symbol}
           </span>
           {displayPhone ? (
-            <span className="text-[12px] text-neutral-400 font-bold tabular-nums flex-shrink-0">{displayPhone}</span>
+            <span className="text-[12px] font-bold tabular-nums flex-shrink-0" style={{ color: 'var(--mos-text-muted)' }}>
+              {displayPhone}
+            </span>
           ) : null}
-          <span className="text-[14px] font-extrabold text-white truncate tracking-tight">{cleanCustomerName}</span>
+          <span className="text-[14px] font-extrabold truncate tracking-tight" style={{ color: 'var(--mos-text)' }}>
+            {cleanCustomerName}
+          </span>
         </div>
 
         {/* LINE 2: HyperLight 5X 770 60 (Lược bỏ chi tiết cong, dày, dài) */}
-        <div className="text-[11.5px] font-bold text-amber-400/90 tracking-tight leading-tight mt-0.5 truncate">
+        <div
+          className="text-[11.5px] font-bold tracking-tight leading-tight mt-0.5 truncate"
+          style={{ color: 'var(--mos-accent)' }}
+        >
           {formatLashSpecLine(b)}
         </div>
 
@@ -271,6 +304,7 @@ export function IncomingBookingCard({
               className="shrink-0 inline-flex items-center cursor-pointer active:scale-95 transition-transform"
             >
               <ComboSessionBadge
+                theme={themeMode}
                 normalRemaining={b.comboLiveStatus?.normalRemaining}
                 retainRemaining={b.comboLiveStatus?.retainRemaining}
                 remainingSessions={remainingSessions}
@@ -287,13 +321,20 @@ export function IncomingBookingCard({
             />
           )}
 
-          <span className="text-[11px] text-neutral-400 font-medium tabular-nums">
+          <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
             Lần {visits}
             {daysText}
           </span>
 
           {isOtherCustomerLocked && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700 text-[10px] font-bold leading-none">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold leading-none"
+              style={{
+                backgroundColor: 'var(--mos-surface-muted)',
+                borderColor: 'var(--mos-surface-border)',
+                color: 'var(--mos-text-muted)',
+              }}
+            >
               <Lock className="w-2.5 h-2.5 stroke-[2.2] shrink-0" />
               <span>Chưa thể check-in</span>
             </span>
@@ -306,11 +347,12 @@ export function IncomingBookingCard({
             e.stopPropagation();
             onOpenCustomerDetail(b);
           }}
-          className="text-[10.5px] text-neutral-400 hover:text-amber-300 leading-tight mt-1 line-clamp-1 italic font-normal cursor-pointer flex items-center justify-between group pt-0.5"
+          className="text-[10.5px] leading-tight mt-1 line-clamp-1 italic font-normal cursor-pointer flex items-center justify-between group pt-0.5"
+          style={{ color: 'var(--mos-text-muted)' }}
           title="Bấm để xem chi tiết ghi chú & thông tin khách hàng"
         >
           <span className="truncate">{b.customerNote ? `“${b.customerNote}”` : 'Hồ sơ & thông số khách'}</span>
-          <span className="ml-1.5 shrink-0 not-italic flex items-center text-amber-400/90 group-hover:text-amber-300 transition-colors">
+          <span className="ml-1.5 shrink-0 not-italic flex items-center transition-colors" style={{ color: 'var(--mos-accent)' }}>
             <Info className="w-3.5 h-3.5 stroke-[2.2]" />
           </span>
         </div>
@@ -318,9 +360,12 @@ export function IncomingBookingCard({
 
       {/* 3.3 Right Column */}
       {isDone && doneSummary ? (
-        <div className="w-[104px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch space-y-1">
+        <div
+          className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center text-left self-stretch space-y-1"
+          style={{ borderColor: 'var(--mos-surface-border)' }}
+        >
           {/* TẦNG 1: THỜI GIAN (09:00 · 55p) */}
-          <div className="text-neutral-400 text-[11px] font-bold tabular-nums tracking-tight leading-none">
+          <div className="text-[11px] font-bold tabular-nums tracking-tight leading-none" style={{ color: 'var(--mos-text-muted)' }}>
             {doneSummary.timeAndDurationStr}
           </div>
 
@@ -332,21 +377,26 @@ export function IncomingBookingCard({
                 {formatShortMoney(doneSummary.debtAmount)}
               </span>
             ) : doneSummary.soldComboPrice > 0 ? (
-              <span className="text-purple-400 font-black text-[12.5px] tabular-nums tracking-tight inline-flex items-center">
-                <Package className="w-3.5 h-3.5 stroke-[2.2] text-purple-400 shrink-0 mr-1" />
+              <span className="text-purple-500 font-black text-[12.5px] tabular-nums tracking-tight inline-flex items-center">
+                <Package className="w-3.5 h-3.5 stroke-[2.2] text-purple-500 shrink-0 mr-1" />
                 {formatShortMoney(doneSummary.soldComboPrice)}
               </span>
             ) : doneSummary.upgradeOrPaidAmount > 0 ? (
-              <span className="text-emerald-400 font-black text-[12.5px] tabular-nums tracking-tight">
+              <span className="text-emerald-500 font-black text-[12.5px] tabular-nums tracking-tight">
                 +{formatShortMoney(doneSummary.upgradeOrPaidAmount)}
               </span>
             ) : (
-              <span className="text-neutral-400 font-bold text-[12px] tabular-nums">0đ</span>
+              <span className="font-bold text-[12px] tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
+                0đ
+              </span>
             )}
           </div>
 
           {/* TẦNG 3: ĐIỂM CVL & TIP (↻ +41 pts · Heart 50K) */}
-          <div className="text-[10px] font-bold text-amber-400 tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center">
+          <div
+            className="text-[10px] font-bold tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center"
+            style={{ color: 'var(--mos-accent)' }}
+          >
             <span>↻ +{doneSummary.cvPoints}</span>
             {doneSummary.tipAmount > 0 ? (
               <span className="inline-flex items-center ml-0.5">
@@ -360,16 +410,25 @@ export function IncomingBookingCard({
 
           {doneSummary.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' && (
             <div className="pt-0.5">
-              <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-700/60 text-[9px] font-extrabold tracking-tight">
+              <span
+                className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded border text-[9px] font-extrabold tracking-tight ${
+                  isDark
+                    ? 'bg-amber-950/70 text-amber-300 border-amber-700/60'
+                    : 'bg-amber-50 text-amber-800 border-amber-300'
+                }`}
+              >
                 Chờ Quầy chốt
               </span>
             </div>
           )}
         </div>
       ) : (
-        <div className="w-[88px] flex-shrink-0 border-l border-neutral-800/80 pl-2.5 flex flex-col justify-center text-left self-stretch">
+        <div
+          className="w-[88px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center text-left self-stretch"
+          style={{ borderColor: 'var(--mos-surface-border)' }}
+        >
           {/* HÀNG 1: THỜI GIAN 24H (Bỏ AM/PM để rộng chỗ) */}
-          <span className="text-amber-400 text-[14px] font-black tabular-nums leading-tight">
+          <span className="text-[14px] font-black tabular-nums leading-tight" style={{ color: 'var(--mos-accent)' }}>
             {isServicingActive ? completionInfo.completionTimeStr : formatTime24h(b.time12h || b.timeSlot)}
           </span>
 

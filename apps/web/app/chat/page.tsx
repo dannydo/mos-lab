@@ -103,7 +103,7 @@ export default function ChatPage() {
       <OmiCallProvider>
         <Suspense
           fallback={
-            <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-slate-400">
+            <div className="h-screen w-screen flex items-center justify-center bg-[var(--background)] text-[var(--mos-text-muted)]">
               Đang khởi tạo mOS Chat...
             </div>
           }

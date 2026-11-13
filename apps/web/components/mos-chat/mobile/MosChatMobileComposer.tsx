@@ -5,6 +5,7 @@ import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles,
 import { message as antdMessage, Avatar } from 'antd';
 import type { MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { useTheme } from '../../../context/ThemeContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
@@ -47,6 +48,8 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   stagedCustomerCard,
   onRemoveCustomerCard,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const {
     sendMessage,
     replyingToMessage,
@@ -215,7 +218,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
         transition: 'transform 0.15s ease-out',
         paddingBottom: isKeyboardOpen ? '8px' : 'max(env(safe-area-inset-bottom, 14px), 12px)',
       }}
-      className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 shadow-lg"
+      className="sticky bottom-0 z-30 bg-[var(--mos-surface)] backdrop-blur-md border-t border-[var(--mos-surface-border)] px-3 pt-2 shadow-lg"
     >
       {/* Autocomplete when typing @mention */}
       <MosChatMobileMentionAutocomplete
@@ -226,9 +229,9 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
 
       {/* Quoted Message Preview Banner */}
       {replyingToMessage && (
-        <div className="flex items-center justify-between bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 mb-2 text-xs">
+        <div className="flex items-center justify-between bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-xl px-3 py-1.5 mb-2 text-xs">
           <div className="flex items-center gap-2 truncate min-w-0">
-            <span className="w-1 h-3.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="w-1 h-3.5 rounded-full bg-[var(--mos-accent)] shrink-0" />
             <MosChatAvatar
               size="xs"
               src={replyingToMessage.senderAvatar}
@@ -237,14 +240,16 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
               staffDirectory={staffDirectory}
             />
             <div className="truncate min-w-0">
-              <span className="font-semibold text-amber-300">Trả lời {replyingToMessage.senderName}:</span>{' '}
-              <span className="text-slate-300 truncate">{cleanQuotedText(replyingToMessage.text)}</span>
+              <span className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                Trả lời {replyingToMessage.senderName}:
+              </span>{' '}
+              <span className="text-[var(--mos-text)] truncate">{cleanQuotedText(replyingToMessage.text)}</span>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setReplyingToMessage(null)}
-            className="p-1 text-slate-400 hover:text-white rounded-full"
+            className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] rounded-full"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -282,10 +287,14 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
                 .join('')
                 .toUpperCase()}
             </Avatar>
-            <span className="font-bold text-white truncate">{stagedCustomerCard.name}</span>
-            <span className="text-amber-400 font-medium truncate">({stagedCustomerCard.meta})</span>
+            <span className="font-bold text-[var(--mos-text)] truncate">{stagedCustomerCard.name}</span>
+            <span className={`font-medium truncate ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+              ({stagedCustomerCard.meta})
+            </span>
             {stagedCustomerCard.cvName && (
-              <span className="text-slate-400 truncate hidden sm:inline">· {stagedCustomerCard.cvName}</span>
+              <span className="text-[var(--mos-text-muted)] truncate hidden sm:inline">
+                · {stagedCustomerCard.cvName}
+              </span>
             )}
           </div>
           <button
@@ -294,7 +303,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
               e.stopPropagation();
               onRemoveCustomerCard?.();
             }}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all shrink-0"
+            className="text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] p-1 rounded-lg hover:bg-[var(--mos-surface-muted)] active:scale-95 transition-all shrink-0"
             title="Bỏ đính kèm thẻ khách hàng"
             aria-label="Bỏ đính kèm thẻ khách hàng"
           >
@@ -316,12 +325,16 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
               return (
                 <div
                   key={att.id || idx}
-                  className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/50 shrink-0 group bg-slate-900 shadow-sm flex items-center justify-center"
+                  className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/50 shrink-0 group bg-[var(--mos-surface-raised)] shadow-sm flex items-center justify-center"
                 >
                   {att.posterUrl ? (
                     <img src={att.posterUrl} alt={att.name || 'Video'} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-slate-950 flex items-center justify-center text-purple-400">
+                    <div
+                      className={`w-full h-full bg-[var(--background)] flex items-center justify-center ${
+                        isDark ? 'text-purple-400' : 'text-purple-600'
+                      }`}
+                    >
                       <Film size={22} />
                     </div>
                   )}
@@ -339,7 +352,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
                     <button
                       type="button"
                       onClick={() => onRemoveAttachment(att.id)}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
                       aria-label={`Xóa video ${idx + 1}`}
                     >
                       <X className="w-2.5 h-2.5" />
@@ -353,7 +366,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
               return (
                 <div
                   key={att.id || idx}
-                  className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 group bg-slate-800 shadow-sm"
+                  className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 group bg-[var(--mos-surface-raised)] shadow-sm"
                 >
                   <img
                     src={resolveMediaUrl(att.url)}
@@ -364,7 +377,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
                     <button
                       type="button"
                       onClick={() => onRemoveAttachment(att.id)}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
                       aria-label={`Xóa ảnh ${idx + 1}`}
                     >
                       <X className="w-2.5 h-2.5" />
@@ -377,28 +390,28 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             return (
               <div
                 key={att.id || idx}
-                className="relative h-14 min-w-[120px] max-w-[170px] px-2.5 rounded-xl border border-amber-500/40 shrink-0 flex items-center gap-2 bg-slate-800 shadow-sm"
+                className="relative h-14 min-w-[120px] max-w-[170px] px-2.5 rounded-xl border border-amber-500/40 shrink-0 flex items-center gap-2 bg-[var(--mos-surface-raised)] shadow-sm"
               >
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-[10px] ${
                     isPdf
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      ? `bg-rose-500/20 border border-rose-500/30 ${isDark ? 'text-rose-400' : 'text-rose-600'}`
+                      : `bg-emerald-500/20 border border-emerald-500/30 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`
                   }`}
                 >
                   {isPdf ? <FileText size={16} /> : <File size={16} />}
                 </div>
                 <div className="flex-1 min-w-0 pr-3">
-                  <p className="text-[11px] font-semibold text-slate-100 truncate" title={att.name}>
+                  <p className="text-[11px] font-semibold text-[var(--mos-text)] truncate" title={att.name}>
                     {att.name}
                   </p>
-                  <span className="text-[9.5px] text-slate-400 uppercase font-extrabold">{ext}</span>
+                  <span className="text-[9.5px] text-[var(--mos-text-muted)] uppercase font-extrabold">{ext}</span>
                 </div>
                 {onRemoveAttachment && (
                   <button
                     type="button"
                     onClick={() => onRemoveAttachment(att.id)}
-                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
                     aria-label={`Xóa tệp ${idx + 1}`}
                   >
                     <X className="w-2.5 h-2.5" />
@@ -409,8 +422,10 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           })}
           {isUploadingImages && (
             <div className="w-14 h-14 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 flex flex-col items-center justify-center shrink-0">
-              <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-              <span className="text-[9px] text-amber-300 mt-0.5 font-medium">Tải...</span>
+              <Loader2 className={`w-4 h-4 animate-spin ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+              <span className={`text-[9px] mt-0.5 font-medium ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                Tải...
+              </span>
             </div>
           )}
         </div>
@@ -418,8 +433,12 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
 
       {/* Uploading Banner when no images are ready yet */}
       {isUploadingImages && !hasAttachments && (
-        <div className="flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
-          <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-amber-400" />
+        <div
+          className={`flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs ${
+            isDark ? 'text-amber-300' : 'text-amber-800'
+          }`}
+        >
+          <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
           <span>Đang tải hình ảnh lên...</span>
         </div>
       )}
@@ -438,9 +457,13 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
                 setIsSending(false);
                 onSendSuccess?.();
               }}
-              className="shrink-0 px-2.5 py-1 text-xs rounded-full bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 border border-purple-500/30 active:scale-95 transition-all shadow-sm flex items-center gap-1"
+              className={`shrink-0 px-2.5 py-1 text-xs rounded-full border active:scale-95 transition-all shadow-sm flex items-center gap-1 ${
+                isDark
+                  ? 'bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 border-purple-500/30'
+                  : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-800 border-purple-500/30'
+              }`}
             >
-              <Sparkles className="w-3 h-3 text-purple-400" />
+              <Sparkles className={`w-3 h-3 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
               <span>{item.label}</span>
             </button>
           ))}
@@ -453,14 +476,14 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
         <button
           type="button"
           onClick={onOpenActionSheet}
-          className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5"
+          className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text)] active:scale-90 transition-transform shrink-0 mb-0.5"
           aria-label="Tác vụ đính kèm"
         >
-          <Plus className="w-5 h-5 text-amber-400" />
+          <Plus className="w-5 h-5 text-[var(--mos-accent)]" />
         </button>
 
         {/* Text Input Box */}
-        <div className="flex-1 min-h-[38px] max-h-[120px] bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex items-center gap-2 focus-within:border-amber-400/80 transition-colors">
+        <div className="flex-1 min-h-[38px] max-h-[120px] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-2xl px-3 py-1.5 flex items-center gap-2 focus-within:border-[var(--mos-accent)] transition-colors">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -468,7 +491,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[110px] py-1 leading-snug"
+            className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] resize-none max-h-[110px] py-1 leading-snug"
             style={{ outline: 'none', boxShadow: 'none' }}
           />
 
@@ -477,7 +500,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onOpenStickerSheet('emoji')}
-            className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+            className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-90 transition-transform shrink-0"
             aria-label="Biểu cảm Emoji & Nhãn dán"
             title="Biểu cảm Emoji & Nhãn dán"
           >
@@ -491,23 +514,23 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             type="button"
             onClick={handleSend}
             disabled={isSending || isUploadingImages}
-            className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
+            className="w-9 h-9 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-md active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
             aria-label="Gửi tin nhắn"
           >
             {isSending || isUploadingImages ? (
-              <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+              <Loader2 className="w-4 h-4 text-[var(--mos-accent-contrast)] animate-spin" />
             ) : (
-              <SendHorizontal className="w-4 h-4 text-slate-950 font-bold" />
+              <SendHorizontal className="w-4 h-4 text-[var(--mos-accent-contrast)] font-bold" />
             )}
           </button>
         ) : (
           <button
             type="button"
             onClick={onOpenActionSheet}
-            className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5"
+            className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text-muted)] active:scale-90 transition-transform shrink-0 mb-0.5"
             aria-label="Ghi âm giọng nói"
           >
-            <Mic className="w-4 h-4 text-slate-400" />
+            <Mic className="w-4 h-4 text-[var(--mos-text-muted)]" />
           </button>
         )}
       </div>

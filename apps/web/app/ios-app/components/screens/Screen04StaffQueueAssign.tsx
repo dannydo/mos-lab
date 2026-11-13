@@ -110,11 +110,7 @@ export function Screen04StaffQueueAssign({ booking, currentBranch, onBack, onAss
     : `Khách yêu cầu đích danh: CHUYÊN VIÊN ${(booking?.assignedStaffName || selectedOption?.name || 'THẢO LY').toUpperCase()}`;
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${
-        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'
-      } overflow-y-auto select-none`}
-    >
+    <div className="flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none">
       <IosNavigationBar
         title="Assign Specialist"
         onBack={onBack}
@@ -122,18 +118,18 @@ export function Screen04StaffQueueAssign({ booking, currentBranch, onBack, onAss
         rightAction={
           <button
             onClick={handleConfirm}
-            className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
+            className={`font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}
           >
             Done
           </button>
         }
       />
 
-      {/* Sub-navbar Category Tabs on Black */}
-      <div className="bg-black px-3 pt-1 pb-2 flex items-center justify-between border-b border-neutral-900 shrink-0 text-[12px]">
+      {/* Sub-navbar Category Tabs */}
+      <div className="bg-[var(--mos-surface)] px-3 pt-1 pb-2 flex items-center justify-between border-b border-[var(--mos-surface-border)] shrink-0 text-[12px]">
         {(['LASHES', 'LASH_LIFT', 'NAILS', 'ALL'] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} className="pb-1 relative font-bold cursor-pointer">
-            <span className={activeTab === tab ? 'text-[#FFB400]' : 'text-neutral-400'}>
+            <span className={activeTab === tab ? (isDark ? 'text-[#FFB400]' : 'text-amber-700') : 'text-[var(--mos-text-muted)]'}>
               {tab === 'LASH_LIFT' ? 'LASH LIFT' : tab}
             </span>
             {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />}

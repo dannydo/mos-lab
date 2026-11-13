@@ -16,6 +16,7 @@ import { SegmentCounts } from './incoming/incomingBookingHelpers';
 import { IncomingBookingCard } from './incoming/IncomingBookingCard';
 import { IncomingBookingsModals } from './incoming/IncomingBookingsModals';
 import { RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
+import { useTheme } from '../../../../context/ThemeContext';
 
 interface Screen01IncomingBookingsProps {
   bookings: BookingItem[];
@@ -145,24 +146,41 @@ export function Screen01IncomingBookings({
     });
   }, [bookings, bookingSegment, activeServicingBooking]);
 
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
   const actorName = actor?.name || 'Thảo Ly';
   const isCvll = role === 'CVLL';
 
   return (
-    <div className="flex-1 flex flex-col bg-black text-white overflow-hidden select-none">
+    <div
+      className="flex-1 flex flex-col overflow-hidden select-none transition-colors"
+      style={{ backgroundColor: 'var(--background)', color: 'var(--mos-text)' }}
+    >
       {/* 1. Single Native iOS Navigation Bar (Clean 1-row layout) */}
-      <div className="h-12 px-3 bg-black border-b border-neutral-900 flex items-center justify-between z-10 flex-shrink-0">
+      <div
+        className="h-12 px-3 border-b flex items-center justify-between z-10 flex-shrink-0 transition-colors"
+        style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+      >
         {/* Left: Tên chi nhánh viết tắt siêu gọn ("ĐT" / "EP") + Live Refresh Indicator */}
-        <div className="flex items-center gap-1 bg-[#1C1C1E] border border-neutral-800 rounded-full pl-2 pr-1.5 py-1 text-neutral-300 shadow-xs">
+        <div
+          className="flex items-center gap-1 border rounded-full pl-2 pr-1.5 py-1 shadow-xs"
+          style={{
+            backgroundColor: 'var(--mos-surface-muted)',
+            borderColor: 'var(--mos-surface-border)',
+            color: 'var(--mos-text)',
+          }}
+        >
           {canSwitchBranch ? (
             <button
               onClick={() => setIsBranchSheetOpen(true)}
-              className="flex items-center gap-1.5 hover:text-amber-400 active:scale-95 cursor-pointer transition-all select-none"
+              className="flex items-center gap-1.5 active:scale-95 cursor-pointer transition-all select-none"
               title={`${effectiveBranch.name} · Bấm để đổi chi nhánh (Admin)`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-[11.5px] font-black text-neutral-100 tracking-wider">{effectiveBranch.code}</span>
-              <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
+              <span className="text-[11.5px] font-black tracking-wider" style={{ color: 'var(--mos-text)' }}>
+                {effectiveBranch.code}
+              </span>
+              <ChevronDown className="w-3 h-3 shrink-0" style={{ color: 'var(--mos-text-muted)' }} />
             </button>
           ) : (
             <div
@@ -170,7 +188,9 @@ export function Screen01IncomingBookings({
               title={`Chi nhánh ${effectiveBranch.name} (Cố định theo Chuyên Viên)`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[11.5px] font-black text-neutral-100 tracking-wider">{effectiveBranch.code}</span>
+              <span className="text-[11.5px] font-black tracking-wider" style={{ color: 'var(--mos-text)' }}>
+                {effectiveBranch.code}
+              </span>
             </div>
           )}
           <button
@@ -179,18 +199,26 @@ export function Screen01IncomingBookings({
               onRefreshDb?.();
             }}
             disabled={isRefreshing}
-            className="p-0.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white active:scale-90 transition-all cursor-pointer"
+            className="p-0.5 rounded-full active:scale-90 transition-all cursor-pointer hover:opacity-80"
+            style={{ color: 'var(--mos-text-muted)' }}
             title="Làm mới dữ liệu từ máy chủ"
           >
-            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} style={isRefreshing ? { color: 'var(--mos-accent)' } : undefined} />
           </button>
         </div>
 
         {/* Center: Chuyển ngày < Hôm nay > mượt mà */}
-        <div className="flex items-center gap-0.5 bg-[#1C1C1E] px-1 py-0.5 rounded-full border border-neutral-800 shadow-inner">
+        <div
+          className="flex items-center gap-0.5 px-1 py-0.5 rounded-full border shadow-inner"
+          style={{
+            backgroundColor: 'var(--mos-surface-muted)',
+            borderColor: 'var(--mos-surface-border)',
+          }}
+        >
           <button
             onClick={() => onDateOffsetChange?.(dateOffset - 1)}
-            className="w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
+            className="w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
+            style={{ color: 'var(--mos-text-muted)' }}
             title="Xem ngày trước"
           >
             <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -202,18 +230,20 @@ export function Screen01IncomingBookings({
             title={dateOffset !== 0 ? 'Bấm để về lại Hôm nay' : undefined}
           >
             <span
-              className={`text-[12px] font-black leading-tight ${
-                dateOffset === 0 ? 'text-amber-400' : 'text-neutral-200'
-              }`}
+              className="text-[12px] font-black leading-tight"
+              style={{ color: dateOffset === 0 ? 'var(--mos-accent)' : 'var(--mos-text)' }}
             >
               {dateLabel}
             </span>
-            <span className="text-[10px] text-neutral-400 font-semibold tabular-nums leading-none">{subDateLabel}</span>
+            <span className="text-[10px] font-semibold tabular-nums leading-none" style={{ color: 'var(--mos-text-muted)' }}>
+              {subDateLabel}
+            </span>
           </button>
 
           <button
             onClick={() => onDateOffsetChange?.(dateOffset + 1)}
-            className="w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
+            className="w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
+            style={{ color: 'var(--mos-text-muted)' }}
             title="Xem ngày kế tiếp"
           >
             <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -223,13 +253,20 @@ export function Screen01IncomingBookings({
         {/* Right: Quick Profile Trigger (Tapping opens iOS Action Sheet) */}
         <button
           onClick={onOpenProfileMenu}
-          className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-[#1C1C1E] border border-neutral-800 hover:border-amber-400/50 active:scale-95 transition-all cursor-pointer shadow-xs"
+          className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full border active:scale-95 transition-all cursor-pointer shadow-xs"
+          style={{
+            backgroundColor: 'var(--mos-surface-muted)',
+            borderColor: 'var(--mos-surface-border)',
+          }}
           title="Mở hồ sơ & chuyển vai trò"
         >
-          <span className="text-[10.5px] font-black text-amber-400">
+          <span className="text-[10.5px] font-black" style={{ color: 'var(--mos-accent)' }}>
             {isCvll ? <CvFeather2Badge /> : <CvFeather1Badge />}
           </span>
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-amber-400/80 bg-neutral-800 shrink-0">
+          <div
+            className="w-6 h-6 rounded-full overflow-hidden border shrink-0"
+            style={{ borderColor: 'var(--mos-accent)', backgroundColor: 'var(--mos-surface)' }}
+          >
             <img
               src={actor?.avatar || 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png'}
               alt={actorName}
@@ -244,26 +281,44 @@ export function Screen01IncomingBookings({
 
       {/* 1.5 Superadmin Scope Switcher Toolbar (Chỉ hiển thị khi Admin kiểm thử các vai trò quầy / quản lý CC, STORE, CVLL - Ẩn tuyệt đối khi ở vai trò CVL để bảo mật 100%) */}
       {isAdmin && role !== 'CVL' && (
-        <div className="px-3 py-1.5 bg-[#181611] border-b border-amber-500/20 flex items-center justify-between z-10 flex-shrink-0">
-          <div className="flex items-center gap-1.5 text-amber-400 font-extrabold text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+        <div
+          className="px-3 py-1.5 border-b flex items-center justify-between z-10 flex-shrink-0"
+          style={{
+            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.12)',
+            borderColor: 'var(--mos-surface-border)',
+          }}
+        >
+          <div className="flex items-center gap-1.5 font-extrabold text-[11px]" style={{ color: 'var(--mos-accent)' }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: 'var(--mos-accent)' }} />
             <span>Superadmin:</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-[#1C1C1E] p-0.5 rounded-full border border-neutral-800">
+          <div
+            className="flex items-center gap-1 p-0.5 rounded-full border"
+            style={{
+              backgroundColor: 'var(--mos-surface-muted)',
+              borderColor: 'var(--mos-surface-border)',
+            }}
+          >
             <button
               onClick={() => onScopeModeChange?.('STORE_ALL')}
-              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer ${
-                scopeMode === 'STORE_ALL' ? 'bg-amber-400 text-black shadow-xs' : 'text-neutral-400 hover:text-white'
-              }`}
+              className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer"
+              style={
+                scopeMode === 'STORE_ALL'
+                  ? { backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }
+                  : { color: 'var(--mos-text-muted)' }
+              }
             >
               Toàn bộ sảnh ({totalStoreBookingsCount ?? bookings.length})
             </button>
             <button
               onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}
-              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer inline-flex items-center gap-0.5 ${
-                scopeMode === 'MY_CUSTOMERS' ? 'bg-amber-400 text-black shadow-xs' : 'text-neutral-400 hover:text-white'
-              }`}
+              className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer inline-flex items-center gap-0.5"
+              style={
+                scopeMode === 'MY_CUSTOMERS'
+                  ? { backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }
+                  : { color: 'var(--mos-text-muted)' }
+              }
             >
               <span>Lọc</span>
               <CvFeather1Badge />
@@ -273,73 +328,68 @@ export function Screen01IncomingBookings({
         </div>
       )}
 
-      {/* 2. Native iOS Dark Segmented Control */}
-      <div className="px-3 pt-2.5 pb-2 flex-shrink-0 bg-black">
-        <div className="bg-[#1C1C1E] p-1 rounded-2xl border border-neutral-800/90 grid grid-cols-3 gap-1 shadow-inner">
-          <button
-            onClick={() => setBookingSegment('INCOMING')}
-            className={`py-1.5 px-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              bookingSegment === 'INCOMING'
-                ? 'bg-[#2C2C2E] text-amber-400 shadow-sm font-black'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <span>Chờ đón</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none ${
-                bookingSegment === 'INCOMING' ? 'bg-amber-400 text-black' : 'bg-neutral-800 text-neutral-300'
-              }`}
-            >
-              {counts?.incoming ?? filteredBookings.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setBookingSegment('SERVICING')}
-            className={`py-1.5 px-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              bookingSegment === 'SERVICING'
-                ? 'bg-[#2C2C2E] text-amber-400 shadow-sm font-black'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <span>Đang làm</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none ${
-                bookingSegment === 'SERVICING' ? 'bg-amber-400 text-black' : 'bg-neutral-800 text-neutral-300'
-              }`}
-            >
-              {counts?.servicing ?? 0}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setBookingSegment('DONE')}
-            className={`py-1.5 px-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              bookingSegment === 'DONE'
-                ? 'bg-[#2C2C2E] text-amber-400 shadow-sm font-black'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <span>Đã xong</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none ${
-                bookingSegment === 'DONE' ? 'bg-amber-400 text-black' : 'bg-neutral-800 text-neutral-300'
-              }`}
-            >
-              {counts?.done ?? 0}
-            </span>
-          </button>
+      {/* 2. Native iOS Segmented Control */}
+      <div className="px-3 pt-2.5 pb-2 flex-shrink-0" style={{ backgroundColor: 'var(--background)' }}>
+        <div
+          className="p-1 rounded-2xl border grid grid-cols-3 gap-1 shadow-inner"
+          style={{
+            backgroundColor: 'var(--mos-surface-muted)',
+            borderColor: 'var(--mos-surface-border)',
+          }}
+        >
+          {(
+            [
+              { key: 'INCOMING', label: 'Chờ đón', badge: counts?.incoming ?? filteredBookings.length },
+              { key: 'SERVICING', label: 'Đang làm', badge: counts?.servicing ?? 0 },
+              { key: 'DONE', label: 'Đã xong', badge: counts?.done ?? 0 },
+            ] as const
+          ).map((seg) => {
+            const active = bookingSegment === seg.key;
+            return (
+              <button
+                key={seg.key}
+                onClick={() => setBookingSegment(seg.key)}
+                className={`py-1.5 px-2 rounded-xl text-[12px] transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  active ? 'shadow-sm font-black' : 'font-bold'
+                }`}
+                style={
+                  active
+                    ? { backgroundColor: 'var(--mos-surface)', color: 'var(--mos-accent)' }
+                    : { color: 'var(--mos-text-muted)' }
+                }
+              >
+                <span>{seg.label}</span>
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded-full font-black tabular-nums leading-none"
+                  style={
+                    active
+                      ? { backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }
+                      : { backgroundColor: 'var(--mos-surface-border)', color: 'var(--mos-text-muted)' }
+                  }
+                >
+                  {seg.badge}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* 3. Customer Booking Cards (Số thứ tự đặt góc Avatar, không tốn diện tích card!) */}
-      <div className="flex-1 bg-black overflow-y-auto px-3 py-1 space-y-2.5 pb-20">
+      <div className="flex-1 overflow-y-auto px-3 py-1 space-y-2.5 pb-20" style={{ backgroundColor: 'var(--background)' }}>
         {filteredBookings.length === 0 ? (
-          <div className="text-center py-20 text-neutral-500 text-xs px-4 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-neutral-800 flex items-center justify-center mx-auto text-amber-400">
+          <div className="text-center py-20 text-xs px-4 space-y-3" style={{ color: 'var(--mos-text-muted)' }}>
+            <div
+              className="w-12 h-12 rounded-full border flex items-center justify-center mx-auto"
+              style={{
+                backgroundColor: 'var(--mos-surface)',
+                borderColor: 'var(--mos-surface-border)',
+                color: 'var(--mos-accent)',
+              }}
+            >
               <Calendar className="w-6 h-6 stroke-[1.8]" />
             </div>
-            <p className="text-neutral-400 font-medium">
+            <p className="font-medium" style={{ color: 'var(--mos-text-muted)' }}>
               {dateOffset !== 0
                 ? `Chưa có lịch hẹn nào cho ngày ${subDateLabel} (${dateLabel}).`
                 : isRefreshing
@@ -349,7 +399,8 @@ export function Screen01IncomingBookings({
             {dateOffset !== 0 && (
               <button
                 onClick={() => onDateOffsetChange?.(0)}
-                className="px-3.5 py-1.5 rounded-full bg-amber-400 text-black font-extrabold text-[11px] shadow-sm active:scale-95 transition-transform cursor-pointer"
+                className="px-3.5 py-1.5 rounded-full font-extrabold text-[11px] shadow-sm active:scale-95 transition-transform cursor-pointer"
+                style={{ backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }}
               >
                 Về lại Hôm nay
               </button>

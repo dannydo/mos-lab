@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, ZoomIn, Check, Sparkles, User, ShieldCheck } from 'lucide-react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { LashHistoryItem, LashHistoryPhoto } from '../../state/mockData';
 import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 
@@ -13,6 +14,8 @@ interface Screen02LashHistorySheetProps {
 }
 
 export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }: Screen02LashHistorySheetProps) {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const [zoomPhoto, setZoomPhoto] = useState<LashHistoryPhoto | null>(null);
 
   if (!isOpen || !item) return null;
@@ -85,25 +88,29 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-6 duration-200"
+        className="w-full max-w-[430px] bg-[var(--mos-surface)] text-[var(--mos-text)] rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[var(--mos-surface-border)] overflow-hidden flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-6 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: Tiêu đề góc trái · Nút đóng [✕] góc phải (Chuẩn UI Invariant) */}
-        <div className="flex items-start justify-between gap-3 p-4 pb-3 border-b border-neutral-100 bg-neutral-50/60 shrink-0">
+        <div className="flex items-start justify-between gap-3 p-4 pb-3 border-b border-[var(--mos-surface-border)] bg-[var(--mos-surface-raised)] shrink-0">
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 block">
+            <span
+              className={`text-[10px] font-black uppercase tracking-wider block ${
+                isDark ? 'text-blue-400' : 'text-blue-600'
+              }`}
+            >
               HỒ SƠ BỘ MI LẦN TRƯỚC
             </span>
-            <h3 className="text-[15px] font-black text-neutral-900 truncate">
+            <h3 className="text-[15px] font-black text-[var(--mos-text)] truncate">
               {item.date} · {item.serviceName}
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
+              <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                 <span>★</span> {item.rating || '5.0'}
               </span>
-              <span className="text-neutral-300">·</span>
-              <span className="text-[11px] text-neutral-500 font-medium truncate">
-                Chuyên viên: <strong className="text-neutral-800">{item.staffName}</strong>
+              <span className="text-[var(--mos-text-muted)]">·</span>
+              <span className="text-[11px] text-[var(--mos-text-muted)] font-medium truncate">
+                Chuyên viên: <strong className="text-[var(--mos-text)]">{item.staffName}</strong>
               </span>
             </div>
           </div>
@@ -111,7 +118,7 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
             type="button"
             onClick={onClose}
             aria-label="Đóng chi tiết hồ sơ bộ mi"
-            className="w-8 h-8 rounded-full bg-neutral-200/80 hover:bg-neutral-300 flex items-center justify-center text-neutral-700 active:scale-95 transition-transform shrink-0 cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-80 flex items-center justify-center text-[var(--mos-text)] active:scale-95 transition-transform shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4 stroke-[2.5]" />
           </button>
@@ -122,10 +129,16 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
           {/* Section 1: 3 Bắt Buộc Tấm Hình */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-neutral-700 flex items-center gap-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[var(--mos-text-muted)] flex items-center gap-1">
                 <span>📸</span> 3 TẤM HÌNH BẮT BUỘC
               </span>
-              <span className="text-[10.5px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/70">
+              <span
+                className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
+                  isDark
+                    ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40'
+                    : 'text-emerald-700 bg-emerald-50 border-emerald-200/70'
+                }`}
+              >
                 ✓ Đủ 3 góc chụp
               </span>
             </div>
@@ -137,7 +150,7 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                   <div
                     key={idx}
                     onClick={() => setZoomPhoto(p)}
-                    className="group relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200/90 shadow-xs cursor-pointer hover:border-blue-400 hover:shadow-md transition-all flex items-center justify-center"
+                    className="group relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900 border border-[var(--mos-surface-border)] shadow-xs cursor-pointer hover:border-blue-400 hover:shadow-md transition-all flex items-center justify-center"
                   >
                     <img
                       src={thumbUrl}
@@ -166,17 +179,17 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                 );
               })}
             </div>
-            <p className="text-[10px] text-neutral-400 mt-1.5 italic text-center">
+            <p className="text-[10px] text-[var(--mos-text-muted)] mt-1.5 italic text-center">
               Nhấp vào ảnh bất kỳ để phóng to xem chi tiết bờ mi & chân nối
             </p>
           </div>
 
           {/* Section 2: Bộ Tứ Nhân Sự */}
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-neutral-700 block mb-2">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[var(--mos-text-muted)] block mb-2">
               👥 BỘ TỨ NHÂN SỰ PHỤ TRÁCH
             </span>
-            <div className="bg-[#1C1C1E] text-white rounded-2xl p-3 shadow-sm border border-neutral-800">
+            <div className="bg-[var(--mos-surface-raised)] text-[var(--mos-text)] rounded-2xl p-3 shadow-sm border border-[var(--mos-surface-border)]">
               <div className="grid grid-cols-4 gap-1 text-center">
                 {/* Booked by */}
                 <div className="flex flex-col items-center">
@@ -310,49 +323,49 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
 
           {/* Section 3: Thông Số Kỹ Thuật Mi Nối */}
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-neutral-700 block mb-2">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[var(--mos-text-muted)] block mb-2">
               📐 THÔNG SỐ KỸ THUẬT MI NỐI
             </span>
             <div className="grid grid-cols-3 gap-2">
               {/* Dáng mi */}
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
-                <span className="text-[9px] font-bold text-neutral-400 uppercase block">Dáng mi</span>
-                <span className="text-[13px] font-black text-neutral-900 block truncate mt-0.5">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
+                <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Dáng mi</span>
+                <span className="text-[13px] font-black text-[var(--mos-text)] block truncate mt-0.5">
                   {attrs.style || 'Natural'}
                 </span>
               </div>
               {/* Độ cong */}
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
-                <span className="text-[9px] font-bold text-neutral-400 uppercase block">Độ cong</span>
-                <span className="text-[13px] font-black text-blue-600 block truncate mt-0.5">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
+                <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Độ cong</span>
+                <span className={`text-[13px] font-black block truncate mt-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                   {(attrs.curl || 'C').replace(/^Cong\s+/i, '')}
                 </span>
               </div>
               {/* Độ dài */}
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
-                <span className="text-[9px] font-bold text-neutral-400 uppercase block">Độ dài</span>
-                <span className="text-[13px] font-black text-neutral-900 block truncate mt-0.5 tabular-nums">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
+                <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Độ dài</span>
+                <span className="text-[13px] font-black text-[var(--mos-text)] block truncate mt-0.5 tabular-nums">
                   {(attrs.length || '10-12').replace(/\s*mm/gi, '')}
                 </span>
               </div>
               {/* Độ dày */}
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
-                <span className="text-[9px] font-bold text-neutral-400 uppercase block">Độ dày</span>
-                <span className="text-[12.5px] font-black text-emerald-700 block truncate mt-0.5 tabular-nums">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
+                <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Độ dày</span>
+                <span className={`text-[12.5px] font-black block truncate mt-0.5 tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                   {(attrs.thickness || '0.10').replace(/\s*mm/gi, '')}
                 </span>
               </div>
               {/* Số sợi / Fan */}
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
-                <span className="text-[9px] font-bold text-neutral-400 uppercase block">Số lượng</span>
-                <span className="text-[13px] font-black text-neutral-900 block truncate mt-0.5">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
+                <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Số lượng</span>
+                <span className="text-[13px] font-black text-[var(--mos-text)] block truncate mt-0.5">
                   {attrs.fanCount || '70 sợi'}
                 </span>
               </div>
               {/* Dáng mắt */}
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-200/70">
-                <span className="text-[9px] font-bold text-neutral-400 uppercase block">Dáng mắt</span>
-                <span className="text-[12px] font-black text-purple-700 block truncate mt-0.5">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
+                <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Dáng mắt</span>
+                <span className={`text-[12px] font-black block truncate mt-0.5 ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>
                   {attrs.eyeShape || 'Mí lót'}
                 </span>
               </div>
@@ -362,20 +375,42 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
           {/* Section 4: Ghi Chú & Đánh Giá */}
           <div className="space-y-2">
             {attrs.notes && (
-              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5">
-                <span className="text-[10px] font-black uppercase text-amber-800 flex items-center gap-1">
+              <div
+                className={`border rounded-xl p-2.5 ${
+                  isDark ? 'bg-amber-950/35 border-amber-500/40' : 'bg-amber-50/70 border-amber-200/80'
+                }`}
+              >
+                <span
+                  className={`text-[10px] font-black uppercase flex items-center gap-1 ${
+                    isDark ? 'text-amber-300' : 'text-amber-800'
+                  }`}
+                >
                   <span>📝</span> Ghi chú kỹ thuật từ chuyên viên
                 </span>
-                <p className="text-[12px] text-amber-950 font-medium mt-1 leading-snug">{attrs.notes}</p>
+                <p className={`text-[12px] font-medium mt-1 leading-snug ${isDark ? 'text-amber-100' : 'text-amber-950'}`}>
+                  {attrs.notes}
+                </p>
               </div>
             )}
 
             {item.review && (
-              <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5">
-                <span className="text-[10px] font-black uppercase text-emerald-800 flex items-center gap-1">
+              <div
+                className={`border rounded-xl p-2.5 ${
+                  isDark ? 'bg-emerald-950/35 border-emerald-500/40' : 'bg-emerald-50/70 border-emerald-200/80'
+                }`}
+              >
+                <span
+                  className={`text-[10px] font-black uppercase flex items-center gap-1 ${
+                    isDark ? 'text-emerald-300' : 'text-emerald-800'
+                  }`}
+                >
                   <span>💬</span> Phản hồi khách hàng (Đánh giá {item.rating || '5.0'} ★)
                 </span>
-                <p className="text-[12px] text-emerald-950 font-medium mt-1 italic leading-snug">
+                <p
+                  className={`text-[12px] font-medium mt-1 italic leading-snug ${
+                    isDark ? 'text-emerald-100' : 'text-emerald-950'
+                  }`}
+                >
                   &ldquo;{item.review}&rdquo;
                 </p>
               </div>
@@ -384,19 +419,19 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 pt-3 border-t border-neutral-100 bg-white space-y-2 shrink-0">
+        <div className="p-4 pt-3 border-t border-[var(--mos-surface-border)] bg-[var(--mos-surface)] space-y-2 shrink-0">
           <button
             type="button"
             onClick={() => onApplySpecs(item)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-[#FFB400] hover:brightness-105 active:scale-98 text-black font-extrabold text-[14px] flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[var(--mos-accent)] hover:brightness-105 active:scale-98 text-[var(--mos-accent-contrast)] font-extrabold text-[14px] flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 fill-black stroke-black" />
+            <Sparkles className="w-4 h-4 fill-current" />
             <span>ÁP DỤNG THÔNG SỐ NÀY CHO HÔM NAY</span>
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 active:scale-98 text-neutral-700 font-bold text-[13px] text-center transition-all cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl bg-[var(--mos-surface-muted)] hover:opacity-90 active:scale-98 text-[var(--mos-text)] font-bold text-[13px] text-center transition-all cursor-pointer"
           >
             Đóng
           </button>

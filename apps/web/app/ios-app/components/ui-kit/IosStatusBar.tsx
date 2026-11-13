@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Wifi, BatteryMedium, Signal } from 'lucide-react';
+import { Wifi, Signal } from 'lucide-react';
+import { useTheme } from '../../../../context/ThemeContext';
 
 interface IosStatusBarProps {
   darkTheme?: boolean;
 }
 
-export function IosStatusBar({ darkTheme = true }: IosStatusBarProps) {
+export function IosStatusBar({ darkTheme }: IosStatusBarProps) {
+  const { themeMode } = useTheme();
+  const isDark = typeof darkTheme === 'boolean' ? darkTheme : themeMode === 'dark';
   const [timeStr, setTimeStr] = useState('09:41');
 
   useEffect(() => {
@@ -22,7 +25,7 @@ export function IosStatusBar({ darkTheme = true }: IosStatusBarProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const textColor = darkTheme ? 'text-white' : 'text-neutral-900';
+  const textColor = isDark ? 'text-white' : 'text-neutral-900';
 
   return (
     <div

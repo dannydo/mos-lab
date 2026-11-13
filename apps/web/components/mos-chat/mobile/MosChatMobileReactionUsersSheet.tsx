@@ -5,8 +5,11 @@ import { X, Users } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { parseStickerReactionKey, MosChatStickerVisual } from '../mos-chat-stickers';
+import { useTheme } from '../../../context/ThemeContext';
 
 export const MosChatMobileReactionUsersSheet: React.FC = () => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const {
     reactionUsersTarget,
     closeReactionUsersSheet,
@@ -128,27 +131,27 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
       {/* Backdrop */}
       <div
         onClick={closeReactionUsersSheet}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className={`absolute inset-0 backdrop-blur-sm transition-opacity ${isDark ? 'bg-black/60' : 'bg-slate-900/40'}`}
       />
 
       {/* Slide-up Sheet */}
-      <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[80vh] flex flex-col">
+      <div className="relative bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border-t border-[var(--mos-surface-border)] rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[80vh] flex flex-col">
         {/* Grab Handle */}
-        <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-3 shrink-0" />
+        <div className="w-10 h-1 bg-[var(--mos-surface-border-strong)] rounded-full mx-auto mb-3 shrink-0" />
 
         {/* Header with Title and Right-placed Close Button (Rule 8 Invariant) */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--mos-surface-border)] shrink-0">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-amber-400" />
-            <h3 className="text-base font-semibold text-slate-100">Người đã thả cảm xúc</h3>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold tabular-nums">
+            <Users className="w-4 h-4 text-[var(--mos-accent)]" />
+            <h3 className="text-base font-semibold text-[var(--mos-text)]">Người đã thả cảm xúc</h3>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-accent)] font-bold tabular-nums">
               {totalCount}
             </span>
           </div>
           <button
             type="button"
             onClick={closeReactionUsersSheet}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors active:scale-95"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] transition-colors active:scale-95"
             aria-label="Đóng"
           >
             <X className="w-4 h-4" />
@@ -157,18 +160,18 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
 
         {/* Horizontal Emoji Filter Tabs */}
         {emojiTabs.length > 0 && (
-          <div className="flex items-center gap-2 py-3 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-800/80">
+          <div className="flex items-center gap-2 py-3 overflow-x-auto no-scrollbar shrink-0 border-b border-[var(--mos-surface-border)]">
             <button
               type="button"
               onClick={() => setActiveFilter('ALL')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 border ${
                 activeFilter === 'ALL'
-                  ? 'bg-amber-500/25 border border-amber-500/80 text-amber-300 shadow-sm'
-                  : 'bg-slate-800/90 border border-slate-700 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-[var(--mos-accent)] border-[var(--mos-accent)] text-[var(--mos-accent-contrast)] shadow-sm'
+                  : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)]'
               }`}
             >
               <span>Tất cả</span>
-              <span className="text-[10px] tabular-nums font-bold text-amber-400/90">{totalCount}</span>
+              <span className="text-[10px] tabular-nums font-bold opacity-85">{totalCount}</span>
             </button>
 
             {emojiTabs.map(({ emoji, count }) => {
@@ -179,10 +182,10 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
                   key={emoji}
                   type="button"
                   onClick={() => setActiveFilter(emoji)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 border ${
                     isSelected
-                      ? 'bg-amber-500/25 border border-amber-500/80 text-amber-300 shadow-sm'
-                      : 'bg-slate-800/90 border border-slate-700 text-slate-300 hover:bg-slate-700'
+                      ? 'bg-[var(--mos-accent)] border-[var(--mos-accent)] text-[var(--mos-accent-contrast)] shadow-sm'
+                      : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)]'
                   }`}
                 >
                   {sticker ? (
@@ -190,7 +193,7 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
                   ) : (
                     <span className="text-sm">{emoji}</span>
                   )}
-                  <span className="text-[10px] tabular-nums font-bold text-amber-400/90">{count}</span>
+                  <span className="text-[10px] tabular-nums font-bold opacity-85">{count}</span>
                 </button>
               );
             })}
@@ -198,9 +201,9 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
         )}
 
         {/* User List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60 py-1 min-h-[160px] max-h-[50vh]">
+        <div className="flex-1 overflow-y-auto divide-y divide-[var(--mos-surface-border)] py-1 min-h-[160px] max-h-[50vh]">
           {filteredEntries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-500 text-sm">
+            <div className="flex flex-col items-center justify-center py-10 text-[var(--mos-text-muted)] text-sm">
               <p>Chưa có ai thả cảm xúc này.</p>
             </div>
           ) : (
@@ -216,7 +219,7 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
               return (
                 <div
                   key={`${entry.userKey}-${entry.emoji}-${idx}`}
-                  className="flex items-center justify-between py-2.5 px-2 hover:bg-slate-800/50 rounded-xl transition-colors"
+                  className="flex items-center justify-between py-2.5 px-2 hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors"
                 >
                   {/* User Avatar + Name */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -224,7 +227,7 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
                       <img
                         src={entry.staffAvatar}
                         alt={entry.staffName}
-                        className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-700"
+                        className="w-10 h-10 rounded-full object-cover shrink-0 border border-[var(--mos-surface-border)]"
                       />
                     ) : (
                       <div
@@ -237,24 +240,24 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold text-sm text-slate-100 truncate">
+                        <span className="font-semibold text-sm text-[var(--mos-text)] truncate">
                           {entry.staffName}
                         </span>
                         {entry.isMe && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-bold">
                             Bạn
                           </span>
                         )}
                       </div>
                       {entry.staffRole && (
-                        <p className="text-xs text-slate-400 truncate">{entry.staffRole}</p>
+                        <p className="text-xs text-[var(--mos-text-muted)] truncate">{entry.staffRole}</p>
                       )}
                     </div>
                   </div>
 
                   {/* Reaction Emoji Badge + Undo Action (Huỷ react) */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800/90 border border-slate-700/80 shadow-sm">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] shadow-sm">
                       {sticker ? (
                         <MosChatStickerVisual sticker={sticker} size="reaction" />
                       ) : (
@@ -266,7 +269,11 @@ export const MosChatMobileReactionUsersSheet: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveMyReaction(entry.emoji)}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-semibold active:scale-95 transition-all"
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold active:scale-95 transition-all ${
+                          isDark
+                            ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-300'
+                            : 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700'
+                        }`}
                         title="Gỡ cảm xúc của bạn"
                       >
                         Huỷ react

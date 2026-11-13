@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *, .dark-theme, .dark-theme *));
 
 /* ==========================================================================
    Chrome 91 & Legacy Browser Fallback Utilities (No @layer dependency)
@@ -787,16 +788,53 @@
   --color-goldLight: #f3d27e;
 }
 
+:root {
+  color-scheme: light dark;
+}
+
+:root:has(> head > meta[name='color-scheme'][content='dark']) {
+  color-scheme: dark;
+}
+
+:root:has(> head > meta[name='color-scheme'][content='light']) {
+  color-scheme: light;
+}
+
 html,
 body {
   max-width: 100%;
   overflow-x: hidden;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 button:not(:disabled),
 [role='button']:not([aria-disabled='true']),
 a[href] {
   cursor: pointer;
+}
+
+/* Scoped contrast guard for mobile Chat outgoing (`isMe`) bubbles using `--mos-accent` fill.
+   Keeps `MosChatRichText` desktop defaults intact while ensuring bold/link/bullet accents stay
+   high-contrast against light or dark `--mos-accent` backgrounds. */
+.mos-accent-bubble-ink,
+.mos-accent-bubble-ink p,
+.mos-accent-bubble-ink li,
+.mos-accent-bubble-ink strong,
+.mos-accent-bubble-ink b,
+.mos-accent-bubble-ink h1,
+.mos-accent-bubble-ink h2,
+.mos-accent-bubble-ink h3,
+.mos-accent-bubble-ink h4,
+.mos-accent-bubble-ink h5,
+.mos-accent-bubble-ink h6,
+.mos-accent-bubble-ink a,
+.mos-accent-bubble-ink .text-amber-300,
+.mos-accent-bubble-ink .text-amber-400,
+.mos-accent-bubble-ink .text-amber-800,
+.mos-accent-bubble-ink .text-sky-400,
+.mos-accent-bubble-ink .text-sky-600 {
+  color: var(--mos-accent-contrast) !important;
 }
 
 /* Reporter history is a decision surface. At Laptop Large and above, retain

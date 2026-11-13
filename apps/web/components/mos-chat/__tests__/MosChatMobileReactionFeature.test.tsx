@@ -176,7 +176,8 @@ describe('Mobile Message Reaction Bar & Action Sheet Integration', () => {
     const heartBtn = screen.getByText('❤️').closest('button');
     expect(heartBtn).toBeTruthy();
     expect(heartBtn?.className).toContain('bg-amber-500/20');
-    expect(heartBtn?.className).toContain('text-amber-300');
+    expect(heartBtn?.className).toContain('border-amber-500/60');
+    expect(heartBtn?.className).toMatch(/text-amber-(300|800)/);
 
     // Button to view who reacted should exist
     const viewUsersBtn = screen.getByLabelText('Xem người thả cảm xúc');

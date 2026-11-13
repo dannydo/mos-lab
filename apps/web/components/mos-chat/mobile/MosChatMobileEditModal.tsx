@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, Smile, AlertCircle } from 'lucide-react';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
+import { useTheme } from '../../../context/ThemeContext';
 
 export interface MosChatMobileEditModalProps {
   open: boolean;
@@ -19,6 +20,8 @@ export const MosChatMobileEditModal: React.FC<MosChatMobileEditModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const [text, setText] = useState<string>(initialText);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -106,7 +109,7 @@ export const MosChatMobileEditModal: React.FC<MosChatMobileEditModalProps> = ({
         onClick={() => {
           if (!isSaving) onClose();
         }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className={`absolute inset-0 backdrop-blur-sm transition-opacity ${isDark ? 'bg-black/60' : 'bg-slate-900/40'}`}
       />
 
       {/* Slide-up Edit Sheet */}
@@ -116,26 +119,26 @@ export const MosChatMobileEditModal: React.FC<MosChatMobileEditModalProps> = ({
           transition: 'transform 0.15s ease-out',
           paddingBottom: keyboardOffset > 50 ? '12px' : 'max(env(safe-area-inset-bottom, 20px), 16px)',
         }}
-        className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl px-4 pt-3 shadow-2xl animate-in slide-in-from-bottom duration-200 flex flex-col max-h-[85vh]"
+        className="relative bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border-t border-[var(--mos-surface-border)] rounded-t-3xl px-4 pt-3 shadow-2xl animate-in slide-in-from-bottom duration-200 flex flex-col max-h-[85vh]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="mobile-edit-modal-title"
       >
         {/* Grab Handle */}
-        <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-3" />
+        <div className="w-10 h-1 bg-[var(--mos-surface-border-strong)] rounded-full mx-auto mb-3" />
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--mos-surface-border)]">
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="px-2.5 py-1 text-sm font-medium text-slate-400 hover:text-white active:scale-95 transition-all disabled:opacity-50"
+            className="px-2.5 py-1 text-sm font-medium text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] active:scale-95 transition-all disabled:opacity-50"
           >
             Hủy
           </button>
 
-          <h3 id="mobile-edit-modal-title" className="text-sm font-bold text-white tracking-tight">
+          <h3 id="mobile-edit-modal-title" className="text-sm font-bold text-[var(--mos-text)] tracking-tight">
             {title}
           </h3>
 
@@ -143,7 +146,7 @@ export const MosChatMobileEditModal: React.FC<MosChatMobileEditModalProps> = ({
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 active:scale-95 disabled:opacity-40 disabled:pointer-events-none bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm"
+            className="px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 active:scale-95 disabled:opacity-40 disabled:pointer-events-none bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] hover:opacity-95 shadow-sm"
           >
             {isSaving ? (
               <span>Đang lưu...</span>
@@ -164,7 +167,7 @@ export const MosChatMobileEditModal: React.FC<MosChatMobileEditModalProps> = ({
         />
 
         {/* Textarea Input Container */}
-        <div className="relative bg-slate-800/90 border border-slate-700/80 rounded-2xl p-2.5 focus-within:border-amber-400/80 transition-colors">
+        <div className="relative bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] rounded-2xl p-2.5 focus-within:border-[var(--mos-accent)] transition-colors">
           <textarea
             ref={textareaRef}
             rows={3}
@@ -172,14 +175,14 @@ export const MosChatMobileEditModal: React.FC<MosChatMobileEditModalProps> = ({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Nhập nội dung chỉnh sửa..."
-            className="w-full bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none leading-relaxed min-h-[70px] max-h-[180px]"
+            className="w-full bg-transparent border-none outline-none text-sm text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] resize-none leading-relaxed min-h-[70px] max-h-[180px]"
           />
         </div>
 
         {/* Footer Hint Bar */}
-        <div className="flex items-center justify-between mt-2.5 px-1 text-[11px] text-slate-400">
-          <span className="italic text-slate-400">Tin nhắn sau khi lưu sẽ có nhãn (đã sửa)</span>
-          <span className="tabular-nums font-medium text-slate-400">{text.length} ký tự</span>
+        <div className="flex items-center justify-between mt-2.5 px-1 text-[11px] text-[var(--mos-text-muted)]">
+          <span className="italic text-[var(--mos-text-muted)]">Tin nhắn sau khi lưu sẽ có nhãn (đã sửa)</span>
+          <span className="tabular-nums font-medium text-[var(--mos-text-muted)]">{text.length} ký tự</span>
         </div>
       </div>
     </div>

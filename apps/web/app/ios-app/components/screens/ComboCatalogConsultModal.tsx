@@ -282,17 +282,13 @@ export function ComboCatalogConsultModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs select-none overflow-hidden animate-in fade-in duration-200">
-      <div
-        className={`w-full max-w-[430px] h-full max-h-[100dvh] flex flex-col relative overflow-hidden shadow-2xl ${
-          isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-neutral-900'
-        }`}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs select-none overflow-hidden animate-in fade-in duration-200">
+      <div className="w-full max-w-[430px] h-full max-h-[100dvh] flex flex-col relative overflow-hidden shadow-2xl bg-[var(--background)] text-[var(--mos-text)]">
         {/* iOS Minimal Navigation Bar */}
-        <div className="bg-[#1C1C1E] text-white px-3.5 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2.5 flex items-center justify-between border-b border-white/10 shrink-0">
+        <div className="bg-[var(--mos-surface)] text-[var(--mos-text)] px-3.5 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2.5 flex items-center justify-between border-b border-[var(--mos-surface-border)] shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
-            <Sparkles className="w-4 h-4 text-[#FFB400] shrink-0" />
-            <h2 className="text-[15px] font-black tracking-tight text-white truncate">Bảng Giá Combo</h2>
+            <Sparkles className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#FFB400]' : 'text-amber-600'}`} />
+            <h2 className="text-[15px] font-black tracking-tight text-[var(--mos-text)] truncate">Bảng Giá Combo</h2>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -301,7 +297,7 @@ export function ComboCatalogConsultModal({
               className={`text-[10px] font-black px-2 py-1 rounded-full border transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
                 includeVat
                   ? 'bg-[#FFB400] text-black border-[#FFB400] shadow-xs'
-                  : 'bg-white/10 text-neutral-300 border-white/15 hover:bg-white/20'
+                  : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border-[var(--mos-surface-border)] hover:opacity-80'
               }`}
               title="Bật/tắt hiển thị giá đã bao gồm 8% thuế VAT"
             >
@@ -311,7 +307,7 @@ export function ComboCatalogConsultModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-90 transition-transform cursor-pointer"
+              className="w-7 h-7 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-80 flex items-center justify-center text-[var(--mos-text)] border border-[var(--mos-surface-border)] active:scale-90 transition-transform cursor-pointer"
               aria-label="Đóng"
             >
               <X className="w-3.5 h-3.5" />
@@ -533,23 +529,23 @@ export function ComboCatalogConsultModal({
         </div>
 
         {/* Floating Bottom Action Bar */}
-        <div className="sticky bottom-0 bg-[#1C1C1E]/95 backdrop-blur-md border-t border-white/10 px-4 py-3 flex items-center justify-between z-30 shrink-0 shadow-2xl">
+        <div className="sticky bottom-0 bg-[var(--mos-surface)]/95 backdrop-blur-md border-t border-[var(--mos-surface-border)] px-4 py-3 flex items-center justify-between z-30 shrink-0 shadow-2xl">
           <div className="flex flex-col font-variant-numeric tabular-nums min-w-0 pr-2">
-            <div className="text-[11px] font-bold text-neutral-400 truncate flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-[var(--mos-text-muted)] truncate flex items-center gap-1.5">
               {totalSelectedCount > 0 ? (
                 <>
                   <span>
-                    Đã chọn <strong className="text-white">{totalSelectedCount}</strong> gói:
+                    Đã chọn <strong className="text-[var(--mos-text)]">{totalSelectedCount}</strong> gói:
                   </span>
                   {tempSelectedUpper && (
-                    <span className="inline-flex items-center gap-0.5 text-amber-300 font-extrabold text-[10.5px]">
-                      <Eye className="w-3 h-3 text-amber-400" />
+                    <span className={`inline-flex items-center gap-0.5 font-extrabold text-[10.5px] ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                      <Eye className={`w-3 h-3 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                       <span>Trên</span>
                     </span>
                   )}
                   {tempSelectedUnder && (
-                    <span className="inline-flex items-center gap-0.5 text-purple-300 font-extrabold text-[10.5px]">
-                      <Sparkles className="w-3 h-3 text-purple-400" />
+                    <span className={`inline-flex items-center gap-0.5 font-extrabold text-[10.5px] ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                      <Sparkles className={`w-3 h-3 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
                       <span>Dưới</span>
                     </span>
                   )}
@@ -558,9 +554,9 @@ export function ComboCatalogConsultModal({
                 <span>Chưa chọn gói nào</span>
               )}
             </div>
-            <div className="text-[16px] font-black text-[#FFB400] leading-tight mt-0.5 flex items-baseline gap-1.5">
+            <div className={`text-[16px] font-black leading-tight mt-0.5 flex items-baseline gap-1.5 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}>
               <span>{totalSelectedPrice.toLocaleString('vi-VN')}đ</span>
-              {includeVat && <span className="text-[9.5px] font-bold text-emerald-400">(Đã gồm 8% VAT)</span>}
+              {includeVat && <span className={`text-[9.5px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>(Đã gồm 8% VAT)</span>}
             </div>
           </div>
 
@@ -568,7 +564,7 @@ export function ComboCatalogConsultModal({
             <button
               type="button"
               onClick={handleApply}
-              className="px-5 py-2.5 rounded-full bg-[#FFB400] text-black text-[13px] font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
+              className="px-5 py-2.5 rounded-full bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] text-[13px] font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
             >
               <Check className="w-4 h-4 stroke-[2.5]" />
               <span>Áp Dụng</span>
@@ -584,9 +580,7 @@ export function ComboCatalogConsultModal({
           onClick={() => setLockedModalOpen(false)}
         >
           <div
-            className={`rounded-2xl p-4 max-w-sm w-full space-y-3 shadow-xl animate-in zoom-in-95 duration-150 ${
-              isDark ? 'bg-[#1C1C1E] text-white border border-neutral-800' : 'bg-white text-neutral-900'
-            }`}
+            className="rounded-2xl p-4 max-w-sm w-full space-y-3 shadow-xl animate-in zoom-in-95 duration-150 bg-[var(--mos-surface)] text-[var(--mos-text)] border border-[var(--mos-surface-border)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2">

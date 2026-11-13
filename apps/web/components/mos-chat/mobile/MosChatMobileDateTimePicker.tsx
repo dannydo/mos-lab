@@ -167,10 +167,8 @@ export const MosChatMobileDateTimePicker: React.FC<MosChatMobileDateTimePickerPr
                 onClick={() => handleSelectPreset(p)}
                 className={`px-2.5 py-1.5 text-xs rounded-xl border font-medium transition-all active:scale-95 text-center truncate ${
                   isActive
-                    ? 'border-amber-400/80 bg-amber-500/20 text-amber-300 font-semibold shadow-sm'
-                    : isDark
-                      ? 'border-slate-700/80 bg-slate-800/90 text-slate-300 hover:bg-slate-700/80 hover:text-white'
-                      : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'border-[var(--mos-accent)] bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-semibold shadow-sm'
+                    : 'border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] text-[var(--mos-text)] hover:opacity-90'
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {p.label}
@@ -192,12 +190,8 @@ export const MosChatMobileDateTimePicker: React.FC<MosChatMobileDateTimePickerPr
         }}
         className={`relative flex items-center justify-between px-3 py-2 rounded-xl border transition-colors cursor-pointer select-none ${
           parsedDayjs
-            ? isDark
-              ? 'border-amber-500/50 bg-slate-900/90 ring-1 ring-amber-500/30'
-              : 'border-amber-500/60 bg-amber-50/50 ring-1 ring-amber-500/20'
-            : isDark
-              ? 'border-slate-700/80 bg-slate-900/80 hover:border-slate-600'
-              : 'border-slate-300 bg-white hover:border-slate-400'
+            ? 'border-[var(--mos-accent)] bg-[var(--mos-surface)] ring-1 ring-[var(--mos-focus-ring)]'
+            : 'border-[var(--mos-surface-border)] bg-[var(--mos-surface)] hover:border-[var(--mos-surface-border-strong)]'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {/* Native Touch Layer (Invokes native iOS wheel or Android picker) */}
@@ -215,7 +209,7 @@ export const MosChatMobileDateTimePicker: React.FC<MosChatMobileDateTimePickerPr
         <div className="flex items-center gap-2 min-w-0 pr-2">
           <Calendar
             className={`w-4 h-4 shrink-0 ${
-              parsedDayjs ? 'text-amber-400' : isDark ? 'text-slate-400' : 'text-slate-500'
+              parsedDayjs ? 'text-[var(--mos-accent)]' : 'text-[var(--mos-text-muted)]'
             }`}
           />
           {parsedDayjs ? (
@@ -227,7 +221,7 @@ export const MosChatMobileDateTimePicker: React.FC<MosChatMobileDateTimePickerPr
               {displayText}
             </span>
           ) : (
-            <span className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className="text-xs truncate text-[var(--mos-text-muted)]">
               {placeholder}
             </span>
           )}
@@ -240,14 +234,12 @@ export const MosChatMobileDateTimePicker: React.FC<MosChatMobileDateTimePickerPr
               type="button"
               onClick={handleClear}
               aria-label="Xóa hạn chót"
-              className={`p-1 rounded-full transition-colors ${
-                isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-slate-200 text-slate-500 hover:text-slate-900'
-              }`}
+              className="p-1 rounded-full transition-colors hover:bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           ) : (
-            <Clock className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+            <Clock className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
           )}
         </div>
       </div>

@@ -23,12 +23,27 @@ export function IosTableSection({ title, footer, children, className = '' }: Ios
   return (
     <div className={`space-y-1.5 ${className}`}>
       {title && (
-        <h3 className="px-4 text-[12px] font-medium tracking-wider text-neutral-400 uppercase select-none">{title}</h3>
+        <h3
+          className="px-4 text-[12px] font-medium tracking-wider uppercase select-none"
+          style={{ color: 'var(--mos-text-muted)' }}
+        >
+          {title}
+        </h3>
       )}
-      <div className="rounded-2xl bg-[#1c1c1e] border border-neutral-800/90 divide-y divide-neutral-800/60 overflow-hidden shadow-sm">
+      <div
+        className="rounded-2xl border divide-y overflow-hidden shadow-sm transition-colors"
+        style={{
+          backgroundColor: 'var(--mos-surface)',
+          borderColor: 'var(--mos-surface-border)',
+        }}
+      >
         {children}
       </div>
-      {footer && <p className="px-4 text-[11px] text-neutral-500 select-none">{footer}</p>}
+      {footer && (
+        <p className="px-4 text-[11px] select-none" style={{ color: 'var(--mos-text-muted)' }}>
+          {footer}
+        </p>
+      )}
     </div>
   );
 }
@@ -60,24 +75,34 @@ export function IosTableCell({
     <div
       onClick={onClick}
       className={`px-4 py-3.5 flex items-center justify-between text-sm transition-colors ${
-        isClickable ? 'cursor-pointer active:bg-neutral-800/70 hover:bg-neutral-800/40 select-none' : ''
+        isClickable ? 'cursor-pointer active:opacity-80 select-none' : ''
       } ${className}`}
+      style={{ borderColor: 'var(--mos-surface-border)' }}
     >
       <div className="flex items-center space-x-3 min-w-0 pr-2">
         {icon && <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0">{icon}</div>}
         <div className="flex flex-col min-w-0">
           <span
-            className={`font-normal truncate leading-tight ${destructive ? 'text-rose-500 font-medium' : 'text-white'}`}
+            className={`font-normal truncate leading-tight ${destructive ? 'text-rose-500 font-medium' : ''}`}
+            style={destructive ? undefined : { color: 'var(--mos-text)' }}
           >
             {title}
           </span>
-          {subtitle && <span className="text-xs text-neutral-400 truncate leading-tight mt-0.5">{subtitle}</span>}
+          {subtitle && (
+            <span className="text-xs truncate leading-tight mt-0.5" style={{ color: 'var(--mos-text-muted)' }}>
+              {subtitle}
+            </span>
+          )}
         </div>
       </div>
 
       <div className="flex items-center space-x-2 shrink-0">
-        {detail && <span className="text-neutral-400 text-sm font-normal tabular-nums">{detail}</span>}
-        {hasChevron && <ChevronRight className="w-4 h-4 text-neutral-500 stroke-[2.5]" />}
+        {detail && (
+          <span className="text-sm font-normal tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
+            {detail}
+          </span>
+        )}
+        {hasChevron && <ChevronRight className="w-4 h-4 stroke-[2.5]" style={{ color: 'var(--mos-text-muted)' }} />}
       </div>
     </div>
   );

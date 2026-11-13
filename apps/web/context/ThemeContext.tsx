@@ -44,10 +44,51 @@ dayjs.updateLocale('en', {
 });
 
 type ThemeMode = CoreThemeMode;
+export type ThemePreference = ThemeMode | 'auto';
 
 export const DESKTOP_DENSITY_STORAGE_KEY = 'mos_desktop_density';
 export const CORE_THEME_STORAGE_KEY = 'mos_core_theme';
 export const CUSTOM_THEMES_STORAGE_KEY = 'mos_custom_themes';
+export const THEME_MODE_STORAGE_KEY = 'mos_theme';
+export const THEME_PREFERENCE_STORAGE_KEY = 'mos_theme_preference';
+
+function readSystemThemeMode(): ThemeMode {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return 'dark';
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function isThemePreference(value: unknown): value is ThemePreference {
+  return value === 'light' || value === 'dark' || value === 'auto';
+}
+
+function syncHeadThemeMetaTags(
+  themeColor: string,
+  colorSchemeContent: 'light' | 'dark' | 'light dark'
+): void {
+  if (typeof document === 'undefined' || !document.head) return;
+  let schemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+  if (!schemeMeta) {
+    schemeMeta = document.createElement('meta');
+    schemeMeta.name = 'color-scheme';
+    document.head.appendChild(schemeMeta);
+  }
+  schemeMeta.content = colorSchemeContent;
+
+  const existingThemeMetas = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'));
+  if (existingThemeMetas.length === 0) {
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = themeColor;
+    document.head.appendChild(meta);
+    return;
+  }
+  existingThemeMetas.forEach((meta) => {
+    meta.removeAttribute('media');
+    meta.content = themeColor;
+  });
+}
 
 export interface AvailableThemeItem {
   id: string;
@@ -65,6 +106,10 @@ interface ThemeContextType {
   setCoreThemeId: (themeId: string) => void;
   setThemeId: (themeId: string) => void;
   themeMode: ThemeMode;
+  themePreference: ThemePreference;
+  systemThemeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
+  setThemePreference: (preference: ThemePreference) => void;
   toggleTheme: () => void;
   /** Saved preference used whenever the viewport is not a phone. */
   desktopDensity: DesktopDensity;
@@ -141,13 +186,70 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
 
   const coreTheme = mergedThemeRegistry[coreThemeId] ?? coreThemeRegistry[DEFAULT_CORE_THEME_ID];
 
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const saved = safeStorage.getItem('mos_theme') as ThemeMode;
-    if (saved === 'light' || saved === 'dark') {
-      return saved;
+  const [systemThemeMode, setSystemThemeMode] = useState<ThemeMode>(() => readSystemThemeMode());
+
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => {
+    const savedPref = safeStorage.getItem(THEME_PREFERENCE_STORAGE_KEY);
+    if (isThemePreference(savedPref)) {
+      return savedPref;
+    }
+    const savedMode = safeStorage.getItem(THEME_MODE_STORAGE_KEY);
+    if (savedMode === 'light' || savedMode === 'dark') {
+      return savedMode;
     }
     return coreTheme.defaultMode;
   });
+
+  const themeMode: ThemeMode = themePreference === 'auto' ? systemThemeMode : themePreference;
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncSystemMode = (matches: boolean) => {
+      setSystemThemeMode(matches ? 'dark' : 'light');
+    };
+    syncSystemMode(mediaQuery.matches);
+    const handleChange = (event: MediaQueryListEvent) => syncSystemMode(event.matches);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+    mediaQuery.addListener?.(handleChange);
+    return () => mediaQuery.removeListener?.(handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleStorageSync = (event: StorageEvent) => {
+      if (event.key === THEME_PREFERENCE_STORAGE_KEY) {
+        if (isThemePreference(event.newValue)) {
+          setThemePreferenceState(event.newValue);
+        } else if (event.newValue === null) {
+          const fallbackMode = safeStorage.getItem(THEME_MODE_STORAGE_KEY);
+          setThemePreferenceState(
+            fallbackMode === 'light' || fallbackMode === 'dark' ? fallbackMode : coreTheme.defaultMode
+          );
+        }
+      } else if (event.key === THEME_MODE_STORAGE_KEY) {
+        const pref = safeStorage.getItem(THEME_PREFERENCE_STORAGE_KEY);
+        if (pref !== 'auto' && (event.newValue === 'light' || event.newValue === 'dark')) {
+          setThemePreferenceState(event.newValue);
+        }
+      } else if (event.key === CORE_THEME_STORAGE_KEY && event.newValue) {
+        if (coreThemeRegistry[event.newValue] || event.newValue in customThemes) {
+          setCoreThemeIdState(event.newValue);
+        }
+      } else if (event.key === CUSTOM_THEMES_STORAGE_KEY) {
+        try {
+          setCustomThemes(event.newValue ? JSON.parse(event.newValue) : {});
+        } catch {
+          // ignore malformed custom theme JSON from another tab
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageSync);
+    return () => window.removeEventListener('storage', handleStorageSync);
+  }, [coreTheme.defaultMode, customThemes]);
 
   const availableCoreThemes = React.useMemo<AvailableThemeItem[]>(() => {
     return Object.values(mergedThemeRegistry).map((def) => {
@@ -206,6 +308,12 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       root.style.setProperty('--client-desc-color', colors.textSecondary);
       root.style.setProperty('--color-gold', colors.primary);
       root.style.setProperty('--color-primary', colors.primary);
+      root.style.setProperty('--mos-bg-layout', colors.bgLayout);
+      root.style.setProperty('--mos-bg-container', colors.bgContainer);
+      root.style.setProperty('--mos-bg-elevated', colors.bgElevated);
+      root.style.setProperty('--mos-text-secondary', colors.textSecondary);
+      root.style.setProperty('--mos-border-color', colors.borderColor);
+      root.style.setProperty('--mos-border-secondary', colors.borderSecondary);
 
       // Semantic tokens
       root.style.setProperty('--mos-surface', semantic.surface);
@@ -240,24 +348,44 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       root.dataset.desktopDensity = desktopDensity;
       root.dataset.theme = coreTheme.id;
       root.dataset.themeBase = themeMode;
-    } catch (_) {}
-  }, [coreTheme, desktopDensity, effectiveDensity, mounted, themeMode]);
+      root.dataset.themePreference = themePreference;
 
-  const toggleTheme = () => {
-    const nextTheme = themeMode === 'light' ? 'dark' : 'light';
-    setThemeMode(nextTheme);
-    safeStorage.setItem('mos_theme', nextTheme);
+      // Sync iOS Safari / PWA status bar & overscroll chrome
+      root.style.backgroundColor = colors.bgLayout;
+      if (document.body) {
+        document.body.style.backgroundColor = colors.bgLayout;
+        document.body.style.color = colors.textPrimary;
+      }
+      syncHeadThemeMetaTags(colors.bgLayout, themePreference === 'auto' ? 'light dark' : themeMode);
+    } catch (_) {}
+  }, [coreTheme, desktopDensity, effectiveDensity, mounted, themeMode, themePreference]);
+
+  const setThemePreference = (preference: ThemePreference) => {
+    setThemePreferenceState(preference);
+    safeStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, preference);
+    const resolved: ThemeMode = preference === 'auto' ? readSystemThemeMode() : preference;
+    safeStorage.setItem(THEME_MODE_STORAGE_KEY, resolved);
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
-      if (nextTheme === 'light') {
+      if (resolved === 'light') {
         root.classList.remove('dark-theme', 'dark');
         root.classList.add('light-theme');
       } else {
         root.classList.remove('light-theme');
         root.classList.add('dark-theme', 'dark');
       }
-      root.dataset.themeBase = nextTheme;
+      root.dataset.themeBase = resolved;
+      root.dataset.themePreference = preference;
     }
+  };
+
+  const setThemeMode = (mode: ThemeMode) => {
+    setThemePreference(mode);
+  };
+
+  const toggleTheme = () => {
+    const nextTheme = themeMode === 'light' ? 'dark' : 'light';
+    setThemePreference(nextTheme);
   };
 
   const setDesktopDensity = (density: DesktopDensity) => {
@@ -302,8 +430,7 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       safeStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(updated));
       setCoreThemeIdState(input.id);
       safeStorage.setItem(CORE_THEME_STORAGE_KEY, input.id);
-      setThemeMode(input.base);
-      safeStorage.setItem('mos_theme', input.base);
+      setThemePreference(input.base);
     } catch (err) {
       console.error('Failed to save custom theme', err);
     }
@@ -340,6 +467,10 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
         setCoreThemeId,
         setThemeId: setCoreThemeId,
         themeMode,
+        themePreference,
+        systemThemeMode,
+        setThemeMode,
+        setThemePreference,
         toggleTheme,
         desktopDensity,
         effectiveDensity,
@@ -487,6 +618,10 @@ const defaultThemeContextFallback: ThemeContextType = {
   setCoreThemeId: () => {},
   setThemeId: () => {},
   themeMode: 'light',
+  themePreference: 'light',
+  systemThemeMode: 'dark',
+  setThemeMode: () => {},
+  setThemePreference: () => {},
   toggleTheme: () => {},
   desktopDensity: 'standard',
   effectiveDensity: 'standard',

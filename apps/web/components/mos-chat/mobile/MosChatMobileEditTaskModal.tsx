@@ -155,7 +155,7 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
     >
       <div className="space-y-3.5 py-2">
         <div>
-          <label className="text-xs font-semibold text-slate-300 block mb-1">Nội dung công việc *</label>
+          <label className="text-xs font-semibold text-[var(--mos-text)] block mb-1">Nội dung công việc *</label>
           <Input.TextArea
             rows={3}
             value={title}
@@ -165,7 +165,7 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-slate-300 block mb-1">Người thực hiện</label>
+          <label className="text-xs font-semibold text-[var(--mos-text)] block mb-1">Người thực hiện</label>
           <Select
             className="w-full"
             placeholder="Chọn người được giao"
@@ -215,7 +215,7 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+          <label className="text-xs font-semibold text-[var(--mos-text)] block mb-1.5">
             Thời hạn hoàn thành (Deadline)
           </label>
           <MosChatMobileDateTimePicker
@@ -226,7 +226,7 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-slate-300 block mb-1">Mức độ ưu tiên</label>
+          <label className="text-xs font-semibold text-[var(--mos-text)] block mb-1">Mức độ ưu tiên</label>
           <Select
             className="w-full"
             value={priority}

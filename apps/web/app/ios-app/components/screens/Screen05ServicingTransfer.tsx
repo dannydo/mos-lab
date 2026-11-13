@@ -36,62 +36,54 @@ export function Screen05ServicingTransfer({
   }, [booking, servicingBookings]);
 
   return (
-    <div
-      className={`flex-1 flex flex-col ${
-        isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'
-      } overflow-y-auto select-none`}
-    >
-      {/* Top Navigation Bar on Black */}
-      <header className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-2.5 px-4 flex items-center justify-between bg-black border-b border-neutral-900 select-none z-40 relative min-h-[50px] shrink-0">
+    <div className="flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none">
+      {/* Top Navigation Bar */}
+      <header className="w-full pt-[calc(env(safe-area-inset-top,0px)+10px)] pb-2.5 px-4 flex items-center justify-between bg-[var(--mos-surface)] border-b border-[var(--mos-surface-border)] select-none z-40 relative min-h-[50px] shrink-0">
         <div className="flex items-center gap-2">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center gap-0.5 text-[#FFB400] text-sm font-semibold active:opacity-60 cursor-pointer"
+              className={`flex items-center gap-0.5 text-sm font-semibold active:opacity-60 cursor-pointer ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}
             >
               <ChevronLeft className="w-5 h-5" />
               <span>Quay lại</span>
             </button>
           ) : (
-            <Calendar className="w-5 h-5 text-[#FFB400]" />
+            <Calendar className={`w-5 h-5 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`} />
           )}
         </div>
-        <div className="text-[#FFB400] font-bold text-[17px] tracking-tight">{branchHeader}</div>
+        <div className={`font-bold text-[17px] tracking-tight ${isDark ? 'text-[#FFB400]' : 'text-[var(--mos-text)]'}`}>{branchHeader}</div>
         <div className="flex items-center gap-3.5">
-          <Phone className="w-5 h-5 text-[#FFB400]" />
-          <ShoppingCart className="w-5 h-5 text-[#FFB400]" />
+          <Phone className={`w-5 h-5 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`} />
+          <ShoppingCart className={`w-5 h-5 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`} />
         </div>
       </header>
 
-      {/* Sub-navbar Category Tabs on Black */}
-      <div className="bg-black px-4 pt-1 pb-2 flex items-center justify-between border-b border-neutral-900 shrink-0 text-[12px] font-bold">
+      {/* Sub-navbar Category Tabs */}
+      <div className="bg-[var(--mos-surface)] px-4 pt-1 pb-2 flex items-center justify-between border-b border-[var(--mos-surface-border)] shrink-0 text-[12px] font-bold">
         <div className="pb-1 relative">
-          <span className="text-[#FFB400] tracking-tight">LASHES</span>
+          <span className={`tracking-tight ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}>LASHES</span>
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFB400]" />
         </div>
-        <div className="pb-1 text-neutral-400">LASH LIFT</div>
-        <div className="pb-1 text-neutral-400">NAILS</div>
-        <div className="pb-1 text-neutral-400">ALL</div>
+        <div className="pb-1 text-[var(--mos-text-muted)]">LASH LIFT</div>
+        <div className="pb-1 text-[var(--mos-text-muted)]">NAILS</div>
+        <div className="pb-1 text-[var(--mos-text-muted)]">ALL</div>
       </div>
 
-      {/* Segmented Control on Black */}
-      <div className="bg-black px-3 py-2 flex items-center gap-1 shrink-0 border-b border-neutral-900">
-        <div className="flex-1 py-1.5 text-center text-[12px] font-medium text-neutral-400 rounded-md">INCOMING</div>
+      {/* Segmented Control */}
+      <div className="bg-[var(--mos-surface)] px-3 py-2 flex items-center gap-1 shrink-0 border-b border-[var(--mos-surface-border)]">
+        <div className="flex-1 py-1.5 text-center text-[12px] font-medium text-[var(--mos-text-muted)] rounded-md">INCOMING</div>
         <div className="flex-[1.4] py-1.5 text-center text-[12px] font-extrabold bg-[#FFB400] text-black rounded-md shadow-xs">
           SERVICING (ĐANG LÀM)
         </div>
-        <div className="flex-1 py-1.5 text-center text-[12px] font-medium text-neutral-400 rounded-md">DONE</div>
+        <div className="flex-1 py-1.5 text-center text-[12px] font-medium text-[var(--mos-text-muted)] rounded-md">DONE</div>
       </div>
 
       {/* Content */}
       <div className="flex-1 flex flex-col justify-between overflow-y-auto">
         {/* Booking Items */}
-        <div
-          className={`${
-            isDark ? 'bg-[#1C1C1E] divide-neutral-800 border-neutral-800' : 'bg-white divide-gray-100 border-gray-200'
-          } divide-y border-b`}
-        >
+        <div className="bg-[var(--mos-surface)] divide-[var(--mos-surface-border)] border-[var(--mos-surface-border)] divide-y border-b">
           {activeRows.map((row, idx) => {
             const isPrimary = Number(row.id) === Number(booking?.id);
             const rowName = row.customerName || 'Khách hàng';

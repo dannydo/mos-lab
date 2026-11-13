@@ -149,10 +149,10 @@ export function ScreenStoreDashboard({
     };
   }, [bookings, isDemoMode]);
 
-  const cardSurface = isDark ? 'bg-[#1C1C1E] border-neutral-800' : 'bg-white border-[#E5E5EA]';
+  const cardSurface = 'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]';
 
   return (
-    <div className={`flex flex-col h-full ${isDark ? 'bg-black text-white' : 'bg-[#F2F2F7] text-[#1C1C1E]'}`}>
+    <div className="flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)]">
       <IosNavigationBar
         title="Quản Lý Salon (Store Manager)"
         rightAction={{
@@ -163,18 +163,18 @@ export function ScreenStoreDashboard({
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {/* Salon Branch Header Card */}
-        <div className="bg-gradient-to-r from-[#1C1C1E] to-[#2C2C2E] rounded-2xl p-4 text-white shadow-sm flex items-center justify-between border border-neutral-800">
+        <div className="bg-[var(--mos-surface-raised)] rounded-2xl p-4 text-[var(--mos-text)] shadow-sm flex items-center justify-between border border-[var(--mos-surface-border)]">
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-11 h-11 rounded-xl bg-[#FF9500] text-black flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
               <Store className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
               <h2 className="text-base font-bold truncate">{branchHeader.title}</h2>
-              <p className="text-xs text-white/70 truncate">{branchHeader.address}</p>
+              <p className="text-xs text-[var(--mos-text-muted)] truncate">{branchHeader.address}</p>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center gap-1 shrink-0 ml-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1 shrink-0 ml-2 ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             Đang mở
           </span>
         </div>

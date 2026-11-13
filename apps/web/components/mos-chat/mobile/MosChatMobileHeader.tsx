@@ -18,9 +18,11 @@ import {
   Bell,
   BellRing,
   X,
+  Palette,
 } from 'lucide-react';
 import { Dropdown, Modal } from 'antd';
 import type { MenuProps } from 'antd';
+import { useTheme } from '../../../context/ThemeContext';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatPresenceStatus } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
@@ -34,6 +36,7 @@ export interface MosChatMobileHeaderProps {
   onOpenMembersModal?: () => void;
   onOpenSearch?: () => void;
   onOpenPushSettings?: () => void;
+  onOpenThemeSheet?: () => void;
   isPushSubscribed?: boolean;
   onClose?: () => void;
 }
@@ -45,9 +48,12 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   onOpenMembersModal,
   onOpenSearch,
   onOpenPushSettings,
+  onOpenThemeSheet,
   isPushSubscribed = false,
   onClose,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const {
     currentUser,
     mobileView,
@@ -115,7 +121,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   // View: INBOX
   if (mobileView === 'inbox') {
     return (
-      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 shadow-sm flex flex-col">
+      <header className="sticky top-0 z-40 bg-[var(--mos-surface)]/95 backdrop-blur-md border-b border-[var(--mos-surface-border)] shadow-sm flex flex-col">
         <HeaderRoleQuickSwitch
           variant="standalone-bar"
           userRole={currentUser?.role}
@@ -127,7 +133,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               🪽
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight leading-none flex items-center gap-2">
+              <h1 className="text-lg font-bold text-[var(--mos-text)] tracking-tight leading-none flex items-center gap-2">
                 mOS Chat
                 {totalUnreadCount > 0 && (
                   <span className="px-1.5 py-0.5 text-xs font-semibold bg-rose-500 text-white rounded-full leading-none tabular-nums animate-pulse">
@@ -135,19 +141,30 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   </span>
                 )}
               </h1>
-              <p className="text-[11px] text-slate-400 mt-0.5">Wings Enterprise Hub</p>
+              <p className="text-[11px] text-[var(--mos-text-muted)] mt-0.5">Wings Enterprise Hub</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {onOpenThemeSheet && (
+              <button
+                type="button"
+                onClick={onOpenThemeSheet}
+                className="p-2 rounded-full bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-accent)] hover:opacity-85 active:scale-95 transition-transform cursor-pointer"
+                aria-label="Giao diện & Chủ đề"
+                title="Giao diện Sáng / Tối & Chủ đề"
+              >
+                <Palette className="w-4 h-4" />
+              </button>
+            )}
             {onOpenPushSettings && (
               <button
                 type="button"
                 onClick={onOpenPushSettings}
-                className={`relative p-2 rounded-full border active:scale-95 transition-transform ${
+                className={`relative p-2 rounded-full border active:scale-95 transition-transform cursor-pointer ${
                   isPushSubscribed
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                    : 'bg-slate-800/80 border-slate-700/60 text-amber-400'
+                    ? (isDark ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700')
+                    : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-amber-500'
                 }`}
                 aria-label="Chuông báo cuộc gọi khi khóa máy"
                 title="Bật chuông báo cuộc gọi khi khóa màn hình iPhone"
@@ -162,17 +179,17 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenSearch}
-                className="p-2 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 active:scale-95 transition-transform"
+                className="p-2 rounded-full text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] active:scale-95 transition-transform cursor-pointer"
                 aria-label="Tìm kiếm tin nhắn"
                 title="Tìm kiếm tin nhắn (⌘K)"
               >
-                <Search className="w-4 h-4 text-amber-400" />
+                <Search className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
               </button>
             )}
             <Dropdown menu={{ items: presenceMenuItems }} trigger={['click']} placement="bottomRight">
               <button
                 type="button"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300 active:scale-95 transition-transform"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-xs font-medium text-[var(--mos-text)] active:scale-95 transition-transform cursor-pointer"
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
@@ -192,7 +209,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 active:scale-95 transition-transform cursor-pointer"
+                className="p-2 rounded-full text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] active:scale-95 transition-transform cursor-pointer"
                 aria-label="Đóng Chat"
                 title="Đóng Chat"
               >
@@ -208,31 +225,31 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   // View: THREAD
   if (mobileView === 'thread') {
     return (
-      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 px-3 pt-[max(env(safe-area-inset-top),14px)] pb-3 flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 z-40 bg-[var(--mos-surface)]/95 backdrop-blur-md border-b border-[var(--mos-surface-border)] px-3 pt-[max(env(safe-area-inset-top),14px)] pb-3 flex items-center justify-between shadow-sm">
         <button
           type="button"
           onClick={() => setMobileView('room')}
-          className="flex items-center gap-1 text-amber-400 font-semibold text-sm py-1 pr-2 active:opacity-70 transition-opacity"
+          className={`flex items-center gap-1 font-semibold text-sm py-1 pr-2 active:opacity-70 transition-opacity cursor-pointer ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
         >
           <ChevronLeft className="w-5 h-5 -ml-1" />
           <span>Quay lại</span>
         </button>
 
         <div className="text-center flex-1 mx-2">
-          <h2 className="text-sm font-bold text-white truncate leading-snug">Luồng thảo luận</h2>
-          <p className="text-[11px] text-slate-400 leading-none">Trả lời tin nhắn</p>
+          <h2 className="text-sm font-bold text-[var(--mos-text)] truncate leading-snug">Luồng thảo luận</h2>
+          <p className="text-[11px] text-[var(--mos-text-muted)] leading-none">Trả lời tin nhắn</p>
         </div>
 
         <div className="flex items-center justify-end min-w-[70px]">
           <button
             type="button"
             onClick={onOpenTaskModal}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all active:scale-95 border ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all active:scale-95 border cursor-pointer ${
               linkedTask
                 ? linkedTask.done
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  ? (isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                  : (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-amber-50 text-amber-800 border-amber-200')
+                : 'bg-[var(--mos-surface-muted)] hover:opacity-85 text-[var(--mos-text)] border-[var(--mos-surface-border)]'
             }`}
             title={linkedTask ? `Main Task: ${linkedTask.title}` : 'Giao việc cho tin nhắn cha'}
           >
@@ -256,7 +273,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   const isRoomPinned = Boolean(activeConversation && pinnedConvIds?.has(activeConversation.id));
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 shadow-sm flex flex-col">
+    <header className="sticky top-0 z-40 bg-[var(--mos-surface)]/95 backdrop-blur-md border-b border-[var(--mos-surface-border)] shadow-sm flex flex-col">
       <div className="px-3 pt-[max(env(safe-area-inset-top),14px)] pb-2.5 flex items-center justify-between gap-2">
         {/* Left: Back button + Room Identity (Strictly Left-Aligned) */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -267,10 +284,10 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               setActiveSubtab('chat');
               setMobileView('inbox');
             }}
-            className="shrink-0 flex items-center text-amber-400 font-medium text-sm py-1 pr-1 active:opacity-70 transition-opacity"
+            className={`shrink-0 flex items-center font-medium text-sm py-1 pr-1 active:opacity-70 transition-opacity cursor-pointer ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
             aria-label="Quay lại danh sách hội thoại"
           >
-            <ChevronLeft className="w-6 h-6 -ml-1 text-amber-400" />
+            <ChevronLeft className="w-6 h-6 -ml-1" />
           </button>
 
           <div
@@ -287,30 +304,30 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <h2 className="text-sm font-bold text-white truncate leading-snug">🤖 MAI</h2>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40 shrink-0">
+                    <h2 className="text-sm font-bold text-[var(--mos-text)] truncate leading-snug">🤖 MAI</h2>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold uppercase border shrink-0 ${isDark ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-purple-100 text-purple-700 border-purple-200'}`}>
                       mOS AI
                     </span>
                   </div>
-                  <p className="text-[11px] text-purple-300/80 truncate leading-none mt-0.5">
+                  <p className={`text-[11px] truncate leading-none mt-0.5 ${isDark ? 'text-purple-300/80' : 'text-purple-700'}`}>
                     Tra cứu & Phân tích riêng tư
                   </p>
                 </div>
               </div>
             ) : isSpace ? (
               <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
-                <div className="w-9 h-9 rounded-xl bg-slate-800/90 border border-slate-700/70 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] flex items-center justify-center shrink-0">
                   {activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
                     <span className="text-base leading-none">{activeConversation.avatar}</span>
                   ) : (
-                    <Hash className="w-4 h-4 text-amber-400" />
+                    <Hash className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <h2 className="text-sm font-bold text-white truncate leading-snug">{roomTitle}</h2>
+                    <h2 className="text-sm font-bold text-[var(--mos-text)] truncate leading-snug">{roomTitle}</h2>
                     {isRoomPinned && (
-                      <Pin className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" aria-label="Đã ghim" />
+                      <Pin className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`} aria-label="Đã ghim" />
                     )}
                   </div>
                   <p
@@ -320,7 +337,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                         onOpenMembersModal();
                       }
                     }}
-                    className="text-[11px] text-slate-400 hover:text-emerald-400 transition-colors truncate leading-none mt-0.5"
+                    className="text-[11px] text-[var(--mos-text-muted)] hover:text-emerald-500 transition-colors truncate leading-none mt-0.5"
                   >
                     {subtitle}
                   </p>
@@ -341,12 +358,12 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <h2 className="text-sm font-bold text-white truncate leading-snug">{roomTitle}</h2>
+                    <h2 className="text-sm font-bold text-[var(--mos-text)] truncate leading-snug">{roomTitle}</h2>
                     {isRoomPinned && (
-                      <Pin className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" aria-label="Đã ghim" />
+                      <Pin className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`} aria-label="Đã ghim" />
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400 truncate leading-none mt-0.5">{subtitle}</p>
+                  <p className="text-[11px] text-[var(--mos-text-muted)] truncate leading-none mt-0.5">{subtitle}</p>
                 </div>
               </div>
             )}
@@ -368,7 +385,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   onOk: () => resetAiChat?.(),
                 });
               }}
-              className="p-2 text-purple-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+              className={`p-2 rounded-full hover:bg-[var(--mos-surface-muted)] transition-colors active:scale-95 cursor-pointer ${isDark ? 'text-purple-300 hover:text-white' : 'text-purple-700'}`}
               aria-label="Làm mới cuộc trò chuyện với MAI"
               title="Làm mới cuộc trò chuyện với MAI"
             >
@@ -380,11 +397,11 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               <button
                 type="button"
                 onClick={onCallRoom}
-                className="w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-sm shadow-emerald-500/10"
+                className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-sm ${isDark ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 shadow-emerald-500/10' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'}`}
                 aria-label="Gọi thoại nội bộ mOS"
                 title="Gọi thoại nội bộ mOS"
               >
-                <Phone className="w-4 h-4 text-emerald-400" />
+                <Phone className="w-4 h-4" />
               </button>
 
               {/* Push Notification / Call Ring Settings Button */}
@@ -394,8 +411,8 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   onClick={onOpenPushSettings}
                   className={`w-9 h-9 relative rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer border ${
                     isPushSubscribed
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                      : 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                      ? (isDark ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700')
+                      : (isDark ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-600')
                   }`}
                   aria-label="Chuông báo cuộc gọi khi khóa máy"
                   title="Chuông báo cuộc gọi khi khóa màn hình"
@@ -417,14 +434,14 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 className={`w-9 h-9 relative rounded-full flex items-center justify-center transition-colors active:scale-95 cursor-pointer border ${
                   activeSubtab === 'tasks'
                     ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
-                    : 'bg-slate-800/70 border-slate-700/60 text-slate-300 hover:bg-slate-800'
+                    : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)] hover:opacity-85'
                 }`}
                 aria-label="Xem danh sách công việc"
                 title="Danh sách công việc"
               >
                 <CheckSquare className="w-4 h-4" />
                 {openTaskCount > 0 && activeSubtab !== 'tasks' && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border border-slate-900" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border border-[var(--mos-surface)]" />
                 )}
               </button>
 
@@ -434,8 +451,8 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 onClick={() => setMoreMenuOpen((prev) => !prev)}
                 className={`w-9 h-9 relative rounded-full flex items-center justify-center transition-colors active:scale-95 cursor-pointer border ${
                   moreMenuOpen || activeSubtab === 'pinned'
-                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                    : 'bg-slate-800/70 border-slate-700/60 text-slate-300 hover:bg-slate-800'
+                    ? (isDark ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700')
+                    : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)] hover:opacity-85'
                 }`}
                 aria-label="Mở menu tùy chọn phòng chat"
                 title="Tùy chọn phòng chat"
@@ -453,7 +470,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               <div
                 className={
                   moreMenuOpen
-                    ? 'absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl bg-slate-900/98 backdrop-blur-xl border border-slate-700/80 shadow-2xl py-1.5 text-slate-100'
+                    ? 'absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl bg-[var(--mos-surface)] backdrop-blur-xl border border-[var(--mos-surface-border)] shadow-2xl py-1.5 text-[var(--mos-text)]'
                     : 'hidden'
                 }
               >
@@ -464,11 +481,26 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                       setMoreMenuOpen(false);
                       onOpenSearch();
                     }}
-                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium transition-colors cursor-pointer"
+                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
                     aria-label="Tìm kiếm tin nhắn"
                   >
-                    <Search className="w-4 h-4 text-amber-400 shrink-0" />
+                    <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                     <span className="flex-1">Tìm kiếm tin nhắn</span>
+                  </button>
+                )}
+
+                {onOpenThemeSheet && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoreMenuOpen(false);
+                      onOpenThemeSheet();
+                    }}
+                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
+                    aria-label="Giao diện & Chủ đề"
+                  >
+                    <Palette className="w-4 h-4 text-[var(--mos-accent)] shrink-0" />
+                    <span className="flex-1">Giao diện & Chủ đề</span>
                   </button>
                 )}
 
@@ -478,13 +510,13 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                     setMoreMenuOpen(false);
                     setActiveSubtab(activeSubtab === 'pinned' ? 'chat' : 'pinned');
                   }}
-                  className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium transition-colors cursor-pointer"
+                  className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
                   aria-label="Xem tin nhắn đã ghim"
                 >
-                  <Pin className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Pin className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                   <span className="flex-1">Xem tin nhắn đã ghim</span>
                   {pinnedMessages.length > 0 && (
-                    <span className="inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 tabular-nums">
+                    <span className={`inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[11px] font-bold tabular-nums ${isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-800'}`}>
                       {pinnedMessages.length}
                     </span>
                   )}
@@ -497,7 +529,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                       setMoreMenuOpen(false);
                       togglePinConversation(activeConversation.id);
                     }}
-                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium transition-colors cursor-pointer"
+                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
                     aria-label={
                       isRoomPinned
                         ? isSpace
@@ -510,7 +542,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   >
                     <Pin
                       className={`w-4 h-4 shrink-0 ${
-                        isRoomPinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400'
+                        isRoomPinned ? 'fill-amber-400 text-amber-400' : 'text-[var(--mos-text-muted)]'
                       }`}
                     />
                     <span className="flex-1">
@@ -526,10 +558,10 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                       setMoreMenuOpen(false);
                       onOpenMembersModal?.();
                     }}
-                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium transition-colors cursor-pointer"
+                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
                     aria-label="Thành viên Không gian"
                   >
-                    <UserPlus className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <UserPlus className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span className="flex-1">Thành viên Không gian</span>
                   </button>
                 )}
@@ -541,18 +573,20 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                       setMoreMenuOpen(false);
                       onOpenPushSettings();
                     }}
-                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium transition-colors cursor-pointer border-t border-slate-800/80 mt-1 pt-2.5"
+                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer border-t border-[var(--mos-surface-border)] mt-1 pt-2.5"
                     aria-label="Chuông báo cuộc gọi khi khóa máy"
                   >
                     {isPushSubscribed ? (
-                      <BellRing className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <BellRing className="w-4 h-4 text-emerald-500 shrink-0" />
                     ) : (
-                      <Bell className="w-4 h-4 text-amber-400 shrink-0" />
+                      <Bell className="w-4 h-4 text-amber-500 shrink-0" />
                     )}
                     <span className="flex-1">Chuông cuộc gọi khi khóa máy</span>
                     <span
                       className={`inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[10px] font-bold ${
-                        isPushSubscribed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        isPushSubscribed
+                          ? (isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
+                          : (isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-800')
                       }`}
                     >
                       {isPushSubscribed ? 'Đã bật' : 'Bật ngay'}
@@ -567,10 +601,10 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                       setMoreMenuOpen(false);
                       onClose();
                     }}
-                    className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-slate-800/80 active:bg-slate-800 text-left text-xs font-medium text-rose-300 transition-colors cursor-pointer border-t border-slate-800/80 mt-1 pt-2.5"
+                    className={`w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer border-t border-[var(--mos-surface-border)] mt-1 pt-2.5 ${isDark ? 'text-rose-300' : 'text-rose-600'}`}
                     aria-label="Đóng Chat"
                   >
-                    <X className="w-4 h-4 text-rose-400 shrink-0" />
+                    <X className="w-4 h-4 text-rose-500 shrink-0" />
                     <span className="flex-1">Đóng mOS Chat</span>
                   </button>
                 )}
@@ -581,7 +615,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-full text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 active:scale-95 transition-transform cursor-pointer"
+              className="p-1.5 rounded-full text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] active:scale-95 transition-transform cursor-pointer"
               aria-label="Đóng Chat"
               title="Đóng Chat"
             >
@@ -593,8 +627,8 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
 
       {/* Slim Return Bar when viewing Pinned Messages tab */}
       {activeSubtab === 'pinned' && (
-        <div className="px-3 py-1.5 bg-amber-500/15 border-t border-amber-500/30 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
+        <div className={`px-3 py-1.5 border-t flex items-center justify-between text-xs ${isDark ? 'bg-amber-500/15 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+          <div className={`flex items-center gap-1.5 font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>
             <Pin className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
             <span>Đang xem Tin nhắn đã ghim ({pinnedMessages.length})</span>
           </div>

@@ -9,6 +9,7 @@ import {
   type IosCustomerComboWalletItem,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { useTheme } from '../../../../context/ThemeContext';
 import { ComboSessionBadge } from './ComboSessionBadge';
 import { AlertTriangle, CalendarClock, CheckCircle2, Lock, ShieldCheck, Snowflake, Sparkles, X } from 'lucide-react';
 
@@ -102,12 +103,13 @@ export function ComboWalletDetailModal({
   isOpen,
   onClose,
   isAdmin = false,
-  theme = 'dark',
+  theme,
   onUpdated,
 }: ComboWalletDetailModalProps) {
+  const { themeMode } = useTheme();
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement | null>(null);
-  const isDark = theme === 'dark';
+  const isDark = (theme ?? themeMode) === 'dark';
 
   const wallets = useMemo(() => resolveBookingComboWallets(booking), [booking]);
   const [customDateByBalance, setCustomDateByBalance] = useState<Record<number, string>>({});

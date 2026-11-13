@@ -310,11 +310,11 @@ export function NaturalLashEyeHealthAndGoldenRatio({
       </div>
 
       {/* CARD 3: KHUYẾN NGHỊ KHOA HỌC WINGS (CHỈ TÍNH TOÁN SAU KHI ĐO ĐỦ 7/7 THÔNG SỐ) */}
-      <div className="bg-[#1C1C1E] text-white rounded-2xl p-3 shadow-sm border border-amber-500/30 space-y-2.5">
+      <div className={`rounded-2xl p-3 shadow-sm border space-y-2.5 ${isDark ? 'bg-[#1C1C1E] text-white border-amber-500/30' : 'bg-[var(--mos-surface)] text-[var(--mos-text)] border-amber-300'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-[#FFB400]" />
-            <span className="text-[11.5px] font-black uppercase text-amber-400 tracking-wide">
+            <span className={`text-[11.5px] font-black uppercase tracking-wide ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
               Gợi ý tỷ lệ vàng Wings
             </span>
           </div>
@@ -329,13 +329,13 @@ export function NaturalLashEyeHealthAndGoldenRatio({
                   advice: `Dáng ${recommendation.recommendedDesign} · Cong ${recommendation.recommendedCurl} · Độ dày ${recommendation.recommendedThickness} · Dài an toàn ≤ ${recommendation.maxSafeMm}mm`,
                 })
               }
-              className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 px-2 py-0.5 rounded-full border border-amber-500/30 transition-colors cursor-pointer"
+              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${isDark ? 'text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30' : 'text-amber-800 bg-amber-100 hover:bg-amber-200 border-amber-300'}`}
             >
               <Info className="w-3 h-3" />
               <span>Kịch bản tư vấn (i)</span>
             </button>
           ) : (
-            <span className="text-[10px] font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded-full border border-neutral-700 tabular-nums">
+            <span className="text-[10px] font-bold text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] px-2 py-0.5 rounded-full border border-[var(--mos-surface-border)] tabular-nums">
               Chờ đo đủ {completedNaturalLashCount}/7
             </span>
           )}
@@ -343,35 +343,35 @@ export function NaturalLashEyeHealthAndGoldenRatio({
 
         {recommendation ? (
           <div className="grid grid-cols-4 gap-1 text-center">
-            <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
-              <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dòng mi</span>
-              <span className="text-[10px] font-black text-amber-300 block truncate mt-0.5">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-lg py-1 px-1 min-w-0">
+              <span className="text-[8px] font-bold text-[var(--mos-text-muted)] uppercase block">Dòng mi</span>
+              <span className={`text-[10px] font-black block truncate mt-0.5 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
                 {recommendation.recommendedMaterial.replace(/New\s*/i, '').replace(/\s*\(.*\)/, '')}
               </span>
             </div>
-            <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
-              <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dáng/Cong</span>
-              <span className="text-[10px] font-black text-white block truncate mt-0.5">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-lg py-1 px-1 min-w-0">
+              <span className="text-[8px] font-bold text-[var(--mos-text-muted)] uppercase block">Dáng/Cong</span>
+              <span className="text-[10px] font-black text-[var(--mos-text)] block truncate mt-0.5">
                 {recommendation.recommendedDesign} {recommendation.recommendedCurl}
               </span>
             </div>
-            <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
-              <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dày</span>
-              <span className="text-[10px] font-black text-emerald-300 block truncate mt-0.5 tabular-nums">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-lg py-1 px-1 min-w-0">
+              <span className="text-[8px] font-bold text-[var(--mos-text-muted)] uppercase block">Dày</span>
+              <span className={`text-[10px] font-black block truncate mt-0.5 tabular-nums ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
                 {recommendation.recommendedThickness.replace(/\s*mm/gi, '')}
               </span>
             </div>
-            <div className="bg-black/60 border border-white/10 rounded-lg py-1 px-1 min-w-0">
-              <span className="text-[8px] font-bold text-neutral-400 uppercase block">Dài tối đa</span>
-              <span className="text-[10px] font-black text-blue-300 block truncate mt-0.5 tabular-nums">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-lg py-1 px-1 min-w-0">
+              <span className="text-[8px] font-bold text-[var(--mos-text-muted)] uppercase block">Dài tối đa</span>
+              <span className={`text-[10px] font-black block truncate mt-0.5 tabular-nums ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
                 ≤ {recommendation.maxSafeMm}
               </span>
             </div>
           </div>
         ) : (
-          <div className="bg-black/50 border border-dashed border-neutral-700 rounded-xl px-3 py-2 text-[11px] text-neutral-300 leading-relaxed">
+          <div className="bg-[var(--mos-surface-muted)] border border-dashed border-[var(--mos-surface-border-strong)] rounded-xl px-3 py-2 text-[11px] text-[var(--mos-text-muted)] leading-relaxed">
             Không có thông số mặc định cho khách hàng. Vui lòng đo & chọn đủ{' '}
-            <strong className="text-amber-300 tabular-nums">7/7</strong> thông số mi thật ở trên để hệ thống tính Tỷ Lệ
+            <strong className={`tabular-nums ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>7/7</strong> thông số mi thật ở trên để hệ thống tính Tỷ Lệ
             Vàng an toàn.
           </div>
         )}

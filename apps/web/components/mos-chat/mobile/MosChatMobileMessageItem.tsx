@@ -27,6 +27,7 @@ import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { parsePureStickerMessage, MosChatStickerVisual, parseStickerReactionKey } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
@@ -52,6 +53,8 @@ export interface MosChatMobileMessageItemProps {
 
 export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> = React.memo(
   ({ message, prevMessage, onOpenThread, onOpenGallery, onOpenCustomer }) => {
+    const { themeMode = 'dark' } = useTheme();
+    const isDark = themeMode === 'dark';
     const {
       currentUser,
       reactToMessage,
@@ -220,7 +223,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
               opacity: Math.min(1, swipeOffset / 35),
               transform: `scale(${Math.min(1, 0.5 + swipeOffset / 70)}) translateY(-50%)`,
             }}
-            className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md z-30 pointer-events-none"
+            className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-md z-30 pointer-events-none"
           >
             <MessageSquareReply className="w-4 h-4" />
           </div>
@@ -233,7 +236,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
               opacity: Math.min(1, Math.abs(swipeOffset) / 35),
               transform: `scale(${Math.min(1, 0.5 + Math.abs(swipeOffset) / 70)}) translateY(-50%)`,
             }}
-            className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md z-30 pointer-events-none"
+            className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-md z-30 pointer-events-none"
           >
             <MessageSquareReply className="w-4 h-4" />
           </div>
@@ -268,17 +271,31 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             )}
             <span
               className={`text-xs font-semibold ${
-                isAiBot ? 'text-purple-300' : isMe ? 'text-amber-300' : 'text-slate-300'
+                isAiBot
+                  ? isDark
+                    ? 'text-purple-300'
+                    : 'text-purple-700'
+                  : isMe
+                    ? isDark
+                      ? 'text-amber-300'
+                      : 'text-[var(--mos-text)]'
+                    : 'text-[var(--mos-text)]'
               }`}
             >
               {message.senderName}
             </span>
             {isAiBot ? (
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40">
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded font-bold uppercase border ${
+                  isDark
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                    : 'bg-purple-500/15 text-purple-700 border-purple-500/35'
+                }`}
+              >
                 mOS AI
               </span>
             ) : message.senderRole ? (
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-medium uppercase border border-[var(--mos-surface-border)]">
                 {message.senderRole}
               </span>
             ) : null}
@@ -290,8 +307,10 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           <div
             className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-xs italic break-words shadow-sm transition-colors flex items-center gap-2 select-none ${
               isMe
-                ? 'bg-amber-500/10 text-amber-300/80 border border-dashed border-amber-500/30 rounded-tr-sm'
-                : 'bg-slate-800/60 text-slate-400 border border-dashed border-slate-700/60 rounded-tl-sm'
+                ? `bg-amber-500/10 border border-dashed border-amber-500/30 rounded-tr-sm ${
+                    isDark ? 'text-amber-300/80' : 'text-amber-800/80'
+                  }`
+                : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border border-dashed border-[var(--mos-surface-border)] rounded-tl-sm'
             }`}
           >
             <Trash2 className="w-3.5 h-3.5 opacity-60 shrink-0" />
@@ -302,16 +321,24 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           <div
             className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm transition-colors ${
               isMe
-                ? 'bg-amber-500/20 text-slate-100 border border-amber-500/40 font-normal rounded-tr-sm shadow-amber-500/10'
+                ? 'mos-accent-bubble-ink bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] border border-black/10 font-normal rounded-tr-sm'
                 : isAiBot
-                  ? 'bg-slate-900 text-slate-100 border border-purple-500/40 rounded-tl-sm shadow-md shadow-purple-950/20'
-                  : 'bg-slate-800/90 text-slate-100 border border-slate-700/70 rounded-tl-sm'
+                  ? 'bg-[var(--mos-surface)] text-[var(--mos-text)] border border-purple-500/40 rounded-tl-sm shadow-md'
+                  : 'bg-[var(--mos-surface)] text-[var(--mos-text)] border border-[var(--mos-surface-border)] rounded-tl-sm'
             }`}
           >
             {/* Pinned Badge */}
             {message.pinned && (
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-300 mb-1 pb-1 border-b border-white/20">
-                <Pin className="w-3 h-3 fill-amber-300" />
+              <div
+                className={`flex items-center gap-1 text-[11px] font-semibold mb-1 pb-1 border-b ${
+                  isMe
+                    ? 'text-[var(--mos-accent-contrast)] opacity-85 border-current/20'
+                    : isDark
+                      ? 'text-amber-300 border-white/15'
+                      : 'text-amber-700 border-black/10'
+                }`}
+              >
+                <Pin className="w-3 h-3 fill-current" />
                 Đã ghim trong kênh
               </div>
             )}
@@ -336,8 +363,8 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                 }}
                 className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 flex items-center gap-2 cursor-pointer transition-all active:scale-[0.98] ${
                   isMe
-                    ? 'bg-amber-500/20 border-amber-400 text-slate-200 hover:bg-amber-500/30'
-                    : 'bg-slate-900/60 border-amber-500 text-slate-300 hover:bg-slate-900/90'
+                    ? 'bg-black/15 border-current text-[var(--mos-accent-contrast)] hover:bg-black/20'
+                    : 'bg-[var(--mos-surface-muted)] border-[var(--mos-accent)] text-[var(--mos-text)] hover:opacity-90'
                 }`}
               >
                 <MosChatAvatar
@@ -356,23 +383,29 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
             {/* Collapsible AI Reasoning (<thinking>) Block */}
             {message.aiThinking && (
-              <div className="mb-2 rounded-xl overflow-hidden w-full bg-purple-950/40 border border-purple-500/30">
+              <div
+                className={`mb-2 rounded-xl overflow-hidden w-full border border-purple-500/30 ${
+                  isDark ? 'bg-purple-950/40' : 'bg-purple-500/10'
+                }`}
+              >
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setThinkingOpen((prev) => !prev);
                   }}
-                  className="w-full px-2.5 py-1.5 flex items-center justify-between text-xs font-bold text-purple-300 active:bg-purple-900/40 transition-colors"
+                  className={`w-full px-2.5 py-1.5 flex items-center justify-between text-xs font-bold transition-colors ${
+                    isDark ? 'text-purple-300 active:bg-purple-900/40' : 'text-purple-700 active:bg-purple-500/15'
+                  }`}
                 >
                   <span className="inline-flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <Sparkles className={`w-3.5 h-3.5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
                     <span>Quá trình suy luận của MAI</span>
                   </span>
                   {thinkingOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 {thinkingOpen && (
-                  <div className="px-2.5 pb-2 pt-1 text-xs leading-relaxed whitespace-pre-wrap text-slate-300 border-t border-dashed border-purple-500/20 text-left">
+                  <div className="px-2.5 pb-2 pt-1 text-xs leading-relaxed whitespace-pre-wrap text-[var(--mos-text)] border-t border-dashed border-purple-500/20 text-left">
                     {message.aiThinking}
                   </div>
                 )}
@@ -380,7 +413,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             )}
 
             {/* Rich Text / Markdown / Mermaid / Sticker Render */}
-            <MosChatRichText content={message.text} isMe={isMe} isDark={true} />
+            <MosChatRichText content={message.text} isMe={isMe} isDark={isDark} />
 
             {/* Customer Card Attachment */}
             {message.customerCard && (
@@ -434,33 +467,33 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                               }}
                               className={`flex items-center gap-2.5 p-2 rounded-xl border cursor-pointer active:scale-[0.98] transition-transform ${
                                 isMe
-                                  ? 'bg-amber-600/20 border-amber-900/40 text-slate-900'
-                                  : 'bg-slate-900/70 border-slate-700/60 text-slate-100'
+                                  ? 'bg-black/15 border-current/25 text-[var(--mos-accent-contrast)]'
+                                  : 'bg-[var(--mos-surface-raised)] border-[var(--mos-surface-border)] text-[var(--mos-text)]'
                               }`}
                             >
                               <div
                                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs shadow-sm ${
                                   isPdf
-                                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                    ? `bg-rose-500/20 border border-rose-500/30 ${isDark ? 'text-rose-400' : 'text-rose-600'}`
                                     : isExcel
-                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                      ? `bg-emerald-500/20 border border-emerald-500/30 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`
                                       : isWord
-                                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                        ? `bg-blue-500/20 border border-blue-500/30 ${isDark ? 'text-blue-400' : 'text-blue-700'}`
                                         : isZip
-                                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                          : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                                          ? `bg-amber-500/20 border border-amber-500/30 ${isDark ? 'text-amber-400' : 'text-amber-700'}`
+                                          : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border border-[var(--mos-surface-border)]'
                                 }`}
                               >
                                 {isPdf ? (
-                                  <FileText size={18} className="text-rose-400" />
+                                  <FileText size={18} />
                                 ) : isExcel ? (
-                                  <FileSpreadsheet size={18} className="text-emerald-400" />
+                                  <FileSpreadsheet size={18} />
                                 ) : isWord ? (
-                                  <FileText size={18} className="text-blue-400" />
+                                  <FileText size={18} />
                                 ) : isZip ? (
-                                  <FileArchive size={18} className="text-amber-400" />
+                                  <FileArchive size={18} />
                                 ) : (
-                                  <File size={18} className="text-slate-400" />
+                                  <File size={18} />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -478,7 +511,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                                 rel="noreferrer"
                                 download={att.name}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-slate-400 hover:text-amber-400 active:scale-95 transition-transform shrink-0"
+                                className="w-7 h-7 rounded-lg inline-flex items-center justify-center opacity-75 hover:opacity-100 active:scale-95 transition-transform shrink-0"
                                 aria-label={`Tải ${att.name}`}
                               >
                                 <Download size={14} />
@@ -573,8 +606,10 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                         }}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all shadow-sm ${
                           isApplied
-                            ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                            : 'bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30'
+                            ? `bg-emerald-500/20 border border-emerald-500/40 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`
+                            : `bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 ${
+                                isDark ? 'text-purple-300' : 'text-purple-700'
+                              }`
                         }`}
                       >
                         {isApplied ? <Check className="w-3.5 h-3.5" /> : <Sliders className="w-3.5 h-3.5" />}
@@ -605,11 +640,13 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                     }
                   }}
                   className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
-                    isSpeaking ? 'bg-purple-500/30 text-purple-200' : 'text-slate-400 hover:text-white'
+                    isSpeaking
+                      ? `bg-purple-500/30 ${isDark ? 'text-purple-200' : 'text-purple-800'}`
+                      : 'text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]'
                   }`}
                 >
                   {isSpeaking ? (
-                    <VolumeX className="w-3.5 h-3.5 animate-pulse text-purple-400" />
+                    <VolumeX className={`w-3.5 h-3.5 animate-pulse ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
                   ) : (
                     <Volume2 className="w-3.5 h-3.5" />
                   )}
@@ -625,7 +662,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                       antdMessage.success('Đã sao chép câu trả lời của MAI');
                     }
                   }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-slate-400 hover:text-white transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] transition-colors"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>Sao chép</span>
@@ -636,12 +673,12 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {/* Time & Read status */}
             <div
               className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                isMe ? 'text-amber-300/80' : 'text-slate-400'
+                isMe ? 'text-[var(--mos-accent-contrast)] opacity-75' : 'text-[var(--mos-text-muted)]'
               }`}
             >
               {message.editedAt && <span className="italic mr-0.5">đã sửa</span>}
               <span>{timeFormatted}</span>
-              {isMe && <CheckCheck className="w-3.5 h-3.5 text-amber-400" />}
+              {isMe && <CheckCheck className="w-3.5 h-3.5 text-[var(--mos-accent-contrast)]" />}
             </div>
           </div>
         )}
@@ -664,8 +701,10 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                   }}
                   className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs shadow-sm active:scale-90 transition-all ${
                     isReacted
-                      ? 'bg-amber-500/20 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40 font-semibold'
-                      : 'bg-slate-800/90 border border-slate-700 text-slate-200'
+                      ? `bg-amber-500/20 border border-amber-500/60 ring-1 ring-amber-500/40 font-semibold ${
+                          isDark ? 'text-amber-300' : 'text-amber-800'
+                        }`
+                      : 'bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] text-[var(--mos-text)]'
                   }`}
                   title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
                   aria-label={isReacted ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
@@ -676,7 +715,9 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                     <span>{emoji}</span>
                   )}
                   <span
-                    className={`text-[10px] font-semibold tabular-nums ${isReacted ? 'text-amber-300 font-bold' : 'text-slate-400'}`}
+                    className={`text-[10px] font-semibold tabular-nums ${
+                      isReacted ? (isDark ? 'text-amber-300 font-bold' : 'text-amber-800 font-bold') : 'text-[var(--mos-text-muted)]'
+                    }`}
                   >
                     {count}
                   </span>
@@ -688,7 +729,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             <button
               type="button"
               onClick={() => openReactionUsersSheet(message)}
-              className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 active:scale-95 transition-all shadow-sm"
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-95 transition-all shadow-sm"
               title="Xem những ai đã thả cảm xúc"
               aria-label="Xem người thả cảm xúc"
             >
@@ -699,7 +740,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             <button
               type="button"
               onClick={() => setSelectedMsgForAction(message)}
-              className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-400 active:scale-95 transition-all shadow-sm"
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-95 transition-all shadow-sm"
               aria-label="Thêm biểu cảm"
               title="Thêm biểu cảm"
             >
@@ -716,14 +757,20 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
               <button
                 type="button"
                 onClick={() => onOpenThread?.(message)}
-                className={`mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                className={`mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border active:scale-95 transition-all ${
                   unreadThreadCount > 0
-                    ? 'bg-indigo-900/90 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-950/50'
-                    : 'bg-indigo-950/80 border-indigo-700/60 text-indigo-300'
-                } border active:scale-95 transition-all ${isMe ? 'self-end' : 'self-start'}`}
+                    ? isDark
+                      ? 'bg-indigo-900/90 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-950/50'
+                      : 'bg-indigo-500/15 border-indigo-500 text-indigo-800 shadow-sm'
+                    : isDark
+                      ? 'bg-indigo-950/80 border-indigo-700/60 text-indigo-300'
+                      : 'bg-indigo-500/10 border-indigo-500/35 text-indigo-700'
+                } ${isMe ? 'self-end' : 'self-start'}`}
               >
                 <MessageSquareReply
-                  className={`w-3.5 h-3.5 ${unreadThreadCount > 0 ? 'text-indigo-300' : 'text-indigo-400'}`}
+                  className={`w-3.5 h-3.5 ${
+                    isDark ? (unreadThreadCount > 0 ? 'text-indigo-300' : 'text-indigo-400') : 'text-indigo-600'
+                  }`}
                 />
                 <span>{threadCount} câu trả lời trong luồng</span>
                 {unreadThreadCount > 0 && (

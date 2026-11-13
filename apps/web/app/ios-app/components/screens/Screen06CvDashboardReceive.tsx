@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
+import { useTheme } from '../../../../context/ThemeContext';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
@@ -23,6 +24,8 @@ export function Screen06CvDashboardReceive({
   onBack,
   staffStats,
 }: Screen06CvDashboardReceiveProps) {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const bookerAvatar = resolveStaffAvatarUrl(booking.bookerAvatar, undefined, booking.bookerName || 'CC');
   const customerAvatar =
     booking.customerAvatar || 'https://cdn.wingslashes.com/uploads/user/avatar/48400/original/48400.jpg';
@@ -144,35 +147,41 @@ export function Screen06CvDashboardReceive({
   }, [booking, displayServiceName, isComboNewFullSet]);
 
   return (
-    <div className="flex-1 flex flex-col bg-black overflow-hidden select-none font-sans">
+    <div className="flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-hidden select-none font-sans">
       {/* 1. Sleek Native iOS Navigation Bar (Replaces bulky avatar & NOW header) */}
-      <div className="h-12 px-3.5 bg-black border-b border-neutral-900 flex items-center justify-between z-20 sticky top-0 flex-shrink-0">
+      <div className="h-12 px-3.5 bg-[var(--mos-surface)]/95 backdrop-blur-xl border-b border-[var(--mos-surface-border)] flex items-center justify-between z-20 sticky top-0 flex-shrink-0">
         {/* Left: Back to Lobby Button */}
         <div className="flex items-center min-w-[70px]">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center text-[#FFB400] active:opacity-60 transition-opacity text-[14.5px] font-semibold -ml-1 py-1 cursor-pointer"
+              className="flex items-center text-[var(--mos-accent)] active:opacity-60 transition-opacity text-[14.5px] font-semibold -ml-1 py-1 cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5 -mr-0.5 shrink-0" />
               <span>Sảnh</span>
             </button>
           ) : (
-            <span className="text-[11px] font-bold text-neutral-400">Ca Hiện Tại</span>
+            <span className="text-[11px] font-bold text-[var(--mos-text-muted)]">Ca Hiện Tại</span>
           )}
         </div>
 
         {/* Center: Title */}
         <div className="flex flex-col items-center justify-center">
-          <span className="text-[15px] font-black text-white tracking-tight leading-tight">Nhiệm Vụ Ca Làm</span>
+          <span className="text-[15px] font-black text-[var(--mos-text)] tracking-tight leading-tight">
+            Nhiệm Vụ Ca Làm
+          </span>
         </div>
 
         {/* Right: Estimated Duration & Completion Target */}
         <div className="flex items-center justify-end min-w-[70px]">
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C1C1E] border shadow-xs transition-all select-none ${
-              selectedDurationMin ? 'border-emerald-500/70 text-emerald-400' : 'border-neutral-700 text-neutral-400'
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--mos-surface-raised)] border shadow-xs transition-all select-none ${
+              selectedDurationMin
+                ? isDark
+                  ? 'border-emerald-500/70 text-emerald-400'
+                  : 'border-emerald-500 text-emerald-700'
+                : 'border-[var(--mos-surface-border)] text-[var(--mos-text-muted)]'
             }`}
             title={
               selectedDurationMin
@@ -181,19 +190,29 @@ export function Screen06CvDashboardReceive({
             }
           >
             <Clock
-              className={`w-3.5 h-3.5 shrink-0 ${selectedDurationMin ? 'text-emerald-400' : 'text-neutral-500'}`}
+              className={`w-3.5 h-3.5 shrink-0 ${
+                selectedDurationMin
+                  ? isDark
+                    ? 'text-emerald-400'
+                    : 'text-emerald-600'
+                  : 'text-[var(--mos-text-muted)]'
+              }`}
             />
             {selectedDurationMin ? (
               <>
-                <span className="text-[12px] font-black tabular-nums tracking-tight text-emerald-400">
+                <span
+                  className={`text-[12px] font-black tabular-nums tracking-tight ${
+                    isDark ? 'text-emerald-400' : 'text-emerald-700'
+                  }`}
+                >
                   ~{selectedDurationMin}p
                 </span>
-                <span className="text-[9.5px] text-neutral-300 font-semibold border-l border-neutral-700/80 pl-1.5 tabular-nums">
+                <span className="text-[9.5px] text-[var(--mos-text-muted)] font-semibold border-l border-[var(--mos-surface-border)] pl-1.5 tabular-nums">
                   Xong {estimatedFinishTime}
                 </span>
               </>
             ) : (
-              <span className="text-[11px] font-bold text-neutral-400">Chưa chọn giờ</span>
+              <span className="text-[11px] font-bold text-[var(--mos-text-muted)]">Chưa chọn giờ</span>
             )}
           </div>
         </div>
@@ -202,14 +221,14 @@ export function Screen06CvDashboardReceive({
       {/* 2. Main Content Body */}
       <div className="p-4 pb-28 space-y-3.5 flex-1 overflow-y-auto">
         {/* Active Quest Card (Bordered in Gold Laser) */}
-        <div className="relative bg-[#1C1C1E] border border-amber-500/80 rounded-3xl p-4 space-y-3.5 shadow-2xl overflow-hidden">
+        <div className="relative bg-[var(--mos-surface)] border border-amber-500/80 rounded-3xl p-4 space-y-3.5 shadow-2xl overflow-hidden">
           {/* Laser Glow top bar */}
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
 
           {/* Customer Info & Target Service */}
-          <div className="bg-black/50 border border-white/10 rounded-2xl p-3 flex items-start gap-3">
+          <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-2xl p-3 flex items-start gap-3">
             {/* Customer Avatar */}
-            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400/60 bg-neutral-800 shrink-0">
+            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400/60 bg-[var(--mos-surface-muted)] shrink-0">
               <img
                 src={customerAvatar}
                 alt={booking.customerName}
@@ -223,25 +242,29 @@ export function Screen06CvDashboardReceive({
             {/* Customer Details & Service Target */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-1">
-                <h2 className="text-[17px] font-black text-white tracking-tight truncate">{booking.customerName}</h2>
-                <span className="text-[10.5px] font-bold text-neutral-400 shrink-0">
+                <h2 className="text-[17px] font-black text-[var(--mos-text)] tracking-tight truncate">
+                  {booking.customerName}
+                </h2>
+                <span className="text-[10.5px] font-bold text-[var(--mos-text-muted)] shrink-0">
                   Lần {booking.customerVisits || 7}
                 </span>
               </div>
-              <div className="text-[11.5px] text-neutral-400 font-mono mt-0.2">
+              <div className="text-[11.5px] text-[var(--mos-text-muted)] font-mono mt-0.2">
                 {(booking.customerPhone || '').replace(/\*+\s*/g, '').trim()}
               </div>
 
               {/* Service Target & Price */}
-              <div className="mt-1 text-[13px] font-black text-amber-300 leading-tight">{displayServiceName}</div>
+              <div className={`mt-1 text-[13px] font-black leading-tight ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                {displayServiceName}
+              </div>
 
               {/* Rewards / Pricing Bar */}
               <div className="mt-2 flex items-center justify-between gap-1.5 flex-wrap">
-                <span className="text-[12px] font-extrabold text-white">
+                <span className="text-[12px] font-extrabold text-[var(--mos-text)]">
                   {booking.servicePrice ? booking.servicePrice.toLocaleString('vi-VN') : '640.000'} đ
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-800/80 border border-neutral-700/70 text-neutral-300 text-[11px] font-semibold tabular-nums">
-                  <RotateCw className="w-3 h-3 text-blue-400 shrink-0" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] text-[var(--mos-text)] text-[11px] font-semibold tabular-nums">
+                  <RotateCw className={`w-3 h-3 shrink-0 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                   <span>+{rotationPoints} pts</span>
                 </span>
               </div>
@@ -250,16 +273,32 @@ export function Screen06CvDashboardReceive({
 
           {/* Mandatory Natural Lash Check Banner for New Clients */}
           {mustCheckNaturalLashFirst && (
-            <div className="bg-rose-950/70 border-2 border-rose-500 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-lg">
+            <div
+              className={`border-2 border-rose-500 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-lg ${
+                isDark ? 'bg-rose-950/70' : 'bg-rose-50'
+              }`}
+            >
               <div className="flex items-start gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                    isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-600'
+                  }`}
+                >
                   <Eye className="w-4.5 h-4.5 stroke-[2.5]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[11.5px] font-black text-rose-300 uppercase tracking-tight">
+                  <div
+                    className={`text-[11.5px] font-black uppercase tracking-tight ${
+                      isDark ? 'text-rose-300' : 'text-rose-800'
+                    }`}
+                  >
                     CHƯA KIỂM TRA MI THẬT · BẮT BUỘC ĐO ĐỦ 7/7 MỤC
                   </div>
-                  <div className="text-[11px] font-bold text-rose-100/95 leading-snug mt-0.5">
+                  <div
+                    className={`text-[11px] font-bold leading-snug mt-0.5 ${
+                      isDark ? 'text-rose-100/95' : 'text-rose-700'
+                    }`}
+                  >
                     Bắt buộc đo đủ 7/7 thông số mi thật & dáng mắt trước khi nhận ca và bắt đầu làm mi!
                   </div>
                 </div>
@@ -268,7 +307,7 @@ export function Screen06CvDashboardReceive({
                 <button
                   type="button"
                   onClick={onEditService}
-                  className="px-2.5 py-1.5 rounded-xl bg-[#FFB400] text-black font-black text-[11px] shrink-0 cursor-pointer shadow-sm"
+                  className="px-2.5 py-1.5 rounded-xl bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-black text-[11px] shrink-0 cursor-pointer shadow-sm"
                 >
                   Kiểm tra →
                 </button>
@@ -278,15 +317,31 @@ export function Screen06CvDashboardReceive({
 
           {/* Tech Invariant Banner: Ca Nối Mới Combo bắt buộc gỡ sạch 100% mi cũ */}
           {isComboNewFullSet && (
-            <div className="bg-amber-950/70 border-2 border-amber-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+            <div
+              className={`border-2 border-amber-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg ${
+                isDark ? 'bg-amber-950/70' : 'bg-amber-50'
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                  isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700'
+                }`}
+              >
                 <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div className="min-w-0">
-                <div className="text-[11.5px] font-black text-amber-300 uppercase tracking-tight">
+                <div
+                  className={`text-[11.5px] font-black uppercase tracking-tight ${
+                    isDark ? 'text-amber-300' : 'text-amber-800'
+                  }`}
+                >
                   QUY CHUẨN KỸ THUẬT: CA TRỪ SUẤT NỐI MỚI (COMBO)
                 </div>
-                <div className="text-[11px] font-bold text-amber-100/95 leading-snug mt-0.5">
+                <div
+                  className={`text-[11px] font-bold leading-snug mt-0.5 ${
+                    isDark ? 'text-amber-100/95' : 'text-amber-900'
+                  }`}
+                >
                   Chuyên viên BẮT BUỘC phải gỡ ra toàn bộ mi cũ và nối mới 100% cho khách hàng (không được dặm đè lên mi
                   cũ khi trừ suất nối mới)!
                 </div>
@@ -296,18 +351,34 @@ export function Screen06CvDashboardReceive({
 
           {/* Upgrade Banner if upgraded from Combo */}
           {Boolean(booking?.upgradePrice && booking.upgradePrice > 0) && (
-            <div className="bg-emerald-950/70 border-2 border-emerald-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+            <div
+              className={`border-2 border-emerald-500 rounded-2xl p-3 flex items-start gap-2.5 shadow-lg ${
+                isDark ? 'bg-emerald-950/70' : 'bg-emerald-50'
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                  isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                }`}
+              >
                 <Sparkles className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[11.5px] font-black text-emerald-300 uppercase tracking-tight flex items-center justify-between">
+                <div
+                  className={`text-[11.5px] font-black uppercase tracking-tight flex items-center justify-between ${
+                    isDark ? 'text-emerald-300' : 'text-emerald-800'
+                  }`}
+                >
                   <span>Ca Nâng Cấp Từ Gói Combo</span>
-                  <span className="text-emerald-400 tabular-nums">
+                  <span className={`tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                     +{(booking.upgradePrice || 0).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
-                <div className="text-[11px] font-bold text-emerald-100/95 leading-snug mt-0.5">
+                <div
+                  className={`text-[11px] font-bold leading-snug mt-0.5 ${
+                    isDark ? 'text-emerald-100/95' : 'text-emerald-900'
+                  }`}
+                >
                   Khách nâng cấp dịch vụ: Thu phụ thu +{(booking.upgradePrice || 0).toLocaleString('vi-VN')} đ khi
                   Checkout. Điểm thưởng Vòng xoay tính theo dịch vụ thực tế (+{rotationPoints} pts).
                 </div>
@@ -326,28 +397,36 @@ export function Screen06CvDashboardReceive({
           {/* 3.5 BẮT BUỘC: KHỐI DỰ ĐOÁN THỜI GIAN HOÀN THÀNH CA (CVL CAM KẾT) */}
           <div
             ref={timeSectionRef}
-            className={`rounded-2xl p-3.5 space-y-2.5 transition-all ${
+            className={`rounded-2xl p-3.5 space-y-2.5 transition-all bg-[var(--mos-surface-raised)] ${
               selectedDurationMin
-                ? 'bg-[#1C1C1E] border border-emerald-500/50 shadow-md'
+                ? 'border border-emerald-500/50 shadow-md'
                 : showTimeRequiredWarning
-                  ? 'bg-[#1C1C1E] border-2 border-rose-500/80 shadow-lg shadow-rose-500/20 animate-pulse'
-                  : 'bg-[#1C1C1E] border border-neutral-700/80 shadow-md'
+                  ? 'border-2 border-rose-500/80 shadow-lg shadow-rose-500/20 animate-pulse'
+                  : 'border border-[var(--mos-surface-border)] shadow-md'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="text-[11.5px] font-black uppercase text-amber-400 tracking-tight">
+                <Clock className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                <span
+                  className={`text-[11.5px] font-black uppercase tracking-tight ${
+                    isDark ? 'text-amber-400' : 'text-amber-700'
+                  }`}
+                >
                   Thời Gian Dự Đoán Hoàn Thành
                 </span>
               </div>
               <span
                 className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full border leading-none ${
                   selectedDurationMin
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    ? isDark
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-300'
                     : showTimeRequiredWarning
-                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
-                      : 'bg-neutral-800 text-neutral-400 border-neutral-700'
+                      ? isDark
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
+                        : 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
+                      : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border-[var(--mos-surface-border)]'
                 }`}
               >
                 {selectedDurationMin ? `Đã chọn: ${selectedDurationMin}p` : 'Bắt buộc chọn'}
@@ -369,10 +448,12 @@ export function Screen06CvDashboardReceive({
                     }}
                     className={`relative px-2.5 py-1.5 rounded-xl text-[11.5px] font-bold tabular-nums transition-all active:scale-95 cursor-pointer flex items-center gap-1 border ${
                       isSelected
-                        ? 'bg-[#FFB400] text-black border-[#FFB400] shadow-sm font-black ring-2 ring-amber-400/50'
+                        ? 'bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] border-[var(--mos-accent)] shadow-sm font-black ring-2 ring-[var(--mos-accent)]/40'
                         : isSuggested && selectedDurationMin !== null
-                          ? 'bg-[#252528] text-amber-300 border-amber-500/70 hover:border-amber-400'
-                          : 'bg-[#141416] text-neutral-300 border-neutral-700/80 hover:border-neutral-500'
+                          ? isDark
+                            ? 'bg-[var(--mos-surface)] text-amber-300 border-amber-500/70 hover:border-amber-400'
+                            : 'bg-amber-50 text-amber-800 border-amber-400 hover:border-amber-500'
+                          : 'bg-[var(--mos-surface)] text-[var(--mos-text)] border-[var(--mos-surface-border)] hover:border-[var(--mos-surface-border-strong)]'
                     }`}
                   >
                     <span>{mins}p</span>
@@ -380,10 +461,12 @@ export function Screen06CvDashboardReceive({
                       <span
                         className={`text-[8.5px] px-1 py-0.2 rounded font-black leading-none ${
                           isSelected
-                            ? 'bg-black text-[#FFB400]'
+                            ? 'bg-black/20 text-[var(--mos-accent-contrast)]'
                             : selectedDurationMin !== null
-                              ? 'bg-amber-400/20 text-amber-400'
-                              : 'bg-neutral-800 text-neutral-400'
+                              ? isDark
+                                ? 'bg-amber-400/20 text-amber-400'
+                                : 'bg-amber-200 text-amber-900'
+                              : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)]'
                         }`}
                       >
                         Gợi ý
@@ -394,7 +477,7 @@ export function Screen06CvDashboardReceive({
               })}
 
               {/* Stepper Buttons: -5p and +5p */}
-              <div className="inline-flex items-center rounded-xl bg-[#141416] border border-neutral-700/80 overflow-hidden ml-auto">
+              <div className="inline-flex items-center rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] overflow-hidden ml-auto">
                 <button
                   type="button"
                   onClick={() => {
@@ -404,13 +487,15 @@ export function Screen06CvDashboardReceive({
                     );
                     setShowTimeRequiredWarning(false);
                   }}
-                  className="px-2 py-1.5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
+                  className="px-2 py-1.5 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
                   title="Giảm 5 phút"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span
-                  className={`px-2 text-[11.5px] font-extrabold tabular-nums ${selectedDurationMin ? 'text-amber-400' : 'text-neutral-500'}`}
+                  className={`px-2 text-[11.5px] font-extrabold tabular-nums ${
+                    selectedDurationMin ? 'text-[var(--mos-accent)]' : 'text-[var(--mos-text-muted)]'
+                  }`}
                 >
                   {selectedDurationMin ? `${selectedDurationMin}p` : '—'}
                 </span>
@@ -423,7 +508,7 @@ export function Screen06CvDashboardReceive({
                     );
                     setShowTimeRequiredWarning(false);
                   }}
-                  className="px-2 py-1.5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
+                  className="px-2 py-1.5 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
                   title="Tăng 5 phút"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -432,13 +517,15 @@ export function Screen06CvDashboardReceive({
             </div>
 
             {/* Estimated Finish Time Banner */}
-            <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-neutral-800">
-              <span className="text-neutral-400">Dự kiến xong lúc:</span>
+            <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-[var(--mos-surface-border)]">
+              <span className="text-[var(--mos-text-muted)]">Dự kiến xong lúc:</span>
               <span className="font-extrabold tabular-nums">
                 {selectedDurationMin ? (
-                  <span className="text-emerald-400">{estimatedFinishTime} (Cam kết)</span>
+                  <span className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>
+                    {estimatedFinishTime} (Cam kết)
+                  </span>
                 ) : (
-                  <span className="text-neutral-500 font-semibold">—</span>
+                  <span className="text-[var(--mos-text-muted)] font-semibold">—</span>
                 )}
               </span>
             </div>
@@ -449,7 +536,7 @@ export function Screen06CvDashboardReceive({
             <button
               type="button"
               onClick={handleStartTaskClick}
-              className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[13.5px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
+              className="w-full py-4 px-4 rounded-2xl bg-[var(--mos-accent)] hover:brightness-105 active:scale-[0.98] text-[var(--mos-accent-contrast)] font-black text-[13.5px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl uppercase cursor-pointer"
             >
               <Eye className="w-4 h-4 stroke-[2.5]" />
               <span>KIỂM TRA MI THẬT TRƯỚC KHI BẮT ĐẦU →</span>
@@ -458,18 +545,18 @@ export function Screen06CvDashboardReceive({
             <button
               type="button"
               onClick={handleStartTaskClick}
-              className="w-full py-4 px-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 text-neutral-400 font-bold text-[12.5px] tracking-wider flex items-center justify-center gap-2 cursor-pointer uppercase select-none active:scale-[0.99] transition-all"
+              className="w-full py-4 px-4 rounded-2xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text-muted)] font-bold text-[12.5px] tracking-wider flex items-center justify-center gap-2 cursor-pointer uppercase select-none active:scale-[0.99] transition-all"
             >
-              <Lock className="w-4 h-4 text-neutral-400" />
+              <Lock className="w-4 h-4 text-[var(--mos-text-muted)]" />
               <span>BẮT BUỘC CHỌN THỜI GIAN TRƯỚC KHI BẮT ĐẦU</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={handleStartTaskClick}
-              className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-[#FFB400] via-amber-400 to-[#FF9500] hover:brightness-105 active:scale-[0.98] text-black font-black text-[14px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-500/20 uppercase cursor-pointer"
+              className="w-full py-4 px-4 rounded-2xl bg-[var(--mos-accent)] hover:brightness-105 active:scale-[0.98] text-[var(--mos-accent-contrast)] font-black text-[14px] tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl uppercase cursor-pointer"
             >
-              <Play className="w-4 h-4 fill-black stroke-black" />
+              <Play className="w-4 h-4 fill-current" />
               <span>
                 {selectedDurationMin
                   ? `MỞ TIẾN TRÌNH & BẮT ĐẦU CA LÀM (~${selectedDurationMin}p)`
@@ -480,13 +567,13 @@ export function Screen06CvDashboardReceive({
         </div>
 
         {/* 5. Stats Summary Card (Footer KPI) */}
-        <div className="bg-[#1C1C1E] rounded-2xl p-4 border border-neutral-800 space-y-2 text-xs">
+        <div className="bg-[var(--mos-surface)] rounded-2xl p-4 border border-[var(--mos-surface-border)] space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-neutral-400 font-medium">Doanh số ca {monthLabel}</span>
-            <span className="text-[#FFB400] font-black text-sm tabular-nums">{displayRevenue}</span>
+            <span className="text-[var(--mos-text-muted)] font-medium">Doanh số ca {monthLabel}</span>
+            <span className="text-[var(--mos-accent)] font-black text-sm tabular-nums">{displayRevenue}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-neutral-400 font-medium">Tỷ lệ hài lòng (5 sao)</span>
+            <span className="text-[var(--mos-text-muted)] font-medium">Tỷ lệ hài lòng (5 sao)</span>
             <span className="text-[#34C759] font-black text-sm tabular-nums">{displaySatisfaction}</span>
           </div>
         </div>

@@ -32,21 +32,47 @@ export function IosBranchSelectorSheet({
       {/* Sheet Container */}
       <div className="w-full max-w-[420px] z-10 flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom duration-200">
         {/* Main Selection Card */}
-        <div className="bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl overflow-hidden border border-neutral-800 shadow-2xl">
+        <div
+          className="backdrop-blur-2xl rounded-3xl overflow-hidden border shadow-2xl"
+          style={{
+            backgroundColor: 'var(--mos-surface)',
+            borderColor: 'var(--mos-surface-border)',
+            color: 'var(--mos-text)',
+          }}
+        >
           {/* Header */}
-          <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between">
+          <div
+            className="px-5 py-4 border-b flex items-center justify-between"
+            style={{ borderColor: 'var(--mos-surface-border)' }}
+          >
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-400">
+              <div
+                className="w-8 h-8 rounded-full border flex items-center justify-center"
+                style={{
+                  backgroundColor: 'var(--mos-focus-ring)',
+                  borderColor: 'var(--mos-accent)',
+                  color: 'var(--mos-accent)',
+                }}
+              >
                 <Building2 className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-[14px] font-black text-white tracking-wide uppercase">Chọn Chi Nhánh Vận Hành</h3>
-                <p className="text-[11px] text-neutral-400 font-medium">Xem khách hàng và tình hình thực tế sảnh đón</p>
+                <h3 className="text-[14px] font-black tracking-wide uppercase" style={{ color: 'var(--mos-text)' }}>
+                  Chọn Chi Nhánh Vận Hành
+                </h3>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--mos-text-muted)' }}>
+                  Xem khách hàng và tình hình thực tế sảnh đón
+                </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-full bg-neutral-800/80 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              aria-label="Đóng chọn chi nhánh"
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 cursor-pointer"
+              style={{
+                backgroundColor: 'var(--mos-surface-muted)',
+                color: 'var(--mos-text-muted)',
+              }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -63,46 +89,60 @@ export function IosBranchSelectorSheet({
                     onSelectBranch(branch.id);
                     onClose();
                   }}
-                  className={`w-full p-3.5 rounded-2xl flex items-center justify-between transition-all cursor-pointer text-left ${
-                    isSelected
-                      ? 'bg-amber-400/15 border border-amber-400/40 shadow-sm'
-                      : 'bg-neutral-900/60 hover:bg-neutral-800/70 border border-neutral-800/80'
-                  }`}
+                  className="w-full p-3.5 rounded-2xl flex items-center justify-between transition-all cursor-pointer text-left border"
+                  style={{
+                    backgroundColor: isSelected ? 'var(--mos-focus-ring)' : 'var(--mos-surface-muted)',
+                    borderColor: isSelected ? 'var(--mos-accent)' : 'var(--mos-surface-border)',
+                  }}
                 >
                   <div className="flex items-start gap-3 min-w-0 pr-2">
                     <span
-                      className={`px-2.5 py-1 rounded-lg text-[12px] font-black tracking-wider shrink-0 mt-0.5 ${
+                      className="px-2.5 py-1 rounded-lg text-[12px] font-black tracking-wider shrink-0 mt-0.5 border"
+                      style={
                         isSelected
-                          ? 'bg-amber-400 text-black shadow-xs'
-                          : 'bg-neutral-800 text-neutral-300 border border-neutral-700'
-                      }`}
+                          ? {
+                              backgroundColor: 'var(--mos-accent)',
+                              color: 'var(--mos-accent-contrast)',
+                              borderColor: 'var(--mos-accent)',
+                            }
+                          : {
+                              backgroundColor: 'var(--mos-surface)',
+                              color: 'var(--mos-text)',
+                              borderColor: 'var(--mos-surface-border)',
+                            }
+                      }
                     >
                       {branch.code}
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-black text-[14px] truncate ${
-                            isSelected ? 'text-amber-400' : 'text-neutral-100'
-                          }`}
+                          className="font-black text-[14px] truncate"
+                          style={{ color: isSelected ? 'var(--mos-accent)' : 'var(--mos-text)' }}
                         >
                           {branch.name}
                         </span>
                         {isSelected && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
                             Đang xem
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1 text-[11px] text-neutral-400 truncate">
-                        <MapPin className="w-3 h-3 text-neutral-500 shrink-0" />
+                      <div className="flex items-center gap-1.5 mt-1 text-[11px] truncate" style={{ color: 'var(--mos-text-muted)' }}>
+                        <MapPin className="w-3 h-3 shrink-0" style={{ color: 'var(--mos-text-muted)' }} />
                         <span className="truncate">{branch.address}</span>
                       </div>
                     </div>
                   </div>
 
                   {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-black shrink-0 shadow-xs">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-xs"
+                      style={{
+                        backgroundColor: 'var(--mos-accent)',
+                        color: 'var(--mos-accent-contrast)',
+                      }}
+                    >
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                     </div>
                   )}
@@ -111,18 +151,31 @@ export function IosBranchSelectorSheet({
             })}
           </div>
 
-          <div className="px-4 py-2.5 bg-neutral-950/60 border-t border-neutral-800/60 text-center">
-            <span className="text-[10.5px] text-neutral-500">
+          <div
+            className="px-4 py-2.5 border-t text-center"
+            style={{
+              backgroundColor: 'var(--mos-surface-muted)',
+              borderColor: 'var(--mos-surface-border)',
+            }}
+          >
+            <span className="text-[10.5px]" style={{ color: 'var(--mos-text-muted)' }}>
               Quyền Admin: Chuyển đổi sẽ tự động mở xem Toàn Bộ Sảnh của chi nhánh đó
             </span>
           </div>
         </div>
 
         {/* Cancel Button */}
-        <div className="bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl">
+        <div
+          className="backdrop-blur-2xl rounded-2xl overflow-hidden border shadow-2xl"
+          style={{
+            backgroundColor: 'var(--mos-surface)',
+            borderColor: 'var(--mos-surface-border)',
+          }}
+        >
           <button
             onClick={onClose}
-            className="w-full py-3.5 text-center text-[#FFB400] text-[15px] font-bold active:bg-white/5 transition-colors cursor-pointer"
+            className="w-full py-3.5 text-center text-[15px] font-bold active:opacity-75 transition-opacity cursor-pointer"
+            style={{ color: 'var(--mos-accent)' }}
           >
             Đóng
           </button>

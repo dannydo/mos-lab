@@ -16,6 +16,7 @@ import {
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { MosChatMobileMessageItem } from './MosChatMobileMessageItem';
 import { MosChatAvatar } from '../MosChatAvatar';
@@ -31,6 +32,8 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
   onOpenGallery,
   onOpenPinnedTab,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const { messages, activeConversation, activeConvId, isAiThinking, pinnedMessages, togglePinMessage, staffDirectory } =
     useMosChat();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -229,10 +232,16 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
   const isSpace = activeConversation?.type === 'space';
 
   return (
-    <div className="relative flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
+    <div className="relative flex-1 flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)] overflow-hidden">
       {/* Top Pinned Messages Banner (Google Chat mobile style) */}
       {pinnedMessages.length > 0 && currentPinnedMsg && (
-        <div className="shrink-0 px-3 py-2 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-slate-900 border-b border-amber-500/30 flex items-center justify-between gap-2 shadow-sm z-20 backdrop-blur-md">
+        <div
+          className={`shrink-0 px-3 py-2 border-b flex items-center justify-between gap-2 shadow-sm z-20 backdrop-blur-md ${
+            isDark
+              ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-[var(--mos-surface)] border-amber-500/30'
+              : 'bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-[var(--mos-surface)] border-amber-500/35'
+          }`}
+        >
           <div
             onClick={() => handleScrollToMessage(currentPinnedMsg.id)}
             className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer active:opacity-75"
@@ -240,9 +249,9 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
             tabIndex={0}
             aria-label={`Đi đến tin nhắn đã ghim: ${currentPinnedMsg.senderName}`}
           >
-            <Pin className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+            <Pin className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`} />
             <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs">
-              <span className="font-bold text-amber-400 shrink-0 tabular-nums">
+              <span className={`font-bold shrink-0 tabular-nums ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                 Ghim
                 {pinnedMessages.length > 1
                   ? ` (${(pinnedBannerIndex % pinnedMessages.length) + 1}/${pinnedMessages.length})`
@@ -256,8 +265,8 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
                 staffId={currentPinnedMsg.senderId}
                 staffDirectory={staffDirectory}
               />
-              <span className="font-semibold text-white shrink-0">{currentPinnedMsg.senderName}:</span>
-              <span className="text-slate-300 truncate">
+              <span className="font-semibold text-[var(--mos-text)] shrink-0">{currentPinnedMsg.senderName}:</span>
+              <span className="text-[var(--mos-text-muted)] truncate">
                 {currentPinnedMsg.text ||
                   (currentPinnedMsg.customerCard
                     ? `[Khách hàng: ${currentPinnedMsg.customerCard.name}]`
@@ -271,7 +280,9 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
               <button
                 type="button"
                 onClick={() => setPinnedBannerIndex((prev) => (prev + 1) % pinnedMessages.length)}
-                className="p-1 rounded text-slate-400 hover:text-amber-400 active:scale-95 transition-transform"
+                className={`p-1 rounded text-[var(--mos-text-muted)] active:scale-95 transition-transform ${
+                  isDark ? 'hover:text-amber-400' : 'hover:text-amber-600'
+                }`}
                 aria-label="Tin ghim tiếp theo"
                 title="Tin ghim tiếp theo"
               >
@@ -283,7 +294,11 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
               <button
                 type="button"
                 onClick={onOpenPinnedTab}
-                className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 active:scale-95 transition-transform tabular-nums"
+                className={`px-2 py-0.5 rounded-full text-[11px] font-bold border active:scale-95 transition-transform tabular-nums ${
+                  isDark
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                    : 'bg-amber-500/15 text-amber-700 border-amber-500/40'
+                }`}
                 aria-label="Xem tất cả tin ghim"
               >
                 Tất cả ({pinnedMessages.length})
@@ -293,7 +308,9 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
             <button
               type="button"
               onClick={() => togglePinMessage(currentPinnedMsg.id)}
-              className="p-1 rounded text-slate-400 hover:text-rose-400 active:scale-95 transition-transform"
+              className={`p-1 rounded text-[var(--mos-text-muted)] active:scale-95 transition-transform ${
+                isDark ? 'hover:text-rose-400' : 'hover:text-rose-600'
+              }`}
               aria-label="Bỏ ghim tin nhắn"
               title="Bỏ ghim"
             >
@@ -311,25 +328,39 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
       >
         {/* Welcome Header */}
         {activeConversation?.id === AI_COPILOT_CONV_ID ? (
-          <div className="pt-6 pb-4 text-center border-b border-purple-500/30 mb-4 bg-gradient-to-b from-purple-950/20 to-transparent rounded-2xl">
+          <div
+            className={`pt-6 pb-4 text-center border-b border-purple-500/30 mb-4 rounded-2xl ${
+              isDark ? 'bg-gradient-to-b from-purple-950/20 to-transparent' : 'bg-gradient-to-b from-purple-500/10 to-transparent'
+            }`}
+          >
             <div className="w-14 h-14 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white mb-2.5 shadow-lg shadow-purple-500/25">
               <Sparkles className="w-7 h-7 animate-pulse text-white" />
             </div>
-            <h2 className="text-base font-bold text-white flex items-center justify-center gap-1.5">
+            <h2 className="text-base font-bold text-[var(--mos-text)] flex items-center justify-center gap-1.5">
               <span>Trợ lý mOS AI (MAI)</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40">
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border ${
+                  isDark
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                    : 'bg-purple-500/15 text-purple-700 border-purple-500/35'
+                }`}
+              >
                 mOS AI
               </span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs text-[var(--mos-text-muted)] mt-1 max-w-xs mx-auto leading-relaxed">
               Kênh 1-1 riêng tư · Mọi trao đổi và phân tích dữ liệu chỉ một mình bạn nhìn thấy.
             </p>
           </div>
         ) : (
-          <div className="pt-6 pb-4 text-center border-b border-slate-800/40 mb-4">
+          <div className="pt-6 pb-4 text-center border-b border-[var(--mos-surface-border)] mb-4">
             <div className="mx-auto mb-2.5 flex justify-center">
               {isSpace ? (
-                <div className="w-14 h-14 rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shadow-sm">
+                <div
+                  className={`w-14 h-14 rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shadow-sm ${
+                    isDark ? 'text-amber-400' : 'text-amber-600'
+                  }`}
+                >
                   {activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
                     <span className="text-2xl leading-none">{activeConversation.avatar}</span>
                   ) : (
@@ -347,12 +378,12 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
                 />
               )}
             </div>
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-[var(--mos-text)]">
               {isSpace
                 ? `Chào mừng bạn đến với #${activeConversation?.name || 'cuộc trò chuyện'}`
                 : activeConversation?.name || 'Cuộc trò chuyện'}
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+            <p className="text-xs text-[var(--mos-text-muted)] mt-1 max-w-xs mx-auto">
               {activeConversation?.subtitle || 'Không gian trao đổi công việc và điều phối vận hành'}
             </p>
           </div>
@@ -372,7 +403,7 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
             <div key={group.date} className="space-y-1">
               {/* Date Divider Pill */}
               <div className="flex items-center justify-center my-3">
-                <span className="px-3 py-0.5 rounded-full text-[11px] font-medium bg-slate-800/80 text-slate-400 border border-slate-700/50 shadow-sm">
+                <span className="px-3 py-0.5 rounded-full text-[11px] font-medium bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border border-[var(--mos-surface-border)] shadow-sm">
                   {dateLabel}
                 </span>
               </div>
@@ -393,14 +424,20 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
 
         {/* MAI Copilot Thinking Shimmer Pill */}
         {isAiThinking && (
-          <div className="flex items-center gap-2.5 p-3 my-2 mx-1 rounded-2xl bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-950/70 border border-purple-500/40 text-xs text-purple-200 animate-pulse shadow-lg">
+          <div
+            className={`flex items-center gap-2.5 p-3 my-2 mx-1 rounded-2xl border text-xs animate-pulse shadow-lg ${
+              isDark
+                ? 'bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-950/70 border-purple-500/40 text-purple-200'
+                : 'bg-gradient-to-r from-purple-500/15 via-indigo-500/10 to-purple-500/15 border-purple-500/35 text-purple-900'
+            }`}
+          >
             <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
               🤖
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-semibold text-purple-300">MAI Copilot:</span> Đang suy nghĩ và trả lời vào nhóm...
+              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span> Đang suy nghĩ và trả lời vào nhóm...
             </div>
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400 shrink-0" />
+            <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
           </div>
         )}
 
@@ -412,10 +449,10 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
         <button
           type="button"
           onClick={() => scrollToBottom('smooth')}
-          className="absolute right-4 bottom-20 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-800/95 border border-slate-700/90 text-white shadow-xl backdrop-blur-md active:scale-95 transition-transform"
+          className="absolute right-4 bottom-20 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border-strong)] text-[var(--mos-text)] shadow-xl backdrop-blur-md active:scale-95 transition-transform"
           aria-label="Cuộn xuống tin nhắn mới"
         >
-          <ArrowDown className="w-4 h-4 text-amber-400" />
+          <ArrowDown className="w-4 h-4 text-[var(--mos-accent)]" />
           <span className="text-xs font-semibold">Tin mới</span>
           {unreadBelowCount > 0 && (
             <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-[10px] font-bold text-white tabular-nums">

@@ -22,6 +22,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import type { MosChatTaskItem } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { MosChatAvatar } from '../MosChatAvatar';
 
 dayjs.extend(relativeTime);
@@ -39,6 +40,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
   onOpenCreateTaskModal,
   onSelectTask,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const { tasks, toggleTaskDone, activeConvId, currentUser, activeConversation, staffDirectory } = useMosChat();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -167,15 +170,15 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
   }, [tasks, activeConvId, myId, myName]);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)] overflow-hidden select-none">
       {/* Title Header with New Task Button */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-[var(--mos-text)] tracking-tight flex items-center gap-1.5">
             <span>Kho Công Việc & Nhắc Hẹn</span>
-            <span className="text-xs font-mono font-normal text-slate-500">({counts.all})</span>
+            <span className="text-xs font-mono font-normal text-[var(--mos-text-muted)]">({counts.all})</span>
           </h2>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-[var(--mos-text-muted)]">
             {activeConversation?.name ? `Không gian: ${activeConversation.name}` : 'Toàn bộ công việc'}
           </p>
         </div>
@@ -183,7 +186,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
         <button
           type="button"
           onClick={onOpenCreateTaskModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 active:scale-95 transition-transform"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] text-xs font-bold shadow-md active:scale-95 transition-transform"
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           <span>Giao việc</span>
@@ -193,19 +196,19 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
       {/* Search Input */}
       <div className="px-4 pb-2">
         <div className="relative flex items-center">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-[var(--mos-text-muted)] absolute left-3 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên việc, mã #TASK, người nhận..."
-            className="w-full pl-8.5 pr-8 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-amber-500/50 transition-colors"
+            className="w-full pl-8.5 pr-8 py-1.5 rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] text-xs focus:outline-none focus:border-[var(--mos-accent)] transition-colors"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 p-0.5 rounded-full text-slate-400 hover:text-white"
+              className="absolute right-2.5 p-0.5 rounded-full text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -220,8 +223,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           onClick={() => setScopeFilter('all')}
           className={`px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 transition-colors ${
             scopeFilter === 'all'
-              ? 'bg-slate-700 text-white border border-slate-600'
-              : 'text-slate-400 bg-slate-900/60 border border-slate-800 hover:text-slate-200'
+              ? 'bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border-strong)] shadow-xs'
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Tất cả ({counts.all})
@@ -231,8 +234,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           onClick={() => setScopeFilter('mine')}
           className={`px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 transition-colors ${
             scopeFilter === 'mine'
-              ? 'bg-amber-500 text-slate-950 font-bold'
-              : 'text-slate-400 bg-slate-900/60 border border-slate-800 hover:text-slate-200'
+              ? 'bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-bold'
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Của tôi ({counts.mine})
@@ -243,7 +246,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           className={`px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 transition-colors ${
             scopeFilter === 'channel'
               ? 'bg-blue-600 text-white font-bold'
-              : 'text-slate-400 bg-slate-900/60 border border-slate-800 hover:text-slate-200'
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Kênh này ({counts.channel})
@@ -251,14 +254,14 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
       </div>
 
       {/* Status Filter Pill Strip */}
-      <div className="px-4 pb-2.5 border-b border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      <div className="px-4 pb-2.5 border-b border-[var(--mos-surface-border)] flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setStatusFilter('pending')}
           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 transition-colors ${
             statusFilter === 'pending'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-              : 'text-slate-400 bg-slate-900/40 border border-slate-800/60 hover:text-white'
+              ? `bg-amber-500/20 border border-amber-500/40 ${isDark ? 'text-amber-300' : 'text-amber-800'}`
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Đang làm ({counts.pending})
@@ -268,8 +271,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           onClick={() => setStatusFilter('overdue')}
           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 transition-colors ${
             statusFilter === 'overdue'
-              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
-              : 'text-slate-400 bg-slate-900/40 border border-slate-800/60 hover:text-white'
+              ? `bg-rose-500/20 border border-rose-500/40 font-bold ${isDark ? 'text-rose-300' : 'text-rose-700'}`
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Quá hạn ({counts.overdue})
@@ -279,8 +282,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           onClick={() => setStatusFilter('completed')}
           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 transition-colors ${
             statusFilter === 'completed'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-              : 'text-slate-400 bg-slate-900/40 border border-slate-800/60 hover:text-white'
+              ? `bg-emerald-500/20 border border-emerald-500/40 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Đã xong ({counts.completed})
@@ -290,8 +293,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           onClick={() => setStatusFilter('archived')}
           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 transition-colors ${
             statusFilter === 'archived'
-              ? 'bg-slate-700 text-slate-200 border border-slate-600'
-              : 'text-slate-400 bg-slate-900/40 border border-slate-800/60 hover:text-white'
+              ? 'bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border-strong)]'
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Lưu trữ ({counts.archived})
@@ -301,8 +304,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
           onClick={() => setStatusFilter('all')}
           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 transition-colors ${
             statusFilter === 'all'
-              ? 'bg-slate-700 text-slate-200 border border-slate-600'
-              : 'text-slate-400 bg-slate-900/40 border border-slate-800/60 hover:text-white'
+              ? 'bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border-strong)]'
+              : 'text-[var(--mos-text-muted)] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
           }`}
         >
           Tất cả
@@ -312,9 +315,9 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
       {/* Task List */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-2.5">
         {sortedTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 mt-8">
-            <CheckCircle2 className="w-12 h-12 text-slate-700 mb-2" />
-            <p className="text-sm font-medium text-slate-400">
+          <div className="flex flex-col items-center justify-center p-8 text-center text-[var(--mos-text-muted)] mt-8">
+            <CheckCircle2 className="w-12 h-12 opacity-40 mb-2" />
+            <p className="text-sm font-medium text-[var(--mos-text)]">
               {searchQuery
                 ? 'Không tìm thấy công việc nào khớp từ khóa'
                 : statusFilter === 'completed'
@@ -325,7 +328,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       ? 'Không có công việc nào trong kho lưu trữ'
                       : 'Không có công việc nào đang chờ thực hiện'}
             </p>
-            <p className="text-xs text-slate-600 mt-1">Bấm nút Giao việc để tạo việc mới</p>
+            <p className="text-xs text-[var(--mos-text-muted)] mt-1">Bấm nút Giao việc để tạo việc mới</p>
           </div>
         ) : (
           sortedTasks.map((t) => {
@@ -374,8 +377,8 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                 aria-label={`Mở chi tiết công việc: ${t.title}`}
                 className={`p-3.5 rounded-2xl border transition-all active:scale-[0.99] select-none cursor-pointer ${
                   t.done
-                    ? 'bg-slate-900/40 border-slate-800/60 opacity-60'
-                    : 'bg-slate-900 border-slate-800 hover:border-slate-700 shadow-sm'
+                    ? 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] opacity-60'
+                    : 'bg-[var(--mos-surface)] border-[var(--mos-surface-border)] hover:border-[var(--mos-surface-border-strong)] shadow-sm'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -386,42 +389,58 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       e.stopPropagation();
                       toggleTaskDone(t.id, !t.done);
                     }}
-                    className="mt-0.5 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform p-0.5 shrink-0"
+                    className="mt-0.5 text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-90 transition-transform p-0.5 shrink-0"
                     aria-label={t.done ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
                   >
                     {t.done ? (
-                      <CheckSquare className="w-5 h-5 text-emerald-400 fill-emerald-400/20" />
+                      <CheckSquare
+                        className={`w-5 h-5 fill-emerald-400/20 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
+                      />
                     ) : (
-                      <Square className="w-5 h-5 text-slate-500" />
+                      <Square className="w-5 h-5 text-[var(--mos-text-muted)]" />
                     )}
                   </button>
 
                   <div className="flex-1 min-w-0">
                     {/* Top Row: Code, Space pill & Priority */}
                     <div className="flex items-center gap-1.5 flex-wrap mb-1 text-[10px]">
-                      <span className="font-mono font-bold text-amber-400/90">{taskCode}</span>
+                      <span className={`font-mono font-bold ${isDark ? 'text-amber-400/90' : 'text-amber-700'}`}>
+                        {taskCode}
+                      </span>
 
                       {t.conversationName && scopeFilter !== 'channel' && (
-                        <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 truncate max-w-[120px]">
+                        <span className="px-1.5 py-0.2 rounded bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] truncate max-w-[120px]">
                           {t.conversationName}
                         </span>
                       )}
 
                       {/* Priority Tag */}
                       {t.priority === 'URGENT' && (
-                        <span className="px-1.5 py-0.2 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-bold bg-rose-500/20 border border-rose-500/30 ${
+                            isDark ? 'text-rose-400' : 'text-rose-700'
+                          }`}
+                        >
                           P0 Khẩn cấp
                         </span>
                       )}
                       {t.priority === 'HIGH' && (
-                        <span className="px-1.5 py-0.2 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-bold bg-amber-500/20 border border-amber-500/30 ${
+                            isDark ? 'text-amber-400' : 'text-amber-800'
+                          }`}
+                        >
                           P1 Ưu tiên
                         </span>
                       )}
 
                       {/* Negotiation Pending Tag */}
                       {hasNegotiation && (
-                        <span className="px-1.5 py-0.2 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-bold bg-amber-500/20 border border-amber-500/40 flex items-center gap-1 ${
+                            isDark ? 'text-amber-300' : 'text-amber-800'
+                          }`}
+                        >
                           <Handshake className="w-2.5 h-2.5" />
                           <span>Xin dời hạn</span>
                         </span>
@@ -429,7 +448,11 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
 
                       {/* Mission Linked Tag */}
                       {t.mission && (
-                        <span className="px-1.5 py-0.2 rounded font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-bold bg-purple-500/20 border border-purple-500/30 flex items-center gap-1 ${
+                            isDark ? 'text-purple-300' : 'text-purple-700'
+                          }`}
+                        >
                           <Rocket className="w-2.5 h-2.5" />
                           <span>#{t.mission.missionKey}</span>
                         </span>
@@ -453,7 +476,11 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
 
                       {/* Awaiting Acceptance Badge */}
                       {isMissionAwaitingAccept && (
-                        <span className="px-1.5 py-0.2 rounded font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1">
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-bold bg-sky-500/20 border border-sky-500/30 flex items-center gap-1 ${
+                            isDark ? 'text-sky-300' : 'text-sky-700'
+                          }`}
+                        >
                           <span>Chờ nghiệm thu</span>
                         </span>
                       )}
@@ -462,7 +489,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                     {/* Title */}
                     <p
                       className={`text-sm font-medium leading-snug line-clamp-2 break-words ${
-                        t.done ? 'line-through text-slate-500' : 'text-white'
+                        t.done ? 'line-through text-[var(--mos-text-muted)]' : 'text-[var(--mos-text)]'
                       }`}
                     >
                       {t.title}
@@ -473,18 +500,28 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       <div className="flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums">
                         <Clock
                           className={`w-3 h-3 shrink-0 ${
-                            isOverdue ? 'text-rose-400' : t.done ? 'text-slate-500' : 'text-slate-400'
+                            isOverdue
+                              ? isDark
+                                ? 'text-rose-400'
+                                : 'text-rose-600'
+                              : 'text-[var(--mos-text-muted)]'
                           }`}
                         />
                         <span
                           className={
-                            isOverdue ? 'text-rose-400 font-bold' : t.done ? 'text-slate-500' : 'text-slate-400'
+                            isOverdue
+                              ? `${isDark ? 'text-rose-400' : 'text-rose-600'} font-bold`
+                              : 'text-[var(--mos-text-muted)]'
                           }
                         >
                           {dayjs(deadline).format('HH:mm DD/MM')}
                         </span>
                         {isOverdue && !t.done && (
-                          <span className="text-[10px] font-bold text-rose-400 bg-rose-500/15 px-1 py-0.2 rounded border border-rose-500/30">
+                          <span
+                            className={`text-[10px] font-bold bg-rose-500/15 px-1 py-0.2 rounded border border-rose-500/30 ${
+                              isDark ? 'text-rose-400' : 'text-rose-600'
+                            }`}
+                          >
                             Quá hạn
                           </span>
                         )}
@@ -492,31 +529,35 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                     )}
 
                     {/* 3 Cột trên 1 dòng: Người tạo · Người giao · Người nhận (Minimalist, Avatar & Icon là chính) */}
-                    <div className="grid grid-cols-3 divide-x divide-slate-800/50 items-center mt-2 pt-2 border-t border-slate-800/60 text-[11px]">
+                    <div className="grid grid-cols-3 divide-x divide-[var(--mos-surface-border)] items-center mt-2 pt-2 border-t border-[var(--mos-surface-border)] text-[11px]">
                       {/* Cột 1: Người tạo */}
                       <div className="flex items-center gap-1 min-w-0 pr-1" title={`Người tạo: ${creator}`}>
-                        <PenLine className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+                        <PenLine className={`w-2.5 h-2.5 shrink-0 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
                         <MosChatAvatar size="xs" name={creator} staffDirectory={staffDirectory} />
-                        <span className="truncate text-[11px] text-slate-300">{creator}</span>
+                        <span className="truncate text-[11px] text-[var(--mos-text)]">{creator}</span>
                       </div>
 
                       {/* Cột 2: Người giao */}
                       <div className="flex items-center gap-1 min-w-0 px-1" title={`Người giao: ${assigner}`}>
-                        <Send className="w-2.5 h-2.5 text-sky-400 shrink-0" />
+                        <Send className={`w-2.5 h-2.5 shrink-0 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
                         <MosChatAvatar size="xs" name={assigner} staffDirectory={staffDirectory} />
-                        <span className="truncate text-[11px] text-slate-300">{assigner}</span>
+                        <span className="truncate text-[11px] text-[var(--mos-text)]">{assigner}</span>
                       </div>
 
                       {/* Cột 3: Người nhận */}
                       <div className="flex items-center gap-1 min-w-0 pl-1" title={`Người nhận: ${assignee}`}>
-                        <UserCheck className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                        <UserCheck className={`w-2.5 h-2.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                         <MosChatAvatar
                           size="xs"
                           name={assignee}
                           staffId={t.assigneeId}
                           staffDirectory={staffDirectory}
                         />
-                        <span className="truncate text-[11px] text-amber-300 font-medium">{assignee}</span>
+                        <span
+                          className={`truncate text-[11px] font-medium ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
+                        >
+                          {assignee}
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -17,10 +17,18 @@ import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
 
 const ScreenSkeleton = () => (
-  <div className="w-full min-h-[450px] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-pulse">
+  <div
+    className="w-full min-h-[450px] flex items-center justify-center backdrop-blur-sm animate-pulse"
+    style={{ backgroundColor: 'var(--background)' }}
+  >
     <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-      <span className="text-xs font-medium text-neutral-400">Đang tải màn hình...</span>
+      <div
+        className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+        style={{ borderColor: 'var(--mos-accent)', borderTopColor: 'transparent' }}
+      />
+      <span className="text-xs font-medium" style={{ color: 'var(--mos-text-muted)' }}>
+        Đang tải màn hình...
+      </span>
     </div>
   </div>
 );
@@ -160,7 +168,10 @@ function IosAppInner() {
 
   if (!authorized) {
     return (
-      <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
+      <div
+        className="w-full min-h-[100dvh] flex items-center justify-center font-bold gap-1.5"
+        style={{ backgroundColor: 'var(--background)', color: 'var(--mos-accent)' }}
+      >
         <span>Đang mở ứng dụng Tư vấn & Checkout</span>
         <CvFeather1Badge />
       </div>
@@ -481,10 +492,21 @@ function IosAppInner() {
   };
 
   return (
-    <div className="w-full h-[100dvh] max-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-hidden">
-      <div className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col bg-black relative overflow-hidden">
+    <div
+      className="w-full h-[100dvh] max-h-[100dvh] flex justify-center font-sans select-none overflow-hidden transition-colors"
+      style={{ backgroundColor: 'var(--background)', color: 'var(--mos-text)' }}
+    >
+      <div
+        className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden transition-colors"
+        style={{ backgroundColor: 'var(--background)' }}
+      >
         {/* Screen Body */}
-        <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-black">{renderActiveScreen()}</div>
+        <div
+          className="flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors"
+          style={{ backgroundColor: 'var(--background)' }}
+        >
+          {renderActiveScreen()}
+        </div>
 
         {/* Real Native iOS Bottom TabBar */}
         {showTabBar && (
@@ -569,7 +591,10 @@ export default function IosAppPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold gap-1.5">
+        <div
+          className="w-full min-h-[100dvh] flex items-center justify-center font-bold gap-1.5"
+          style={{ backgroundColor: 'var(--background)', color: 'var(--mos-accent)' }}
+        >
           <span>Đang tải ứng dụng Tư vấn & Checkout</span>
           <CvFeather1Badge />
         </div>

@@ -6,6 +6,7 @@ import { message as antdMessage } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import { removeVietnameseTones } from '@mos-lab/shared';
 import { isStaffInConversationMembers } from '../utils/chat-helpers';
+import { useTheme } from '../../../context/ThemeContext';
 
 export interface MosChatMentionCandidate {
   id: string;
@@ -94,6 +95,8 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
   onClose,
   className = '',
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const { activeConversation, staffDirectory, currentUser, addMemberToSpace } = useMosChat();
 
   const [dismissedAtIndex, setDismissedAtIndex] = useState<number | null>(null);
@@ -350,18 +353,20 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
       <div
         role="listbox"
         aria-label="Danh sách gợi ý nhắc tên"
-        className={`mos-chat-mobile-mention-dropdown absolute bottom-full left-0 right-0 mb-2 z-50 rounded-2xl shadow-2xl border border-slate-700/80 bg-slate-900/98 backdrop-blur-xl overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-bottom-2 select-none ${className}`}
+        className={`mos-chat-mobile-mention-dropdown absolute bottom-full left-0 right-0 mb-2 z-50 rounded-2xl shadow-2xl border border-[var(--mos-surface-border-strong)] bg-[var(--mos-surface-raised)] text-[var(--mos-text)] backdrop-blur-xl overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-bottom-2 select-none ${className}`}
         style={{
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7)',
+          boxShadow: isDark
+            ? '0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7)'
+            : '0 20px 25px -5px rgba(15, 23, 42, 0.16), 0 8px 10px -6px rgba(15, 23, 42, 0.12)',
           touchAction: 'pan-y',
         }}
       >
         {/* Header bar */}
-        <div className="px-3 py-1.5 flex items-center justify-between border-b border-slate-800/80 bg-slate-800/50 text-[11px] font-semibold">
-          <div className="flex items-center gap-1.5 text-amber-400">
+        <div className="px-3 py-1.5 flex items-center justify-between border-b border-[var(--mos-surface-border)] bg-[var(--mos-surface)] text-[11px] font-semibold">
+          <div className="flex items-center gap-1.5 text-[var(--mos-accent)]">
             <AtSign className="w-3.5 h-3.5" />
             <span className="uppercase font-bold tracking-wider">Nhắc tên</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-400/20 text-amber-300 text-[10px] tabular-nums font-mono">
+            <span className="px-1.5 py-0.2 rounded-full bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] text-[10px] tabular-nums font-mono">
               {totalVisible}
             </span>
           </div>
@@ -372,7 +377,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
               setDismissedAtIndex(mentionMatch.atIndex);
               onClose?.();
             }}
-            className="p-1 text-slate-400 hover:text-white rounded-full active:scale-95"
+            className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] rounded-full active:scale-95"
             aria-label="Đóng gợi ý nhắc tên"
           >
             <X className="w-3.5 h-3.5" />
@@ -380,12 +385,12 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
         </div>
 
         {/* Danh sách thành viên */}
-        <div className="max-h-56 overflow-y-auto overscroll-contain divide-y divide-slate-800/50">
+        <div className="max-h-56 overflow-y-auto overscroll-contain divide-y divide-[var(--mos-surface-border)]">
           {/* PHẦN 1: THÀNH VIÊN TRONG NHÓM (Tag trực tiếp) */}
           {filteredInGroup.length > 0 && (
             <div>
-              <div className="px-3 py-1 bg-slate-950/40 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <Users className="w-3 h-3 text-emerald-400" />
+              <div className="px-3 py-1 bg-[var(--mos-surface-muted)] text-[10px] font-bold uppercase tracking-wider text-[var(--mos-text-muted)] flex items-center gap-1">
+                <Users className={`w-3 h-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 <span>Thành viên trong nhóm ({filteredInGroup.length})</span>
               </div>
               {filteredInGroup.map((item) => (
@@ -396,7 +401,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                   aria-selected="false"
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleCandidateClick(item)}
-                  className="w-full px-3 py-2 flex items-center gap-2.5 text-left hover:bg-white/5 active:bg-amber-500/20 transition-colors cursor-pointer min-h-[44px]"
+                  className="w-full px-3 py-2 flex items-center gap-2.5 text-left hover:bg-[var(--mos-surface-muted)] active:bg-[var(--mos-surface-muted)] transition-colors cursor-pointer min-h-[44px]"
                 >
                   {/* Avatar */}
                   <div className="relative shrink-0">
@@ -411,17 +416,17 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                       </div>
                     )}
                     {item.isOnline && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-slate-900" />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[var(--mos-surface-raised)]" />
                     )}
                   </div>
 
                   {/* Thông tin */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold text-xs text-white truncate">{item.displayName}</span>
+                      <span className="font-semibold text-xs text-[var(--mos-text)] truncate">{item.displayName}</span>
                       {item.role && (
                         <span
-                          className="px-1.5 py-0.2 rounded text-[9.5px] font-medium shrink-0 bg-slate-800 border border-slate-700/60"
+                          className="px-1.5 py-0.2 rounded text-[9.5px] font-medium shrink-0 bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)]"
                           style={{ color: item.color }}
                         >
                           {item.role}
@@ -429,12 +434,18 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                       )}
                     </div>
                     {item.username && (
-                      <div className="text-[10px] text-slate-400 truncate font-mono">@{item.username}</div>
+                      <div className="text-[10px] text-[var(--mos-text-muted)] truncate font-mono">@{item.username}</div>
                     )}
                   </div>
 
                   {/* Tag preview pill */}
-                  <div className="shrink-0 text-[11px] font-mono font-medium px-2 py-0.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-300">
+                  <div
+                    className={`shrink-0 text-[11px] font-mono font-medium px-2 py-0.5 rounded-lg border ${
+                      isDark
+                        ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-300'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    }`}
+                  >
                     @{item.tagText}
                   </div>
                 </button>
@@ -444,10 +455,14 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
 
           {/* PHẦN 2: NGOÀI NHÓM (Bắt buộc mời vào nhóm trước) */}
           {filteredOutsideGroup.length > 0 && (
-            <div className="border-t border-slate-800/80">
-              <div className="px-3 py-1 bg-amber-500/10 text-[10px] font-bold uppercase tracking-wider text-amber-300 flex items-center justify-between">
+            <div className="border-t border-[var(--mos-surface-border)]">
+              <div
+                className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between ${
+                  isDark ? 'bg-amber-500/10 text-amber-300' : 'bg-amber-50 text-amber-800'
+                }`}
+              >
                 <span className="flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 text-amber-400" />
+                  <AlertCircle className={`w-3 h-3 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                   <span>Ngoài nhóm · Phải mời trước ({filteredOutsideGroup.length})</span>
                 </span>
                 <span className="text-[9.5px] font-normal normal-case opacity-80">Chưa vào nhóm</span>
@@ -460,7 +475,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                   aria-selected="false"
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleCandidateClick(item)}
-                  className="w-full px-3 py-2 flex items-center gap-2.5 text-left hover:bg-amber-500/10 active:bg-amber-500/20 transition-colors cursor-pointer min-h-[44px] opacity-85"
+                  className="w-full px-3 py-2 flex items-center gap-2.5 text-left hover:bg-[var(--mos-surface-muted)] active:bg-[var(--mos-surface-muted)] transition-colors cursor-pointer min-h-[44px] opacity-90"
                 >
                   {/* Avatar */}
                   <div className="relative shrink-0 grayscale opacity-80">
@@ -479,21 +494,21 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                   {/* Thông tin */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold text-xs text-slate-300 truncate">{item.displayName}</span>
+                      <span className="font-semibold text-xs text-[var(--mos-text)] truncate">{item.displayName}</span>
                       {item.role && (
-                        <span className="px-1.5 py-0.2 rounded text-[9.5px] font-medium shrink-0 bg-slate-800/80 border border-slate-700/60 text-slate-400">
+                        <span className="px-1.5 py-0.2 rounded text-[9.5px] font-medium shrink-0 bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] text-[var(--mos-text-muted)]">
                           {item.role}
                         </span>
                       )}
                     </div>
                     {item.username && (
-                      <div className="text-[10px] text-slate-500 truncate font-mono">@{item.username}</div>
+                      <div className="text-[10px] text-[var(--mos-text-muted)] truncate font-mono">@{item.username}</div>
                     )}
                   </div>
 
                   {/* Action: Mời vào nhóm */}
-                  <div className="shrink-0 flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 active:scale-95 transition-transform">
-                    <UserPlus className="w-3 h-3 text-amber-400" />
+                  <div className="shrink-0 flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] active:scale-95 transition-transform">
+                    <UserPlus className="w-3 h-3" />
                     <span>Mời & Tag</span>
                   </div>
                 </button>
@@ -509,33 +524,35 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
           role="dialog"
           aria-modal="true"
           aria-label="Xác nhận mời vào nhóm"
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in"
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in ${
+            isDark ? 'bg-slate-950/80' : 'bg-slate-900/45'
+          }`}
         >
-          <div className="w-full max-w-xs bg-slate-900 border border-slate-700 rounded-3xl p-5 shadow-2xl space-y-3.5">
-            <div className="flex items-center gap-2.5 text-amber-400">
-              <div className="w-9 h-9 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-amber-400" />
+          <div className="w-full max-w-xs bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border-strong)] rounded-3xl p-5 shadow-2xl space-y-3.5">
+            <div className="flex items-center gap-2.5 text-[var(--mos-accent)]">
+              <div className="w-9 h-9 rounded-2xl bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-[var(--mos-accent)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Mời vào nhóm trước</h3>
-                <p className="text-[11px] text-slate-400">Yêu cầu quyền thành viên</p>
+                <h3 className="text-sm font-bold text-[var(--mos-text)]">Mời vào nhóm trước</h3>
+                <p className="text-[11px] text-[var(--mos-text-muted)]">Yêu cầu quyền thành viên</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Đồng nghiệp <span className="font-semibold text-white">{pendingInviteCandidate.displayName}</span> chưa
-              tham gia nhóm <span className="font-semibold text-amber-400">#{activeConversation?.name}</span>.
+            <p className="text-xs text-[var(--mos-text-muted)] leading-relaxed">
+              Đồng nghiệp <span className="font-semibold text-[var(--mos-text)]">{pendingInviteCandidate.displayName}</span> chưa
+              tham gia nhóm <span className="font-semibold text-[var(--mos-accent)]">#{activeConversation?.name}</span>.
               <br />
-              <span className="text-slate-400 mt-1 inline-block">
+              <span className="text-[var(--mos-text-muted)] mt-1 inline-block">
                 Bạn cần mời vào nhóm trước để có thể nhắc tên trong cuộc trò chuyện này.
               </span>
             </p>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--mos-surface-border)]">
               <button
                 type="button"
                 onClick={() => setPendingInviteCandidate(null)}
-                className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-800 active:scale-95 transition-transform"
+                className="px-3.5 py-2 rounded-xl text-xs font-medium text-[var(--mos-text)] bg-[var(--mos-surface-muted)] active:scale-95 transition-transform"
               >
                 Hủy
               </button>
@@ -543,7 +560,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                 type="button"
                 disabled={isInviting}
                 onClick={handleConfirmInviteAndTag}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 active:scale-95 disabled:opacity-50 transition-transform shadow-md shadow-amber-500/20"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--mos-accent-contrast)] bg-[var(--mos-accent)] active:scale-95 disabled:opacity-50 transition-transform shadow-md"
               >
                 {isInviting ? 'Đang mời...' : 'Mời & Nhắc tên'}
               </button>

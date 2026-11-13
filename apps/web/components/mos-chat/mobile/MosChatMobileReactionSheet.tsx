@@ -27,6 +27,7 @@ import {
 import { isUserMessageOwner, isImageAttachment } from '../utils/chat-helpers';
 import { copyImageToClipboard } from '../utils/chat-image-copy';
 import { MosChatStickerAndEmojiPicker, formatStickerToken } from '../mos-chat-stickers';
+import { useTheme } from '../../../context/ThemeContext';
 
 export interface MosChatMobileReactionSheetProps {
   message: MosChatMessage | null;
@@ -45,6 +46,8 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   onEditMessage,
   onOpenMoveThread,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const {
     reactToMessage,
     hasUserReacted,
@@ -115,30 +118,33 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end select-none">
       {/* Backdrop */}
-      <div onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" />
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 backdrop-blur-sm transition-opacity ${isDark ? 'bg-black/60' : 'bg-slate-900/40'}`}
+      />
 
       {/* Slide-up Sheet */}
-      <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200">
+      <div className="relative bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border-t border-[var(--mos-surface-border)] rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200">
         {/* Grab Handle */}
-        <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-3" />
+        <div className="w-10 h-1 bg-[var(--mos-surface-border-strong)] rounded-full mx-auto mb-3" />
 
         {showFullPicker ? (
           <div>
             {/* Header with Back & Close */}
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--mos-surface-border)]">
               <button
                 type="button"
                 onClick={() => setShowFullPicker(false)}
-                className="flex items-center gap-1.5 text-xs text-amber-400 font-semibold active:scale-95 px-2 py-1 rounded-lg hover:bg-slate-800"
+                className="flex items-center gap-1.5 text-xs text-[var(--mos-accent)] font-semibold active:scale-95 px-2 py-1 rounded-lg hover:bg-[var(--mos-surface-muted)]"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Quay lại</span>
               </button>
-              <span className="text-xs font-bold text-slate-200">Kho biểu cảm & nhãn dán</span>
+              <span className="text-xs font-bold text-[var(--mos-text)]">Kho biểu cảm & nhãn dán</span>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 rounded-full text-slate-400 hover:text-white active:scale-95"
+                className="p-1 rounded-full text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] active:scale-95"
                 aria-label="Đóng"
               >
                 <X className="w-4 h-4" />
@@ -148,9 +154,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             {/* Scrollable Picker Container */}
             <div className="max-h-[58vh] overflow-y-auto">
               <MosChatStickerAndEmojiPicker
-                isDark={true}
-                borderColor="#334155"
-                surfaceRaised="#0f172a"
+                isDark={isDark}
+                borderColor="var(--mos-surface-border)"
+                surfaceRaised="var(--mos-surface)"
                 wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
                 popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
                 defaultPack="wings"
@@ -169,7 +175,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
         ) : (
           <>
             {/* Quick Reaction Pills + Full Library Trigger */}
-            <div className="flex items-center justify-between gap-1 bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
+            <div className="flex items-center justify-between gap-1 bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] rounded-2xl py-2 px-3 mb-4 shadow-sm">
               <div className="flex items-center justify-around flex-1">
                 {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
                   const isReacted = hasUserReacted(message, emoji);
@@ -179,7 +185,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                       type="button"
                       onClick={() => handleEmojiClick(emoji)}
                       className={`text-2xl p-1.5 rounded-xl active:scale-125 transition-all ${
-                        isReacted ? 'bg-amber-500/25 ring-2 ring-amber-500/70 shadow-sm' : 'hover:bg-slate-700/50'
+                        isReacted
+                          ? 'bg-[var(--mos-surface-muted)] ring-2 ring-[var(--mos-accent)] shadow-sm'
+                          : 'hover:bg-[var(--mos-surface-muted)]'
                       }`}
                       aria-label={isReacted ? `Gỡ cảm xúc ${emoji}` : `Thả cảm xúc ${emoji}`}
                       title={isReacted ? `Đã thả ${emoji} (Nhấn để gỡ / huỷ react)` : `Thả ${emoji}`}
@@ -192,7 +200,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
               <button
                 type="button"
                 onClick={() => setShowFullPicker(true)}
-                className="w-9 h-9 rounded-full bg-slate-700/70 border border-slate-600/70 flex items-center justify-center text-amber-400 active:scale-110 transition-transform shadow-sm ml-1 shrink-0"
+                className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-accent)] active:scale-110 transition-transform shadow-sm ml-1 shrink-0"
                 aria-label="Mở kho biểu cảm và nhãn dán"
                 title="Mở thư viện biểu cảm & icon"
               >
@@ -201,7 +209,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             </div>
 
             {/* Actions List */}
-            <div className="space-y-1 divide-y divide-slate-800/60">
+            <div className="space-y-1 divide-y divide-[var(--mos-surface-border)]">
               {totalReactions > 0 && (
                 <button
                   type="button"
@@ -209,15 +217,15 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                     onClose();
                     openReactionUsersSheet(message);
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-slate-200 bg-slate-800/50 hover:bg-slate-800 rounded-xl transition-colors active:scale-98 border border-slate-700/40 mb-1"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
                 >
                   <div className="flex items-center gap-3">
-                    <Users className="w-4 h-4 text-amber-400" />
-                    <span className="font-semibold text-amber-300">Xem người đã thả cảm xúc</span>
+                    <Users className="w-4 h-4 text-[var(--mos-accent)]" />
+                    <span className="font-semibold text-[var(--mos-accent)]">Xem người đã thả cảm xúc</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <span className="tabular-nums font-bold text-amber-400">{totalReactions}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
+                    <span className="tabular-nums font-bold text-[var(--mos-accent)]">{totalReactions}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
                   </div>
                 </button>
               )}
@@ -225,27 +233,27 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
               <button
                 type="button"
                 onClick={() => setShowFullPicker(true)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <SmilePlus className="w-4 h-4 text-amber-400" />
+                <SmilePlus className="w-4 h-4 text-[var(--mos-accent)]" />
                 <span className="font-medium">Thả biểu cảm khác (Emoji & Nhãn dán)...</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleReply}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <MessageSquareReply className="w-4 h-4 text-amber-400" />
+                <MessageSquareReply className="w-4 h-4 text-[var(--mos-accent)]" />
                 <span className="font-medium">Trả lời tin nhắn</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleThread}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <MessageSquareReply className="w-4 h-4 text-indigo-400" />
+                <MessageSquareReply className={`w-4 h-4 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
                 <span className="font-medium">Thảo luận trong luồng (Thread)</span>
               </button>
 
@@ -255,18 +263,18 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                   onClose();
                   onOpenMoveThread?.(message);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <CornerDownRight className="w-4 h-4 text-amber-400" />
+                <CornerDownRight className="w-4 h-4 text-[var(--mos-accent)]" />
                 <span className="font-medium">Gộp tin nhắn vào luồng khác...</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleCopy}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <Copy className="w-4 h-4 text-slate-400" />
+                <Copy className="w-4 h-4 text-[var(--mos-text-muted)]" />
                 <span className="font-medium">Sao chép văn bản</span>
               </button>
 
@@ -280,19 +288,19 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                       await copyImageToClipboard(img.url);
                     }
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
                 >
-                  <Copy className="w-4 h-4 text-emerald-400" />
-                  <span className="font-medium text-emerald-300">Sao chép hình ảnh</span>
+                  <Copy className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                  <span className={`font-medium ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>Sao chép hình ảnh</span>
                 </button>
               )}
 
               <button
                 type="button"
                 onClick={handlePin}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <Pin className={`w-4 h-4 ${message.pinned ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`} />
+                <Pin className={`w-4 h-4 ${message.pinned ? 'text-[var(--mos-accent)] fill-[var(--mos-accent)]' : 'text-[var(--mos-text-muted)]'}`} />
                 <span className="font-medium">{message.pinned ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}</span>
               </button>
 
@@ -302,9 +310,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                   onClose();
                   onCreateTaskFromMsg(message);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <CheckSquare className="w-4 h-4 text-emerald-400" />
+                <CheckSquare className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 <span className="font-medium">Giao việc từ tin nhắn này</span>
               </button>
 
@@ -315,9 +323,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                     onClose();
                     onEditMessage?.(message);
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
                 >
-                  <Pencil className="w-4 h-4 text-amber-400" />
+                  <Pencil className="w-4 h-4 text-[var(--mos-accent)]" />
                   <span className="font-medium">Chỉnh sửa tin nhắn</span>
                 </button>
               )}
@@ -326,9 +334,11 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98"
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98 ${
+                    isDark ? 'text-rose-400' : 'text-rose-600'
+                  }`}
                 >
-                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <Trash2 className="w-4 h-4" />
                   <span className="font-medium">Xóa tin nhắn</span>
                 </button>
               )}

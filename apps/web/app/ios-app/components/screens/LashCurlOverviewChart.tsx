@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import { LASH_CURL_LIST } from './LashCurlData';
 import { LashCurlIllustration, LashCurlGroupFanIllustration } from './LashCurlIllustration';
 
@@ -10,6 +11,8 @@ interface LashCurlOverviewChartProps {
 }
 
 export const LashCurlOverviewChart: React.FC<LashCurlOverviewChartProps> = ({ selectedCurlId, onSelectCurl }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const subtleCurls = LASH_CURL_LIST.filter((c) => c.category === 'SUBTLE');
   const dramaticCurls = LASH_CURL_LIST.filter((c) => c.category === 'DRAMATIC');
   const liftUpCurls = LASH_CURL_LIST.filter((c) => c.category === 'LIFT UP');
@@ -51,7 +54,11 @@ export const LashCurlOverviewChart: React.FC<LashCurlOverviewChartProps> = ({ se
   return (
     <div className="w-full space-y-3.5 py-1 select-none">
       {/* Top Legend Bar */}
-      <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-2.5 flex items-center justify-between text-[11px] text-amber-200">
+      <div
+        className={`border rounded-2xl p-2.5 flex items-center justify-between text-[11px] ${
+          isDark ? 'bg-amber-500/10 border-amber-500/25 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'
+        }`}
+      >
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-[#9E6B55] border border-amber-300 inline-block" />
           <span>
@@ -70,13 +77,13 @@ export const LashCurlOverviewChart: React.FC<LashCurlOverviewChartProps> = ({ se
       {groups.map((grp) => (
         <div
           key={grp.category}
-          className="bg-white/5 border border-white/10 rounded-3xl p-3 space-y-2.5 backdrop-blur-sm"
+          className="bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] rounded-3xl p-3 space-y-2.5 backdrop-blur-sm"
         >
           {/* Category Header + Multi-Curl Overlay Fan Comparison */}
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+          <div className="flex items-center justify-between gap-2 border-b border-[var(--mos-surface-border)] pb-2">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-black text-white tracking-wide">{grp.title}</span>
+                <span className="text-xs font-black text-[var(--mos-text)] tracking-wide">{grp.title}</span>
                 <span
                   className="text-[9.5px] font-black px-2 py-0.5 rounded-full"
                   style={{
@@ -88,11 +95,11 @@ export const LashCurlOverviewChart: React.FC<LashCurlOverviewChartProps> = ({ se
                   {grp.badge}
                 </span>
               </div>
-              <p className="text-[10.5px] text-gray-400 mt-0.5 leading-snug">{grp.subtitle}</p>
+              <p className="text-[10.5px] text-[var(--mos-text-muted)] mt-0.5 leading-snug">{grp.subtitle}</p>
             </div>
 
             {/* Superimposed Group Fan Box (Left-column of BL Lashes Chart) */}
-            <div className="w-[106px] shrink-0 bg-black/45 border border-white/10 rounded-2xl px-1.5 py-0.5 flex flex-col items-center">
+            <div className="w-[106px] shrink-0 bg-neutral-900 border border-[var(--mos-surface-border)] rounded-2xl px-1.5 py-0.5 flex flex-col items-center">
               <LashCurlGroupFanIllustration category={grp.category} activeCurlId={selectedCurlId} />
             </div>
           </div>

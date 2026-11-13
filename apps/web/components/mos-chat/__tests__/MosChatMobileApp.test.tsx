@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MosChatProvider } from '../context/MosChatContext';
 import { MosChatMobileApp } from '../mobile/MosChatMobileApp';
 import { apiClient } from '../../../lib/api-client';
+import { ThemeProvider } from '../../../context/ThemeContext';
 
 // Mock apiClient.chat
 vi.mock('../../../lib/api-client', () => ({
@@ -436,7 +437,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
 
     // Parent message card in thread sheet
     const parentMsg = screen.getAllByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')[0];
-    const parentCard = parentMsg.closest('.bg-slate-900') as HTMLElement;
+    const parentCard = parentMsg.closest('[data-testid="mos-thread-parent-card"]') as HTMLElement;
     expect(parentCard).toBeTruthy();
 
     // First tap
@@ -1771,5 +1772,35 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(bannerBtn);
 
     expect(screen.getByText(/Chuông báo Cuộc gọi khi Khóa máy/i)).toBeTruthy();
+  });
+
+  it('opens MobileThemeSheet from header palette button and switches mobile chat between Dark and Light themes', async () => {
+    window.localStorage.clear();
+    render(
+      <ThemeProvider>
+        <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+          <MosChatMobileApp standalone={true} />
+        </MosChatProvider>
+      </ThemeProvider>
+    );
+
+    const themeBtn = await screen.findByRole('button', { name: /Giao diện & Chủ đề/i });
+    fireEvent.click(themeBtn);
+
+    const dialog = await screen.findByRole('dialog', { name: /Chọn giao diện & tông màu/i });
+    expect(dialog).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Nền Sáng/i }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.themeBase).toBe('light');
+      expect(document.documentElement.classList.contains('light-theme')).toBe(true);
+    });
+
+    const blushBtn = within(dialog).getByText(/Blush Blossom/i).closest('button');
+    expect(blushBtn).not.toBeNull();
+    fireEvent.click(blushBtn!);
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('blush');
+    });
   });
 });

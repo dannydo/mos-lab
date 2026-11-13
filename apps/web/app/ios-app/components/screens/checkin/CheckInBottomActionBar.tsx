@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Check, Edit3, Eye, Zap, Lock, Sliders } from 'lucide-react';
+import { useTheme } from '../../../../../context/ThemeContext';
 import { BookingItem } from '../../../state/mockData';
 
 export interface CheckInBottomActionBarProps {
@@ -27,11 +28,20 @@ export function CheckInBottomActionBar({
   onExecuteQuickCheckIn,
   onCheckIn,
 }: CheckInBottomActionBarProps) {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
+
   return (
-    <div className="bg-black/95 backdrop-blur-xl border-t border-neutral-800 px-3.5 py-2.5 flex flex-col gap-2 z-30 shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
+    <div className="bg-[var(--mos-surface)]/95 backdrop-blur-xl border-t border-[var(--mos-surface-border)] px-3.5 py-2.5 flex flex-col gap-2 z-30 shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
       {isCheckInLocked ? (
         <div className="w-full space-y-2">
-          <div className="bg-amber-500/15 border border-amber-400/40 rounded-xl px-3 py-2 text-center text-[11.5px] text-amber-300 font-medium flex items-center justify-center gap-1.5">
+          <div
+            className={`rounded-xl px-3 py-2 text-center text-[11.5px] font-medium flex items-center justify-center gap-1.5 border ${
+              isDark
+                ? 'bg-amber-500/15 border-amber-400/40 text-amber-300'
+                : 'bg-amber-50 border-amber-300 text-amber-800'
+            }`}
+          >
             <Lock className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
             <span>
               Đang phục vụ <strong>{activeServicingCustomerName || 'khách khác'}</strong>. Vui lòng hoàn thành checkout
@@ -42,14 +52,14 @@ export function CheckInBottomActionBar({
             <button
               type="button"
               onClick={onResumeServicing}
-              className="w-full py-3 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[13px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
+              className="w-full py-3 px-4 rounded-2xl bg-[var(--mos-accent)] hover:opacity-95 text-[var(--mos-accent-contrast)] font-black text-[13px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
             >
               <span>Quay lại ca làm {activeServicingCustomerName} →</span>
             </button>
           ) : (
             <button
               disabled
-              className="w-full py-3.5 px-4 rounded-2xl bg-neutral-800 text-neutral-500 font-bold text-[13px] flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+              className="w-full py-3.5 px-4 rounded-2xl bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-bold text-[13px] flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
             >
               <Lock className="w-4 h-4" />
               <span>Chưa thể check-in khách này</span>
@@ -69,7 +79,7 @@ export function CheckInBottomActionBar({
           <button
             type="button"
             onClick={() => onCheckIn(booking?.id)}
-            className="py-3 px-3.5 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-amber-400 border border-amber-500/40 font-bold text-[12.5px] flex items-center justify-center gap-1.5 shrink-0 active:scale-98 transition-transform cursor-pointer"
+            className="py-3 px-3.5 rounded-2xl bg-[var(--mos-surface-raised)] hover:bg-[var(--mos-surface-muted)] text-[var(--mos-accent)] border border-[var(--mos-accent)]/40 font-bold text-[12.5px] flex items-center justify-center gap-1.5 shrink-0 active:scale-98 transition-transform cursor-pointer"
             title="Đổi dáng / Độ cong / Tư vấn lại"
           >
             <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -80,7 +90,7 @@ export function CheckInBottomActionBar({
         <button
           type="button"
           onClick={() => onCheckIn(booking?.id)}
-          className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer tracking-tight"
+          className="w-full py-3.5 px-4 rounded-2xl bg-[var(--mos-accent)] hover:opacity-95 text-[var(--mos-accent-contrast)] font-black text-[14px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer tracking-tight"
         >
           {requiresNaturalLashCheck ? (
             <>

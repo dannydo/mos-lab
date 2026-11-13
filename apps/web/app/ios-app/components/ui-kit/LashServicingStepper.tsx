@@ -18,7 +18,13 @@ export function LashServicingStepper({ activeStep, elapsedMinutes }: LashServici
   ];
 
   return (
-    <div className="bg-black select-none shrink-0 border-b border-neutral-800/80 px-3 py-1.5">
+    <div
+      className="select-none shrink-0 border-b px-3 py-1.5 transition-colors"
+      style={{
+        backgroundColor: 'var(--mos-surface)',
+        borderColor: 'var(--mos-surface-border)',
+      }}
+    >
       <div className="grid grid-cols-4 gap-1.5 items-center">
         {steps.map((step) => {
           const isCompleted = activeStep > step.num;
@@ -28,9 +34,16 @@ export function LashServicingStepper({ activeStep, elapsedMinutes }: LashServici
             return (
               <div
                 key={step.num}
-                className="bg-[#FFB400] text-black font-black text-[11px] py-1.5 px-1 rounded-lg flex items-center justify-center gap-1 shadow-sm leading-none"
+                className="font-black text-[11px] py-1.5 px-1 rounded-lg flex items-center justify-center gap-1 shadow-sm leading-none"
+                style={{
+                  backgroundColor: 'var(--mos-accent)',
+                  color: 'var(--mos-accent-contrast)',
+                }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: 'var(--mos-accent-contrast)' }}
+                />
                 <span className="truncate">
                   {step.num}. {step.label}
                 </span>
@@ -42,9 +55,14 @@ export function LashServicingStepper({ activeStep, elapsedMinutes }: LashServici
             return (
               <div
                 key={step.num}
-                className="bg-neutral-900 border border-neutral-800 text-neutral-200 font-bold text-[10.5px] py-1.5 px-1 rounded-lg flex items-center justify-center gap-1 leading-none"
+                className="border font-bold text-[10.5px] py-1.5 px-1 rounded-lg flex items-center justify-center gap-1 leading-none"
+                style={{
+                  backgroundColor: 'var(--mos-surface-muted)',
+                  borderColor: 'var(--mos-surface-border)',
+                  color: 'var(--mos-text)',
+                }}
               >
-                <Check className="w-3 h-3 text-emerald-400 shrink-0 stroke-[3]" />
+                <Check className="w-3 h-3 text-emerald-500 shrink-0 stroke-[3]" />
                 <span className="truncate">{step.label}</span>
               </div>
             );
@@ -53,9 +71,14 @@ export function LashServicingStepper({ activeStep, elapsedMinutes }: LashServici
           return (
             <div
               key={step.num}
-              className="bg-neutral-900/40 border border-neutral-900 text-neutral-500 font-medium text-[10.5px] py-1.5 px-1 rounded-lg flex items-center justify-center gap-1 leading-none"
+              className="border font-medium text-[10.5px] py-1.5 px-1 rounded-lg flex items-center justify-center gap-1 leading-none opacity-75"
+              style={{
+                backgroundColor: 'var(--mos-surface-muted)',
+                borderColor: 'var(--mos-surface-border)',
+                color: 'var(--mos-text-muted)',
+              }}
             >
-              <span className="text-[9px] text-neutral-600 shrink-0">{step.num}</span>
+              <span className="text-[9px] shrink-0">{step.num}</span>
               <span className="truncate">{step.label}</span>
             </div>
           );

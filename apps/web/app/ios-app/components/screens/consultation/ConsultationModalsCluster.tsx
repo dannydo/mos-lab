@@ -285,31 +285,31 @@ export function ConsultationModalsCluster({
       {/* iOS-Style Minimalist Info Modal Sheet */}
       {activeInfoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-[#1C1C1E] text-white rounded-2xl w-full max-w-sm p-4 border border-neutral-800 shadow-2xl space-y-3 relative">
+          <div className="bg-[var(--mos-surface)] text-[var(--mos-text)] rounded-2xl w-full max-w-sm p-4 border border-[var(--mos-surface-border)] shadow-2xl space-y-3 relative">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-[#FFB400]" />
-                <h4 className="text-[13px] font-black uppercase text-white tracking-wide">{activeInfoModal.title}</h4>
+                <Info className={`w-4 h-4 ${isDark ? 'text-[#FFB400]' : 'text-amber-600'}`} />
+                <h4 className="text-[13px] font-black uppercase text-[var(--mos-text)] tracking-wide">{activeInfoModal.title}</h4>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveInfoModal(null)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-80 flex items-center justify-center text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] border border-[var(--mos-surface-border)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {activeInfoModal.badge && (
-              <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FFB400]/20 text-[#FFB400] border border-[#FFB400]/30">
+              <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${isDark ? 'bg-[#FFB400]/20 text-[#FFB400] border-[#FFB400]/30' : 'bg-amber-100 text-amber-800 border-amber-300'}`}>
                 {activeInfoModal.badge}
               </span>
             )}
 
-            <p className="text-[12px] text-neutral-300 leading-relaxed font-medium">{activeInfoModal.content}</p>
+            <p className="text-[12px] text-[var(--mos-text-muted)] leading-relaxed font-medium">{activeInfoModal.content}</p>
 
             {activeInfoModal.advice && (
-              <div className="bg-neutral-800/80 rounded-xl p-2.5 border border-amber-400/20 text-[11px] text-amber-200 leading-relaxed font-medium">
+              <div className={`rounded-xl p-2.5 border text-[11px] leading-relaxed font-medium ${isDark ? 'bg-[var(--mos-surface-muted)] border-amber-400/20 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-950'}`}>
                 💡 <strong>Quy chuẩn Wings:</strong> {activeInfoModal.advice}
               </div>
             )}
@@ -317,7 +317,7 @@ export function ConsultationModalsCluster({
             <button
               type="button"
               onClick={() => setActiveInfoModal(null)}
-              className="w-full py-2.5 rounded-xl bg-[#FFB400] hover:bg-amber-400 text-black font-extrabold text-[12px] transition-colors cursor-pointer shadow-xs"
+              className="w-full py-2.5 rounded-xl bg-[var(--mos-accent)] hover:opacity-90 text-[var(--mos-accent-contrast)] font-extrabold text-[12px] transition-colors cursor-pointer shadow-xs"
             >
               Đã hiểu
             </button>
@@ -328,72 +328,72 @@ export function ConsultationModalsCluster({
       {/* Modal Xác Nhận Nâng Cấp Dịch Vụ Từ Combo */}
       {pendingUpgradeConfirmation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-[#1C1C1E] text-white rounded-3xl w-full max-w-[390px] p-4 border border-emerald-500/50 shadow-2xl space-y-3.5 relative overflow-hidden">
+          <div className="bg-[var(--mos-surface)] text-[var(--mos-text)] rounded-3xl w-full max-w-[390px] p-4 border border-emerald-500/50 shadow-2xl space-y-3.5 relative overflow-hidden">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 border ${isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
                   <Sparkles className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <h4 className="text-[14px] font-black uppercase text-emerald-400 tracking-wide">
+                  <h4 className={`text-[14px] font-black uppercase tracking-wide ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                     Xác Nhận Nâng Cấp Dịch Vụ
                   </h4>
-                  <span className="text-[11px] text-neutral-400 font-medium">Từ Gói Combo Đang Sử Dụng</span>
+                  <span className="text-[11px] text-[var(--mos-text-muted)] font-medium">Từ Gói Combo Đang Sử Dụng</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setPendingUpgradeConfirmation(null)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer shrink-0 mt-0.5"
+                className="w-7 h-7 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-80 flex items-center justify-center text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] border border-[var(--mos-surface-border)] transition-colors cursor-pointer shrink-0 mt-0.5"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-2">
-              <div className="bg-black/60 rounded-xl p-2.5 border border-white/10 space-y-1">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2.5 border border-[var(--mos-surface-border)] space-y-1">
                 <div className="flex items-center justify-between text-[10.5px]">
-                  <span className="text-neutral-400 font-bold uppercase tracking-wider">1. Gói Combo gốc</span>
-                  <span className="text-neutral-400 tabular-nums font-semibold">
+                  <span className="text-[var(--mos-text-muted)] font-bold uppercase tracking-wider">1. Gói Combo gốc</span>
+                  <span className="text-[var(--mos-text-muted)] tabular-nums font-semibold">
                     {pendingUpgradeConfirmation.serviceType === 'Normal' ? '✦ Suất Nối Mới' : '↻ Suất Dặm'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12.5px] font-black text-white leading-snug">
+                  <span className="text-[12.5px] font-black text-[var(--mos-text)] leading-snug">
                     {pendingUpgradeConfirmation.comboName}
                   </span>
-                  <span className="text-[12.5px] font-bold text-neutral-300 tabular-nums shrink-0">
+                  <span className="text-[12.5px] font-bold text-[var(--mos-text-muted)] tabular-nums shrink-0">
                     {pendingUpgradeConfirmation.comboBasePrice.toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-xl p-2.5 border border-amber-500/40 space-y-1">
+              <div className={`bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-xl p-2.5 border space-y-1 ${isDark ? 'border-amber-500/40' : 'border-amber-300'}`}>
                 <div className="flex items-center justify-between text-[10.5px]">
-                  <span className="text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className={`font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                    <Sparkles className={`w-3 h-3 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                     <span>2. Nâng cấp hôm nay</span>
                   </span>
                   {pendingUpgradeConfirmation.targetSpecs && (
-                    <span className="text-amber-300/80 font-bold tabular-nums">
+                    <span className={`font-bold tabular-nums ${isDark ? 'text-amber-300/80' : 'text-amber-700'}`}>
                       {pendingUpgradeConfirmation.targetSpecs}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-black text-amber-300 leading-snug">
+                  <span className={`text-[13px] font-black leading-snug ${isDark ? 'text-amber-300' : 'text-amber-900'}`}>
                     {pendingUpgradeConfirmation.targetName}
                   </span>
-                  <span className="text-[13px] font-black text-amber-400 tabular-nums shrink-0">
+                  <span className={`text-[13px] font-black tabular-nums shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                     {pendingUpgradeConfirmation.targetPrice.toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
 
-              <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 space-y-2 text-[11.5px]">
-                <div className="flex items-center justify-between text-neutral-400">
+              <div className="bg-[var(--mos-surface-raised)] rounded-xl p-3 border border-[var(--mos-surface-border)] space-y-2 text-[11.5px]">
+                <div className="flex items-center justify-between text-[var(--mos-text-muted)]">
                   <span>Phạm vi áp dụng:</span>
-                  <span className="font-bold text-white text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 border border-neutral-700">
+                  <span className="font-bold text-[var(--mos-text)] text-[11px] px-2 py-0.5 rounded-full bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)]">
                     {pendingUpgradeConfirmation.upgradeScope === 'ALL'
                       ? `Toàn bộ gói (${pendingUpgradeConfirmation.comboNormalRemaining} Mới · ${pendingUpgradeConfirmation.comboRetainRemaining} Dặm)`
                       : pendingUpgradeConfirmation.serviceType === 'Normal'
@@ -403,21 +403,21 @@ export function ConsultationModalsCluster({
                 </div>
 
                 {pendingUpgradeConfirmation.upgradeScope === 'SINGLE' ? (
-                  <div className="flex items-center justify-between text-neutral-300 pt-1 border-t border-neutral-800/80">
+                  <div className="flex items-center justify-between text-[var(--mos-text-muted)] pt-1 border-t border-[var(--mos-surface-border)]">
                     <span>Cách tính chênh lệch:</span>
-                    <span className="font-mono text-[11px] text-neutral-300 tabular-nums">
+                    <span className="font-mono text-[11px] text-[var(--mos-text-muted)] tabular-nums">
                       {pendingUpgradeConfirmation.targetPrice.toLocaleString('vi-VN')} -{' '}
                       {pendingUpgradeConfirmation.comboBasePrice.toLocaleString('vi-VN')}
                     </span>
                   </div>
                 ) : (
-                  <div className="space-y-1 pt-1 border-t border-neutral-800/80 text-[11px]">
-                    <div className="flex items-center justify-between text-neutral-400">
+                  <div className="space-y-1 pt-1 border-t border-[var(--mos-surface-border)] text-[11px]">
+                    <div className="flex items-center justify-between text-[var(--mos-text-muted)]">
                       <span>
                         Nối Mới ({pendingUpgradeConfirmation.comboNormalRemaining} ca × +
                         {pendingUpgradeConfirmation.normalDiff.toLocaleString('vi-VN')} đ):
                       </span>
-                      <span className="font-bold text-neutral-200 tabular-nums">
+                      <span className="font-bold text-[var(--mos-text)] tabular-nums">
                         +
                         {(
                           pendingUpgradeConfirmation.normalDiff * pendingUpgradeConfirmation.comboNormalRemaining
@@ -426,12 +426,12 @@ export function ConsultationModalsCluster({
                       </span>
                     </div>
                     {pendingUpgradeConfirmation.comboRetainRemaining > 0 && (
-                      <div className="flex items-center justify-between text-neutral-400">
+                      <div className="flex items-center justify-between text-[var(--mos-text-muted)]">
                         <span>
                           Dặm ({pendingUpgradeConfirmation.comboRetainRemaining} ca × +
                           {pendingUpgradeConfirmation.retainDiff.toLocaleString('vi-VN')} đ):
                         </span>
-                        <span className="font-bold text-neutral-200 tabular-nums">
+                        <span className="font-bold text-[var(--mos-text)] tabular-nums">
                           +
                           {(
                             pendingUpgradeConfirmation.retainDiff * pendingUpgradeConfirmation.comboRetainRemaining
@@ -443,21 +443,21 @@ export function ConsultationModalsCluster({
                   </div>
                 )}
 
-                <div className="pt-2 border-t border-neutral-800 flex items-center justify-between">
+                <div className="pt-2 border-t border-[var(--mos-surface-border)] flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="font-extrabold text-white text-[12.5px]">Phụ thu thanh toán:</span>
-                    <span className="text-[10px] text-neutral-400">
+                    <span className="font-extrabold text-[var(--mos-text)] text-[12.5px]">Phụ thu thanh toán:</span>
+                    <span className="text-[10px] text-[var(--mos-text-muted)]">
                       (Trừ 1 suất {pendingUpgradeConfirmation.serviceType === 'Normal' ? 'Mới' : 'Dặm'} trong gói)
                     </span>
                   </div>
-                  <span className="text-[17px] font-black text-emerald-400 tabular-nums tracking-tight">
+                  <span className={`text-[17px] font-black tabular-nums tracking-tight ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                     +{pendingUpgradeConfirmation.totalAmount.toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-emerald-950/60 rounded-xl p-2.5 border border-emerald-500/30 text-[11px] text-emerald-200/90 leading-snug">
+            <div className={`rounded-xl p-2.5 border text-[11px] leading-snug ${isDark ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-200/90' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
               ℹ️ Khoản phụ thu này sẽ được tự động cộng vào hóa đơn tại quầy Thu Ngân khi khách làm xong và Checkout.
             </div>
 
@@ -465,7 +465,7 @@ export function ConsultationModalsCluster({
               <button
                 type="button"
                 onClick={() => setPendingUpgradeConfirmation(null)}
-                className="py-2.5 px-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-[12px] cursor-pointer transition-all"
+                className="py-2.5 px-3 rounded-xl bg-[var(--mos-surface-muted)] hover:opacity-80 text-[var(--mos-text)] border border-[var(--mos-surface-border)] font-bold text-[12px] cursor-pointer transition-all"
               >
                 Hủy bỏ
               </button>

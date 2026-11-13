@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Star } from 'lucide-react';
+import { useTheme } from '../../../../../../context/ThemeContext';
 import { ALL_LASH_DESIGNS, type LashMaterialSpec } from '../../LashMaterialConstraintMatrix';
 import { LASH_CURL_LIST } from '../../LashCurlData';
 import { LashCurlIllustration } from '../../LashCurlIllustration';
@@ -19,16 +20,19 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
   handleToggleDesign,
   handleToggleCurl,
 }) => {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
+
   return (
     <>
       {/* CONFIG SECTION 1: THIẾT KẾ CHO PHÉP (DESIGNS) */}
-      <div className="bg-white rounded-2xl p-3 shadow-xs border border-gray-200 space-y-2.5">
+      <div className="bg-[var(--mos-surface)] rounded-2xl p-3 shadow-xs border border-[var(--mos-surface-border)] space-y-2.5">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[12px] font-black text-gray-900 uppercase">
+            <div className="text-[12px] font-black text-[var(--mos-text)] uppercase">
               1. {activeMaterial.shortLabel} → Có thể ra Thiết Kế gì?
             </div>
-            <div className="text-[10px] text-gray-500 font-medium">
+            <div className="text-[10px] text-[var(--mos-text-muted)] font-medium">
               Bấm để Bật / Khóa thiết kế. Bấm ngôi sao ★ để đặt làm mặc định.
             </div>
           </div>
@@ -45,7 +49,7 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                   `Chỉ mở Natural cho ${activeMaterial.shortLabel}`
                 )
               }
-              className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-[9px] font-extrabold text-gray-700"
+              className="px-2 py-1 rounded-lg bg-[var(--mos-surface-muted)] hover:opacity-80 text-[9px] font-extrabold text-[var(--mos-text)] border border-[var(--mos-surface-border)] cursor-pointer"
             >
               Chỉ Natural
             </button>
@@ -60,7 +64,7 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                   `Mở đủ 4 dáng cho ${activeMaterial.shortLabel}`
                 )
               }
-              className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-[9px] font-extrabold text-gray-700"
+              className="px-2 py-1 rounded-lg bg-[var(--mos-surface-muted)] hover:opacity-80 text-[9px] font-extrabold text-[var(--mos-text)] border border-[var(--mos-surface-border)] cursor-pointer"
             >
               Mở cả 4
             </button>
@@ -77,22 +81,22 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                 onClick={() => handleToggleDesign(d.id)}
                 className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-1.5 ${
                   isAllowed
-                    ? 'bg-emerald-50/70 border-emerald-500 text-gray-900 shadow-2xs'
-                    : 'bg-gray-50 border-gray-200 text-gray-400 opacity-75'
+                    ? (isDark ? 'bg-emerald-500/15 border-emerald-500/60 text-[var(--mos-text)] shadow-2xs' : 'bg-emerald-50/70 border-emerald-500 text-gray-900 shadow-2xs')
+                    : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text-muted)] opacity-75'
                 }`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span
                       className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-black ${
-                        isAllowed ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500'
+                        isAllowed ? 'bg-emerald-600 text-white' : 'bg-[var(--mos-surface-raised)] text-[var(--mos-text-muted)] border border-[var(--mos-surface-border)]'
                       }`}
                     >
                       {isAllowed ? '✓' : '✕'}
                     </span>
                     <span className="text-[12px] font-extrabold truncate">{d.shortName}</span>
                   </div>
-                  <div className="text-[10px] text-gray-500 mt-1 line-clamp-1">
+                  <div className="text-[10px] text-[var(--mos-text-muted)] mt-1 line-clamp-1">
                     {isAllowed ? d.desc : 'Đang khóa cho chất liệu này'}
                   </div>
                 </div>
@@ -108,10 +112,10 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                       );
                     }}
                     title="Đặt làm thiết kế mặc định"
-                    className={`p-1 rounded-lg border shrink-0 ${
+                    className={`p-1 rounded-lg border shrink-0 cursor-pointer ${
                       isDefault
                         ? 'bg-[#FFB400] text-black border-amber-500'
-                        : 'bg-white text-gray-400 border-gray-200 hover:text-gray-700'
+                        : 'bg-[var(--mos-surface)] text-[var(--mos-text-muted)] border-[var(--mos-surface-border)] hover:text-[var(--mos-text)]'
                     }`}
                   >
                     <Star className="w-3 h-3 fill-current" />
@@ -124,13 +128,13 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
       </div>
 
       {/* CONFIG SECTION 2: ĐỘ CONG CHO PHÉP (CURLS) */}
-      <div className="bg-white rounded-2xl p-3 shadow-xs border border-gray-200 space-y-2.5">
+      <div className="bg-[var(--mos-surface)] rounded-2xl p-3 shadow-xs border border-[var(--mos-surface-border)] space-y-2.5">
         <div className="flex items-center justify-between flex-wrap gap-1.5">
           <div>
-            <div className="text-[12px] font-black text-gray-900 uppercase">
+            <div className="text-[12px] font-black text-[var(--mos-text)] uppercase">
               2. {activeMaterial.shortLabel} → Có Độ Cong thế nào?
             </div>
-            <div className="text-[10px] text-gray-500 font-medium">
+            <div className="text-[10px] text-[var(--mos-text-muted)] font-medium">
               Chọn trong 7 độ cong chuẩn (`J, B, C, D` & `LJ, LB, LC`).
             </div>
           </div>
@@ -157,7 +161,7 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                     `Đã đặt độ cong [${preset.curls.join(', ')}] cho ${activeMaterial.shortLabel}`
                   )
                 }
-                className="px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[9px] font-extrabold"
+                className={`px-2 py-0.5 rounded-md border text-[9px] font-extrabold cursor-pointer ${isDark ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30' : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'}`}
               >
                 {preset.label}
               </button>
@@ -175,12 +179,12 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                 onClick={() => handleToggleCurl(curlItem.id)}
                 className={`p-1.5 rounded-xl border cursor-pointer transition-all flex flex-col items-center relative ${
                   isAllowed
-                    ? 'bg-emerald-50/60 border-emerald-500 shadow-2xs'
-                    : 'bg-gray-50 border-gray-200 opacity-45 grayscale'
+                    ? (isDark ? 'bg-emerald-500/15 border-emerald-500/60 shadow-2xs' : 'bg-emerald-50/60 border-emerald-500 shadow-2xs')
+                    : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] opacity-50 grayscale'
                 }`}
               >
                 <div className="w-full flex items-center justify-between px-0.5 mb-0.5">
-                  <span className={`text-[11px] font-black ${isAllowed ? 'text-emerald-900' : 'text-gray-400'}`}>
+                  <span className={`text-[11px] font-black ${isAllowed ? (isDark ? 'text-emerald-300' : 'text-emerald-900') : 'text-[var(--mos-text-muted)]'}`}>
                     {curlItem.code}
                   </span>
                   {isAllowed ? (
@@ -193,23 +197,23 @@ export const ConfiguratorDesignAndCurlSections: React.FC<ConfiguratorDesignAndCu
                           `Đặt độ cong ${curlItem.code} làm mặc định`
                         );
                       }}
-                      className={`p-0.5 rounded ${
-                        isDefault ? 'bg-[#FFB400] text-black' : 'text-gray-300 hover:text-gray-600'
+                      className={`p-0.5 rounded cursor-pointer ${
+                        isDefault ? 'bg-[#FFB400] text-black' : 'text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]'
                       }`}
                       title="Đặt làm độ cong mặc định"
                     >
                       <Star className="w-2.5 h-2.5 fill-current" />
                     </button>
                   ) : (
-                    <span className="text-[8px] font-bold text-gray-400">Khóa</span>
+                    <span className="text-[8px] font-bold text-[var(--mos-text-muted)]">Khóa</span>
                   )}
                 </div>
 
                 <div className="w-full">
-                  <LashCurlIllustration curl={curlItem} variant="card" isActive={isAllowed} showLabels={false} />
+                  <LashCurlIllustration curl={curlItem} variant="card" isActive={isAllowed} isDark={isDark} showLabels={false} />
                 </div>
 
-                <div className="text-[8.5px] font-bold text-gray-600 mt-0.5 truncate w-full text-center">
+                <div className="text-[8.5px] font-bold text-[var(--mos-text-muted)] mt-0.5 truncate w-full text-center">
                   {curlItem.angleLabel}
                 </div>
               </div>

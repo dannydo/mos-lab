@@ -39,20 +39,36 @@ export function IncomingBookingsModals({
     <>
       {/* Modal Cảnh Báo Khóa Check-in khi đang có ca làm dở dang */}
       {lockedCustomerModal?.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-[340px] bg-[#1C1C1E] border border-neutral-700 rounded-3xl p-5 shadow-2xl text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-amber-400/20 border-2 border-amber-400/70 flex items-center justify-center mx-auto text-amber-400 shadow-inner">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="w-full max-w-[340px] border rounded-3xl p-5 shadow-2xl text-center space-y-4"
+            style={{
+              backgroundColor: 'var(--mos-surface)',
+              borderColor: 'var(--mos-surface-border)',
+              color: 'var(--mos-text)',
+            }}
+          >
+            <div
+              className="w-14 h-14 rounded-full border-2 flex items-center justify-center mx-auto shadow-inner"
+              style={{
+                backgroundColor: 'var(--mos-focus-ring)',
+                borderColor: 'var(--mos-accent)',
+                color: 'var(--mos-accent)',
+              }}
+            >
               <Lock className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="text-white font-extrabold text-[16px] tracking-tight">Đang Trong Ca Phục Vụ!</h3>
-              <p className="text-neutral-300 text-[12.5px] leading-relaxed font-medium">
+              <h3 className="font-extrabold text-[16px] tracking-tight" style={{ color: 'var(--mos-text)' }}>
+                Đang Trong Ca Phục Vụ!
+              </h3>
+              <p className="text-[12.5px] leading-relaxed font-medium" style={{ color: 'var(--mos-text-muted)' }}>
                 Chuyên Viên đang phục vụ{' '}
-                <strong className="text-amber-400">{activeServicingBooking?.customerName}</strong>.
+                <strong style={{ color: 'var(--mos-accent)' }}>{activeServicingBooking?.customerName}</strong>.
               </p>
-              <p className="text-neutral-400 text-[11.5px] leading-relaxed">
+              <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--mos-text-muted)' }}>
                 Theo quy trình của Wings, bạn không thể check-in cho{' '}
-                <strong className="text-white">{lockedCustomerModal.attemptedCustomerName}</strong> cho đến khi hoàn
+                <strong style={{ color: 'var(--mos-text)' }}>{lockedCustomerModal.attemptedCustomerName}</strong> cho đến khi hoàn
                 thành checkout cho ca làm hiện tại.
               </p>
             </div>
@@ -68,14 +84,20 @@ export function IncomingBookingsModals({
                     onSelectBooking(activeServicingBooking.id);
                   }
                 }}
-                className="w-full py-3 rounded-2xl bg-[#FFB400] hover:bg-amber-400 text-black font-black text-[13px] shadow-md active:scale-98 transition-all cursor-pointer"
+                className="w-full py-3 rounded-2xl font-black text-[13px] shadow-md active:scale-98 transition-all cursor-pointer"
+                style={{ backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }}
               >
                 Quay lại ca làm {activeServicingBooking?.customerName}
               </button>
               <button
                 type="button"
                 onClick={() => setLockedCustomerModal(null)}
-                className="w-full py-2.5 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-neutral-300 font-bold text-[12px] active:scale-98 transition-all cursor-pointer"
+                className="w-full py-2.5 rounded-2xl font-bold text-[12px] active:scale-98 transition-all cursor-pointer border"
+                style={{
+                  backgroundColor: 'var(--mos-surface-muted)',
+                  borderColor: 'var(--mos-surface-border)',
+                  color: 'var(--mos-text)',
+                }}
               >
                 Đóng
               </button>
@@ -86,20 +108,29 @@ export function IncomingBookingsModals({
 
       {/* Modal Xác Nhận Admin Trả Khách Về Chờ Đón */}
       {revertConfirmModal?.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-[340px] bg-[#1C1C1E] border border-neutral-700 rounded-3xl p-5 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center mx-auto text-rose-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="w-full max-w-[340px] border rounded-3xl p-5 shadow-2xl text-center space-y-4"
+            style={{
+              backgroundColor: 'var(--mos-surface)',
+              borderColor: 'var(--mos-surface-border)',
+              color: 'var(--mos-text)',
+            }}
+          >
+            <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center mx-auto text-rose-500">
               <RotateCcw className="w-6 h-6" />
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-base font-black text-white">Trả khách về Chờ đón?</h3>
-              <p className="text-xs text-neutral-300 leading-relaxed">
+              <h3 className="text-base font-black" style={{ color: 'var(--mos-text)' }}>
+                Trả khách về Chờ đón?
+              </h3>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--mos-text-muted)' }}>
                 Bạn có chắc chắn muốn hủy ca làm dở dang của khách hàng{' '}
-                <strong className="text-amber-400">{revertConfirmModal.customerName}</strong> và đưa về lại danh sách{' '}
-                <strong className="text-white">Chờ đón</strong>?
+                <strong style={{ color: 'var(--mos-accent)' }}>{revertConfirmModal.customerName}</strong> và đưa về lại danh sách{' '}
+                <strong style={{ color: 'var(--mos-text)' }}>Chờ đón</strong>?
               </p>
-              <p className="text-[11px] text-neutral-400 leading-normal pt-1">
+              <p className="text-[11px] leading-normal pt-1" style={{ color: 'var(--mos-text-muted)' }}>
                 Thời gian làm dở dang sẽ được giải phóng để Chuyên Viên có thể nhận ca tiếp theo.
               </p>
             </div>
@@ -108,7 +139,12 @@ export function IncomingBookingsModals({
               <button
                 type="button"
                 onClick={() => setRevertConfirmModal(null)}
-                className="w-full py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-xs active:scale-95 transition-all cursor-pointer"
+                className="w-full py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all cursor-pointer border"
+                style={{
+                  backgroundColor: 'var(--mos-surface-muted)',
+                  borderColor: 'var(--mos-surface-border)',
+                  color: 'var(--mos-text)',
+                }}
               >
                 Hủy bỏ
               </button>
@@ -132,32 +168,43 @@ export function IncomingBookingsModals({
       {/* Modal / Bottom Sheet Chi Tiết Khách Hàng & Đầy Đủ Ghi Chú */}
       {selectedCustomerDetail && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setSelectedCustomerDetail(null)}
         >
           <div
-            className="w-full max-w-[430px] bg-[#1C1C1E] border border-neutral-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 duration-200"
+            className="w-full max-w-[430px] border rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 duration-200"
+            style={{
+              backgroundColor: 'var(--mos-surface)',
+              borderColor: 'var(--mos-surface-border)',
+              color: 'var(--mos-text)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* 1. Header: Tiêu đề góc trái · Nút đóng [✕] góc phải (Chuẩn UI Invariant) */}
-            <div className="flex items-start justify-between gap-3 p-4 pb-3 border-b border-neutral-800 bg-[#252528] shrink-0">
+            <div
+              className="flex items-start justify-between gap-3 p-4 pb-3 border-b shrink-0"
+              style={{
+                backgroundColor: 'var(--mos-surface-raised, var(--mos-surface))',
+                borderColor: 'var(--mos-surface-border)',
+              }}
+            >
               <div className="min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block">
+                <span className="text-[10px] font-black uppercase tracking-wider block" style={{ color: 'var(--mos-accent)' }}>
                   CHI TIẾT LỊCH HẸN & GHI CHÚ
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[16px] font-black text-white truncate">
+                  <span className="text-[16px] font-black truncate" style={{ color: 'var(--mos-text)' }}>
                     {selectedCustomerDetail.customerName}
                   </span>
                   {selectedCustomerDetail.customerPhone && (
-                    <span className="text-[12px] font-bold text-neutral-400 tabular-nums">
+                    <span className="text-[12px] font-bold tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
                       {selectedCustomerDetail.customerPhone.replace(/\*+\s*/g, '').trim()}
                     </span>
                   )}
                 </div>
-                <div className="text-[11px] text-neutral-400 font-medium mt-0.5">
+                <div className="text-[11px] font-medium mt-0.5" style={{ color: 'var(--mos-text-muted)' }}>
                   Giờ hẹn:{' '}
-                  <span className="text-amber-400 font-bold">
+                  <span className="font-bold" style={{ color: 'var(--mos-accent)' }}>
                     {selectedCustomerDetail.time12h || selectedCustomerDetail.timeSlot}
                   </span>
                   {' · '}Lần {selectedCustomerDetail.customerVisits || 1}
@@ -168,7 +215,12 @@ export function IncomingBookingsModals({
                 type="button"
                 onClick={() => setSelectedCustomerDetail(null)}
                 aria-label="Đóng chi tiết ghi chú"
-                className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white active:scale-95 transition-transform shrink-0 cursor-pointer"
+                className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform shrink-0 cursor-pointer border"
+                style={{
+                  backgroundColor: 'var(--mos-surface-muted)',
+                  borderColor: 'var(--mos-surface-border)',
+                  color: 'var(--mos-text-muted)',
+                }}
               >
                 <X className="w-4 h-4 stroke-[2.5]" />
               </button>
@@ -177,15 +229,28 @@ export function IncomingBookingsModals({
             {/* 2. Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5 select-none text-left">
               {/* Section 1: Ghi chú đầy đủ từ Booker & CSKH */}
-              <div className="rounded-2xl bg-[#252528] border border-amber-400/30 p-3.5 space-y-2">
+              <div
+                className="rounded-2xl border p-3.5 space-y-2"
+                style={{
+                  backgroundColor: 'var(--mos-surface-muted)',
+                  borderColor: 'var(--mos-accent)',
+                }}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--mos-accent)' }}>
                     <FileText className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                     <span>GHI CHÚ ĐẦY ĐỦ</span>
                   </span>
-                  <span className="text-[10px] text-neutral-400">Booker & CSKH</span>
+                  <span className="text-[10px]" style={{ color: 'var(--mos-text-muted)' }}>Booker & CSKH</span>
                 </div>
-                <div className="text-[13px] text-white font-medium leading-relaxed whitespace-pre-wrap break-words bg-[#1C1C1E] p-3 rounded-xl border border-neutral-800">
+                <div
+                  className="text-[13px] font-medium leading-relaxed whitespace-pre-wrap break-words p-3 rounded-xl border"
+                  style={{
+                    backgroundColor: 'var(--mos-surface)',
+                    borderColor: 'var(--mos-surface-border)',
+                    color: 'var(--mos-text)',
+                  }}
+                >
                   {selectedCustomerDetail.customerNote || 'Không có ghi chú đặc biệt cho lịch hẹn này.'}
                 </div>
               </div>
@@ -194,39 +259,62 @@ export function IncomingBookingsModals({
               {(() => {
                 const specs = getLashDetailSpecs(selectedCustomerDetail);
                 return (
-                  <div className="rounded-2xl bg-[#252528] border border-neutral-800 p-3.5 space-y-2.5">
+                  <div
+                    className="rounded-2xl border p-3.5 space-y-2.5"
+                    style={{
+                      backgroundColor: 'var(--mos-surface-muted)',
+                      borderColor: 'var(--mos-surface-border)',
+                    }}
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+                      <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--mos-text)' }}>
                         <Eye className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                         <span>THÔNG SỐ NỐI MI DỰ KIẾN</span>
                       </span>
-                      <span className="text-[11.5px] font-black text-amber-400 tabular-nums">{specs.price}</span>
+                      <span className="text-[11.5px] font-black tabular-nums" style={{ color: 'var(--mos-accent)' }}>
+                        {specs.price}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-[11.5px]">
-                      <div className="bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80">
-                        <span className="text-neutral-400 text-[10px] block">Dòng mi</span>
-                        <span className="text-white font-bold">{specs.material}</span>
+                      <div
+                        className="p-2.5 rounded-xl border"
+                        style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                      >
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Dòng mi</span>
+                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>{specs.material}</span>
                       </div>
-                      <div className="bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80">
-                        <span className="text-neutral-400 text-[10px] block">Độ dày & Số lượng</span>
-                        <span className="text-white font-bold">
+                      <div
+                        className="p-2.5 rounded-xl border"
+                        style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                      >
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Độ dày & Số lượng</span>
+                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>
                           {specs.volume} · {specs.count}
                         </span>
                       </div>
-                      <div className="bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80">
-                        <span className="text-neutral-400 text-[10px] block">Độ cong</span>
-                        <span className="text-amber-400 font-bold">{specs.curl}</span>
+                      <div
+                        className="p-2.5 rounded-xl border"
+                        style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                      >
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Độ cong</span>
+                        <span className="font-bold" style={{ color: 'var(--mos-accent)' }}>{specs.curl}</span>
                       </div>
-                      <div className="bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80">
-                        <span className="text-neutral-400 text-[10px] block">Độ dày sợi · Chiều dài</span>
-                        <span className="text-amber-400 font-bold">
+                      <div
+                        className="p-2.5 rounded-xl border"
+                        style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                      >
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Độ dày sợi · Chiều dài</span>
+                        <span className="font-bold" style={{ color: 'var(--mos-accent)' }}>
                           {specs.thickness} · {specs.length}
                         </span>
                       </div>
-                      <div className="col-span-2 bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80 flex items-center justify-between">
-                        <span className="text-neutral-400 text-[10px]">Kiểu dáng thiết kế</span>
-                        <span className="text-white font-bold">{specs.design}</span>
+                      <div
+                        className="col-span-2 p-2.5 rounded-xl border flex items-center justify-between"
+                        style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                      >
+                        <span className="text-[10px]" style={{ color: 'var(--mos-text-muted)' }}>Kiểu dáng thiết kế</span>
+                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>{specs.design}</span>
                       </div>
                     </div>
                   </div>
@@ -234,15 +322,24 @@ export function IncomingBookingsModals({
               })()}
 
               {/* Section 3: Nhân sự phụ trách */}
-              <div className="rounded-2xl bg-[#252528] border border-neutral-800 p-3.5 space-y-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+              <div
+                className="rounded-2xl border p-3.5 space-y-2"
+                style={{ backgroundColor: 'var(--mos-surface-muted)', borderColor: 'var(--mos-surface-border)' }}
+              >
+                <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--mos-text)' }}>
                   <Users className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                   <span>NHÂN SỰ PHỤ TRÁCH</span>
                 </span>
                 <div className="grid grid-cols-2 gap-2 text-[11.5px]">
                   {/* Booker */}
-                  <div className="bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full overflow-hidden border border-neutral-700 bg-neutral-900 shrink-0">
+                  <div
+                    className="p-2.5 rounded-xl border flex items-center gap-2"
+                    style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full overflow-hidden border shrink-0"
+                      style={{ borderColor: 'var(--mos-surface-border-strong)', backgroundColor: 'var(--mos-surface-muted)' }}
+                    >
                       {selectedCustomerDetail.bookerAvatar ? (
                         <img
                           src={selectedCustomerDetail.bookerAvatar}
@@ -260,21 +357,29 @@ export function IncomingBookingsModals({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[9.5px] text-neutral-400 block">Người đặt lịch</span>
-                      <span className="text-white font-bold text-[11px] truncate block">
+                      <span className="text-[9.5px] block" style={{ color: 'var(--mos-text-muted)' }}>Người đặt lịch</span>
+                      <span className="font-bold text-[11px] truncate block" style={{ color: 'var(--mos-text)' }}>
                         {selectedCustomerDetail.bookerName || 'Khách đặt Online'}
                       </span>
                     </div>
                   </div>
 
                   {/* Chuyên Viên */}
-                  <div className="bg-[#1C1C1E] p-2.5 rounded-xl border border-neutral-800/80 flex items-center gap-2">
+                  <div
+                    className="p-2.5 rounded-xl border flex items-center gap-2"
+                    style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
+                  >
                     <div
-                      className={`w-8 h-8 rounded-full overflow-hidden ${
+                      className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${
                         selectedCustomerDetail.isBookedInAdvance
                           ? 'border border-emerald-500'
-                          : 'border border-neutral-700'
-                      } bg-neutral-900 shrink-0`}
+                          : 'border'
+                      }`}
+                      style={
+                        selectedCustomerDetail.isBookedInAdvance
+                          ? { backgroundColor: 'var(--mos-surface-muted)' }
+                          : { borderColor: 'var(--mos-surface-border-strong)', backgroundColor: 'var(--mos-surface-muted)' }
+                      }
                     >
                       {selectedCustomerDetail.assignedStaffAvatar ? (
                         <img
@@ -283,16 +388,16 @@ export function IncomingBookingsModals({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-neutral-500 font-bold">
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold" style={{ color: 'var(--mos-text-muted)' }}>
                           CV
                         </div>
                       )}
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[9.5px] text-neutral-400 block">
+                      <span className="text-[9.5px] block" style={{ color: 'var(--mos-text-muted)' }}>
                         {selectedCustomerDetail.isBookedInAdvance ? 'Book riêng trước' : 'Chuyên Viên'}
                       </span>
-                      <span className="text-white font-bold text-[11px] truncate block">
+                      <span className="font-bold text-[11px] truncate block" style={{ color: 'var(--mos-text)' }}>
                         {selectedCustomerDetail.assignedStaffName || 'Chưa phân công'}
                       </span>
                     </div>
@@ -304,15 +409,20 @@ export function IncomingBookingsModals({
               {(selectedCustomerDetail.comboLiveStatus?.isComboLive ||
                 selectedCustomerDetail.comboLiveStatus?.isExpired) && (
                 <div
-                  className={`rounded-2xl bg-[#252528] p-3.5 space-y-2 border ${
-                    selectedCustomerDetail.comboLiveStatus?.isExpired ? 'border-rose-500/60' : 'border-amber-400/30'
-                  }`}
+                  className="rounded-2xl p-3.5 space-y-2 border"
+                  style={{
+                    backgroundColor: 'var(--mos-surface-muted)',
+                    borderColor: selectedCustomerDetail.comboLiveStatus?.isExpired ? '#f43f5e' : 'var(--mos-accent)',
+                  }}
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span
                       className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                        selectedCustomerDetail.comboLiveStatus?.isExpired ? 'text-rose-400' : 'text-amber-400'
+                        selectedCustomerDetail.comboLiveStatus?.isExpired ? 'text-rose-500' : ''
                       }`}
+                      style={
+                        selectedCustomerDetail.comboLiveStatus?.isExpired ? undefined : { color: 'var(--mos-accent)' }
+                      }
                     >
                       <Sparkles className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                       <span>
@@ -321,22 +431,35 @@ export function IncomingBookingsModals({
                           : 'GÓI COMBO LIVE'}
                       </span>
                     </span>
-                    <span className="text-[11px] font-black text-amber-400 tabular-nums">
+                    <span className="text-[11px] font-black tabular-nums" style={{ color: 'var(--mos-accent)' }}>
                       Còn {selectedCustomerDetail.comboLiveStatus.remainingSessions} buổi
                     </span>
                   </div>
-                  <div className="text-[12px] text-neutral-200">{selectedCustomerDetail.comboLiveStatus.comboName}</div>
+                  <div className="text-[12px]" style={{ color: 'var(--mos-text)' }}>
+                    {selectedCustomerDetail.comboLiveStatus.comboName}
+                  </div>
                   <ComboExpiryStatusBadge status={selectedCustomerDetail.comboLiveStatus} showPace />
                 </div>
               )}
             </div>
 
             {/* 3. Footer: Nút check-in / vào phục vụ */}
-            <div className="p-4 border-t border-neutral-800 bg-[#252528] flex items-center gap-2 shrink-0">
+            <div
+              className="p-4 border-t flex items-center gap-2 shrink-0"
+              style={{
+                backgroundColor: 'var(--mos-surface-raised, var(--mos-surface))',
+                borderColor: 'var(--mos-surface-border)',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setSelectedCustomerDetail(null)}
-                className="py-3 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-[12px] active:scale-95 transition-all cursor-pointer"
+                className="py-3 px-4 rounded-xl border font-bold text-[12px] active:scale-95 transition-all cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--mos-surface-muted)',
+                  borderColor: 'var(--mos-surface-border)',
+                  color: 'var(--mos-text)',
+                }}
               >
                 Đóng
               </button>
@@ -351,7 +474,8 @@ export function IncomingBookingsModals({
                     onSelectBooking(bId);
                   }
                 }}
-                className="flex-1 py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[13px] shadow-md active:scale-95 transition-all cursor-pointer text-center"
+                className="flex-1 py-3 px-4 rounded-xl font-black text-[13px] shadow-md active:scale-95 transition-all cursor-pointer text-center"
+                style={{ backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }}
               >
                 {selectedCustomerDetail.status === 'SERVICING' ? 'Quay lại ca đang làm' : 'Bắt đầu phục vụ khách này'}
               </button>

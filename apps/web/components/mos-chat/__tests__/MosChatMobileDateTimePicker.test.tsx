@@ -79,7 +79,8 @@ describe('MosChatMobileDateTimePicker', () => {
     );
 
     const button = screen.getByText(preset.label);
-    expect(button.className).toContain('border-amber-400');
+    expect(button.className).toContain('border-[var(--mos-accent)]');
+    expect(button.className).toContain('bg-[var(--mos-accent)]');
   });
 
   it('shows clear button when value is present and calls onChange(null) when clicked', () => {

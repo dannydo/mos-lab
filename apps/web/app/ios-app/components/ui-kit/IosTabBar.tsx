@@ -40,23 +40,36 @@ export function IosTabBar({
   const renderBadge = (count?: number) => {
     if (!count || count <= 0) return null;
     return (
-      <span className="absolute -top-1 -right-2 min-w-4.5 h-4 px-1 rounded-full bg-[#FF3B30] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-sm leading-none tabular-nums">
+      <span
+        className="absolute -top-1 -right-2 min-w-4.5 h-4 px-1 rounded-full bg-[#FF3B30] text-white text-[10px] font-bold flex items-center justify-center border-2 shadow-sm leading-none tabular-nums"
+        style={{ borderColor: 'var(--mos-surface)' }}
+      >
         {count > 99 ? '99+' : count}
       </span>
     );
   };
 
+  const tabStyle = (tabKey: string): React.CSSProperties => ({
+    color: activeTab === tabKey ? 'var(--mos-accent)' : 'var(--mos-text-muted)',
+  });
+
   return (
-    <div className="w-full bg-[#1C1C1E]/95 backdrop-blur-xl border-t border-neutral-800 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none z-40 relative shadow-2xl flex-shrink-0 text-neutral-400">
+    <div
+      className="w-full backdrop-blur-xl border-t pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] select-none z-40 relative shadow-2xl flex-shrink-0 transition-colors"
+      style={{
+        backgroundColor: 'var(--mos-surface)',
+        borderColor: 'var(--mos-surface-border)',
+        color: 'var(--mos-text-muted)',
+      }}
+    >
       <div className="h-12 px-2 flex items-center justify-around relative">
         {/* VAI TRÒ CVL & CVLL: TỰ TƯ VẤN & CHECKOUT */}
         {(role === 'CVL' || role === 'CVLL') && (
           <>
             <button
               onClick={() => onTabChange('booking')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer ${
-                activeTab === 'booking' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer"
+              style={tabStyle('booking')}
             >
               <div className="relative">
                 <CalendarCheck className="w-5 h-5 mb-0.5 stroke-[2.2]" />
@@ -67,9 +80,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('task')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer ${
-                activeTab === 'task' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer"
+              style={tabStyle('task')}
             >
               <div className="relative">
                 <FileText className="w-5 h-5 mb-0.5 stroke-[2.2]" />
@@ -81,7 +93,12 @@ export function IosTabBar({
             <div className="w-14 flex items-center justify-center -mt-6">
               <button
                 onClick={onCenterPlusClick}
-                className="w-13 h-13 rounded-full bg-black text-[#FFB400] shadow-[0_0_15px_rgba(255,180,0,0.35)] flex flex-col items-center justify-center active:scale-95 transition-transform border-[2.5px] border-amber-400/80 cursor-pointer"
+                className="w-13 h-13 rounded-full shadow-[0_0_15px_rgba(255,180,0,0.35)] flex flex-col items-center justify-center active:scale-95 transition-transform border-[2.5px] cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--mos-surface-raised, var(--mos-surface))',
+                  color: 'var(--mos-accent)',
+                  borderColor: 'var(--mos-accent)',
+                }}
                 title="Tư vấn & Checkout nhanh"
               >
                 <Sparkles className="w-5 h-5 stroke-[2.5]" />
@@ -93,9 +110,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('paystub')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-                activeTab === 'paystub' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('paystub')}
             >
               <Wallet className="w-5 h-5 mb-0.5 stroke-[2]" />
               <span className="text-[10px] font-medium leading-none">Thu Nhập</span>
@@ -103,9 +119,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('more')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-                activeTab === 'more' ? 'text-amber-400' : 'text-neutral-400 hover:text-white'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('more')}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
               <span className="text-[10px] font-medium leading-none">Vai Trò</span>
@@ -118,9 +133,8 @@ export function IosTabBar({
           <>
             <button
               onClick={() => onTabChange('booking')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
-                activeTab === 'booking' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer"
+              style={tabStyle('booking')}
             >
               <div className="relative">
                 <CalendarCheck className="w-5 h-5 mb-0.5 stroke-[2.2]" />
@@ -131,9 +145,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('customer')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'customer' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('customer')}
             >
               <Users className="w-5 h-5 mb-0.5 stroke-[2]" />
               <span className="text-[10px] font-medium leading-none">Customer</span>
@@ -142,7 +155,12 @@ export function IosTabBar({
             <div className="w-14 flex items-center justify-center -mt-6">
               <button
                 onClick={onCenterPlusClick}
-                className="w-13 h-13 rounded-full bg-black text-[#FFB400] shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex items-center justify-center active:scale-95 transition-transform border-[3px] border-white"
+                className="w-13 h-13 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.25)] flex items-center justify-center active:scale-95 transition-transform border-[3px] cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--mos-accent)',
+                  color: 'var(--mos-accent-contrast)',
+                  borderColor: 'var(--mos-surface)',
+                }}
                 title="Tạo lịch hẹn mới"
               >
                 <Plus className="w-8 h-8 stroke-[3.5]" />
@@ -151,9 +169,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('target')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'target' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('target')}
             >
               <img
                 src="/ios-assets/credit-icon.png"
@@ -165,9 +182,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('more')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('more')}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
               <span className="text-[10px] font-medium leading-none">More</span>
@@ -180,9 +196,8 @@ export function IosTabBar({
           <>
             <button
               onClick={() => onTabChange('home')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'home' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('home')}
             >
               <Home className="w-5 h-5 mb-0.5 stroke-[2]" />
               <span className="text-[10px] font-medium leading-none">Home</span>
@@ -190,9 +205,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('booking')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'booking' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('booking')}
             >
               <CalendarCheck className="w-5 h-5 mb-0.5 stroke-[2]" />
               <span className="text-[10px] font-medium leading-none">Booking</span>
@@ -200,9 +214,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('task')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
-                activeTab === 'task' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer"
+              style={tabStyle('task')}
             >
               <div className="relative">
                 <FileText className="w-5 h-5 mb-0.5 stroke-[2.2]" />
@@ -213,9 +226,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('shift')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'shift' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('shift')}
             >
               <Clock className="w-5 h-5 mb-0.5 stroke-[2]" />
               <span className="text-[10px] font-medium leading-none">Shift</span>
@@ -223,9 +235,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('more')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('more')}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
               <span className="text-[10px] font-medium leading-none">More</span>
@@ -238,9 +249,8 @@ export function IosTabBar({
           <>
             <button
               onClick={() => onTabChange('dashboard')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'dashboard' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('dashboard')}
             >
               <LayoutDashboard className="w-5 h-5 mb-0.5 stroke-[2.2]" />
               <span className="text-[10px] font-semibold leading-none">Sàn Salon</span>
@@ -248,9 +258,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('staff')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
-                activeTab === 'staff' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer"
+              style={tabStyle('staff')}
             >
               <div className="relative">
                 <UserCheck className="w-5 h-5 mb-0.5 stroke-[2]" />
@@ -261,9 +270,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('cash')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'cash' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('cash')}
             >
               <Banknote className="w-5 h-5 mb-0.5 stroke-[2]" />
               <span className="text-[10px] font-medium leading-none">Chốt Sổ</span>
@@ -271,9 +279,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('more')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('more')}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
               <span className="text-[10px] font-medium leading-none">Cài Đặt</span>
@@ -286,9 +293,8 @@ export function IosTabBar({
           <>
             <button
               onClick={() => onTabChange('stock')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'stock' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('stock')}
             >
               <Package className="w-5 h-5 mb-0.5 stroke-[2.2]" />
               <span className="text-[10px] font-semibold leading-none">Tồn Kho</span>
@@ -296,9 +302,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('dispense')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors relative ${
-                activeTab === 'dispense' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors relative cursor-pointer"
+              style={tabStyle('dispense')}
             >
               <div className="relative">
                 <Layers className="w-5 h-5 mb-0.5 stroke-[2]" />
@@ -309,9 +314,8 @@ export function IosTabBar({
 
             <button
               onClick={() => onTabChange('more')}
-              className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'more' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-colors cursor-pointer"
+              style={tabStyle('more')}
             >
               <MoreHorizontal className="w-5 h-5 mb-0.5 stroke-[2.5]" />
               <span className="text-[10px] font-medium leading-none">Cài Đặt</span>

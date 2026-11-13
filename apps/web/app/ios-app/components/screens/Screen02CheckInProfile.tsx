@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
+import { useTheme } from '../../../../context/ThemeContext';
 import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
@@ -88,6 +89,8 @@ export function Screen02CheckInProfile({
   onQuickCheckIn,
   onUpdateAvatar,
 }: Screen02CheckInProfileProps) {
+  const { themeMode = 'dark' } = useTheme();
+  const isDark = themeMode === 'dark';
   const customerName = (booking?.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const customerPhone = (booking?.customerPhone || '0901.xxx.xxx').replace(/\*+\s*/g, '').trim();
   const serviceName = resolveDisplayServiceName(booking);
@@ -408,7 +411,7 @@ export function Screen02CheckInProfile({
   };
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-black text-white overflow-hidden select-none relative">
+    <div className="flex-1 min-h-0 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-hidden select-none relative">
       <IosNavigationBar
         title="Hồ Sơ Khách"
         onBack={onBack}
@@ -420,7 +423,7 @@ export function Screen02CheckInProfile({
                 ? handleExecuteQuickCheckIn
                 : () => onCheckIn(booking?.id)
             }
-            className="text-[#FFB400] font-bold text-sm py-1 px-1 active:opacity-60 cursor-pointer"
+            className="text-[var(--mos-accent)] font-bold text-sm py-1 px-1 active:opacity-60 cursor-pointer"
           >
             {booking?.status === 'CHECKED_IN' || booking?.status === 'SERVICING' ? 'Tiếp tục' : 'Check In'}
           </button>
@@ -429,7 +432,7 @@ export function Screen02CheckInProfile({
 
       <div className="flex-1 min-h-0 px-3.5 py-3 space-y-3 overflow-y-auto pb-4">
         {/* Card 1: Customer Profile Header */}
-        <div className="bg-[#1C1C1E] rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm border border-neutral-800 text-white">
+        <div className="bg-[var(--mos-surface)] rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm border border-[var(--mos-surface-border)] text-[var(--mos-text)]">
           <CustomerAvatarPicker
             avatarUrl={booking?.customerAvatar}
             customerName={customerName}
@@ -450,21 +453,27 @@ export function Screen02CheckInProfile({
                   <span className={`text-[14px] font-black select-none ${typeMeta.colorClass}`} title={typeMeta.label}>
                     {typeMeta.symbol}
                   </span>
-                  <h2 className="text-[17px] font-bold text-white tracking-tight truncate">{customerName}</h2>
+                  <h2 className="text-[17px] font-bold text-[var(--mos-text)] tracking-tight truncate">{customerName}</h2>
                   {visits >= 5 && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30 font-bold tracking-tight">
+                    <span
+                      className={`text-[11px] px-2 py-0.5 rounded-full font-bold tracking-tight border ${
+                        isDark
+                          ? 'bg-amber-400/20 text-amber-400 border-amber-400/30'
+                          : 'bg-amber-50 text-amber-700 border-amber-300'
+                      }`}
+                    >
                       GOLD VIP
                     </span>
                   )}
                 </div>
               );
             })()}
-            <div className="text-[13px] text-neutral-400 font-normal mt-0.5 tabular-nums">{customerPhone}</div>
-            <div className="text-[12px] text-neutral-300 font-medium mt-0.5">
+            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">{customerPhone}</div>
+            <div className="text-[12px] text-[var(--mos-text-muted)] font-medium mt-0.5">
               <span>
-                Lần ghé: <strong className="font-bold text-white">{visits}</strong>
+                Lần ghé: <strong className="font-bold text-[var(--mos-text)]">{visits}</strong>
                 {preset.daysSinceLastVisit !== null && visits > 1 && (
-                  <span className="text-neutral-400 ml-1">· {preset.daysSinceLastVisit}N</span>
+                  <span className="text-[var(--mos-text-muted)] ml-1">· {preset.daysSinceLastVisit}N</span>
                 )}
               </span>
             </div>
