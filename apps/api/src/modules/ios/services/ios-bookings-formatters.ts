@@ -3,9 +3,12 @@ import {
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
   calculateIosPromotionDiscount,
+  filterBookingsForCvlScope,
+  IosBookingItem,
   IosBookingStatus,
   IosCartProductItem,
   IosPromotionOption,
+  IosSegmentCounts,
   IosSettlementStatus,
   maskPhoneNumber,
   resolveEffectiveServiceTotal,
@@ -291,4 +294,31 @@ export function computeBookingFinancials(params: {
       grandTotal: Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),
     },
   };
+}
+
+export function applyIosScopeAndCounts(
+  allBookings: IosBookingItem[],
+  params: {
+    effectiveRole: string;
+    scope: string;
+    activeStaffId: number;
+    targetDate?: string;
+    todayVn?: string;
+  }
+): { effectiveList: IosBookingItem[]; counts: IosSegmentCounts } {
+  const { effectiveRole, scope, activeStaffId, targetDate, todayVn } = params;
+  const shouldApplyCvlPrivacyScope =
+    effectiveRole === 'CVL' || (effectiveRole !== 'CC' && effectiveRole !== 'STORE' && scope === 'MY_CUSTOMERS');
+  const effectiveList = shouldApplyCvlPrivacyScope
+    ? filterBookingsForCvlScope(allBookings, activeStaffId, { targetDate, todayVn })
+    : allBookings;
+
+  const counts: IosSegmentCounts = {
+    incoming: effectiveList.filter((b) => b.status === 'INCOMING').length,
+    servicing: effectiveList.filter((b) => b.status === 'SERVICING' || b.status === 'CHECKED_IN').length,
+    done: effectiveList.filter((b) => b.status === 'DONE').length,
+    cancel: effectiveList.filter((b) => b.status === 'CANCELLED').length,
+  };
+
+  return { effectiveList, counts };
 }
