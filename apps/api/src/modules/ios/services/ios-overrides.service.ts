@@ -1,5 +1,11 @@
 import mysql from 'mysql2/promise';
-import { hasCompleteNaturalLashAttributes, NaturalLashConsultationAttributes, SafeAny } from '@mos-lab/shared';
+import {
+  hasCompleteNaturalLashAttributes,
+  IosPaymentBreakdown,
+  IosPaymentMethod,
+  NaturalLashConsultationAttributes,
+  SafeAny,
+} from '@mos-lab/shared';
 import { getCrmPool } from './db-pools.js';
 
 export const LEGACY_LIVE_OVERRIDES_KEY = 'IOS_APP_LIVE_BOOKING_OVERRIDES';
@@ -26,7 +32,8 @@ export interface LegacySettlementReceipt {
   bookingId: number;
   settlementStatus: 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
   orderState: string;
-  paymentMethod: 'CASH' | 'POS' | 'VIETQR';
+  paymentMethod: IosPaymentMethod;
+  paymentBreakdown?: IosPaymentBreakdown;
   grandTotal: number;
   bankTransferRef?: string;
   settledAt: string;
@@ -502,6 +509,31 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     return result;
   }
 
+  async function listBookingOverrides(): Promise<Array<{ bookingId: number; override: BookingOverrideRecord }>> {
+    const entries: Array<{ bookingId: number; override: BookingOverrideRecord }> = [];
+    const seenIds = new Set<number>();
+    const atomicMap = await store.getByPrefix(BOOKING_OVERRIDE_KEY_PREFIX);
+    for (const [key, raw] of atomicMap.entries()) {
+      const id = Number(key.slice(BOOKING_OVERRIDE_KEY_PREFIX.length));
+      const parsed = safeJsonParseObject(raw);
+      if (Number.isFinite(id) && id > 0 && parsed) {
+        entries.push({ bookingId: id, override: parsed });
+        seenIds.add(id);
+      }
+    }
+    const legacyRaw = await store.getOne(LEGACY_LIVE_OVERRIDES_KEY);
+    const legacyMap = safeJsonParseObject(legacyRaw);
+    if (legacyMap) {
+      for (const [rawId, val] of Object.entries(legacyMap)) {
+        const id = Number(rawId);
+        if (Number.isFinite(id) && id > 0 && !seenIds.has(id) && val && typeof val === 'object') {
+          entries.push({ bookingId: id, override: val as BookingOverrideRecord });
+        }
+      }
+    }
+    return entries;
+  }
+
   return {
     withBookingLock,
     loadBookingOverride,
@@ -509,6 +541,7 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     deleteBookingOverride,
     resetDemoOverrides,
     loadBookingOverridesBatch,
+    listBookingOverrides,
     saveCustomerAvatar,
     loadCustomerAvatarsBatch,
     saveCustomerNaturalLashProfile,

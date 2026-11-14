@@ -2,7 +2,7 @@ import {
   calculateActorTipBreakdown,
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
-  calculateIosPromotionDiscount,
+  calculateIosItemizedPromotionDiscounts,
   filterBookingsForCvlScope,
   IosBookingItem,
   IosBookingStatus,
@@ -12,6 +12,7 @@ import {
   IosSettlementStatus,
   maskPhoneNumber,
   resolveEffectiveServiceTotal,
+  resolveNormalizedPaymentBreakdown,
   SafeAny,
 } from '@mos-lab/shared';
 
@@ -142,6 +143,9 @@ export function computeBookingFinancials(params: {
   isTrainingCvlOrder?: boolean;
   promotionId?: number | null;
   appliedPromotion?: IosPromotionOption | null;
+  servicePromotion?: IosPromotionOption | null;
+  comboPromotion?: IosPromotionOption | null;
+  underComboPromotion?: IosPromotionOption | null;
 }) {
   const {
     servicePrice,
@@ -164,12 +168,15 @@ export function computeBookingFinancials(params: {
     isTrainingCvlOrder,
     promotionId,
     appliedPromotion,
+    servicePromotion,
+    comboPromotion,
+    underComboPromotion,
   } = params;
 
   const productTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0) * Number(p.quantity || 1), 0);
-  const comboTotal =
-    (selectedCombo ? Number(selectedCombo.price || 0) : 0) +
-    (selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0);
+  const upperComboTotal = selectedCombo ? Number(selectedCombo.price || 0) : 0;
+  const underComboTotal = selectedUnderCombo ? Number(selectedUnderCombo.price || 0) : 0;
+  const comboTotal = upperComboTotal + underComboTotal;
 
   const normalizedSelectedCombo = selectedCombo ? { todaySingleServiceWaived: true, ...selectedCombo } : null;
   const normalizedSelectedUnderCombo = selectedUnderCombo
@@ -191,26 +198,48 @@ export function computeBookingFinancials(params: {
 
   const subtotal = effectiveServiceTotal + comboTotal + productTotal;
   const vatRate = 0.08;
-  const promoBreakdown = calculateIosPromotionDiscount({
-    promotion: appliedPromotion,
+  const hasAnyPromotionObject = Boolean(
+    servicePromotion ||
+    comboPromotion ||
+    underComboPromotion ||
+    cartProducts.some((p) => p.appliedPromotion) ||
+    appliedPromotion
+  );
+  const itemizedPromo = calculateIosItemizedPromotionDiscounts({
     serviceAmount: effectiveServiceTotal,
     upgradeAmount: upgradePrice,
-    comboAmount: comboTotal,
-    productAmount: productTotal,
+    servicePromotion,
+    comboAmount: upperComboTotal,
+    comboPromotion,
+    underComboAmount: underComboTotal,
+    underComboPromotion,
+    products: cartProducts.map((p) => ({
+      productId: Number(p.productId),
+      amount: Number(p.price || 0) * Number(p.quantity || 1),
+      promotion: p.appliedPromotion ?? undefined,
+    })),
+    fallbackOrderPromotion: appliedPromotion,
     vatRate,
   });
-  const effectivePromotionDiscount = appliedPromotion
-    ? promoBreakdown.totalDiscount
+  const effectivePromotionDiscount = hasAnyPromotionObject
+    ? itemizedPromo.totalDiscount
     : promotionId && overrideBilling?.promotionDiscountAmount
       ? Math.max(0, Math.round(Number(overrideBilling.promotionDiscountAmount) || 0))
       : 0;
   const subtotalAfterDiscount = Math.max(0, subtotal - effectivePromotionDiscount);
-  const vatAmount = appliedPromotion ? promoBreakdown.vatAmount : Math.round(subtotalAfterDiscount * vatRate);
-  const isCreditLocked = Boolean(appliedPromotion && appliedPromotion.isCreditAllowed === false);
-  const diamondUsed = isCreditLocked ? 0 : Number(overrideBilling?.diamondUsed ?? 0);
-  const diamondDiscountAmount = isCreditLocked
+  const vatAmount = hasAnyPromotionObject ? itemizedPromo.vatAmount : Math.round(subtotalAfterDiscount * vatRate);
+  const rawDiamondUsed = Number(overrideBilling?.diamondUsed ?? 0);
+  const maxEligibleDiamonds = Math.floor(itemizedPromo.creditEligiblePayableWithVat / 1000);
+  const diamondUsed = itemizedPromo.isFullCreditLocked
     ? 0
-    : Number(overrideBilling?.diamondDiscountAmount ?? diamondUsed * 1000);
+    : itemizedPromo.hasAnyCreditRestrictedItem
+      ? Math.max(0, Math.min(rawDiamondUsed, maxEligibleDiamonds))
+      : rawDiamondUsed;
+  const diamondDiscountAmount = itemizedPromo.isFullCreditLocked
+    ? 0
+    : itemizedPromo.hasAnyCreditRestrictedItem
+      ? diamondUsed * 1000
+      : Number(overrideBilling?.diamondDiscountAmount ?? diamondUsed * 1000);
   const tipAmount = Number(overrideBilling?.tipAmount ?? 0);
 
   const dualCombo = calculateDualComboTierBonus(
@@ -260,25 +289,39 @@ export function computeBookingFinancials(params: {
       subtotal,
       vatRate,
       vatAmount,
-      promotionId: appliedPromotion?.promotionId ?? promotionId ?? overrideBilling?.promotionId ?? null,
-      promotionName: appliedPromotion?.name ?? overrideBilling?.promotionName ?? undefined,
+      promotionId:
+        itemizedPromo.unifiedOrderPromotionId ??
+        itemizedPromo.primaryPromotion?.promotionId ??
+        promotionId ??
+        overrideBilling?.promotionId ??
+        null,
+      promotionName:
+        itemizedPromo.primaryPromotion?.name ?? appliedPromotion?.name ?? overrideBilling?.promotionName ?? undefined,
       promotionDiscountAmount: effectivePromotionDiscount,
-      serviceDiscountAmount: appliedPromotion
-        ? promoBreakdown.serviceDiscount
+      serviceDiscountAmount: hasAnyPromotionObject
+        ? itemizedPromo.serviceDiscount
         : (overrideBilling?.serviceDiscountAmount ?? 0),
-      comboDiscountAmount: appliedPromotion
-        ? promoBreakdown.comboDiscount
+      comboDiscountAmount: hasAnyPromotionObject
+        ? itemizedPromo.comboDiscount + itemizedPromo.underComboDiscount
         : (overrideBilling?.comboDiscountAmount ?? 0),
-      productDiscountAmount: appliedPromotion
-        ? promoBreakdown.productDiscount
+      productDiscountAmount: hasAnyPromotionObject
+        ? itemizedPromo.totalProductDiscount
         : (overrideBilling?.productDiscountAmount ?? 0),
       diamondUsed,
       diamondDiscountAmount,
       serviceTotal: effectiveServiceTotal,
       comboTotal,
       productTotal,
-      paymentMethod: (overrideBilling?.paymentMethod ||
-        (settlementStatus === 'PENDING_COUNTER_SETTLEMENT' ? 'CASH' : 'VIETQR')) as 'CASH' | 'POS' | 'VIETQR',
+      paymentMethod: resolveNormalizedPaymentBreakdown(
+        Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),
+        overrideBilling?.paymentMethod || (settlementStatus === 'PENDING_COUNTER_SETTLEMENT' ? 'CASH' : 'VIETQR'),
+        overrideBilling?.paymentBreakdown
+      ).paymentMethod,
+      paymentBreakdown: resolveNormalizedPaymentBreakdown(
+        Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),
+        overrideBilling?.paymentMethod || (settlementStatus === 'PENDING_COUNTER_SETTLEMENT' ? 'CASH' : 'VIETQR'),
+        overrideBilling?.paymentBreakdown
+      ).breakdown,
       settlementStatus,
       bankTransferRef: overrideBilling?.bankTransferRef,
       posTransactionId: overrideBilling?.posTransactionId,

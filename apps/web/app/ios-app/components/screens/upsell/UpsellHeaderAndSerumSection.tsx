@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Wallet, Info, AlertTriangle } from 'lucide-react';
+import { Wallet, AlertTriangle } from 'lucide-react';
 import { calculateComboRedemptionAccounting, formatExpiryDateDdMmYyyy } from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
-import { CvFeather2Badge, CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
+import { CvFeather2Badge, CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
 import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { formatComboName } from '../LashMaterialConstraintMatrix';
+import { UpsellSerumCard } from './UpsellSerumCard';
 
 type RedemptionAccountingResult = ReturnType<typeof calculateComboRedemptionAccounting>;
 type SerumTierItem = (typeof SERUM_TIERS_CVL)[number];
@@ -27,8 +28,9 @@ export interface UpsellHeaderAndSerumSectionProps {
   simulateOnlyRefillLeft: boolean;
   onToggleSimulateOnlyRefillLeft: () => void;
   yeppeumCount: number;
-  onDecrementYeppeum: () => void;
-  onIncrementYeppeum: () => void;
+  cartProducts?: NonNullable<BookingItem['cartProducts']>;
+  onOpenQrScanner: () => void;
+  onRemoveScannedUnit: (productIndex: number, inventoryWarehouseItemId?: number) => void;
   selectedSerumTier: SerumTierItem;
   showStaffRewards: boolean;
   onOpenSerumInfoModal: () => void;
@@ -50,8 +52,9 @@ export function UpsellHeaderAndSerumSection({
   simulateOnlyRefillLeft,
   onToggleSimulateOnlyRefillLeft,
   yeppeumCount,
-  onDecrementYeppeum,
-  onIncrementYeppeum,
+  cartProducts,
+  onOpenQrScanner,
+  onRemoveScannedUnit,
   selectedSerumTier,
   showStaffRewards,
   onOpenSerumInfoModal,
@@ -293,116 +296,17 @@ export function UpsellHeaderAndSerumSection({
       )}
 
       {/* Section 1: CÂY DƯỠNG MI YEPPEUM KOREA (THANG THƯỞNG CV) */}
-      <div>
-        <div
-          className={`text-[11px] font-extrabold ${isDark ? 'text-amber-400' : 'text-amber-800'} uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between`}
-        >
-          <span>{isExistingComboLive ? '3. DƯỠNG MI YEPPEUM KOREA' : '2. DƯỠNG MI YEPPEUM KOREA'}</span>
-        </div>
-
-        <div
-          className={`${isDark ? 'bg-neutral-900/90 border-[#FFB400]' : 'bg-white border-[#FFB400]'} border-2 rounded-2xl p-3 shadow-sm space-y-2.5`}
-        >
-          <div className="flex gap-3">
-            <div className="w-16 h-18 rounded-xl bg-[#1C1C1E] border border-neutral-700/60 flex flex-col items-center justify-center p-2 shrink-0">
-              <span className="text-[#FFB400] font-black text-[10px] tracking-wider text-center leading-tight">
-                YEPPEUM
-              </span>
-              <span className="text-white text-[9.5px] font-bold mt-0.5 tracking-wider">KOREA</span>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-1">
-                <span className={`text-[14px] font-bold text-[var(--mos-text)] leading-snug`}>
-                  Dưỡng Mi Yeppeum Korea
-                </span>
-                <div
-                  className={`${isDark ? 'bg-neutral-800 text-neutral-200 border border-neutral-700/60' : 'bg-[#F2F2F7] text-gray-800'} rounded-lg px-2 py-0.5 flex items-center gap-2 text-[12px] font-bold shrink-0`}
-                >
-                  <button
-                    onClick={onDecrementYeppeum}
-                    className={`px-1 ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-500 hover:text-black'} active:scale-90`}
-                  >
-                    -
-                  </button>
-                  <span className="tabular-nums font-black">{yeppeumCount}</span>
-                  <button
-                    onClick={onIncrementYeppeum}
-                    className={`px-1 ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-500 hover:text-black'} active:scale-90`}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-gray-600'} mt-1 leading-tight`}>
-                Phục hồi nang mi thật, không làm thâm mắt. Giải pháp tuyệt vời cho những người vừa nối vừa dưỡng mi.
-              </div>
-            </div>
-          </div>
-
-          {/* Compact Tier Selector Bar & (i) Info Button (Full Width) */}
-          <div className={`pt-2 border-t border-[var(--mos-surface-border)] flex items-center gap-2`}>
-            <div
-              role={showStaffRewards ? 'button' : undefined}
-              tabIndex={showStaffRewards ? 0 : undefined}
-              onClick={showStaffRewards ? onOpenSerumInfoModal : undefined}
-              onKeyDown={
-                showStaffRewards
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onOpenSerumInfoModal();
-                      }
-                    }
-                  : undefined
-              }
-              className={`flex-1 flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left ${
-                isDark ? 'bg-amber-950/30 border-amber-500/30' : 'bg-amber-50/80 border-amber-200/90'
-              } ${
-                showStaffRewards
-                  ? isDark
-                    ? 'hover:bg-amber-950/50 cursor-pointer active:scale-[0.99]'
-                    : 'hover:bg-amber-100/80 cursor-pointer active:scale-[0.99]'
-                  : ''
-              }`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`text-[13px] font-black ${isDark ? 'text-amber-300' : 'text-amber-950'} truncate`}>
-                  {selectedSerumTier.price > 0
-                    ? `${selectedSerumTier.price.toLocaleString('vi-VN')}đ`
-                    : 'Tặng kèm (Trị giá 1.100.000đ)'}
-                </span>
-                <span
-                  className={`text-[10.5px] font-bold ${isDark ? 'text-neutral-300 bg-black/60 border-neutral-700' : 'text-gray-600 bg-white border-gray-200'} px-2 py-0.5 rounded-md border truncate`}
-                >
-                  {selectedSerumTier.label.split('(')[0].trim()}
-                </span>
-              </div>
-              {showStaffRewards && (
-                <div className="flex items-center gap-1 shrink-0 ml-1">
-                  <span
-                    className={`inline-flex items-center gap-0.5 text-[11px] font-black ${isDark ? 'text-emerald-300 bg-emerald-950/50 border-emerald-500/40' : 'text-emerald-700 bg-white border-emerald-200'} px-2 py-0.5 rounded-md border tabular-nums`}
-                  >
-                    +{Math.round(selectedSerumTier.cvBonus / 1000)}
-                    <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {showStaffRewards && (
-              <button
-                type="button"
-                onClick={onOpenSerumInfoModal}
-                className={`w-9 h-9 rounded-xl ${isDark ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 hover:bg-amber-400/30' : 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'} flex items-center justify-center font-bold shrink-0 shadow-xs active:scale-90 transition-transform cursor-pointer border`}
-                title="Xem chi tiết thang thưởng"
-              >
-                <Info className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <UpsellSerumCard
+        isDark={isDark}
+        isExistingComboLive={isExistingComboLive}
+        yeppeumCount={yeppeumCount}
+        cartProducts={cartProducts}
+        onOpenQrScanner={onOpenQrScanner}
+        onRemoveScannedUnit={onRemoveScannedUnit}
+        selectedSerumTier={selectedSerumTier}
+        showStaffRewards={showStaffRewards}
+        onOpenSerumInfoModal={onOpenSerumInfoModal}
+      />
     </>
   );
 }

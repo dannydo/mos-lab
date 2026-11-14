@@ -9,6 +9,7 @@ import {
   filterBookingsForCvlScope,
   formatComboName,
   IosBookingItem,
+  IosPromotionOption,
   maskPhoneNumber,
   normalizeCvFeatherRole,
   resolveIosCustomerTypeIcon,
@@ -1005,4 +1006,59 @@ test('Promotion Visibility ACL & Booking Promotion Hydration', () => {
   assert.equal(mapped[0].appliedPromotion?.name, 'Ưu đãi 20% Chào Bạn Mới');
   assert.equal(mapped[0].billing?.promotionDiscountAmount, 154000);
   assert.equal(mapped[0].billing?.vatAmount, Math.round((770000 - 154000) * 0.08));
+
+  // Itemized per-service + per-product promotions via legacy os_promotion_id & product_promotion_map
+  const productPromo: IosPromotionOption = {
+    promotionId: 25,
+    promotionKey: 'SERUM-10',
+    promotionType: 'normal',
+    promotionApply: 'all',
+    serviceGroup: null,
+    name: 'Giảm 10% Dưỡng Mi',
+    shortName: 'Dưỡng -10%',
+    discountPercentage: 10,
+    discountAmount: 0,
+    exactlyAmount: 0,
+    isOldUserDisabled: false,
+    isApprovalRequired: false,
+    isPublic: true,
+    isSystem: false,
+    isCreditAllowed: true,
+    dateExpired: null,
+    position: 2,
+  };
+  const itemizedPromoMap = new Map<number, IosPromotionOption>([...promoMap.entries(), [25, productPromo]]);
+
+  const itemizedOrder: RawIosOrderSnapshot = {
+    ...orderWithPromo,
+    id: 341000,
+    order_number: '341000',
+    promotion_id: null,
+    os_promotion_id: 19,
+    product_promotion_map: { 901: 25 },
+  };
+
+  const mappedItemized = mapLiveOrdersToBookings({
+    orders: [itemizedOrder],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: {
+      341000: {
+        cartProducts: [{ productId: 901, productName: 'Serum Dưỡng Mi', price: 500000, quantity: 1 }],
+      },
+    },
+    customerAvatarMap: {},
+    promotionsById: itemizedPromoMap,
+    storeId: 6,
+    targetDate: '2026-11-14',
+    todayVn: '2026-11-14',
+    activeStaffId: 37790,
+    canViewFullPhone: true,
+  });
+
+  assert.equal(mappedItemized[0].servicePromotionId, 19);
+  assert.equal(mappedItemized[0].servicePromotion?.name, 'Ưu đãi 20% Chào Bạn Mới');
+  assert.equal(mappedItemized[0].cartProducts?.[0]?.promotionId, 25);
+  assert.equal(mappedItemized[0].cartProducts?.[0]?.appliedPromotion?.name, 'Giảm 10% Dưỡng Mi');
+  // Service discount: 154,000 + Product discount: 50,000 = 204,000
+  assert.equal(mappedItemized[0].billing?.promotionDiscountAmount, 204000);
 });

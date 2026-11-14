@@ -28,6 +28,8 @@ export interface RawIosOrderSnapshot {
   combo_sale_required: number | null;
   is_new: number | null;
   promotion_id: unknown;
+  os_promotion_id?: unknown;
+  product_promotion_map?: Record<number, number>;
   customer_name: string;
   customer_phone: string;
   customer_avatar: string | null;
@@ -150,6 +152,7 @@ export async function fetchLiveOrderSnapshots(
              os.id AS os_id,
              os.order_id,
              os.service_type,
+             os.promotion_id AS os_promotion_id,
              os.created_staff_id AS os_created_staff_id,
              os.assigned_staff_id,
              os.booked_staff_id,
@@ -213,12 +216,37 @@ export async function fetchLiveOrderSnapshots(
         )
       : emptyQueryResult;
 
-  const [[osRows], [contactRows], [visitRows], customerContext] = await Promise.all([
+  const productPromoPromise =
+    orderIds.length > 0
+      ? pool.query<mysql.RowDataPacket[]>(
+          `SELECT op.order_id, op.product_id, op.promotion_id
+           FROM order_product op
+           WHERE op.order_id IN (${orderIds.map(() => '?').join(',')})
+             AND op.promotion_id IS NOT NULL
+             AND op.promotion_id > 0`,
+          orderIds
+        )
+      : emptyQueryResult;
+
+  const [[osRows], [contactRows], [visitRows], [productPromoRows], customerContext] = await Promise.all([
     primaryServicePromise,
     fallbackContactPromise,
     visitCountsPromise,
+    productPromoPromise,
     fetchCustomerEnrichmentContext(pool, customerIds),
   ]);
+
+  const productPromoMapByOrderId = new Map<number, Record<number, number>>();
+  for (const pr of productPromoRows) {
+    const oid = Number(pr.order_id);
+    const prodId = Number(pr.product_id);
+    const promoId = Number(pr.promotion_id);
+    if (oid > 0 && prodId > 0 && promoId > 0) {
+      const existing = productPromoMapByOrderId.get(oid) ?? {};
+      existing[prodId] = promoId;
+      productPromoMapByOrderId.set(oid, existing);
+    }
+  }
 
   const allOsIds = Array.from(new Set(osRows.map((row) => Number(row.os_id)).filter((id) => id > 0)));
   let ledgerSummaryByOrderId = new Map<number, OrderLedgerCvSummary>();
@@ -323,6 +351,8 @@ export async function fetchLiveOrderSnapshots(
       combo_sale_required: r.combo_sale_required !== null ? Number(r.combo_sale_required) : null,
       is_new: resolvedIsNew,
       promotion_id: r.promotion_id,
+      os_promotion_id: os?.os_promotion_id ?? null,
+      product_promotion_map: productPromoMapByOrderId.get(orderId),
       customer_name: r.customer_name ? String(r.customer_name) : 'Khách Vãng Lai',
       customer_phone:
         (r.direct_contact_phone ? String(r.direct_contact_phone) : undefined) ||

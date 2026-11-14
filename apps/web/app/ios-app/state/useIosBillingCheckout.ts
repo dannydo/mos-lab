@@ -5,7 +5,6 @@ import {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
-  calculateIosPromotionDiscount,
   canDirectlySettleCounterPayment,
   resolveEffectiveServiceTotal,
   resolveServicePriceSplit,
@@ -13,11 +12,14 @@ import {
   buildPercentageTipSuggestions,
   CHECKOUT_TIP_PERCENT_TIERS,
   calculateActorTipBreakdown,
+  resolveNormalizedPaymentBreakdown,
 } from '@mos-lab/shared';
 import type {
   ActorTipBreakdown,
   CheckoutTipPercentTier,
   CvToCvPlusRequirements,
+  IosPaymentBreakdown,
+  IosPaymentMethod,
   IosPromotionOption,
   IosSettlementStatus,
   PercentTipSuggestionItem,
@@ -25,6 +27,14 @@ import type {
 import { BookingItem } from './mockData';
 import { ActiveActorProfile } from './iosActorProfile';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServicingStep } from './offlineSync';
+import {
+  applyCartProductsUpdateToBookingDraft,
+  applyTargetPromotionToBookingDraft,
+  buildRecomputedCheckoutBilling,
+  computeFreshBillingLineTotals,
+  type CartProductItem,
+  type SavePromotionTarget,
+} from './iosBillingMath';
 
 export {
   calculateCvComboTierBonus,
@@ -36,10 +46,16 @@ export {
   buildPercentageTipSuggestions,
   CHECKOUT_TIP_PERCENT_TIERS,
   calculateActorTipBreakdown,
+  computeFreshBillingLineTotals,
 };
-export type { ActorTipBreakdown, CheckoutTipPercentTier, CvToCvPlusRequirements, PercentTipSuggestionItem };
-
-export type CartProductItem = NonNullable<BookingItem['cartProducts']>[number];
+export type {
+  ActorTipBreakdown,
+  CartProductItem,
+  CheckoutTipPercentTier,
+  CvToCvPlusRequirements,
+  PercentTipSuggestionItem,
+  SavePromotionTarget,
+};
 
 export interface UpsellPayload {
   cartProducts?: CartProductItem[];
@@ -57,91 +73,6 @@ export interface UseIosBillingCheckoutParams {
   refreshDb?: () => Promise<any>;
   setCurrentStep: (step: number) => void;
   setBookingSegment: (segment: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL') => void;
-}
-
-/**
- * Computes fresh service, combo, product, subtotal, and VAT totals from a booking's active items
- * so re-checking out an already-billed booking never freezes stale totals.
- */
-export function computeFreshBillingLineTotals(
-  booking: Pick<
-    BookingItem,
-    | 'servicePrice'
-    | 'upgradePrice'
-    | 'serviceName'
-    | 'attributes'
-    | 'comboLiveStatus'
-    | 'underMinkComboStatus'
-    | 'cartProducts'
-    | 'selectedCombo'
-    | 'selectedUnderCombo'
-    | 'comboRedemption'
-    | 'promotionId'
-    | 'appliedPromotion'
-    | 'billing'
-  >
-): {
-  serviceTotal: number;
-  comboTotal: number;
-  productTotal: number;
-  subtotal: number;
-  promotionDiscountAmount: number;
-  serviceDiscountAmount: number;
-  comboDiscountAmount: number;
-  productDiscountAmount: number;
-  subtotalAfterDiscount: number;
-  vatRate: number;
-  vatAmount: number;
-} {
-  const hasUnderMinkComboActive = Boolean(
-    booking.underMinkComboStatus?.hasUnderCombo && (booking.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
-  const shouldUseOldUpperCombo = Boolean(
-    booking.comboLiveStatus?.isComboLive &&
-    (!booking.selectedCombo ||
-      !booking.selectedCombo.todayUsageMode ||
-      booking.selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
-  );
-  const serviceTotal = resolveEffectiveServiceTotal({
-    servicePrice: booking.servicePrice,
-    upgradePrice: booking.upgradePrice,
-    serviceName: booking.serviceName,
-    isComboLive: shouldUseOldUpperCombo,
-    hasUnderMink: booking.attributes?.hasUnderMink,
-    underMinkServiceType: booking.attributes?.underMinkServiceType,
-    hasUnderMinkCombo: hasUnderMinkComboActive,
-    selectedCombo: booking.selectedCombo,
-    selectedUnderCombo: booking.selectedUnderCombo,
-    comboRedemption: booking.comboRedemption,
-  });
-  const productTotal = (booking.cartProducts || []).reduce((sum, p) => sum + p.price * p.quantity, 0);
-  const comboTotal =
-    (booking.selectedCombo ? booking.selectedCombo.price : 0) +
-    (booking.selectedUnderCombo ? booking.selectedUnderCombo.price : 0);
-  const subtotal = serviceTotal + comboTotal + productTotal;
-  const vatRate = booking.billing?.vatRate ?? 0.08;
-  const promoBreakdown = calculateIosPromotionDiscount({
-    promotion: booking.appliedPromotion,
-    serviceAmount: serviceTotal,
-    upgradeAmount: booking.upgradePrice || 0,
-    comboAmount: comboTotal,
-    productAmount: productTotal,
-    vatRate,
-  });
-
-  return {
-    serviceTotal,
-    comboTotal,
-    productTotal,
-    subtotal,
-    promotionDiscountAmount: promoBreakdown.totalDiscount,
-    serviceDiscountAmount: promoBreakdown.serviceDiscount,
-    comboDiscountAmount: promoBreakdown.comboDiscount,
-    productDiscountAmount: promoBreakdown.productDiscount,
-    subtotalAfterDiscount: promoBreakdown.subtotalAfterDiscount,
-    vatRate,
-    vatAmount: promoBreakdown.vatAmount,
-  };
 }
 
 export function useIosBillingCheckout({
@@ -180,6 +111,11 @@ export function useIosBillingCheckout({
           subtotalAfterDiscount,
           vatRate,
           vatAmount,
+          creditEligiblePayableWithVat,
+          hasAnyCreditRestrictedItem,
+          isFullCreditLocked,
+          unifiedOrderPromotionId,
+          primaryPromotion,
         } = computeFreshBillingLineTotals({
           ...prev,
           cartProducts: nextProducts,
@@ -188,8 +124,17 @@ export function useIosBillingCheckout({
           comboRedemption: nextRedemption,
         });
         const tipAmount = prev.billing?.tipAmount ?? 0;
-        const creditLocked = Boolean(prev.appliedPromotion && prev.appliedPromotion.isCreditAllowed === false);
-        const diamondDiscountAmount = creditLocked ? 0 : (prev.billing?.diamondDiscountAmount ?? 0);
+        const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
+        const clampedDiamondUsed = isFullCreditLocked
+          ? 0
+          : hasAnyCreditRestrictedItem
+            ? Math.max(0, Math.min(prev.billing?.diamondUsed ?? 0, maxEligibleDiamonds))
+            : (prev.billing?.diamondUsed ?? 0);
+        const diamondDiscountAmount = isFullCreditLocked
+          ? 0
+          : hasAnyCreditRestrictedItem
+            ? clampedDiamondUsed * 1000
+            : (prev.billing?.diamondDiscountAmount ?? 0);
 
         const isActorCc = actor.tier === 'CC';
         const isTrainingMenteeOrder = Boolean(prev.isTrainingCvlOrder);
@@ -268,13 +213,15 @@ export function useIosBillingCheckout({
             tipCheckInShare: tipBreakdown.checkInShareAmount,
             tipCheckOutShare: tipBreakdown.checkOutShareAmount,
             tipCcShare: tipBreakdown.checkInShareAmount + tipBreakdown.checkOutShareAmount,
-            promotionId: prev.appliedPromotion?.promotionId ?? prev.promotionId ?? null,
-            promotionName: prev.appliedPromotion?.name ?? prev.billing?.promotionName,
+            promotionId: unifiedOrderPromotionId ?? primaryPromotion?.promotionId ?? prev.promotionId ?? null,
+            promotionName: primaryPromotion?.name ?? prev.billing?.promotionName,
             promotionDiscountAmount,
             serviceDiscountAmount,
             comboDiscountAmount,
             productDiscountAmount,
-            ...(creditLocked ? { diamondUsed: 0, diamondDiscountAmount: 0 } : {}),
+            ...(isFullCreditLocked || hasAnyCreditRestrictedItem
+              ? { diamondUsed: clampedDiamondUsed, diamondDiscountAmount }
+              : {}),
             grandTotal: Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),
           },
         };
@@ -284,65 +231,29 @@ export function useIosBillingCheckout({
     [actor, cvPlusRules, postAction, setCurrentStep, updateActiveBooking]
   );
 
-  // Step 13A: Persist selected/cleared promotion during Checkout
+  // Step 13A: Persist selected/cleared itemized or fallback promotion during Checkout
   const handleSavePromotion = useCallback(
-    (promotion: IosPromotionOption | null) => {
+    (promotion: IosPromotionOption | null, target?: SavePromotionTarget) => {
       let nextBillingSnapshot: Record<string, any> | undefined;
+      let nextCartProductsSnapshot: CartProductItem[] | undefined;
       let resolvedCustomerVisits = 1;
+
       updateActiveBooking((prev) => {
         resolvedCustomerVisits = prev.customerVisits ?? 1;
-        const {
-          serviceTotal: freshServiceTotal,
-          comboTotal: freshComboTotal,
-          productTotal: freshProductTotal,
-          subtotal,
-          promotionDiscountAmount,
-          serviceDiscountAmount,
-          comboDiscountAmount,
-          productDiscountAmount,
-          subtotalAfterDiscount,
-          vatRate,
-          vatAmount,
-        } = computeFreshBillingLineTotals({
-          ...prev,
-          promotionId: promotion?.promotionId ?? null,
-          appliedPromotion: promotion,
-        });
-        const tipAmount = prev.billing?.tipAmount ?? 0;
-        const creditLocked = Boolean(promotion && promotion.isCreditAllowed === false);
-        const diamondUsed = creditLocked ? 0 : (prev.billing?.diamondUsed ?? 0);
-        const diamondDiscountAmount = creditLocked ? 0 : diamondUsed * 1000;
-        const grandTotal = Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
 
-        const nextBilling = {
-          ...(prev.billing || {}),
-          subtotal,
-          serviceTotal: freshServiceTotal,
-          comboTotal: freshComboTotal,
-          productTotal: freshProductTotal,
-          vatRate,
-          vatAmount,
-          promotionId: promotion?.promotionId ?? null,
-          promotionName: promotion?.name ?? undefined,
-          promotionDiscountAmount,
-          serviceDiscountAmount,
-          comboDiscountAmount,
-          productDiscountAmount,
-          diamondUsed,
-          diamondDiscountAmount,
-          paymentMethod: prev.billing?.paymentMethod || ('VIETQR' as const),
-          tipAmount,
-          tipCvShare: prev.billing?.tipCvShare ?? Math.round(tipAmount * 0.7),
-          tipCheckInShare: prev.billing?.tipCheckInShare ?? Math.round(tipAmount * 0.1),
-          tipCheckOutShare: prev.billing?.tipCheckOutShare ?? Math.round(tipAmount * 0.1),
-          tipCcShare: prev.billing?.tipCcShare ?? Math.round(tipAmount * 0.2),
-          grandTotal,
-        };
+        const { draft: nextBookingDraft, updatedCartProducts } = applyTargetPromotionToBookingDraft(
+          prev,
+          promotion,
+          target
+        );
+        if (updatedCartProducts) {
+          nextCartProductsSnapshot = updatedCartProducts;
+        }
+
+        const nextBilling = buildRecomputedCheckoutBilling(nextBookingDraft);
         nextBillingSnapshot = nextBilling;
         return {
-          ...prev,
-          promotionId: promotion?.promotionId ?? null,
-          appliedPromotion: promotion,
+          ...nextBookingDraft,
           billing: nextBilling,
         };
       });
@@ -350,6 +261,10 @@ export function useIosBillingCheckout({
       void postAction('SAVE_PROMOTION', {
         promotionId: promotion?.promotionId ?? null,
         appliedPromotion: promotion,
+        targetScope: target?.scope,
+        productIndex: target?.productIndex,
+        productId: target?.productId,
+        ...(target?.scope === 'product' && nextCartProductsSnapshot ? { cartProducts: nextCartProductsSnapshot } : {}),
         customerVisits: resolvedCustomerVisits,
         billing: nextBillingSnapshot,
       });
@@ -357,10 +272,19 @@ export function useIosBillingCheckout({
     [postAction, updateActiveBooking]
   );
 
+  // Step 13B: Quick-add / update Yeppeum serum cart products directly from Checkout
+  const handleUpdateCartProducts = useCallback(
+    (nextProducts: CartProductItem[]) => {
+      updateActiveBooking((prev) => applyCartProductsUpdateToBookingDraft(prev, nextProducts, actor.tier, cvPlusRules));
+      void postAction('SAVE_UPSELL', { cartProducts: nextProducts });
+    },
+    [actor.tier, cvPlusRules, postAction, updateActiveBooking]
+  );
+
   // Step 13: Choose Payment Method & Confirm Tip Directly & Diamond Wallet (One-Stop Checkout)
   const handleChoosePaymentMethod = useCallback(
     (
-      method: 'CASH' | 'POS' | 'VIETQR',
+      method: IosPaymentMethod,
       chosenTip?: number,
       chosenDiamond?: number,
       proofPhoto?: string,
@@ -371,14 +295,21 @@ export function useIosBillingCheckout({
         voucherCode?: string;
       },
       promotionSelection?: {
-        promotionId: number | null;
-        appliedPromotion: IosPromotionOption | null;
+        promotionId?: number | null;
+        appliedPromotion?: IosPromotionOption | null;
+        servicePromotionId?: number | null;
+        servicePromotion?: IosPromotionOption | null;
+        comboPromotionId?: number | null;
+        comboPromotion?: IosPromotionOption | null;
+        underComboPromotionId?: number | null;
+        underComboPromotion?: IosPromotionOption | null;
+        cartProducts?: CartProductItem[];
+        paymentBreakdown?: IosPaymentBreakdown;
       }
     ) => {
       const completedAt = new Date().toISOString();
       let calculatedBilling: any = null;
-      let chosenPromoId: number | null | undefined;
-      let chosenPromoObj: IosPromotionOption | null | undefined;
+      let promoActionSnapshot: Record<string, any> = {};
 
       updateActiveBooking((prev) => {
         const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 0);
@@ -387,14 +318,39 @@ export function useIosBillingCheckout({
         const checkOutShare = Math.round(tipAmount * 0.1);
         const ccShare = checkInShare + checkOutShare;
 
-        const effectivePromo =
-          promotionSelection !== undefined ? promotionSelection.appliedPromotion : (prev.appliedPromotion ?? null);
-        const effectivePromoId =
-          promotionSelection !== undefined
-            ? promotionSelection.promotionId
-            : (effectivePromo?.promotionId ?? prev.promotionId ?? null);
-        chosenPromoId = effectivePromoId;
-        chosenPromoObj = effectivePromo;
+        const nextBookingDraft: BookingItem = {
+          ...prev,
+          promotionId:
+            promotionSelection?.promotionId !== undefined ? promotionSelection.promotionId : prev.promotionId,
+          appliedPromotion:
+            promotionSelection?.appliedPromotion !== undefined
+              ? promotionSelection.appliedPromotion
+              : prev.appliedPromotion,
+          servicePromotionId:
+            promotionSelection?.servicePromotionId !== undefined
+              ? promotionSelection.servicePromotionId
+              : prev.servicePromotionId,
+          servicePromotion:
+            promotionSelection?.servicePromotion !== undefined
+              ? promotionSelection.servicePromotion
+              : prev.servicePromotion,
+          comboPromotionId:
+            promotionSelection?.comboPromotionId !== undefined
+              ? promotionSelection.comboPromotionId
+              : prev.comboPromotionId,
+          comboPromotion:
+            promotionSelection?.comboPromotion !== undefined ? promotionSelection.comboPromotion : prev.comboPromotion,
+          underComboPromotionId:
+            promotionSelection?.underComboPromotionId !== undefined
+              ? promotionSelection.underComboPromotionId
+              : prev.underComboPromotionId,
+          underComboPromotion:
+            promotionSelection?.underComboPromotion !== undefined
+              ? promotionSelection.underComboPromotion
+              : prev.underComboPromotion,
+          cartProducts:
+            promotionSelection?.cartProducts !== undefined ? promotionSelection.cartProducts : prev.cartProducts,
+        };
 
         const {
           serviceTotal: freshServiceTotal,
@@ -408,27 +364,55 @@ export function useIosBillingCheckout({
           subtotalAfterDiscount,
           vatRate,
           vatAmount,
-        } = computeFreshBillingLineTotals({
-          ...prev,
-          promotionId: effectivePromoId,
-          appliedPromotion: effectivePromo,
-        });
+          creditEligiblePayableWithVat,
+          hasAnyCreditRestrictedItem,
+          isFullCreditLocked,
+          unifiedOrderPromotionId,
+          primaryPromotion,
+        } = computeFreshBillingLineTotals(nextBookingDraft);
 
         const totalBeforeDiamond = subtotalAfterDiscount + vatAmount + tipAmount;
 
         // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ
         const DIAMOND_RATE = 1000;
         const currentDiamondBalance = prev.diamondBalance ?? 0;
-        const creditLocked = Boolean(effectivePromo && effectivePromo.isCreditAllowed === false);
-        const diamondUsed = creditLocked
+        const maxDiamondVnd = isFullCreditLocked
           ? 0
-          : Math.min(chosenDiamond ?? 0, currentDiamondBalance, Math.floor(totalBeforeDiamond / DIAMOND_RATE));
+          : hasAnyCreditRestrictedItem
+            ? creditEligiblePayableWithVat
+            : totalBeforeDiamond;
+        const diamondUsed = Math.min(
+          chosenDiamond ?? 0,
+          currentDiamondBalance,
+          Math.floor(maxDiamondVnd / DIAMOND_RATE)
+        );
         const diamondDiscountAmount = diamondUsed * DIAMOND_RATE;
         const grandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
         const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
 
+        const effectiveOrderPromoId =
+          unifiedOrderPromotionId ?? nextBookingDraft.promotionId ?? primaryPromotion?.promotionId ?? null;
+        promoActionSnapshot = {
+          promotionId: effectiveOrderPromoId,
+          appliedPromotion: nextBookingDraft.appliedPromotion ?? null,
+          servicePromotionId:
+            nextBookingDraft.servicePromotion?.promotionId ?? nextBookingDraft.servicePromotionId ?? null,
+          servicePromotion: nextBookingDraft.servicePromotion ?? null,
+          comboPromotionId: nextBookingDraft.comboPromotion?.promotionId ?? nextBookingDraft.comboPromotionId ?? null,
+          comboPromotion: nextBookingDraft.comboPromotion ?? null,
+          underComboPromotionId:
+            nextBookingDraft.underComboPromotion?.promotionId ?? nextBookingDraft.underComboPromotionId ?? null,
+          underComboPromotion: nextBookingDraft.underComboPromotion ?? null,
+          cartProducts: nextBookingDraft.cartProducts,
+        };
+
+        const normalizedPayment = resolveNormalizedPaymentBreakdown(
+          grandTotal,
+          method,
+          promotionSelection?.paymentBreakdown ?? (method === 'MIXED' ? prev.billing?.paymentBreakdown : undefined)
+        );
         const optimisticSettlement: IosSettlementStatus =
-          grandTotal <= 0 || method === 'VIETQR' || canDirectlySettleCounterPayment(actor.tier)
+          grandTotal <= 0 || normalizedPayment.isPureVietqrOrZero || canDirectlySettleCounterPayment(actor.tier)
             ? 'SETTLED_COMPLETED'
             : 'PENDING_COUNTER_SETTLEMENT';
 
@@ -438,13 +422,14 @@ export function useIosBillingCheckout({
           serviceTotal: freshServiceTotal,
           comboTotal: freshComboTotal,
           productTotal: freshProductTotal,
-          promotionId: effectivePromoId,
-          promotionName: effectivePromo?.name ?? undefined,
+          promotionId: effectiveOrderPromoId,
+          promotionName: primaryPromotion?.name ?? nextBookingDraft.appliedPromotion?.name ?? undefined,
           promotionDiscountAmount,
           serviceDiscountAmount,
           comboDiscountAmount,
           productDiscountAmount,
-          paymentMethod: method,
+          paymentMethod: normalizedPayment.paymentMethod,
+          paymentBreakdown: normalizedPayment.breakdown,
           settlementStatus: optimisticSettlement,
           vatRate,
           vatAmount,
@@ -464,12 +449,11 @@ export function useIosBillingCheckout({
         calculatedBilling = nextBilling;
 
         return {
-          ...prev,
+          ...nextBookingDraft,
           status: 'DONE',
           orderState: optimisticSettlement === 'PENDING_COUNTER_SETTLEMENT' ? 'CheckOut' : 'Completed',
           diamondBalance: remainingDiamondBalance,
-          promotionId: effectivePromoId,
-          appliedPromotion: effectivePromo,
+          promotionId: effectiveOrderPromoId,
           checkOutStaffId: prev.checkOutStaffId || actor.staffId,
           checkOutStaffName: prev.checkOutStaffName || actor.name,
           checkOutStaffTier: prev.checkOutStaffTier || actor.tier,
@@ -483,8 +467,7 @@ export function useIosBillingCheckout({
       });
 
       void postAction('COMPLETE_ORDER', {
-        promotionId: chosenPromoId,
-        appliedPromotion: chosenPromoObj,
+        ...promoActionSnapshot,
         billing: calculatedBilling,
         status: 'DONE',
         completedAt,
@@ -525,11 +508,22 @@ export function useIosBillingCheckout({
           subtotalAfterDiscount,
           vatRate,
           vatAmount,
+          creditEligiblePayableWithVat,
+          hasAnyCreditRestrictedItem,
+          isFullCreditLocked,
         } = computeFreshBillingLineTotals(prev);
-        const creditLocked = Boolean(prev.appliedPromotion && prev.appliedPromotion.isCreditAllowed === false);
-        const diamondDiscountAmount = creditLocked
+        const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
+        const rawDiamondUsed = prev.billing?.diamondUsed ?? 0;
+        const clampedDiamondUsed = isFullCreditLocked
           ? 0
-          : (prev.billing?.diamondDiscountAmount ?? (prev.billing?.diamondUsed || 0) * 1000);
+          : hasAnyCreditRestrictedItem
+            ? Math.max(0, Math.min(rawDiamondUsed, maxEligibleDiamonds))
+            : rawDiamondUsed;
+        const diamondDiscountAmount = isFullCreditLocked
+          ? 0
+          : hasAnyCreditRestrictedItem
+            ? clampedDiamondUsed * 1000
+            : (prev.billing?.diamondDiscountAmount ?? rawDiamondUsed * 1000);
         const grandTotal = Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
         const method = prev.billing?.paymentMethod || 'VIETQR';
         const optimisticSettlement: IosSettlementStatus =
@@ -632,6 +626,7 @@ export function useIosBillingCheckout({
   return {
     handleGoToBilling,
     handleSavePromotion,
+    handleUpdateCartProducts,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,

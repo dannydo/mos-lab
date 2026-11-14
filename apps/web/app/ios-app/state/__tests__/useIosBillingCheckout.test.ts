@@ -307,7 +307,7 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
       },
     });
 
-    expect(totals).toEqual({
+    expect(totals).toMatchObject({
       serviceTotal: 0,
       comboTotal: 4980000,
       productTotal: 0,
@@ -366,7 +366,7 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
       },
     });
 
-    expect(totals).toEqual({
+    expect(totals).toMatchObject({
       serviceTotal: 500000,
       comboTotal: 0,
       productTotal: 0,
@@ -378,6 +378,99 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
       subtotalAfterDiscount: 400000,
       vatRate: 0.08,
       vatAmount: 32000,
+      isFullCreditLocked: true,
+    });
+  });
+
+  it('computeFreshBillingLineTotals áp dụng promotion riêng cho từng dịch vụ và sản phẩm cộng dồn VAT 8%', () => {
+    const totals = computeFreshBillingLineTotals({
+      servicePrice: 880000,
+      upgradePrice: 0,
+      serviceName: 'HyperLight 4X 880',
+      comboLiveStatus: undefined,
+      selectedCombo: null,
+      selectedUnderCombo: null,
+      comboRedemption: null,
+      servicePromotion: {
+        promotionId: 19,
+        promotionKey: 'PROMO20',
+        promotionType: 'percentage',
+        promotionApply: 'single',
+        serviceGroup: null,
+        name: 'Giảm 20% dịch vụ',
+        shortName: 'Giảm 20%',
+        discountPercentage: 20,
+        discountAmount: 0,
+        exactlyAmount: 0,
+        isCreditAllowed: false,
+        isOldUserDisabled: false,
+        isApprovalRequired: false,
+        isPublic: true,
+        isSystem: false,
+        dateExpired: null,
+        position: 1,
+      },
+      cartProducts: [
+        {
+          productId: 901,
+          productName: 'Serum Dưỡng Mi',
+          price: 500000,
+          quantity: 1,
+          promotionId: 25,
+          appliedPromotion: {
+            promotionId: 25,
+            promotionKey: 'SERUM10',
+            promotionType: 'percentage',
+            promotionApply: 'all',
+            serviceGroup: null,
+            name: 'Giảm 10% sản phẩm',
+            shortName: 'SP -10%',
+            discountPercentage: 10,
+            discountAmount: 0,
+            exactlyAmount: 0,
+            isCreditAllowed: true,
+            isOldUserDisabled: false,
+            isApprovalRequired: false,
+            isPublic: true,
+            isSystem: false,
+            dateExpired: null,
+            position: 2,
+          },
+        },
+      ],
+      appliedPromotion: null,
+      billing: {
+        subtotal: 0,
+        vatRate: 0.08,
+        vatAmount: 0,
+        serviceTotal: 0,
+        comboTotal: 0,
+        productTotal: 0,
+        paymentMethod: 'CASH',
+        tipAmount: 0,
+        tipCvShare: 0,
+        tipCcShare: 0,
+        grandTotal: 0,
+      },
+    });
+
+    expect(totals).toMatchObject({
+      serviceTotal: 880000,
+      comboTotal: 0,
+      productTotal: 500000,
+      subtotal: 1380000,
+      serviceDiscountAmount: 176000,
+      comboDiscountAmount: 0,
+      productDiscountAmount: 50000,
+      productDiscounts: [50000],
+      promotionDiscountAmount: 226000,
+      subtotalAfterDiscount: 1154000,
+      vatRate: 0.08,
+      vatAmount: Math.round(1154000 * 0.08),
+      hasAnyCreditRestrictedItem: true,
+      isFullCreditLocked: false,
+      creditEligibleSubtotal: 450000,
+      creditEligiblePayableWithVat: 486000,
     });
   });
 });

@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import type { IosPromotionOption } from '@mos-lab/shared';
-import { Lock, Tag, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock } from 'lucide-react';
 import { calculateActorTipBreakdown, type PercentTipSuggestionItem } from '../../../state/useIosBillingCheckout';
 
 type ActorTipBreakdown = ReturnType<typeof calculateActorTipBreakdown>;
@@ -27,12 +26,8 @@ export interface CheckoutTipAndDiamondSectionProps {
   diamondDiscountAmount: number;
   diamondRate: number;
   onSetDiamondUsed: (val: number) => void;
-  selectedPromotion?: IosPromotionOption | null;
-  promotionDiscountAmount?: number;
-  promotionCount?: number;
-  onOpenPromotionPicker?: () => void;
-  onClearPromotion?: () => void;
   isCreditLockedByPromotion?: boolean;
+  hasPartialCreditRestriction?: boolean;
 }
 
 export function CheckoutTipAndDiamondSection({
@@ -55,13 +50,10 @@ export function CheckoutTipAndDiamondSection({
   diamondDiscountAmount,
   diamondRate,
   onSetDiamondUsed,
-  selectedPromotion,
-  promotionDiscountAmount = 0,
-  promotionCount = 0,
-  onOpenPromotionPicker,
-  onClearPromotion,
   isCreditLockedByPromotion = false,
+  hasPartialCreditRestriction = false,
 }: CheckoutTipAndDiamondSectionProps) {
+  const [customDiamondDraft, setCustomDiamondDraft] = useState<string | null>(null);
   return (
     <>
       {/* Section 1B: Tiền Tip Cho Chuyên Viên (Mốc thông dụng + Gợi ý theo % giá trị ca phục vụ) */}
@@ -342,103 +334,6 @@ export function CheckoutTipAndDiamondSection({
       </div>
 
       {/* Section 1C: Khuyến Mãi (Promotion) */}
-      {onOpenPromotionPicker && (
-        <div>
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider px-1 mb-1.5">
-            <span className={`flex items-center gap-1 text-[var(--mos-text-muted)]`}>
-              <Tag className="w-3 h-3 text-amber-500" />
-              <span>KHUYẾN MÃI (PROMOTION)</span>
-            </span>
-            {promotionCount > 0 && (
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border tabular-nums ${
-                  isDark
-                    ? 'text-amber-300 bg-amber-950/40 border-amber-700'
-                    : 'text-amber-800 bg-amber-50 border-amber-200'
-                }`}
-              >
-                {promotionCount} ưu đãi
-              </span>
-            )}
-          </div>
-          <div
-            className={`${
-              isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-white border-neutral-100 shadow-sm'
-            } rounded-2xl p-3 border`}
-          >
-            {selectedPromotion ? (
-              <div
-                className={`flex items-center justify-between gap-2 rounded-xl border p-2.5 ${
-                  isDark ? 'bg-emerald-950/30 border-emerald-700/60' : 'bg-emerald-50/70 border-emerald-200'
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div
-                    className={`text-[12.5px] font-black truncate ${isDark ? 'text-emerald-200' : 'text-emerald-950'}`}
-                  >
-                    {selectedPromotion.name}
-                  </div>
-                  <div
-                    className={`text-[11px] font-bold tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}
-                  >
-                    Giảm -{promotionDiscountAmount.toLocaleString('vi-VN')}đ
-                    {isCreditLockedByPromotion ? ' · Khóa Ví Kim Cương' : ''}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    data-testid="change-promotion-btn"
-                    onClick={onOpenPromotionPicker}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer active:scale-95 ${
-                      isDark
-                        ? 'bg-neutral-800 border-neutral-700 text-amber-300 hover:bg-neutral-700'
-                        : 'bg-white border-neutral-200 text-amber-800 hover:bg-amber-50'
-                    }`}
-                  >
-                    Đổi
-                  </button>
-                  {onClearPromotion && (
-                    <button
-                      type="button"
-                      data-testid="clear-promotion-btn"
-                      onClick={onClearPromotion}
-                      aria-label="Gỡ khuyến mãi"
-                      className={`p-1.5 rounded-lg border cursor-pointer active:scale-95 ${
-                        isDark
-                          ? 'bg-neutral-800 border-neutral-700 text-rose-400 hover:bg-rose-950/50'
-                          : 'bg-white border-neutral-200 text-rose-600 hover:bg-rose-50'
-                      }`}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                data-testid="open-promotion-picker-btn"
-                onClick={onOpenPromotionPicker}
-                className={`w-full py-2.5 px-3 rounded-xl border border-dashed flex items-center justify-between text-[12px] font-bold transition-colors cursor-pointer active:scale-[0.99] ${
-                  isDark
-                    ? 'bg-neutral-800/50 border-neutral-700 text-amber-300 hover:border-amber-500/60'
-                    : 'bg-amber-50/40 border-amber-300/80 text-amber-900 hover:bg-amber-50'
-                }`}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Tag className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Chọn chương trình khuyến mãi</span>
-                </span>
-                <span className={`text-[11px] font-semibold ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                  + Áp dụng
-                </span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Section 1D: Ví Kim Cương (1 💎 = 1.000 VNĐ) */}
       <div>
         <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider px-1 mb-1.5">
@@ -478,6 +373,18 @@ export function CheckoutTipAndDiamondSection({
               <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
                 Chọn số Kim Cương dùng để cấn trừ (1 💎 = 1.000đ):
               </div>
+              {hasPartialCreditRestriction && (
+                <div
+                  data-testid="diamond-partial-restriction-note"
+                  className={`rounded-xl border px-2.5 py-1.5 text-[10.5px] font-semibold ${
+                    isDark
+                      ? 'bg-amber-950/30 border-amber-800/60 text-amber-200'
+                      : 'bg-amber-50 border-amber-200 text-amber-900'
+                  }`}
+                >
+                  Chỉ cấn trừ tối đa {maxDiamondCanUse} 💎 cho các mục không gắn khuyến mãi khóa Kim Cương.
+                </div>
+              )}
 
               {/* Quick Presets */}
               <div className="grid grid-cols-5 gap-1.5">
@@ -523,6 +430,85 @@ export function CheckoutTipAndDiamondSection({
                 >
                   {maxDiamondCanUse} 💎
                 </button>
+              </div>
+
+              {/* Custom Diamond Stepper & Numeric Input */}
+              <div
+                className={`flex items-center justify-center rounded-xl border px-2.5 py-2 ${
+                  isDark ? 'bg-neutral-950/70 border-neutral-800' : 'bg-cyan-50/40 border-cyan-200/80'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    aria-label="Giảm 1 Kim Cương"
+                    disabled={effectiveDiamondUsed <= 0}
+                    onClick={() => {
+                      setCustomDiamondDraft(null);
+                      onSetDiamondUsed(Math.max(0, effectiveDiamondUsed - 1));
+                    }}
+                    className={`w-8 h-8 rounded-lg font-black text-sm flex items-center justify-center border transition-all cursor-pointer active:scale-95 ${
+                      effectiveDiamondUsed <= 0
+                        ? isDark
+                          ? 'bg-neutral-900 border-neutral-800 text-neutral-600 cursor-not-allowed'
+                          : 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
+                        : isDark
+                          ? 'bg-neutral-800 border-neutral-700 text-cyan-300 hover:bg-neutral-700'
+                          : 'bg-white border-cyan-200 text-cyan-800 hover:bg-cyan-50'
+                    }`}
+                  >
+                    −
+                  </button>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      aria-label="Nhập số Kim Cương sử dụng"
+                      data-testid="diamond-custom-input"
+                      value={customDiamondDraft !== null ? customDiamondDraft : String(effectiveDiamondUsed)}
+                      onFocus={() => setCustomDiamondDraft(String(effectiveDiamondUsed))}
+                      onChange={(e) => {
+                        const rawDigits = e.target.value.replace(/\D/g, '');
+                        if (rawDigits === '') {
+                          setCustomDiamondDraft('');
+                          onSetDiamondUsed(0);
+                          return;
+                        }
+                        const parsed = Math.min(maxDiamondCanUse, Math.max(0, Number.parseInt(rawDigits, 10) || 0));
+                        setCustomDiamondDraft(String(parsed));
+                        onSetDiamondUsed(parsed);
+                      }}
+                      onBlur={() => setCustomDiamondDraft(null)}
+                      className={`w-24 h-8 px-6 rounded-lg border text-center text-[13px] font-black tabular-nums outline-none transition-colors ${
+                        isDark
+                          ? 'bg-neutral-900 border-cyan-700/70 text-cyan-200 focus:border-cyan-400'
+                          : 'bg-white border-cyan-300 text-cyan-950 focus:border-cyan-600'
+                      }`}
+                    />
+                    <span className="absolute right-2 text-[11px] pointer-events-none">💎</span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Tăng 1 Kim Cương"
+                    disabled={effectiveDiamondUsed >= maxDiamondCanUse}
+                    onClick={() => {
+                      setCustomDiamondDraft(null);
+                      onSetDiamondUsed(Math.min(maxDiamondCanUse, effectiveDiamondUsed + 1));
+                    }}
+                    className={`w-8 h-8 rounded-lg font-black text-sm flex items-center justify-center border transition-all cursor-pointer active:scale-95 ${
+                      effectiveDiamondUsed >= maxDiamondCanUse
+                        ? isDark
+                          ? 'bg-neutral-900 border-neutral-800 text-neutral-600 cursor-not-allowed'
+                          : 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
+                        : isDark
+                          ? 'bg-neutral-800 border-neutral-700 text-cyan-300 hover:bg-neutral-700'
+                          : 'bg-white border-cyan-200 text-cyan-800 hover:bg-cyan-50'
+                    }`}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               {/* Status banner */}

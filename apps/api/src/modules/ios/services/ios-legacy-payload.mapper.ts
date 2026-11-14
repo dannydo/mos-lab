@@ -1,12 +1,16 @@
 import {
-  calculateIosPromotionDiscount,
   canDirectlySettleCounterPayment,
   IosCartProductItem,
+  IosPaymentBreakdown,
+  IosPaymentMethod,
   IosPromotionOption,
   resolveEffectiveServiceTotal,
+  resolveNormalizedPaymentBreakdown,
   SafeAny,
 } from '@mos-lab/shared';
 import { LegacyOrderCatalogSnapshot } from './ios-legacy-catalog.service.js';
+import { buildLegacySelectedProductsForPayment } from './ios-legacy-product-mapper.service.js';
+import { resolveLegacyPromotionDiscountsAndCredits } from './ios-promotions.service.js';
 
 export {
   inferComboTotalSessions,
@@ -48,13 +52,20 @@ export interface BuildLegacyPaymentPayloadInput {
   serviceName?: string;
   promotionId?: number | null;
   appliedPromotion?: IosPromotionOption | null;
+  servicePromotionId?: number | null;
+  servicePromotion?: IosPromotionOption | null;
+  comboPromotionId?: number | null;
+  comboPromotion?: IosPromotionOption | null;
+  underComboPromotionId?: number | null;
+  underComboPromotion?: IosPromotionOption | null;
   billing?: SafeAny;
   settlementActorTier?: string | null;
   catalog: LegacyOrderCatalogSnapshot;
 }
 
 export interface BuiltLegacyOrderPayloads {
-  paymentMethod: 'CASH' | 'POS' | 'VIETQR';
+  paymentMethod: IosPaymentMethod;
+  paymentBreakdown: IosPaymentBreakdown;
   shouldSettleCompletedImmediately: boolean;
   promotionId: number | null;
   discountAmount: number;
@@ -97,12 +108,14 @@ export function resolveDiamondCreditUnits(diamondUsed?: number, diamondDiscountA
 export function shouldAutoCompleteLegacyOrder(
   paymentMethod: string,
   grandTotal: number,
-  actorTierOrRole?: string | null
+  actorTierOrRole?: string | null,
+  paymentBreakdown?: Partial<IosPaymentBreakdown> | null
 ): boolean {
   if (Math.round(Number(grandTotal || 0)) <= 0) {
     return true;
   }
-  if (String(paymentMethod || 'VIETQR').toUpperCase() === 'VIETQR') {
+  const normalized = resolveNormalizedPaymentBreakdown(grandTotal, paymentMethod, paymentBreakdown);
+  if (normalized.isPureVietqrOrZero) {
     return true;
   }
   return canDirectlySettleCounterPayment(actorTierOrRole);
@@ -385,41 +398,70 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
       ? input.appliedPromotion
       : null;
 
-  const promoBreakdown = calculateIosPromotionDiscount({
-    promotion: appliedPromotion,
-    serviceAmount: effectiveServiceTotal,
-    upgradeAmount: Number(upgradePrice || 0),
-    comboAmount: comboTotal,
-    productAmount: productTotal,
-    vatRate: 0.08,
+  const servicePromotion = input.servicePromotion ?? null;
+  const comboPromotion = input.comboPromotion ?? null;
+  const underComboPromotion = input.underComboPromotion ?? null;
+  const {
+    hasAnyItemizedPromoObj,
+    hasAnyPromoObj,
+    itemizedPromo,
+    serviceDiscount,
+    comboDiscount,
+    productDiscount,
+    orderDiscountTotal,
+    diamondCredits,
+  } = resolveLegacyPromotionDiscountsAndCredits({
+    effectiveServiceTotal,
+    upgradePrice: Number(upgradePrice || 0),
+    upperComboPrice,
+    underComboPrice,
+    comboTotal,
+    productTotal,
+    cartProducts,
+    servicePromotion,
+    comboPromotion,
+    underComboPromotion,
+    appliedPromotion,
+    effectivePromotionId,
+    billing,
+    rawDiamondCredits: resolveDiamondCreditUnits(billing?.diamondUsed, billing?.diamondDiscountAmount),
   });
 
-  let serviceDiscount = appliedPromotion
-    ? promoBreakdown.serviceDiscount
-    : Math.max(0, Math.round(Number(billing?.serviceDiscountAmount ?? 0)));
-  let comboDiscount = appliedPromotion
-    ? promoBreakdown.comboDiscount
-    : Math.max(0, Math.round(Number(billing?.comboDiscountAmount ?? 0)));
-  let productDiscount = appliedPromotion
-    ? promoBreakdown.productDiscount
-    : Math.max(0, Math.round(Number(billing?.productDiscountAmount ?? 0)));
-  const orderDiscountTotal = appliedPromotion
-    ? promoBreakdown.totalDiscount
-    : Math.max(
-        0,
-        Math.round(Number(billing?.promotionDiscountAmount ?? serviceDiscount + comboDiscount + productDiscount))
-      );
+  const resolvedServicePromoId =
+    servicePromotion?.promotionId ??
+    (input.servicePromotionId && Number(input.servicePromotionId) > 0 ? Number(input.servicePromotionId) : null) ??
+    effectivePromotionId;
+  const resolvedUpperComboPromoId =
+    comboPromotion?.promotionId ??
+    (input.comboPromotionId && Number(input.comboPromotionId) > 0 ? Number(input.comboPromotionId) : null) ??
+    effectivePromotionId;
+  const resolvedUnderComboPromoId =
+    underComboPromotion?.promotionId ??
+    (input.underComboPromotionId && Number(input.underComboPromotionId) > 0
+      ? Number(input.underComboPromotionId)
+      : null) ??
+    effectivePromotionId;
 
-  if (effectivePromotionId && orderDiscountTotal > 0 && serviceDiscount + comboDiscount + productDiscount === 0) {
-    if (effectiveServiceTotal > 0) serviceDiscount = Math.min(effectiveServiceTotal, orderDiscountTotal);
-    else if (comboTotal > 0) comboDiscount = Math.min(comboTotal, orderDiscountTotal);
-    else if (productTotal > 0) productDiscount = Math.min(productTotal, orderDiscountTotal);
-  }
+  const isServiceCreditRestricted = Boolean(
+    (servicePromotion && servicePromotion.isCreditAllowed === false && serviceDiscount > 0) ||
+    (!hasAnyItemizedPromoObj && appliedPromotion && appliedPromotion.isCreditAllowed === false && serviceDiscount > 0)
+  );
 
-  const isCreditLockedByPromo = Boolean(appliedPromotion && appliedPromotion.isCreditAllowed === false);
-  const diamondCredits = isCreditLockedByPromo
-    ? 0
-    : resolveDiamondCreditUnits(billing?.diamondUsed, billing?.diamondDiscountAmount);
+  const chargeIncludesSingleUnder = Boolean(includeUnderServiceSlot && !underUsesBalancePackage);
+  const upperServiceChargeCap =
+    (upperUsesBalancePackage
+      ? 0
+      : Math.max(0, Math.round(Number(catalog.upperService.singlePriceAmount || effectiveServiceTotal)))) +
+    Math.max(0, Math.round(Number(upgradePrice || 0)));
+  const upperServiceDiscount =
+    chargeIncludesSingleUnder && serviceDiscount > 0
+      ? Math.min(upperServiceChargeCap, serviceDiscount)
+      : serviceDiscount;
+  const underServiceDiscount =
+    chargeIncludesSingleUnder && serviceDiscount > 0 ? Math.max(0, serviceDiscount - upperServiceDiscount) : 0;
+
+  const serviceLineCredits = !isServiceCreditRestricted ? diamondCredits : 0;
+  const remainingProductCreditsToAssign = isServiceCreditRestricted ? diamondCredits : 0;
 
   const selectedService: Array<Record<string, SafeAny>> = [
     {
@@ -430,9 +472,9 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
       assigned_staff_id: String(assignedStaffId),
       upgrade_price: String(Math.max(0, Math.round(Number(upgradePrice || 0)))),
       downgrade_price: '0',
-      ...(effectivePromotionId && serviceDiscount > 0 ? { promotion_id: String(effectivePromotionId) } : {}),
-      discount_amount: String(serviceDiscount),
-      paid_credit_amount: String(diamondCredits),
+      ...(resolvedServicePromoId && upperServiceDiscount > 0 ? { promotion_id: String(resolvedServicePromoId) } : {}),
+      discount_amount: String(upperServiceDiscount),
+      paid_credit_amount: String(serviceLineCredits),
     },
   ];
 
@@ -448,19 +490,24 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
       assigned_staff_id: String(assignedStaffId),
       upgrade_price: '0',
       downgrade_price: '0',
-      discount_amount: '0',
+      ...(resolvedServicePromoId && underServiceDiscount > 0 ? { promotion_id: String(resolvedServicePromoId) } : {}),
+      discount_amount: String(underServiceDiscount),
       paid_credit_amount: '0',
     });
   }
 
-  const upperComboDiscount =
-    comboDiscount > 0 && hasUpperComboPurchase && comboTotal > 0
+  const upperComboDiscount = hasAnyPromoObj
+    ? itemizedPromo.comboDiscount
+    : comboDiscount > 0 && hasUpperComboPurchase && comboTotal > 0
       ? hasUnderComboPurchase
         ? Math.min(upperComboPrice, Math.round((comboDiscount * upperComboPrice) / comboTotal))
         : comboDiscount
       : 0;
-  const underComboDiscount =
-    comboDiscount > 0 && hasUnderComboPurchase ? Math.max(0, comboDiscount - upperComboDiscount) : 0;
+  const underComboDiscount = hasAnyPromoObj
+    ? itemizedPromo.underComboDiscount
+    : comboDiscount > 0 && hasUnderComboPurchase
+      ? Math.max(0, comboDiscount - upperComboDiscount)
+      : 0;
 
   const selectedServiceCombo: Array<Record<string, SafeAny>> = [];
   if (hasUpperComboPurchase && catalog.upperCombo) {
@@ -468,7 +515,9 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
       service_id: String(catalog.upperCombo.serviceId),
       service_price_id: String(catalog.upperCombo.servicePriceId),
       service_price_ids: [String(catalog.upperCombo.servicePriceId)],
-      ...(effectivePromotionId && upperComboDiscount > 0 ? { promotion_id: String(effectivePromotionId) } : {}),
+      ...(resolvedUpperComboPromoId && upperComboDiscount > 0
+        ? { promotion_id: String(resolvedUpperComboPromoId) }
+        : {}),
       discount_amount: String(upperComboDiscount),
     });
   } else if (hasUnderComboPurchase && includeUnderServiceSlot) {
@@ -481,7 +530,9 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
       service_id: String(catalog.underCombo.serviceId),
       service_price_id: String(catalog.underCombo.servicePriceId),
       service_price_ids: [String(catalog.underCombo.servicePriceId)],
-      ...(effectivePromotionId && underComboDiscount > 0 ? { promotion_id: String(effectivePromotionId) } : {}),
+      ...(resolvedUnderComboPromoId && underComboDiscount > 0
+        ? { promotion_id: String(resolvedUnderComboPromoId) }
+        : {}),
       discount_amount: String(underComboDiscount),
     });
   }
@@ -496,47 +547,35 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
     Math.round(Number(billing?.grandTotal ?? subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountVnd))
   );
 
-  const rawMethod = String(billing?.paymentMethod || 'VIETQR').toUpperCase();
-  const paymentMethod: 'CASH' | 'POS' | 'VIETQR' =
-    rawMethod === 'CASH' ? 'CASH' : rawMethod === 'POS' ? 'POS' : 'VIETQR';
+  const normalizedPayment = resolveNormalizedPaymentBreakdown(
+    grandTotal,
+    billing?.paymentMethod,
+    billing?.paymentBreakdown
+  );
+  const paymentMethod = normalizedPayment.paymentMethod;
   const shouldSettleCompletedImmediately = shouldAutoCompleteLegacyOrder(
     paymentMethod,
     grandTotal,
-    settlementActorTier
+    settlementActorTier,
+    normalizedPayment.breakdown
   );
 
   const bankTransferRef =
     String(billing?.bankTransferRef || '').trim() ||
-    (paymentMethod === 'VIETQR' && grandTotal > 0 ? `MOS-VIETQR-${orderId}-${Date.now()}` : '');
+    (normalizedPayment.hasVietqr && grandTotal > 0 ? `MOS-VIETQR-${orderId}-${Date.now()}` : '');
 
-  const eligibleProducts = catalog.products.filter((p) => p.firstInventoryWarehouseOrderItemId > 0);
-  const eligibleProductsGross = eligibleProducts.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0);
-  let remainingProductPromoDiscount = productDiscount;
-  const selectedProductForPayment = eligibleProducts.map((p, idx) => {
-    const grossLine = p.unitPrice * p.quantity;
-    let promoLineDiscount = 0;
-    if (remainingProductPromoDiscount > 0 && eligibleProductsGross > 0) {
-      if (idx === eligibleProducts.length - 1) {
-        promoLineDiscount = Math.min(grossLine, remainingProductPromoDiscount);
-      } else {
-        promoLineDiscount = Math.min(grossLine, Math.round((productDiscount * grossLine) / eligibleProductsGross));
-      }
-      remainingProductPromoDiscount = Math.max(0, remainingProductPromoDiscount - promoLineDiscount);
-    }
-    const lineDiscount = Math.max(Number(p.discountAmount || 0), promoLineDiscount);
-    const lineAfterDisc = Math.max(0, grossLine - lineDiscount);
-    const lineTax = Math.round(lineAfterDisc * 0.08);
-    return {
-      order_id: String(orderId),
-      product_id: String(p.productId),
-      first_inventory_warehouse_order_item_ids: [String(p.firstInventoryWarehouseOrderItemId)],
-      product_price: String(grossLine),
-      ...(effectivePromotionId && lineDiscount > 0 ? { promotion_id: String(effectivePromotionId) } : {}),
-      discount_amount: String(lineDiscount),
-      paid_credit_amount: '0',
-      tax_amount: String(lineTax),
-    };
+  const selectedProductForPayment = buildLegacySelectedProductsForPayment({
+    orderId,
+    catalogProducts: catalog.products,
+    cartProducts,
+    productDiscount,
+    effectivePromotionId,
+    hasAnyPromoObj,
+    itemizedProductDiscounts: itemizedPromo.productDiscounts,
+    remainingProductCreditsToAssign,
   });
+
+  const orderLevelPromotionId = hasAnyItemizedPromoObj ? itemizedPromo.unifiedOrderPromotionId : effectivePromotionId;
 
   const upperAttrMap = buildUpperLashAttributeMap({ attributes, serviceName, selectedCombo });
   const underAttrMap = buildUnderLashAttributeMap(attributes);
@@ -581,12 +620,12 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
     selected_service: selectedService,
     selected_service_combo: selectedServiceCombo,
     selected_product: selectedProductForPayment,
-    ...(effectivePromotionId && effectivePromotionId > 0 ? { promotion_id: String(effectivePromotionId) } : {}),
+    ...(orderLevelPromotionId && orderLevelPromotionId > 0 ? { promotion_id: String(orderLevelPromotionId) } : {}),
     ...(catalog.userUrlId && catalog.userUrlId > 0 ? { user_url_id: String(catalog.userUrlId) } : {}),
-    paid_cash_amount: paymentMethod === 'CASH' ? String(grandTotal) : '0',
-    paid_credit_card_amount: paymentMethod === 'POS' ? String(grandTotal) : '0',
-    paid_bank_transfer_amount: paymentMethod === 'VIETQR' ? String(grandTotal) : '0',
-    ...(paymentMethod === 'VIETQR' && bankTransferRef ? { paid_bank_transfer_transaction_id: bankTransferRef } : {}),
+    paid_cash_amount: String(normalizedPayment.breakdown.cashAmount),
+    paid_credit_card_amount: String(normalizedPayment.breakdown.posAmount),
+    paid_bank_transfer_amount: String(normalizedPayment.breakdown.vietqrAmount),
+    ...(normalizedPayment.hasVietqr && bankTransferRef ? { paid_bank_transfer_transaction_id: bankTransferRef } : {}),
     paid_credit_amount: String(diamondCredits),
     discount_amount: String(orderDiscountTotal),
     prepaid_amount: '0',
@@ -598,8 +637,9 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
 
   return {
     paymentMethod,
+    paymentBreakdown: normalizedPayment.breakdown,
     shouldSettleCompletedImmediately,
-    promotionId: effectivePromotionId,
+    promotionId: orderLevelPromotionId,
     discountAmount: orderDiscountTotal,
     subtotal,
     vatAmount,

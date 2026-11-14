@@ -6,15 +6,192 @@ import {
   formatExpiryDateDdMmYyyy,
   type ComboPurchaseExpiryResult,
   type ComboTodayUsageMode,
+  type IosScannedProductCatalogMatch,
+  type IosScannedProductUnit,
 } from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { mergeExpiryIntoRemainingWallet } from '../consultation/comboExpiryConsultHelpers';
 
 type PurchaseAccountingResult = ReturnType<typeof calculateComboPurchaseAccounting>;
 type RedemptionAccountingResult = ReturnType<typeof calculateComboRedemptionAccounting>;
-type SerumTierItem = (typeof SERUM_TIERS_CVL)[number];
+export type SerumTierItem = (typeof SERUM_TIERS_CVL)[number];
+
+export const YEPPEUM_PRODUCT_ID = 36;
+
+export function isYeppeumProductItem(item: { productId?: number; productName?: string }): boolean {
+  return Number(item.productId) === YEPPEUM_PRODUCT_ID || /yeppeum|dưỡng mi/i.test(item.productName || '');
+}
+
+/** Hydrate serum stick count & price tier from booking.cartProducts when revisiting Upsell. */
+export function resolveInitialSerumSelection(cartProducts?: BookingItem['cartProducts']): {
+  count: number;
+  tierId: string;
+} {
+  const matched = (cartProducts || []).find((p) => Number(p.quantity || 0) > 0 && isYeppeumProductItem(p));
+  if (!matched) {
+    return { count: 0, tierId: SERUM_TIERS_CVL[0].id };
+  }
+  const byPrice = SERUM_TIERS_CVL.find((tier) => Number(tier.price) === Number(matched.price));
+  const byLabel = SERUM_TIERS_CVL.find((tier) => (matched.productName || '').includes(tier.label));
+  return {
+    count: Math.max(0, Number(matched.quantity || 0)),
+    tierId: (byPrice || byLabel || SERUM_TIERS_CVL[0]).id,
+  };
+}
+
+export function formatCartProductDisplayName(name?: string | null): string {
+  return (name || '').replace(/\s*\(\s*Giá gốc[^)]*\)/gi, '').trim();
+}
+
+/** Add, update quantity, or remove Dưỡng Mi Yeppeum Korea while preserving non-serum items, scanned units & applied promos. */
+export function upsertYeppeumInCartProducts(
+  cartProducts: BookingItem['cartProducts'] | undefined,
+  count: number,
+  tier: SerumTierItem = SERUM_TIERS_CVL[0]
+): NonNullable<BookingItem['cartProducts']> {
+  const safeCount = Math.max(0, Math.round(count));
+  const existing = cartProducts || [];
+  const existingYeppeum = existing.find((p) => isYeppeumProductItem(p));
+  const others = existing.filter((p) => !isYeppeumProductItem(p));
+  if (safeCount <= 0) {
+    return others;
+  }
+  const productName = tier.id === 'serum-orig' ? 'Dưỡng Mi Yeppeum Korea' : `Dưỡng Mi Yeppeum Korea (${tier.label})`;
+  const existingUnits = existingYeppeum?.scannedUnits?.slice(0, safeCount);
+  return [
+    ...others,
+    {
+      productId: existingYeppeum?.productId || YEPPEUM_PRODUCT_ID,
+      productName,
+      price: tier.price,
+      quantity: safeCount,
+      cvBonus: tier.cvBonus,
+      ...(existingUnits && existingUnits.length > 0 ? { scannedUnits: existingUnits } : {}),
+      ...(existingYeppeum?.appliedPromotion ? { appliedPromotion: existingYeppeum.appliedPromotion } : {}),
+      ...(existingYeppeum?.promotionId ? { promotionId: existingYeppeum.promotionId } : {}),
+    },
+  ];
+}
+
+export function applyYeppeumTierToCartProducts(
+  cartProducts: BookingItem['cartProducts'] | undefined,
+  tier: SerumTierItem
+): NonNullable<BookingItem['cartProducts']> {
+  const existing = cartProducts || [];
+  return existing.map((item) => {
+    if (!isYeppeumProductItem(item)) return item;
+    const productName = tier.id === 'serum-orig' ? 'Dưỡng Mi Yeppeum Korea' : `Dưỡng Mi Yeppeum Korea (${tier.label})`;
+    return {
+      ...item,
+      productName,
+      price: tier.price,
+      cvBonus: tier.cvBonus,
+    };
+  });
+}
+
+export function addScannedProductToCartProducts(
+  cartProducts: BookingItem['cartProducts'] | undefined,
+  scanned: IosScannedProductCatalogMatch,
+  options?: { yeppeumTierOverride?: SerumTierItem }
+): NonNullable<BookingItem['cartProducts']> {
+  const existing = [...(cartProducts || [])];
+  const unit: IosScannedProductUnit = scanned.scannedUnit;
+
+  // Guard against scanning duplicate physical unit anywhere in cart
+  const alreadyPresent = existing.some((item) =>
+    (item.scannedUnits || []).some((u) => u.inventoryWarehouseItemId === unit.inventoryWarehouseItemId)
+  );
+  if (alreadyPresent) {
+    return existing;
+  }
+
+  const isYeppeum = isYeppeumProductItem({ productId: scanned.productId, productName: scanned.productName });
+  const tier = options?.yeppeumTierOverride;
+  const resolvedProductName =
+    isYeppeum && tier
+      ? tier.id === 'serum-orig'
+        ? formatCartProductDisplayName(scanned.productName) || 'Dưỡng Mi Yeppeum Korea'
+        : `${formatCartProductDisplayName(scanned.productName) || 'Dưỡng Mi Yeppeum Korea'} (${tier.label})`
+      : formatCartProductDisplayName(scanned.productName);
+  const resolvedPrice = isYeppeum && tier ? tier.price : scanned.unitPrice;
+  const resolvedCvBonus = isYeppeum && tier ? tier.cvBonus : scanned.cvBonus;
+
+  const targetIdx = existing.findIndex(
+    (item) => Number(item.productId) === Number(scanned.productId) || (isYeppeum && isYeppeumProductItem(item))
+  );
+
+  if (targetIdx >= 0) {
+    const currentItem = existing[targetIdx];
+    const nextUnits = [...(currentItem.scannedUnits || []), unit];
+    existing[targetIdx] = {
+      ...currentItem,
+      productId: scanned.productId,
+      productName: resolvedProductName || formatCartProductDisplayName(currentItem.productName),
+      price: currentItem.price !== undefined && currentItem.quantity > 0 ? currentItem.price : resolvedPrice,
+      cvBonus: currentItem.cvBonus ?? resolvedCvBonus,
+      scannedUnits: nextUnits,
+      quantity: nextUnits.length,
+    };
+    return existing;
+  }
+
+  return [
+    ...existing,
+    {
+      productId: scanned.productId,
+      productName: resolvedProductName,
+      price: resolvedPrice,
+      quantity: 1,
+      cvBonus: resolvedCvBonus,
+      scannedUnits: [unit],
+    },
+  ];
+}
+
+export function removeScannedUnitFromCartProducts(
+  cartProducts: BookingItem['cartProducts'] | undefined,
+  productIndex: number,
+  inventoryWarehouseItemId?: number
+): NonNullable<BookingItem['cartProducts']> {
+  const existing = cartProducts || [];
+  return existing
+    .map((item, idx) => {
+      if (idx !== productIndex) return item;
+      const units = item.scannedUnits || [];
+      if (units.length > 0) {
+        const nextUnits =
+          inventoryWarehouseItemId !== undefined
+            ? units.filter((u) => u.inventoryWarehouseItemId !== inventoryWarehouseItemId)
+            : units.slice(0, -1);
+        return {
+          ...item,
+          scannedUnits: nextUnits,
+          quantity: nextUnits.length,
+        };
+      }
+      return {
+        ...item,
+        quantity: Math.max(0, Number(item.quantity || 0) - 1),
+      };
+    })
+    .filter((item) => item.quantity > 0);
+}
+
+export function collectScannedWarehouseItemIds(cartProducts?: BookingItem['cartProducts']): number[] {
+  const ids: number[] = [];
+  for (const item of cartProducts || []) {
+    for (const unit of item.scannedUnits || []) {
+      if (Number(unit.inventoryWarehouseItemId) > 0) {
+        ids.push(Number(unit.inventoryWarehouseItemId));
+      }
+    }
+  }
+  return ids;
+}
 
 export interface BuildUpsellCheckoutPayloadParams {
+  existingCartProducts?: BookingItem['cartProducts'];
   yeppeumCount: number;
   selectedSerumTier: SerumTierItem;
   isExistingComboLive: boolean;
@@ -39,6 +216,7 @@ export interface BuildUpsellCheckoutPayloadParams {
 }
 
 export function buildUpsellCheckoutPayload({
+  existingCartProducts,
   yeppeumCount,
   selectedSerumTier,
   isExistingComboLive,
@@ -61,18 +239,7 @@ export function buildUpsellCheckoutPayload({
   underTodayUsageMode,
   selectedUnderExpiry,
 }: BuildUpsellCheckoutPayloadParams) {
-  const cartProducts =
-    yeppeumCount > 0
-      ? [
-          {
-            productId: 36,
-            productName: `Dưỡng Mi Yeppeum Korea (${selectedSerumTier.label})`,
-            price: selectedSerumTier.price,
-            quantity: yeppeumCount,
-            cvBonus: selectedSerumTier.cvBonus,
-          },
-        ]
-      : [];
+  const cartProducts = upsertYeppeumInCartProducts(existingCartProducts, yeppeumCount, selectedSerumTier);
 
   const effectiveUseOldComboToday =
     shouldUseOldUpperComboToday !== undefined ? shouldUseOldUpperComboToday : isExistingComboLive;

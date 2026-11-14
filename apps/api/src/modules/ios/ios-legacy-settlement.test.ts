@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import mysql from 'mysql2/promise';
 import {
   calculateDualComboTierBonus,
+  calculateIosItemizedPromotionDiscounts,
   calculateIosPromotionDiscount,
   IosPromotionOption,
   SafeAny,
@@ -782,4 +783,286 @@ test('Promotion Discount Math & Legacy PHP /order/payment/update Payload Sync (s
   assert.equal(newGuestOk.statusCode, 200);
   assert.equal(newGuestOk.payload.override.promotionId, 77);
   assert.equal(newGuestOk.payload.override.billing.diamondUsed, 0);
+});
+
+test('A7-Itemized: Per-item promotions on service/combo/product, partial Diamond credit & SAVE_PROMOTION targetScope', async () => {
+  const servicePromoNoCredit: IosPromotionOption = {
+    promotionId: 19,
+    promotionKey: 'PROMO-SVC-20',
+    promotionType: 'normal',
+    promotionApply: 'single',
+    serviceGroup: null,
+    name: 'Giảm 20% Dịch Vụ Mi',
+    shortName: 'Giảm 20%',
+    discountPercentage: 20,
+    discountAmount: 0,
+    exactlyAmount: 0,
+    isOldUserDisabled: false,
+    isApprovalRequired: false,
+    isPublic: true,
+    isSystem: false,
+    isCreditAllowed: false,
+    dateExpired: null,
+    position: 1,
+  };
+
+  const productPromoWithCredit: IosPromotionOption = {
+    promotionId: 25,
+    promotionKey: 'SERUM-10',
+    promotionType: 'normal',
+    promotionApply: 'all',
+    serviceGroup: null,
+    name: 'Giảm 10% Dưỡng Mi',
+    shortName: 'Dưỡng -10%',
+    discountPercentage: 10,
+    discountAmount: 0,
+    exactlyAmount: 0,
+    isOldUserDisabled: false,
+    isApprovalRequired: false,
+    isPublic: true,
+    isSystem: false,
+    isCreditAllowed: true,
+    dateExpired: null,
+    position: 2,
+  };
+
+  const breakdown = calculateIosItemizedPromotionDiscounts({
+    serviceAmount: 880000,
+    upgradeAmount: 0,
+    servicePromotion: servicePromoNoCredit,
+    comboAmount: 3000000,
+    comboPromotion: null,
+    underComboAmount: 0,
+    underComboPromotion: null,
+    products: [{ productId: 901, amount: 500000, promotion: productPromoWithCredit }],
+    vatRate: 0.08,
+  });
+
+  // Service: 20% of 880k = 176k (not credit-eligible); Product: 10% of 500k = 50k (credit-eligible)
+  assert.equal(breakdown.serviceDiscount, 176000);
+  assert.equal(breakdown.totalProductDiscount, 50000);
+  assert.equal(breakdown.totalDiscount, 226000);
+  assert.equal(breakdown.hasAnyCreditRestrictedItem, true);
+  assert.equal(breakdown.isFullCreditLocked, false);
+  // Credit-eligible payable = Combo (3,000,000) + Product net (450,000) = 3,450,000 + 8% VAT = 3,726,000
+  assert.equal(breakdown.creditEligiblePayableWithVat, Math.round((3000000 + 450000) * 1.08));
+
+  // Build legacy payloads: 200 💎 = 200,000đ <= credit-eligible product payable (486,000đ) -> applied ONLY to product, 0 on service
+  const built = buildLegacyOrderPayloads({
+    orderId: 339955,
+    assignedStaffId: 46272,
+    serviceName: 'HyperLight 4X 880',
+    servicePrice: 880000,
+    servicePromotionId: servicePromoNoCredit.promotionId,
+    servicePromotion: servicePromoNoCredit,
+    cartProducts: [
+      {
+        productId: 901,
+        productName: 'Dưỡng Mi Cao Cấp',
+        price: 500000,
+        quantity: 1,
+        promotionId: productPromoWithCredit.promotionId,
+        appliedPromotion: productPromoWithCredit,
+      },
+    ],
+    billing: {
+      paymentMethod: 'CASH',
+      diamondUsed: 200,
+      diamondDiscountAmount: 200000,
+      tipAmount: 0,
+    },
+    catalog: createMockCatalogSnapshot({
+      underService: undefined,
+      underCombo: undefined,
+      products: [
+        {
+          productId: 901,
+          inventoryWarehouseItemId: 8002,
+          firstInventoryWarehouseOrderItemId: 9002,
+          unitPrice: 500000,
+          quantity: 1,
+          discountAmount: 0,
+        },
+      ],
+      existingOrderServiceIds: [501001],
+    }),
+  });
+
+  assert.equal(built.selectedService[0].promotion_id, '19');
+  assert.equal(built.selectedService[0].discount_amount, '176000');
+  assert.equal(built.selectedService[0].paid_credit_amount, '0');
+  assert.equal(built.selectedProductForPayment[0].promotion_id, '25');
+  assert.equal(built.selectedProductForPayment[0].discount_amount, '50000');
+  assert.equal(built.selectedProductForPayment[0].paid_credit_amount, '200');
+  assert.equal(built.diamondCredits, 200);
+
+  // SAVE_PROMOTION with targetScope mutates service / product / combo independently
+  const repo = createOverrideRepository(createInMemoryConfigStore());
+  const ccUser = { id: 88, role: 'cc', careerTier: 'CC' as const, legacyStaffId: 37790, displayName: 'Diễm Hương' };
+
+  const afterSvc = await executeIosBookingAction(
+    ccUser,
+    {
+      bookingId: 339955,
+      action: 'SAVE_PROMOTION',
+      targetScope: 'service',
+      promotionId: servicePromoNoCredit.promotionId,
+      appliedPromotion: servicePromoNoCredit,
+      customerVisits: 5,
+    },
+    repo
+  );
+  assert.equal(afterSvc.statusCode, 200);
+  assert.equal(afterSvc.payload.override.servicePromotionId, 19);
+
+  // Add product to override via UPDATE_CART first or alongside product promo
+  const withCart = await executeIosBookingAction(
+    ccUser,
+    {
+      bookingId: 339955,
+      action: 'SAVE_UPSELL',
+      cartProducts: [{ productId: 901, productName: 'Dưỡng Mi Cao Cấp', price: 500000, quantity: 1 }],
+    },
+    repo
+  );
+  assert.equal(withCart.statusCode, 200);
+
+  const afterProd = await executeIosBookingAction(
+    ccUser,
+    {
+      bookingId: 339955,
+      action: 'SAVE_PROMOTION',
+      targetScope: 'product',
+      productIndex: 0,
+      productId: 901,
+      promotionId: productPromoWithCredit.promotionId,
+      appliedPromotion: productPromoWithCredit,
+      customerVisits: 5,
+    },
+    repo
+  );
+  assert.equal(afterProd.statusCode, 200);
+  assert.equal(afterProd.payload.override.servicePromotionId, 19);
+  assert.equal(afterProd.payload.override.cartProducts?.[0]?.promotionId, 25);
+
+  // Clearing service promo preserves product promo
+  const afterClearSvc = await executeIosBookingAction(
+    ccUser,
+    {
+      bookingId: 339955,
+      action: 'SAVE_PROMOTION',
+      targetScope: 'service',
+      promotionId: null,
+      appliedPromotion: null,
+      customerVisits: 5,
+    },
+    repo
+  );
+  assert.equal(afterClearSvc.statusCode, 200);
+  assert.equal(afterClearSvc.payload.override.servicePromotionId, null);
+  assert.equal(afterClearSvc.payload.override.cartProducts?.[0]?.promotionId, 25);
+
+  // Combos are never discounted: reject targetScope='combo' in SAVE_PROMOTION and keep comboDiscount=0 in math
+  const comboReject = await executeIosBookingAction(
+    ccUser,
+    {
+      bookingId: 339955,
+      action: 'SAVE_PROMOTION',
+      targetScope: 'combo' as SafeAny,
+      promotionId: servicePromoNoCredit.promotionId,
+      appliedPromotion: servicePromoNoCredit,
+      customerVisits: 5,
+    },
+    repo
+  );
+  assert.equal(comboReject.statusCode, 400);
+
+  const noComboBreakdown = calculateIosItemizedPromotionDiscounts({
+    serviceAmount: 880000,
+    comboAmount: 3000000,
+    comboPromotion: servicePromoNoCredit,
+    underComboAmount: 780000,
+    underComboPromotion: productPromoWithCredit,
+    products: [],
+    vatRate: 0.08,
+  });
+  assert.equal(noComboBreakdown.comboDiscount, 0);
+  assert.equal(noComboBreakdown.underComboDiscount, 0);
+  assert.equal(noComboBreakdown.totalDiscount, 0);
+
+  const allPromoSkipCombo = calculateIosPromotionDiscount({
+    promotion: { ...productPromoWithCredit, promotionApply: 'all' },
+    serviceAmount: 880000,
+    comboAmount: 3000000,
+    productAmount: 500000,
+    vatRate: 0.08,
+  });
+  assert.equal(allPromoSkipCombo.comboDiscount, 0);
+  assert.equal(allPromoSkipCombo.serviceDiscount, 88000);
+  assert.equal(allPromoSkipCombo.productDiscount, 50000);
+});
+
+test('A8-Split & Custom Diamond: MIXED 3-way payment split syncs paid_*_amount to PHP and respects A3 Cash Gate', () => {
+  // 880,000 + 8% VAT (70,400) = 950,400; minus custom 37 diamonds (-37,000) = 913,400
+  const breakdown = {
+    vietqrAmount: 400000,
+    posAmount: 300000,
+    cashAmount: 213400,
+  };
+
+  // CVL cannot self-settle a MIXED bill containing Cash or POS -> stops at CheckOut
+  const cvlBuilt = buildLegacyOrderPayloads({
+    orderId: 339988,
+    assignedStaffId: 46272,
+    serviceName: 'HyperLight 4X 880',
+    servicePrice: 880000,
+    settlementActorTier: 'CVL',
+    billing: {
+      paymentMethod: 'MIXED',
+      paymentBreakdown: breakdown,
+      diamondUsed: 37,
+      diamondDiscountAmount: 37000,
+      tipAmount: 0,
+    },
+    catalog: createMockCatalogSnapshot({
+      underService: undefined,
+      underCombo: undefined,
+      products: [],
+      existingOrderServiceIds: [501001],
+    }),
+  });
+
+  assert.equal(cvlBuilt.paymentMethod, 'MIXED');
+  assert.equal(cvlBuilt.shouldSettleCompletedImmediately, false);
+  assert.equal(cvlBuilt.diamondCredits, 37);
+  assert.equal(cvlBuilt.grandTotal, 913400);
+  assert.equal(cvlBuilt.paymentUpdatePayload.paid_credit_amount, '37');
+  assert.equal(cvlBuilt.paymentUpdatePayload.paid_bank_transfer_amount, '400000');
+  assert.equal(cvlBuilt.paymentUpdatePayload.paid_credit_card_amount, '300000');
+  assert.equal(cvlBuilt.paymentUpdatePayload.paid_cash_amount, '213400');
+
+  // CC settles immediately to Completed with exact 3-channel PHP split amounts
+  const ccBuilt = buildLegacyOrderPayloads({
+    orderId: 339988,
+    assignedStaffId: 46272,
+    serviceName: 'HyperLight 4X 880',
+    servicePrice: 880000,
+    settlementActorTier: 'CC',
+    billing: {
+      paymentMethod: 'MIXED',
+      paymentBreakdown: breakdown,
+      diamondUsed: 37,
+      diamondDiscountAmount: 37000,
+      tipAmount: 0,
+    },
+    catalog: createMockCatalogSnapshot({
+      underService: undefined,
+      underCombo: undefined,
+      products: [],
+      existingOrderServiceIds: [501001],
+    }),
+  });
+
+  assert.equal(ccBuilt.shouldSettleCompletedImmediately, true);
+  assert.deepEqual(ccBuilt.paymentBreakdown, breakdown);
 });

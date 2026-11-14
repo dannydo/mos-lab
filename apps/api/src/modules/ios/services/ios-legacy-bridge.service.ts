@@ -1,7 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import mysql from 'mysql2/promise';
-import { IosSettlementStatus, SafeAny } from '@mos-lab/shared';
+import { IosSettlementStatus, resolveNormalizedPaymentBreakdown, SafeAny } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { getLegacyPool } from './db-pools.js';
 import { BookingOverrideRecord, LegacySettlementReceipt } from './ios-overrides.service.js';
@@ -249,20 +249,32 @@ export async function settleIosOrderWithLegacyPhp(
     };
   }
 
-  const rawMethod = String(mergedOverride.billing?.paymentMethod || 'VIETQR').toUpperCase();
-  const requestedMethod: 'CASH' | 'POS' | 'VIETQR' =
-    rawMethod === 'CASH' ? 'CASH' : rawMethod === 'POS' ? 'POS' : 'VIETQR';
   const requestedGrandTotal = Math.max(0, Math.round(Number(mergedOverride.billing?.grandTotal ?? 0)));
+  const normalizedRequested = resolveNormalizedPaymentBreakdown(
+    requestedGrandTotal,
+    mergedOverride.billing?.paymentMethod,
+    mergedOverride.billing?.paymentBreakdown
+  );
+  const requestedMethod = normalizedRequested.paymentMethod;
   const wantsImmediateComplete = shouldAutoCompleteLegacyOrder(
     requestedMethod,
     requestedGrandTotal,
-    settlementActorTier
+    settlementActorTier,
+    normalizedRequested.breakdown
   );
+
+  const prevBreakdown = existingReceipt?.paymentBreakdown;
+  const sameBreakdown =
+    !prevBreakdown ||
+    (prevBreakdown.vietqrAmount === normalizedRequested.breakdown.vietqrAmount &&
+      prevBreakdown.posAmount === normalizedRequested.breakdown.posAmount &&
+      prevBreakdown.cashAmount === normalizedRequested.breakdown.cashAmount);
 
   const isExactPendingDuplicate =
     existingReceipt?.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' &&
     !wantsImmediateComplete &&
     existingReceipt.paymentMethod === requestedMethod &&
+    sameBreakdown &&
     Math.round(Number(existingReceipt.grandTotal ?? 0)) === requestedGrandTotal;
 
   if (isExactPendingDuplicate) {
@@ -318,6 +330,7 @@ export async function settleIosOrderWithLegacyPhp(
         settlementStatus: 'SETTLED_COMPLETED',
         orderState: 'Completed',
         paymentMethod: requestedMethod,
+        paymentBreakdown: normalizedRequested.breakdown,
         grandTotal: requestedGrandTotal,
         bankTransferRef: mergedOverride.billing?.bankTransferRef,
         settledAt: nowIso,
@@ -383,6 +396,12 @@ export async function settleIosOrderWithLegacyPhp(
       promotionId:
         mergedOverride.promotionId !== undefined ? mergedOverride.promotionId : mergedOverride.billing?.promotionId,
       appliedPromotion: mergedOverride.appliedPromotion,
+      servicePromotionId: mergedOverride.servicePromotionId,
+      servicePromotion: mergedOverride.servicePromotion,
+      comboPromotionId: mergedOverride.comboPromotionId,
+      comboPromotion: mergedOverride.comboPromotion,
+      underComboPromotionId: mergedOverride.underComboPromotionId,
+      underComboPromotion: mergedOverride.underComboPromotion,
       billing: mergedOverride.billing,
       settlementActorTier,
       catalog,
@@ -517,6 +536,7 @@ export async function settleIosOrderWithLegacyPhp(
         settlementStatus: 'PENDING_COUNTER_SETTLEMENT',
         orderState: 'CheckOut',
         paymentMethod: built.paymentMethod,
+        paymentBreakdown: built.paymentBreakdown,
         grandTotal: built.grandTotal,
         settledAt: nowIso,
       });
@@ -558,6 +578,7 @@ export async function settleIosOrderWithLegacyPhp(
       settlementStatus: 'SETTLED_COMPLETED',
       orderState: 'Completed',
       paymentMethod: built.paymentMethod,
+      paymentBreakdown: built.paymentBreakdown,
       grandTotal: built.grandTotal,
       bankTransferRef: built.bankTransferRef || undefined,
       settledAt: nowIso,

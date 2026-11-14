@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { formatIosPaymentMethodLabel } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { ChevronLeft, Heart, Gem } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
@@ -9,6 +10,7 @@ import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { ThermalReceiptComboItemsSection } from './checkout/ReceiptComboExpiryLine';
+import { formatCartProductDisplayName } from './upsell/upsellCheckoutHelpers';
 import {
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
@@ -79,7 +81,17 @@ export function Screen14ThermalReceiptDone({
         (selectedCombo ? selectedCombo.price : 0) +
         (selectedUnderCombo ? selectedUnderCombo.price : 0) +
         cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
-  const promotionName = booking?.appliedPromotion?.name ?? booking?.billing?.promotionName ?? null;
+  const activePromoNames = Array.from(
+    new Set(
+      [booking?.servicePromotion?.name, ...cartProducts.map((p) => p.appliedPromotion?.name)].filter((v): v is string =>
+        Boolean(v)
+      )
+    )
+  );
+  const promotionName =
+    activePromoNames.length > 1
+      ? `${activePromoNames.length} ưu đãi`
+      : (activePromoNames[0] ?? booking?.appliedPromotion?.name ?? booking?.billing?.promotionName ?? null);
   const promotionDiscountAmount = booking?.billing?.promotionDiscountAmount ?? 0;
   const subtotalAfterDiscount = Math.max(0, subtotal - promotionDiscountAmount);
   const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotalAfterDiscount * vatRate);
@@ -299,7 +311,7 @@ export function Screen14ThermalReceiptDone({
               className={`flex justify-between items-center ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}
             >
               <span>
-                {selectedCombo ? idx + 3 : idx + 2}. {p.productName} (x{p.quantity})
+                {selectedCombo ? idx + 3 : idx + 2}. {formatCartProductDisplayName(p.productName)} (x{p.quantity})
               </span>
               <span className={`tabular-nums font-bold text-[var(--mos-text)]`}>
                 {(p.price * p.quantity).toLocaleString('vi-VN')} đ
@@ -374,17 +386,15 @@ export function Screen14ThermalReceiptDone({
           >
             <span>Hình thức thanh toán:</span>
             <span
-              className={`font-bold ${isDark ? 'text-neutral-200 bg-neutral-800' : 'text-black bg-gray-100'} px-2 py-0.5 rounded`}
+              className={`font-bold ${isDark ? 'text-neutral-200 bg-neutral-800' : 'text-black bg-gray-100'} px-2 py-0.5 rounded text-right`}
             >
-              {grandTotal === 0 && diamondUsed > 0
-                ? '💎 100% Ví Kim Cương'
-                : booking?.billing?.paymentMethod === 'POS'
-                  ? 'Thẻ ngân hàng (POS)'
-                  : booking?.billing?.paymentMethod === 'CASH'
-                    ? 'Tiền mặt (Cash)'
-                    : isPendingCounter
-                      ? 'Chờ Quầy thu Tiền mặt / POS'
-                      : 'Chuyển khoản QR (Bank)'}
+              {formatIosPaymentMethodLabel({
+                grandTotal,
+                diamondUsed,
+                paymentMethod: booking?.billing?.paymentMethod,
+                paymentBreakdown: booking?.billing?.paymentBreakdown,
+                isPendingCounter,
+              })}
             </span>
           </div>
 

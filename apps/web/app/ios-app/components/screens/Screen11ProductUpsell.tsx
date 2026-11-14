@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import type { IosScannedProductCatalogMatch } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
-import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import {
@@ -15,7 +15,6 @@ import {
   matchComboCategoryAndVolumeFromBooking,
   getComboPackagesForCategoryAndVolume,
   calculateComboPurchaseAccounting,
-  calculateComboRedemptionAccounting,
   getLashFamilyInfo,
   resolveValidVolumeForCategory,
   getUnderLashComboPackages,
@@ -23,14 +22,20 @@ import {
   resolveMatchedUnderComboFromSaved,
   resolveServicePriceSplit,
 } from '@mos-lab/shared';
-import { ComboCatalogConsultModal } from './ComboCatalogConsultModal';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
-import { calculateCvComboTierBonus, resolveEffectiveServiceTotal } from '../../state/useIosBillingCheckout';
 import { UpsellHeaderAndSerumSection } from './upsell/UpsellHeaderAndSerumSection';
 import { UpsellMainComboSelector } from './upsell/UpsellMainComboSelector';
 import { UpsellUnderComboAndSummary } from './upsell/UpsellUnderComboAndSummary';
-import { UpsellModals } from './upsell/UpsellModals';
-import { buildUpsellCheckoutPayload } from './upsell/upsellCheckoutHelpers';
+import { UpsellOverlays } from './upsell/UpsellOverlays';
+import { computeUpsellRedemptionAccounting, computeUpsellTotals } from './upsell/upsellAccountingHelpers';
+import {
+  addScannedProductToCartProducts,
+  applyYeppeumTierToCartProducts,
+  buildUpsellCheckoutPayload,
+  isYeppeumProductItem,
+  removeScannedUnitFromCartProducts,
+  resolveInitialSerumSelection,
+} from './upsell/upsellCheckoutHelpers';
 import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
 
 interface Screen11ProductUpsellProps {
@@ -39,8 +44,9 @@ interface Screen11ProductUpsellProps {
   isAdmin?: boolean;
   onRefreshDb?: () => Promise<any> | void;
   onBack: () => void;
+  onUpdateCartProducts?: (cartProducts: NonNullable<BookingItem['cartProducts']>) => void;
   onGoToBilling: (payload?: {
-    cartProducts?: Array<{ productId: number; productName: string; price: number; quantity: number; cvBonus?: number }>;
+    cartProducts?: NonNullable<BookingItem['cartProducts']>;
     selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
     selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
     comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
@@ -53,12 +59,29 @@ export function Screen11ProductUpsell({
   isAdmin = false,
   onRefreshDb,
   onBack,
+  onUpdateCartProducts,
   onGoToBilling,
 }: Screen11ProductUpsellProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
-  const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(SERUM_TIERS_CVL[0].id);
-  const [yeppeumCount, setYeppeumCount] = useState<number>(0);
+  const initialSerum = resolveInitialSerumSelection(booking?.cartProducts);
+  const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(initialSerum.tierId);
+  const [localCartProducts, setLocalCartProducts] = useState<NonNullable<BookingItem['cartProducts']>>(
+    () => booking?.cartProducts || []
+  );
+  useEffect(() => {
+    const synced = resolveInitialSerumSelection(booking?.cartProducts);
+    setSelectedSerumTierId(synced.tierId);
+    setLocalCartProducts(booking?.cartProducts || []);
+  }, [booking?.id, booking?.cartProducts]);
+  const yeppeumCount = useMemo(
+    () =>
+      localCartProducts
+        .filter((p) => isYeppeumProductItem(p))
+        .reduce((sum, p) => sum + Math.max(0, Number(p.quantity || 0)), 0),
+    [localCartProducts]
+  );
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState<boolean>(false);
   const [isConsultModalOpen, setIsConsultModalOpen] = useState<boolean>(false);
   const [isSerumInfoModalOpen, setIsSerumInfoModalOpen] = useState<boolean>(false);
   const [isLockedWelcomeModalOpen, setIsLockedWelcomeModalOpen] = useState<boolean>(false);
@@ -370,88 +393,73 @@ export function Screen11ProductUpsell({
     [booking?.lashHistory]
   );
 
-  const redemptionAccounting = useMemo(() => {
-    if (!isExistingComboLive) return null;
-    const totalRem = booking?.comboLiveStatus?.remainingSessions ?? 2;
-    const normalRem = simulateOnlyRefillLeft
-      ? 0
-      : (booking?.comboLiveStatus?.normalRemaining ?? Math.max(1, Math.floor(totalRem / 2)));
-    const retainRem = simulateOnlyRefillLeft
-      ? Math.max(1, totalRem)
-      : (booking?.comboLiveStatus?.retainRemaining ?? Math.max(0, totalRem - normalRem));
+  const redemptionAccounting = useMemo(
+    () =>
+      computeUpsellRedemptionAccounting({
+        isExistingComboLive,
+        simulateOnlyRefillLeft,
+        booking,
+        existingComboCategoryId: existingComboMatch.categoryId,
+        existingComboVolume: existingComboMatch.volume,
+        targetCategoryId: autoMatched.categoryId,
+        targetVolume: autoMatched.volume,
+        daysSinceLastVisit,
+      }),
+    [isExistingComboLive, simulateOnlyRefillLeft, booking, existingComboMatch, autoMatched, daysSinceLastVisit]
+  );
 
-    // Tách lượt Mua vs lượt Tặng 0đ (1 lượt cuối mặc định là lượt tặng 0đ nếu tổng còn <= 1, hoặc tách theo tỷ lệ gói)
-    const paidNewRem = normalRem > 1 ? normalRem - 1 : normalRem;
-    const bonusNewRem = normalRem > 1 ? 1 : 0;
-    const paidRefillRem = retainRem > 1 ? retainRem - 1 : retainRem;
-    const bonusRefillRem = retainRem > 1 ? 1 : 0;
+  const handleScannedProduct = useCallback(
+    (scanned: IosScannedProductCatalogMatch) => {
+      setLocalCartProducts((prev) => {
+        const next = addScannedProductToCartProducts(prev, scanned, {
+          yeppeumTierOverride: selectedSerumTier,
+        });
+        onUpdateCartProducts?.(next);
+        return next;
+      });
+    },
+    [selectedSerumTier, onUpdateCartProducts]
+  );
 
-    return calculateComboRedemptionAccounting({
-      comboName: booking?.comboLiveStatus?.comboName || 'Gói Combo Đang Active',
-      baseCategoryId: existingComboMatch.categoryId,
-      baseVolume: existingComboMatch.volume,
-      targetCategoryId: autoMatched.categoryId,
-      targetVolume: autoMatched.volume,
-      requestedServiceType: (booking?.serviceType as 'Normal' | 'Retain') || 'Normal',
-      daysSinceLastVisit,
-      paidNewRemaining: paidNewRem,
-      paidRefillRemaining: paidRefillRem,
-      bonusNewRemaining: bonusNewRem,
-      bonusRefillRemaining: bonusRefillRem,
-    });
-  }, [
-    isExistingComboLive,
-    simulateOnlyRefillLeft,
-    booking?.comboLiveStatus,
-    booking?.serviceType,
-    existingComboMatch,
-    autoMatched,
-    daysSinceLastVisit,
-  ]);
+  const handleRemoveScannedUnit = useCallback(
+    (productIndex: number, inventoryWarehouseItemId?: number) => {
+      setLocalCartProducts((prev) => {
+        const next = removeScannedUnitFromCartProducts(prev, productIndex, inventoryWarehouseItemId);
+        onUpdateCartProducts?.(next);
+        return next;
+      });
+    },
+    [onUpdateCartProducts]
+  );
 
-  const serumTotal = yeppeumCount > 0 ? selectedSerumTier.price * yeppeumCount : 0;
-  const serumBonus = yeppeumCount > 0 ? selectedSerumTier.cvBonus * yeppeumCount : 0;
-  const newComboTotal = selectedNewComboPkg ? selectedNewComboPkg.comboPrice : 0;
-  const underComboTotal = selectedUnderComboPkg ? selectedUnderComboPkg.comboPrice : 0;
-  const totalComboPrice = newComboTotal + underComboTotal;
-  const totalComboBonus = calculateCvComboTierBonus(totalComboPrice);
-  const hasBothCombos = Boolean(selectedNewComboPkg && selectedUnderComboPkg && totalComboPrice > 0);
-
-  const upperComboStandaloneBonus = selectedNewComboPkg ? calculateCvComboTierBonus(selectedNewComboPkg.comboPrice) : 0;
-  const underComboStandaloneBonus = selectedUnderComboPkg
-    ? calculateCvComboTierBonus(selectedUnderComboPkg.comboPrice)
-    : 0;
-
-  const newComboBonus = hasBothCombos ? totalComboBonus : upperComboStandaloneBonus;
-  const underComboBonus = hasBothCombos ? 0 : underComboStandaloneBonus;
-
-  const effectiveServiceChargeToday = resolveEffectiveServiceTotal({
+  const {
+    serumTotal,
+    serumBonus,
+    newComboTotal,
+    underComboTotal,
+    totalComboPrice,
+    totalComboBonus,
+    hasBothCombos,
+    upperComboStandaloneBonus,
+    underComboStandaloneBonus,
+    newComboBonus,
+    underComboBonus,
+    effectiveServiceChargeToday,
+    subtotal,
+  } = computeUpsellTotals({
+    booking,
+    localCartProducts,
+    yeppeumCount,
+    selectedSerumTier,
+    selectedNewComboPkg,
+    selectedUnderComboPkg,
     servicePrice,
-    upgradePrice: booking?.upgradePrice,
-    serviceName: booking?.serviceName,
-    isComboLive: shouldUseOldUpperComboToday,
-    hasUnderMink: booking?.attributes?.hasUnderMink,
-    underMinkServiceType: booking?.attributes?.underMinkServiceType,
-    hasUnderMinkCombo: hasUnderMinkComboActive,
-    selectedCombo: selectedNewComboPkg
-      ? {
-          price: selectedNewComboPkg.comboPrice,
-          todaySingleServiceWaived: upperTodayUsageMode === 'USE_NEW_COMBO',
-        }
-      : null,
-    selectedUnderCombo: selectedUnderComboPkg
-      ? {
-          price: selectedUnderComboPkg.comboPrice,
-          todaySingleServiceWaived: shouldWaiveUnderToday,
-        }
-      : null,
-    comboRedemption:
-      shouldUseOldUpperComboToday && redemptionAccounting
-        ? { totalCustomerPayToday: redemptionAccounting.totalCustomerPayToday }
-        : null,
+    shouldUseOldUpperComboToday,
+    hasUnderMinkComboActive,
+    upperTodayUsageMode,
+    shouldWaiveUnderToday,
+    redemptionAccounting,
   });
-
-  const subtotal = effectiveServiceChargeToday + newComboTotal + underComboTotal + serumTotal;
 
   const handleCollapseNewComboSection = () => {
     setShowNewComboSection(false);
@@ -462,6 +470,7 @@ export function Screen11ProductUpsell({
   const handleConfirmCheckout = () => {
     onGoToBilling(
       buildUpsellCheckoutPayload({
+        existingCartProducts: localCartProducts,
         yeppeumCount,
         selectedSerumTier,
         isExistingComboLive,
@@ -526,8 +535,9 @@ export function Screen11ProductUpsell({
           simulateOnlyRefillLeft={simulateOnlyRefillLeft}
           onToggleSimulateOnlyRefillLeft={() => setSimulateOnlyRefillLeft((v) => !v)}
           yeppeumCount={yeppeumCount}
-          onDecrementYeppeum={() => setYeppeumCount((c) => Math.max(0, c - 1))}
-          onIncrementYeppeum={() => setYeppeumCount((c) => c + 1)}
+          cartProducts={localCartProducts}
+          onOpenQrScanner={() => setIsQrScannerOpen(true)}
+          onRemoveScannedUnit={handleRemoveScannedUnit}
           selectedSerumTier={selectedSerumTier}
           showStaffRewards={showStaffRewards}
           onOpenSerumInfoModal={() => setIsSerumInfoModalOpen(true)}
@@ -606,14 +616,19 @@ export function Screen11ProductUpsell({
         />
       </div>
 
-      {/* Interactive 13-Category Combo Consultation & Comparison Modal */}
-      <ComboCatalogConsultModal
-        open={isConsultModalOpen}
-        onClose={() => setIsConsultModalOpen(false)}
-        initialCategoryId={activeCategoryId}
-        initialVolume={activeVolume}
+      <UpsellOverlays
+        isDark={isDark}
+        booking={booking}
+        customerName={customerName}
+        isAdmin={isAdmin}
+        onRefreshDb={onRefreshDb}
+        isConsultModalOpen={isConsultModalOpen}
+        onCloseConsultModal={() => setIsConsultModalOpen(false)}
+        activeCategoryId={activeCategoryId}
+        activeVolume={activeVolume}
         welcomeEligibility={welcomeEligibility}
-        selectedPackageId={selectedNewComboPkg?.id || null}
+        selectedNewComboPkg={selectedNewComboPkg}
+        selectedUnderComboPkg={selectedUnderComboPkg}
         todaySingleServicePrice={effectiveUpperSinglePrice}
         existingUpperExpirySnapshot={existingUpperExpirySnapshot}
         existingUnderExpirySnapshot={existingUnderExpirySnapshot}
@@ -621,13 +636,11 @@ export function Screen11ProductUpsell({
         underTodayUsageMode={underTodayUsageMode}
         todayServiceType={todayServiceType}
         underServiceType={underServiceType}
-        initialSelectedUpperPkg={selectedNewComboPkg}
-        initialSelectedUnderPkg={selectedUnderComboPkg}
-        onSelectPackage={(pkg) => {
+        onSelectComboPackage={(pkg) => {
           setActiveCategoryAndVolume(pkg.categoryId, pkg.volume);
           setSelectedNewComboId(pkg.id);
         }}
-        onApplyPackages={({ upperPkg, underPkg }) => {
+        onApplyComboPackages={({ upperPkg, underPkg }) => {
           if (upperPkg) {
             setActiveCategoryAndVolume(upperPkg.categoryId, upperPkg.volume);
             setSelectedNewComboId(upperPkg.id);
@@ -640,32 +653,32 @@ export function Screen11ProductUpsell({
             setSelectedUnderComboId('NONE');
           }
         }}
-      />
-
-      <UpsellModals
-        isDark={isDark}
-        booking={booking}
-        customerName={customerName}
         isSerumInfoModalOpen={isSerumInfoModalOpen}
         onCloseSerumInfoModal={() => setIsSerumInfoModalOpen(false)}
         selectedSerumTierId={selectedSerumTierId}
         yeppeumCount={yeppeumCount}
         onSelectSerumTier={(tierId) => {
           setSelectedSerumTierId(tierId);
-          if (yeppeumCount === 0) setYeppeumCount(1);
+          const nextTier = SERUM_TIERS_CVL.find((t) => t.id === tierId) || SERUM_TIERS_CVL[0];
+          setLocalCartProducts((prev) => {
+            const next = applyYeppeumTierToCartProducts(prev, nextTier);
+            onUpdateCartProducts?.(next);
+            return next;
+          });
           setIsSerumInfoModalOpen(false);
+          if (yeppeumCount === 0) {
+            setIsQrScannerOpen(true);
+          }
         }}
         isLockedWelcomeModalOpen={isLockedWelcomeModalOpen}
         onCloseLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(false)}
-      />
-
-      <ComboWalletDetailModal
-        booking={booking || null}
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-        isAdmin={isAdmin}
-        theme={isDark ? 'dark' : 'light'}
-        onUpdated={onRefreshDb}
+        isQrScannerOpen={isQrScannerOpen}
+        onCloseQrScanner={() => setIsQrScannerOpen(false)}
+        localCartProducts={localCartProducts}
+        onScannedProduct={handleScannedProduct}
+        onRemoveScannedUnit={handleRemoveScannedUnit}
+        isWalletModalOpen={isWalletModalOpen}
+        onCloseWalletModal={() => setIsWalletModalOpen(false)}
       />
     </div>
   );

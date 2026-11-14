@@ -430,6 +430,45 @@ export async function resolveLegacyOrderCatalogSnapshot(
   for (const item of params.cartProducts || []) {
     const qty = Math.max(1, Number(item.quantity || 1));
     const paidUnit = Math.max(0, Math.round(Number(item.price || 0)));
+    const scannedUnits = Array.isArray(item.scannedUnits) ? item.scannedUnits : [];
+
+    if (scannedUnits.length > 0) {
+      const unitIds = scannedUnits
+        .map((u) => Number(u.inventoryWarehouseItemId))
+        .filter((id) => Number.isFinite(id) && id > 0);
+      if (unitIds.length > 0) {
+        const [scannedRows] = await pool.query<mysql.RowDataPacket[]>(
+          `SELECT p.id AS productId,
+                  COALESCE(pp.product_price, 1100000) AS catalogPrice,
+                  iwi.id AS warehouseItemId,
+                  COALESCE(iwi.first_inventory_warehouse_order_item_id, 0) AS firstOrderItemId
+           FROM inventory_warehouse_item iwi
+           JOIN product p ON p.inventory_item_id = iwi.inventory_item_id AND p.is_disabled = 0
+           LEFT JOIN product_price pp ON pp.product_id = p.id
+           WHERE iwi.id IN (${unitIds.map(() => '?').join(',')})
+           GROUP BY iwi.id
+           ORDER BY iwi.id ASC`,
+          unitIds
+        );
+        if (scannedRows.length > 0) {
+          for (const row of scannedRows) {
+            const catalogUnit = Math.round(Number(row.catalogPrice || paidUnit));
+            const discountAmount = Math.max(0, catalogUnit - paidUnit);
+            products.push({
+              productId: Number(row.productId),
+              inventoryWarehouseItemId: Number(row.warehouseItemId),
+              firstInventoryWarehouseOrderItemId: Number(row.firstOrderItemId || 0),
+              unitPrice: catalogUnit,
+              quantity: 1,
+              discountAmount,
+            });
+          }
+          continue;
+        }
+      }
+    }
+
+    const explicitProductId = Number(item.productId || 0);
     const [prodRows] = await pool.query<mysql.RowDataPacket[]>(
       `SELECT p.id AS productId,
               COALESCE(pp.product_price, 1100000) AS catalogPrice,
@@ -442,22 +481,35 @@ export async function resolveLegacyOrderCatalogSnapshot(
        LEFT JOIN inventory_warehouse_item iwi
          ON iwi.inventory_item_id = p.inventory_item_id
          AND iwi.inventory_warehouse_id = iw.id
-         AND iwi.item_state = 'Available'
+         AND iwi.item_state = 'New'
        WHERE p.is_disabled = 0
-         AND (p.product_sku LIKE '%yeppeum%' OR pl.product_name LIKE '%Yeppeum%' OR pl.product_name LIKE ?)
+         AND (
+           (? > 0 AND p.id = ?)
+           OR p.product_sku LIKE '%yeppeum%'
+           OR pl.product_name LIKE '%Yeppeum%'
+           OR pl.product_name LIKE ?
+         )
+       GROUP BY p.id, iwi.id
        ORDER BY iwi.id ASC
-       LIMIT 1`,
-      [clientStoreId, `%${String(item.productName || 'Yeppeum').slice(0, 20)}%`]
+       LIMIT ?`,
+      [
+        clientStoreId,
+        explicitProductId,
+        explicitProductId,
+        `%${String(item.productName || 'Yeppeum').slice(0, 20)}%`,
+        qty,
+      ]
     );
-    if (prodRows.length > 0 && Number(prodRows[0].warehouseItemId) > 0) {
-      const catalogUnit = Math.round(Number(prodRows[0].catalogPrice || paidUnit));
-      const discountAmount = Math.max(0, (catalogUnit - paidUnit) * qty);
+    for (const row of prodRows) {
+      if (Number(row.warehouseItemId) <= 0) continue;
+      const catalogUnit = Math.round(Number(row.catalogPrice || paidUnit));
+      const discountAmount = Math.max(0, catalogUnit - paidUnit);
       products.push({
-        productId: Number(prodRows[0].productId),
-        inventoryWarehouseItemId: Number(prodRows[0].warehouseItemId),
-        firstInventoryWarehouseOrderItemId: Number(prodRows[0].firstOrderItemId || 0),
+        productId: Number(row.productId),
+        inventoryWarehouseItemId: Number(row.warehouseItemId),
+        firstInventoryWarehouseOrderItemId: Number(row.firstOrderItemId || 0),
         unitPrice: catalogUnit,
-        quantity: qty,
+        quantity: 1,
         discountAmount,
       });
     }

@@ -13,6 +13,7 @@ import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { executeAdminComboExpiryAction } from './services/ios-combo-expiry.service.js';
 import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
+import { scanIosProductByCode } from './services/ios-product-scan.service.js';
 import { fetchIosPromotionsForActor, resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
 
 export { hasAnyNaturalLashAttribute, hasCompleteNaturalLashAttributes, validateNaturalLashConsultationSave };
@@ -142,6 +143,32 @@ export async function iosRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         success: false,
         error: error?.message || 'Combo expiry action error',
+      });
+    }
+  });
+
+  // POST /api/ios/products/scan
+  fastify.post('/ios/products/scan', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      }
+
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({
+          success: false,
+          error: 'Tài khoản không có quyền truy cập ứng dụng /ios-app.',
+        });
+      }
+
+      const result = await scanIosProductByCode(authUser, request.body as SafeAny);
+      return reply.status(result.statusCode).send(result.payload);
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'Error executing /api/ios/products/scan');
+      return reply.status(500).send({
+        success: false,
+        error: error?.message || 'Lỗi kiểm tra mã QR sản phẩm.',
       });
     }
   });

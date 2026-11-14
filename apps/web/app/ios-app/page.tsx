@@ -434,6 +434,7 @@ function IosAppInner() {
             isAdmin={state.isAdmin}
             onRefreshDb={() => state.refreshDb()}
             onBack={state.handleBackToAfterPhoto}
+            onUpdateCartProducts={state.handleUpdateCartProducts}
             onGoToBilling={state.handleGoToBilling}
           />
         );
@@ -453,6 +454,7 @@ function IosAppInner() {
             }}
             onChoosePayment={state.handleChoosePaymentMethod}
             onSavePromotion={state.handleSavePromotion}
+            onUpdateCartProducts={state.handleUpdateCartProducts}
             onEditService={() => state.handleOpenConsultation(13)}
           />
         );

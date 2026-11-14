@@ -2,9 +2,12 @@
 
 import React, { useMemo, useState } from 'react';
 import {
+  calculateIosItemizedPromotionDiscounts,
   calculateIosPromotionDiscount,
   isPromotionEligibleForCustomer,
+  normalizePromotionApplyTarget,
   type IosPromotionOption,
+  type IosPromotionTargetScope,
 } from '@mos-lab/shared';
 import { Check, Gem, Lock, Search, Tag, X } from 'lucide-react';
 
@@ -15,6 +18,9 @@ export interface CheckoutPromotionPickerModalProps {
   isLoading: boolean;
   error?: string | null;
   selectedPromotionId?: number | null;
+  targetScope?: IosPromotionTargetScope;
+  targetLabel?: string;
+  targetAmount?: number;
   customerVisits: number;
   serviceAmount: number;
   upgradeAmount: number;
@@ -55,6 +61,9 @@ export function CheckoutPromotionPickerModal({
   isLoading,
   error,
   selectedPromotionId,
+  targetScope,
+  targetLabel,
+  targetAmount,
   customerVisits,
   serviceAmount,
   upgradeAmount,
@@ -66,16 +75,21 @@ export function CheckoutPromotionPickerModal({
 }: CheckoutPromotionPickerModalProps) {
   const [keyword, setKeyword] = useState('');
 
+  const applicablePromotions = useMemo(
+    () => promotions.filter((p) => normalizePromotionApplyTarget(p.promotionApply) !== 'combo'),
+    [promotions]
+  );
+
   const filteredPromotions = useMemo(() => {
     const q = keyword.trim().toLowerCase();
-    if (!q) return promotions;
-    return promotions.filter(
+    if (!q) return applicablePromotions;
+    return applicablePromotions.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.shortName.toLowerCase().includes(q) ||
         p.promotionKey.toLowerCase().includes(q)
     );
-  }, [promotions, keyword]);
+  }, [applicablePromotions, keyword]);
 
   if (!open) return null;
 
@@ -102,9 +116,14 @@ export function CheckoutPromotionPickerModal({
               <Tag className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-[15px] font-black tracking-tight truncate">Chọn Khuyến Mãi</h2>
-              <p className={`text-[11px] font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                {promotions.length} ưu đãi khả dụng · Lần đến #{customerVisits}
+              <h2 className="text-[15px] font-black tracking-tight truncate">
+                {targetLabel ? `Khuyến Mãi · ${targetLabel}` : 'Chọn Khuyến Mãi'}
+              </h2>
+              <p className={`text-[11px] font-medium truncate ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                {targetAmount !== undefined && targetAmount > 0
+                  ? `Áp dụng cho mục ${targetAmount.toLocaleString('vi-VN')}đ · `
+                  : ''}
+                {applicablePromotions.length} ưu đãi · Lần đến #{customerVisits}
               </p>
             </div>
           </div>
@@ -200,14 +219,26 @@ export function CheckoutPromotionPickerModal({
             filteredPromotions.map((promo) => {
               const eligible = isPromotionEligibleForCustomer(promo, customerVisits);
               const isSelected = Number(selectedPromotionId || 0) === promo.promotionId;
-              const preview = calculateIosPromotionDiscount({
-                promotion: promo,
-                serviceAmount,
-                upgradeAmount,
-                comboAmount,
-                productAmount,
-                vatRate,
-              });
+              const preview = targetScope
+                ? calculateIosItemizedPromotionDiscounts({
+                    serviceAmount: targetScope === 'service' ? (targetAmount ?? serviceAmount) : 0,
+                    upgradeAmount: targetScope === 'service' ? upgradeAmount : 0,
+                    servicePromotion: targetScope === 'service' ? promo : undefined,
+                    comboAmount: 0,
+                    products:
+                      targetScope === 'product'
+                        ? [{ productId: 0, amount: targetAmount ?? productAmount, promotion: promo }]
+                        : [],
+                    vatRate,
+                  })
+                : calculateIosPromotionDiscount({
+                    promotion: promo,
+                    serviceAmount,
+                    upgradeAmount,
+                    comboAmount,
+                    productAmount,
+                    vatRate,
+                  });
 
               return (
                 <button

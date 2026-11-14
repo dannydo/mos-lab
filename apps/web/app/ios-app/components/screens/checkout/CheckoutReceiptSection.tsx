@@ -1,10 +1,30 @@
 'use client';
 
 import React from 'react';
-import { Heart, Sparkles } from 'lucide-react';
+import type { IosPromotionOption, IosPromotionTargetScope } from '@mos-lab/shared';
+import { Sparkles } from 'lucide-react';
 import { BookingItem } from '../../../state/mockData';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
+import { ReceiptItemPromotionBadge } from './ReceiptItemPromotionBadge';
+import { ReceiptTotalsSummary } from './ReceiptTotalsSummary';
+import { ReceiptQuickScanProductRow, ReceiptScannedSerialChips } from './ReceiptQuickSerumControls';
+import { formatCartProductDisplayName } from '../upsell/upsellCheckoutHelpers';
+
+export interface ReceiptPromotionOpenTarget {
+  scope: IosPromotionTargetScope;
+  label: string;
+  amount: number;
+  productIndex?: number;
+  productId?: number;
+  currentPromo?: IosPromotionOption | null;
+}
+
+export interface ReceiptPromotionClearTarget {
+  scope: IosPromotionTargetScope;
+  productIndex?: number;
+  productId?: number;
+}
 
 function cleanComboTitle(name?: string | null): string {
   if (!name) return '';
@@ -38,6 +58,13 @@ export interface CheckoutReceiptSectionProps {
   vatAmount: number;
   appliedPromotionName?: string | null;
   promotionDiscountAmount?: number;
+  servicePromotion?: IosPromotionOption | null;
+  serviceDiscountAmount?: number;
+  productDiscounts?: number[];
+  onOpenItemPromotionPicker?: (target: ReceiptPromotionOpenTarget) => void;
+  onClearItemPromotion?: (target: ReceiptPromotionClearTarget) => void;
+  onRemoveScannedUnit?: (productIndex: number, inventoryWarehouseItemId?: number) => void;
+  onOpenProductQrScanner?: () => void;
   tipAmount: number;
   effectiveDiamondUsed: number;
   diamondDiscountAmount: number;
@@ -74,6 +101,13 @@ export function CheckoutReceiptSection({
   vatAmount,
   appliedPromotionName,
   promotionDiscountAmount = 0,
+  servicePromotion,
+  serviceDiscountAmount = 0,
+  productDiscounts = [],
+  onOpenItemPromotionPicker,
+  onClearItemPromotion,
+  onRemoveScannedUnit,
+  onOpenProductQrScanner,
   tipAmount,
   effectiveDiamondUsed,
   diamondDiscountAmount,
@@ -260,6 +294,25 @@ export function CheckoutReceiptSection({
                   </div>
                 )
               )}
+              <ReceiptItemPromotionBadge
+                isDark={isDark}
+                itemAmount={effectiveServiceCharge}
+                appliedPromotion={servicePromotion}
+                discountAmount={serviceDiscountAmount}
+                testIdPrefix="service"
+                onOpenPicker={
+                  onOpenItemPromotionPicker
+                    ? () =>
+                        onOpenItemPromotionPicker({
+                          scope: 'service',
+                          label: serviceName,
+                          amount: effectiveServiceCharge,
+                          currentPromo: servicePromotion,
+                        })
+                    : undefined
+                }
+                onClear={onClearItemPromotion ? () => onClearItemPromotion({ scope: 'service' }) : undefined}
+              />
             </div>
 
             {/* Price: Zero-Drop 'đ' invariant */}
@@ -269,8 +322,17 @@ export function CheckoutReceiptSection({
                   <span
                     className={`text-[13px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-black tabular-nums whitespace-nowrap block`}
                   >
-                    {effectiveServiceCharge > 0 ? `+${effectiveServiceCharge.toLocaleString('vi-VN')}đ` : '0đ'}
+                    {effectiveServiceCharge > 0
+                      ? `+${Math.max(0, effectiveServiceCharge - serviceDiscountAmount).toLocaleString('vi-VN')}đ`
+                      : '0đ'}
                   </span>
+                  {serviceDiscountAmount > 0 && effectiveServiceCharge > 0 && (
+                    <span
+                      className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
+                    >
+                      +{effectiveServiceCharge.toLocaleString('vi-VN')}đ
+                    </span>
+                  )}
                   <span
                     className={`text-[10px] ${
                       isDark ? 'text-sky-300 bg-sky-950/50 border-sky-500/40' : 'text-sky-700 bg-sky-50 border-sky-200'
@@ -283,7 +345,7 @@ export function CheckoutReceiptSection({
                 <div className="space-y-0.5">
                   <span
                     className={`text-[13px] ${
-                      effectiveServiceCharge === 0
+                      Math.max(0, effectiveServiceCharge - serviceDiscountAmount) === 0
                         ? isDark
                           ? 'text-emerald-400'
                           : 'text-emerald-700'
@@ -292,13 +354,15 @@ export function CheckoutReceiptSection({
                           : 'text-neutral-900'
                     } font-black tabular-nums whitespace-nowrap block`}
                   >
-                    {effectiveServiceCharge === 0 ? '0đ' : `${effectiveServiceCharge.toLocaleString('vi-VN')}đ`}
+                    {effectiveServiceCharge === 0
+                      ? '0đ'
+                      : `${Math.max(0, effectiveServiceCharge - serviceDiscountAmount).toLocaleString('vi-VN')}đ`}
                   </span>
-                  {effectiveServiceCharge < servicePrice && (
+                  {(effectiveServiceCharge < servicePrice || serviceDiscountAmount > 0) && (
                     <span
                       className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
                     >
-                      {servicePrice.toLocaleString('vi-VN')}đ
+                      {(serviceDiscountAmount > 0 ? effectiveServiceCharge : servicePrice).toLocaleString('vi-VN')}đ
                     </span>
                   )}
                 </div>
@@ -307,8 +371,17 @@ export function CheckoutReceiptSection({
                   <span
                     className={`text-[13px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-black tabular-nums whitespace-nowrap block`}
                   >
-                    {effectiveServiceCharge > 0 ? `+${effectiveServiceCharge.toLocaleString('vi-VN')}đ` : '0đ'}
+                    {effectiveServiceCharge > 0
+                      ? `+${Math.max(0, effectiveServiceCharge - serviceDiscountAmount).toLocaleString('vi-VN')}đ`
+                      : '0đ'}
                   </span>
+                  {serviceDiscountAmount > 0 && effectiveServiceCharge > 0 && (
+                    <span
+                      className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
+                    >
+                      +{effectiveServiceCharge.toLocaleString('vi-VN')}đ
+                    </span>
+                  )}
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap inline-block ${
                       effectiveServiceCharge > 0
@@ -324,9 +397,20 @@ export function CheckoutReceiptSection({
                   </span>
                 </div>
               ) : (
-                <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap block`}>
-                  {effectiveServiceCharge.toLocaleString('vi-VN')}đ
-                </span>
+                <div className="space-y-0.5">
+                  <span
+                    className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap block`}
+                  >
+                    {Math.max(0, effectiveServiceCharge - serviceDiscountAmount).toLocaleString('vi-VN')}đ
+                  </span>
+                  {serviceDiscountAmount > 0 && effectiveServiceCharge > 0 && (
+                    <span
+                      className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
+                    >
+                      {effectiveServiceCharge.toLocaleString('vi-VN')}đ
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -452,157 +536,107 @@ export function CheckoutReceiptSection({
           )}
 
           {/* Item 3: Products */}
-          {cartProducts.map((p, idx) => (
-            <div key={idx} className="p-3.5 flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <div className={`text-[13px] font-bold text-[var(--mos-text)] truncate`}>{p.productName}</div>
-                <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium inline-flex items-center gap-1`}>
-                  <span>SL: {p.quantity}</span>
-                  {showStaffRewards && !isCheckoutStaffCc && (
-                    <>
-                      <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
-                      <span
-                        className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
-                      >
-                        Thưởng: +{Math.round(((p.cvBonus || 100000) * p.quantity) / 1000)}
-                        <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                      </span>
-                    </>
+          {cartProducts.map((p, idx) => {
+            const lineGross = p.price * p.quantity;
+            const lineDiscount = productDiscounts[idx] ?? 0;
+            const displayProductName = formatCartProductDisplayName(p.productName);
+            return (
+              <div key={idx} className="p-3.5 flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className={`text-[13px] font-bold text-[var(--mos-text)] truncate`}>{displayProductName}</div>
+                  <div
+                    className={`text-[11px] text-[var(--mos-text-muted)] font-medium inline-flex items-center gap-1`}
+                  >
+                    <span>SL: {p.quantity}</span>
+                    {showStaffRewards && !isCheckoutStaffCc && (
+                      <>
+                        <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
+                        <span
+                          className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
+                        >
+                          Thưởng: +{Math.round(((p.cvBonus || 100000) * p.quantity) / 1000)}
+                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {onRemoveScannedUnit && (
+                      <ReceiptScannedSerialChips
+                        isDark={isDark}
+                        productName={displayProductName}
+                        scannedUnits={p.scannedUnits}
+                        onRemoveUnit={(unitId) => onRemoveScannedUnit(idx, unitId)}
+                        onOpenScanner={onOpenProductQrScanner}
+                      />
+                    )}
+                    <ReceiptItemPromotionBadge
+                      isDark={isDark}
+                      itemAmount={lineGross}
+                      appliedPromotion={p.appliedPromotion}
+                      discountAmount={lineDiscount}
+                      testIdPrefix={`product-${idx}`}
+                      onOpenPicker={
+                        onOpenItemPromotionPicker
+                          ? () =>
+                              onOpenItemPromotionPicker({
+                                scope: 'product',
+                                label: displayProductName,
+                                amount: lineGross,
+                                productIndex: idx,
+                                productId: p.productId,
+                                currentPromo: p.appliedPromotion,
+                              })
+                          : undefined
+                      }
+                      onClear={
+                        onClearItemPromotion
+                          ? () =>
+                              onClearItemPromotion({
+                                scope: 'product',
+                                productIndex: idx,
+                                productId: p.productId,
+                              })
+                          : undefined
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="text-right shrink-0 space-y-0.5">
+                  <span
+                    className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap block`}
+                  >
+                    {Math.max(0, lineGross - lineDiscount).toLocaleString('vi-VN')}đ
+                  </span>
+                  {lineDiscount > 0 && (
+                    <span
+                      className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-neutral-400'} line-through tabular-nums whitespace-nowrap block`}
+                    >
+                      {lineGross.toLocaleString('vi-VN')}đ
+                    </span>
                   )}
                 </div>
               </div>
-              <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap shrink-0`}>
-                {(p.price * p.quantity).toLocaleString('vi-VN')}đ
-              </span>
-            </div>
-          ))}
+            );
+          })}
 
-          {/* Subtotal & VAT Rows */}
-          <div
-            className={`p-3.5 ${isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-neutral-50/50 border-neutral-100'} space-y-1.5 border-t text-[12px]`}
-          >
-            <div className={`flex items-center justify-between text-[var(--mos-text-muted)] font-medium`}>
-              <span>Tạm tính dịch vụ & SP:</span>
-              <span
-                className={`${isDark ? 'text-neutral-200' : 'text-neutral-900'} font-bold tabular-nums whitespace-nowrap shrink-0`}
-              >
-                {subtotal.toLocaleString('vi-VN')}đ
-              </span>
-            </div>
-            {promotionDiscountAmount > 0 && (
-              <div
-                data-testid="receipt-promotion-row"
-                className={`flex items-center justify-between font-bold px-2.5 py-1.5 rounded-xl border ${
-                  isDark
-                    ? 'text-emerald-300 bg-emerald-950/35 border-emerald-800/60'
-                    : 'text-emerald-800 bg-emerald-50/80 border-emerald-200'
-                }`}
-              >
-                <span className="truncate mr-2">🏷️ Khuyến mãi ({appliedPromotionName || 'Ưu đãi'}):</span>
-                <span className="font-black tabular-nums whitespace-nowrap shrink-0">
-                  -{promotionDiscountAmount.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-            )}
-            <div className={`flex items-center justify-between text-[var(--mos-text-muted)] font-medium`}>
-              <span>Thuế VAT (8%):</span>
-              <span
-                className={`${isDark ? 'text-neutral-200' : 'text-neutral-900'} font-bold tabular-nums whitespace-nowrap shrink-0`}
-              >
-                +{vatAmount.toLocaleString('vi-VN')}đ
-              </span>
-            </div>
-            {tipAmount > 0 && (
-              <div
-                className={`flex items-center justify-between ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-semibold`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 shrink-0" />
-                  <span>Tiền tip chuyên viên:</span>
-                </span>
-                <span className="font-black tabular-nums whitespace-nowrap shrink-0">
-                  +{tipAmount.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-            )}
-            {effectiveDiamondUsed > 0 && (
-              <div
-                className={`flex items-center justify-between font-bold px-2.5 py-1.5 rounded-xl border ${
-                  isDark
-                    ? 'text-cyan-300 bg-cyan-950/40 border-cyan-800/60'
-                    : 'text-cyan-800 bg-cyan-50/80 border-cyan-200'
-                }`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span>💎 Thanh toán Kim Cương:</span>
-                  <span
-                    className={`text-[10px] font-black px-1.5 py-0.5 rounded border tabular-nums ${
-                      isDark ? 'text-cyan-300 bg-neutral-900 border-cyan-700' : 'text-cyan-800 bg-white border-cyan-300'
-                    }`}
-                  >
-                    {effectiveDiamondUsed} 💎
-                  </span>
-                </div>
-                <span className="font-black tabular-nums whitespace-nowrap shrink-0">
-                  -{diamondDiscountAmount.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Total Row */}
-          <div
-            className={`p-3.5 ${
-              isDark ? 'bg-[#251B08] border-amber-500/30' : 'bg-[#FFFBEB] border-amber-200/80'
-            } flex items-center justify-between border-t`}
-          >
-            <div>
-              <span
-                className={`text-[13px] font-black ${isDark ? 'text-amber-200' : 'text-neutral-900'} tracking-tight block`}
-              >
-                TỔNG TIỀN THANH TOÁN
-              </span>
-              <span className={`text-[10.5px] text-[var(--mos-text-muted)] font-medium`}>
-                {effectiveDiamondUsed > 0
-                  ? `Đã cấn trừ ${effectiveDiamondUsed} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ)`
-                  : promotionDiscountAmount > 0
-                    ? `Đã giảm -${promotionDiscountAmount.toLocaleString('vi-VN')}đ KM · Đã gồm 8% VAT`
-                    : tipAmount > 0
-                      ? 'Đã gồm Dịch vụ + 8% VAT + Tiền tip'
-                      : 'Đã bao gồm 8% thuế VAT'}
-              </span>
-            </div>
-            <span className="text-[20px] font-black text-[#FF9500] tabular-nums whitespace-nowrap shrink-0 tracking-tight">
-              {finalGrandTotal.toLocaleString('vi-VN')}đ
-            </span>
-          </div>
-
-          {/* CV Rotation Points Recording Banner */}
-          {booking?.cvRotationPoints && showStaffRewards && (
-            <div
-              className={`px-3.5 py-2.5 ${
-                isDark ? 'bg-blue-950/40 border-blue-900/60' : 'bg-blue-50/60 border-blue-100'
-              } border-t flex items-center justify-between text-[11.5px]`}
-            >
-              <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                <span className={`font-black ${isDark ? 'text-blue-300' : 'text-blue-950'} shrink-0`}>
-                  ◔ Vòng xoay CV:
-                </span>
-                <span className={`text-[11px] ${isDark ? 'text-blue-400' : 'text-blue-700'} font-medium truncate`}>
-                  {booking.cvRotationBreakdown || 'Điểm thưởng ca'}
-                </span>
-              </div>
-              <span
-                className={`font-black tabular-nums whitespace-nowrap shrink-0 border px-2 py-0.5 rounded-full text-[10.5px] ${
-                  isDark
-                    ? 'text-blue-300 bg-blue-900/50 border-blue-700'
-                    : 'text-blue-800 bg-blue-100/70 border-blue-200'
-                }`}
-              >
-                +{booking.cvRotationPoints} pts
-              </span>
-            </div>
+          {onOpenProductQrScanner && (
+            <ReceiptQuickScanProductRow isDark={isDark} onOpenScanner={onOpenProductQrScanner} />
           )}
+
+          <ReceiptTotalsSummary
+            isDark={isDark}
+            booking={booking}
+            subtotal={subtotal}
+            appliedPromotionName={appliedPromotionName}
+            promotionDiscountAmount={promotionDiscountAmount}
+            vatAmount={vatAmount}
+            tipAmount={tipAmount}
+            effectiveDiamondUsed={effectiveDiamondUsed}
+            diamondDiscountAmount={diamondDiscountAmount}
+            finalGrandTotal={finalGrandTotal}
+            showStaffRewards={showStaffRewards}
+          />
         </div>
       </div>
     </>

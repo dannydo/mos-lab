@@ -16,7 +16,7 @@ import { BookingOverrideRecord, CustomerComboExpiryOverrideEntry } from './ios-o
 import { applyCustomerComboExpiryOverridesToBooking } from './ios-combo-expiry.service.js';
 import { IosCustomerEnrichmentContext, LastVisitSpecSummary, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
 import { computeCanonicalCvRotationPoints } from './ios-cv-points.helper.js';
-import { resolveBookingPromotion } from './ios-promotions.service.js';
+import { resolveItemizedBookingPromotions } from './ios-promotions.service.js';
 import {
   computeBookingFinancials,
   formatPhoneNumberDots,
@@ -190,7 +190,16 @@ export function mapLiveOrdersToBookings(params: {
       const selectedCombo = override.selectedCombo || null;
       const selectedUnderCombo = override.selectedUnderCombo || null;
       const comboRedemption = override.comboRedemption || null;
-      const cartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts) ? override.cartProducts : [];
+      const rawCartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts) ? override.cartProducts : [];
+      const promoState = resolveItemizedBookingPromotions(
+        override,
+        r.promotion_id,
+        r.os_promotion_id,
+        r.product_promotion_map,
+        rawCartProducts,
+        promotionsById
+      );
+      const cartProducts = promoState.cartProducts;
       const upgradePrice = Number(override.upgradePrice || 0);
 
       const underComboStatus = customerContext.underMinkComboMap.get(customerId);
@@ -205,7 +214,6 @@ export function mapLiveOrdersToBookings(params: {
         targetDate
       );
       const isTrainingCvlOrder = Boolean(matchedTrainingPair);
-      const { promotionId, appliedPromotion } = resolveBookingPromotion(override, r.promotion_id, promotionsById);
 
       const { cvRewardBreakdown, billing } = computeBookingFinancials({
         servicePrice,
@@ -226,8 +234,11 @@ export function mapLiveOrdersToBookings(params: {
         activeStaffId,
         dbOrderState: r.order_state,
         isTrainingCvlOrder,
-        promotionId,
-        appliedPromotion,
+        promotionId: promoState.promotionId,
+        appliedPromotion: promoState.appliedPromotion,
+        servicePromotion: promoState.servicePromotion,
+        comboPromotion: promoState.comboPromotion,
+        underComboPromotion: promoState.underComboPromotion,
       });
 
       const isAnyServiceName = (name?: string | null) => !name || name.toLowerCase().includes('any');
@@ -438,7 +449,11 @@ export function mapLiveOrdersToBookings(params: {
         bookerName: r.booker_name,
         bookerAvatar: resolveCustomerAvatar(r.booker_avatar),
         customerTypeIcon: resolveIosCustomerTypeIcon(note, visits, effectiveIsNew),
-        hasDiscountTag: resolveIosHasDiscountTag(note, Number(r.combo_sale_required), r.promotion_id),
+        hasDiscountTag: resolveIosHasDiscountTag(
+          note,
+          Number(r.combo_sale_required),
+          r.promotion_id || r.os_promotion_id
+        ),
         assignedStaffName,
         assignedStaffId,
         isUnassignedQueue,
@@ -483,9 +498,7 @@ export function mapLiveOrdersToBookings(params: {
         upgradePrice,
         cvRotationPoints: resolvedCvPoints,
         cvRotationBreakdown: resolvedCvBreakdown,
-        cartProducts,
-        promotionId,
-        appliedPromotion,
+        ...promoState,
         cvRewardBreakdown,
         billing,
         isTrainingCvlOrder,
@@ -543,11 +556,13 @@ export function buildDemoModeBookings(params: {
       override.selectedUnderCombo !== undefined ? override.selectedUnderCombo : (mock.selectedUnderCombo ?? null);
     const comboRedemption =
       override.comboRedemption !== undefined ? override.comboRedemption : (mock.comboRedemption ?? null);
-    const cartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts)
+    const rawDemoCartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts)
       ? override.cartProducts
       : Array.isArray(mock.cartProducts)
         ? mock.cartProducts
         : [];
+    const promoState = resolveItemizedBookingPromotions(override, null, null, undefined, rawDemoCartProducts);
+    const cartProducts = promoState.cartProducts;
 
     const preHydratedDemo = applyCustomerComboExpiryOverridesToBooking(
       mock as unknown as IosBookingItem,
@@ -565,10 +580,6 @@ export function buildDemoModeBookings(params: {
       targetDate
     );
     const isTrainingCvlOrder = Boolean(matchedTrainingPair);
-    const { promotionId: demoPromoId, appliedPromotion: demoAppliedPromotion } = resolveBookingPromotion(
-      override,
-      null
-    );
 
     const { cvRewardBreakdown, billing } = computeBookingFinancials({
       servicePrice,
@@ -588,8 +599,11 @@ export function buildDemoModeBookings(params: {
       checkOutStaffId,
       activeStaffId,
       isTrainingCvlOrder,
-      promotionId: demoPromoId,
-      appliedPromotion: demoAppliedPromotion,
+      promotionId: promoState.promotionId,
+      appliedPromotion: promoState.appliedPromotion,
+      servicePromotion: promoState.servicePromotion,
+      comboPromotion: promoState.comboPromotion,
+      underComboPromotion: promoState.underComboPromotion,
     });
 
     const resolvedStoreId = Number(mock.storeId) || (storeId > 0 ? storeId : 6);
@@ -658,9 +672,7 @@ export function buildDemoModeBookings(params: {
                 underMinkServiceType: effectiveAttrs?.underMinkServiceType,
               }).totalPoints,
       cvRotationBreakdown: override.cvRotationBreakdown || mock.cvRotationBreakdown,
-      cartProducts,
-      promotionId: demoPromoId,
-      appliedPromotion: demoAppliedPromotion,
+      ...promoState,
       cvRewardBreakdown,
       billing,
       isTrainingCvlOrder,

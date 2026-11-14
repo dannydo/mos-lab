@@ -9,6 +9,8 @@ import type {
   IosPromotionOption,
   IosAdminComboExpiryActionPayload,
   IosAdminComboExpiryActionResponse,
+  IosScanProductRequest,
+  IosScanProductResponse,
 } from '@mos-lab/shared';
 
 export interface IosPromotionsResponse {
@@ -66,6 +68,15 @@ export const iosApi = {
         signal: options?.signal,
         priority: options?.priority,
         timeout: options?.timeout ?? 8000,
+      });
+      return res.data;
+    },
+
+    async scanProduct(payload: IosScanProductRequest, options?: ApiRequestOptions): Promise<IosScanProductResponse> {
+      const res = await api.post<IosScanProductResponse>('/ios/products/scan', payload, {
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout ?? 10000,
       });
       return res.data;
     },

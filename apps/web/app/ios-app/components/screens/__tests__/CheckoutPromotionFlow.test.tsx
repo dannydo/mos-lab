@@ -48,6 +48,26 @@ const PROMO_NEW_ONLY: IosPromotionOption = {
   position: 2,
 };
 
+const PROMO_PRODUCT_10_CREDIT_OK: IosPromotionOption = {
+  promotionId: 25,
+  promotionKey: 'SERUM-10',
+  promotionType: 'normal',
+  promotionApply: 'all',
+  serviceGroup: null,
+  name: 'Giảm 10% Sản Phẩm',
+  shortName: 'SP -10%',
+  discountPercentage: 10,
+  discountAmount: 0,
+  exactlyAmount: 0,
+  isOldUserDisabled: false,
+  isApprovalRequired: false,
+  isPublic: true,
+  isSystem: false,
+  isCreditAllowed: true,
+  dateExpired: null,
+  position: 3,
+};
+
 function makeBooking(overrides: Partial<BookingItem> = {}): BookingItem {
   const base: BookingItem = {
     id: 340555,
@@ -124,7 +144,7 @@ describe('CheckoutPromotionFlow — Screen12 & Screen14 Promotion Integration', 
       />
     );
 
-    const openBtn = await screen.findByTestId('open-promotion-picker-btn');
+    const openBtn = await screen.findByTestId('add-promo-service');
     fireEvent.click(openBtn);
 
     const newOnlyBtn = await screen.findByTestId('promotion-option-42');
@@ -136,8 +156,15 @@ describe('CheckoutPromotionFlow — Screen12 & Screen14 Promotion Integration', 
     fireEvent.click(promo20Btn);
 
     await waitFor(() => {
-      expect(onSavePromotion).toHaveBeenCalledWith(PROMO_20_NO_CREDIT);
+      expect(onSavePromotion).toHaveBeenCalledWith(PROMO_20_NO_CREDIT, {
+        scope: 'service',
+        productIndex: undefined,
+        productId: undefined,
+      });
     });
+
+    const serviceBadge = await screen.findByTestId('promo-badge-service');
+    expect(serviceBadge).toHaveTextContent('-176.000đ');
 
     const receiptPromoRow = await screen.findByTestId('receipt-promotion-row');
     expect(receiptPromoRow).toHaveTextContent('Giảm 20% Dịch Vụ Mi');
@@ -145,6 +172,119 @@ describe('CheckoutPromotionFlow — Screen12 & Screen14 Promotion Integration', 
 
     const lockedBanner = screen.getByTestId('diamond-locked-by-promo-banner');
     expect(lockedBanner).toHaveTextContent('không áp dụng chung với Ví Kim Cương');
+  });
+
+  it('supports independent per-item promotions on service, combo & product with partial Diamond credit lock and hides 0đ service promo button', async () => {
+    vi.spyOn(apiClient.ios, 'getPromotions').mockResolvedValue({
+      success: true,
+      canViewGlobalPromotions: true,
+      count: 3,
+      promotions: [PROMO_20_NO_CREDIT, PROMO_NEW_ONLY, PROMO_PRODUCT_10_CREDIT_OK],
+    });
+
+    const onSavePromotion = vi.fn();
+    render(
+      <Screen12CheckoutBilling
+        booking={makeBooking({
+          customerVisits: 5,
+          diamondBalance: 500,
+          selectedCombo: {
+            id: '7+3',
+            name: 'Combo 7 tặng 3 - Classic 1D 550',
+            price: 3010000,
+            bonus: 150000,
+            sessions: 10,
+            todaySingleServiceWaived: false,
+          },
+          cartProducts: [{ productId: 901, productName: 'Serum Dưỡng Mi', price: 500000, quantity: 1 }],
+          billing: {
+            paymentMethod: 'VIETQR',
+            subtotal: 4390000,
+            serviceTotal: 880000,
+            comboTotal: 3010000,
+            productTotal: 500000,
+            tipAmount: 0,
+            tipCvShare: 0,
+            tipCcShare: 0,
+            grandTotal: 4741200,
+          },
+        })}
+        actor={{ staffId: 37790, name: 'Diễm Hương', tier: 'CC', badgeLabel: 'CC' }}
+        onBack={vi.fn()}
+        onChoosePayment={vi.fn()}
+        onSavePromotion={onSavePromotion}
+      />
+    );
+
+    expect(await screen.findByTestId('add-promo-service')).toBeInTheDocument();
+    expect(screen.queryByTestId('add-promo-combo')).toBeNull();
+    expect(screen.queryByTestId('add-promo-under-combo')).toBeNull();
+
+    // 1. Apply credit-restricted promo to Service -> partial restriction banner (Combo & Product stay credit-eligible)
+    fireEvent.click(screen.getByTestId('add-promo-service'));
+    fireEvent.click(await screen.findByTestId('promotion-option-19'));
+
+    expect(await screen.findByTestId('promo-badge-service')).toHaveTextContent('-176.000đ');
+    expect(screen.queryByTestId('diamond-locked-by-promo-banner')).toBeNull();
+    expect(screen.getByTestId('diamond-partial-restriction-note')).toBeInTheDocument();
+
+    // 2. Apply independent 10% promo to Product[0] -> total discount = 176k + 50k = 226k
+    fireEvent.click(screen.getByTestId('add-promo-product-0'));
+    fireEvent.click(await screen.findByTestId('promotion-option-25'));
+
+    expect(await screen.findByTestId('promo-badge-product-0')).toHaveTextContent('-50.000đ');
+    expect(screen.getByTestId('receipt-promotion-row')).toHaveTextContent('-226.000đ');
+    expect(screen.getByTestId('receipt-promotion-row')).toHaveTextContent('2 ưu đãi');
+
+    // 3. Clearing service promo preserves product promo
+    fireEvent.click(screen.getByTestId('clear-promo-service'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('promo-badge-service')).toBeNull();
+    });
+    expect(screen.getByTestId('promo-badge-product-0')).toHaveTextContent('-50.000đ');
+    expect(screen.getByTestId('receipt-promotion-row')).toHaveTextContent('-50.000đ');
+  });
+
+  it('hides + Khuyến mãi button on 0đ redeemed combo service while showing it on chargeable upsell product', async () => {
+    vi.spyOn(apiClient.ios, 'getPromotions').mockResolvedValue({
+      success: true,
+      canViewGlobalPromotions: true,
+      count: 1,
+      promotions: [PROMO_PRODUCT_10_CREDIT_OK],
+    });
+
+    render(
+      <Screen12CheckoutBilling
+        booking={makeBooking({
+          comboLiveStatus: {
+            isComboLive: true,
+            comboName: 'HyperLight 4X 880',
+            remainingSessions: 5,
+            upsellOpportunity: false,
+          },
+          comboRedemption: {
+            comboName: 'HyperLight 4X 880',
+            deductedBucket: 'paidNew',
+            typeConversionSurcharge: 0,
+            upgradeVolumeSurcharge: 0,
+            totalCustomerPayToday: 0,
+            recognizedRevenueToday: 770000,
+            remainingAfterToday: 4,
+            explanation: 'Trừ 1 lượt gói Combo',
+            totalSessions: 10,
+            paidRemaining: 4,
+            bonusRemaining: 0,
+          },
+          cartProducts: [{ productId: 901, productName: 'Serum Dưỡng Mi', price: 500000, quantity: 1 }],
+        })}
+        actor={{ staffId: 37790, name: 'Diễm Hương', tier: 'CC', badgeLabel: 'CC' }}
+        onBack={vi.fn()}
+        onChoosePayment={vi.fn()}
+      />
+    );
+
+    expect(await screen.findByTestId('add-promo-product-0')).toBeInTheDocument();
+    expect(screen.queryByTestId('add-promo-service')).toBeNull();
   });
 
   it('preloads attached booking promotion & renders discount on Screen14ThermalReceiptDone and ESC/POS receipt', async () => {

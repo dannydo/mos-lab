@@ -261,12 +261,46 @@ export interface IosBookingProgress {
   selfChallengeSlowerReason?: string;
 }
 
+export interface IosScannedProductUnit {
+  inventoryWarehouseItemId: number;
+  firstInventoryWarehouseOrderItemId: number;
+  scanCode: string;
+}
+
+export interface IosScannedProductCatalogMatch {
+  productId: number;
+  productSku: string;
+  productName: string;
+  unitPrice: number;
+  cvBonus: number;
+  inventoryItemId: number;
+  inventoryWarehouseId: number;
+  clientStoreId: number;
+  storeName?: string | null;
+  scannedUnit: IosScannedProductUnit;
+}
+
+export interface IosScanProductRequest {
+  bookingId: number;
+  code: string;
+  scannedItemIds?: number[];
+}
+
+export interface IosScanProductResponse {
+  success: boolean;
+  error?: string;
+  product?: IosScannedProductCatalogMatch;
+}
+
 export interface IosCartProductItem {
   productId: number;
   productName: string;
   price: number;
   quantity: number;
   cvBonus?: number;
+  promotionId?: number | null;
+  appliedPromotion?: IosPromotionOption | null;
+  scannedUnits?: IosScannedProductUnit[];
 }
 
 export interface IosBookingItem {
@@ -373,6 +407,12 @@ export interface IosBookingItem {
   cartProducts?: IosCartProductItem[];
   promotionId?: number | null;
   appliedPromotion?: IosPromotionOption | null;
+  servicePromotionId?: number | null;
+  servicePromotion?: IosPromotionOption | null;
+  comboPromotionId?: number | null;
+  comboPromotion?: IosPromotionOption | null;
+  underComboPromotionId?: number | null;
+  underComboPromotion?: IosPromotionOption | null;
   cvRewardBreakdown?: {
     techTipPercent: number;
     checkInTipPercent: number;
@@ -395,7 +435,8 @@ export interface IosBookingItem {
     serviceDiscountAmount?: number;
     comboDiscountAmount?: number;
     productDiscountAmount?: number;
-    paymentMethod: 'CASH' | 'POS' | 'VIETQR';
+    paymentMethod: IosPaymentMethod;
+    paymentBreakdown?: IosPaymentBreakdown;
     tipAmount: number;
     tipCvShare: number;
     tipCheckInShare?: number;
@@ -1193,4 +1234,118 @@ export function resolveIosHasDiscountTag(note: string, comboRequired: number, pr
     Boolean(promotionId) ||
     comboRequired === 1
   );
+}
+
+export type IosPaymentMethod = 'CASH' | 'POS' | 'VIETQR' | 'MIXED';
+
+export interface IosPaymentBreakdown {
+  vietqrAmount: number;
+  posAmount: number;
+  cashAmount: number;
+}
+
+export interface NormalizedPaymentBreakdownResult {
+  paymentMethod: IosPaymentMethod;
+  breakdown: IosPaymentBreakdown;
+  hasVietqr: boolean;
+  hasPos: boolean;
+  hasCash: boolean;
+  isMixed: boolean;
+  isPureVietqrOrZero: boolean;
+}
+
+export function resolveNormalizedPaymentBreakdown(
+  grandTotal: number,
+  paymentMethod?: string | null,
+  paymentBreakdown?: Partial<IosPaymentBreakdown> | null
+): NormalizedPaymentBreakdownResult {
+  const safeTotal = Math.max(0, Math.round(Number(grandTotal || 0)));
+  const rawMethod = String(paymentMethod || 'VIETQR').toUpperCase();
+  const normalizePart = (v: unknown) => Math.max(0, Math.round(Number(v || 0)));
+
+  if (safeTotal === 0) {
+    return {
+      paymentMethod: rawMethod === 'CASH' ? 'CASH' : rawMethod === 'POS' ? 'POS' : 'VIETQR',
+      breakdown: { vietqrAmount: 0, posAmount: 0, cashAmount: 0 },
+      hasVietqr: false,
+      hasPos: false,
+      hasCash: false,
+      isMixed: false,
+      isPureVietqrOrZero: true,
+    };
+  }
+
+  let vietqrAmount = normalizePart(paymentBreakdown?.vietqrAmount);
+  let posAmount = normalizePart(paymentBreakdown?.posAmount);
+  let cashAmount = normalizePart(paymentBreakdown?.cashAmount);
+  const breakdownSum = vietqrAmount + posAmount + cashAmount;
+
+  if (breakdownSum <= 0) {
+    if (rawMethod === 'CASH') {
+      cashAmount = safeTotal;
+    } else if (rawMethod === 'POS') {
+      posAmount = safeTotal;
+    } else {
+      vietqrAmount = safeTotal;
+    }
+  } else if (breakdownSum !== safeTotal) {
+    const ratio = safeTotal / breakdownSum;
+    vietqrAmount = Math.round(vietqrAmount * ratio);
+    posAmount = Math.round(posAmount * ratio);
+    cashAmount = Math.round(cashAmount * ratio);
+    const diff = safeTotal - (vietqrAmount + posAmount + cashAmount);
+    if (diff !== 0) {
+      if (cashAmount > 0) cashAmount = Math.max(0, cashAmount + diff);
+      else if (posAmount > 0) posAmount = Math.max(0, posAmount + diff);
+      else vietqrAmount = Math.max(0, vietqrAmount + diff);
+    }
+  }
+
+  const hasVietqr = vietqrAmount > 0;
+  const hasPos = posAmount > 0;
+  const hasCash = cashAmount > 0;
+  const activeCount = [hasVietqr, hasPos, hasCash].filter(Boolean).length;
+  const isMixed = activeCount > 1;
+  const resolvedMethod: IosPaymentMethod = isMixed ? 'MIXED' : hasCash ? 'CASH' : hasPos ? 'POS' : 'VIETQR';
+
+  return {
+    paymentMethod: resolvedMethod,
+    breakdown: { vietqrAmount, posAmount, cashAmount },
+    hasVietqr,
+    hasPos,
+    hasCash,
+    isMixed,
+    isPureVietqrOrZero: !hasCash && !hasPos,
+  };
+}
+
+export function formatIosPaymentMethodLabel(params: {
+  grandTotal: number;
+  diamondUsed?: number;
+  paymentMethod?: string | null;
+  paymentBreakdown?: Partial<IosPaymentBreakdown> | null;
+  isPendingCounter?: boolean;
+}): string {
+  const { grandTotal, diamondUsed = 0, paymentMethod, paymentBreakdown, isPendingCounter = false } = params;
+  if (grandTotal === 0 && diamondUsed > 0) {
+    return '💎 100% Ví Kim Cương';
+  }
+  const normalized = resolveNormalizedPaymentBreakdown(grandTotal, paymentMethod, paymentBreakdown);
+  if (normalized.isMixed) {
+    const parts: string[] = [];
+    if (normalized.breakdown.vietqrAmount > 0) {
+      parts.push(`QR ${normalized.breakdown.vietqrAmount.toLocaleString('vi-VN')}đ`);
+    }
+    if (normalized.breakdown.posAmount > 0) {
+      parts.push(`POS ${normalized.breakdown.posAmount.toLocaleString('vi-VN')}đ`);
+    }
+    if (normalized.breakdown.cashAmount > 0) {
+      parts.push(`Tiền mặt ${normalized.breakdown.cashAmount.toLocaleString('vi-VN')}đ`);
+    }
+    return `Kết hợp: ${parts.join(' + ')}`;
+  }
+  if (normalized.paymentMethod === 'POS') return 'Thẻ ngân hàng (POS)';
+  if (normalized.paymentMethod === 'CASH') return 'Tiền mặt (Cash)';
+  if (isPendingCounter) return 'Chờ Quầy thu Tiền mặt / POS';
+  return 'Chuyển khoản QR (Bank)';
 }

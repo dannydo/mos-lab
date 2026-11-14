@@ -10,6 +10,7 @@ export interface CheckoutVietQrModalProps {
   vietQrUrl: string;
   qrTransferContent: string;
   finalGrandTotal: number;
+  totalBillGrandTotal?: number;
   copySuccess: string | null;
   onCopyToClipboard: (text: string, label: string) => void;
   transferProofPhoto: string | null;
@@ -26,6 +27,7 @@ export function CheckoutVietQrModal({
   vietQrUrl,
   qrTransferContent,
   finalGrandTotal,
+  totalBillGrandTotal,
   copySuccess,
   onCopyToClipboard,
   transferProofPhoto,
@@ -115,11 +117,19 @@ export function CheckoutVietQrModal({
             </div>
 
             <div className="flex items-center justify-between">
-              <span className={`text-[var(--mos-text-muted)] font-bold text-[11px]`}>Số Tiền:</span>
+              <span className={`text-[var(--mos-text-muted)] font-bold text-[11px]`}>
+                {totalBillGrandTotal && totalBillGrandTotal > finalGrandTotal ? 'Phần chuyển khoản QR:' : 'Số Tiền:'}
+              </span>
               <span className="text-[#E11D48] font-black text-[15px] tabular-nums">
                 {finalGrandTotal.toLocaleString('vi-VN')} VNĐ
               </span>
             </div>
+            {totalBillGrandTotal && totalBillGrandTotal > finalGrandTotal && (
+              <div className="flex items-center justify-between text-[10.5px]">
+                <span className="text-[var(--mos-text-muted)] font-medium">Tổng bill (đã chia hình thức):</span>
+                <span className="font-bold tabular-nums">{totalBillGrandTotal.toLocaleString('vi-VN')} VNĐ</span>
+              </div>
+            )}
 
             <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
               <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Ngân Hàng:</span>
