@@ -357,16 +357,17 @@ export function useIosAppState(
     setActiveTab,
   });
 
-  const { handleGoToBilling, handleChoosePaymentMethod, handleRecordTip, handleFinishOrder } = useIosBillingCheckout({
-    activeBookingId,
-    actor,
-    cvPlusRules: staffStats?.cvPlusRules,
-    updateActiveBooking,
-    postAction,
-    refreshDb,
-    setCurrentStep,
-    setBookingSegment,
-  });
+  const { handleGoToBilling, handleSavePromotion, handleChoosePaymentMethod, handleRecordTip, handleFinishOrder } =
+    useIosBillingCheckout({
+      activeBookingId,
+      actor,
+      cvPlusRules: staffStats?.cvPlusRules,
+      updateActiveBooking,
+      postAction,
+      refreshDb,
+      setCurrentStep,
+      setBookingSegment,
+    });
 
   return {
     bookings: visibleBookings,
@@ -417,6 +418,7 @@ export function useIosAppState(
     handleBackToAfterPhoto,
     handleCompleteSurvey,
     handleGoToBilling,
+    handleSavePromotion,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,

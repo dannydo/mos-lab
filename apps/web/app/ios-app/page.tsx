@@ -452,6 +452,7 @@ function IosAppInner() {
               }
             }}
             onChoosePayment={state.handleChoosePaymentMethod}
+            onSavePromotion={state.handleSavePromotion}
             onEditService={() => state.handleOpenConsultation(13)}
           />
         );

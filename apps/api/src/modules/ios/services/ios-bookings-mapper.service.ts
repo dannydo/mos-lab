@@ -5,6 +5,7 @@ import {
   IosBookingItem,
   IosBookingStatus,
   IosCartProductItem,
+  IosPromotionOption,
   IosSegmentCounts,
   matchComboCategoryAndVolumeFromBooking,
   NaturalLashConsultationAttributes,
@@ -17,6 +18,7 @@ import { BookingOverrideRecord, CustomerComboExpiryOverrideEntry } from './ios-o
 import { applyCustomerComboExpiryOverridesToBooking } from './ios-combo-expiry.service.js';
 import { IosCustomerEnrichmentContext, LastVisitSpecSummary, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
 import { computeCanonicalCvRotationPoints } from './ios-cv-points.helper.js';
+import { resolveBookingPromotion } from './ios-promotions.service.js';
 import {
   computeBookingFinancials,
   formatPhoneNumberDots,
@@ -116,6 +118,7 @@ export function mapLiveOrdersToBookings(params: {
   activeStaffId: number;
   canViewFullPhone: boolean;
   activeTrainingPairs?: CvlTrainingMentorshipPair[];
+  promotionsById?: Map<number, IosPromotionOption>;
 }): IosBookingItem[] {
   const {
     orders,
@@ -130,6 +133,7 @@ export function mapLiveOrdersToBookings(params: {
     activeStaffId,
     canViewFullPhone,
     activeTrainingPairs = [],
+    promotionsById,
   } = params;
 
   return orders
@@ -203,6 +207,7 @@ export function mapLiveOrdersToBookings(params: {
         targetDate
       );
       const isTrainingCvlOrder = Boolean(matchedTrainingPair);
+      const { promotionId, appliedPromotion } = resolveBookingPromotion(override, r.promotion_id, promotionsById);
 
       const { cvRewardBreakdown, billing } = computeBookingFinancials({
         servicePrice,
@@ -223,6 +228,8 @@ export function mapLiveOrdersToBookings(params: {
         activeStaffId,
         dbOrderState: r.order_state,
         isTrainingCvlOrder,
+        promotionId,
+        appliedPromotion,
       });
 
       const isAnyServiceName = (name?: string | null) => !name || name.toLowerCase().includes('any');
@@ -415,7 +422,9 @@ export function mapLiveOrdersToBookings(params: {
         customerAvatar:
           (override.customerAvatar !== undefined ? override.customerAvatar : customerAvatarMap[String(customerId)]) ||
           resolveCustomerAvatar(r.customer_avatar, customerId),
-        assignedStaffAvatar: resolveStaffAvatar(r.staff_avatar || r.check_in_staff_avatar),
+        assignedStaffAvatar: isUnassignedQueue
+          ? undefined
+          : override.assignedStaffAvatar || resolveStaffAvatar(r.staff_avatar || r.check_in_staff_avatar),
         customerVisits: visits,
         lastVisitDate: priorVisitEntry?.date,
         customerNote: note,
@@ -477,6 +486,8 @@ export function mapLiveOrdersToBookings(params: {
         cvRotationPoints: resolvedCvPoints,
         cvRotationBreakdown: resolvedCvBreakdown,
         cartProducts,
+        promotionId,
+        appliedPromotion,
         cvRewardBreakdown,
         billing,
         isTrainingCvlOrder,
@@ -556,6 +567,10 @@ export function buildDemoModeBookings(params: {
       targetDate
     );
     const isTrainingCvlOrder = Boolean(matchedTrainingPair);
+    const { promotionId: demoPromoId, appliedPromotion: demoAppliedPromotion } = resolveBookingPromotion(
+      override,
+      null
+    );
 
     const { cvRewardBreakdown, billing } = computeBookingFinancials({
       servicePrice,
@@ -575,6 +590,8 @@ export function buildDemoModeBookings(params: {
       checkOutStaffId,
       activeStaffId,
       isTrainingCvlOrder,
+      promotionId: demoPromoId,
+      appliedPromotion: demoAppliedPromotion,
     });
 
     const resolvedStoreId = Number(mock.storeId) || (storeId > 0 ? storeId : 6);
@@ -644,6 +661,8 @@ export function buildDemoModeBookings(params: {
               }).totalPoints,
       cvRotationBreakdown: override.cvRotationBreakdown || mock.cvRotationBreakdown,
       cartProducts,
+      promotionId: demoPromoId,
+      appliedPromotion: demoAppliedPromotion,
       cvRewardBreakdown,
       billing,
       isTrainingCvlOrder,

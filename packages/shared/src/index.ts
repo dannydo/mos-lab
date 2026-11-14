@@ -87,4 +87,5 @@ export * from './catalog/combo-expiry.js';
 export * from './types/cv-discipline.js';
 export * from './types/cvl-training-mentorship.js';
 export * from './utils/ios-self-challenge.js';
+export * from './types/ios-promotions.js';
 export * from './types/ios-app.js';

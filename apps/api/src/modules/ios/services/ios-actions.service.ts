@@ -1,6 +1,8 @@
 import mysql from 'mysql2/promise';
 import {
   hasCompleteNaturalLashAttributes,
+  IosPromotionOption,
+  isPromotionEligibleForCustomer,
   isSelfChallengeSlowerThanAverage,
   SafeAny,
   validateNaturalLashConsultationSave,
@@ -12,6 +14,7 @@ import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
 import { settleIosOrderWithLegacyPhp, SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
+import { fetchPromotionsByIds } from './ios-promotions.service.js';
 import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
@@ -424,6 +427,53 @@ export async function executeIosBookingAction(
         comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
         checkedOutAt: new Date().toISOString(),
       };
+    } else if (action === 'SAVE_PROMOTION') {
+      const requestedPromotionId =
+        body.promotionId !== undefined && body.promotionId !== null && Number(body.promotionId) > 0
+          ? Number(body.promotionId)
+          : null;
+      let resolvedPromotion: IosPromotionOption | null =
+        requestedPromotionId &&
+        body.appliedPromotion &&
+        Number(body.appliedPromotion?.promotionId) === requestedPromotionId
+          ? (body.appliedPromotion as IosPromotionOption)
+          : null;
+
+      if (requestedPromotionId && !resolvedPromotion) {
+        try {
+          const map = await fetchPromotionsByIds(getLegacyPool(), [requestedPromotionId]);
+          resolvedPromotion = map.get(requestedPromotionId) ?? null;
+        } catch {
+          resolvedPromotion = null;
+        }
+      }
+
+      const customerVisits = Number(body.customerVisits ?? current.customerVisits ?? 1);
+      if (resolvedPromotion && !isPromotionEligibleForCustomer(resolvedPromotion, customerVisits)) {
+        return {
+          statusCode: 400,
+          payload: {
+            success: false,
+            error: 'Chương trình khuyến mãi này chỉ áp dụng cho khách hàng mới (lần đầu).',
+          },
+        };
+      }
+
+      const creditLocked = Boolean(resolvedPromotion && resolvedPromotion.isCreditAllowed === false);
+      const nextBilling = {
+        ...(current.billing || {}),
+        ...(body.billing || {}),
+        promotionId: requestedPromotionId,
+        promotionName: resolvedPromotion?.name,
+        ...(creditLocked ? { diamondUsed: 0, diamondDiscountAmount: 0 } : {}),
+      };
+
+      nextOverride = {
+        ...current,
+        promotionId: requestedPromotionId,
+        appliedPromotion: resolvedPromotion,
+        billing: nextBilling,
+      };
     } else if (action === 'COMPLETE_ORDER' || action === 'COMPLETE_CHECKOUT') {
       const checkOutStaffId = Number(current.checkOutStaffId || actorStaffId);
       const checkOutStaffName = current.checkOutStaffName || actorStaffName;
@@ -433,6 +483,22 @@ export async function executeIosBookingAction(
       const completedAtIso = new Date().toISOString();
       const canAuthUserSettleCounter = authUser.careerTier === 'CC' || authUser.careerTier === 'ADMIN';
       const trustedSettlementTier = canAuthUserSettleCounter ? actorStaffTier : String(authUser.careerTier || 'CVL');
+
+      const resolvedPromotionId =
+        body.promotionId !== undefined
+          ? body.promotionId
+            ? Number(body.promotionId)
+            : null
+          : current.promotionId !== undefined
+            ? current.promotionId
+            : null;
+      const resolvedAppliedPromotion =
+        resolvedPromotionId && body.appliedPromotion !== undefined
+          ? (body.appliedPromotion as IosPromotionOption | null)
+          : resolvedPromotionId
+            ? (current.appliedPromotion as IosPromotionOption | null)
+            : null;
+      const creditLocked = Boolean(resolvedAppliedPromotion && resolvedAppliedPromotion.isCreditAllowed === false);
 
       const draftOverride: BookingOverrideRecord = {
         ...current,
@@ -447,9 +513,14 @@ export async function executeIosBookingAction(
         selectedUnderCombo:
           body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
         comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
+        promotionId: resolvedPromotionId,
+        appliedPromotion: resolvedAppliedPromotion,
         billing: {
           ...(current.billing || {}),
           ...(body.billing || {}),
+          promotionId: resolvedPromotionId,
+          ...(resolvedAppliedPromotion ? { promotionName: resolvedAppliedPromotion.name } : {}),
+          ...(creditLocked ? { diamondUsed: 0, diamondDiscountAmount: 0 } : {}),
           settledByTier: trustedSettlementTier,
           completedAt: completedAtIso,
         },

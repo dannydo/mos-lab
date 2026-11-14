@@ -380,6 +380,9 @@ export async function settleIosOrderWithLegacyPhp(
       cartProducts: mergedOverride.cartProducts,
       servicePrice: mergedOverride.servicePrice,
       serviceName: mergedOverride.serviceName,
+      promotionId:
+        mergedOverride.promotionId !== undefined ? mergedOverride.promotionId : mergedOverride.billing?.promotionId,
+      appliedPromotion: mergedOverride.appliedPromotion,
       billing: mergedOverride.billing,
       settlementActorTier,
       catalog,

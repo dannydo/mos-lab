@@ -2,8 +2,10 @@ import {
   calculateActorTipBreakdown,
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
+  calculateIosPromotionDiscount,
   IosBookingStatus,
   IosCartProductItem,
+  IosPromotionOption,
   IosSettlementStatus,
   maskPhoneNumber,
   resolveEffectiveServiceTotal,
@@ -25,11 +27,17 @@ export function resolveCustomerAvatar(dbAvatar: string | null | undefined, userI
   return undefined;
 }
 
-export function resolveStaffAvatar(dbAvatar: string | null | undefined): string {
-  if (dbAvatar && typeof dbAvatar === 'string' && dbAvatar.trim().startsWith('http')) {
-    return dbAvatar.trim();
+export function resolveStaffAvatar(dbAvatar: string | null | undefined): string | undefined {
+  if (!dbAvatar || typeof dbAvatar !== 'string') return undefined;
+  const trimmed = dbAvatar.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com\//, 'https://cdn.wingslashes.com/');
   }
-  return 'https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg';
+  if (trimmed.startsWith('/api/') || trimmed.startsWith('/uploads/')) {
+    return trimmed;
+  }
+  return undefined;
 }
 
 export function formatTime12h(dateStart: Date | string | null): string {
@@ -129,6 +137,8 @@ export function computeBookingFinancials(params: {
   activeStaffId: number;
   dbOrderState?: string | null;
   isTrainingCvlOrder?: boolean;
+  promotionId?: number | null;
+  appliedPromotion?: IosPromotionOption | null;
 }) {
   const {
     servicePrice,
@@ -149,6 +159,8 @@ export function computeBookingFinancials(params: {
     activeStaffId,
     dbOrderState,
     isTrainingCvlOrder,
+    promotionId,
+    appliedPromotion,
   } = params;
 
   const productTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0) * Number(p.quantity || 1), 0);
@@ -176,9 +188,26 @@ export function computeBookingFinancials(params: {
 
   const subtotal = effectiveServiceTotal + comboTotal + productTotal;
   const vatRate = 0.08;
-  const vatAmount = Math.round(subtotal * vatRate);
-  const diamondUsed = Number(overrideBilling?.diamondUsed ?? 0);
-  const diamondDiscountAmount = Number(overrideBilling?.diamondDiscountAmount ?? diamondUsed * 1000);
+  const promoBreakdown = calculateIosPromotionDiscount({
+    promotion: appliedPromotion,
+    serviceAmount: effectiveServiceTotal,
+    upgradeAmount: upgradePrice,
+    comboAmount: comboTotal,
+    productAmount: productTotal,
+    vatRate,
+  });
+  const effectivePromotionDiscount = appliedPromotion
+    ? promoBreakdown.totalDiscount
+    : promotionId && overrideBilling?.promotionDiscountAmount
+      ? Math.max(0, Math.round(Number(overrideBilling.promotionDiscountAmount) || 0))
+      : 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - effectivePromotionDiscount);
+  const vatAmount = appliedPromotion ? promoBreakdown.vatAmount : Math.round(subtotalAfterDiscount * vatRate);
+  const isCreditLocked = Boolean(appliedPromotion && appliedPromotion.isCreditAllowed === false);
+  const diamondUsed = isCreditLocked ? 0 : Number(overrideBilling?.diamondUsed ?? 0);
+  const diamondDiscountAmount = isCreditLocked
+    ? 0
+    : Number(overrideBilling?.diamondDiscountAmount ?? diamondUsed * 1000);
   const tipAmount = Number(overrideBilling?.tipAmount ?? 0);
 
   const dualCombo = calculateDualComboTierBonus(
@@ -228,6 +257,18 @@ export function computeBookingFinancials(params: {
       subtotal,
       vatRate,
       vatAmount,
+      promotionId: appliedPromotion?.promotionId ?? promotionId ?? overrideBilling?.promotionId ?? null,
+      promotionName: appliedPromotion?.name ?? overrideBilling?.promotionName ?? undefined,
+      promotionDiscountAmount: effectivePromotionDiscount,
+      serviceDiscountAmount: appliedPromotion
+        ? promoBreakdown.serviceDiscount
+        : (overrideBilling?.serviceDiscountAmount ?? 0),
+      comboDiscountAmount: appliedPromotion
+        ? promoBreakdown.comboDiscount
+        : (overrideBilling?.comboDiscountAmount ?? 0),
+      productDiscountAmount: appliedPromotion
+        ? promoBreakdown.productDiscount
+        : (overrideBilling?.productDiscountAmount ?? 0),
       diamondUsed,
       diamondDiscountAmount,
       serviceTotal: effectiveServiceTotal,
@@ -247,7 +288,7 @@ export function computeBookingFinancials(params: {
       transferProofPhoto: overrideBilling?.transferProofPhoto,
       zaloConsent: overrideBilling?.zaloConsent,
       completedAt: overrideBilling?.completedAt,
-      grandTotal: Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount),
+      grandTotal: Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),
     },
   };
 }

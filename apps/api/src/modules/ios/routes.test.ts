@@ -27,7 +27,7 @@ import {
   buildDemoModeBookings,
   mapLiveOrdersToBookings,
 } from './services/ios-bookings-mapper.service.js';
-import { resolveBookingStatusFromState } from './services/ios-bookings-formatters.js';
+import { resolveBookingStatusFromState, resolveStaffAvatar } from './services/ios-bookings-formatters.js';
 import { isIosDemoModeRequested, queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { createEmptyCustomerEnrichmentContext, RawIosOrderSnapshot } from './services/ios-bookings-sql.service.js';
 import {
@@ -40,6 +40,7 @@ import {
   LEGACY_LIVE_OVERRIDES_KEY,
 } from './services/ios-overrides.service.js';
 import { buildDemoStaffMonthlyStats, createInitialLiveStaffStats } from './services/ios-staff-stats.service.js';
+import { resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
 
 test('iOS Consultation App Auth & Role Guards (Kinh Thánh mOS Điều răn UI-010)', () => {
   // CVL (cv_plus) must have access
@@ -840,4 +841,168 @@ test('Admin inspecting CC view is also locked to STORE_ALL and receives totalSto
   assert.equal(cvlRes.role, 'CVL');
   assert.equal(cvlRes.scope, 'MY_CUSTOMERS');
   assert.equal(cvlRes.totalStoreCount, undefined);
+});
+
+test('resolveStaffAvatar & mapLiveOrdersToBookings preserve real staff avatar (3744.jpg) and return undefined when unassigned', () => {
+  assert.equal(resolveStaffAvatar(null), undefined);
+  assert.equal(resolveStaffAvatar(''), undefined);
+  assert.equal(
+    resolveStaffAvatar('https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg'),
+    'https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg'
+  );
+
+  const bookedTuyeOrder: RawIosOrderSnapshot = {
+    id: 339492,
+    order_number: null,
+    order_state: 'New',
+    booking_date_start: '2026-11-14T07:30:00.000Z',
+    booking_duration_minute: 90,
+    total_price: 880000,
+    client_store_id: 6,
+    booking_note: '13/11 c book Tuyết',
+    user_id: 1001,
+    combo_sale_required: 0,
+    is_new: 0,
+    promotion_id: null,
+    customer_name: 'Văn Kim Yến',
+    customer_phone: '0906814072',
+    customer_avatar: null,
+    booker_name: 'Thanh Vũ',
+    booker_avatar: null,
+    service_name: 'HyperLight 4X 880',
+    service_key: 'hyperlight-4x-880',
+    is_temporary: 0,
+    service_type: 'Normal',
+    staff_name: 'Ánh Tuyết',
+    staff_avatar: 'https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg',
+    assigned_staff_id: 3832,
+    booked_staff_id: 3832,
+    check_in_staff_id: null,
+    check_out_staff_id: null,
+    check_in_staff_name: null,
+    check_in_staff_avatar: null,
+    check_out_staff_name: null,
+    check_out_staff_avatar: null,
+    total_visits: 149,
+  };
+
+  const unassignedOrder: RawIosOrderSnapshot = {
+    ...bookedTuyeOrder,
+    id: 339498,
+    customer_name: 'Michelle',
+    staff_name: 'Chưa phân công',
+    staff_avatar: null,
+    assigned_staff_id: null,
+    booked_staff_id: null,
+  };
+
+  const mapped = mapLiveOrdersToBookings({
+    orders: [bookedTuyeOrder, unassignedOrder],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: {},
+    customerAvatarMap: {},
+    storeId: 6,
+    targetDate: '2026-11-14',
+    todayVn: '2026-11-14',
+    activeStaffId: 37790,
+    canViewFullPhone: true,
+  });
+
+  assert.equal(mapped[0].assignedStaffAvatar, 'https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg');
+  assert.equal(mapped[0].isBookedInAdvance, true);
+  assert.equal(mapped[1].assignedStaffAvatar, undefined);
+  assert.equal(mapped[1].isNextQueueCustomer, true);
+});
+
+test('Promotion Visibility ACL & Booking Promotion Hydration', () => {
+  // CC & Admin (without CVL/CVLL preview) see global promotions; CVL/CVLL only see public non-system promos
+  assert.equal(resolveCanViewGlobalPromotions({ id: 1, role: 'cc', careerTier: 'CC', legacyStaffId: 37790 }), true);
+  assert.equal(
+    resolveCanViewGlobalPromotions({ id: 2, role: 'super_admin', careerTier: 'ADMIN', legacyStaffId: 1 }),
+    true
+  );
+  assert.equal(
+    resolveCanViewGlobalPromotions({ id: 2, role: 'super_admin', careerTier: 'ADMIN', legacyStaffId: 1 }, 'CVL'),
+    false
+  );
+  assert.equal(resolveCanViewGlobalPromotions({ id: 3, role: 'cvl', careerTier: 'CVL', legacyStaffId: 46272 }), false);
+  assert.equal(resolveCanViewGlobalPromotions({ id: 4, role: 'cvll', careerTier: 'CVLL', legacyStaffId: 744 }), false);
+
+  const promoMap = new Map([
+    [
+      19,
+      {
+        promotionId: 19,
+        promotionKey: 'WELCOME-20',
+        promotionType: 'normal',
+        promotionApply: 'single' as const,
+        serviceGroup: null,
+        name: 'Ưu đãi 20% Chào Bạn Mới',
+        shortName: 'Giảm 20%',
+        discountPercentage: 20,
+        discountAmount: 0,
+        exactlyAmount: 0,
+        isOldUserDisabled: true,
+        isApprovalRequired: false,
+        isPublic: true,
+        isSystem: false,
+        isCreditAllowed: false,
+        dateExpired: null,
+        position: 1,
+      },
+    ],
+  ]);
+
+  const orderWithPromo: RawIosOrderSnapshot = {
+    id: 340999,
+    order_number: '340999',
+    order_state: 'CheckIn',
+    booking_date_start: '2026-11-14T08:00:00.000Z',
+    booking_duration_minute: 90,
+    total_price: 770000,
+    client_store_id: 6,
+    booking_note: '',
+    user_id: 9001,
+    combo_sale_required: 0,
+    is_new: 1,
+    promotion_id: 19,
+    customer_name: 'Khách Promo',
+    customer_phone: '0909123456',
+    customer_avatar: null,
+    booker_name: '',
+    booker_avatar: null,
+    service_name: 'HyperLight 4X 770',
+    service_key: 'hyperlight-4x-770',
+    is_temporary: 0,
+    service_type: 'Normal',
+    staff_name: 'Thảo Ly',
+    staff_avatar: null,
+    assigned_staff_id: 46272,
+    booked_staff_id: 46272,
+    check_in_staff_id: 37790,
+    check_out_staff_id: null,
+    check_in_staff_name: 'Diễm Hương',
+    check_in_staff_avatar: null,
+    check_out_staff_name: null,
+    check_out_staff_avatar: null,
+    total_visits: 1,
+  };
+
+  const mapped = mapLiveOrdersToBookings({
+    orders: [orderWithPromo],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: {},
+    customerAvatarMap: {},
+    promotionsById: promoMap,
+    storeId: 6,
+    targetDate: '2026-11-14',
+    todayVn: '2026-11-14',
+    activeStaffId: 37790,
+    canViewFullPhone: true,
+  });
+
+  assert.equal(mapped[0].promotionId, 19);
+  assert.equal(mapped[0].appliedPromotion?.name, 'Ưu đãi 20% Chào Bạn Mới');
+  assert.equal(mapped[0].billing?.promotionDiscountAmount, 154000);
+  assert.equal(mapped[0].billing?.vatAmount, Math.round((770000 - 154000) * 0.08));
 });

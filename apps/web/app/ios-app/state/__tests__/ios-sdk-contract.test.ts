@@ -39,6 +39,10 @@ describe('iOS State, SDK Integration & Live/Demo Mode Contract', () => {
     expect(STAFF_QUEUE.length).toBeGreaterThan(0);
     expect(SALON_INFO.storeId).toBe(6);
     expect(resolveStaffAvatarUrl(null, 13783, 'Khanh Cao')).toBe(KNOWN_STAFF_AVATARS['13783']);
+    expect(
+      resolveStaffAvatarUrl('https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg', 3832, 'Ánh Tuyết')
+    ).toBe('https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg');
+    expect(resolveStaffAvatarUrl(null, 3832, 'Ánh Tuyết')).toBe(KNOWN_STAFF_AVATARS['3832']);
     expect(typeof filterBookingsForCvlScope).toBe('function');
     expect(typeof resolveCustomerBookingTab).toBe('function');
     expect(typeof resolveServicingSubStatus).toBe('function');

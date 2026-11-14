@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import mysql from 'mysql2/promise';
-import { calculateDualComboTierBonus, SafeAny } from '@mos-lab/shared';
+import {
+  calculateDualComboTierBonus,
+  calculateIosPromotionDiscount,
+  IosPromotionOption,
+  SafeAny,
+} from '@mos-lab/shared';
 import { buildCheckoutAttributionSqlCondition, resolveCvTipSplitFromRows } from '../career/career.service.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { settleIosOrderWithLegacyPhp } from './services/ios-legacy-bridge.service.js';
@@ -651,4 +656,130 @@ test('A6: CV Xoay attribute isolation (2-step consultation group_key) & Upper/Un
     }),
   });
   assert.equal(singleBuilt.preConsultationUpperAttrPayload, undefined);
+});
+
+test('Promotion Discount Math & Legacy PHP /order/payment/update Payload Sync (single/combo/upgrade/all + Diamond Lock)', async () => {
+  const pctSinglePromo: IosPromotionOption = {
+    promotionId: 19,
+    promotionKey: 'GIRL-DAY-20',
+    promotionType: 'normal',
+    promotionApply: 'single',
+    serviceGroup: null,
+    name: 'Ưu đãi 20% Dịch Vụ Mi',
+    shortName: 'Giảm 20%',
+    discountPercentage: 20,
+    discountAmount: 0,
+    exactlyAmount: 0,
+    isOldUserDisabled: false,
+    isApprovalRequired: false,
+    isPublic: true,
+    isSystem: false,
+    isCreditAllowed: false,
+    dateExpired: null,
+    position: 1,
+  };
+
+  // 1) Percentage single promo: 20% of 880,000 = 176,000; afterDisc = 704,000; VAT 8% = 56,320
+  const singleBreakdown = calculateIosPromotionDiscount({
+    promotion: pctSinglePromo,
+    serviceAmount: 880000,
+    comboAmount: 0,
+    productAmount: 100000,
+    vatRate: 0.08,
+  });
+  assert.equal(singleBreakdown.serviceDiscount, 176000);
+  assert.equal(singleBreakdown.productDiscount, 0);
+  assert.equal(singleBreakdown.totalDiscount, 176000);
+  assert.equal(singleBreakdown.subtotalAfterDiscount, 804000);
+  assert.equal(singleBreakdown.vatAmount, Math.round(804000 * 0.08));
+
+  // 2) Fixed discount_amount uses pre-tax division by (1 + vatRate) matching legacy Common.swift
+  const fixedAllPromo: IosPromotionOption = {
+    ...pctSinglePromo,
+    promotionId: 25,
+    promotionApply: 'all',
+    discountPercentage: 0,
+    discountAmount: 108000,
+    isCreditAllowed: true,
+  };
+  const fixedBreakdown = calculateIosPromotionDiscount({
+    promotion: fixedAllPromo,
+    serviceAmount: 770000,
+    comboAmount: 0,
+    productAmount: 0,
+    vatRate: 0.08,
+  });
+  assert.equal(fixedBreakdown.totalDiscount, 100000); // 108,000 / 1.08
+  assert.equal(fixedBreakdown.subtotalAfterDiscount, 670000);
+  assert.equal(fixedBreakdown.vatAmount, Math.round(670000 * 0.08));
+
+  // 3) exactly_amount overrides price down to target amount
+  const exactPromo: IosPromotionOption = {
+    ...pctSinglePromo,
+    promotionId: 33,
+    promotionApply: 'single',
+    discountPercentage: 0,
+    discountAmount: 0,
+    exactlyAmount: 500000,
+  };
+  const exactBreakdown = calculateIosPromotionDiscount({
+    promotion: exactPromo,
+    serviceAmount: 880000,
+    comboAmount: 0,
+    productAmount: 0,
+  });
+  assert.equal(exactBreakdown.serviceDiscount, 380000);
+  assert.equal(exactBreakdown.subtotalAfterDiscount, 500000);
+
+  // 4) Legacy PHP payload carries promotion_id, discount_amount, tax_amount AND locks diamond when isCreditAllowed=false
+  const builtWithPromo = buildLegacyOrderPayloads({
+    orderId: 339901,
+    assignedStaffId: 46272,
+    serviceName: 'HyperLight 4X 880',
+    servicePrice: 880000,
+    promotionId: pctSinglePromo.promotionId,
+    appliedPromotion: pctSinglePromo,
+    billing: {
+      paymentMethod: 'VIETQR',
+      diamondUsed: 120,
+      diamondDiscountAmount: 120000,
+      tipAmount: 50000,
+    },
+    catalog: createMockCatalogSnapshot({
+      underService: undefined,
+      underCombo: undefined,
+      products: [],
+      existingOrderServiceIds: [501001],
+    }),
+  });
+
+  assert.equal(builtWithPromo.promotionId, 19);
+  assert.equal(builtWithPromo.discountAmount, 176000);
+  assert.equal(builtWithPromo.diamondCredits, 0); // Locked because isCreditAllowed === false
+  assert.equal(builtWithPromo.paymentUpdatePayload.promotion_id, '19');
+  assert.equal(builtWithPromo.paymentUpdatePayload.discount_amount, '176000');
+  assert.equal(builtWithPromo.paymentUpdatePayload.paid_credit_amount, '0');
+  assert.equal(builtWithPromo.selectedService[0].promotion_id, '19');
+  assert.equal(builtWithPromo.selectedService[0].discount_amount, '176000');
+
+  // 5) SAVE_PROMOTION action rejects isOldUserDisabled when customerVisits > 1, accepts for first-visit
+  const repo = createOverrideRepository(createInMemoryConfigStore());
+  const newOnlyPromo: IosPromotionOption = { ...pctSinglePromo, promotionId: 77, isOldUserDisabled: true };
+  const ccUser = { id: 88, role: 'cc', careerTier: 'CC' as const, legacyStaffId: 37790, displayName: 'Diễm Hương' };
+
+  const oldGuestReject = await executeIosBookingAction(
+    ccUser,
+    { bookingId: 339901, action: 'SAVE_PROMOTION', promotionId: 77, appliedPromotion: newOnlyPromo, customerVisits: 5 },
+    repo
+  );
+  assert.equal(oldGuestReject.statusCode, 400);
+
+  const newGuestOk = await executeIosBookingAction(
+    ccUser,
+    { bookingId: 339901, action: 'SAVE_PROMOTION', promotionId: 77, appliedPromotion: newOnlyPromo, customerVisits: 1 },
+    repo
+  );
+  assert.equal(newGuestOk.statusCode, 200);
+  assert.equal(newGuestOk.payload.override.promotionId, 77);
+  assert.equal(newGuestOk.payload.override.billing.diamondUsed, 0);
 });

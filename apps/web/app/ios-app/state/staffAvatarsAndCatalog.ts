@@ -1,6 +1,7 @@
 import type { ComboPackageOption, SerumTierOption } from '@mos-lab/shared';
 
 export const KNOWN_STAFF_AVATARS: Record<string, string> = {
+  '3832': 'https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg', // Ánh Tuyết (CV)
   '13783': 'https://cdn.wingslashes.com/uploads/user/avatar/400/thumbnail/15400.png', // Khanh Cao (CVL)
   '46272': 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png', // Thảo Ly (CVL)
   '25337': 'https://cdn.wingslashes.com/uploads/user/avatar/955/thumbnail/26955.jpg', // Tuyết Nhi ❤️ (CV)
@@ -18,9 +19,10 @@ export function resolveStaffAvatarUrl(
   staffId?: number | null,
   staffName?: string | null
 ): string | undefined {
-  if (dbAvatar && typeof dbAvatar === 'string' && dbAvatar.trim().startsWith('http')) {
-    if (!dbAvatar.includes('3744.jpg') && !dbAvatar.includes('719.jpg')) {
-      return dbAvatar.trim();
+  if (dbAvatar && typeof dbAvatar === 'string') {
+    const trimmed = dbAvatar.trim();
+    if (trimmed.startsWith('http') || trimmed.startsWith('/api/') || trimmed.startsWith('/uploads/')) {
+      return trimmed;
     }
   }
   if (staffId && KNOWN_STAFF_AVATARS[String(staffId)]) {
@@ -28,6 +30,7 @@ export function resolveStaffAvatarUrl(
   }
   if (staffName) {
     const s = staffName.toLowerCase();
+    if (s.includes('ánh tuyết')) return KNOWN_STAFF_AVATARS['3832'];
     if (s.includes('khanh cao') || s.includes('khanh')) return KNOWN_STAFF_AVATARS['13783'];
     if (s.includes('thảo ly')) return KNOWN_STAFF_AVATARS['46272'];
     if (s.includes('tuyết nhi')) return KNOWN_STAFF_AVATARS['25337'];

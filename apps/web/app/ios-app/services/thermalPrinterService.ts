@@ -26,6 +26,7 @@ export interface ReceiptData {
   }>;
   subtotal: number;
   discount: number;
+  promotionName?: string;
   tipAmount: number;
   total: number;
   paymentMethod: string;
@@ -144,10 +145,15 @@ class ThermalPrinterService {
 
     // Tổng tiền
     const subtotalStr = new Intl.NumberFormat('vi-VN').format(receipt.subtotal) + 'd';
+    const discountStr = new Intl.NumberFormat('vi-VN').format(receipt.discount) + 'd';
     const totalStr = new Intl.NumberFormat('vi-VN').format(receipt.total) + 'd';
     const tipStr = new Intl.NumberFormat('vi-VN').format(receipt.tipAmount) + 'd';
 
     commands.push(...new TextEncoder().encode(`Tam tinh: ${subtotalStr}\n`));
+    if (receipt.discount > 0) {
+      const promoLabel = receipt.promotionName ? `Khuyen mai (${receipt.promotionName})` : 'Giam gia / KM';
+      commands.push(...new TextEncoder().encode(`${promoLabel}: -${discountStr}\n`));
+    }
     if (receipt.tipAmount > 0) {
       commands.push(...new TextEncoder().encode(`Tien tip: ${tipStr}\n`));
     }

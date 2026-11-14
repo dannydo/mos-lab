@@ -6,12 +6,34 @@ import type {
   IosBookingActionResponse,
   IosPrintReceiptPayload,
   IosPrintReceiptResponse,
+  IosPromotionOption,
   IosAdminComboExpiryActionPayload,
   IosAdminComboExpiryActionResponse,
 } from '@mos-lab/shared';
 
+export interface IosPromotionsResponse {
+  success: boolean;
+  canViewGlobalPromotions?: boolean;
+  count?: number;
+  promotions: IosPromotionOption[];
+  error?: string;
+}
+
 export const iosApi = {
   ios: {
+    async getPromotions(
+      params?: { role?: string; keyword?: string },
+      options?: ApiRequestOptions
+    ): Promise<IosPromotionsResponse> {
+      const res = await api.get<IosPromotionsResponse>('/ios/promotions', {
+        params,
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
+      return res.data;
+    },
+
     async getBookings(params?: IosBookingListQuery, options?: ApiRequestOptions): Promise<IosBookingListResponse> {
       const normalizedParams: Record<string, unknown> = { ...(params ?? {}) };
       if (typeof params?.demo === 'boolean') {

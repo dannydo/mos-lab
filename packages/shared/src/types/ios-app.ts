@@ -1,6 +1,7 @@
 import { calculateComboBonus, type CvToCvPlusRequirements } from './career-progression.js';
 import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem } from '../catalog/combo-expiry.js';
 import type { IosCvSelfSpeedHistoryProfile, IosSelfChallengeTierKey } from '../utils/ios-self-challenge.js';
+import type { IosPromotionOption } from './ios-promotions.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -370,6 +371,8 @@ export interface IosBookingItem {
     feedbackNote?: string;
   };
   cartProducts?: IosCartProductItem[];
+  promotionId?: number | null;
+  appliedPromotion?: IosPromotionOption | null;
   cvRewardBreakdown?: {
     techTipPercent: number;
     checkInTipPercent: number;
@@ -386,6 +389,12 @@ export interface IosBookingItem {
     serviceTotal: number;
     comboTotal?: number;
     productTotal: number;
+    promotionId?: number | null;
+    promotionName?: string;
+    promotionDiscountAmount?: number;
+    serviceDiscountAmount?: number;
+    comboDiscountAmount?: number;
+    productDiscountAmount?: number;
     paymentMethod: 'CASH' | 'POS' | 'VIETQR';
     tipAmount: number;
     tipCvShare: number;
@@ -450,6 +459,7 @@ export type IosBookingActionType =
   | 'START_SERVICE'
   | 'SAVE_SURVEY'
   | 'SAVE_UPSELL'
+  | 'SAVE_PROMOTION'
   | 'COMPLETE_CHECKOUT'
   | 'UPDATE_CUSTOMER_AVATAR'
   | 'RESET_DEMO';

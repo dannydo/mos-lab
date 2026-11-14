@@ -36,6 +36,8 @@ export interface CheckoutReceiptSectionProps {
   isCheckoutStaffCc?: boolean;
   subtotal: number;
   vatAmount: number;
+  appliedPromotionName?: string | null;
+  promotionDiscountAmount?: number;
   tipAmount: number;
   effectiveDiamondUsed: number;
   diamondDiscountAmount: number;
@@ -70,6 +72,8 @@ export function CheckoutReceiptSection({
   isCheckoutStaffCc = false,
   subtotal,
   vatAmount,
+  appliedPromotionName,
+  promotionDiscountAmount = 0,
   tipAmount,
   effectiveDiamondUsed,
   diamondDiscountAmount,
@@ -485,6 +489,21 @@ export function CheckoutReceiptSection({
                 {subtotal.toLocaleString('vi-VN')}đ
               </span>
             </div>
+            {promotionDiscountAmount > 0 && (
+              <div
+                data-testid="receipt-promotion-row"
+                className={`flex items-center justify-between font-bold px-2.5 py-1.5 rounded-xl border ${
+                  isDark
+                    ? 'text-emerald-300 bg-emerald-950/35 border-emerald-800/60'
+                    : 'text-emerald-800 bg-emerald-50/80 border-emerald-200'
+                }`}
+              >
+                <span className="truncate mr-2">🏷️ Khuyến mãi ({appliedPromotionName || 'Ưu đãi'}):</span>
+                <span className="font-black tabular-nums whitespace-nowrap shrink-0">
+                  -{promotionDiscountAmount.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+            )}
             <div className={`flex items-center justify-between text-[var(--mos-text-muted)] font-medium`}>
               <span>Thuế VAT (8%):</span>
               <span
@@ -546,9 +565,11 @@ export function CheckoutReceiptSection({
               <span className={`text-[10.5px] text-[var(--mos-text-muted)] font-medium`}>
                 {effectiveDiamondUsed > 0
                   ? `Đã cấn trừ ${effectiveDiamondUsed} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ)`
-                  : tipAmount > 0
-                    ? 'Đã gồm Dịch vụ + 8% VAT + Tiền tip'
-                    : 'Đã bao gồm 8% thuế VAT'}
+                  : promotionDiscountAmount > 0
+                    ? `Đã giảm -${promotionDiscountAmount.toLocaleString('vi-VN')}đ KM · Đã gồm 8% VAT`
+                    : tipAmount > 0
+                      ? 'Đã gồm Dịch vụ + 8% VAT + Tiền tip'
+                      : 'Đã bao gồm 8% thuế VAT'}
               </span>
             </div>
             <span className="text-[20px] font-black text-[#FF9500] tabular-nums whitespace-nowrap shrink-0 tracking-tight">

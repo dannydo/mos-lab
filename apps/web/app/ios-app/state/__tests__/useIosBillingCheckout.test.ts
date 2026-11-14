@@ -312,8 +312,72 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
       comboTotal: 4980000,
       productTotal: 0,
       subtotal: 4980000,
+      serviceDiscountAmount: 0,
+      comboDiscountAmount: 0,
+      productDiscountAmount: 0,
+      promotionDiscountAmount: 0,
+      subtotalAfterDiscount: 4980000,
       vatRate: 0.08,
       vatAmount: 398400,
+    });
+  });
+
+  it('computeFreshBillingLineTotals áp dụng discount promotion và tính lại VAT 8% sau giảm giá', () => {
+    const totals = computeFreshBillingLineTotals({
+      servicePrice: 500000,
+      upgradePrice: 0,
+      serviceName: 'HyperLight 500K',
+      comboLiveStatus: undefined,
+      selectedCombo: null,
+      selectedUnderCombo: null,
+      comboRedemption: null,
+      cartProducts: [],
+      appliedPromotion: {
+        promotionId: 101,
+        promotionKey: 'PROMO20',
+        promotionType: 'percentage',
+        promotionApply: 'single',
+        serviceGroup: null,
+        name: 'Giảm 20% dịch vụ lẻ',
+        shortName: 'Giảm 20%',
+        discountPercentage: 20,
+        discountAmount: 0,
+        exactlyAmount: 0,
+        isCreditAllowed: false,
+        isOldUserDisabled: false,
+        isApprovalRequired: false,
+        isPublic: true,
+        isSystem: false,
+        dateExpired: null,
+        position: 1,
+      },
+      billing: {
+        subtotal: 0,
+        vatRate: 0.08,
+        vatAmount: 0,
+        serviceTotal: 0,
+        comboTotal: 0,
+        productTotal: 0,
+        paymentMethod: 'CASH',
+        tipAmount: 0,
+        tipCvShare: 0,
+        tipCcShare: 0,
+        grandTotal: 0,
+      },
+    });
+
+    expect(totals).toEqual({
+      serviceTotal: 500000,
+      comboTotal: 0,
+      productTotal: 0,
+      subtotal: 500000,
+      serviceDiscountAmount: 100000,
+      comboDiscountAmount: 0,
+      productDiscountAmount: 0,
+      promotionDiscountAmount: 100000,
+      subtotalAfterDiscount: 400000,
+      vatRate: 0.08,
+      vatAmount: 32000,
     });
   });
 });

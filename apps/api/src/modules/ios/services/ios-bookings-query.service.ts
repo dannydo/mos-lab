@@ -23,6 +23,7 @@ import {
   mapLiveOrdersToBookings,
 } from './ios-bookings-mapper.service.js';
 import { buildDemoCvSelfSpeedProfile, fetchLiveCvSelfSpeedProfiles } from './ios-cv-self-speed.service.js';
+import { collectPromotionIdsFromSources, fetchPromotionsByIds } from './ios-promotions.service.js';
 import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
 
 export function resolveTodayVietnamDate(): string {
@@ -183,6 +184,9 @@ export async function queryIosBookingsList(
     defaultIosOverrideRepo.loadCustomerComboExpiryOverridesBatch(liveCustomerIds),
   ]);
 
+  const promoIds = collectPromotionIdsFromSources(orders, overrides);
+  const promotionsById = await fetchPromotionsByIds(pool, promoIds);
+
   // Tự động đối soát & hạch toán bù (Idempotent Backfill) cho các ca đã DONE trên /ios-app nhưng chưa chốt Legacy DB
   let reconciledAny = false;
   for (const row of orders) {
@@ -267,6 +271,7 @@ export async function queryIosBookingsList(
     activeStaffId,
     canViewFullPhone,
     activeTrainingPairs,
+    promotionsById,
   });
 
   const { effectiveList, counts } = applyIosScopeAndCounts(allMappedBookings, {

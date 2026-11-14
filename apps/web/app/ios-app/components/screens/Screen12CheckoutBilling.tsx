@@ -1,8 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { canDirectlySettleCounterPayment } from '@mos-lab/shared';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import {
+  calculateIosPromotionDiscount,
+  canDirectlySettleCounterPayment,
+  type IosPromotionOption,
+} from '@mos-lab/shared';
 import { GraduationCap } from 'lucide-react';
+import { apiClient } from '~/lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
@@ -25,6 +30,7 @@ import { CheckoutTipAndDiamondSection } from './checkout/CheckoutTipAndDiamondSe
 import { CheckoutPaymentMethodSection } from './checkout/CheckoutPaymentMethodSection';
 import { CheckoutVietQrModal } from './checkout/CheckoutVietQrModal';
 import { CheckoutZaloConsentModal } from './checkout/CheckoutZaloConsentModal';
+import { CheckoutPromotionPickerModal } from './checkout/CheckoutPromotionPickerModal';
 
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
@@ -41,8 +47,13 @@ interface Screen12CheckoutBillingProps {
       phone: string;
       sentAt?: string;
       voucherCode?: string;
+    },
+    promotionSelection?: {
+      promotionId: number | null;
+      appliedPromotion: IosPromotionOption | null;
     }
   ) => void;
+  onSavePromotion?: (promotion: IosPromotionOption | null) => void;
   onEditService?: () => void;
 }
 
@@ -52,6 +63,7 @@ export function Screen12CheckoutBilling({
   cvPlusRules,
   onBack,
   onChoosePayment,
+  onSavePromotion,
   onEditService,
 }: Screen12CheckoutBillingProps) {
   const { themeMode } = useTheme();
@@ -65,11 +77,63 @@ export function Screen12CheckoutBilling({
   const [isCustomTipOpen, setIsCustomTipOpen] = useState<boolean>(false);
   const [customTipInput, setCustomTipInput] = useState<string>('');
   const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
+  const [selectedPromotion, setSelectedPromotion] = useState<IosPromotionOption | null>(
+    booking?.appliedPromotion ?? null
+  );
+  const [promotions, setPromotions] = useState<IosPromotionOption[]>([]);
+  const [isPromotionsLoading, setIsPromotionsLoading] = useState<boolean>(false);
+  const [promotionsError, setPromotionsError] = useState<string | null>(null);
+  const [isPromotionModalOpen, setIsPromotionModalOpen] = useState<boolean>(false);
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
 
   useEffect(() => {
     setShowStaffRewards(false);
-  }, [booking?.id]);
+    setSelectedPromotion(booking?.appliedPromotion ?? null);
+    if (booking?.appliedPromotion?.isCreditAllowed === false) {
+      setDiamondUsed(0);
+    }
+  }, [booking?.id, booking?.appliedPromotion]);
+
+  const actorTier = actor?.tier;
+
+  const loadPromotions = useCallback(
+    async (signal?: AbortSignal) => {
+      setIsPromotionsLoading(true);
+      setPromotionsError(null);
+      try {
+        const res = await apiClient.ios.getPromotions({ role: actorTier }, { signal });
+        if (!signal?.aborted && res?.success && Array.isArray(res.promotions)) {
+          setPromotions(res.promotions);
+        }
+      } catch (err: any) {
+        if (!signal?.aborted) {
+          setPromotionsError(err?.message || 'Không thể tải danh sách khuyến mãi');
+        }
+      } finally {
+        if (!signal?.aborted) {
+          setIsPromotionsLoading(false);
+        }
+      }
+    },
+    [actorTier]
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadPromotions(controller.signal);
+    return () => controller.abort();
+  }, [loadPromotions]);
+
+  const handleSelectPromotion = useCallback(
+    (promo: IosPromotionOption | null) => {
+      setSelectedPromotion(promo);
+      if (promo && promo.isCreditAllowed === false) {
+        setDiamondUsed(0);
+      }
+      onSavePromotion?.(promo);
+    },
+    [onSavePromotion]
+  );
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
   const [isZaloModalOpen, setIsZaloModalOpen] = useState<boolean>(false);
   const [zaloPhone, setZaloPhone] = useState<string>(
@@ -172,14 +236,34 @@ export function Screen12CheckoutBilling({
     () => calculateActorTipBreakdown(booking, actor, tipAmount),
     [booking, actor, tipAmount]
   );
-  const subtotal =
-    effectiveServiceCharge +
-    (selectedCombo ? selectedCombo.price : 0) +
-    (selectedUnderCombo ? selectedUnderCombo.price : 0) +
-    cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const comboTotal = (selectedCombo ? selectedCombo.price : 0) + (selectedUnderCombo ? selectedUnderCombo.price : 0);
+  const productTotal = cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const subtotal = effectiveServiceCharge + comboTotal + productTotal;
   const vatRate = booking?.billing?.vatRate ?? 0.08;
-  const vatAmount = Math.round(subtotal * vatRate);
-  const totalWithVat = subtotal + vatAmount;
+
+  const promoBreakdown = useMemo(
+    () =>
+      calculateIosPromotionDiscount({
+        promotion: selectedPromotion,
+        serviceAmount: effectiveServiceCharge,
+        upgradeAmount: upgradePrice,
+        comboAmount: comboTotal,
+        productAmount: productTotal,
+        vatRate,
+      }),
+    [selectedPromotion, effectiveServiceCharge, upgradePrice, comboTotal, productTotal, vatRate]
+  );
+
+  const promotionDiscountAmount = selectedPromotion
+    ? promoBreakdown.totalDiscount
+    : booking?.promotionId && booking?.billing?.promotionDiscountAmount
+      ? Math.max(0, Math.round(Number(booking.billing.promotionDiscountAmount) || 0))
+      : 0;
+  const appliedPromotionDisplayName =
+    selectedPromotion?.name ?? (booking?.promotionId ? booking?.billing?.promotionName : undefined) ?? null;
+  const subtotalAfterDiscount = Math.max(0, subtotal - promotionDiscountAmount);
+  const vatAmount = selectedPromotion ? promoBreakdown.vatAmount : Math.round(subtotalAfterDiscount * vatRate);
+  const totalWithVat = subtotalAfterDiscount + vatAmount;
 
   // CVL: NẾU MUA 2 COMBO CÙNG LÚC, CỘNG GỘP TỔNG TIỀN TRƯỚC RỒI TÍNH THƯỞNG THEO CÔNG THỨC CAREER_PROGRESSION_RULES (<2M = 50K, MỖI 1M KẾ TIẾP = 50K)
   // Trong kỳ Training (isTrainingCvlOrder): nếu CVL tự mở xem đơn (dù CC bấm checkout giùm), CVL vẫn thấy 100% thưởng của mình
@@ -199,9 +283,12 @@ export function Screen12CheckoutBilling({
   // TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ (Khớp 100% legacy database & iOS App cũ)
   const DIAMOND_RATE = 1000;
   const customerDiamondBalance = booking?.diamondBalance ?? 0;
+  const isCreditLockedByPromotion = Boolean(selectedPromotion && selectedPromotion.isCreditAllowed === false);
   const totalBeforeDiamond = totalWithVat + tipAmount;
-  const maxDiamondCanUse = Math.min(customerDiamondBalance, Math.floor(totalBeforeDiamond / DIAMOND_RATE));
-  const effectiveDiamondUsed = Math.min(diamondUsed, maxDiamondCanUse);
+  const maxDiamondCanUse = isCreditLockedByPromotion
+    ? 0
+    : Math.min(customerDiamondBalance, Math.floor(totalBeforeDiamond / DIAMOND_RATE));
+  const effectiveDiamondUsed = isCreditLockedByPromotion ? 0 : Math.min(diamondUsed, maxDiamondCanUse);
   const diamondDiscountAmount = effectiveDiamondUsed * DIAMOND_RATE;
   const finalGrandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
 
@@ -278,22 +365,42 @@ export function Screen12CheckoutBilling({
       setTimeout(() => {
         setIsZaloModalOpen(false);
         setIsZaloSentSuccess(false);
-        onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed, transferProofPhoto || undefined, {
-          agreed: true,
-          phone: zaloPhone,
-          sentAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          voucherCode: 'WINGS50K-ZALO',
-        });
+        onChoosePayment(
+          selectedMethod,
+          tipAmount,
+          effectiveDiamondUsed,
+          transferProofPhoto || undefined,
+          {
+            agreed: true,
+            phone: zaloPhone,
+            sentAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            voucherCode: 'WINGS50K-ZALO',
+          },
+          {
+            promotionId: selectedPromotion?.promotionId ?? null,
+            appliedPromotion: selectedPromotion,
+          }
+        );
       }, 600);
     }, 700);
   };
 
   const handleSkipZalo = () => {
     setIsZaloModalOpen(false);
-    onChoosePayment(selectedMethod, tipAmount, effectiveDiamondUsed, transferProofPhoto || undefined, {
-      agreed: false,
-      phone: zaloPhone,
-    });
+    onChoosePayment(
+      selectedMethod,
+      tipAmount,
+      effectiveDiamondUsed,
+      transferProofPhoto || undefined,
+      {
+        agreed: false,
+        phone: zaloPhone,
+      },
+      {
+        promotionId: selectedPromotion?.promotionId ?? null,
+        appliedPromotion: selectedPromotion,
+      }
+    );
   };
 
   return (
@@ -376,6 +483,8 @@ export function Screen12CheckoutBilling({
           isCheckoutStaffCc={isCheckoutStaffCc}
           subtotal={subtotal}
           vatAmount={vatAmount}
+          appliedPromotionName={appliedPromotionDisplayName}
+          promotionDiscountAmount={promotionDiscountAmount}
           tipAmount={tipAmount}
           effectiveDiamondUsed={effectiveDiamondUsed}
           diamondDiscountAmount={diamondDiscountAmount}
@@ -405,6 +514,17 @@ export function Screen12CheckoutBilling({
           diamondDiscountAmount={diamondDiscountAmount}
           diamondRate={DIAMOND_RATE}
           onSetDiamondUsed={setDiamondUsed}
+          selectedPromotion={selectedPromotion}
+          promotionDiscountAmount={promotionDiscountAmount}
+          promotionCount={promotions.length}
+          onOpenPromotionPicker={() => {
+            setIsPromotionModalOpen(true);
+            if (promotions.length === 0 && !isPromotionsLoading) {
+              void loadPromotions();
+            }
+          }}
+          onClearPromotion={() => handleSelectPromotion(null)}
+          isCreditLockedByPromotion={isCreditLockedByPromotion}
         />
 
         <CheckoutPaymentMethodSection
@@ -451,6 +571,23 @@ export function Screen12CheckoutBilling({
         isZaloSentSuccess={isZaloSentSuccess}
         onConfirmZaloSend={handleConfirmZaloSend}
         onSkipZalo={handleSkipZalo}
+      />
+
+      <CheckoutPromotionPickerModal
+        open={isPromotionModalOpen}
+        isDark={isDark}
+        promotions={promotions}
+        isLoading={isPromotionsLoading}
+        error={promotionsError}
+        selectedPromotionId={selectedPromotion?.promotionId ?? booking?.promotionId ?? null}
+        customerVisits={booking?.customerVisits ?? 1}
+        serviceAmount={effectiveServiceCharge}
+        upgradeAmount={upgradePrice}
+        comboAmount={comboTotal}
+        productAmount={productTotal}
+        vatRate={vatRate}
+        onSelectPromotion={handleSelectPromotion}
+        onClose={() => setIsPromotionModalOpen(false)}
       />
     </div>
   );

@@ -79,11 +79,14 @@ export function Screen14ThermalReceiptDone({
         (selectedCombo ? selectedCombo.price : 0) +
         (selectedUnderCombo ? selectedUnderCombo.price : 0) +
         cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
-  const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotal * vatRate);
+  const promotionName = booking?.appliedPromotion?.name ?? booking?.billing?.promotionName ?? null;
+  const promotionDiscountAmount = booking?.billing?.promotionDiscountAmount ?? 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - promotionDiscountAmount);
+  const vatAmount = booking?.billing?.vatAmount ?? Math.round(subtotalAfterDiscount * vatRate);
   const grandTotal =
     booking?.billing?.grandTotal !== undefined
       ? booking.billing.grandTotal
-      : Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount);
+      : Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
 
   const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
   const dualComboBonus = calculateDualComboTierBonus(
@@ -303,6 +306,19 @@ export function Screen14ThermalReceiptDone({
               </span>
             </div>
           ))}
+
+          {/* Khuyến mãi (Promotion) */}
+          {promotionDiscountAmount > 0 && (
+            <div
+              data-testid="thermal-receipt-promotion-row"
+              className={`flex justify-between items-center ${isDark ? 'text-emerald-300 bg-emerald-950/40 border-emerald-800' : 'text-emerald-800 bg-emerald-50 border-emerald-200'} font-bold px-2 py-1 rounded-lg border`}
+            >
+              <span className="truncate mr-2">🏷️ Khuyến mãi ({promotionName || 'Ưu đãi'})</span>
+              <span className="tabular-nums font-black shrink-0">
+                -{promotionDiscountAmount.toLocaleString('vi-VN')} đ
+              </span>
+            </div>
+          )}
 
           {/* Thuế VAT (8%) */}
           {vatAmount > 0 && (
