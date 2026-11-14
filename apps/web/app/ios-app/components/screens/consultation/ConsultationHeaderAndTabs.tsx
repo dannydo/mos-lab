@@ -85,6 +85,7 @@ interface ConsultationHeaderAndTabsProps {
   activeSubTab: 'SPECS' | 'PROFILE';
   setActiveSubTab: (tab: 'SPECS' | 'PROFILE') => void;
   triggerMandatoryLashCheckGuard: () => void;
+  showStaffRewards?: boolean;
 }
 
 export function ConsultationHeaderAndTabs({
@@ -108,6 +109,7 @@ export function ConsultationHeaderAndTabs({
   activeSubTab,
   setActiveSubTab,
   triggerMandatoryLashCheckGuard,
+  showStaffRewards = false,
 }: ConsultationHeaderAndTabsProps) {
   return (
     <>
@@ -157,8 +159,13 @@ export function ConsultationHeaderAndTabs({
             Dịch vụ:{' '}
             <strong className={isDark ? 'text-white' : 'text-black'}>
               {serviceName.toLowerCase().includes('any') ? 'Chưa chọn mẫu mi' : serviceName}
-            </strong>{' '}
-            · In: <strong className="text-emerald-500">{actorName}</strong>
+            </strong>
+            {showStaffRewards && (
+              <>
+                {' '}
+                · In: <strong className="text-emerald-500">{actorName}</strong>
+              </>
+            )}
           </div>
         </div>
       </div>

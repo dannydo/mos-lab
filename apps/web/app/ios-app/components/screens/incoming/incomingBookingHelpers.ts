@@ -1,4 +1,4 @@
-import { BookingItem } from '../../../state/mockData';
+import { BookingItem, isDoneBookingPendingCheckout } from '../../../state/mockData';
 import { resolveServiceSpecsFromComboOrHistory } from '../consultation/constraints/comboAndUnderMinkPresets';
 import { calculateLashPricingAndCvPoints } from '../consultation/constraints/pricingAndCvPoints';
 import { getWingsMenuDetail } from '../consultation/constraints/wingsMenuLookup';
@@ -204,18 +204,21 @@ export function getLashDetailSpecs(b: BookingItem) {
 export function formatArrivalCountdownInMins(
   timeStr: string | undefined,
   dateOffset: number,
-  now: Date
+  now: Date,
+  isDark = true
 ): { text: string; colorClass: string; diffMins: number | null } {
+  const mutedTextClass = isDark ? 'text-neutral-400' : 'text-neutral-600';
+  const dimTextClass = isDark ? 'text-neutral-500' : 'text-neutral-500';
   if (dateOffset !== 0) {
-    if (dateOffset === 1) return { text: 'Ngày mai', colorClass: 'text-neutral-400', diffMins: null };
-    if (dateOffset === -1) return { text: 'Hôm qua', colorClass: 'text-neutral-500', diffMins: null };
-    return { text: `${dateOffset > 0 ? '+' : ''}${dateOffset}N`, colorClass: 'text-neutral-400', diffMins: null };
+    if (dateOffset === 1) return { text: 'Ngày mai', colorClass: mutedTextClass, diffMins: null };
+    if (dateOffset === -1) return { text: 'Hôm qua', colorClass: dimTextClass, diffMins: null };
+    return { text: `${dateOffset > 0 ? '+' : ''}${dateOffset}N`, colorClass: mutedTextClass, diffMins: null };
   }
 
-  if (!timeStr) return { text: '-- mins', colorClass: 'text-neutral-500', diffMins: null };
+  if (!timeStr) return { text: '-- mins', colorClass: dimTextClass, diffMins: null };
 
   const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
-  if (!match) return { text: '-- mins', colorClass: 'text-neutral-500', diffMins: null };
+  if (!match) return { text: '-- mins', colorClass: dimTextClass, diffMins: null };
 
   let hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
@@ -232,19 +235,39 @@ export function formatArrivalCountdownInMins(
   const suffix = Math.abs(diffMins) === 1 ? 'min' : 'mins';
 
   if (diffMins > 60) {
-    return { text: `${diffMins} ${suffix}`, colorClass: 'text-neutral-400 font-bold', diffMins };
+    return {
+      text: `${diffMins} ${suffix}`,
+      colorClass: isDark ? 'text-neutral-400 font-bold' : 'text-neutral-600 font-bold',
+      diffMins,
+    };
   }
   if (diffMins > 15) {
-    return { text: `${diffMins} ${suffix}`, colorClass: 'text-sky-400 font-extrabold', diffMins };
+    return {
+      text: `${diffMins} ${suffix}`,
+      colorClass: isDark ? 'text-sky-400 font-extrabold' : 'text-sky-700 font-extrabold',
+      diffMins,
+    };
   }
   if (diffMins > 0) {
-    return { text: `${diffMins} ${suffix}`, colorClass: 'text-emerald-400 font-black animate-pulse', diffMins };
+    return {
+      text: `${diffMins} ${suffix}`,
+      colorClass: isDark ? 'text-emerald-400 font-black animate-pulse' : 'text-emerald-700 font-black animate-pulse',
+      diffMins,
+    };
   }
   if (diffMins === 0) {
-    return { text: '0 mins', colorClass: 'text-amber-400 font-black animate-pulse', diffMins: 0 };
+    return {
+      text: '0 mins',
+      colorClass: isDark ? 'text-amber-400 font-black animate-pulse' : 'text-amber-700 font-black animate-pulse',
+      diffMins: 0,
+    };
   }
   // diffMins < 0: Đã quá giờ hẹn
-  return { text: `${diffMins} ${suffix}`, colorClass: 'text-rose-400 font-bold', diffMins };
+  return {
+    text: `${diffMins} ${suffix}`,
+    colorClass: isDark ? 'text-rose-400 font-bold' : 'text-rose-700 font-bold',
+    diffMins,
+  };
 }
 
 export function parseBookingTime(timeStr?: string, baseDate: Date = new Date()): Date {
@@ -294,10 +317,12 @@ export function formatTime24h(timeStr?: string): string {
  */
 export function getBookingCompletionInfo(
   b: BookingItem,
-  now: Date
+  now: Date,
+  isDark = true
 ): {
   completionTimeStr: string;
   countdownText: string;
+  shortCountdownText: string;
   colorClass: string;
   diffMins: number;
 } {
@@ -331,7 +356,8 @@ export function getBookingCompletionInfo(
     return {
       completionTimeStr,
       countdownText: `${remainingMins} ${suffix}`,
-      colorClass: 'text-emerald-400 font-extrabold',
+      shortCountdownText: `còn ${remainingMins}p`,
+      colorClass: isDark ? 'text-emerald-400 font-extrabold' : 'text-emerald-700 font-extrabold',
       diffMins: remainingMins,
     };
   }
@@ -339,7 +365,8 @@ export function getBookingCompletionInfo(
     return {
       completionTimeStr,
       countdownText: `${remainingMins} ${suffix}`,
-      colorClass: 'text-amber-400 font-black animate-pulse',
+      shortCountdownText: `còn ${remainingMins}p`,
+      colorClass: isDark ? 'text-amber-400 font-black animate-pulse' : 'text-amber-700 font-black animate-pulse',
       diffMins: remainingMins,
     };
   }
@@ -347,7 +374,8 @@ export function getBookingCompletionInfo(
     return {
       completionTimeStr,
       countdownText: '0 mins',
-      colorClass: 'text-amber-400 font-black animate-pulse',
+      shortCountdownText: 'đến giờ',
+      colorClass: isDark ? 'text-amber-400 font-black animate-pulse' : 'text-amber-700 font-black animate-pulse',
       diffMins: 0,
     };
   }
@@ -355,7 +383,8 @@ export function getBookingCompletionInfo(
   return {
     completionTimeStr,
     countdownText: `${remainingMins} ${suffix}`,
-    colorClass: 'text-rose-400 font-bold',
+    shortCountdownText: `trễ ${Math.abs(remainingMins)}p`,
+    colorClass: isDark ? 'text-rose-400 font-bold' : 'text-rose-700 font-bold',
     diffMins: remainingMins,
   };
 }
@@ -432,6 +461,8 @@ export function getDoneBookingSummary(b: BookingItem) {
   const cvPoints = resolveBookingCvRotationPoints(b);
   const tipAmount = Number(b.billing?.tipAmount || 0);
   const settlementStatus = b.billing?.settlementStatus;
+  const isPendingCheckout = isDoneBookingPendingCheckout(b);
+  const paymentMethod = b.billing?.paymentMethod;
 
   return {
     timeAndDurationStr,
@@ -442,5 +473,7 @@ export function getDoneBookingSummary(b: BookingItem) {
     cvPoints,
     tipAmount,
     settlementStatus,
+    isPendingCheckout,
+    paymentMethod,
   };
 }

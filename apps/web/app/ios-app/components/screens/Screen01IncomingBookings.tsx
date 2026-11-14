@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BookingItem, resolveCustomerBookingTab } from '../../state/mockData';
+import { BookingItem, resolveCustomerBookingTab, sortDoneBookingsWithCheckoutFirst } from '../../state/mockData';
 import {
   ActiveActorProfile,
   BookingScopeMode,
@@ -140,10 +140,11 @@ export function Screen01IncomingBookings({
   }, [targetDate]);
 
   const filteredBookings = useMemo(() => {
-    return bookings.filter((b) => {
+    const matched = bookings.filter((b) => {
       const tab = resolveCustomerBookingTab(b, activeServicingBooking?.id);
       return tab === bookingSegment;
     });
+    return bookingSegment === 'DONE' ? sortDoneBookingsWithCheckoutFirst(matched) : matched;
   }, [bookings, bookingSegment, activeServicingBooking]);
 
   const { themeMode } = useTheme();

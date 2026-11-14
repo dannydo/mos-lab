@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, ChevronRight, Eye, EyeOff, Zap, AlertTriangle, CalendarClock } from 'lucide-react';
+import { Sparkles, ChevronRight, Zap, AlertTriangle, CalendarClock } from 'lucide-react';
 import {
   formatExpiryDateDdMmYyyy,
   type ComboPurchaseExpiryResult,
@@ -423,64 +423,34 @@ export function ConsultationComboSelectorSection({
               </div>
             )}
 
-            {/* Bottom Row: Thưởng Chuyên Viên */}
-            {calculateCvComboTierBonus(
-              (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0)
-            ) > 0 &&
-              (showStaffRewards ? (
+            {/* Bottom Row: Thưởng Chuyên Viên (Chỉ hiển thị khi bật Con mắt trên Header) */}
+            {showStaffRewards &&
+              calculateCvComboTierBonus(
+                (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0)
+              ) > 0 && (
                 <div
                   className={`px-3 py-2 flex items-center justify-between text-[11px] ${
                     isDark ? 'bg-[#141416] text-neutral-400' : 'bg-neutral-50/50 text-neutral-500'
                   }`}
                 >
                   <span className="font-medium">Thưởng chuyên viên:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`inline-flex items-center gap-0.5 font-black px-2 py-0.5 rounded-full tabular-nums border ${
-                        isDark
-                          ? 'text-emerald-300 bg-emerald-950/60 border-emerald-800'
-                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                      }`}
-                    >
-                      +
-                      {Math.round(
-                        calculateCvComboTierBonus(
-                          (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0)
-                        ) / 1000
-                      )}
-                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowStaffRewards(false)}
-                      className="p-1 rounded text-neutral-400 hover:text-neutral-200 cursor-pointer"
-                      title="Ẩn thưởng"
-                    >
-                      <EyeOff className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={`px-3 py-1 flex items-center justify-end text-[10.5px] ${
-                    isDark ? 'bg-[#141416]' : 'bg-neutral-50/50'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setShowStaffRewards(true)}
-                    className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
-                      isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-400 hover:text-neutral-600'
-                    } transition-colors cursor-pointer select-none`}
+                  <span
+                    className={`inline-flex items-center gap-0.5 font-black px-2 py-0.5 rounded-full tabular-nums border ${
+                      isDark
+                        ? 'text-emerald-300 bg-emerald-950/60 border-emerald-800'
+                        : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    }`}
                   >
-                    <Eye className="w-3 h-3 text-neutral-400" />
-                    <span className="inline-flex items-center gap-1">
-                      <span>Xem</span>
-                      <FeatherSvg className="w-3 h-3 text-amber-500" />
-                    </span>
-                  </button>
+                    +
+                    {Math.round(
+                      calculateCvComboTierBonus(
+                        (selectedNewComboPkg?.comboPrice || 0) + (selectedUnderComboPkg?.comboPrice || 0)
+                      ) / 1000
+                    )}
+                    <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                  </span>
                 </div>
-              ))}
+              )}
           </div>
         </div>
       )}

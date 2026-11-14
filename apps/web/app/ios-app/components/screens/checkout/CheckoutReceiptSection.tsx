@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Heart, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Heart, Sparkles } from 'lucide-react';
 import { BookingItem } from '../../../state/mockData';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
@@ -41,7 +41,7 @@ export interface CheckoutReceiptSectionProps {
   diamondDiscountAmount: number;
   finalGrandTotal: number;
   showStaffRewards: boolean;
-  onToggleShowStaffRewards: () => void;
+  onToggleShowStaffRewards?: () => void;
   onEditService?: () => void;
 }
 
@@ -125,22 +125,24 @@ export function CheckoutReceiptSection({
                 {customerPhone}
               </span>
             </div>
-            <div
-              className={`text-[11.5px] ${
-                isDark ? 'text-neutral-400' : 'text-neutral-500'
-              } mt-0.5 font-semibold flex items-center gap-1 flex-wrap`}
-            >
-              <span>
-                Chuyên viên:{' '}
-                <strong className={isDark ? 'text-neutral-200' : 'text-neutral-900'}>{assignedStaff}</strong>
-              </span>
-              <CvFeather1Badge />
-              {(checkInStaff !== assignedStaff || checkOutStaff !== assignedStaff) && (
-                <span className={`${isDark ? 'text-neutral-500' : 'text-neutral-400'} text-[10.5px] font-normal`}>
-                  (In: {checkInStaff} · Out: {checkOutStaff})
+            {showStaffRewards && (
+              <div
+                className={`text-[11.5px] ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-500'
+                } mt-0.5 font-semibold flex items-center gap-1 flex-wrap`}
+              >
+                <span>
+                  Chuyên viên:{' '}
+                  <strong className={isDark ? 'text-neutral-200' : 'text-neutral-900'}>{assignedStaff}</strong>
                 </span>
-              )}
-            </div>
+                <CvFeather1Badge />
+                {(checkInStaff !== assignedStaff || checkOutStaff !== assignedStaff) && (
+                  <span className={`${isDark ? 'text-neutral-500' : 'text-neutral-400'} text-[10.5px] font-normal`}>
+                    (In: {checkInStaff} · Out: {checkOutStaff})
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <span className="bg-emerald-500 text-white font-black text-[10.5px] px-2.5 py-1 rounded-full shadow-2xs shrink-0 tracking-tight">
             Đã Check-out
@@ -152,37 +154,6 @@ export function CheckoutReceiptSection({
       <div>
         <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider px-1 mb-1.5">
           <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Chi Tiết Hóa Đơn</span>
-          <button
-            type="button"
-            onClick={onToggleShowStaffRewards}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-all cursor-pointer select-none active:scale-95 ${
-              showStaffRewards
-                ? isDark
-                  ? 'bg-amber-950/70 text-amber-300 border border-amber-700/60 shadow-xs'
-                  : 'bg-amber-100 text-amber-900 border border-amber-300 shadow-xs'
-                : isDark
-                  ? 'bg-neutral-800/90 text-neutral-400 hover:text-neutral-200 border border-neutral-700'
-                  : 'bg-gray-100 text-gray-600 hover:text-gray-800 border border-gray-200'
-            }`}
-          >
-            {showStaffRewards ? (
-              <>
-                <EyeOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="inline-flex items-center gap-1">
-                  <span>Ẩn</span>
-                  <FeatherSvg className="w-3 h-3 text-amber-500" />
-                </span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                <span className="inline-flex items-center gap-1">
-                  <span>Xem</span>
-                  <FeatherSvg className="w-3 h-3 text-amber-500" />
-                </span>
-              </>
-            )}
-          </button>
         </div>
         <div
           className={`${
@@ -214,10 +185,13 @@ export function CheckoutReceiptSection({
                   </button>
                 )}
               </div>
-              <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
-                {assignedStaff}
-                {booking?.attributes?.style ? ` · Dáng ${booking.attributes.style}` : ''}
-              </div>
+              {(showStaffRewards || booking?.attributes?.style) && (
+                <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
+                  {showStaffRewards ? assignedStaff : ''}
+                  {showStaffRewards && booking?.attributes?.style ? ' · ' : ''}
+                  {booking?.attributes?.style ? `Dáng ${booking.attributes.style}` : ''}
+                </div>
+              )}
               {comboRedemption ? (
                 <div className="pt-0.5 space-y-0.5 text-[10px]">
                   <div className="flex items-center gap-1.5 flex-wrap">

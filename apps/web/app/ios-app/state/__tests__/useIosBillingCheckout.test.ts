@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
+  computeFreshBillingLineTotals,
   resolveEffectiveServiceTotal,
   resolveServicePriceSplit,
   calculateActorTipBreakdown,
@@ -263,5 +264,56 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
     const mergedDuringOptimistic = mergeServerBookingsWithLocalState([freshLocalClear], [staleServerPoll], 0);
     expect(mergedDuringOptimistic[0].selectedCombo).toBeNull();
     expect(mergedDuringOptimistic[0].selectedUnderCombo?.id).toBe('FlawlessMink:4_tặng_1:under_390');
+  });
+
+  it('computeFreshBillingLineTotals luôn tính lại subtotal/comboTotal/vatAmount mới kể cả khi booking đã có billing cũ từ Chờ Quầy chốt', () => {
+    const totals = computeFreshBillingLineTotals({
+      servicePrice: 390000,
+      upgradePrice: 0,
+      serviceName: 'Dặm HyperLight 390K (70 fan)',
+      comboLiveStatus: {
+        isComboLive: true,
+        remainingSessions: 2,
+        normalRemaining: 0,
+        retainRemaining: 2,
+        comboName: '❖ Hyperlight 660 10+6',
+        retainDaysLimit: 21,
+        upsellOpportunity: true,
+      },
+      selectedCombo: {
+        id: 'HyperLight_3X:10_tặng_6:660',
+        name: 'Combo 10 tặng 6 · HyperLight 3X 660',
+        price: 4980000,
+        bonus: 200000,
+        sessions: 16,
+        todayUsageMode: 'USE_OLD_COMBO',
+        todaySingleServiceWaived: false,
+      },
+      selectedUnderCombo: null,
+      comboRedemption: null,
+      cartProducts: [],
+      billing: {
+        subtotal: 0,
+        vatRate: 0.08,
+        vatAmount: 0,
+        serviceTotal: 0,
+        comboTotal: 0,
+        productTotal: 0,
+        paymentMethod: 'CASH',
+        tipAmount: 100000,
+        tipCvShare: 70000,
+        tipCcShare: 20000,
+        grandTotal: 100000,
+      },
+    });
+
+    expect(totals).toEqual({
+      serviceTotal: 0,
+      comboTotal: 4980000,
+      productTotal: 0,
+      subtotal: 4980000,
+      vatRate: 0.08,
+      vatAmount: 398400,
+    });
   });
 });

@@ -8,7 +8,13 @@ import type {
   CustomerBookingTab,
   ServicingSubStatus,
 } from '@mos-lab/shared';
-import { filterBookingsForCvlScope, resolveCustomerBookingTab, resolveServicingSubStatus } from '@mos-lab/shared';
+import {
+  filterBookingsForCvlScope,
+  resolveCustomerBookingTab,
+  resolveServicingSubStatus,
+  isDoneBookingPendingCheckout,
+  sortDoneBookingsWithCheckoutFirst,
+} from '@mos-lab/shared';
 
 export type BookingItem = IosBookingItem;
 
@@ -23,7 +29,13 @@ export type {
   ServicingSubStatus,
 };
 
-export { filterBookingsForCvlScope, resolveCustomerBookingTab, resolveServicingSubStatus };
+export {
+  filterBookingsForCvlScope,
+  resolveCustomerBookingTab,
+  resolveServicingSubStatus,
+  isDoneBookingPendingCheckout,
+  sortDoneBookingsWithCheckoutFirst,
+};
 
 export {
   KNOWN_STAFF_AVATARS,

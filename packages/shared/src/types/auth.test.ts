@@ -5,6 +5,7 @@ import {
   getDefaultRouteForRole,
   isTelesalesRole,
   canAccessIosConsultationApp,
+  canDirectlySettleCounterPayment,
   resolveLockedIosRoleForUser,
 } from './auth.js';
 import { resolveMenuKeysForApiPath, isCvAllowedPath, isNonAdminAllowedDashboardPath } from './menu-access.js';
@@ -103,6 +104,19 @@ describe('Auth Role Invariants & Routing Tests', () => {
     assert.equal(resolveLockedIosRoleForUser('cc', 'CVL'), 'CC');
     assert.equal(resolveLockedIosRoleForUser('admin', 'CVLL'), 'CVLL');
     assert.equal(resolveLockedIosRoleForUser('super_admin', 'CC'), 'CC');
+
+    // Counter settlement permission: CC / Admin / Cashier settle Cash/POS straight to Completed; CVL / CVLL stop at counter
+    assert.equal(canDirectlySettleCounterPayment('CC'), true);
+    assert.equal(canDirectlySettleCounterPayment('cc'), true);
+    assert.equal(canDirectlySettleCounterPayment('consultant'), true);
+    assert.equal(canDirectlySettleCounterPayment('ADMIN'), true);
+    assert.equal(canDirectlySettleCounterPayment('super_admin'), true);
+    assert.equal(canDirectlySettleCounterPayment('cashier'), true);
+    assert.equal(canDirectlySettleCounterPayment('reception'), true);
+    assert.equal(canDirectlySettleCounterPayment('CVL'), false);
+    assert.equal(canDirectlySettleCounterPayment('CVLL'), false);
+    assert.equal(canDirectlySettleCounterPayment('CV'), false);
+    assert.equal(canDirectlySettleCounterPayment(null), false);
   });
 
   it('should enforce Zero-Trust Admin-Only default on unregistered APIs and paths', () => {

@@ -208,7 +208,11 @@ export function computeBookingFinancials(params: {
 
   const rawSettlement = overrideBilling?.settlementStatus as IosSettlementStatus | undefined;
   const settlementStatus: IosSettlementStatus | undefined =
-    dbOrderState === 'Completed' ? 'SETTLED_COMPLETED' : rawSettlement;
+    dbOrderState === 'Completed'
+      ? 'SETTLED_COMPLETED'
+      : (dbOrderState === 'CheckOut' || dbOrderState === 'Check-out') && !rawSettlement
+        ? 'PENDING_COUNTER_SETTLEMENT'
+        : rawSettlement;
 
   return {
     cvRewardBreakdown: {
@@ -229,7 +233,8 @@ export function computeBookingFinancials(params: {
       serviceTotal: effectiveServiceTotal,
       comboTotal,
       productTotal,
-      paymentMethod: (overrideBilling?.paymentMethod || 'VIETQR') as 'CASH' | 'POS' | 'VIETQR',
+      paymentMethod: (overrideBilling?.paymentMethod ||
+        (settlementStatus === 'PENDING_COUNTER_SETTLEMENT' ? 'CASH' : 'VIETQR')) as 'CASH' | 'POS' | 'VIETQR',
       settlementStatus,
       bankTransferRef: overrideBilling?.bankTransferRef,
       posTransactionId: overrideBilling?.posTransactionId,

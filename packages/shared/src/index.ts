@@ -11,6 +11,7 @@ export {
   isCcRole,
   isAdminOrSuperAdminRole,
   isSuperAdminRole,
+  canDirectlySettleCounterPayment,
   canAccessIosConsultationApp,
   resolveLockedIosRoleForUser,
   normalizeCvFeatherRole,

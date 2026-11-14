@@ -193,27 +193,47 @@ export function formatComboName(name?: string, packageKey?: string): string {
  * - ❖! : Khách Combo sắp hết (còn ≤ 2 suất)
  * - ↻ : Khách quay lại
  */
-export function resolveCustomerTypeMeta(booking?: {
-  customerVisits?: number;
-  lashHistory?: Array<{ date?: string; serviceName?: string }>;
-  comboLiveStatus?: { isComboLive?: boolean; remainingSessions?: number; isExpired?: boolean };
-}): CustomerTypeMeta {
+export function resolveCustomerTypeMeta(
+  booking?: {
+    customerVisits?: number;
+    lashHistory?: Array<{ date?: string; serviceName?: string }>;
+    comboLiveStatus?: { isComboLive?: boolean; remainingSessions?: number; isExpired?: boolean };
+  },
+  theme: 'light' | 'dark' = 'dark'
+): CustomerTypeMeta {
   const visits = booking?.customerVisits || 1;
   const isCombo = Boolean(booking?.comboLiveStatus?.isComboLive);
   const isComboExpired = Boolean(booking?.comboLiveStatus?.isExpired);
   const remaining = booking?.comboLiveStatus?.remainingSessions ?? 0;
   const hasHistory = Boolean(booking?.lashHistory && booking.lashHistory.length > 0);
+  const isLight = theme === 'light';
 
   if (isCombo && remaining > 0) {
     if (remaining <= 2) {
-      return { symbol: '❖!', label: 'Khách Combo sắp hết (≤ 2 lần)', colorClass: 'text-rose-400' };
+      return {
+        symbol: '❖!',
+        label: 'Khách Combo sắp hết (≤ 2 lần)',
+        colorClass: isLight ? 'text-rose-600' : 'text-rose-400',
+      };
     }
-    return { symbol: '❖', label: 'Khách có Combo Live', colorClass: 'text-amber-400' };
+    return {
+      symbol: '❖',
+      label: 'Khách có Combo Live',
+      colorClass: isLight ? 'text-amber-600' : 'text-amber-400',
+    };
   }
   if (visits <= 1 && !hasHistory && !isComboExpired) {
-    return { symbol: '✦', label: 'Khách mới lần đầu', colorClass: 'text-cyan-400' };
+    return {
+      symbol: '✦',
+      label: 'Khách mới lần đầu',
+      colorClass: isLight ? 'text-cyan-700' : 'text-cyan-400',
+    };
   }
-  return { symbol: '↻', label: 'Khách quay lại', colorClass: 'text-purple-300' };
+  return {
+    symbol: '↻',
+    label: 'Khách quay lại',
+    colorClass: isLight ? 'text-purple-700' : 'text-purple-300',
+  };
 }
 
 /**

@@ -94,6 +94,7 @@ export function QuickCheckInComboCard({
                 remainingSessions={expTotal}
                 comboName={booking.comboLiveStatus.comboName}
                 size="xs"
+                theme={isDark ? 'dark' : 'light'}
               />
               {onOpenWalletModal && (
                 <button
@@ -113,7 +114,11 @@ export function QuickCheckInComboCard({
           </div>
 
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <ComboExpiryStatusBadge status={booking.comboLiveStatus} onClick={onOpenWalletModal} />
+            <ComboExpiryStatusBadge
+              status={booking.comboLiveStatus}
+              theme={isDark ? 'dark' : 'light'}
+              onClick={onOpenWalletModal}
+            />
             <span className={`text-[10.5px] font-bold ${isDark ? 'text-rose-200/90' : 'text-rose-700'}`}>
               Đã khóa trừ 0đ · Check-in đi lẻ / Voucher
             </span>
@@ -195,6 +200,7 @@ export function QuickCheckInComboCard({
               remainingSessions={remainingSessions}
               comboName={booking?.comboLiveStatus?.comboName}
               size="xs"
+              theme={isDark ? 'dark' : 'light'}
             />
           </button>
         </div>
@@ -203,7 +209,12 @@ export function QuickCheckInComboCard({
       {/* Hàng HSD + Tốc độ đi trung bình (Avg: X.X ngày/buổi) + Nút mở Chi tiết Combo */}
       {booking?.comboLiveStatus && (
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <ComboExpiryStatusBadge status={booking.comboLiveStatus} showPace onClick={onOpenWalletModal} />
+          <ComboExpiryStatusBadge
+            status={booking.comboLiveStatus}
+            showPace
+            theme={isDark ? 'dark' : 'light'}
+            onClick={onOpenWalletModal}
+          />
           {onOpenWalletModal && (
             <button
               type="button"
@@ -354,9 +365,7 @@ export function QuickCheckInComboCard({
       {isOverridden && (
         <div
           className={`px-2.5 py-1 rounded-lg border flex items-center justify-between gap-2 text-[10px] font-semibold ${
-            isDark
-              ? 'bg-rose-950/40 border-rose-500/50 text-rose-300'
-              : 'bg-rose-50 border-rose-300 text-rose-700'
+            isDark ? 'bg-rose-950/40 border-rose-500/50 text-rose-300' : 'bg-rose-50 border-rose-300 text-rose-700'
           }`}
         >
           <span className="truncate flex items-center gap-1">

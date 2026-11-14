@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { canDirectlySettleCounterPayment } from '@mos-lab/shared';
 import { GraduationCap } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { compressLashImage } from '../../utils/imageCompressor';
@@ -64,6 +66,10 @@ export function Screen12CheckoutBilling({
   const [customTipInput, setCustomTipInput] = useState<string>('');
   const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
+
+  useEffect(() => {
+    setShowStaffRewards(false);
+  }, [booking?.id]);
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
   const [isZaloModalOpen, setIsZaloModalOpen] = useState<boolean>(false);
   const [zaloPhone, setZaloPhone] = useState<string>(
@@ -297,17 +303,24 @@ export function Screen12CheckoutBilling({
         onBack={onBack}
         backTitle={booking?.orderNumber || 'Order'}
         rightAction={
-          <button
-            onClick={handleProceed}
-            className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60"
-          >
-            Chốt đơn
-          </button>
+          <div className="flex items-center gap-1.5">
+            <IosStaffVisibilityToggle
+              showStaffRewards={showStaffRewards}
+              onToggle={() => setShowStaffRewards((prev) => !prev)}
+              isDark={isDark}
+            />
+            <button
+              onClick={handleProceed}
+              className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
+            >
+              Chốt đơn
+            </button>
+          </div>
         }
       />
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
-        {booking?.isTrainingCvlOrder && actor?.tier === 'CC' && (
+        {showStaffRewards && booking?.isTrainingCvlOrder && actor?.tier === 'CC' && (
           <div
             className={`rounded-2xl border p-3 text-xs ${
               isDark
@@ -396,6 +409,8 @@ export function Screen12CheckoutBilling({
 
         <CheckoutPaymentMethodSection
           isDark={isDark}
+          showStaffRewards={showStaffRewards}
+          canDirectCounterSettle={canDirectlySettleCounterPayment(actor?.tier)}
           selectedMethod={selectedMethod}
           onSelectMethod={setSelectedMethod}
           finalGrandTotal={finalGrandTotal}

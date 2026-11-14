@@ -146,6 +146,19 @@ export function isCcRole(role?: string | null): boolean {
 }
 
 /**
+ * Roles / operational tiers authorized to collect Cash or POS and immediately finalize
+ * an `/ios-app` checkout to `Completed` without waiting for Legacy Cashier settlement.
+ * Tech tiers (`CVL`, `CVLL`, `CV`) collecting Cash/POS > 0đ still stop at `PENDING_COUNTER_SETTLEMENT`.
+ */
+export function canDirectlySettleCounterPayment(roleOrTier?: string | null): boolean {
+  const raw = String(roleOrTier || '').trim();
+  if (!raw) return false;
+  if (isCcRole(raw) || isAdminOrSuperAdminRole(raw)) return true;
+  const lower = raw.toLowerCase();
+  return lower === 'cashier' || lower === 'reception';
+}
+
+/**
  * Strict access guard for `/ios-app` (Tư vấn & Checkout KH):
  * Invariant: Only Admin / Super Admin, CV🪶 (CVL), 🪶CV🪶 (CVLL), and CC are allowed.
  * Standard CV ('cv', 'technician', 'lt', 'ktv') and all other roles (Manager, Telesales, CS, HR, QA/QC, etc.) are strictly blocked.

@@ -31,6 +31,7 @@ interface ConsultationNotesAndFooterPanelProps {
   triggerMandatoryLashCheckGuard: () => void;
   handleSubmit: () => void;
   comboPurchaseTotal: number;
+  showStaffRewards?: boolean;
 }
 
 export function ConsultationNotesAndFooterPanel({
@@ -58,6 +59,7 @@ export function ConsultationNotesAndFooterPanel({
   triggerMandatoryLashCheckGuard,
   handleSubmit,
   comboPurchaseTotal,
+  showStaffRewards = false,
 }: ConsultationNotesAndFooterPanelProps) {
   return (
     <>
@@ -218,24 +220,26 @@ export function ConsultationNotesAndFooterPanel({
               </div>
             )}
 
-            <div
-              className={`pt-2 border-t flex items-center justify-between text-[11px] ${
-                isDark ? 'border-neutral-800' : 'border-gray-100'
-              }`}
-            >
-              <span className={`font-medium text-[var(--mos-text-muted)]`}>Vòng xoay:</span>
-              <span
-                className={`px-2 py-0.5 rounded-full border font-bold tabular-nums text-[11px] ${
-                  isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200'
+            {showStaffRewards && (
+              <div
+                className={`pt-2 border-t flex items-center justify-between text-[11px] ${
+                  isDark ? 'border-neutral-800' : 'border-gray-100'
                 }`}
               >
-                +{livePricingAndCvPoints.totalPoints} pts
-              </span>
-            </div>
+                <span className={`font-medium text-[var(--mos-text-muted)]`}>Vòng xoay:</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full border font-bold tabular-nums text-[11px] ${
+                    isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  +{livePricingAndCvPoints.totalPoints} pts
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Chế độ Nhận ca hoặc Phân ca cho CVLL khi tư vấn khách chưa cố định CV khác */}
-          {actor?.tier === 'CVLL' && (
+          {showStaffRewards && actor?.tier === 'CVLL' && (
             <div
               className={`rounded-2xl p-3 border space-y-2 ${
                 isDark ? 'bg-[#1C1C1E] border-amber-500/30' : 'bg-amber-50/70 border-amber-200'

@@ -88,7 +88,9 @@ export function CheckoutZaloConsentModal({
               className={`flex justify-between items-center text-[10.5px] font-bold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}
             >
               <span>SỐ ĐIỆN THOẠI NHẬN ZALO:</span>
-              <span className="text-[10px] text-blue-400 font-semibold">Chạm để sửa nếu dùng số khác</span>
+              <span className={`text-[10px] font-semibold ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
+                Chạm để sửa nếu dùng số khác
+              </span>
             </div>
             <div
               className={`flex items-center gap-2 ${
@@ -111,8 +113,10 @@ export function CheckoutZaloConsentModal({
                 <button
                   type="button"
                   onClick={() => onSetZaloPhone(customerPhone)}
-                  className={`text-[10px] text-blue-400 hover:text-blue-300 font-bold ${
-                    isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-blue-200'
+                  className={`text-[10px] font-bold ${
+                    isDark
+                      ? 'bg-neutral-800 border-neutral-700 text-blue-400 hover:text-blue-300'
+                      : 'bg-white border-blue-200 text-blue-700 hover:text-blue-800'
                   } px-2 py-0.5 rounded border cursor-pointer`}
                 >
                   Đặt lại
@@ -136,7 +140,7 @@ export function CheckoutZaloConsentModal({
             </div>
             <div className="space-y-1 font-medium">
               <div className="flex items-start gap-1.5">
-                <span className="text-emerald-400 font-black shrink-0">✓</span>
+                <span className={`font-black shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>✓</span>
                 <span>
                   <strong className={isDark ? 'text-emerald-100' : 'text-emerald-950'}>
                     Hóa đơn điện tử chi tiết:
@@ -145,7 +149,7 @@ export function CheckoutZaloConsentModal({
                 </span>
               </div>
               <div className="flex items-start gap-1.5">
-                <span className="text-emerald-400 font-black shrink-0">✓</span>
+                <span className={`font-black shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>✓</span>
                 <span>
                   <strong className={isDark ? 'text-emerald-100' : 'text-emerald-950'}>
                     Thẻ bảo hành dặm mi 3 ngày:
@@ -154,7 +158,7 @@ export function CheckoutZaloConsentModal({
                 </span>
               </div>
               <div className="flex items-start gap-1.5">
-                <span className="text-emerald-400 font-black shrink-0">✓</span>
+                <span className={`font-black shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>✓</span>
                 <span>
                   <strong className={isDark ? 'text-emerald-100' : 'text-emerald-950'}>Voucher 50.000đ:</strong> Tự động
                   tích lũy vào tài khoản cho lần ghé tới.

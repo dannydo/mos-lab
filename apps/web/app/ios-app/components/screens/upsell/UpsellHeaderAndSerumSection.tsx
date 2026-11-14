@@ -117,16 +117,20 @@ export function UpsellHeaderAndSerumSection({
                   {serviceName}
                 </strong>
               </span>
-              <span>·</span>
-              <span className="inline-flex items-center gap-1">
-                <span>
-                  CV:{' '}
-                  <strong className={`${isDark ? 'text-neutral-300' : 'text-neutral-800'} font-bold`}>
-                    {assignedStaffName}
-                  </strong>
-                </span>
-                {assignedStaffTier === 'CVLL' ? <CvFeather2Badge /> : <CvFeather1Badge />}
-              </span>
+              {showStaffRewards && (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span>
+                      CV:{' '}
+                      <strong className={`${isDark ? 'text-neutral-300' : 'text-neutral-800'} font-bold`}>
+                        {assignedStaffName}
+                      </strong>
+                    </span>
+                    {assignedStaffTier === 'CVLL' ? <CvFeather2Badge /> : <CvFeather1Badge />}
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <span
@@ -338,10 +342,29 @@ export function UpsellHeaderAndSerumSection({
 
           {/* Compact Tier Selector Bar & (i) Info Button (Full Width) */}
           <div className={`pt-2 border-t border-[var(--mos-surface-border)] flex items-center gap-2`}>
-            <button
-              type="button"
-              onClick={onOpenSerumInfoModal}
-              className={`flex-1 flex items-center justify-between px-3 py-2 rounded-xl ${isDark ? 'bg-amber-950/30 border-amber-500/30 hover:bg-amber-950/50' : 'bg-amber-50/80 border-amber-200/90 hover:bg-amber-100/80'} border transition-all text-left cursor-pointer active:scale-[0.99]`}
+            <div
+              role={showStaffRewards ? 'button' : undefined}
+              tabIndex={showStaffRewards ? 0 : undefined}
+              onClick={showStaffRewards ? onOpenSerumInfoModal : undefined}
+              onKeyDown={
+                showStaffRewards
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenSerumInfoModal();
+                      }
+                    }
+                  : undefined
+              }
+              className={`flex-1 flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left ${
+                isDark ? 'bg-amber-950/30 border-amber-500/30' : 'bg-amber-50/80 border-amber-200/90'
+              } ${
+                showStaffRewards
+                  ? isDark
+                    ? 'hover:bg-amber-950/50 cursor-pointer active:scale-[0.99]'
+                    : 'hover:bg-amber-100/80 cursor-pointer active:scale-[0.99]'
+                  : ''
+              }`}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`text-[13px] font-black ${isDark ? 'text-amber-300' : 'text-amber-950'} truncate`}>
@@ -365,7 +388,7 @@ export function UpsellHeaderAndSerumSection({
                   </span>
                 </div>
               )}
-            </button>
+            </div>
 
             {showStaffRewards && (
               <button

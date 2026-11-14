@@ -29,6 +29,10 @@ export function useLashDesignSelection(booking?: BookingItem) {
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
 
   useEffect(() => {
+    setShowStaffRewards(false);
+  }, [booking?.id]);
+
+  useEffect(() => {
     setMaterialCatalog(loadMaterialCatalog());
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);

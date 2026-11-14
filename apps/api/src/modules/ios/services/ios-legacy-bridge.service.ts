@@ -10,6 +10,7 @@ import {
   buildLegacyOrderPayloads,
   LegacyOrderCatalogSnapshot,
   resolveLegacyOrderCatalogSnapshot,
+  shouldAutoCompleteLegacyOrder,
 } from './ios-legacy-payload.mapper.js';
 
 export interface LegacyStaffAuthToken {
@@ -219,10 +220,13 @@ export async function settleIosOrderWithLegacyPhp(
     checkInStaffId: number;
     assignedStaffId: number;
     checkOutStaffId: number;
+    settlementActorTier?: string | null;
   },
   deps: SettleLegacyOrderBridgeDeps
 ): Promise<SettleLegacyOrderResult> {
   const { bookingId, mergedOverride, checkInStaffId, assignedStaffId, checkOutStaffId } = params;
+  const settlementActorTier =
+    params.settlementActorTier || mergedOverride.billing?.settledByTier || mergedOverride.checkOutStaffTier;
   const nowIso = new Date().toISOString();
 
   if (DEMO_BOOKING_IDS.has(bookingId)) {
@@ -249,9 +253,19 @@ export async function settleIosOrderWithLegacyPhp(
   const requestedMethod: 'CASH' | 'POS' | 'VIETQR' =
     rawMethod === 'CASH' ? 'CASH' : rawMethod === 'POS' ? 'POS' : 'VIETQR';
   const requestedGrandTotal = Math.max(0, Math.round(Number(mergedOverride.billing?.grandTotal ?? 0)));
-  const wantsImmediateComplete = requestedGrandTotal <= 0 || requestedMethod === 'VIETQR';
+  const wantsImmediateComplete = shouldAutoCompleteLegacyOrder(
+    requestedMethod,
+    requestedGrandTotal,
+    settlementActorTier
+  );
 
-  if (existingReceipt?.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' && !wantsImmediateComplete) {
+  const isExactPendingDuplicate =
+    existingReceipt?.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' &&
+    !wantsImmediateComplete &&
+    existingReceipt.paymentMethod === requestedMethod &&
+    Math.round(Number(existingReceipt.grandTotal ?? 0)) === requestedGrandTotal;
+
+  if (isExactPendingDuplicate) {
     return {
       settlementStatus: 'PENDING_COUNTER_SETTLEMENT',
       orderState: 'CheckOut',
@@ -367,6 +381,7 @@ export async function settleIosOrderWithLegacyPhp(
       servicePrice: mergedOverride.servicePrice,
       serviceName: mergedOverride.serviceName,
       billing: mergedOverride.billing,
+      settlementActorTier,
       catalog,
     });
 

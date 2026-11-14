@@ -7,6 +7,7 @@ import {
   canAccessIosConsultationApp,
   hasCompleteNaturalLashSet,
   isCvRole,
+  isDoneBookingPendingCheckout,
   resolveLockedIosRoleForUser,
 } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
@@ -185,7 +186,9 @@ function IosAppInner() {
     const idNum = Number(id);
     state.setActiveBookingId(idNum);
     const target = state.bookings.find((b) => Number(b.id) === idNum);
-    if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
+    if (target && isDoneBookingPendingCheckout(target)) {
+      state.setCurrentStep(13);
+    } else if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
       state.setCurrentStep(15);
     } else if (target?.status === 'SERVICING') {
       const needsNaturalLashCheck = !hasCompleteNaturalLashSet(target) && !target.progress?.startedAt;
@@ -440,7 +443,14 @@ function IosAppInner() {
             booking={currentBooking}
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
-            onBack={() => state.setCurrentStep(12)}
+            onBack={() => {
+              if (isDoneBookingPendingCheckout(currentBooking)) {
+                state.setBookingSegment('DONE');
+                state.setCurrentStep(1);
+              } else {
+                state.setCurrentStep(12);
+              }
+            }}
             onChoosePayment={state.handleChoosePaymentMethod}
             onEditService={() => state.handleOpenConsultation(13)}
           />

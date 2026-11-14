@@ -202,6 +202,7 @@ export function ConsultationServiceAndUpgradeCard({
                 remainingSessions={comboRemainingSessions}
                 comboName={comboName}
                 size="xs"
+                theme={isDark ? 'dark' : 'light'}
               />
             </button>
           )}
@@ -421,7 +422,9 @@ export function ConsultationServiceAndUpgradeCard({
           type="button"
           onClick={() => handleRequestServiceTypeChange('Normal')}
           className={`py-1.5 px-2 rounded-lg font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition-all cursor-pointer tabular-nums ${
-            serviceType === 'Normal' ? 'bg-[#FFB400] text-black shadow-xs' : 'text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]'
+            serviceType === 'Normal'
+              ? 'bg-[#FFB400] text-black shadow-xs'
+              : 'text-[var(--mos-text-muted)] hover:text-[var(--mos-text)]'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -571,13 +574,15 @@ export function ConsultationServiceAndUpgradeCard({
                 </span>
               </div>
             )}
-            <div className="flex items-center justify-between text-neutral-400 text-[10.5px] pt-1 border-t border-white/10">
-              <span className="inline-flex items-center gap-1">
-                <span>↻</span>
-                <CvFeather1Badge />:
-              </span>
-              <span className="font-bold text-amber-300 tabular-nums">+{livePricingAndCvPoints.totalPoints} pts</span>
-            </div>
+            {showStaffRewards && (
+              <div className="flex items-center justify-between text-neutral-400 text-[10.5px] pt-1 border-t border-white/10">
+                <span className="inline-flex items-center gap-1">
+                  <span>↻</span>
+                  <CvFeather1Badge />:
+                </span>
+                <span className="font-bold text-amber-300 tabular-nums">+{livePricingAndCvPoints.totalPoints} pts</span>
+              </div>
+            )}
           </div>
         </div>
       )}

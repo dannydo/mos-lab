@@ -13,9 +13,11 @@ import {
   filterBookingsForCvlScope,
   resolveCustomerBookingTab,
   resolveServicingSubStatus,
+  isDoneBookingPendingCheckout,
+  sortDoneBookingsWithCheckoutFirst,
   type IosBookingItem,
 } from '@mos-lab/shared';
-import { getDoneBookingSummary } from '../components/screens/incoming/incomingBookingHelpers';
+import { getBookingCompletionInfo, getDoneBookingSummary } from '../components/screens/incoming/incomingBookingHelpers';
 
 function makeBooking(overrides: Partial<IosBookingItem> = {}): IosBookingItem {
   return {
@@ -310,6 +312,82 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
         key: 'CHECKOUT',
         targetStep: 12,
       });
+
+      const lightLashing = resolveServicingSubStatus(
+        {
+          status: 'SERVICING',
+          progress: { elapsedSeconds: 300, timerRunning: true, currentStep: 9 },
+        },
+        'light'
+      );
+      expect(lightLashing.colorClass).toContain('text-amber-800');
+      expect(lightLashing.colorClass).toContain('bg-amber-50');
+    });
+
+    it('pins CheckOut / pending counter settlement bookings on top of DONE tab and tracks pending status', () => {
+      const completedFirst = makeBooking({
+        id: 7001,
+        status: 'DONE',
+        orderState: 'Completed',
+        timeSlot: '08:30 - 10:00',
+        billing: {
+          subtotal: 550000,
+          serviceTotal: 550000,
+          productTotal: 0,
+          paymentMethod: 'VIETQR',
+          tipAmount: 50000,
+          tipCvShare: 35000,
+          tipCcShare: 10000,
+          grandTotal: 600000,
+          settlementStatus: 'SETTLED_COMPLETED',
+        },
+      });
+      const pendingCheckoutSecond = makeBooking({
+        id: 7002,
+        status: 'DONE',
+        orderState: 'CheckOut',
+        timeSlot: '10:30 - 12:00',
+        billing: {
+          subtotal: 660000,
+          serviceTotal: 660000,
+          productTotal: 0,
+          paymentMethod: 'CASH',
+          tipAmount: 50000,
+          tipCvShare: 35000,
+          tipCcShare: 10000,
+          grandTotal: 660000,
+          settlementStatus: 'PENDING_COUNTER_SETTLEMENT',
+        },
+      });
+      const historicalNewUnclosed = makeBooking({
+        id: 7003,
+        status: 'DONE',
+        orderState: 'New',
+        timeSlot: '09:00 - 10:30',
+      });
+
+      expect(isDoneBookingPendingCheckout(pendingCheckoutSecond)).toBe(true);
+      expect(isDoneBookingPendingCheckout(completedFirst)).toBe(false);
+      expect(isDoneBookingPendingCheckout(historicalNewUnclosed)).toBe(false);
+
+      const sorted = sortDoneBookingsWithCheckoutFirst([completedFirst, pendingCheckoutSecond, historicalNewUnclosed]);
+      expect(sorted.map((b) => b.id)).toEqual([7002, 7001, 7003]);
+
+      expect(getDoneBookingSummary(pendingCheckoutSecond).isPendingCheckout).toBe(true);
+      expect(getDoneBookingSummary(completedFirst).isPendingCheckout).toBe(false);
+
+      const completionLight = getBookingCompletionInfo(
+        makeBooking({
+          status: 'SERVICING',
+          timeSlot: '10:00 - 11:30',
+          serviceDuration: 90,
+          progress: { elapsedSeconds: 3000, timerRunning: true, currentStep: 9 },
+        }),
+        new Date(2026, 10, 14, 11, 0, 0),
+        false
+      );
+      expect(completionLight.shortCountdownText).toBe('còn 40p');
+      expect(completionLight.colorClass).toContain('text-emerald-700');
     });
   });
 

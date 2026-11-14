@@ -1,4 +1,9 @@
-import { IosCartProductItem, resolveEffectiveServiceTotal, SafeAny } from '@mos-lab/shared';
+import {
+  canDirectlySettleCounterPayment,
+  IosCartProductItem,
+  resolveEffectiveServiceTotal,
+  SafeAny,
+} from '@mos-lab/shared';
 import { LegacyOrderCatalogSnapshot } from './ios-legacy-catalog.service.js';
 
 export {
@@ -40,6 +45,7 @@ export interface BuildLegacyPaymentPayloadInput {
   servicePrice?: number;
   serviceName?: string;
   billing?: SafeAny;
+  settlementActorTier?: string | null;
   catalog: LegacyOrderCatalogSnapshot;
 }
 
@@ -79,13 +85,21 @@ export function resolveDiamondCreditUnits(diamondUsed?: number, diamondDiscountA
 /**
  * Điều răn A3 (Cash Drawer & Tax Gate):
  * - Đơn 0đ (trừ buổi Combo / 100% Kim Cương) hoặc VIETQR chuyển khoản -> Chốt thẳng Completed.
- * - Đơn thu Tiền mặt (CASH) hoặc Máy quẹt thẻ (POS) có số tiền > 0đ -> Dừng ở CheckOut để Quầy thu tiền/bill máy POS.
+ * - Đơn thu Tiền mặt (CASH) hoặc Máy quẹt thẻ (POS) > 0đ do CC / Thu ngân / Admin bấm trên `/ios-app` -> Chốt thẳng Completed.
+ * - Đơn CASH / POS > 0đ do CVL / CVLL thao tác -> Dừng ở CheckOut (Chờ Quầy chốt) để CC / Thu ngân xác nhận hoàn tất.
  */
-export function shouldAutoCompleteLegacyOrder(paymentMethod: string, grandTotal: number): boolean {
+export function shouldAutoCompleteLegacyOrder(
+  paymentMethod: string,
+  grandTotal: number,
+  actorTierOrRole?: string | null
+): boolean {
   if (Math.round(Number(grandTotal || 0)) <= 0) {
     return true;
   }
-  return String(paymentMethod || 'VIETQR').toUpperCase() === 'VIETQR';
+  if (String(paymentMethod || 'VIETQR').toUpperCase() === 'VIETQR') {
+    return true;
+  }
+  return canDirectlySettleCounterPayment(actorTierOrRole);
 }
 
 export function buildUpperLashAttributeMap(params: {
@@ -302,6 +316,7 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
     servicePrice = 0,
     serviceName = '',
     billing = {},
+    settlementActorTier,
     catalog,
   } = input;
 
@@ -413,7 +428,11 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
   const rawMethod = String(billing?.paymentMethod || 'VIETQR').toUpperCase();
   const paymentMethod: 'CASH' | 'POS' | 'VIETQR' =
     rawMethod === 'CASH' ? 'CASH' : rawMethod === 'POS' ? 'POS' : 'VIETQR';
-  const shouldSettleCompletedImmediately = shouldAutoCompleteLegacyOrder(paymentMethod, grandTotal);
+  const shouldSettleCompletedImmediately = shouldAutoCompleteLegacyOrder(
+    paymentMethod,
+    grandTotal,
+    settlementActorTier
+  );
 
   const bankTransferRef =
     String(billing?.bankTransferRef || '').trim() ||

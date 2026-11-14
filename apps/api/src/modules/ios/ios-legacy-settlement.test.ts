@@ -170,10 +170,12 @@ test('A1: buildLegacyOrderPayloads inserts placeholder {} at index 0 when buying
   assert.equal(built.selectedServiceCombo.length, 2);
   assert.deepEqual(built.selectedServiceCombo[0], {});
   assert.equal(built.selectedServiceCombo[1].service_price_id, '9127');
-  assert.equal(shouldAutoCompleteLegacyOrder('CASH', built.grandTotal), false);
-  assert.equal(shouldAutoCompleteLegacyOrder('POS', built.grandTotal), false);
-  assert.equal(shouldAutoCompleteLegacyOrder('CASH', 0), true);
-  assert.equal(shouldAutoCompleteLegacyOrder('VIETQR', built.grandTotal), true);
+  assert.equal(shouldAutoCompleteLegacyOrder('CASH', built.grandTotal, 'CVL'), false);
+  assert.equal(shouldAutoCompleteLegacyOrder('POS', built.grandTotal, 'CVLL'), false);
+  assert.equal(shouldAutoCompleteLegacyOrder('CASH', built.grandTotal, 'CC'), true);
+  assert.equal(shouldAutoCompleteLegacyOrder('POS', built.grandTotal, 'ADMIN'), true);
+  assert.equal(shouldAutoCompleteLegacyOrder('CASH', 0, 'CVL'), true);
+  assert.equal(shouldAutoCompleteLegacyOrder('VIETQR', built.grandTotal, 'CVL'), true);
 });
 
 test('A2 & A3: Cash/POS stops at CheckOut (PENDING_COUNTER_SETTLEMENT); upgrade to VIETQR settles Completed with full idempotency', async () => {
@@ -251,6 +253,40 @@ test('A2 & A3: Cash/POS stops at CheckOut (PENDING_COUNTER_SETTLEMENT); upgrade 
   assert.equal(dupCashRes.payload.settlementStatus, 'PENDING_COUNTER_SETTLEMENT');
   assert.equal(phpCalls.length, callCountAfterCash);
 
+  // 2b) Pending CASH booking edited to new grandTotal (or switched CASH -> POS) -> must re-sync & update receipt (not short-circuit)
+  const editedCashRes = await executeIosBookingAction(
+    cvlUser,
+    {
+      bookingId: 140282,
+      action: 'COMPLETE_ORDER',
+      billing: {
+        paymentMethod: 'POS',
+        subtotal: 4970000,
+        vatAmount: 397600,
+        tipAmount: 200000,
+        grandTotal: 5567600,
+      },
+      selectedCombo: { id: '7+3', name: 'Combo 7 tặng 3', price: 4190000, todaySingleServiceWaived: true },
+      selectedUnderCombo: { id: '2+1', name: 'Combo 2 tặng 1 Mi Dưới', price: 780000, todaySingleServiceWaived: true },
+    },
+    repo,
+    bridgeDeps
+  );
+  assert.equal(editedCashRes.payload.settlementStatus, 'PENDING_COUNTER_SETTLEMENT');
+  assert.equal(editedCashRes.payload.override.orderState, 'CheckOut');
+  assert.ok(
+    phpCalls.length > callCountAfterCash,
+    'Edited pending order must re-sync Legacy PHP consultation & checkout'
+  );
+  assert.equal(
+    phpCalls.some((c) => c.path === '/order/payment/update'),
+    false,
+    'POS > 0đ must still pause at CheckOut waiting for Reception settlement'
+  );
+  const updatedPendingReceipt = await repo.loadSettlementReceipt(140282);
+  assert.equal(updatedPendingReceipt?.paymentMethod, 'POS');
+  assert.equal(updatedPendingReceipt?.grandTotal, 5567600);
+
   // 3) Customer switches from CASH to VIETQR -> upgrades to SETTLED_COMPLETED & calls /order/payment/update + /order/booking/generate/report
   const vietQrRes = await executeIosBookingAction(
     cvlUser,
@@ -290,6 +326,95 @@ test('A2 & A3: Cash/POS stops at CheckOut (PENDING_COUNTER_SETTLEMENT); upgrade 
   );
   assert.equal(retrySettled.payload.settlementStatus, 'SETTLED_COMPLETED');
   assert.equal(phpCalls.length, callCountAfterSettled);
+});
+
+test('A3-CC: CC / Admin confirming CASH on a pending booking (or spoofing blocked for CVL) settles straight to Completed', async () => {
+  const store = createInMemoryConfigStore();
+  const repo = createOverrideRepository(store);
+  const phpCalls: Array<{ path: string; payload: Record<string, SafeAny> }> = [];
+  const fakePool = {} as unknown as mysql.Pool;
+
+  const bridgeDeps = {
+    getPool: () => fakePool,
+    resolveCatalog: async () => createMockCatalogSnapshot({ products: [] }),
+    resolveAuthToken: async () => ({ authUserId: 37790, loginToken: 'tok-diem-huong' }),
+    callEndpoint: async (endpointPath: string, payload: Record<string, SafeAny>) => {
+      phpCalls.push({ path: endpointPath, payload });
+      return { ok: true, status: '1', code: '0000', message: 'OK' };
+    },
+  };
+
+  const cvlUser = {
+    id: 77,
+    username: 'thaoly',
+    role: 'cvl',
+    careerTier: 'CVL' as const,
+    legacyStaffId: 46272,
+    displayName: 'Thảo Ly',
+  };
+
+  const ccUser = {
+    id: 88,
+    username: 'diemhuong',
+    role: 'cc',
+    careerTier: 'CC' as const,
+    legacyStaffId: 37790,
+    displayName: 'Diễm Hương',
+  };
+
+  // 1) Even if CVL passes actorStaffTier: 'CC' in payload, backend locks CVL -> stays PENDING_COUNTER_SETTLEMENT
+  const spoofAttempt = await executeIosBookingAction(
+    cvlUser,
+    {
+      bookingId: 339300,
+      action: 'COMPLETE_ORDER',
+      actorStaffTier: 'CC',
+      billing: {
+        paymentMethod: 'CASH',
+        subtotal: 4980000,
+        vatAmount: 398400,
+        tipAmount: 100000,
+        grandTotal: 5478400,
+      },
+      selectedCombo: { id: '7+3', name: 'Combo 10+6', price: 4980000, todaySingleServiceWaived: false },
+    },
+    repo,
+    bridgeDeps
+  );
+  assert.equal(spoofAttempt.payload.settlementStatus, 'PENDING_COUNTER_SETTLEMENT');
+  assert.equal(spoofAttempt.payload.override.orderState, 'CheckOut');
+  assert.equal(
+    phpCalls.some((c) => c.path === '/order/payment/update'),
+    false
+  );
+
+  // 2) CC user taps "Xác Nhận Thu Tiền Mặt" on /ios-app -> immediately settles Completed & calls /order/payment/update
+  const ccCashRes = await executeIosBookingAction(
+    ccUser,
+    {
+      bookingId: 339300,
+      action: 'COMPLETE_ORDER',
+      actorStaffTier: 'CC',
+      billing: {
+        paymentMethod: 'CASH',
+        subtotal: 4980000,
+        vatAmount: 398400,
+        tipAmount: 100000,
+        grandTotal: 5478400,
+      },
+      selectedCombo: { id: '7+3', name: 'Combo 10+6', price: 4980000, todaySingleServiceWaived: false },
+    },
+    repo,
+    bridgeDeps
+  );
+  assert.equal(ccCashRes.statusCode, 200);
+  assert.equal(ccCashRes.payload.settlementStatus, 'SETTLED_COMPLETED');
+  assert.equal(ccCashRes.payload.override.orderState, 'Completed');
+  const paymentCall = phpCalls.find((c) => c.path === '/order/payment/update');
+  assert.ok(paymentCall, 'CC confirming CASH must immediately invoke /order/payment/update');
+  assert.equal(paymentCall.payload.paid_cash_amount, '5478400');
+  assert.equal(paymentCall.payload.paid_bank_transfer_amount, '0');
+  assert.equal(phpCalls.filter((c) => c.path === '/order/booking/generate/report').length, 1);
 });
 
 test('A4: Payroll Tip Split & Checkout Attribution prevent 115.7% inflation and duplicate CVL/CC combo bonus', () => {

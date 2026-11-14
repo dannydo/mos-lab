@@ -68,15 +68,15 @@ export function IncomingBookingCard({
   const cleanCustomerName = (b.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const displayPhone = (b.customerPhone || '').replace(/\*+\s*/g, '').trim();
   const visits = b.customerVisits || 1;
-  const typeMeta = resolveCustomerTypeMeta(b);
+  const typeMeta = resolveCustomerTypeMeta(b, themeMode);
   const lastVisitDateStr = b.lastVisitDate || b.lashHistory?.[0]?.date;
   const viewRefDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dateOffset, 12, 0, 0);
   const viewRefDateStr = `${String(viewRefDate.getDate()).padStart(2, '0')}/${String(viewRefDate.getMonth() + 1).padStart(2, '0')}/${viewRefDate.getFullYear()}`;
   const daysSinceLastVisit = parseDaysSinceLastVisit(lastVisitDateStr, viewRefDateStr);
   const daysText = visits > 1 && daysSinceLastVisit !== null ? ` · ${daysSinceLastVisit}N` : '';
   const isServicingActive = b.status === 'SERVICING' || bookingSegment === 'SERVICING';
-  const countdown = formatArrivalCountdownInMins(b.time12h || b.timeSlot, dateOffset, now);
-  const completionInfo = getBookingCompletionInfo(b, now);
+  const countdown = formatArrivalCountdownInMins(b.time12h || b.timeSlot, dateOffset, now, isDark);
+  const completionInfo = getBookingCompletionInfo(b, now, isDark);
   const isDone = bookingSegment === 'DONE' || b.status === 'DONE';
   const doneSummary = isDone ? getDoneBookingSummary(b) : null;
 
@@ -163,7 +163,7 @@ export function IncomingBookingCard({
           borderColor: 'var(--mos-surface-border)',
         };
 
-  const servicingSubStatus = resolveServicingSubStatus(b);
+  const servicingSubStatus = resolveServicingSubStatus(b, themeMode);
 
   return (
     <div
@@ -218,7 +218,9 @@ export function IncomingBookingCard({
 
         {/* Góc dưới bên trái: Avatar Người đặt lịch (Booker / Telesales) hoặc Logo 1 cánh trái Wings khi đặt online */}
         <div
-          className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full overflow-hidden border border-neutral-700 bg-neutral-900 flex items-center justify-center shadow-md z-10"
+          className={`absolute -bottom-1 -left-1 w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center shadow-md z-10 ${
+            isDark ? 'border-neutral-700 bg-neutral-900' : 'border-[#d6cab2] bg-[#faf5ea]'
+          }`}
           title={b.bookerName ? `Người đặt lịch: ${b.bookerName}` : 'Khách đặt lịch online (Wings)'}
         >
           {b.bookerAvatar ? (
@@ -249,8 +251,10 @@ export function IncomingBookingCard({
                 ? 'border border-emerald-500 ring-1 ring-emerald-500/40'
                 : isServicingActive
                   ? 'border-2 border-amber-400 ring-1 ring-amber-400/50'
-                  : 'border border-neutral-500'
-            } bg-neutral-900 flex items-center justify-center`}
+                  : isDark
+                    ? 'border border-neutral-500'
+                    : 'border border-[#c7b99e]'
+            } ${isDark ? 'bg-neutral-900' : 'bg-[#faf5ea]'} flex items-center justify-center`}
             title={
               isBookedInAdvance
                 ? `Book riêng trước: ${effectiveStaffName || 'Chuyên Viên'}`
@@ -280,7 +284,10 @@ export function IncomingBookingCard({
             {typeMeta.symbol}
           </span>
           {displayPhone ? (
-            <span className="text-[12px] font-bold tabular-nums flex-shrink-0" style={{ color: 'var(--mos-text-muted)' }}>
+            <span
+              className="text-[12px] font-bold tabular-nums flex-shrink-0"
+              style={{ color: 'var(--mos-text-muted)' }}
+            >
               {displayPhone}
             </span>
           ) : null}
@@ -323,6 +330,7 @@ export function IncomingBookingCard({
             <ComboExpiryStatusBadge
               status={b.comboLiveStatus}
               compact
+              theme={themeMode}
               onClick={onOpenWalletModal ? () => onOpenWalletModal(b) : undefined}
             />
           )}
@@ -358,7 +366,10 @@ export function IncomingBookingCard({
           title="Bấm để xem chi tiết ghi chú & thông tin khách hàng"
         >
           <span className="truncate">{b.customerNote ? `“${b.customerNote}”` : 'Hồ sơ & thông số khách'}</span>
-          <span className="ml-1.5 shrink-0 not-italic flex items-center transition-colors" style={{ color: 'var(--mos-accent)' }}>
+          <span
+            className="ml-1.5 shrink-0 not-italic flex items-center transition-colors"
+            style={{ color: 'var(--mos-accent)' }}
+          >
             <Info className="w-3.5 h-3.5 stroke-[2.2]" />
           </span>
         </div>
@@ -367,57 +378,14 @@ export function IncomingBookingCard({
       {/* 3.3 Right Column */}
       {isDone && doneSummary ? (
         <div
-          className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center text-left self-stretch space-y-1"
+          className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center items-end text-right self-stretch space-y-1 tabular-nums"
           style={{ borderColor: 'var(--mos-surface-border)' }}
         >
-          {/* TẦNG 1: THỜI GIAN (09:00 · 55p) */}
-          <div className="text-[11px] font-bold tabular-nums tracking-tight leading-none" style={{ color: 'var(--mos-text-muted)' }}>
-            {doneSummary.timeAndDurationStr}
-          </div>
-
-          {/* TẦNG 2: TIỀN (Quan trọng nhất: Nợ / Combo / Phụ thu / 0đ) */}
-          <div className="flex items-center gap-1 leading-none flex-wrap">
-            {doneSummary.hasDebt ? (
-              <span className="text-rose-500 font-black text-[12.5px] tabular-nums tracking-tight animate-pulse inline-flex items-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 inline-block mr-1" />-
-                {formatShortMoney(doneSummary.debtAmount)}
-              </span>
-            ) : doneSummary.soldComboPrice > 0 ? (
-              <span className="text-purple-500 font-black text-[12.5px] tabular-nums tracking-tight inline-flex items-center">
-                <Package className="w-3.5 h-3.5 stroke-[2.2] text-purple-500 shrink-0 mr-1" />
-                {formatShortMoney(doneSummary.soldComboPrice)}
-              </span>
-            ) : doneSummary.upgradeOrPaidAmount > 0 ? (
-              <span className="text-emerald-500 font-black text-[12.5px] tabular-nums tracking-tight">
-                +{formatShortMoney(doneSummary.upgradeOrPaidAmount)}
-              </span>
-            ) : (
-              <span className="font-bold text-[12px] tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
-                0đ
-              </span>
-            )}
-          </div>
-
-          {/* TẦNG 3: ĐIỂM CVL & TIP (↻ +41 pts · Heart 50K) */}
-          <div
-            className="text-[10px] font-bold tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center"
-            style={{ color: 'var(--mos-accent)' }}
-          >
-            <span>↻ +{doneSummary.cvPoints}</span>
-            {doneSummary.tipAmount > 0 ? (
-              <span className="inline-flex items-center ml-0.5">
-                p · <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400 shrink-0 mx-0.5" />
-                {formatShortMoney(doneSummary.tipAmount)}
-              </span>
-            ) : (
-              ' pts'
-            )}
-          </div>
-
-          {doneSummary.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' && (
-            <div className="pt-0.5">
+          {doneSummary.isPendingCheckout ? (
+            <>
+              {/* TẦNG 1: TRẠNG THÁI CHỜ QUẦY CHỐT (Pinned on top) */}
               <span
-                className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded border text-[9px] font-extrabold tracking-tight ${
+                className={`inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full border text-[9.5px] font-extrabold tracking-tight whitespace-nowrap ${
                   isDark
                     ? 'bg-amber-950/70 text-amber-300 border-amber-700/60'
                     : 'bg-amber-50 text-amber-800 border-amber-300'
@@ -425,41 +393,170 @@ export function IncomingBookingCard({
               >
                 Chờ Quầy chốt
               </span>
-            </div>
+
+              {/* TẦNG 2: THỜI GIAN (09:00 · 84p) */}
+              <div
+                className="text-[11px] font-bold tabular-nums tracking-tight leading-none"
+                style={{ color: 'var(--mos-text-muted)' }}
+              >
+                {doneSummary.timeAndDurationStr}
+              </div>
+
+              {/* TẦNG 3: SỐ TIỀN DỰ KIẾN THU (Ẩn ↻ +pts và Tip cho tới khi Quầy hoàn tất) */}
+              <div className="flex items-center justify-end gap-1 leading-none">
+                {doneSummary.hasDebt ? (
+                  <span
+                    className={`font-black text-[12px] tabular-nums tracking-tight inline-flex items-center ${
+                      isDark ? 'text-rose-400' : 'text-rose-600'
+                    }`}
+                  >
+                    -{formatShortMoney(doneSummary.debtAmount)}
+                  </span>
+                ) : doneSummary.soldComboPrice > 0 ? (
+                  <span
+                    className={`font-black text-[12px] tabular-nums tracking-tight inline-flex items-center ${
+                      isDark ? 'text-purple-400' : 'text-purple-700'
+                    }`}
+                  >
+                    <Package className="w-3 h-3 stroke-[2.2] shrink-0 mr-1" />
+                    {formatShortMoney(doneSummary.soldComboPrice)}
+                  </span>
+                ) : doneSummary.upgradeOrPaidAmount > 0 ? (
+                  <span
+                    className={`font-black text-[12px] tabular-nums tracking-tight ${
+                      isDark ? 'text-amber-300' : 'text-amber-700'
+                    }`}
+                  >
+                    {formatShortMoney(doneSummary.upgradeOrPaidAmount)}
+                  </span>
+                ) : (
+                  <span className="font-bold text-[11.5px] tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
+                    0đ
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* TẦNG 1: THỜI GIAN (09:00 · 84p) */}
+              <div
+                className="text-[11px] font-bold tabular-nums tracking-tight leading-none"
+                style={{ color: 'var(--mos-text-muted)' }}
+              >
+                {doneSummary.timeAndDurationStr}
+              </div>
+
+              {/* TẦNG 2: TIỀN (Quan trọng nhất: Nợ / Combo / Phụ thu / 0đ) */}
+              <div className="flex items-center justify-end gap-1 leading-none flex-wrap">
+                {doneSummary.hasDebt ? (
+                  <span
+                    className={`font-black text-[12.5px] tabular-nums tracking-tight animate-pulse inline-flex items-center ${
+                      isDark ? 'text-rose-400' : 'text-rose-600'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 inline-block mr-1" />-
+                    {formatShortMoney(doneSummary.debtAmount)}
+                  </span>
+                ) : doneSummary.soldComboPrice > 0 ? (
+                  <span
+                    className={`font-black text-[12.5px] tabular-nums tracking-tight inline-flex items-center ${
+                      isDark ? 'text-purple-400' : 'text-purple-700'
+                    }`}
+                  >
+                    <Package className="w-3.5 h-3.5 stroke-[2.2] shrink-0 mr-1" />
+                    {formatShortMoney(doneSummary.soldComboPrice)}
+                  </span>
+                ) : doneSummary.upgradeOrPaidAmount > 0 ? (
+                  <span
+                    className={`font-black text-[12.5px] tabular-nums tracking-tight ${
+                      isDark ? 'text-emerald-400' : 'text-emerald-700'
+                    }`}
+                  >
+                    +{formatShortMoney(doneSummary.upgradeOrPaidAmount)}
+                  </span>
+                ) : (
+                  <span className="font-bold text-[12px] tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
+                    0đ
+                  </span>
+                )}
+              </div>
+
+              {/* TẦNG 3: ĐIỂM CVL & TIP (↻ +41 pts · Heart 50K) */}
+              <div
+                className="text-[10px] font-bold tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center justify-end"
+                style={{ color: 'var(--mos-accent)' }}
+              >
+                <span>↻ +{doneSummary.cvPoints}</span>
+                {doneSummary.tipAmount > 0 ? (
+                  <span className="inline-flex items-center ml-0.5">
+                    p ·{' '}
+                    <Heart
+                      className={`w-2.5 h-2.5 shrink-0 mx-0.5 ${
+                        isDark ? 'fill-rose-400 text-rose-400' : 'fill-rose-600 text-rose-600'
+                      }`}
+                    />
+                    {formatShortMoney(doneSummary.tipAmount)}
+                  </span>
+                ) : (
+                  ' pts'
+                )}
+              </div>
+            </>
           )}
         </div>
       ) : (
         <div
-          className="w-[88px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center text-left self-stretch"
+          className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center items-end text-right self-stretch tabular-nums"
           style={{ borderColor: 'var(--mos-surface-border)' }}
         >
-          {/* HÀNG 1: THỜI GIAN 24H (Bỏ AM/PM để rộng chỗ) */}
-          <span className="text-[14px] font-black tabular-nums leading-tight" style={{ color: 'var(--mos-accent)' }}>
-            {isServicingActive ? completionInfo.completionTimeStr : formatTime24h(b.time12h || b.timeSlot)}
-          </span>
-
-          {/* HÀNG 2: BADGE TRẠNG THÁI (Checkout, Lashing, Cleaning,...) HOẶC COUNTDOWN KHI Ở CHỜ ĐÓN */}
           {bookingSegment === 'SERVICING' ? (
-            <div className="mt-1">
+            <>
+              {/* TẦNG 1: BADGE TRẠNG THÁI ĐANG LÀM (Check-in, Cleaning, Lashing, Survey, Checkout) */}
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border tracking-tight leading-none ${servicingSubStatus.colorClass}`}
+                className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black border tracking-tight leading-none whitespace-nowrap ${servicingSubStatus.colorClass}`}
               >
                 {servicingSubStatus.label}
               </span>
-            </div>
+
+              {/* TẦNG 2: THỜI GIAN DỰ KIẾN XONG + ĐẾM NGƯỢC */}
+              <div className="mt-1 flex flex-col items-end leading-tight">
+                <span
+                  className="text-[12.5px] font-black tabular-nums leading-tight"
+                  style={{ color: 'var(--mos-accent)' }}
+                >
+                  Xong {completionInfo.completionTimeStr}
+                </span>
+                <span
+                  className={`mt-0.5 text-[10.5px] tabular-nums tracking-tight leading-none ${completionInfo.colorClass}`}
+                >
+                  {completionInfo.shortCountdownText}
+                </span>
+              </div>
+            </>
           ) : (
-            <div
-              className={`mt-1 text-[12px] font-extrabold tabular-nums tracking-tight leading-tight ${countdown.colorClass}`}
-              title={
-                countdown.diffMins !== null
-                  ? countdown.diffMins >= 0
-                    ? `Khách sẽ đến trong ${countdown.diffMins} phút`
-                    : `Khách trễ ${Math.abs(countdown.diffMins)} phút`
-                  : undefined
-              }
-            >
-              {countdown.text}
-            </div>
+            <>
+              {/* TẦNG 1: GIỜ HẸN 24H */}
+              <span
+                className="text-[14px] font-black tabular-nums leading-tight"
+                style={{ color: 'var(--mos-accent)' }}
+              >
+                {formatTime24h(b.time12h || b.timeSlot)}
+              </span>
+
+              {/* TẦNG 2: ĐẾM NGƯỢC GIỜ ĐẾN */}
+              <div
+                className={`mt-1 text-[11.5px] font-extrabold tabular-nums tracking-tight leading-tight ${countdown.colorClass}`}
+                title={
+                  countdown.diffMins !== null
+                    ? countdown.diffMins >= 0
+                      ? `Khách sẽ đến trong ${countdown.diffMins} phút`
+                      : `Khách trễ ${Math.abs(countdown.diffMins)} phút`
+                    : undefined
+                }
+              >
+                {countdown.text}
+              </div>
+            </>
           )}
 
           {/* Nút Admin: Hoàn tác đưa khách hàng về Chờ đón (chỉ hiện khi Admin đang ở tab SERVICING) */}
@@ -470,7 +567,11 @@ export function IncomingBookingCard({
                 e.stopPropagation();
                 onOpenRevertModal(b.id, cleanCustomerName);
               }}
-              className="mt-1.5 w-full py-1 px-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[9.5px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
+              className={`mt-1.5 inline-flex items-center justify-center gap-1 py-0.5 px-2 rounded-md border text-[9.5px] font-bold leading-none active:scale-95 transition-all cursor-pointer shadow-xs whitespace-nowrap ${
+                isDark
+                  ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-300'
+                  : 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-700'
+              }`}
               title="Quyền Admin: Trả khách hàng này về danh sách Chờ đón"
             >
               <RotateCcw className="w-2.5 h-2.5 shrink-0" />

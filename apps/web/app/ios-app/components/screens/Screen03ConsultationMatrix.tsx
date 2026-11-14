@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import type { Screen03ConsultationMatrixProps } from './consultation/ConsultationTypes';
 import { useLashDesignSelection } from './consultation/useLashDesignSelection';
@@ -62,11 +63,18 @@ export function Screen03ConsultationMatrix({
         onBack={onBack}
         backTitle="Check In"
         rightAction={
-          <ConsultationAutoSaveButton
-            saveStatus={pricing.saveStatus}
-            isDark={isDark}
-            onManualSaveClick={pricing.handleManualSaveClick}
-          />
+          <div className="flex items-center gap-1.5">
+            <IosStaffVisibilityToggle
+              showStaffRewards={design.showStaffRewards}
+              onToggle={() => design.setShowStaffRewards((prev) => !prev)}
+              isDark={isDark}
+            />
+            <ConsultationAutoSaveButton
+              saveStatus={pricing.saveStatus}
+              isDark={isDark}
+              onManualSaveClick={pricing.handleManualSaveClick}
+            />
+          </div>
         }
       />
 
@@ -78,6 +86,7 @@ export function Screen03ConsultationMatrix({
           customerPhone={pricing.customerPhone}
           serviceName={pricing.serviceName}
           actorName={pricing.actorName}
+          showStaffRewards={design.showStaffRewards}
           avatarRingClass={pricing.avatarRingClass}
           onUpdateAvatar={onUpdateAvatar}
           isNewClient={diagnostic.isNewClient}
@@ -278,6 +287,7 @@ export function Screen03ConsultationMatrix({
         <ConsultationNotesAndFooterPanel
           isDark={isDark}
           actor={actor}
+          showStaffRewards={design.showStaffRewards}
           notes={diagnostic.notes}
           setNotes={diagnostic.setNotes}
           mustCompleteNaturalLashBeforeProceeding={diagnostic.mustCompleteNaturalLashBeforeProceeding}

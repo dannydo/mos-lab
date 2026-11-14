@@ -537,15 +537,15 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Duy nhất Tiền Tip (tipAmount) của khách hàng trao tặng cho Chuyên Viên và nhân sự phục vụ TUYỆT ĐỐI KHÔNG chịu thuế VAT. Tiền tip được chuyển trọn vẹn 100% vào cơ cấu phân bổ thưởng nhân sự (CV 70%, In/Out 20%, Quỹ 10%).',
       'Tổng tiền thanh toán cuối cùng (Grand Total) bắt buộc tuân thủ công thức: Grand Total = Tạm tính (Subtotal) + Thuế VAT (8%) + Tiền Tip (♥) - Cấn trừ Ví Kim Cương (💎).',
       'Tất cả hóa đơn in nhiệt xuất cho khách hàng (Thermal Receipt Screen 14) bắt buộc phải in minh bạch dòng Thuế VAT (8%) ngay sau phần Tạm tính và trước Tiền Tip.',
-      'Kiểm soát dòng tiền & Kết chuyển sổ thuế trên /ios-app (Idempotent Legacy PHP Bridge): Đơn 0đ (trừ gói) hoặc chuyển khoản VIETQR (có mã tham chiếu / ảnh chứng từ ngân hàng) được kết chuyển thẳng sang Completed (order_payment, report_order, accountant_revenue_gst, client_store_balance). Đơn Tiền mặt (CASH) và Máy POS Quẹt thẻ được đồng bộ dịch vụ, gói ❖, dưỡng mi và khóa cứng check_out_staff_id về trạng thái CheckOut để Lễ tân/CC tại quầy thu tiền thật vào két hoặc nhập mã chuẩn chi POS rồi bấm Completed.',
+      'Kiểm soát dòng tiền & Kết chuyển sổ thuế trên /ios-app (Idempotent Legacy PHP Bridge): Đơn 0đ (trừ gói), chuyển khoản VIETQR (có mã tham chiếu / ảnh chứng từ ngân hàng), hoặc đơn Tiền mặt (CASH) / Máy POS Quẹt thẻ do CC / Thu ngân / Admin trực tiếp xác nhận thu trên /ios-app được kết chuyển thẳng sang Completed (order_payment, report_order, accountant_revenue_gst, client_store_balance). Đơn Tiền mặt (CASH) / POS > 0đ do CV🪶 / 🪶CV🪶 thao tác vẫn dừng ở CheckOut (Chờ Quầy chốt) để CC / Thu ngân xác nhận hoàn tất.',
     ],
     rationale:
       'Đảm bảo tuân thủ 100% quy định thuế GTGT hiện hành của nhà nước, minh bạch tài chính cho khách hàng trên hóa đơn điện tử/hóa đơn in nhiệt, đồng thời bảo vệ trọn vẹn quyền lợi tiền tip của nhân sự.',
     tags: ['VAT', '8%', 'CHECKOUT', 'BILLING', 'RECEIPT', 'TAX', 'TIP_EXEMPT', 'VIETQR', 'CASH_DRAWER'],
     routeScopes: ['/ios-app', '/dashboard/revenue', '/dashboard/finance'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-11-12',
+    version: '1.2.0',
+    effectiveFrom: '2026-11-14',
     sources: [
       { label: 'Quy tắc VAT 8% Checkout', reference: 'Kinh Thánh mOS Điều răn VAT-001' },
       { label: 'Nghị định 72/2024/NĐ-CP', reference: 'Chính sách giảm thuế GTGT 8%' },

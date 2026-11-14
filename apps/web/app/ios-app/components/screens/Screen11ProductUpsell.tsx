@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
+import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { Eye, EyeOff } from 'lucide-react';
 import {
   WingsComboCategoryId,
   MatchedComboPackageOption,
@@ -228,6 +228,10 @@ export function Screen11ProductUpsell({
   );
 
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
+
+  useEffect(() => {
+    setShowStaffRewards(false);
+  }, [booking?.id]);
 
   const currentCategory = useMemo(() => getWingsComboCategory(activeCategoryId), [activeCategoryId]);
   const selectedSerumTier = SERUM_TIERS_CVL.find((t) => t.id === selectedSerumTierId) || SERUM_TIERS_CVL[0];
@@ -491,20 +495,11 @@ export function Screen11ProductUpsell({
         backTitle="Ảnh After"
         rightAction={
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setShowStaffRewards((prev) => !prev)}
-              className={`p-1.5 rounded-full transition-all cursor-pointer ${
-                showStaffRewards
-                  ? 'text-amber-400 bg-amber-950/60 border border-amber-500/40'
-                  : isDark
-                    ? 'text-neutral-500 hover:text-neutral-300'
-                    : 'text-neutral-400 hover:text-neutral-600'
-              }`}
-              title={showStaffRewards ? 'Đang hiện thưởng CV (Nhấn để ẩn toàn bộ)' : 'Đang ẩn thưởng CV (Nhấn để xem)'}
-            >
-              {showStaffRewards ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+            <IosStaffVisibilityToggle
+              showStaffRewards={showStaffRewards}
+              onToggle={() => setShowStaffRewards((prev) => !prev)}
+              isDark={isDark}
+            />
             <button
               onClick={handleConfirmCheckout}
               className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"

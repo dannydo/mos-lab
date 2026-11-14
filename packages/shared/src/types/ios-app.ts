@@ -313,6 +313,7 @@ export interface IosBookingItem {
   isTuaAssigned?: boolean;
   bookingAccessTag?: 'NEXT_CUSTOMER' | 'NEXT_QUEUE_CUSTOMER' | 'MY_BOOKED_CUSTOMER' | 'STORE_CUSTOMER';
   status: IosBookingStatus;
+  orderState?: string;
   comboLiveStatus?: {
     balanceId?: number;
     isComboLive: boolean;
@@ -529,6 +530,8 @@ export type ServicingSubStatus = {
   key: 'CHECKIN' | 'CLEANING' | 'LASHING' | 'SURVEY' | 'CHECKOUT';
   label: string;
   colorClass: string;
+  lightColorClass: string;
+  darkColorClass: string;
   targetStep: number;
 };
 
@@ -1067,47 +1070,89 @@ export function resolveCustomerBookingTab(
   return 'INCOMING';
 }
 
+export function isDoneBookingPendingCheckout(b: Pick<IosBookingItem, 'orderState' | 'billing'>): boolean {
+  const state = String(b.orderState || '').trim();
+  const settlement = b.billing?.settlementStatus;
+  if (state === 'Completed' || settlement === 'SETTLED_COMPLETED') {
+    return false;
+  }
+  return state === 'CheckOut' || state === 'Check-out' || settlement === 'PENDING_COUNTER_SETTLEMENT';
+}
+
+export function sortDoneBookingsWithCheckoutFirst<T extends Pick<IosBookingItem, 'orderState' | 'billing'>>(
+  bookings: T[]
+): T[] {
+  return [...bookings].sort((a, b) => {
+    const aPending = isDoneBookingPendingCheckout(a) ? 0 : 1;
+    const bPending = isDoneBookingPendingCheckout(b) ? 0 : 1;
+    return aPending - bPending;
+  });
+}
+
 export function resolveServicingSubStatus(
-  b: Pick<IosBookingItem, 'status' | 'billing' | 'progress'>
+  b: Pick<IosBookingItem, 'status' | 'billing' | 'progress'>,
+  theme: 'light' | 'dark' = 'dark'
 ): ServicingSubStatus {
   const step = b.progress?.currentStep ?? (b.status === 'CHECKED_IN' ? 3 : 6);
+  const pick = (lightColorClass: string, darkColorClass: string) =>
+    theme === 'light' ? lightColorClass : darkColorClass;
 
   if (step >= 12 || Boolean(b.billing?.completedAt)) {
+    const lightColorClass = 'bg-emerald-50 text-emerald-700 border-emerald-300';
+    const darkColorClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
     return {
       key: 'CHECKOUT',
       label: 'Checkout',
-      colorClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      colorClass: pick(lightColorClass, darkColorClass),
+      lightColorClass,
+      darkColorClass,
       targetStep: 12,
     };
   }
   if (step >= 10) {
+    const lightColorClass = 'bg-purple-50 text-purple-700 border-purple-300';
+    const darkColorClass = 'bg-purple-500/20 text-purple-300 border-purple-500/30';
     return {
       key: 'SURVEY',
       label: 'Survey',
-      colorClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      colorClass: pick(lightColorClass, darkColorClass),
+      lightColorClass,
+      darkColorClass,
       targetStep: 10,
     };
   }
   if (step >= 9 || b.progress?.timerRunning || (b.progress?.elapsedSeconds && b.progress.elapsedSeconds > 0)) {
+    const lightColorClass = 'bg-amber-50 text-amber-800 border-amber-300';
+    const darkColorClass = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
     return {
       key: 'LASHING',
       label: 'Lashing',
-      colorClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      colorClass: pick(lightColorClass, darkColorClass),
+      lightColorClass,
+      darkColorClass,
       targetStep: 9,
     };
   }
   if (step >= 7) {
+    const lightColorClass = 'bg-cyan-50 text-cyan-700 border-cyan-300';
+    const darkColorClass = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
     return {
       key: 'CLEANING',
       label: 'Cleaning',
-      colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      colorClass: pick(lightColorClass, darkColorClass),
+      lightColorClass,
+      darkColorClass,
       targetStep: 8,
     };
   }
+  const lightColorClass = 'bg-blue-50 text-blue-700 border-blue-300';
+  const darkColorClass = 'bg-blue-500/20 text-blue-300 border-blue-500/30';
   return {
     key: 'CHECKIN',
     label: 'Check-in',
-    colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    colorClass: pick(lightColorClass, darkColorClass),
+    lightColorClass,
+    darkColorClass,
     targetStep: 3,
   };
 }

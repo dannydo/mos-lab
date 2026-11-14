@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
-import { ChevronLeft, ChevronDown, ChevronUp, Heart, Gem, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, Heart, Gem } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
+import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { ThermalReceiptComboItemsSection } from './checkout/ReceiptComboExpiryLine';
 import {
   calculateCvSerumTierBonus,
@@ -34,6 +35,10 @@ export function Screen14ThermalReceiptDone({
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
+
+  useEffect(() => {
+    setShowStaffRewards(false);
+  }, [booking?.id]);
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = (booking?.customerPhone || '0933.779.207').replace(/\*+\s*/g, '').trim();
   const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
@@ -131,9 +136,15 @@ export function Screen14ThermalReceiptDone({
             <span>Quay lại</span>
           </button>
         )}
-        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight flex items-center justify-center gap-1 px-20 text-center">
+        <h1 className="text-[#FFB400] font-bold text-[16px] tracking-tight flex items-center justify-center gap-1 px-24 text-center">
           Chi Tiết Hoá Đơn
         </h1>
+        <IosStaffVisibilityToggle
+          showStaffRewards={showStaffRewards}
+          onToggle={() => setShowStaffRewards((prev) => !prev)}
+          isDark={isDark}
+          className="absolute right-0 -mr-1"
+        />
       </div>
 
       {/* Thermal Receipt Card */}
@@ -165,25 +176,28 @@ export function Screen14ThermalReceiptDone({
             PHIẾU THANH TOÁN & GHI NHẬN CA
           </div>
           <div className={`text-[11px] text-[var(--mos-text-muted)] font-mono`}>
-            HĐ: #{booking?.orderNumber || 'BK-336925'} · {isPendingCounter ? 'Chờ Quầy thu ngân chốt' : 'Hoàn tất'}
+            HĐ: #{booking?.orderNumber || 'BK-336925'}
+            {showStaffRewards ? ` · ${isPendingCounter ? 'Chờ Quầy thu ngân chốt' : 'Hoàn tất'}` : ''}
           </div>
-          <div>
-            <span
-              className={`inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${
-                isPendingCounter
-                  ? isDark
-                    ? 'bg-amber-950/50 text-amber-300 border-amber-700/60'
-                    : 'bg-amber-50 text-amber-800 border-amber-200'
-                  : isDark
-                    ? 'bg-emerald-950/50 text-emerald-300 border-emerald-700/60'
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              }`}
-            >
-              {isPendingCounter
-                ? '⏳ Chờ Quầy thu Tiền mặt / POS · Đã khóa thưởng Checkout'
-                : '✓ Đã hoàn tất & Ghi sổ kế toán · Báo Cáo CV'}
-            </span>
-          </div>
+          {showStaffRewards && (
+            <div>
+              <span
+                className={`inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${
+                  isPendingCounter
+                    ? isDark
+                      ? 'bg-amber-950/50 text-amber-300 border-amber-700/60'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                    : isDark
+                      ? 'bg-emerald-950/50 text-emerald-300 border-emerald-700/60'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}
+              >
+                {isPendingCounter
+                  ? '⏳ Chờ Quầy thu Tiền mặt / POS · Đã khóa thưởng Checkout'
+                  : '✓ Đã hoàn tất & Ghi sổ kế toán · Báo Cáo CV'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div
@@ -195,22 +209,27 @@ export function Screen14ThermalReceiptDone({
               {customerName} ({customerPhone})
             </strong>
           </div>
-          <div className="flex items-center justify-between">
-            <span>Chuyên Viên làm mi:</span>
-            <strong className={`font-bold text-[var(--mos-text)] inline-flex items-center gap-1`}>
-              {assignedStaff} (<CvFeather1Badge />)
-            </strong>
-          </div>
-          <div
-            className={`flex items-center justify-between border-t border-[var(--mos-surface-border)] pt-1 text-[10.5px]`}
-          >
-            <span>
-              Check-in: <strong className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>{checkInStaff}</strong>
-            </span>
-            <span>
-              Check-out: <strong className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>{checkOutStaff}</strong>
-            </span>
-          </div>
+          {showStaffRewards && (
+            <>
+              <div className="flex items-center justify-between">
+                <span>Chuyên Viên làm mi:</span>
+                <strong className={`font-bold text-[var(--mos-text)] inline-flex items-center gap-1`}>
+                  {assignedStaff} (<CvFeather1Badge />)
+                </strong>
+              </div>
+              <div
+                className={`flex items-center justify-between border-t border-[var(--mos-surface-border)] pt-1 text-[10.5px]`}
+              >
+                <span>
+                  Check-in: <strong className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>{checkInStaff}</strong>
+                </span>
+                <span>
+                  Check-out:{' '}
+                  <strong className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>{checkOutStaff}</strong>
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className={`border-b border-dashed ${isDark ? 'border-neutral-700' : 'border-gray-300'}`} />
@@ -343,11 +362,13 @@ export function Screen14ThermalReceiptDone({
             >
               {grandTotal === 0 && diamondUsed > 0
                 ? '💎 100% Ví Kim Cương'
-                : booking?.billing?.paymentMethod === 'VIETQR'
-                  ? 'Chuyển khoản QR (Bank)'
-                  : booking?.billing?.paymentMethod === 'POS'
-                    ? 'Thẻ ngân hàng (POS)'
-                    : 'Tiền mặt (Cash)'}
+                : booking?.billing?.paymentMethod === 'POS'
+                  ? 'Thẻ ngân hàng (POS)'
+                  : booking?.billing?.paymentMethod === 'CASH'
+                    ? 'Tiền mặt (Cash)'
+                    : isPendingCounter
+                      ? 'Chờ Quầy thu Tiền mặt / POS'
+                      : 'Chuyển khoản QR (Bank)'}
             </span>
           </div>
 
@@ -448,148 +469,111 @@ export function Screen14ThermalReceiptDone({
           )}
         </div>
 
-        {/* Quyền Lợi Chuyên Viên Accordion (Ẩn mặc định, nhấn xem để mở rộng) */}
-        {(() => {
-          const isCheckoutStaffCc = actor?.tier === 'CC' || booking?.checkOutStaffTier === 'CC';
-          return (
-            <div className="pt-1.5">
-              {!showStaffRewards ? (
-                <button
-                  type="button"
-                  onClick={() => setShowStaffRewards(true)}
-                  className={`w-full py-2.5 px-3 rounded-xl border flex items-center justify-between text-[11px] font-semibold transition-all cursor-pointer select-none active:scale-[0.99] ${
-                    isDark
-                      ? 'bg-neutral-900/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
-                      : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>Xem</span>
-                    {isCheckoutStaffCc ? (
-                      <span className="font-bold text-emerald-400">CC</span>
-                    ) : (
-                      <FeatherSvg className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    )}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                </button>
-              ) : (
-                <div
-                  className={`rounded-xl border transition-all overflow-hidden ${
-                    isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-amber-50/40 border-amber-200/70'
-                  }`}
-                >
-                  {/* Header row as toggle to close */}
-                  <button
-                    type="button"
-                    onClick={() => setShowStaffRewards(false)}
-                    className={`w-full py-2.5 px-3 flex items-center justify-between text-[11px] font-bold border-b cursor-pointer select-none ${
-                      isDark
-                        ? 'border-neutral-800 text-amber-400 hover:bg-neutral-800/40'
-                        : 'border-amber-200/60 text-amber-900 hover:bg-amber-100/40'
-                    }`}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      <EyeOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>Ẩn</span>
-                      {isCheckoutStaffCc ? (
-                        <span className="font-bold text-emerald-400">CC</span>
-                      ) : (
-                        <FeatherSvg className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      )}
-                    </span>
-                    <ChevronUp className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                  </button>
-
-                  {/* Body */}
-                  <div className="p-3 space-y-2 text-[11px]">
-                    <div className={`space-y-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'} font-medium`}>
-                      <div className="flex justify-between items-center">
-                        <span>Tiền Tip bạn nhận ({actorTipBreakdown.actorEarnedPercent}%):</span>
-                        <span className="font-bold tabular-nums text-emerald-400">
-                          +{tipEarned.toLocaleString('vi-VN')} đ
-                        </span>
-                      </div>
-                      {tipAmount > 0 && (
-                        <div
-                          className={`text-[10px] text-[var(--mos-text-muted)] flex items-center justify-between flex-wrap gap-1 tabular-nums`}
-                        >
-                          <span>
-                            • Làm mi ({actorTipBreakdown.techStaffName} · 70%): +
-                            {actorTipBreakdown.techShareAmount.toLocaleString('vi-VN')}đ
-                          </span>
-                          <span>
-                            • In ({actorTipBreakdown.checkInStaffName} · 10%): +
-                            {actorTipBreakdown.checkInShareAmount.toLocaleString('vi-VN')}đ
-                          </span>
-                          <span>
-                            • Out ({actorTipBreakdown.checkOutStaffName} · 10%): +
-                            {actorTipBreakdown.checkOutShareAmount.toLocaleString('vi-VN')}đ
-                          </span>
-                        </div>
-                      )}
-                      {comboBonus > 0 && (
-                        <div className="flex justify-between items-center">
-                          <span>
-                            Thưởng chốt Combo ({selectedCombo && selectedUnderCombo ? '2 gói độc lập' : '1 gói'}):
-                          </span>
-                          <span className="font-bold tabular-nums inline-flex items-center gap-0.5 text-amber-400">
-                            +{Math.round(comboBonus / 1000)}
-                            <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                          </span>
-                        </div>
-                      )}
-                      {isCheckoutStaffCc && (selectedCombo || selectedUnderCombo) && (
-                        <div className="flex justify-between items-center text-emerald-400">
-                          <span>Thưởng bán Combo (CC Checkout):</span>
-                          <span className="font-bold">Tính trên Báo Cáo CC (Combo-Sold)</span>
-                        </div>
-                      )}
-                      {serumBonus > 0 && (
-                        <div className="flex justify-between items-center">
-                          <span>Thưởng bán Dưỡng mi Yeppeum:</span>
-                          <span className="font-bold tabular-nums inline-flex items-center gap-0.5 text-amber-400">
-                            +{Math.round(serumBonus / 1000)}
-                            <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div
-                      className={`pt-2 border-t ${
-                        isDark ? 'border-neutral-800' : 'border-amber-200/60'
-                      } flex justify-between items-center font-black ${
-                        isDark ? 'text-white' : 'text-neutral-900'
-                      } text-[11.5px]`}
-                    >
-                      <span>TỔNG THƯỞNG:</span>
-                      <span
-                        className={`tabular-nums text-[12px] font-black px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${
-                          isDark
-                            ? 'bg-amber-950/40 text-amber-300 border-amber-700/60'
-                            : 'bg-white text-amber-900 border-amber-300 shadow-2xs'
-                        }`}
-                      >
-                        {comboBonus + serumBonus > 0 ? (
-                          <>
-                            +{Math.round((comboBonus + serumBonus) / 1000)}
-                            <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                          </>
-                        ) : (
-                          <>
-                            0 <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                          </>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* Quyền Lợi Chuyên Viên (Chỉ hiển thị khi bật nút Con mắt trên Header) */}
+        {showStaffRewards && (
+          <div
+            className={`rounded-xl border transition-all overflow-hidden ${
+              isDark ? 'bg-neutral-900/90 border-neutral-800' : 'bg-amber-50/40 border-amber-200/70'
+            }`}
+          >
+            <div
+              className={`w-full py-2 px-3 flex items-center justify-between text-[11px] font-bold border-b ${
+                isDark ? 'border-neutral-800 text-amber-400' : 'border-amber-200/60 text-amber-900'
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span>Quyền Lợi Nội Bộ</span>
+                {isCheckoutStaffCc ? (
+                  <span className="font-bold text-emerald-400">CC</span>
+                ) : (
+                  <FeatherSvg className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                )}
+              </span>
             </div>
-          );
-        })()}
+
+            {/* Body */}
+            <div className="p-3 space-y-2 text-[11px]">
+              <div className={`space-y-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'} font-medium`}>
+                <div className="flex justify-between items-center">
+                  <span>Tiền Tip bạn nhận ({actorTipBreakdown.actorEarnedPercent}%):</span>
+                  <span className="font-bold tabular-nums text-emerald-400">
+                    +{tipEarned.toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+                {tipAmount > 0 && (
+                  <div
+                    className={`text-[10px] text-[var(--mos-text-muted)] flex items-center justify-between flex-wrap gap-1 tabular-nums`}
+                  >
+                    <span>
+                      • Làm mi ({actorTipBreakdown.techStaffName} · 70%): +
+                      {actorTipBreakdown.techShareAmount.toLocaleString('vi-VN')}đ
+                    </span>
+                    <span>
+                      • In ({actorTipBreakdown.checkInStaffName} · 10%): +
+                      {actorTipBreakdown.checkInShareAmount.toLocaleString('vi-VN')}đ
+                    </span>
+                    <span>
+                      • Out ({actorTipBreakdown.checkOutStaffName} · 10%): +
+                      {actorTipBreakdown.checkOutShareAmount.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                )}
+                {comboBonus > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span>Thưởng chốt Combo ({selectedCombo && selectedUnderCombo ? '2 gói độc lập' : '1 gói'}):</span>
+                    <span className="font-bold tabular-nums inline-flex items-center gap-0.5 text-amber-400">
+                      +{Math.round(comboBonus / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </span>
+                  </div>
+                )}
+                {isCheckoutStaffCc && (selectedCombo || selectedUnderCombo) && (
+                  <div className="flex justify-between items-center text-emerald-400">
+                    <span>Thưởng bán Combo (CC Checkout):</span>
+                    <span className="font-bold">Tính trên Báo Cáo CC (Combo-Sold)</span>
+                  </div>
+                )}
+                {serumBonus > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span>Thưởng bán Dưỡng mi Yeppeum:</span>
+                    <span className="font-bold tabular-nums inline-flex items-center gap-0.5 text-amber-400">
+                      +{Math.round(serumBonus / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div
+                className={`pt-2 border-t ${
+                  isDark ? 'border-neutral-800' : 'border-amber-200/60'
+                } flex justify-between items-center font-black ${
+                  isDark ? 'text-white' : 'text-neutral-900'
+                } text-[11.5px]`}
+              >
+                <span>TỔNG THƯỞNG:</span>
+                <span
+                  className={`tabular-nums text-[12px] font-black px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                    isDark
+                      ? 'bg-amber-950/40 text-amber-300 border-amber-700/60'
+                      : 'bg-white text-amber-900 border-amber-300 shadow-2xs'
+                  }`}
+                >
+                  {comboBonus + serumBonus > 0 ? (
+                    <>
+                      +{Math.round((comboBonus + serumBonus) / 1000)}
+                      <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </>
+                  ) : (
+                    <>
+                      0 <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Action Area */}

@@ -431,6 +431,8 @@ export async function executeIosBookingAction(
       const checkInStaffId = Number(current.checkInStaffId || actorStaffId);
       const assignedStaffId = Number(current.assignedStaffId || actorStaffId);
       const completedAtIso = new Date().toISOString();
+      const canAuthUserSettleCounter = authUser.careerTier === 'CC' || authUser.careerTier === 'ADMIN';
+      const trustedSettlementTier = canAuthUserSettleCounter ? actorStaffTier : String(authUser.careerTier || 'CVL');
 
       const draftOverride: BookingOverrideRecord = {
         ...current,
@@ -448,6 +450,7 @@ export async function executeIosBookingAction(
         billing: {
           ...(current.billing || {}),
           ...(body.billing || {}),
+          settledByTier: trustedSettlementTier,
           completedAt: completedAtIso,
         },
         progress: {
@@ -466,6 +469,7 @@ export async function executeIosBookingAction(
           checkInStaffId,
           assignedStaffId,
           checkOutStaffId,
+          settlementActorTier: trustedSettlementTier,
         },
         {
           loadSettlementReceipt: (id) => repo.loadSettlementReceipt(id),

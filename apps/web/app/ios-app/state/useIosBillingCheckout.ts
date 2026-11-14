@@ -5,6 +5,7 @@ import {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
+  canDirectlySettleCounterPayment,
   resolveEffectiveServiceTotal,
   resolveServicePriceSplit,
   resolveCheckoutTipBaseAmount,
@@ -56,6 +57,65 @@ export interface UseIosBillingCheckoutParams {
   setBookingSegment: (segment: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL') => void;
 }
 
+/**
+ * Computes fresh service, combo, product, subtotal, and VAT totals from a booking's active items
+ * so re-checking out an already-billed booking never freezes stale totals.
+ */
+export function computeFreshBillingLineTotals(
+  booking: Pick<
+    BookingItem,
+    | 'servicePrice'
+    | 'upgradePrice'
+    | 'serviceName'
+    | 'attributes'
+    | 'comboLiveStatus'
+    | 'underMinkComboStatus'
+    | 'cartProducts'
+    | 'selectedCombo'
+    | 'selectedUnderCombo'
+    | 'comboRedemption'
+    | 'billing'
+  >
+): {
+  serviceTotal: number;
+  comboTotal: number;
+  productTotal: number;
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+} {
+  const hasUnderMinkComboActive = Boolean(
+    booking.underMinkComboStatus?.hasUnderCombo && (booking.underMinkComboStatus?.remainingSessions ?? 0) > 0
+  );
+  const shouldUseOldUpperCombo = Boolean(
+    booking.comboLiveStatus?.isComboLive &&
+    (!booking.selectedCombo ||
+      !booking.selectedCombo.todayUsageMode ||
+      booking.selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
+  );
+  const serviceTotal = resolveEffectiveServiceTotal({
+    servicePrice: booking.servicePrice,
+    upgradePrice: booking.upgradePrice,
+    serviceName: booking.serviceName,
+    isComboLive: shouldUseOldUpperCombo,
+    hasUnderMink: booking.attributes?.hasUnderMink,
+    underMinkServiceType: booking.attributes?.underMinkServiceType,
+    hasUnderMinkCombo: hasUnderMinkComboActive,
+    selectedCombo: booking.selectedCombo,
+    selectedUnderCombo: booking.selectedUnderCombo,
+    comboRedemption: booking.comboRedemption,
+  });
+  const productTotal = (booking.cartProducts || []).reduce((sum, p) => sum + p.price * p.quantity, 0);
+  const comboTotal =
+    (booking.selectedCombo ? booking.selectedCombo.price : 0) +
+    (booking.selectedUnderCombo ? booking.selectedUnderCombo.price : 0);
+  const subtotal = serviceTotal + comboTotal + productTotal;
+  const vatRate = booking.billing?.vatRate ?? 0.08;
+  const vatAmount = Math.round(subtotal * vatRate);
+
+  return { serviceTotal, comboTotal, productTotal, subtotal, vatRate, vatAmount };
+}
+
 export function useIosBillingCheckout({
   activeBookingId,
   actor,
@@ -80,29 +140,20 @@ export function useIosBillingCheckout({
             : prev.selectedUnderCombo || null;
         const nextRedemption =
           upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
-        const productTotal = nextProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
-        const comboTotal = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
-
-        const hasUnderMinkComboActive = Boolean(
-          prev.underMinkComboStatus?.hasUnderCombo && (prev.underMinkComboStatus?.remainingSessions ?? 0) > 0
-        );
-        const shouldUseOldUpperCombo = Boolean(
-          prev.comboLiveStatus?.isComboLive &&
-          (!nextCombo || !nextCombo.todayUsageMode || nextCombo.todayUsageMode === 'USE_OLD_COMBO')
-        );
-        const effectiveServiceTotal = resolveEffectiveServiceTotal({
-          servicePrice: prev.servicePrice,
-          upgradePrice: prev.upgradePrice,
-          serviceName: prev.serviceName,
-          isComboLive: shouldUseOldUpperCombo,
-          hasUnderMink: prev.attributes?.hasUnderMink,
-          underMinkServiceType: prev.attributes?.underMinkServiceType,
-          hasUnderMinkCombo: hasUnderMinkComboActive,
+        const {
+          serviceTotal: effectiveServiceTotal,
+          comboTotal,
+          productTotal,
+          subtotal,
+          vatRate,
+          vatAmount,
+        } = computeFreshBillingLineTotals({
+          ...prev,
+          cartProducts: nextProducts,
           selectedCombo: nextCombo,
           selectedUnderCombo: nextUnderCombo,
           comboRedemption: nextRedemption,
         });
-        const subtotal = effectiveServiceTotal + comboTotal + productTotal;
         const tipAmount = prev.billing?.tipAmount ?? 0;
 
         const isActorCc = actor.tier === 'CC';
@@ -169,9 +220,10 @@ export function useIosBillingCheckout({
             totalOrderBonusForCheckoutStaff: comboBonusAmount + serumBonusAmount,
           },
           billing: {
+            ...(prev.billing || {}),
             subtotal,
-            vatRate: 0.08,
-            vatAmount: Math.round(subtotal * 0.08),
+            vatRate,
+            vatAmount,
             serviceTotal: effectiveServiceTotal,
             comboTotal,
             productTotal,
@@ -181,7 +233,7 @@ export function useIosBillingCheckout({
             tipCheckInShare: tipBreakdown.checkInShareAmount,
             tipCheckOutShare: tipBreakdown.checkOutShareAmount,
             tipCcShare: tipBreakdown.checkInShareAmount + tipBreakdown.checkOutShareAmount,
-            grandTotal: subtotal + Math.round(subtotal * 0.08) + tipAmount,
+            grandTotal: subtotal + vatAmount + tipAmount,
           },
         };
       });
@@ -214,47 +266,15 @@ export function useIosBillingCheckout({
         const checkOutShare = Math.round(tipAmount * 0.1);
         const ccShare = checkInShare + checkOutShare;
 
-        const hasUnderMinkComboActive = Boolean(
-          prev.underMinkComboStatus?.hasUnderCombo && (prev.underMinkComboStatus?.remainingSessions ?? 0) > 0
-        );
-        const shouldUseOldUpperComboFallback = Boolean(
-          prev.comboLiveStatus?.isComboLive &&
-          (!prev.selectedCombo ||
-            !prev.selectedCombo.todayUsageMode ||
-            prev.selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
-        );
-        const fallbackEffectiveService = resolveEffectiveServiceTotal({
-          servicePrice: prev.servicePrice,
-          upgradePrice: prev.upgradePrice,
-          serviceName: prev.serviceName,
-          isComboLive: shouldUseOldUpperComboFallback,
-          hasUnderMink: prev.attributes?.hasUnderMink,
-          underMinkServiceType: prev.attributes?.underMinkServiceType,
-          hasUnderMinkCombo: hasUnderMinkComboActive,
-          selectedCombo: prev.selectedCombo,
-          selectedUnderCombo: prev.selectedUnderCombo,
-          comboRedemption: prev.comboRedemption,
-        });
-        const fallbackProductTotal = (prev.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
-        const fallbackComboTotal =
-          (prev.selectedCombo ? prev.selectedCombo.price : 0) +
-          (prev.selectedUnderCombo ? prev.selectedUnderCombo.price : 0);
-        const fallbackSubtotal = fallbackEffectiveService + fallbackComboTotal + fallbackProductTotal;
+        const {
+          serviceTotal: freshServiceTotal,
+          comboTotal: freshComboTotal,
+          productTotal: freshProductTotal,
+          subtotal,
+          vatRate,
+          vatAmount,
+        } = computeFreshBillingLineTotals(prev);
 
-        const currentBilling = prev.billing || {
-          subtotal: fallbackSubtotal,
-          vatRate: 0.08,
-          vatAmount: Math.round(fallbackSubtotal * 0.08),
-          serviceTotal: fallbackEffectiveService,
-          comboTotal: fallbackComboTotal,
-          productTotal: fallbackProductTotal,
-          paymentMethod: method,
-          transferProofPhoto: undefined as string | undefined,
-          zaloConsent: undefined as NonNullable<BookingItem['billing']>['zaloConsent'],
-        };
-        const subtotal = currentBilling.subtotal;
-        const vatRate = currentBilling.vatRate ?? 0.08;
-        const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
         const totalBeforeDiamond = subtotal + vatAmount + tipAmount;
 
         // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ
@@ -270,10 +290,16 @@ export function useIosBillingCheckout({
         const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
 
         const optimisticSettlement: IosSettlementStatus =
-          grandTotal <= 0 || method === 'VIETQR' ? 'SETTLED_COMPLETED' : 'PENDING_COUNTER_SETTLEMENT';
+          grandTotal <= 0 || method === 'VIETQR' || canDirectlySettleCounterPayment(actor.tier)
+            ? 'SETTLED_COMPLETED'
+            : 'PENDING_COUNTER_SETTLEMENT';
 
         const nextBilling = {
-          ...currentBilling,
+          ...(prev.billing || {}),
+          subtotal,
+          serviceTotal: freshServiceTotal,
+          comboTotal: freshComboTotal,
+          productTotal: freshProductTotal,
           paymentMethod: method,
           settlementStatus: optimisticSettlement,
           vatRate,
@@ -285,8 +311,8 @@ export function useIosBillingCheckout({
           tipCcShare: ccShare,
           diamondUsed,
           diamondDiscountAmount,
-          transferProofPhoto: proofPhoto || currentBilling.transferProofPhoto,
-          zaloConsent: zaloConsent || currentBilling.zaloConsent,
+          transferProofPhoto: proofPhoto || prev.billing?.transferProofPhoto,
+          zaloConsent: zaloConsent || prev.billing?.zaloConsent,
           grandTotal,
           completedAt,
         };
@@ -296,6 +322,7 @@ export function useIosBillingCheckout({
         return {
           ...prev,
           status: 'DONE',
+          orderState: optimisticSettlement === 'PENDING_COUNTER_SETTLEMENT' ? 'CheckOut' : 'Completed',
           diamondBalance: remainingDiamondBalance,
           checkOutStaffId: prev.checkOutStaffId || actor.staffId,
           checkOutStaffName: prev.checkOutStaffName || actor.name,
@@ -341,26 +368,29 @@ export function useIosBillingCheckout({
         const checkInShare = Math.round(tipAmount * 0.1);
         const checkOutShare = Math.round(tipAmount * 0.1);
         const ccShare = checkInShare + checkOutShare;
-        const currentBilling = prev.billing || {
-          subtotal: prev.servicePrice,
-          vatRate: 0.08,
-          vatAmount: Math.round(prev.servicePrice * 0.08),
-          serviceTotal: prev.servicePrice,
-          comboTotal: 0,
-          productTotal: 0,
-          paymentMethod: 'VIETQR' as const,
-        };
-        const subtotal = currentBilling.subtotal;
-        const vatRate = currentBilling.vatRate ?? 0.08;
-        const vatAmount = currentBilling.vatAmount ?? Math.round(subtotal * vatRate);
+        const {
+          serviceTotal: freshServiceTotal,
+          comboTotal: freshComboTotal,
+          productTotal: freshProductTotal,
+          subtotal,
+          vatRate,
+          vatAmount,
+        } = computeFreshBillingLineTotals(prev);
         const diamondDiscountAmount = prev.billing?.diamondDiscountAmount ?? (prev.billing?.diamondUsed || 0) * 1000;
         const grandTotal = Math.max(0, subtotal + vatAmount + tipAmount - diamondDiscountAmount);
-        const method = currentBilling.paymentMethod || 'VIETQR';
+        const method = prev.billing?.paymentMethod || 'VIETQR';
         const optimisticSettlement: IosSettlementStatus =
-          grandTotal <= 0 || method === 'VIETQR' ? 'SETTLED_COMPLETED' : 'PENDING_COUNTER_SETTLEMENT';
+          grandTotal <= 0 || method === 'VIETQR' || canDirectlySettleCounterPayment(actor.tier)
+            ? 'SETTLED_COMPLETED'
+            : 'PENDING_COUNTER_SETTLEMENT';
 
         const nextBilling = {
-          ...currentBilling,
+          ...(prev.billing || {}),
+          subtotal,
+          serviceTotal: freshServiceTotal,
+          comboTotal: freshComboTotal,
+          productTotal: freshProductTotal,
+          paymentMethod: method,
           settlementStatus: optimisticSettlement,
           vatRate,
           vatAmount,
@@ -378,6 +408,7 @@ export function useIosBillingCheckout({
         return {
           ...prev,
           status: 'DONE',
+          orderState: optimisticSettlement === 'PENDING_COUNTER_SETTLEMENT' ? 'CheckOut' : 'Completed',
           checkOutStaffId: prev.checkOutStaffId || actor.staffId,
           checkOutStaffName: prev.checkOutStaffName || actor.name,
           checkOutStaffTier: prev.checkOutStaffTier || actor.tier,

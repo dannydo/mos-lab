@@ -105,7 +105,9 @@ export function ComboExpiryStatusBadge({
         : 'bg-[#18181B] text-neutral-300 border border-neutral-700/80 text-[10.5px]';
     content = (
       <>
-        <CalendarClock className="w-3 h-3 stroke-[2.1] text-emerald-400 shrink-0" />
+        <CalendarClock
+          className={`w-3 h-3 stroke-[2.1] shrink-0 ${theme === 'light' ? 'text-emerald-700' : 'text-emerald-400'}`}
+        />
         <span>
           HSD {displayDate}
           {paceStr}

@@ -5,6 +5,7 @@ import { BookingItem } from '../../../state/mockData';
 import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { getLashDetailSpecs } from './incomingBookingHelpers';
 import { RotateCcw, X, Lock, FileText, Eye, Users, Sparkles } from 'lucide-react';
+import { useTheme } from '../../../../../context/ThemeContext';
 
 interface IncomingBookingsModalsProps {
   lockedCustomerModal: { isOpen: boolean; attemptedCustomerName: string } | null;
@@ -35,6 +36,7 @@ export function IncomingBookingsModals({
   onResumeServicing,
   onRevertToIncoming,
 }: IncomingBookingsModalsProps) {
+  const { themeMode } = useTheme();
   return (
     <>
       {/* Modal Cảnh Báo Khóa Check-in khi đang có ca làm dở dang */}
@@ -68,8 +70,8 @@ export function IncomingBookingsModals({
               </p>
               <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--mos-text-muted)' }}>
                 Theo quy trình của Wings, bạn không thể check-in cho{' '}
-                <strong style={{ color: 'var(--mos-text)' }}>{lockedCustomerModal.attemptedCustomerName}</strong> cho đến khi hoàn
-                thành checkout cho ca làm hiện tại.
+                <strong style={{ color: 'var(--mos-text)' }}>{lockedCustomerModal.attemptedCustomerName}</strong> cho
+                đến khi hoàn thành checkout cho ca làm hiện tại.
               </p>
             </div>
 
@@ -127,8 +129,8 @@ export function IncomingBookingsModals({
               </h3>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--mos-text-muted)' }}>
                 Bạn có chắc chắn muốn hủy ca làm dở dang của khách hàng{' '}
-                <strong style={{ color: 'var(--mos-accent)' }}>{revertConfirmModal.customerName}</strong> và đưa về lại danh sách{' '}
-                <strong style={{ color: 'var(--mos-text)' }}>Chờ đón</strong>?
+                <strong style={{ color: 'var(--mos-accent)' }}>{revertConfirmModal.customerName}</strong> và đưa về lại
+                danh sách <strong style={{ color: 'var(--mos-text)' }}>Chờ đón</strong>?
               </p>
               <p className="text-[11px] leading-normal pt-1" style={{ color: 'var(--mos-text-muted)' }}>
                 Thời gian làm dở dang sẽ được giải phóng để Chuyên Viên có thể nhận ca tiếp theo.
@@ -189,7 +191,10 @@ export function IncomingBookingsModals({
               }}
             >
               <div className="min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-wider block" style={{ color: 'var(--mos-accent)' }}>
+                <span
+                  className="text-[10px] font-black uppercase tracking-wider block"
+                  style={{ color: 'var(--mos-accent)' }}
+                >
                   CHI TIẾT LỊCH HẸN & GHI CHÚ
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -237,11 +242,16 @@ export function IncomingBookingsModals({
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--mos-accent)' }}>
+                  <span
+                    className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                    style={{ color: 'var(--mos-accent)' }}
+                  >
                     <FileText className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                     <span>GHI CHÚ ĐẦY ĐỦ</span>
                   </span>
-                  <span className="text-[10px]" style={{ color: 'var(--mos-text-muted)' }}>Booker & CSKH</span>
+                  <span className="text-[10px]" style={{ color: 'var(--mos-text-muted)' }}>
+                    Booker & CSKH
+                  </span>
                 </div>
                 <div
                   className="text-[13px] font-medium leading-relaxed whitespace-pre-wrap break-words p-3 rounded-xl border"
@@ -267,7 +277,10 @@ export function IncomingBookingsModals({
                     }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--mos-text)' }}>
+                      <span
+                        className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        style={{ color: 'var(--mos-text)' }}
+                      >
                         <Eye className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                         <span>THÔNG SỐ NỐI MI DỰ KIẾN</span>
                       </span>
@@ -281,14 +294,20 @@ export function IncomingBookingsModals({
                         className="p-2.5 rounded-xl border"
                         style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
                       >
-                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Dòng mi</span>
-                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>{specs.material}</span>
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>
+                          Dòng mi
+                        </span>
+                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>
+                          {specs.material}
+                        </span>
                       </div>
                       <div
                         className="p-2.5 rounded-xl border"
                         style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
                       >
-                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Độ dày & Số lượng</span>
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>
+                          Độ dày & Số lượng
+                        </span>
                         <span className="font-bold" style={{ color: 'var(--mos-text)' }}>
                           {specs.volume} · {specs.count}
                         </span>
@@ -297,14 +316,20 @@ export function IncomingBookingsModals({
                         className="p-2.5 rounded-xl border"
                         style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
                       >
-                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Độ cong</span>
-                        <span className="font-bold" style={{ color: 'var(--mos-accent)' }}>{specs.curl}</span>
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>
+                          Độ cong
+                        </span>
+                        <span className="font-bold" style={{ color: 'var(--mos-accent)' }}>
+                          {specs.curl}
+                        </span>
                       </div>
                       <div
                         className="p-2.5 rounded-xl border"
                         style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
                       >
-                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>Độ dày sợi · Chiều dài</span>
+                        <span className="text-[10px] block" style={{ color: 'var(--mos-text-muted)' }}>
+                          Độ dày sợi · Chiều dài
+                        </span>
                         <span className="font-bold" style={{ color: 'var(--mos-accent)' }}>
                           {specs.thickness} · {specs.length}
                         </span>
@@ -313,8 +338,12 @@ export function IncomingBookingsModals({
                         className="col-span-2 p-2.5 rounded-xl border flex items-center justify-between"
                         style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
                       >
-                        <span className="text-[10px]" style={{ color: 'var(--mos-text-muted)' }}>Kiểu dáng thiết kế</span>
-                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>{specs.design}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--mos-text-muted)' }}>
+                          Kiểu dáng thiết kế
+                        </span>
+                        <span className="font-bold" style={{ color: 'var(--mos-text)' }}>
+                          {specs.design}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -326,7 +355,10 @@ export function IncomingBookingsModals({
                 className="rounded-2xl border p-3.5 space-y-2"
                 style={{ backgroundColor: 'var(--mos-surface-muted)', borderColor: 'var(--mos-surface-border)' }}
               >
-                <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--mos-text)' }}>
+                <span
+                  className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                  style={{ color: 'var(--mos-text)' }}
+                >
                   <Users className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
                   <span>NHÂN SỰ PHỤ TRÁCH</span>
                 </span>
@@ -338,7 +370,10 @@ export function IncomingBookingsModals({
                   >
                     <div
                       className="w-8 h-8 rounded-full overflow-hidden border shrink-0"
-                      style={{ borderColor: 'var(--mos-surface-border-strong)', backgroundColor: 'var(--mos-surface-muted)' }}
+                      style={{
+                        borderColor: 'var(--mos-surface-border-strong)',
+                        backgroundColor: 'var(--mos-surface-muted)',
+                      }}
                     >
                       {selectedCustomerDetail.bookerAvatar ? (
                         <img
@@ -357,7 +392,9 @@ export function IncomingBookingsModals({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[9.5px] block" style={{ color: 'var(--mos-text-muted)' }}>Người đặt lịch</span>
+                      <span className="text-[9.5px] block" style={{ color: 'var(--mos-text-muted)' }}>
+                        Người đặt lịch
+                      </span>
                       <span className="font-bold text-[11px] truncate block" style={{ color: 'var(--mos-text)' }}>
                         {selectedCustomerDetail.bookerName || 'Khách đặt Online'}
                       </span>
@@ -371,14 +408,15 @@ export function IncomingBookingsModals({
                   >
                     <div
                       className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${
-                        selectedCustomerDetail.isBookedInAdvance
-                          ? 'border border-emerald-500'
-                          : 'border'
+                        selectedCustomerDetail.isBookedInAdvance ? 'border border-emerald-500' : 'border'
                       }`}
                       style={
                         selectedCustomerDetail.isBookedInAdvance
                           ? { backgroundColor: 'var(--mos-surface-muted)' }
-                          : { borderColor: 'var(--mos-surface-border-strong)', backgroundColor: 'var(--mos-surface-muted)' }
+                          : {
+                              borderColor: 'var(--mos-surface-border-strong)',
+                              backgroundColor: 'var(--mos-surface-muted)',
+                            }
                       }
                     >
                       {selectedCustomerDetail.assignedStaffAvatar ? (
@@ -388,7 +426,10 @@ export function IncomingBookingsModals({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold" style={{ color: 'var(--mos-text-muted)' }}>
+                        <div
+                          className="w-full h-full flex items-center justify-center text-xs font-bold"
+                          style={{ color: 'var(--mos-text-muted)' }}
+                        >
                           CV
                         </div>
                       )}
@@ -438,7 +479,7 @@ export function IncomingBookingsModals({
                   <div className="text-[12px]" style={{ color: 'var(--mos-text)' }}>
                     {selectedCustomerDetail.comboLiveStatus.comboName}
                   </div>
-                  <ComboExpiryStatusBadge status={selectedCustomerDetail.comboLiveStatus} showPace />
+                  <ComboExpiryStatusBadge status={selectedCustomerDetail.comboLiveStatus} showPace theme={themeMode} />
                 </div>
               )}
             </div>

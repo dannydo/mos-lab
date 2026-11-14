@@ -287,10 +287,14 @@ export function ComboWalletDetailModal({
                 {/* Row 1: Category + Sessions */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span
-                    className={`inline-flex items-center justify-center leading-none py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    className={`inline-flex items-center justify-center leading-none py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                       w.serviceGroup === 'under'
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                        : 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
+                        ? isDark
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-purple-50 text-purple-700 border-purple-300'
+                        : isDark
+                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                          : 'bg-amber-50 text-amber-800 border-amber-300'
                     }`}
                   >
                     {w.serviceGroup === 'under' ? 'Combo Mi Dưới' : 'Combo Mi Trên'}
@@ -317,7 +321,13 @@ export function ComboWalletDetailModal({
                       <span>HSD: {expiryDisplay || 'Quá hạn'} · ĐÃ HẾT HẠN</span>
                     </span>
                   ) : w.isFrozen ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 font-black text-[11.5px]">
+                    <span
+                      className={`inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg border font-black text-[11.5px] ${
+                        isDark
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                          : 'bg-sky-50 text-sky-700 border-sky-300'
+                      }`}
+                    >
                       <Snowflake className="w-3.5 h-3.5 shrink-0" />
                       <span>Đang bảo lưu (Chưa kích hoạt HSD)</span>
                     </span>
@@ -326,7 +336,9 @@ export function ComboWalletDetailModal({
                       <span
                         className={`inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg font-black text-[11.5px] border ${
                           w.isExpiringSoon
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                            ? isDark
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                              : 'bg-amber-50 text-amber-800 border-amber-300'
                             : isDark
                               ? 'bg-[#1C1C1E] text-emerald-300 border-emerald-500/40'
                               : 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -346,12 +358,20 @@ export function ComboWalletDetailModal({
 
                 {/* Expired Revival Rule Callout */}
                 {w.isExpired && (
-                  <div className="rounded-xl bg-rose-950/50 border border-rose-500/40 p-2.5 text-[11px] text-rose-200 space-y-1">
-                    <div className="font-extrabold flex items-center gap-1 text-rose-300">
+                  <div
+                    className={`rounded-xl border p-2.5 text-[11px] space-y-1 ${
+                      isDark
+                        ? 'bg-rose-950/50 border-rose-500/40 text-rose-200'
+                        : 'bg-rose-50 border-rose-300 text-rose-900'
+                    }`}
+                  >
+                    <div
+                      className={`font-extrabold flex items-center gap-1 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}
+                    >
                       <Lock className="w-3 h-3 shrink-0" />
                       <span>Đã khóa trừ buổi 0đ (Khách đi lẻ hoặc dùng Voucher hôm nay)</span>
                     </div>
-                    <p className="leading-relaxed text-rose-200/90">
+                    <p className={`leading-relaxed ${isDark ? 'text-rose-200/90' : 'text-rose-800'}`}>
                       Khi khách mua thêm gói Combo mới hôm nay: tự động{' '}
                       <strong>cứu toàn bộ {w.remainingSessions} buổi tồn</strong> và quy đổi cộng dồn từ hôm nay theo{' '}
                       <strong>Nối mới +1 tháng/buổi</strong> · <strong>Dặm +25 ngày/buổi</strong>.

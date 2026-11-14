@@ -453,6 +453,7 @@ export function mapLiveOrdersToBookings(params: {
         checkOutStaffAvatar: resolveCustomerAvatar(r.check_out_staff_avatar),
         assignedBed: override.assignedBed || `Giường 0${(index % 6) + 1}`,
         status,
+        orderState: state || undefined,
         comboLiveStatus: {
           ...comboInfo,
           retainDaysLimit: comboInfo.retainDaysLimit ?? 25,
@@ -591,6 +592,7 @@ export function buildDemoModeBookings(params: {
       branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
       branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
       status,
+      orderState: override.orderState || (mock as unknown as IosBookingItem).orderState,
       serviceName: stripNewLashLabel(override.serviceName || mock.serviceName),
       serviceType: override.serviceType || mock.serviceType,
       servicePrice,
