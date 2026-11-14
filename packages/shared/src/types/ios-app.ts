@@ -433,6 +433,7 @@ export interface IosBookingListResponse {
   targetDate?: string;
   counts: IosSegmentCounts;
   count?: number;
+  totalStoreCount?: number;
   bookings: IosBookingItem[];
   staffStats?: IosStaffMonthlyStats;
   timestamp?: string;

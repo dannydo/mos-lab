@@ -71,6 +71,7 @@ export function useIosBookingsSync({
   setBookings,
 }: UseIosBookingsSyncParams) {
   const [, setCounts] = useState<SegmentCounts>({ incoming: 0, servicing: 0, done: 0, cancel: 0 });
+  const [totalStoreCount, setTotalStoreCount] = useState<number | undefined>(undefined);
   const [staffStats, setStaffStats] = useState<StaffMonthlyStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
@@ -216,7 +217,8 @@ export function useIosBookingsSync({
     }) => {
       const seg = options?.segment || bookingSegment;
       const storeId = options?.storeId ?? effectiveStoreId;
-      const effScope: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
+      const effScope: BookingScopeMode =
+        role === 'CVL' ? 'MY_CUSTOMERS' : role === 'CC' || role === 'STORE' ? 'STORE_ALL' : options?.scope || scopeMode;
       const effStaffId = options?.staffId ?? actor.staffId;
       const targetDateStr = options?.date ?? getDateStrForOffset(selectedDateOffset);
 
@@ -243,6 +245,11 @@ export function useIosBookingsSync({
           setBookings((prev) => mergeServerBookingsWithLocalState(prev, data.bookings, selectedDateOffset));
           if (data.counts) {
             setCounts(data.counts);
+          }
+          if (typeof data.totalStoreCount === 'number') {
+            setTotalStoreCount(data.totalStoreCount);
+          } else if (effScope === 'STORE_ALL') {
+            setTotalStoreCount(data.bookings.length);
           }
           if (data.staffStats) {
             setStaffStats(data.staffStats);
@@ -467,6 +474,7 @@ export function useIosBookingsSync({
   );
 
   return {
+    totalStoreCount,
     staffStats,
     isRefreshing,
     lastRefreshedAt,

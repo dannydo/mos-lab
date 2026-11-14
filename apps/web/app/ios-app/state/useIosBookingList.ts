@@ -137,7 +137,8 @@ export function useIosBookingList({
     }) => {
       const seg = options?.segment || bookingSegment;
       const storeId = options?.storeId ?? effectiveStoreId;
-      const effScope: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : options?.scope || scopeMode;
+      const effScope: BookingScopeMode =
+        role === 'CVL' ? 'MY_CUSTOMERS' : role === 'CC' || role === 'STORE' ? 'STORE_ALL' : options?.scope || scopeMode;
       const effStaffId = options?.staffId ?? actor.staffId;
       const targetDateStr = options?.date ?? getDateStrForOffset(selectedDateOffset);
 

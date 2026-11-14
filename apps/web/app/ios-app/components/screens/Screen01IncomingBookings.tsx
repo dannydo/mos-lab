@@ -204,7 +204,10 @@ export function Screen01IncomingBookings({
             style={{ color: 'var(--mos-text-muted)' }}
             title="Làm mới dữ liệu từ máy chủ"
           >
-            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} style={isRefreshing ? { color: 'var(--mos-accent)' } : undefined} />
+            <RefreshCw
+              className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`}
+              style={isRefreshing ? { color: 'var(--mos-accent)' } : undefined}
+            />
           </button>
         </div>
 
@@ -236,7 +239,10 @@ export function Screen01IncomingBookings({
             >
               {dateLabel}
             </span>
-            <span className="text-[10px] font-semibold tabular-nums leading-none" style={{ color: 'var(--mos-text-muted)' }}>
+            <span
+              className="text-[10px] font-semibold tabular-nums leading-none"
+              style={{ color: 'var(--mos-text-muted)' }}
+            >
               {subDateLabel}
             </span>
           </button>
@@ -308,26 +314,28 @@ export function Screen01IncomingBookings({
               onClick={() => onScopeModeChange?.('STORE_ALL')}
               className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer"
               style={
-                scopeMode === 'STORE_ALL'
+                scopeMode === 'STORE_ALL' || role === 'CC' || role === 'STORE'
                   ? { backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }
                   : { color: 'var(--mos-text-muted)' }
               }
             >
               Toàn bộ sảnh ({totalStoreBookingsCount ?? bookings.length})
             </button>
-            <button
-              onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}
-              className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer inline-flex items-center gap-0.5"
-              style={
-                scopeMode === 'MY_CUSTOMERS'
-                  ? { backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }
-                  : { color: 'var(--mos-text-muted)' }
-              }
-            >
-              <span>Lọc</span>
-              {role === 'CVLL' ? <CvFeather2Badge /> : <span>{role}</span>}
-              <span>({actor?.name || 'Thảo Ly'})</span>
-            </button>
+            {role === 'CVLL' && (
+              <button
+                onClick={() => onScopeModeChange?.('MY_CUSTOMERS')}
+                className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black transition-all cursor-pointer inline-flex items-center gap-0.5"
+                style={
+                  scopeMode === 'MY_CUSTOMERS'
+                    ? { backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }
+                    : { color: 'var(--mos-text-muted)' }
+                }
+              >
+                <span>Lọc</span>
+                <CvFeather2Badge />
+                <span>({actor?.name || 'Thảo Ly'})</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -380,7 +388,10 @@ export function Screen01IncomingBookings({
       </div>
 
       {/* 3. Customer Booking Cards (Số thứ tự đặt góc Avatar, không tốn diện tích card!) */}
-      <div className="flex-1 overflow-y-auto px-3 py-1 space-y-2.5 pb-20" style={{ backgroundColor: 'var(--background)' }}>
+      <div
+        className="flex-1 overflow-y-auto px-3 py-1 space-y-2.5 pb-20"
+        style={{ backgroundColor: 'var(--background)' }}
+      >
         {filteredBookings.length === 0 ? (
           <div className="text-center py-20 text-xs px-4 space-y-3" style={{ color: 'var(--mos-text-muted)' }}>
             <div

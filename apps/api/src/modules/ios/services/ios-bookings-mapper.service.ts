@@ -662,7 +662,8 @@ export function applyIosScopeAndCounts(
   }
 ): { effectiveList: IosBookingItem[]; counts: IosSegmentCounts } {
   const { effectiveRole, scope, activeStaffId, targetDate, todayVn } = params;
-  const shouldApplyCvlPrivacyScope = effectiveRole === 'CVL' || scope === 'MY_CUSTOMERS';
+  const shouldApplyCvlPrivacyScope =
+    effectiveRole === 'CVL' || (effectiveRole !== 'CC' && effectiveRole !== 'STORE' && scope === 'MY_CUSTOMERS');
   const effectiveList = shouldApplyCvlPrivacyScope
     ? filterBookingsForCvlScope(allBookings, activeStaffId, { targetDate, todayVn })
     : allBookings;

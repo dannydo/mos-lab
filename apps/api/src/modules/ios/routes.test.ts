@@ -738,3 +738,106 @@ test('CC gets STORE_ALL visibility across INCOMING, SERVICING, DONE and anchors 
   assert.equal(res.scope, 'STORE_ALL');
   assert.equal(res.role, 'CC');
 });
+
+test('Admin inspecting CC view is also locked to STORE_ALL and receives totalStoreCount', async () => {
+  const sampleBookings = [
+    { ...INITIAL_BOOKINGS[0], id: 911, status: 'INCOMING', assignedStaffId: 0 },
+    { ...INITIAL_BOOKINGS[0], id: 912, status: 'SERVICING', assignedStaffId: 13783 },
+    { ...INITIAL_BOOKINGS[0], id: 913, status: 'DONE', assignedStaffId: 25337 },
+  ] as unknown as IosBookingItem[];
+
+  const ccScoped = applyIosScopeAndCounts(sampleBookings, {
+    effectiveRole: 'CC',
+    scope: 'MY_CUSTOMERS',
+    activeStaffId: 37790,
+    targetDate: '2026-11-13',
+    todayVn: '2026-11-13',
+  });
+  assert.equal(ccScoped.effectiveList.length, 3);
+  assert.deepEqual(ccScoped.counts, { incoming: 1, servicing: 1, done: 1, cancel: 0 });
+
+  const store = createInMemoryConfigStore();
+  const mockFastify = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            const val = await store.getOne(where.key);
+            return val !== null ? { key: where.key, value: val } : null;
+          },
+          findMany: async () => [],
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  const adminCcRes = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 1,
+      legacyStaffId: 13783,
+      clientStoreId: 6,
+      username: 'danny_admin',
+      displayName: 'Danny',
+      role: 'super_admin',
+      careerTier: 'ADMIN',
+    },
+    {
+      storeId: '6',
+      scope: 'MY_CUSTOMERS',
+      role: 'CC',
+      staffId: '37790',
+      demo: 'true',
+    }
+  );
+
+  assert.equal(adminCcRes.success, true);
+  assert.equal(adminCcRes.role, 'CC');
+  assert.equal(adminCcRes.scope, 'STORE_ALL');
+  assert.equal(adminCcRes.bookings.length, adminCcRes.totalStoreCount);
+
+  const adminCvllFilteredRes = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 1,
+      legacyStaffId: 13783,
+      clientStoreId: 6,
+      username: 'danny_admin',
+      displayName: 'Danny',
+      role: 'super_admin',
+      careerTier: 'ADMIN',
+    },
+    {
+      storeId: '6',
+      scope: 'MY_CUSTOMERS',
+      role: 'CVLL',
+      staffId: '13783',
+      demo: 'true',
+    }
+  );
+  assert.equal(adminCvllFilteredRes.scope, 'MY_CUSTOMERS');
+  assert.ok((adminCvllFilteredRes.totalStoreCount ?? 0) >= adminCvllFilteredRes.bookings.length);
+
+  const cvlRes = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 2,
+      legacyStaffId: 46272,
+      clientStoreId: 6,
+      username: 'thaoly_cvl',
+      displayName: 'Thảo Ly',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    {
+      storeId: '6',
+      scope: 'STORE_ALL',
+      role: 'CC',
+      demo: 'true',
+    }
+  );
+  assert.equal(cvlRes.role, 'CVL');
+  assert.equal(cvlRes.scope, 'MY_CUSTOMERS');
+  assert.equal(cvlRes.totalStoreCount, undefined);
+});

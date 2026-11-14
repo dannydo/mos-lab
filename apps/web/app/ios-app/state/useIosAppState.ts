@@ -156,12 +156,18 @@ export function useIosAppState(
 
   // Invariant (Kinh Thánh mOS Điều răn UI-010):
   // - CVL luôn bị khóa cứng ở chế độ MY_CUSTOMERS (1 khách kế tiếp đầu tua + khách book của mình).
-  const scopeMode: BookingScopeMode = role === 'CVL' ? 'MY_CUSTOMERS' : scopeModeState;
+  // - CC & STORE luôn xem toàn bộ sảnh chi nhánh (STORE_ALL), kể cả khi Admin đang kiểm thử dưới góc nhìn CC.
+  const scopeMode: BookingScopeMode =
+    role === 'CVL' ? 'MY_CUSTOMERS' : role === 'CC' || role === 'STORE' ? 'STORE_ALL' : scopeModeState;
 
   const setScopeMode = useCallback(
     (nextScope: BookingScopeMode) => {
       if (role === 'CVL') {
         setScopeModeState('MY_CUSTOMERS');
+        return;
+      }
+      if (role === 'CC' || role === 'STORE') {
+        setScopeModeState('STORE_ALL');
         return;
       }
       setScopeModeState(nextScope);
@@ -176,15 +182,13 @@ export function useIosAppState(
           ? resolveLockedIosRoleForUser(loggedInUser?.role, nextRole)
           : nextRole;
       setRoleState(effectiveRole);
-      if (!isAdmin) {
-        if (effectiveRole === 'CVL') {
-          setScopeModeState('MY_CUSTOMERS');
-        } else if (effectiveRole === 'CVLL' || effectiveRole === 'CC' || effectiveRole === 'STORE') {
-          setScopeModeState('STORE_ALL');
-        }
+      if (effectiveRole === 'CVL') {
+        setScopeModeState('MY_CUSTOMERS');
+      } else if (effectiveRole === 'CVLL' || effectiveRole === 'CC' || effectiveRole === 'STORE') {
+        setScopeModeState('STORE_ALL');
       }
     },
-    [loggedInUser, isAdmin]
+    [loggedInUser]
   );
 
   const activeServicingBooking = useMemo(() => {
@@ -210,7 +214,7 @@ export function useIosAppState(
   }, [bookings, role, actor.staffId]);
 
   const visibleBookings = useMemo(() => {
-    const shouldFilterCvl = role === 'CVL' || scopeMode === 'MY_CUSTOMERS';
+    const shouldFilterCvl = role === 'CVL' || (role !== 'CC' && role !== 'STORE' && scopeMode === 'MY_CUSTOMERS');
     const list = shouldFilterCvl
       ? filterBookingsForCvlScope(bookings, actor.staffId, { isToday: selectedDateOffset === 0 })
       : bookings;
@@ -273,6 +277,7 @@ export function useIosAppState(
   );
 
   const {
+    totalStoreCount,
     staffStats,
     isRefreshing,
     lastRefreshedAt,
@@ -365,7 +370,7 @@ export function useIosAppState(
 
   return {
     bookings: visibleBookings,
-    totalStoreBookingsCount: bookings.length,
+    totalStoreBookingsCount: totalStoreCount ?? bookings.length,
     activeBooking,
     activeBookingId,
     setActiveBookingId,

@@ -66,7 +66,12 @@ export async function queryIosBookingsList(
   const canViewFullPhone = isAdmin && effectiveRole !== 'CVL' ? true : canViewUnmaskedCustomerPhone(effectiveRole);
 
   const rawScope = (query.scope || (effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL')).toUpperCase();
-  const scope = effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : effectiveRole === 'CC' && !isAdmin ? 'STORE_ALL' : rawScope;
+  const scope =
+    effectiveRole === 'CVL'
+      ? 'MY_CUSTOMERS'
+      : effectiveRole === 'CC' || effectiveRole === 'STORE'
+        ? 'STORE_ALL'
+        : rawScope;
 
   const explicitStaffId = query.staffId ? Number(query.staffId) : undefined;
   const activeStaffId =
@@ -149,6 +154,7 @@ export async function queryIosBookingsList(
       targetDate,
       counts,
       count: enrichedDemoList.length,
+      ...(effectiveRole !== 'CVL' ? { totalStoreCount: allDemoBookings.length } : {}),
       bookings: enrichedDemoList,
       staffStats,
       timestamp: new Date().toISOString(),
@@ -298,6 +304,7 @@ export async function queryIosBookingsList(
     targetDate,
     counts,
     count: enrichedLiveList.length,
+    ...(effectiveRole !== 'CVL' ? { totalStoreCount: allMappedBookings.length } : {}),
     bookings: enrichedLiveList,
     staffStats: staffStatsWithSpeed,
     timestamp: new Date().toISOString(),
