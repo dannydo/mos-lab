@@ -7,9 +7,18 @@ import {
   calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
   resolveServicePriceSplit,
+  resolveCheckoutTipBaseAmount,
+  buildPercentageTipSuggestions,
+  CHECKOUT_TIP_PERCENT_TIERS,
   calculateActorTipBreakdown,
 } from '@mos-lab/shared';
-import type { ActorTipBreakdown, CvToCvPlusRequirements, IosSettlementStatus } from '@mos-lab/shared';
+import type {
+  ActorTipBreakdown,
+  CheckoutTipPercentTier,
+  CvToCvPlusRequirements,
+  IosSettlementStatus,
+  PercentTipSuggestionItem,
+} from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import { ActiveActorProfile } from './iosActorProfile';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServicingStep } from './offlineSync';
@@ -20,9 +29,12 @@ export {
   calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
   resolveServicePriceSplit,
+  resolveCheckoutTipBaseAmount,
+  buildPercentageTipSuggestions,
+  CHECKOUT_TIP_PERCENT_TIERS,
   calculateActorTipBreakdown,
 };
-export type { ActorTipBreakdown, CvToCvPlusRequirements };
+export type { ActorTipBreakdown, CheckoutTipPercentTier, CvToCvPlusRequirements, PercentTipSuggestionItem };
 
 export type CartProductItem = NonNullable<BookingItem['cartProducts']>[number];
 

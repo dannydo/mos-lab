@@ -1,17 +1,28 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  computeCvSelfChallengePlan,
+  hasCompleteNaturalLashSet,
+  IosSelfChallengeOption,
+  IosSelfChallengePlan,
+  IosSelfChallengeSelection,
+  IosSelfChallengeTierKey,
+  isSelfChallengeSlowerThanAverage,
+  validateSelfChallengeSlowerReason,
+} from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
+import { resolveBookingCvRotationPoints } from './incoming/incomingBookingHelpers';
 import { CvReceiveMaterialsCard } from './servicing/CvReceiveMaterialsCard';
-import { Sparkles, Eye, Play, RotateCw, Clock, ChevronLeft, AlertTriangle, Minus, Plus, Lock } from 'lucide-react';
+import { SelfChallengeDurationCard } from './servicing/SelfChallengeDurationCard';
+import { Sparkles, Eye, Play, RotateCw, Clock, ChevronLeft, AlertTriangle, Lock } from 'lucide-react';
 
 interface Screen06CvDashboardReceiveProps {
   booking: BookingItem;
-  onStartTask: (durationMinutes?: number) => void;
+  onStartTask: (durationMinutes?: number, selfChallenge?: IosSelfChallengeSelection) => void;
   onEditService?: () => void;
   onBack?: () => void;
   staffStats?: StaffMonthlyStats | null;
@@ -31,7 +42,7 @@ export function Screen06CvDashboardReceive({
     booking.customerAvatar || 'https://cdn.wingslashes.com/uploads/user/avatar/48400/original/48400.jpg';
 
   // Điểm thưởng nhiệm vụ (Quest EXP / Points)
-  const rotationPoints = booking.cvRotationPoints || (booking.attributes?.hasUnderMink ? 56 : 34);
+  const rotationPoints = resolveBookingCvRotationPoints(booking);
 
   // Chuẩn hóa tên dịch vụ hiển thị, triệt tiêu hoàn toàn Any - Lashes
   const displayServiceName = resolveDisplayServiceName(booking);
@@ -61,9 +72,56 @@ export function Screen06CvDashboardReceive({
   }, [booking, displayServiceName]);
 
   // State thời gian CVL chọn cam kết: khởi tạo null để BẮT BUỘC CVL phải chủ động bấm chạm chọn
+  const [selectedTier, setSelectedTier] = useState<IosSelfChallengeTierKey | null>(null);
   const [selectedDurationMin, setSelectedDurationMin] = useState<number | null>(null);
+  const [slowerReason, setSlowerReason] = useState<string>('');
   const [showTimeRequiredWarning, setShowTimeRequiredWarning] = useState<boolean>(false);
+  const [showReasonRequiredWarning, setShowReasonRequiredWarning] = useState<boolean>(false);
   const timeSectionRef = React.useRef<HTMLDivElement>(null);
+  const slowerReasonInputRef = React.useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setSelectedTier(null);
+    setSelectedDurationMin(null);
+    setSlowerReason('');
+    setShowTimeRequiredWarning(false);
+    setShowReasonRequiredWarning(false);
+  }, [booking.id]);
+
+  const selfChallengePlan = useMemo(
+    () =>
+      computeCvSelfChallengePlan({
+        booking,
+        historyProfile: booking.cvSelfSpeedHistory || staffStats?.cvSelfSpeedHistory,
+        fallbackSuggestedMinutes: suggestedDurationMin,
+      }),
+    [booking, staffStats?.cvSelfSpeedHistory, suggestedDurationMin]
+  );
+
+  const requiresSlowerReason = isSelfChallengeSlowerThanAverage(selectedDurationMin, selfChallengePlan.baselineMinutes);
+  const slowerReasonValidation = validateSelfChallengeSlowerReason(slowerReason);
+
+  const handleSelectChallengeOption = (option: IosSelfChallengeOption, _plan: IosSelfChallengePlan) => {
+    setSelectedTier(option.key);
+    setSelectedDurationMin(option.minutes);
+    setShowTimeRequiredWarning(false);
+    if (!isSelfChallengeSlowerThanAverage(option.minutes, selfChallengePlan.baselineMinutes)) {
+      setShowReasonRequiredWarning(false);
+    }
+  };
+
+  const handleAdjustChallengeMinutes = (deltaMinutes: number) => {
+    setSelectedDurationMin((prev) => {
+      const selectedOpt = selectedTier ? selfChallengePlan.options.find((o) => o.key === selectedTier) : null;
+      const base = prev ?? selectedOpt?.minutes ?? selfChallengePlan.baselineMinutes;
+      const next = Math.max(20, Math.min(180, base + deltaMinutes));
+      if (!isSelfChallengeSlowerThanAverage(next, selfChallengePlan.baselineMinutes)) {
+        setShowReasonRequiredWarning(false);
+      }
+      return next;
+    });
+    setShowTimeRequiredWarning(false);
+  };
 
   const mustCheckNaturalLashFirst = !hasCompleteNaturalLashSet(booking);
 
@@ -77,18 +135,30 @@ export function Screen06CvDashboardReceive({
       timeSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
       return;
     }
-    onStartTask(selectedDurationMin);
+    if (requiresSlowerReason && !slowerReasonValidation.valid) {
+      setShowReasonRequiredWarning(true);
+      timeSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      slowerReasonInputRef.current?.focus?.();
+      return;
+    }
+    const activeOption = selectedTier ? selfChallengePlan.options.find((o) => o.key === selectedTier) || null : null;
+    const selectionPayload: IosSelfChallengeSelection | undefined = activeOption
+      ? {
+          tierKey: activeOption.key,
+          tierLabel: activeOption.label,
+          baseOptionMinutes: activeOption.minutes,
+          committedMinutes: selectedDurationMin,
+          baselineMinutes: selfChallengePlan.baselineMinutes,
+          sampleCount: selfChallengePlan.sampleCount,
+          matchedSetLabel: selfChallengePlan.matchedSetLabel,
+          slowerReason: requiresSlowerReason ? slowerReasonValidation.normalized : undefined,
+        }
+      : undefined;
+    onStartTask(selectedDurationMin, selectionPayload);
   };
 
   // Thời lượng hiệu lực dùng để tính giờ xong
-  const activeDurationMin = selectedDurationMin || suggestedDurationMin;
-
-  // Danh sách các pill thời gian thông minh (luôn bao gồm số phút gợi ý từ ma trận)
-  const quickPillOptions = useMemo(() => {
-    const defaultPills = [45, 60, 75, 90, 105];
-    const set = new Set([...defaultPills, suggestedDurationMin]);
-    return Array.from(set).sort((a, b) => a - b);
-  }, [suggestedDurationMin]);
+  const activeDurationMin = selectedDurationMin || selfChallengePlan.baselineMinutes || suggestedDurationMin;
 
   // Giờ dự kiến hoàn thành ca làm (tính từ giờ bắt đầu hẹn + thời lượng)
   const estimatedFinishTime = useMemo(() => {
@@ -254,7 +324,9 @@ export function Screen06CvDashboardReceive({
               </div>
 
               {/* Service Target & Price */}
-              <div className={`mt-1 text-[13px] font-black leading-tight ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+              <div
+                className={`mt-1 text-[13px] font-black leading-tight ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
+              >
                 {displayServiceName}
               </div>
 
@@ -394,142 +466,29 @@ export function Screen06CvDashboardReceive({
             onEditService={onEditService}
           />
 
-          {/* 3.5 BẮT BUỘC: KHỐI DỰ ĐOÁN THỜI GIAN HOÀN THÀNH CA (CVL CAM KẾT) */}
-          <div
-            ref={timeSectionRef}
-            className={`rounded-2xl p-3.5 space-y-2.5 transition-all bg-[var(--mos-surface-raised)] ${
-              selectedDurationMin
-                ? 'border border-emerald-500/50 shadow-md'
-                : showTimeRequiredWarning
-                  ? 'border-2 border-rose-500/80 shadow-lg shadow-rose-500/20 animate-pulse'
-                  : 'border border-[var(--mos-surface-border)] shadow-md'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Clock className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                <span
-                  className={`text-[11.5px] font-black uppercase tracking-tight ${
-                    isDark ? 'text-amber-400' : 'text-amber-700'
-                  }`}
-                >
-                  Thời Gian Dự Đoán Hoàn Thành
-                </span>
-              </div>
-              <span
-                className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full border leading-none ${
-                  selectedDurationMin
-                    ? isDark
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                    : showTimeRequiredWarning
-                      ? isDark
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
-                        : 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
-                      : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] border-[var(--mos-surface-border)]'
-                }`}
-              >
-                {selectedDurationMin ? `Đã chọn: ${selectedDurationMin}p` : 'Bắt buộc chọn'}
-              </span>
-            </div>
-
-            {/* Quick Pills & Stepper */}
-            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-              {quickPillOptions.map((mins) => {
-                const isSelected = selectedDurationMin === mins;
-                const isSuggested = mins === suggestedDurationMin;
-                return (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => {
-                      setSelectedDurationMin(mins);
-                      setShowTimeRequiredWarning(false);
-                    }}
-                    className={`relative px-2.5 py-1.5 rounded-xl text-[11.5px] font-bold tabular-nums transition-all active:scale-95 cursor-pointer flex items-center gap-1 border ${
-                      isSelected
-                        ? 'bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] border-[var(--mos-accent)] shadow-sm font-black ring-2 ring-[var(--mos-accent)]/40'
-                        : isSuggested && selectedDurationMin !== null
-                          ? isDark
-                            ? 'bg-[var(--mos-surface)] text-amber-300 border-amber-500/70 hover:border-amber-400'
-                            : 'bg-amber-50 text-amber-800 border-amber-400 hover:border-amber-500'
-                          : 'bg-[var(--mos-surface)] text-[var(--mos-text)] border-[var(--mos-surface-border)] hover:border-[var(--mos-surface-border-strong)]'
-                    }`}
-                  >
-                    <span>{mins}p</span>
-                    {isSuggested && (
-                      <span
-                        className={`text-[8.5px] px-1 py-0.2 rounded font-black leading-none ${
-                          isSelected
-                            ? 'bg-black/20 text-[var(--mos-accent-contrast)]'
-                            : selectedDurationMin !== null
-                              ? isDark
-                                ? 'bg-amber-400/20 text-amber-400'
-                                : 'bg-amber-200 text-amber-900'
-                              : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)]'
-                        }`}
-                      >
-                        Gợi ý
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* Stepper Buttons: -5p and +5p */}
-              <div className="inline-flex items-center rounded-xl bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] overflow-hidden ml-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const current = selectedDurationMin ?? suggestedDurationMin;
-                    setSelectedDurationMin(
-                      selectedDurationMin === null ? suggestedDurationMin : Math.max(30, current - 5)
-                    );
-                    setShowTimeRequiredWarning(false);
-                  }}
-                  className="px-2 py-1.5 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
-                  title="Giảm 5 phút"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span
-                  className={`px-2 text-[11.5px] font-extrabold tabular-nums ${
-                    selectedDurationMin ? 'text-[var(--mos-accent)]' : 'text-[var(--mos-text-muted)]'
-                  }`}
-                >
-                  {selectedDurationMin ? `${selectedDurationMin}p` : '—'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const current = selectedDurationMin ?? suggestedDurationMin;
-                    setSelectedDurationMin(
-                      selectedDurationMin === null ? suggestedDurationMin : Math.min(180, current + 5)
-                    );
-                    setShowTimeRequiredWarning(false);
-                  }}
-                  className="px-2 py-1.5 text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] transition-colors active:scale-95 text-[11px] font-bold cursor-pointer"
-                  title="Tăng 5 phút"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Estimated Finish Time Banner */}
-            <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-[var(--mos-surface-border)]">
-              <span className="text-[var(--mos-text-muted)]">Dự kiến xong lúc:</span>
-              <span className="font-extrabold tabular-nums">
-                {selectedDurationMin ? (
-                  <span className={isDark ? 'text-emerald-400' : 'text-emerald-700'}>
-                    {estimatedFinishTime} (Cam kết)
-                  </span>
-                ) : (
-                  <span className="text-[var(--mos-text-muted)] font-semibold">—</span>
-                )}
-              </span>
-            </div>
-          </div>
+          {/* 3.5 BẮT BUỘC: KHỐI VƯỢT LÊN CHÍNH MÌNH (4 MỨC TỐC ĐỘ CÁ NHÂN CV) */}
+          <SelfChallengeDurationCard
+            booking={booking}
+            staffStats={staffStats}
+            suggestedDurationMin={suggestedDurationMin}
+            plan={selfChallengePlan}
+            selectedTier={selectedTier}
+            selectedDurationMin={selectedDurationMin}
+            slowerReason={slowerReason}
+            showTimeRequiredWarning={showTimeRequiredWarning}
+            showReasonRequiredWarning={showReasonRequiredWarning}
+            estimatedFinishTime={estimatedFinishTime}
+            timeSectionRef={timeSectionRef}
+            slowerReasonInputRef={slowerReasonInputRef}
+            onSelectOption={handleSelectChallengeOption}
+            onAdjustMinutes={handleAdjustChallengeMinutes}
+            onChangeSlowerReason={(val) => {
+              setSlowerReason(val);
+              if (validateSelfChallengeSlowerReason(val).valid) {
+                setShowReasonRequiredWarning(false);
+              }
+            }}
+          />
 
           {/* 4. Big CTA Button: Start Quest */}
           {mustCheckNaturalLashFirst ? (
@@ -549,6 +508,15 @@ export function Screen06CvDashboardReceive({
             >
               <Lock className="w-4 h-4 text-[var(--mos-text-muted)]" />
               <span>BẮT BUỘC CHỌN THỜI GIAN TRƯỚC KHI BẮT ĐẦU</span>
+            </button>
+          ) : requiresSlowerReason && !slowerReasonValidation.valid && showReasonRequiredWarning ? (
+            <button
+              type="button"
+              onClick={handleStartTaskClick}
+              className="w-full py-4 px-4 rounded-2xl bg-[var(--mos-surface-muted)] border border-rose-500/60 text-rose-400 font-bold text-[12.5px] tracking-wider flex items-center justify-center gap-2 cursor-pointer uppercase select-none active:scale-[0.99] transition-all"
+            >
+              <Lock className="w-4 h-4 text-rose-400" />
+              <span>BẮT BUỘC ĐIỀN LÝ DO HỢP LÝ TRƯỚC KHI BẮT ĐẦU</span>
             </button>
           ) : (
             <button

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, Dispatch, SetStateAction } from 'react';
-import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
+import { hasCompleteNaturalLashSet, IosSelfChallengeSelection } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import {
   saveLocalProgressSnapshot,
@@ -68,19 +68,29 @@ export function useIosServicingProgress({
 
   // Step 6 -> Step 7: CV starts task (Preparation - đồng hồ tự động chạy ngay)
   const handleCvStartTask = useCallback(
-    (durationMinutes?: number) => {
+    (durationMinutes?: number, selfChallenge?: IosSelfChallengeSelection) => {
       if (!hasCompleteNaturalLashSet(activeBooking)) {
         setCurrentStep(3);
         return;
       }
       const startedAt = activeBooking.progress?.startedAt || new Date().toISOString();
-      const effectiveDuration = durationMinutes || activeBooking.serviceDuration || 60;
+      const effectiveDuration =
+        durationMinutes || selfChallenge?.committedMinutes || activeBooking.serviceDuration || 60;
       const progressPatch = {
         ...(activeBooking.progress || { elapsedSeconds: 0 }),
         startedAt,
         timerRunning: true,
         currentStep: 7,
         targetDurationMinutes: effectiveDuration,
+        ...(selfChallenge
+          ? {
+              selfChallengeTier: selfChallenge.tierKey,
+              selfChallengeLabel: selfChallenge.tierLabel,
+              selfChallengeBaselineMinutes: selfChallenge.baselineMinutes,
+              selfChallengeSampleCount: selfChallenge.sampleCount,
+              selfChallengeSlowerReason: selfChallenge.slowerReason || undefined,
+            }
+          : {}),
       };
       updateActiveBooking((prev) => ({
         ...prev,

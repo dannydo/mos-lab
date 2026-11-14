@@ -20,6 +20,7 @@ import {
   Edit3,
   CheckCircle2,
   RotateCcw,
+  Flame,
 } from 'lucide-react';
 
 interface Screen08LashProgressTimerProps {
@@ -42,6 +43,8 @@ export function Screen08LashProgressTimer({
   // 1. Tính toán thời gian định mức (Target Duration) chuẩn xác theo dịch vụ
   const displayServiceName = resolveDisplayServiceName(booking);
   const targetMinutes = useMemo(() => {
+    const progressTarget = booking.progress?.targetDurationMinutes;
+    if (progressTarget && progressTarget > 0) return progressTarget;
     if (booking.serviceDuration && booking.serviceDuration > 0) return booking.serviceDuration;
     let base = 65;
     const sName = (displayServiceName || '').toLowerCase();
@@ -338,6 +341,25 @@ export function Screen08LashProgressTimer({
           <p className={`text-[11.5px] ${isDark ? 'text-neutral-300' : 'text-neutral-600'} leading-snug font-medium`}>
             {speedEvaluation.sub}
           </p>
+          {(booking.progress?.selfChallengeTier || booking.progress?.selfChallengeLabel) && (
+            <div
+              className={`mt-1.5 pt-1.5 border-t flex items-center justify-between gap-2 text-[11px] font-bold tabular-nums ${
+                isDark ? 'border-neutral-800 text-amber-300' : 'border-amber-200/80 text-amber-800'
+              }`}
+            >
+              <span className="inline-flex items-center gap-1 min-w-0 truncate">
+                <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="truncate">Vượt lên chính mình · Cam kết {targetMinutes}p</span>
+              </span>
+              {Boolean(
+                booking.progress.selfChallengeBaselineMinutes && booking.progress.selfChallengeBaselineMinutes > 0
+              ) && (
+                <span className={`text-[10px] shrink-0 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                  (TB gần nhất: {booking.progress.selfChallengeBaselineMinutes}p)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tech Invariant Banner: Ca Nối Mới Combo bắt buộc gỡ sạch 100% mi cũ */}

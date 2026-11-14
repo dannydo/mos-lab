@@ -1,5 +1,6 @@
 import { BookingItem } from '../../../state/mockData';
 import { resolveServiceSpecsFromComboOrHistory } from '../consultation/constraints/comboAndUnderMinkPresets';
+import { calculateLashPricingAndCvPoints } from '../consultation/constraints/pricingAndCvPoints';
 import { getWingsMenuDetail } from '../consultation/constraints/wingsMenuLookup';
 
 export interface SegmentCounts {
@@ -369,6 +370,38 @@ export function formatShortMoney(amount: number): string {
   return `${k.toLocaleString('vi-VN')}K`;
 }
 
+export function resolveBookingCvRotationPoints(b: BookingItem): number {
+  if (typeof b.cvRotationPoints === 'number' && Number.isFinite(b.cvRotationPoints) && b.cvRotationPoints > 0) {
+    return Math.round(b.cvRotationPoints);
+  }
+  const spec = resolveCanonicalBookingLashSpec(b);
+  const menuDetail = getWingsMenuDetail(spec.material, spec.countNum, spec.volume);
+  const combined = `${b.serviceType || ''} ${b.serviceName || ''}`.toLowerCase();
+  let effectiveServiceType = 'Normal';
+  if (/fix|adjust/.test(combined)) {
+    effectiveServiceType = 'Fix';
+  } else if (/retain|\bdặm\b|refill/.test(combined)) {
+    effectiveServiceType = 'Retain';
+  } else if (menuDetail && menuDetail.refillPrice < menuDetail.newPrice) {
+    const paidService = Number(b.billing?.serviceTotal ?? b.servicePrice ?? 0);
+    if (paidService > 0 && paidService === menuDetail.refillPrice) {
+      effectiveServiceType = 'Retain';
+    }
+  }
+  return Math.round(
+    calculateLashPricingAndCvPoints({
+      materialId: spec.material,
+      countStr: `${spec.countNum} ${spec.countUnit}`,
+      volumeStr: spec.volume,
+      designId: b.attributes?.style,
+      colorStr: b.attributes?.color,
+      serviceType: effectiveServiceType,
+      hasUnderMink: Boolean(b.attributes?.hasUnderMink),
+      underMinkServiceType: b.attributes?.underMinkServiceType,
+    }).totalPoints
+  );
+}
+
 /**
  * Trích xuất 3 tầng thông tin chuẩn cho Cột Phải của ca ĐÃ XONG (DONE):
  * 1. Thời gian: 09:00 · 55p
@@ -396,7 +429,7 @@ export function getDoneBookingSummary(b: BookingItem) {
   );
 
   // 3. Điểm CVL & Tip & Trạng thái hạch toán (Completed vs Chờ Quầy chốt Tiền mặt/POS)
-  const cvPoints = Number(b.cvRotationPoints || 41);
+  const cvPoints = resolveBookingCvRotationPoints(b);
   const tipAmount = Number(b.billing?.tipAmount || 0);
   const settlementStatus = b.billing?.settlementStatus;
 

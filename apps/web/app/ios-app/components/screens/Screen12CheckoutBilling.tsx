@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
@@ -8,11 +8,13 @@ import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem } from '../../state/mockData';
 import { compressLashImage } from '../../utils/imageCompressor';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
 import { IosCloudSyncStatus } from '../ui-kit/IosCloudSyncBadge';
 import {
   calculateDualComboTierBonus,
   resolveEffectiveServiceTotal,
+  resolveCheckoutTipBaseAmount,
+  buildPercentageTipSuggestions,
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
 import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
@@ -57,7 +59,7 @@ export function Screen12CheckoutBilling({
     booking?.billing?.paymentMethod || 'VIETQR'
   );
   const [tipAmount, setTipAmount] = useState<number>(booking?.billing?.tipAmount ?? 0);
-  const [activeRoundTarget, setActiveRoundTarget] = useState<number | null>(null);
+  const [activeTipPercent, setActiveTipPercent] = useState<number | null>(null);
   const [isCustomTipOpen, setIsCustomTipOpen] = useState<boolean>(false);
   const [customTipInput, setCustomTipInput] = useState<string>('');
   const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
@@ -113,7 +115,29 @@ export function Screen12CheckoutBilling({
   const checkInStaff = booking?.checkInStaffName || actor?.name || 'Thảo Ly';
   const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
   const serviceName = resolveDisplayServiceName(booking);
-  const servicePrice = booking?.servicePrice || 770000;
+  const servicePrice = useMemo(() => {
+    if (booking?.servicePrice && booking.servicePrice > 0) return booking.servicePrice;
+    const menuDetail = getWingsMenuDetail(
+      booking?.attributes?.material || serviceName || '',
+      booking?.attributes?.count || '',
+      booking?.attributes?.volume || ''
+    );
+    if (menuDetail) {
+      const isRetainSvc =
+        String(booking?.serviceType || '').toLowerCase() === 'retain' ||
+        serviceName.toLowerCase().includes('dặm') ||
+        serviceName.toLowerCase().includes('refill');
+      return isRetainSvc ? menuDetail.refillPrice : menuDetail.newPrice;
+    }
+    return 770000;
+  }, [
+    booking?.servicePrice,
+    booking?.attributes?.material,
+    booking?.attributes?.count,
+    booking?.attributes?.volume,
+    booking?.serviceType,
+    serviceName,
+  ]);
   const upgradePrice = booking?.upgradePrice || 0;
   const selectedCombo = booking?.selectedCombo || null;
   const selectedUnderCombo = booking?.selectedUnderCombo || null;
@@ -175,52 +199,40 @@ export function Screen12CheckoutBilling({
   const diamondDiscountAmount = effectiveDiamondUsed * DIAMOND_RATE;
   const finalGrandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
 
-  // GỢI Ý LÀM TRÒN TỔNG TIỀN (ROUND-UP EVEN TOTAL)
-  // Tính dựa trên tổng tiền trước khi cộng tip (sau khi trừ kim cương nếu có)
-  const baseForRounding = Math.max(0, totalWithVat - diamondDiscountAmount);
+  // GỢI Ý TIỀN TIP THEO % GIÁ TRỊ CA PHỤC VỤ (5% · 10% · 15% · 20%, LÀM TRÒN 10.000đ)
+  // Luôn tính theo giá trị lẻ thực tế của dịch vụ + sản phẩm bán kèm (trước VAT 8% và trước trừ Kim Cương)
+  const { tipBaseAmount } = useMemo(
+    () =>
+      resolveCheckoutTipBaseAmount({
+        servicePrice,
+        effectiveServiceCharge,
+        serviceName: booking?.serviceName || serviceName,
+        hasUnderMink: booking?.attributes?.hasUnderMink,
+        underMinkServiceType: booking?.attributes?.underMinkServiceType,
+        hasUnderMinkCombo,
+        cartProducts,
+      }),
+    [
+      servicePrice,
+      effectiveServiceCharge,
+      booking?.serviceName,
+      serviceName,
+      booking?.attributes?.hasUnderMink,
+      booking?.attributes?.underMinkServiceType,
+      hasUnderMinkCombo,
+      cartProducts,
+    ]
+  );
 
-  const roundUpSuggestions = useMemo(() => {
-    if (baseForRounding <= 0) return [];
-    const list: { targetTotal: number; tipAmount: number; label: string }[] = [];
+  const percentTipSuggestions = useMemo(() => buildPercentageTipSuggestions(tipBaseAmount), [tipBaseAmount]);
 
-    // Mốc 1: Làm tròn lên hàng 100K gần nhất (đảm bảo số tiền tip >= 15.000đ để có ý nghĩa)
-    const ceil100k = Math.ceil(baseForRounding / 100000) * 100000;
-    const target1 = ceil100k - baseForRounding >= 15000 ? ceil100k : ceil100k + 100000;
-    list.push({
-      targetTotal: target1,
-      tipAmount: target1 - baseForRounding,
-      label: `Tròn ${Math.round(target1 / 1000).toLocaleString('vi-VN')}K`,
-    });
-
-    if (baseForRounding < 1000000) {
-      if (target1 < 1000000) {
-        list.push({
-          targetTotal: 1000000,
-          tipAmount: 1000000 - baseForRounding,
-          label: 'Tròn 1.000K',
-        });
-      }
-      list.push({
-        targetTotal: 1200000,
-        tipAmount: 1200000 - baseForRounding,
-        label: 'Tròn 1.200K',
-      });
-    } else {
-      const next500k = Math.ceil((baseForRounding + 50000) / 500000) * 500000;
-      const target2 = next500k > target1 ? next500k : target1 + 200000;
-      list.push({
-        targetTotal: target2,
-        tipAmount: target2 - baseForRounding,
-        label: `Tròn ${Math.round(target2 / 1000).toLocaleString('vi-VN')}K`,
-      });
-      list.push({
-        targetTotal: target2 + 300000,
-        tipAmount: target2 + 300000 - baseForRounding,
-        label: `Tròn ${Math.round((target2 + 300000) / 1000).toLocaleString('vi-VN')}K`,
-      });
+  useEffect(() => {
+    if (activeTipPercent === null) return;
+    const matched = percentTipSuggestions.find((item) => item.percent === activeTipPercent);
+    if (matched && matched.tipAmount !== tipAmount) {
+      setTipAmount(matched.tipAmount);
     }
-    return list.slice(0, 3);
-  }, [baseForRounding]);
+  }, [activeTipPercent, percentTipSuggestions, tipAmount]);
 
   // THÔNG TIN VIETQR CHUẨN GOOGLE SHEET WINGS (VCB 1024731897)
   const branchCode = booking?.branchCode || 'DT';
@@ -364,13 +376,14 @@ export function Screen12CheckoutBilling({
           isDark={isDark}
           tipAmount={tipAmount}
           onSetTipAmount={setTipAmount}
-          activeRoundTarget={activeRoundTarget}
-          onSetActiveRoundTarget={setActiveRoundTarget}
+          activeTipPercent={activeTipPercent}
+          onSetActiveTipPercent={setActiveTipPercent}
           isCustomTipOpen={isCustomTipOpen}
           onSetIsCustomTipOpen={setIsCustomTipOpen}
           customTipInput={customTipInput}
           onSetCustomTipInput={setCustomTipInput}
-          roundUpSuggestions={roundUpSuggestions}
+          percentTipSuggestions={percentTipSuggestions}
+          tipBaseAmount={tipBaseAmount}
           showStaffRewards={showStaffRewards}
           actorTipBreakdown={actorTipBreakdown}
           customerDiamondBalance={customerDiamondBalance}

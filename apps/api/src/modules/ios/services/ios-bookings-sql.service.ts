@@ -5,6 +5,12 @@ import {
   IosCustomerEnrichmentContext,
   LastVisitSpecSummary,
 } from './ios-customer-enrichment.service.js';
+import {
+  ActualOrderLashSpecs,
+  OrderLedgerCvSummary,
+  RawOrderBonusRuleRow,
+  summarizeOrderLedgerCvPoints,
+} from './ios-cv-points.helper.js';
 
 export type { IosCustomerEnrichmentContext, LastVisitSpecSummary };
 export { createEmptyCustomerEnrichmentContext };
@@ -42,6 +48,9 @@ export interface RawIosOrderSnapshot {
   check_out_staff_name: string | null;
   check_out_staff_avatar: string | null;
   total_visits: number;
+  ledger_cv_points?: number | null;
+  ledger_cv_breakdown?: string | null;
+  actual_order_specs?: ActualOrderLashSpecs | null;
 }
 
 /**
@@ -211,6 +220,41 @@ export async function fetchLiveOrderSnapshots(
     fetchCustomerEnrichmentContext(pool, customerIds),
   ]);
 
+  const allOsIds = Array.from(new Set(osRows.map((row) => Number(row.os_id)).filter((id) => id > 0)));
+  let ledgerSummaryByOrderId = new Map<number, OrderLedgerCvSummary>();
+  if (allOsIds.length > 0) {
+    try {
+      const [bonusRows] = await pool.query<mysql.RowDataPacket[]>(
+        `SELECT
+           sb.order_service_id,
+           sb.user_id,
+           sb.bonus_amount,
+           sbr.type,
+           COALESCE(ao.attribute_option_key, sbr.value_required, '') AS opt_key
+         FROM staff_bonus sb
+         JOIN staff_bonus_rule sbr ON sbr.id = sb.staff_bonus_rule_id
+         LEFT JOIN attribute_option ao ON sbr.value_required REGEXP '^[0-9]+$' AND ao.id = CAST(sbr.value_required AS UNSIGNED)
+         WHERE sb.order_service_id IN (${allOsIds.map(() => '?').join(',')})
+           AND sb.bonus_type = 'BonusPoint'`,
+        allOsIds
+      );
+      ledgerSummaryByOrderId = summarizeOrderLedgerCvPoints({
+        orderServices: osRows.map((row) => ({
+          osId: Number(row.os_id),
+          orderId: Number(row.order_id),
+          assignedStaffId: row.assigned_staff_id ? Number(row.assigned_staff_id) : null,
+          serviceKey: row.service_key ? String(row.service_key) : null,
+          serviceName: row.service_name ? String(row.service_name) : null,
+          serviceType: row.service_type ? String(row.service_type) : null,
+          isTemporary: row.is_temporary !== undefined && row.is_temporary !== null ? Number(row.is_temporary) : null,
+        })),
+        bonusRows: bonusRows as unknown as RawOrderBonusRuleRow[],
+      });
+    } catch {
+      // Non-blocking fallback to computed canonical points
+    }
+  }
+
   const isPlaceholderOrAuxRow = (row: mysql.RowDataPacket): boolean => {
     const key = String(row.service_key || '').toLowerCase();
     const name = String(row.service_name || '').toLowerCase();
@@ -264,6 +308,7 @@ export async function fetchLiveOrderSnapshots(
     const visitSummary = userId ? visitSummaryByUserId.get(userId) : undefined;
     const resolvedOrderState = r.order_state ? String(r.order_state) : null;
     const resolvedIsNew = r.is_new !== null ? Number(r.is_new) : null;
+    const ledgerSummary = ledgerSummaryByOrderId.get(orderId);
 
     return {
       id: orderId,
@@ -309,6 +354,9 @@ export async function fetchLiveOrderSnapshots(
             hasPriorOrderBooking: Boolean(r.customer_last_order_booking),
           })
         : 1,
+      ledger_cv_points: ledgerSummary?.ledgerPoints ?? null,
+      ledger_cv_breakdown: ledgerSummary?.breakdownLabel ?? null,
+      actual_order_specs: ledgerSummary?.actualSpecs ?? null,
     };
   });
 

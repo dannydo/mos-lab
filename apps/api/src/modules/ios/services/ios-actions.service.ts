@@ -1,5 +1,11 @@
 import mysql from 'mysql2/promise';
-import { hasCompleteNaturalLashAttributes, SafeAny, validateNaturalLashConsultationSave } from '@mos-lab/shared';
+import {
+  hasCompleteNaturalLashAttributes,
+  isSelfChallengeSlowerThanAverage,
+  SafeAny,
+  validateNaturalLashConsultationSave,
+  validateSelfChallengeSlowerReason,
+} from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
@@ -316,6 +322,27 @@ export async function executeIosBookingAction(
         }
       }
       const incomingProgress = { ...(body.progress || {}) };
+
+      if (
+        body.orderState === 'Preparation' &&
+        isSelfChallengeSlowerThanAverage(
+          incomingProgress.targetDurationMinutes,
+          incomingProgress.selfChallengeBaselineMinutes
+        )
+      ) {
+        const reasonCheck = validateSelfChallengeSlowerReason(incomingProgress.selfChallengeSlowerReason);
+        if (!reasonCheck.valid) {
+          return {
+            statusCode: 400,
+            payload: {
+              success: false,
+              error:
+                reasonCheck.error || 'Bắt buộc điền lý do hợp lý khi chọn thời gian chậm hơn mức trung bình cá nhân.',
+            },
+          };
+        }
+        incomingProgress.selfChallengeSlowerReason = reasonCheck.normalized;
+      }
 
       if (
         incomingProgress.beforePhotoUrl &&

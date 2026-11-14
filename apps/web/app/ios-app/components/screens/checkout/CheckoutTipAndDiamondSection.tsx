@@ -1,27 +1,22 @@
 'use client';
 
 import React from 'react';
-import { calculateActorTipBreakdown } from '../../../state/useIosBillingCheckout';
+import { calculateActorTipBreakdown, type PercentTipSuggestionItem } from '../../../state/useIosBillingCheckout';
 
 type ActorTipBreakdown = ReturnType<typeof calculateActorTipBreakdown>;
-
-export interface RoundUpSuggestionItem {
-  targetTotal: number;
-  tipAmount: number;
-  label: string;
-}
 
 export interface CheckoutTipAndDiamondSectionProps {
   isDark: boolean;
   tipAmount: number;
   onSetTipAmount: (val: number) => void;
-  activeRoundTarget: number | null;
-  onSetActiveRoundTarget: (val: number | null) => void;
+  activeTipPercent: number | null;
+  onSetActiveTipPercent: (val: number | null) => void;
   isCustomTipOpen: boolean;
   onSetIsCustomTipOpen: (open: boolean) => void;
   customTipInput: string;
   onSetCustomTipInput: (val: string) => void;
-  roundUpSuggestions: RoundUpSuggestionItem[];
+  percentTipSuggestions: PercentTipSuggestionItem[];
+  tipBaseAmount?: number;
   showStaffRewards: boolean;
   actorTipBreakdown: ActorTipBreakdown;
   customerDiamondBalance: number;
@@ -36,13 +31,14 @@ export function CheckoutTipAndDiamondSection({
   isDark,
   tipAmount,
   onSetTipAmount,
-  activeRoundTarget,
-  onSetActiveRoundTarget,
+  activeTipPercent,
+  onSetActiveTipPercent,
   isCustomTipOpen,
   onSetIsCustomTipOpen,
   customTipInput,
   onSetCustomTipInput,
-  roundUpSuggestions,
+  percentTipSuggestions,
+  tipBaseAmount,
   showStaffRewards,
   actorTipBreakdown,
   customerDiamondBalance,
@@ -54,7 +50,7 @@ export function CheckoutTipAndDiamondSection({
 }: CheckoutTipAndDiamondSectionProps) {
   return (
     <>
-      {/* Section 1B: Tiền Tip Cho Chuyên Viên (Hỗ trợ Tip theo mốc + Làm chẵn tổng thanh toán) */}
+      {/* Section 1B: Tiền Tip Cho Chuyên Viên (Mốc thông dụng + Gợi ý theo % giá trị ca phục vụ) */}
       <div>
         <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider px-1 mb-1.5">
           <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>TIỀN TIP CHO CHUYÊN VIÊN</span>
@@ -82,14 +78,15 @@ export function CheckoutTipAndDiamondSection({
                 { value: 200000, label: '200K' },
                 { value: 500000, label: '500K' },
               ].map((p) => {
-                const isSelected = tipAmount === p.value && !activeRoundTarget && !isCustomTipOpen;
+                const isSelected = tipAmount === p.value && activeTipPercent === null && !isCustomTipOpen;
                 return (
                   <button
                     key={p.value}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => {
                       onSetTipAmount(p.value);
-                      onSetActiveRoundTarget(null);
+                      onSetActiveTipPercent(null);
                       onSetIsCustomTipOpen(false);
                     }}
                     className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
@@ -109,7 +106,9 @@ export function CheckoutTipAndDiamondSection({
                 onClick={() => onSetIsCustomTipOpen(!isCustomTipOpen)}
                 className={`py-2 rounded-xl text-[11px] font-extrabold text-center transition-all cursor-pointer active:scale-95 ${
                   isCustomTipOpen ||
-                  (tipAmount > 0 && ![0, 50000, 100000, 200000, 500000].includes(tipAmount) && !activeRoundTarget)
+                  (tipAmount > 0 &&
+                    ![0, 50000, 100000, 200000, 500000].includes(tipAmount) &&
+                    activeTipPercent === null)
                     ? 'bg-purple-600 text-white shadow-xs font-black'
                     : isDark
                       ? 'bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800'
@@ -121,27 +120,40 @@ export function CheckoutTipAndDiamondSection({
             </div>
           </div>
 
-          {/* Hàng 2: Gợi ý làm tròn chẵn tổng thanh toán */}
-          {roundUpSuggestions.length > 0 && (
-            <div className={`pt-1 border-t border-[var(--mos-surface-border)]`}>
-              <div
-                className={`text-[10.5px] ${isDark ? 'text-amber-400' : 'text-amber-700'} font-bold mb-1 flex items-center gap-1`}
-              >
-                <span>✨</span> HOẶC LÀM TRÒN CHẴN TỔNG ĐƠN (QUẸT THẺ / CHUYỂN KHOẢN):
+          {/* Hàng 2: Gợi ý theo % giá trị ca phục vụ (5% · 10% · 15% · 20%, làm tròn 10.000đ) */}
+          {percentTipSuggestions.length > 0 && (
+            <div className="pt-1.5 border-t border-[var(--mos-surface-border)]">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div
+                  className={`text-[10.5px] ${isDark ? 'text-amber-400' : 'text-amber-700'} font-bold uppercase tracking-wide flex items-center gap-1`}
+                >
+                  <span>✨</span> <span>HOẶC THEO % GIÁ TRỊ CA PHỤC VỤ:</span>
+                </div>
+                {tipBaseAmount && tipBaseAmount > 0 ? (
+                  <span
+                    className={`text-[9.5px] font-semibold tabular-nums shrink-0 ${
+                      isDark ? 'text-neutral-400' : 'text-gray-500'
+                    }`}
+                  >
+                    Tính trên {Math.round(tipBaseAmount / 1000).toLocaleString('vi-VN')}K
+                  </span>
+                ) : null}
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {roundUpSuggestions.map((opt) => {
-                  const isSelected = activeRoundTarget === opt.targetTotal;
+              <div data-testid="checkout-tip-percent-row" className="grid grid-cols-4 gap-1.5">
+                {percentTipSuggestions.map((opt) => {
+                  const isSelected = activeTipPercent === opt.percent && !isCustomTipOpen;
                   return (
                     <button
-                      key={opt.targetTotal}
+                      key={opt.percent}
                       type="button"
+                      data-percent={opt.percent}
+                      aria-pressed={isSelected}
                       onClick={() => {
                         onSetTipAmount(opt.tipAmount);
-                        onSetActiveRoundTarget(opt.targetTotal);
+                        onSetActiveTipPercent(opt.percent);
                         onSetIsCustomTipOpen(false);
                       }}
-                      className={`p-2 rounded-xl text-center transition-all cursor-pointer active:scale-95 border ${
+                      className={`py-2 px-1.5 rounded-xl text-center transition-all cursor-pointer active:scale-95 border ${
                         isSelected
                           ? 'bg-amber-500 text-black border-amber-600 shadow-xs font-black'
                           : isDark
@@ -149,13 +161,13 @@ export function CheckoutTipAndDiamondSection({
                             : 'bg-amber-50/70 hover:bg-amber-100/70 text-amber-950 border-amber-200/80'
                       }`}
                     >
-                      <div className="text-[12px] font-black tabular-nums">{opt.label}</div>
+                      <div className="text-[13px] font-black leading-tight tabular-nums">{opt.label}</div>
                       <div
-                        className={`text-[10px] tabular-nums font-semibold ${
+                        className={`text-[10.5px] tabular-nums font-semibold ${
                           isSelected ? 'text-black' : isDark ? 'text-amber-400' : 'text-amber-700'
                         }`}
                       >
-                        (+{Math.round(opt.tipAmount / 1000).toLocaleString('vi-VN')}K tip)
+                        +{Math.round(opt.tipAmount / 1000).toLocaleString('vi-VN')}K
                       </div>
                     </button>
                   );
@@ -202,7 +214,7 @@ export function CheckoutTipAndDiamondSection({
                     const val = parseInt(digits, 10);
                     if (!isNaN(val) && val >= 0) {
                       onSetTipAmount(val);
-                      onSetActiveRoundTarget(null);
+                      onSetActiveTipPercent(null);
                       onSetIsCustomTipOpen(false);
                     }
                   }}
@@ -223,7 +235,7 @@ export function CheckoutTipAndDiamondSection({
                     onClick={() => {
                       onSetTipAmount(amt);
                       onSetCustomTipInput(amt.toLocaleString('vi-VN'));
-                      onSetActiveRoundTarget(null);
+                      onSetActiveTipPercent(null);
                       onSetIsCustomTipOpen(false);
                     }}
                     className={`${
@@ -251,8 +263,8 @@ export function CheckoutTipAndDiamondSection({
                   <span className="text-base leading-none">💖</span>
                   <div className="min-w-0">
                     <div className={`font-extrabold ${isDark ? 'text-emerald-200' : 'text-emerald-950'} truncate`}>
-                      {activeRoundTarget
-                        ? `Làm tròn tổng đơn ${activeRoundTarget.toLocaleString('vi-VN')}đ (Tip: +${tipAmount.toLocaleString('vi-VN')}đ)`
+                      {activeTipPercent !== null
+                        ? `Đã ghi nhận tip ${activeTipPercent}% (+${tipAmount.toLocaleString('vi-VN')}đ)`
                         : `Đã ghi nhận tip ${tipAmount.toLocaleString('vi-VN')}đ`}
                     </div>
                   </div>
@@ -271,7 +283,7 @@ export function CheckoutTipAndDiamondSection({
                     type="button"
                     onClick={() => {
                       onSetTipAmount(0);
-                      onSetActiveRoundTarget(null);
+                      onSetActiveTipPercent(null);
                       onSetIsCustomTipOpen(false);
                     }}
                     className={`text-[10px] ${

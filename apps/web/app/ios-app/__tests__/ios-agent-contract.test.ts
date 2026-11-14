@@ -412,5 +412,87 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
       expect(doneSummary.tipAmount).toBe(100000);
       expect(doneSummary.settlementStatus).toBe('PENDING_COUNTER_SETTLEMENT');
     });
+
+    it('computes canonical CV rotation points dynamically when cvRotationPoints is undefined (never falls back to 41)', () => {
+      const card1Retain = getDoneBookingSummary(
+        makeBooking({
+          id: 339337,
+          status: 'DONE',
+          serviceName: 'Dặm HyperLight 340K',
+          serviceType: 'Normal',
+          servicePrice: 0,
+          attributes: {
+            material: 'HyperLight',
+            volume: '3X',
+            count: '50 fan',
+            style: 'Natural',
+            curl: 'C',
+            length: '10-12 mm',
+            thickness: '0.07 mm',
+          },
+        })
+      );
+      expect(card1Retain.cvPoints).toBe(21);
+
+      const card2Retain = getDoneBookingSummary(
+        makeBooking({
+          id: 339415,
+          status: 'DONE',
+          serviceName: 'Hyperlight 770 Refill',
+          serviceType: 'Retain',
+          servicePrice: 0,
+          attributes: {
+            material: 'HyperLight',
+            volume: '4X',
+            count: '70 fan',
+            style: 'Natural',
+            curl: 'C',
+            length: '10-12 mm',
+            thickness: '0.07 mm',
+          },
+        })
+      );
+      expect(card2Retain.cvPoints).toBe(28);
+
+      const card3PaidRefillPrice = getDoneBookingSummary(
+        makeBooking({
+          id: 339389,
+          status: 'DONE',
+          serviceName: 'HyperLight 4X 770',
+          serviceType: 'Normal',
+          servicePrice: 470000,
+          attributes: {
+            material: 'HyperLight',
+            volume: '4X',
+            count: '70 fan',
+            style: 'Natural',
+            curl: 'C',
+            length: '10-12 mm',
+            thickness: '0.07 mm',
+          },
+        })
+      );
+      expect(card3PaidRefillPrice.cvPoints).toBe(28);
+
+      const card4UltraDoll = getDoneBookingSummary(
+        makeBooking({
+          id: 338985,
+          status: 'DONE',
+          serviceName: 'Ultralight 550',
+          serviceType: 'Normal',
+          servicePrice: 416000,
+          attributes: {
+            material: 'UltraLight',
+            volume: '3D',
+            count: '60 fan',
+            style: 'Doll',
+            curl: 'C',
+            length: '10-12 mm',
+            thickness: '0.07 mm',
+          },
+        })
+      );
+      expect(card4UltraDoll.cvPoints).toBe(38);
+    });
   });
 });

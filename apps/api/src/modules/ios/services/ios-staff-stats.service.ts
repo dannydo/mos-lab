@@ -15,6 +15,8 @@ import {
   buildIsMenteeTrainingWindowSql,
 } from '../../kpi/services/cvl-training-mentorship.service.js';
 import { getCrmPool } from './db-pools.js';
+import { invalidateCvSelfSpeedCache } from './ios-cv-self-speed.service.js';
+import { resolveBookingCvRotationPointsBackend } from './ios-cv-points.helper.js';
 
 interface StaffStatsCacheEntry {
   data: IosStaffMonthlyStats;
@@ -28,6 +30,7 @@ let cachedCvPlusRules: { data: CvToCvPlusRequirements; expiresAt: number } | nul
 const RULES_CACHE_TTL_MS = 60_000;
 
 export function invalidateStaffStatsCache(staffIds?: number[]): void {
+  invalidateCvSelfSpeedCache(staffIds);
   if (!staffIds || staffIds.length === 0) {
     staffStatsCache.clear();
     return;
@@ -140,7 +143,7 @@ export function buildDemoStaffMonthlyStats(
     (sum, b) => sum + Number(b.billing?.subtotal ?? b.servicePrice ?? 0),
     0
   );
-  const pointsToday = completedForStaff.reduce((sum, b) => sum + Number(b.cvRotationPoints ?? 64), 0);
+  const pointsToday = completedForStaff.reduce((sum, b) => sum + resolveBookingCvRotationPointsBackend(b), 0);
   const comboBonusToday = checkedOutByStaff.reduce((sum, b) => {
     const dual = calculateDualComboTierBonus(
       Number(b.selectedCombo?.price || 0),

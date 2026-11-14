@@ -1,5 +1,6 @@
 import { calculateComboBonus, type CvToCvPlusRequirements } from './career-progression.js';
 import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem } from '../catalog/combo-expiry.js';
+import type { IosCvSelfSpeedHistoryProfile, IosSelfChallengeTierKey } from '../utils/ios-self-challenge.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
@@ -44,6 +45,7 @@ export interface IosStaffMonthlyStats {
   hourlyPayMonth?: number;
   shiftHours?: string;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
+  cvSelfSpeedHistory?: IosCvSelfSpeedHistoryProfile;
 }
 
 export interface IosActiveActorProfile {
@@ -250,6 +252,12 @@ export interface IosBookingProgress {
   retainLashCountRight?: number;
   retainLashes?: { left: number; right: number };
   retainAttributeValues?: Record<string, { attribute_option_value: string; attribute_key: string }>;
+  targetDurationMinutes?: number;
+  selfChallengeTier?: IosSelfChallengeTierKey;
+  selfChallengeLabel?: string;
+  selfChallengeBaselineMinutes?: number;
+  selfChallengeSampleCount?: number;
+  selfChallengeSlowerReason?: string;
 }
 
 export interface IosCartProductItem {
@@ -354,6 +362,7 @@ export interface IosBookingItem {
   _localComboUpdatedAt?: number;
   attributes?: IosBookingAttributes;
   progress?: IosBookingProgress;
+  cvSelfSpeedHistory?: IosCvSelfSpeedHistoryProfile;
   survey?: {
     rating: number;
     emotion: 'happy' | 'satisfied' | 'neutral' | 'unhappy';
@@ -728,6 +737,88 @@ export function resolveEffectiveServiceTotal(params: {
 
   const underPay = isUnderWaivedByNewCombo ? 0 : underServicePrice;
   return upperServicePrice + underPay;
+}
+
+export const CHECKOUT_TIP_PERCENT_TIERS = [5, 10, 15, 20] as const;
+export type CheckoutTipPercentTier = (typeof CHECKOUT_TIP_PERCENT_TIERS)[number];
+
+export interface PercentTipSuggestionItem {
+  percent: CheckoutTipPercentTier;
+  tipAmount: number;
+  label: string;
+  baseAmount: number;
+}
+
+/**
+ * Xác định nền giá trị ca phục vụ thực tế (trước VAT 8% và trước trừ Kim Cương)
+ * để tính gợi ý tiền Tip theo % bill. Ca trừ gói Combo 0đ hoặc mua Combo lớn vẫn
+ * lấy đúng giá trị lẻ của bộ mi vừa thực hiện (+ sản phẩm bán kèm nếu có).
+ */
+export function resolveCheckoutTipBaseAmount(params: {
+  servicePrice?: number;
+  effectiveServiceCharge?: number;
+  serviceName?: string;
+  hasUnderMink?: boolean;
+  underMinkServiceType?: 'Normal' | 'Retain';
+  hasUnderMinkCombo?: boolean;
+  cartProducts?: Array<{ price: number; quantity: number }> | null;
+}): {
+  tipBaseAmount: number;
+  serviceRetailValue: number;
+  productsTotal: number;
+  isVirtualServiceBase: boolean;
+} {
+  const baseServicePrice = Math.max(0, Number(params.servicePrice ?? 0));
+  const effectiveCharge = Math.max(0, Number(params.effectiveServiceCharge ?? 0));
+  const svcNameLower = String(params.serviceName || '').toLowerCase();
+  const isPureUnderLash =
+    (svcNameLower.includes('mi dưới') || svcNameLower.includes('under mink')) && !svcNameLower.includes('+');
+  const inferredUnderRetain =
+    params.underMinkServiceType === 'Retain' ||
+    svcNameLower.includes('mi dưới (dặm') ||
+    svcNameLower.includes('dặm 250k');
+  const underComboListValue =
+    !isPureUnderLash &&
+    Boolean(params.hasUnderMink) &&
+    (Boolean(params.hasUnderMinkCombo) || svcNameLower.includes('trừ gói mi dưới'))
+      ? inferredUnderRetain
+        ? 250000
+        : 390000
+      : 0;
+
+  const serviceRetailValue = Math.max(effectiveCharge, baseServicePrice + underComboListValue);
+  const productsTotal = (params.cartProducts || []).reduce(
+    (sum, p) => sum + Math.max(0, Number(p.price || 0)) * Math.max(0, Number(p.quantity || 0)),
+    0
+  );
+  const tipBaseAmount = serviceRetailValue + productsTotal;
+  const isVirtualServiceBase = effectiveCharge !== serviceRetailValue;
+
+  return {
+    tipBaseAmount,
+    serviceRetailValue,
+    productsTotal,
+    isVirtualServiceBase,
+  };
+}
+
+/**
+ * Sinh 4 gợi ý tiền Tip theo % giá trị ca phục vụ (5%, 10%, 15%, 20%),
+ * làm tròn đến 10.000đ gần nhất (tối thiểu 10.000đ).
+ */
+export function buildPercentageTipSuggestions(tipBaseAmount: number): PercentTipSuggestionItem[] {
+  const safeBase = Math.max(0, Number(tipBaseAmount || 0));
+  if (safeBase <= 0) return [];
+  return CHECKOUT_TIP_PERCENT_TIERS.map((percent) => {
+    const rawTip = (safeBase * percent) / 100;
+    const roundedTo10k = Math.max(10000, Math.round(rawTip / 10000) * 10000);
+    return {
+      percent,
+      tipAmount: roundedTo10k,
+      label: `${percent}%`,
+      baseAmount: safeBase,
+    };
+  });
 }
 
 export function calculateActorTipBreakdown(

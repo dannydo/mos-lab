@@ -22,6 +22,7 @@ import {
   buildDemoModeBookings,
   mapLiveOrdersToBookings,
 } from './ios-bookings-mapper.service.js';
+import { buildDemoCvSelfSpeedProfile, fetchLiveCvSelfSpeedProfiles } from './ios-cv-self-speed.service.js';
 import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
 
 export function resolveTodayVietnamDate(): string {
@@ -116,7 +117,25 @@ export async function queryIosBookingsList(
       todayVn,
     });
 
-    const staffStats = buildDemoStaffMonthlyStats(allDemoBookings, activeStaffId, targetDate);
+    const demoSpeedByStaff = new Map<number, ReturnType<typeof buildDemoCvSelfSpeedProfile>>();
+    const getDemoSpeedProfile = (sid: number) => {
+      const targetSid = sid > 0 ? sid : activeStaffId;
+      let profile = demoSpeedByStaff.get(targetSid);
+      if (!profile) {
+        profile = buildDemoCvSelfSpeedProfile(targetSid);
+        demoSpeedByStaff.set(targetSid, profile);
+      }
+      return profile;
+    };
+
+    const staffStats = {
+      ...buildDemoStaffMonthlyStats(allDemoBookings, activeStaffId, targetDate),
+      cvSelfSpeedHistory: getDemoSpeedProfile(activeStaffId),
+    };
+    const enrichedDemoList = effectiveList.map((b) => ({
+      ...b,
+      cvSelfSpeedHistory: getDemoSpeedProfile(Number(b.assignedStaffId) || activeStaffId),
+    }));
 
     return {
       success: true,
@@ -129,8 +148,8 @@ export async function queryIosBookingsList(
       activeStaffId,
       targetDate,
       counts,
-      count: effectiveList.length,
-      bookings: effectiveList,
+      count: enrichedDemoList.length,
+      bookings: enrichedDemoList,
       staffStats,
       timestamp: new Date().toISOString(),
     };
@@ -252,6 +271,21 @@ export async function queryIosBookingsList(
     todayVn,
   });
 
+  const speedStaffIds = Array.from(
+    new Set([activeStaffId, ...effectiveList.map((b) => Number(b.assignedStaffId || 0)).filter((id) => id > 0)])
+  );
+  const speedProfilesMap = await fetchLiveCvSelfSpeedProfiles(pool, speedStaffIds, (meta, msg) =>
+    fastify.log.warn(meta, msg)
+  );
+  const staffStatsWithSpeed = {
+    ...staffStats,
+    cvSelfSpeedHistory: speedProfilesMap.get(activeStaffId),
+  };
+  const enrichedLiveList = effectiveList.map((b) => ({
+    ...b,
+    cvSelfSpeedHistory: speedProfilesMap.get(Number(b.assignedStaffId) || activeStaffId),
+  }));
+
   return {
     success: true,
     source: 'mysql_live',
@@ -263,9 +297,9 @@ export async function queryIosBookingsList(
     activeStaffId,
     targetDate,
     counts,
-    count: effectiveList.length,
-    bookings: effectiveList,
-    staffStats,
+    count: enrichedLiveList.length,
+    bookings: enrichedLiveList,
+    staffStats: staffStatsWithSpeed,
     timestamp: new Date().toISOString(),
   };
 }

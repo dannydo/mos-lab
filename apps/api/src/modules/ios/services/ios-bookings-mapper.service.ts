@@ -16,6 +16,7 @@ import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { BookingOverrideRecord, CustomerComboExpiryOverrideEntry } from './ios-overrides.service.js';
 import { applyCustomerComboExpiryOverridesToBooking } from './ios-combo-expiry.service.js';
 import { IosCustomerEnrichmentContext, LastVisitSpecSummary, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
+import { computeCanonicalCvRotationPoints } from './ios-cv-points.helper.js';
 import {
   computeBookingFinancials,
   formatPhoneNumberDots,
@@ -195,6 +196,7 @@ export function mapLiveOrdersToBookings(params: {
         underComboStatus?.hasUnderCombo && (underComboStatus?.remainingSessions ?? 0) > 0
       );
       const overrideAttrs = override.attributes as IosBookingItem['attributes'] | undefined;
+      const actualSpecs = r.actual_order_specs || undefined;
       const matchedTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
         activeTrainingPairs,
         assignedStaffId,
@@ -207,8 +209,8 @@ export function mapLiveOrdersToBookings(params: {
         upgradePrice,
         serviceName: override.serviceName || r.service_name,
         isComboLive: Boolean(comboInfo.isComboLive),
-        hasUnderMink: overrideAttrs?.hasUnderMink,
-        underMinkServiceType: overrideAttrs?.underMinkServiceType,
+        hasUnderMink: overrideAttrs?.hasUnderMink ?? actualSpecs?.hasUnderMink,
+        underMinkServiceType: overrideAttrs?.underMinkServiceType ?? actualSpecs?.underMinkServiceType,
         hasUnderMinkCombo: hasUnderMinkComboActive,
         selectedCombo,
         selectedUnderCombo,
@@ -283,6 +285,126 @@ export function mapLiveOrdersToBookings(params: {
         note.toLowerCase().includes('chỉ định')
       );
 
+      const resolvedAttributes = hydrateSavedNaturalLashAttributes(
+        (override.attributes
+          ? {
+              ...override.attributes,
+              material: normalizeLashMaterialLabel(override.attributes.material) || override.attributes.material,
+            }
+          : null) ||
+          (() => {
+            const isFirstVisitClient = effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship);
+            const savedProfile = customerNaturalLashMap[String(customerId)];
+            const matchedSpec = matchComboCategoryAndVolumeFromBooking({
+              material: isRawOrderPlaceholder ? lastSpecs?.material : undefined,
+              volume: actualSpecs?.volume || (isRawOrderPlaceholder ? lastSpecs?.volume : undefined),
+              count: actualSpecs?.count || (isRawOrderPlaceholder ? lastSpecs?.count : undefined),
+              serviceName: effectiveServiceName,
+              serviceKey: !isRawOrderPlaceholder ? r.service_key || undefined : lastSpecs?.serviceKey,
+              servicePrice: !isRawOrderPlaceholder ? servicePrice : undefined,
+            });
+            const catId = matchedSpec.categoryId;
+            const defaultMat =
+              catId === 'Classic_1D' || catId === 'Classic_Volume'
+                ? 'Classic 1D'
+                : catId === 'Volume_2D' || catId === 'Volume_3D'
+                  ? 'Volume'
+                  : catId.startsWith('HyperLight')
+                    ? 'HyperLight'
+                    : catId.startsWith('IvyLight')
+                      ? 'Ivylight'
+                      : catId.startsWith('UltraLight')
+                        ? 'UltraLight'
+                        : 'Flawless Mink';
+            const defaultVol =
+              defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
+                ? '1D'
+                : catId === 'Volume_3D'
+                  ? '3D'
+                  : catId === 'Volume_2D'
+                    ? '2D'
+                    : catId.includes('_')
+                      ? catId.split('_')[1]
+                      : '4X';
+            const unit =
+              defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
+                ? 'sợi'
+                : defaultMat === 'Ivylight'
+                  ? 'nhịp'
+                  : 'fan';
+            const fallbackCountPerEye =
+              defaultMat === 'Classic 1D' || defaultMat === 'Ivylight'
+                ? 90
+                : defaultMat === 'Flawless Mink'
+                  ? 60
+                  : defaultMat === 'UltraLight' || defaultMat === 'Volume'
+                    ? 80
+                    : 70;
+            const resolvedCountPerEye =
+              matchedSpec.volume !== 'under' && matchedSpec.volumeMeta?.countPerEye
+                ? matchedSpec.volumeMeta.countPerEye
+                : fallbackCountPerEye;
+            const defaultCount = `${resolvedCountPerEye} ${unit}`;
+            const normalizedLastMaterial = normalizeLashMaterialLabel(lastSpecs?.material);
+            const canInheritLastSpecs = isRawOrderPlaceholder || normalizedLastMaterial === defaultMat;
+
+            return {
+              material: canInheritLastSpecs ? normalizedLastMaterial || defaultMat : defaultMat,
+              style: actualSpecs?.style || lastSpecs?.style || 'Natural',
+              volume: actualSpecs?.volume || (canInheritLastSpecs ? lastSpecs?.volume || defaultVol : defaultVol),
+              count: actualSpecs?.count || (canInheritLastSpecs ? lastSpecs?.count || defaultCount : defaultCount),
+              color: actualSpecs?.color || lastSpecs?.color,
+              hasUnderMink: actualSpecs?.hasUnderMink,
+              underMinkServiceType: actualSpecs?.underMinkServiceType,
+              curl: 'C',
+              length: '10-12 mm',
+              thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
+              isNewClientDiagnosticDone: savedProfile ? true : isFirstVisitClient ? false : undefined,
+              notes: note || '',
+            };
+          })(),
+        customerNaturalLashMap[String(customerId)]
+      );
+
+      const resolvedServiceType = override.serviceType || r.service_type || 'Normal';
+      let resolvedCvPoints: number;
+      let resolvedCvBreakdown: string | undefined;
+      if (typeof override.cvRotationPoints === 'number' && override.cvRotationPoints > 0) {
+        resolvedCvPoints = Math.round(override.cvRotationPoints);
+        resolvedCvBreakdown = override.cvRotationBreakdown;
+      } else if (override.attributes) {
+        const computed = computeCanonicalCvRotationPoints({
+          material: resolvedAttributes?.material,
+          volume: resolvedAttributes?.volume,
+          count: resolvedAttributes?.count,
+          serviceType: resolvedServiceType,
+          serviceName: effectiveServiceName,
+          style: resolvedAttributes?.style,
+          color: resolvedAttributes?.color,
+          hasUnderMink: resolvedAttributes?.hasUnderMink,
+          underMinkServiceType: resolvedAttributes?.underMinkServiceType,
+        });
+        resolvedCvPoints = computed.totalPoints;
+        resolvedCvBreakdown = override.cvRotationBreakdown || computed.breakdownLabel;
+      } else if (typeof r.ledger_cv_points === 'number' && r.ledger_cv_points > 0) {
+        resolvedCvPoints = r.ledger_cv_points;
+        resolvedCvBreakdown = r.ledger_cv_breakdown || undefined;
+      } else {
+        const computed = computeCanonicalCvRotationPoints({
+          material: resolvedAttributes?.material,
+          volume: resolvedAttributes?.volume,
+          count: resolvedAttributes?.count,
+          serviceType: resolvedServiceType,
+          serviceName: effectiveServiceName,
+          style: resolvedAttributes?.style,
+          color: resolvedAttributes?.color,
+          hasUnderMink: resolvedAttributes?.hasUnderMink,
+          underMinkServiceType: resolvedAttributes?.underMinkServiceType,
+        });
+        resolvedCvPoints = computed.totalPoints;
+        resolvedCvBreakdown = computed.breakdownLabel;
+      }
+
       return {
         id: Number(r.id),
         orderNumber: orderNum,
@@ -347,89 +469,12 @@ export function mapLiveOrdersToBookings(params: {
         selectedCombo,
         selectedUnderCombo,
         comboRedemption,
-        attributes: hydrateSavedNaturalLashAttributes(
-          (override.attributes
-            ? {
-                ...override.attributes,
-                material: normalizeLashMaterialLabel(override.attributes.material) || override.attributes.material,
-              }
-            : null) ||
-            (() => {
-              const isFirstVisitClient = effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship);
-              const savedProfile = customerNaturalLashMap[String(customerId)];
-              const matchedSpec = matchComboCategoryAndVolumeFromBooking({
-                material: isRawOrderPlaceholder ? lastSpecs?.material : undefined,
-                volume: isRawOrderPlaceholder ? lastSpecs?.volume : undefined,
-                count: isRawOrderPlaceholder ? lastSpecs?.count : undefined,
-                serviceName: effectiveServiceName,
-                serviceKey: !isRawOrderPlaceholder ? r.service_key || undefined : lastSpecs?.serviceKey,
-                servicePrice: !isRawOrderPlaceholder ? servicePrice : undefined,
-              });
-              const catId = matchedSpec.categoryId;
-              const defaultMat =
-                catId === 'Classic_1D' || catId === 'Classic_Volume'
-                  ? 'Classic 1D'
-                  : catId === 'Volume_2D' || catId === 'Volume_3D'
-                    ? 'Volume'
-                    : catId.startsWith('HyperLight')
-                      ? 'HyperLight'
-                      : catId.startsWith('IvyLight')
-                        ? 'Ivylight'
-                        : catId.startsWith('UltraLight')
-                          ? 'UltraLight'
-                          : 'Flawless Mink';
-              const defaultVol =
-                defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
-                  ? '1D'
-                  : catId === 'Volume_3D'
-                    ? '3D'
-                    : catId === 'Volume_2D'
-                      ? '2D'
-                      : catId.includes('_')
-                        ? catId.split('_')[1]
-                        : '4X';
-              const unit =
-                defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
-                  ? 'sợi'
-                  : defaultMat === 'Ivylight'
-                    ? 'nhịp'
-                    : 'fan';
-              const fallbackCountPerEye =
-                defaultMat === 'Classic 1D' || defaultMat === 'Ivylight'
-                  ? 90
-                  : defaultMat === 'Flawless Mink'
-                    ? 60
-                    : defaultMat === 'UltraLight' || defaultMat === 'Volume'
-                      ? 80
-                      : 70;
-              const resolvedCountPerEye =
-                matchedSpec.volume !== 'under' && matchedSpec.volumeMeta?.countPerEye
-                  ? matchedSpec.volumeMeta.countPerEye
-                  : fallbackCountPerEye;
-              const defaultCount = `${resolvedCountPerEye} ${unit}`;
-              const normalizedLastMaterial = normalizeLashMaterialLabel(lastSpecs?.material);
-              const canInheritLastSpecs = isRawOrderPlaceholder || normalizedLastMaterial === defaultMat;
-
-              return {
-                material: canInheritLastSpecs ? normalizedLastMaterial || defaultMat : defaultMat,
-                style: lastSpecs?.style || 'Natural',
-                volume: canInheritLastSpecs ? lastSpecs?.volume || defaultVol : defaultVol,
-                count: canInheritLastSpecs ? lastSpecs?.count || defaultCount : defaultCount,
-                color: lastSpecs?.color,
-                curl: 'C',
-                length: '10-12 mm',
-                thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
-                isNewClientDiagnosticDone: savedProfile ? true : isFirstVisitClient ? false : undefined,
-                notes: note || '',
-              };
-            })(),
-          customerNaturalLashMap[String(customerId)]
-        ),
+        attributes: resolvedAttributes,
         progress: override.progress || undefined,
         survey: override.survey || undefined,
         upgradePrice,
-        cvRotationPoints: override.cvRotationPoints,
-        cvRotationBreakdown: override.cvRotationBreakdown,
+        cvRotationPoints: resolvedCvPoints,
+        cvRotationBreakdown: resolvedCvBreakdown,
         cartProducts,
         cvRewardBreakdown,
         billing,
@@ -579,7 +624,22 @@ export function buildDemoModeBookings(params: {
         status === 'INCOMING' ? undefined : ((override.progress || mock.progress) as IosBookingItem['progress']),
       survey: override.survey || mock.survey,
       upgradePrice,
-      cvRotationPoints: override.cvRotationPoints !== undefined ? override.cvRotationPoints : mock.cvRotationPoints,
+      cvRotationPoints:
+        override.cvRotationPoints !== undefined
+          ? override.cvRotationPoints
+          : mock.cvRotationPoints !== undefined
+            ? mock.cvRotationPoints
+            : computeCanonicalCvRotationPoints({
+                material: effectiveAttrs?.material,
+                volume: effectiveAttrs?.volume,
+                count: effectiveAttrs?.count,
+                serviceType: override.serviceType || mock.serviceType,
+                serviceName: override.serviceName || mock.serviceName,
+                style: effectiveAttrs?.style,
+                color: effectiveAttrs?.color,
+                hasUnderMink: effectiveAttrs?.hasUnderMink,
+                underMinkServiceType: effectiveAttrs?.underMinkServiceType,
+              }).totalPoints,
       cvRotationBreakdown: override.cvRotationBreakdown || mock.cvRotationBreakdown,
       cartProducts,
       cvRewardBreakdown,
