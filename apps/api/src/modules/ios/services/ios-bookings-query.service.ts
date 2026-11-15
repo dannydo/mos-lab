@@ -60,9 +60,13 @@ export async function queryIosBookingsList(
   query: Record<string, string | undefined>
 ): Promise<IosBookingListResponse> {
   const isAdmin = authUser.careerTier === 'ADMIN' || isAdminOrSuperAdminRole(authUser.role || '');
+  const isSimulationMode = isIosDemoModeRequested(query.sim);
+  const isDemoMode = !isSimulationMode && isIosDemoModeRequested(query.demo);
   const requestedStoreId = query.storeId !== undefined && query.storeId !== '' ? Number(query.storeId) : undefined;
   const storeId =
-    !isAdmin && authUser.clientStoreId ? authUser.clientStoreId : (requestedStoreId ?? authUser.clientStoreId ?? 6);
+    !isAdmin && !isSimulationMode && authUser.clientStoreId && authUser.clientStoreId !== 4
+      ? authUser.clientStoreId
+      : (requestedStoreId ?? (authUser.clientStoreId && authUser.clientStoreId !== 4 ? authUser.clientStoreId : 6));
   const segment = (query.segment || 'INCOMING').toUpperCase();
   const todayVn = resolveTodayVietnamDate();
   const targetDate = query.date || todayVn;
@@ -89,8 +93,6 @@ export async function queryIosBookingsList(
 
   const defaultLimit = scope === 'STORE_ALL' ? 200 : 100;
   const limit = Math.min(Math.max(Number(query.limit) || defaultLimit, 1), 250);
-  const isSimulationMode = isIosDemoModeRequested(query.sim);
-  const isDemoMode = !isSimulationMode && isIosDemoModeRequested(query.demo);
 
   const simCtx = isSimulationMode
     ? await resolveSimulationContextActor(
@@ -186,8 +188,11 @@ export async function queryIosBookingsList(
   }
 
   const pool = getLegacyPool();
-  const simDraftBookings =
+  const rawSimDraftBookings =
     isSimulationMode && simCtx ? await loadSimulationCustomBookings(simCtx.targetStaffId, targetDate) : [];
+  const simDraftBookings = rawSimDraftBookings.filter(
+    (b) => !b.storeId || Number(b.storeId) === Number(storeId)
+  );
   const activeRepo =
     isSimulationMode && simCtx ? getSimulationOverrideRepository(simCtx.targetStaffId) : defaultIosOverrideRepo;
 

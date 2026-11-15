@@ -34,7 +34,8 @@ function resolveComboField<T>(
 export function mergeServerBookingsWithLocalState(
   prev: BookingItem[],
   serverBookings: BookingItem[],
-  selectedDateOffset: number
+  selectedDateOffset: number,
+  expectedStoreId?: number
 ): BookingItem[] {
   const prevMap = new Map(prev.map((p) => [p.id, p]));
   const pendingComboBookingIds = new Set(
@@ -227,12 +228,15 @@ export function mergeServerBookingsWithLocalState(
   });
 
   // Chỉ bảo toàn ca đang SERVICING khi đang xem ngày hôm nay (selectedDateOffset === 0)
+  // và BẮT BUỘC phải khớp đúng chi nhánh (targetStoreId) để triệt tiêu lỗi lọt khách Đề Thám sang Estella Place
+  const targetStoreId = expectedStoreId ?? serverBookings[0]?.storeId;
   const incomingIds = new Set(mergedIncoming.map((b) => b.id));
   const preservedServicing =
     selectedDateOffset === 0
       ? prev.filter(
           (b: BookingItem) =>
             !incomingIds.has(b.id) &&
+            (!targetStoreId || !b.storeId || Number(b.storeId) === Number(targetStoreId)) &&
             b.status !== 'DONE' &&
             b.status !== 'CANCELLED' &&
             !b.progress?.completedAt &&

@@ -108,7 +108,6 @@ export function ComboWalletDetailModal({
 }: ComboWalletDetailModalProps) {
   const { themeMode } = useTheme();
   const titleId = useId();
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const isDark = (theme ?? themeMode) === 'dark';
 
   const wallets = useMemo(() => resolveBookingComboWallets(booking), [booking]);
@@ -120,45 +119,11 @@ export function ComboWalletDetailModal({
   useEffect(() => {
     if (!isOpen) return;
     setFeedbackMsg(null);
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (typeof dialog.showModal === 'function') {
-      if (!dialog.open) {
-        try {
-          dialog.showModal();
-        } catch {
-          dialog.setAttribute('open', '');
-        }
-      }
-    } else {
-      dialog.setAttribute('open', '');
-    }
-
-    // Light-dismiss coordinate fallback when `closedBy` is unsupported (e.g. Safari)
-    const supportsClosedBy = typeof HTMLDialogElement !== 'undefined' && 'closedBy' in HTMLDialogElement.prototype;
-    const handleBackdropClick = (event: MouseEvent) => {
-      if (supportsClosedBy) return;
-      if (event.target !== dialog) return;
-      const rect = dialog.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) {
-        onClose();
-        return;
-      }
-      const clickedOutside =
-        event.clientX < rect.left ||
-        event.clientX > rect.right ||
-        event.clientY < rect.top ||
-        event.clientY > rect.bottom;
-      if (clickedOutside) {
-        onClose();
-      }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
     };
-
-    dialog.addEventListener('click', handleBackdropClick);
-    return () => {
-      dialog.removeEventListener('click', handleBackdropClick);
-    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen || !booking) return null;
@@ -214,47 +179,53 @@ export function ComboWalletDetailModal({
   const cardSurface = isDark ? 'bg-[#252528] border border-neutral-800' : 'bg-neutral-50 border border-neutral-200';
 
   return (
-    <dialog
-      ref={dialogRef}
+    <div
+      role="dialog"
+      aria-modal="true"
       aria-labelledby={titleId}
-      onClose={onClose}
-      {...({ closedby: 'any' } as React.DialogHTMLAttributes<HTMLDialogElement>)}
-      style={{ colorScheme: isDark ? 'dark' : 'light' }}
-      className={`m-auto w-[calc(100%-24px)] max-w-[420px] max-h-[86vh] rounded-3xl p-0 shadow-2xl overflow-hidden overscroll-contain backdrop:bg-black/75 backdrop:backdrop-blur-xs open:flex open:flex-col ${dialogSurface}`}
+      className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 select-none animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      {/* Header: Title left, Close [X] top-right (UI Invariant) */}
       <div
-        className={`px-4 py-3.5 flex items-center justify-between gap-3 shrink-0 border-b ${
-          isDark ? 'border-neutral-800 bg-[#252528]' : 'border-neutral-200 bg-neutral-50'
-        }`}
+        style={{ colorScheme: isDark ? 'dark' : 'light' }}
+        className={`w-full max-w-[420px] max-h-[86vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border ${dialogSurface} animate-in zoom-in-95 duration-200`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="min-w-0">
-          <h3 id={titleId} className="text-[15px] font-black tracking-tight truncate flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Gói Combo & Hạn Sử Dụng</span>
-          </h3>
-          <p
-            className={`text-[11.5px] mt-0.5 truncate tabular-nums ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}
-          >
-            {booking.customerName} · {(booking.customerPhone || '').replace(/\*+\s*/g, '').trim()}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Đóng chi tiết gói combo"
-          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-transform active:scale-95 ${
-            isDark
-              ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
-              : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-800'
+        {/* Header: Title left, Close [X] top-right (UI Invariant) */}
+        <div
+          className={`px-4 py-3.5 flex items-center justify-between gap-3 shrink-0 border-b ${
+            isDark ? 'border-neutral-800 bg-[#252528]' : 'border-neutral-200 bg-neutral-50'
           }`}
         >
-          <X className="w-4 h-4 stroke-[2.5]" />
-        </button>
-      </div>
+          <div className="min-w-0">
+            <h3 id={titleId} className="text-[15px] font-black tracking-tight truncate flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Gói Combo & Hạn Sử Dụng</span>
+            </h3>
+            <p
+              className={`text-[11.5px] mt-0.5 truncate tabular-nums ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}
+            >
+              {booking.customerName} · {(booking.customerPhone || '').replace(/\*+\s*/g, '').trim()}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng chi tiết gói combo"
+            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-transform active:scale-95 ${
+              isDark
+                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
+                : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-800'
+            }`}
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
+        </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3.5 text-left">
+        {/* Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3.5 text-left">
         {feedbackMsg && (
           <div
             className={`rounded-xl px-3 py-2 text-[11.5px] font-bold flex items-start gap-2 ${
@@ -481,6 +452,7 @@ export function ComboWalletDetailModal({
           })
         )}
       </div>
-    </dialog>
-  );
+    </div>
+  </div>
+);
 }
