@@ -1541,7 +1541,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                         : isMe
                           ? isDark
                             ? 'text-amber-300'
-                            : 'text-[var(--mos-text)]'
+                            : 'text-amber-700'
                           : 'text-[var(--mos-text)]'
                     }`}
                   >
@@ -1573,7 +1573,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <div
                   className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm ${
                     isMe
-                      ? 'mos-accent-bubble-ink bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] border border-black/10 font-normal rounded-tr-sm'
+                      ? `bg-[var(--mos-accent-soft)] text-[var(--mos-text)] border border-[var(--mos-accent-border)] font-normal rounded-tr-sm ${
+                          isDark ? 'shadow-amber-500/5' : 'shadow-amber-900/5'
+                        }`
                       : 'bg-[var(--mos-surface)] text-[var(--mos-text)] border border-[var(--mos-surface-border)] rounded-tl-sm'
                   }`}
                 >
@@ -1668,7 +1670,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                                     }}
                                     className={`flex items-center gap-2 p-1.5 rounded-lg border cursor-pointer active:scale-[0.98] transition-transform ${
                                       isMe
-                                        ? 'bg-black/15 border-current/25 text-[var(--mos-accent-contrast)]'
+                                        ? isDark
+                                          ? 'bg-black/25 border-amber-400/30 text-[var(--mos-text)]'
+                                          : 'bg-black/5 border-amber-600/30 text-[var(--mos-text)]'
                                         : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)]'
                                     }`}
                                   >
@@ -1719,12 +1723,20 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   <div
                     className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                      isMe ? 'text-[var(--mos-accent-contrast)] opacity-75' : 'text-[var(--mos-text-muted)]'
+                      isMe
+                        ? isDark
+                          ? 'text-amber-300/80'
+                          : 'text-amber-800/80'
+                        : 'text-[var(--mos-text-muted)]'
                     }`}
                   >
                     {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
                     <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
-                    {isMe && <CheckCheck className="w-3.5 h-3.5 text-[var(--mos-accent-contrast)]" />}
+                    {isMe && (
+                      <CheckCheck
+                        className={`w-3.5 h-3.5 ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
+                      />
+                    )}
                   </div>
                 </div>
               )}

@@ -20,6 +20,7 @@ import {
   isDesktopDensity,
   resolveDensityProfile,
   isAdminOrSuperAdminRole,
+  hexToRgba,
   type CoreThemeDefinition,
   type CoreThemeMode,
   type DensityProfile,
@@ -325,6 +326,14 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       root.style.setProperty('--mos-text-muted', semantic.textMuted);
       root.style.setProperty('--mos-accent', semantic.accent);
       root.style.setProperty('--mos-accent-contrast', semantic.accentContrast);
+      root.style.setProperty(
+        '--mos-accent-soft',
+        semantic.accentSoft || hexToRgba(semantic.accent, themeMode === 'dark' ? 0.16 : 0.12)
+      );
+      root.style.setProperty(
+        '--mos-accent-border',
+        semantic.accentBorder || hexToRgba(semantic.accent, themeMode === 'dark' ? 0.38 : 0.34)
+      );
       root.style.setProperty('--mos-focus-ring', semantic.focusRing);
       root.style.setProperty('--mos-shadow', semantic.shadow);
       root.style.setProperty('--mos-success', colors.success);

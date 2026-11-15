@@ -182,6 +182,8 @@ export interface SemanticThemeTokens {
   borderStrong: string;
   accent: string;
   accentContrast: string;
+  accentSoft?: string;
+  accentBorder?: string;
   focusRing: string;
   shadow: string;
 }
@@ -443,6 +445,8 @@ export const themeTokens: DesignTokens = {
       borderStrong: '#2d3748',
       accent: '#D4A84B',
       accentContrast: '#090d16',
+      accentSoft: 'rgba(212, 168, 75, 0.16)',
+      accentBorder: 'rgba(212, 168, 75, 0.38)',
       focusRing: 'rgba(212, 168, 75, 0.22)',
       shadow: '0 16px 36px -8px rgba(0, 0, 0, 0.45), 0 1px 0 0 rgba(255, 255, 255, 0.05) inset',
     },
@@ -456,6 +460,8 @@ export const themeTokens: DesignTokens = {
       borderStrong: '#cbd5e1',
       accent: '#855b0e',
       accentContrast: '#ffffff',
+      accentSoft: 'rgba(133, 91, 14, 0.12)',
+      accentBorder: 'rgba(133, 91, 14, 0.34)',
       focusRing: 'rgba(133, 91, 14, 0.2)',
       shadow: '0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)',
     },
@@ -521,6 +527,8 @@ export function defineTheme(input: ThemePresetInput): CoreThemeDefinition {
     borderStrong: borderSecondary,
     accent: c.primary,
     accentContrast: isLight ? '#ffffff' : '#111827',
+    accentSoft: hexToRgba(c.primary, isLight ? 0.12 : 0.16),
+    accentBorder: hexToRgba(c.primary, isLight ? 0.34 : 0.38),
     focusRing: hexToRgba(c.primary, isLight ? 0.2 : 0.25),
     shadow: isLight ? '0 12px 28px rgba(0, 0, 0, 0.08)' : '0 12px 28px rgba(0, 0, 0, 0.25)',
   };
@@ -553,8 +561,18 @@ export function defineTheme(input: ThemePresetInput): CoreThemeDefinition {
       };
 
   const companionSemantic: SemanticThemeTokens = isLight
-    ? { ...themeTokens.semantic.dark, accent: c.primary }
-    : { ...themeTokens.semantic.light, accent: c.primary };
+    ? {
+        ...themeTokens.semantic.dark,
+        accent: c.primary,
+        accentSoft: hexToRgba(c.primary, 0.16),
+        accentBorder: hexToRgba(c.primary, 0.38),
+      }
+    : {
+        ...themeTokens.semantic.light,
+        accent: c.primary,
+        accentSoft: hexToRgba(c.primary, 0.12),
+        accentBorder: hexToRgba(c.primary, 0.34),
+      };
 
   const companionComponents: CoreThemeComponentTokens = isLight
     ? {
