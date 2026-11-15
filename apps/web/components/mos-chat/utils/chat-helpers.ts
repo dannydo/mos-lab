@@ -2,9 +2,13 @@ import dayjs from 'dayjs';
 import { message as antdMessage } from 'antd';
 import type {
   AiChatMessage,
+  MosChatConversation,
   MosChatImageAttachment,
   MosChatImageMimeType,
   MosChatMessage,
+  MosChatThreadReply,
+  MosChatReadReceiptEntry,
+  MosChatThreadReadReceiptEntry,
   MosChatStaffMember,
   SafeAny,
 } from '@mos-lab/shared';
@@ -1311,4 +1315,165 @@ export function formatReactionUsersTooltip(
     : `${names.slice(0, 3).join(', ')} và ${names.length - 3} người khác`;
 
   return `${prefix} đã thả ${label} · ${actionHint}`;
+}
+
+/**
+ * Kiểm tra xem biên nhận đọc (read receipt) có khớp với tác giả của tin nhắn/phản hồi hay không.
+ */
+export function doesReceiptMatchAuthor(
+  receiptStaffId: number,
+  receiptName: string,
+  senderId?: string | number,
+  senderName?: string
+): boolean {
+  if (senderId !== undefined && senderId !== null && String(senderId) === String(receiptStaffId)) return true;
+  if (receiptName && senderName && receiptName.trim().toLowerCase() === senderName.trim().toLowerCase()) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Định dạng nhãn thời gian đã xem (Read At).
+ */
+export function formatReadAtLabel(iso?: string | null): string {
+  if (!iso) return 'Đã xem';
+  const d = dayjs(iso);
+  if (!d.isValid()) return 'Đã xem';
+  if (d.isSame(dayjs(), 'day')) {
+    return `Lúc ${d.format('HH:mm')}`;
+  }
+  return `${d.format('HH:mm')} · ${d.format('DD/MM')}`;
+}
+
+/**
+ * Phân tích danh sách người đã xem (seenBy) và chưa xem (unseenBy) cho một tin nhắn chính.
+ */
+export function getMessageReadBreakdown(
+  conv: MosChatConversation | null | undefined,
+  msg: MosChatMessage,
+  currentUserId?: string | number
+): { seenBy: MosChatReadReceiptEntry[]; unseenBy: MosChatReadReceiptEntry[] } {
+  if (!conv || !conv.readReceipts || conv.readReceipts.length === 0 || conv.isSelf) {
+    return { seenBy: [], unseenBy: [] };
+  }
+  const visibleMessages = (conv.messages || []).filter((m) => !m.deletedAt && !m.isDeleted);
+  const msgIdx = visibleMessages.findIndex((m) => m.id === msg.id);
+  if (msgIdx < 0) {
+    return { seenBy: [], unseenBy: [] };
+  }
+  const myStaffId = Number(currentUserId || 0);
+  const rawReceipts = conv.readReceipts.filter(
+    (r) =>
+      r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, msg.senderId, msg.senderName)
+  );
+  // Dedup by staffId — keep the entry with the highest readCount
+  const receiptMap = new Map<number, MosChatReadReceiptEntry>();
+  for (const r of rawReceipts) {
+    const existing = receiptMap.get(r.staffId);
+    if (!existing || r.readCount > existing.readCount) {
+      receiptMap.set(r.staffId, r);
+    }
+  }
+  const otherReceipts = Array.from(receiptMap.values());
+  const seenBy = otherReceipts.filter((r) => r.readCount >= msgIdx + 1);
+  const unseenBy = otherReceipts.filter((r) => r.readCount < msgIdx + 1);
+  return { seenBy, unseenBy };
+}
+
+/**
+ * Phân tích danh sách người đã xem (seenBy) và chưa xem (unseenBy) cho một phản hồi trong thread.
+ */
+export function getThreadReplyReadBreakdown(
+  conv: MosChatConversation | null | undefined,
+  parentMsg: MosChatMessage,
+  reply: MosChatThreadReply,
+  currentUserId?: string | number
+): { seenBy: MosChatThreadReadReceiptEntry[]; unseenBy: MosChatThreadReadReceiptEntry[] } {
+  const receipts = parentMsg.threadReadReceipts || [];
+  if (receipts.length === 0 || conv?.isSelf) {
+    return { seenBy: [], unseenBy: [] };
+  }
+  const visibleReplies = (parentMsg.thread || []).filter((r) => !r.deletedAt && !r.isDeleted);
+  const replyIdx = visibleReplies.findIndex((r) => r.id === reply.id);
+  if (replyIdx < 0) {
+    return { seenBy: [], unseenBy: [] };
+  }
+  const myStaffId = Number(currentUserId || 0);
+  const rawThreadReceipts = receipts.filter(
+    (r) =>
+      r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, reply.senderId, reply.senderName)
+  );
+  const threadReceiptMap = new Map<number, MosChatThreadReadReceiptEntry>();
+  for (const r of rawThreadReceipts) {
+    const existing = threadReceiptMap.get(r.staffId);
+    if (!existing || r.readReplyCount > existing.readReplyCount) {
+      threadReceiptMap.set(r.staffId, r);
+    }
+  }
+  const otherReceipts = Array.from(threadReceiptMap.values());
+  const seenBy = otherReceipts.filter((r) => r.readReplyCount >= replyIdx + 1);
+  const unseenBy = otherReceipts.filter((r) => r.readReplyCount < replyIdx + 1);
+  return { seenBy, unseenBy };
+}
+
+/**
+ * Gom nhóm người đọc dừng lại ở mỗi tin nhắn (stopped readers).
+ */
+export function calculateStoppedReadersByMsgId(
+  conv: MosChatConversation | null | undefined,
+  currentUserId?: string | number
+): Record<string, MosChatReadReceiptEntry[]> {
+  const out: Record<string, MosChatReadReceiptEntry[]> = {};
+  if (!conv || !conv.readReceipts || conv.readReceipts.length === 0 || conv.isSelf) {
+    return out;
+  }
+  const visibleMessages = (conv.messages || []).filter((m) => !m.deletedAt && !m.isDeleted);
+  if (visibleMessages.length === 0) return out;
+  const myStaffId = Number(currentUserId || 0);
+  for (const r of conv.readReceipts) {
+    if (r.staffId === myStaffId || r.readCount <= 0) continue;
+    const maxIdx = Math.min(r.readCount, visibleMessages.length) - 1;
+    for (let i = maxIdx; i >= 0; i--) {
+      const candidate = visibleMessages[i];
+      if (!candidate) continue;
+      if (!doesReceiptMatchAuthor(r.staffId, r.displayName, candidate.senderId, candidate.senderName)) {
+        if (!out[candidate.id]) out[candidate.id] = [];
+        out[candidate.id].push(r);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Gom nhóm người đọc dừng lại ở mỗi reply trong thread (stopped readers for replies).
+ */
+export function calculateStoppedReadersByReplyId(
+  parentMsg: MosChatMessage | null | undefined,
+  currentUserId?: string | number,
+  isSelf?: boolean
+): Record<string, MosChatThreadReadReceiptEntry[]> {
+  const out: Record<string, MosChatThreadReadReceiptEntry[]> = {};
+  if (!parentMsg || !parentMsg.threadReadReceipts || parentMsg.threadReadReceipts.length === 0 || isSelf) {
+    return out;
+  }
+  const visibleReplies = (parentMsg.thread || []).filter((r) => !r.deletedAt && !r.isDeleted);
+  if (visibleReplies.length === 0) return out;
+  const myStaffId = Number(currentUserId || 0);
+  for (const r of parentMsg.threadReadReceipts) {
+    if (r.staffId === myStaffId || r.readReplyCount <= 0) continue;
+    const maxIdx = Math.min(r.readReplyCount, visibleReplies.length) - 1;
+    for (let i = maxIdx; i >= 0; i--) {
+      const candidate = visibleReplies[i];
+      if (!candidate) continue;
+      if (!doesReceiptMatchAuthor(r.staffId, r.displayName, candidate.senderId, candidate.senderName)) {
+        if (!out[candidate.id]) out[candidate.id] = [];
+        out[candidate.id].push(r);
+        break;
+      }
+    }
+  }
+  return out;
 }

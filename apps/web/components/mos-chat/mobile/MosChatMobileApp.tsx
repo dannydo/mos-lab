@@ -18,6 +18,7 @@ import { MosChatMobileComposer } from './MosChatMobileComposer';
 import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
 import { MosChatMobileReactionUsersSheet } from './MosChatMobileReactionUsersSheet';
+import { MosChatMobileSeenUsersSheet } from './MosChatMobileSeenUsersSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
 import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
@@ -1001,6 +1002,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
 
       {/* Reaction Users Bottom Sheet (Xem ai đã react) */}
       <MosChatMobileReactionUsersSheet />
+
+      {/* Seen Users Bottom Sheet (Xem người đã đọc tin nhắn - MOS-BUG-229) */}
+      <MosChatMobileSeenUsersSheet />
 
       {/* Move / Merge to Thread Modals */}
       <MosChatMobileMoveThreadModal

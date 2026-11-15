@@ -66,6 +66,10 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       messages,
       staffDirectory,
       openCustomerDetail,
+      activeConversation,
+      getMessageReadBreakdown,
+      stoppedReadersByMsgId,
+      openSeenUsersSheetForMessage,
     } = useMosChat();
 
     const isMe = isUserMessageOwner(message, currentUser);
@@ -198,6 +202,13 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
     // Time format
     const timeFormatted = message.timeLabel || dayjs(message.createdAt).format('HH:mm');
     const threadCount = message.thread?.length || 0;
+
+    // Read status breakdown for this message (MOS-BUG-229)
+    const msgReadBreakdown = getMessageReadBreakdown
+      ? getMessageReadBreakdown(activeConversation, message)
+      : { seenBy: [], unseenBy: [] };
+    const stoppedReadersForMsg = (stoppedReadersByMsgId && stoppedReadersByMsgId[message.id]) || [];
+    const isSeen = msgReadBreakdown.seenBy.length > 0;
 
     return (
       <div
@@ -702,10 +713,38 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             >
               {message.editedAt && <span className="italic mr-0.5">đã sửa</span>}
               <span>{timeFormatted}</span>
-              {isMe && (
-                <CheckCheck
-                  className={`w-3.5 h-3.5 ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
-                />
+              {isMe && !message.isDeleted && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openSeenUsersSheetForMessage?.(message);
+                  }}
+                  className={`inline-flex items-center gap-0.5 active:scale-90 transition-transform cursor-pointer select-none leading-none ${
+                    isSeen
+                      ? 'text-emerald-500 dark:text-emerald-400 font-bold'
+                      : isDark
+                        ? 'text-slate-400'
+                        : 'text-slate-500'
+                  }`}
+                  title={
+                    isSeen
+                      ? `Đã xem bởi ${msgReadBreakdown.seenBy.map((s) => s.displayName).join(', ')} (Nhấn để xem)`
+                      : 'Đã gửi · Chưa có người xem'
+                  }
+                  aria-label="Xem người đã đọc tin nhắn"
+                >
+                  {isSeen ? (
+                    <CheckCheck className="w-3.5 h-3.5 stroke-[2.3]" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5 stroke-[2.2]" />
+                  )}
+                  {msgReadBreakdown.seenBy.length > 1 && (
+                    <span className="text-[9.5px] tabular-nums font-bold">
+                      {msgReadBreakdown.seenBy.length}
+                    </span>
+                  )}
+                </button>
               )}
             </div>
           </div>
@@ -777,6 +816,48 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
               title="Thêm biểu cảm"
             >
               <SmilePlus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Mini Seen Avatars Stack (MOS-BUG-229) */}
+        {!message.isDeleted && stoppedReadersForMsg.length > 0 && (
+          <div
+            className={`mt-1 flex items-center gap-1 select-none px-1 ${
+              isMe ? 'self-end' : 'self-start'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openSeenUsersSheetForMessage?.(message);
+              }}
+              className="inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-transform"
+              title={`Đã xem đến đây: ${stoppedReadersForMsg.map((s) => s.displayName).join(', ')}`}
+              aria-label="Xem người đã đọc đến tin nhắn này"
+            >
+              <div className="flex items-center -space-x-1.5">
+                {stoppedReadersForMsg.slice(0, 4).map((r) => (
+                  <div
+                    key={`mobile-mini-seen-${r.staffId}-${r.displayName}`}
+                    className="rounded-full ring-1.5 ring-[var(--mos-surface)] shrink-0 overflow-hidden"
+                  >
+                    <MosChatAvatar
+                      size="xs"
+                      src={r.avatarUrl}
+                      name={r.displayName}
+                      staffId={r.staffId}
+                      staffDirectory={staffDirectory}
+                    />
+                  </div>
+                ))}
+                {stoppedReadersForMsg.length > 4 && (
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-extrabold bg-[var(--mos-surface-muted)] text-[var(--mos-text)] ring-1.5 ring-[var(--mos-surface)] tabular-nums">
+                    +{stoppedReadersForMsg.length - 4}
+                  </span>
+                )}
+              </div>
             </button>
           </div>
         )}
