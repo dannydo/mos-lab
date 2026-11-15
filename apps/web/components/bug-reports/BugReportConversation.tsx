@@ -131,26 +131,33 @@ export function BugReportConversation({
   const clarificationCopy = (requestType === 'FEATURE' ? FEATURE_CLARIFICATION_COPY : CLARIFICATION_COPY)[
     clarification.status
   ];
-  const locked = ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(status);
+  const locked = ['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(status);
   const isReadOnly = readOnly || locked;
+  const isAgentWorking = ['APPROVED', 'IN_PROGRESS'].includes(status);
   const reporterClarificationCopy = reporterMode
-    ? {
-        PENDING_AGENT: {
+    ? isAgentWorking
+      ? {
           type: 'info' as const,
-          title: 'mOS đang xem yêu cầu',
-          description: 'mOS sẽ hỏi bạn nếu thật sự cần thêm một chi tiết.',
-        },
-        WAITING_REPORTER: {
-          type: 'warning' as const,
-          title: 'Cần bạn trả lời thêm',
-          description: 'Trả lời câu hỏi bên dưới để mOS có thể tiếp tục.',
-        },
-        READY: {
-          type: 'success' as const,
-          title: 'mOS đã có đủ thông tin',
-          description: 'mOS đang chuẩn bị bước xử lý tiếp theo.',
-        },
-      }[clarification.status]
+          title: 'mOS và Agent đang xử lý yêu cầu',
+          description: 'Bạn có thể nhắn thêm chi tiết, góp ý hoặc dán ảnh đính kèm cho Agent tại đây.',
+        }
+      : {
+          PENDING_AGENT: {
+            type: 'info' as const,
+            title: 'mOS đang xem yêu cầu',
+            description: 'mOS sẽ hỏi bạn nếu thật sự cần thêm một chi tiết.',
+          },
+          WAITING_REPORTER: {
+            type: 'warning' as const,
+            title: 'Cần bạn trả lời thêm',
+            description: 'Trả lời câu hỏi bên dưới để mOS có thể tiếp tục.',
+          },
+          READY: {
+            type: 'success' as const,
+            title: 'mOS đã có đủ thông tin',
+            description: 'mOS đang chuẩn bị bước xử lý tiếp theo.',
+          },
+        }[clarification.status]
     : clarificationCopy;
 
   const addFiles = React.useCallback(
@@ -324,7 +331,9 @@ export function BugReportConversation({
                 ? reporterMode
                   ? 'Trả lời câu hỏi của mOS; có thể dán ảnh trực tiếp vào đây…'
                   : 'Trả lời câu hỏi của Agent; có thể dán ảnh trực tiếp vào đây…'
-                : 'Bổ sung chi tiết hoặc bằng chứng; có thể dán ảnh trực tiếp…'
+                : reporterMode
+                  ? 'Góp ý hoặc nhắn thêm cho Agent trong quá trình xử lý; có thể dán ảnh trực tiếp…'
+                  : 'Bổ sung chi tiết hoặc bằng chứng cho Agent; có thể dán ảnh trực tiếp…'
             }
             maxLength={2000}
             autoSize={{ minRows: 2, maxRows: 6 }}

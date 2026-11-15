@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Image, Input, Typography, message, theme } from 'antd';
+import { Alert, Button, Image, Input, Tag, Typography, message, theme } from 'antd';
 import {
   BUG_REPORT_Z_INDEX,
   type BugReportCommentCreateResult,
@@ -24,6 +24,7 @@ import {
   ImageIcon,
   ListTree,
   MessageCircleQuestion,
+  MessageSquare,
   RotateCcw,
   Search,
   Sparkles,
@@ -752,6 +753,50 @@ export function MyBugReportsPanel({
                   </div>
                 )}
               </section>
+
+              {/* Trao đổi & bình luận (luôn hiển thị để người dùng có thể theo dõi và comment thêm trong quá trình xử lý của agent) */}
+              {selected.clarification.status !== 'WAITING_REPORTER' &&
+                (!['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(selected.status) ||
+                  selected.comments.length > 0) && (
+                  <section
+                    className="rounded-xl border p-4"
+                    style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AppIcon icon={MessageSquare} size="sm" />
+                        <Text strong className="text-sm">
+                          Trao đổi & Bình luận ({selected.comments.length})
+                        </Text>
+                      </div>
+                      {['NEW', 'APPROVED', 'IN_PROGRESS'].includes(selected.status) ? (
+                        <Tag color="processing" className="m-0">
+                          {selected.agentProgress.stage === 'ANALYZING' ||
+                          selected.agentProgress.stage === 'CHECKING_BUSINESS_LOGIC' ||
+                          selected.clarification.status === 'PENDING_AGENT'
+                            ? 'Agent đang phân tích'
+                            : selected.agentProgress.stage === 'IMPLEMENTING' ||
+                                selected.agentProgress.stage === 'COMMITTING' ||
+                                selected.agentProgress.stage === 'DEPLOYING' ||
+                                selected.agentProgress.stage === 'VERIFYING' ||
+                                selected.status === 'APPROVED' ||
+                                selected.status === 'IN_PROGRESS'
+                              ? 'Agent đang xử lý'
+                              : 'Đang xử lý'}
+                        </Tag>
+                      ) : null}
+                    </div>
+                    <BugReportConversation
+                      reportId={selected.id}
+                      requestType={selected.requestType}
+                      status={selected.status}
+                      clarification={selected.clarification}
+                      comments={selected.comments}
+                      reporterMode
+                      onSubmit={(request) => onComment(selected.id, request)}
+                    />
+                  </section>
+                )}
 
               {canViewTechnicalHistory ? (
                 <details
