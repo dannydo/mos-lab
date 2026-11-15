@@ -248,7 +248,9 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
             </span>
             <span className={`text-[10px] text-[var(--mos-text-muted)] font-medium tabular-nums`}>
               Đã bao gồm 8% thuế VAT
-              {diamondDiscountAmount > 0 ? ` · Đã cấn trừ -${diamondDiscountAmount.toLocaleString('vi-VN')}đ 💎` : ''}
+              {diamondDiscountAmount > 0
+                ? ` · Đã cấn trừ -${diamondDiscountAmount.toLocaleString('vi-VN')}đ (${Math.round(diamondDiscountAmount / 1000)} 💎)`
+                : ''}
             </span>
           </div>
           <span

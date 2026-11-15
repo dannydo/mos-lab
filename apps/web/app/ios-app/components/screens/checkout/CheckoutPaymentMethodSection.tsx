@@ -24,6 +24,7 @@ export interface CheckoutPaymentMethodSectionProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onCaptureProof: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onProceed: () => void;
+  isSettled?: boolean;
 }
 
 const PAYMENT_CHANNELS: ReadonlyArray<{
@@ -98,6 +99,7 @@ export function CheckoutPaymentMethodSection({
   fileInputRef,
   onCaptureProof,
   onProceed,
+  isSettled = false,
 }: CheckoutPaymentMethodSectionProps) {
   const [focusedField, setFocusedField] = useState<PaymentChannelKey | null>(null);
   const [draftAmountStr, setDraftAmountStr] = useState<string>('');
@@ -141,7 +143,7 @@ export function CheckoutPaymentMethodSection({
       <div>
         <div className="flex items-center justify-between px-1 mb-1.5 gap-2">
           <span className="text-[11px] font-black text-neutral-400 uppercase tracking-wider">Hình Thức Thanh Toán</span>
-          {finalGrandTotal > 0 && (
+          {finalGrandTotal > 0 && !isSettled && (
             <button
               type="button"
               data-testid="toggle-split-payment-btn"
@@ -196,8 +198,12 @@ export function CheckoutPaymentMethodSection({
                 return (
                   <div
                     key={m.id}
-                    onClick={() => onSelectMethod(m.id)}
-                    className={`p-3.5 flex items-center justify-between cursor-pointer transition-colors ${
+                    onClick={() => !isSettled && onSelectMethod(m.id)}
+                    className={`p-3.5 flex items-center justify-between transition-colors ${
+                      isSettled
+                        ? 'cursor-not-allowed'
+                        : 'cursor-pointer'
+                    } ${
                       active
                         ? isDark
                           ? 'bg-emerald-950/40'
@@ -485,38 +491,51 @@ export function CheckoutPaymentMethodSection({
               : '⏳ Tiền mặt / POS: Khóa thưởng Checkout của bạn & chuyển Quầy thu ngân xác nhận Completed.'}
           </div>
         )}
-        <button
-          type="button"
-          onClick={onProceed}
-          disabled={isActionDisabled}
-          className={`w-full py-3.5 px-4 rounded-2xl font-black text-[15px] shadow-sm transition-all text-center tracking-tight ${
-            isActionDisabled
-              ? isDark
-                ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/60 cursor-not-allowed opacity-60'
-                : 'bg-neutral-200 text-neutral-400 border border-neutral-300 cursor-not-allowed opacity-60'
-              : finalGrandTotal === 0
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white active:scale-98 cursor-pointer'
-                : hasVietqr
-                  ? 'bg-gradient-to-r from-[#FF9500] to-[#FFB400] text-black active:scale-98 cursor-pointer'
-                  : 'bg-[#FFB400] text-black active:scale-98 cursor-pointer'
-          }`}
-        >
-          {finalGrandTotal === 0
-            ? `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 · 0đ)`
-            : !isAllocationValid
-              ? `Vui Lòng Chia Đủ ${finalGrandTotal.toLocaleString('vi-VN')}đ`
-              : needsPosProof
-                ? '🔒 Bắt Buộc Chụp Biên Lai POS Để Chốt Đơn'
-                : activeChannelCount > 1 && hasVietqr
-                  ? `Mở Mã QR (${vietqrAmount.toLocaleString('vi-VN')}đ) · Tổng ${finalGrandTotal.toLocaleString('vi-VN')}đ`
-                  : activeChannelCount > 1
-                    ? `Xác Nhận Thu Kết Hợp · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
-                    : hasVietqr
-                      ? `Mở Mã QR Thanh Toán · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
-                      : hasPos
-                        ? `Xác Nhận Quẹt Thẻ (POS) · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
-                        : `Xác Nhận Thu Tiền Mặt · ${finalGrandTotal.toLocaleString('vi-VN')}đ`}
-        </button>
+        {isSettled ? (
+          <div
+            className={`w-full py-3.5 px-4 rounded-2xl font-black text-[14px] shadow-sm text-center tracking-tight border flex items-center justify-center gap-2 ${
+              isDark
+                ? 'bg-emerald-950/60 border-emerald-700/70 text-emerald-300'
+                : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+            }`}
+          >
+            <span>✓</span>
+            <span>ĐÃ CHỐT THANH TOÁN (COMPLETED)</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onProceed}
+            disabled={isActionDisabled}
+            className={`w-full py-3.5 px-4 rounded-2xl font-black text-[15px] shadow-sm transition-all text-center tracking-tight ${
+              isActionDisabled
+                ? isDark
+                  ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/60 cursor-not-allowed opacity-60'
+                  : 'bg-neutral-200 text-neutral-400 border border-neutral-300 cursor-not-allowed opacity-60'
+                : finalGrandTotal === 0
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white active:scale-98 cursor-pointer'
+                  : hasVietqr
+                    ? 'bg-gradient-to-r from-[#FF9500] to-[#FFB400] text-black active:scale-98 cursor-pointer'
+                    : 'bg-[#FFB400] text-black active:scale-98 cursor-pointer'
+            }`}
+          >
+            {finalGrandTotal === 0
+              ? `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 · 0đ)`
+              : !isAllocationValid
+                ? `Vui Lòng Chia Đủ ${finalGrandTotal.toLocaleString('vi-VN')}đ`
+                : needsPosProof
+                  ? '🔒 Bắt Buộc Chụp Biên Lai POS Để Chốt Đơn'
+                  : activeChannelCount > 1 && hasVietqr
+                    ? `Mở Mã QR (${vietqrAmount.toLocaleString('vi-VN')}đ) · Tổng ${finalGrandTotal.toLocaleString('vi-VN')}đ`
+                    : activeChannelCount > 1
+                      ? `Xác Nhận Thu Kết Hợp · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
+                      : hasVietqr
+                        ? `Mở Mã QR Thanh Toán · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
+                        : hasPos
+                          ? `Xác Nhận Quẹt Thẻ (POS) · ${finalGrandTotal.toLocaleString('vi-VN')}đ`
+                          : `Xác Nhận Thu Tiền Mặt · ${finalGrandTotal.toLocaleString('vi-VN')}đ`}
+          </button>
+        )}
       </div>
     </>
   );

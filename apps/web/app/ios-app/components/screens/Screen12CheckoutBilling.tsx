@@ -9,12 +9,12 @@ import {
   type IosPromotionOption,
   type IosScannedProductCatalogMatch,
 } from '@mos-lab/shared';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Lock } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
-import { BookingItem } from '../../state/mockData';
+import { BookingItem, isDoneBookingPendingCheckout } from '../../state/mockData';
 import { addScannedProductToCartProducts, removeScannedUnitFromCartProducts } from './upsell/upsellCheckoutHelpers';
 import { compressLashImage } from '../../utils/imageCompressor';
 import { ActiveActorProfile } from '../../state/useIosAppState';
@@ -209,21 +209,11 @@ export function Screen12CheckoutBilling({
     booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
   );
   const effectiveServiceCharge = resolveEffectiveServiceTotal({
-    servicePrice,
-    upgradePrice,
-    serviceName: booking?.serviceName,
-    isComboLive,
-    hasUnderMink: booking?.attributes?.hasUnderMink,
-    underMinkServiceType: booking?.attributes?.underMinkServiceType,
-    hasUnderMinkCombo,
-    comboRedemption,
-    selectedCombo,
-    selectedUnderCombo,
+    servicePrice, upgradePrice, serviceName: booking?.serviceName, isComboLive,
+    hasUnderMink: booking?.attributes?.hasUnderMink, underMinkServiceType: booking?.attributes?.underMinkServiceType,
+    hasUnderMinkCombo, comboRedemption, selectedCombo, selectedUnderCombo,
   });
-  const actorTipBreakdown = useMemo(
-    () => calculateActorTipBreakdown(booking, actor, tipAmount),
-    [booking, actor, tipAmount]
-  );
+  const actorTipBreakdown = useMemo(() => calculateActorTipBreakdown(booking, actor, tipAmount), [booking, actor, tipAmount]);
   const upperComboPrice = selectedCombo ? selectedCombo.price : 0;
   const underComboPrice = selectedUnderCombo ? selectedUnderCombo.price : 0;
   const comboTotal = upperComboPrice + underComboPrice;
@@ -301,6 +291,10 @@ export function Screen12CheckoutBilling({
   // TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ (Khớp 100% legacy database & iOS App cũ)
   const DIAMOND_RATE = 1000;
   const customerDiamondBalance = booking?.diamondBalance ?? 0;
+  const isSettled =
+    booking?.billing?.settlementStatus === 'SETTLED_COMPLETED' ||
+    booking?.orderState === 'Completed' ||
+    Boolean(booking?.status === 'DONE' && booking?.billing?.completedAt && !isDoneBookingPendingCheckout(booking));
   const isCreditLockedByPromotion = promoBreakdown.isFullCreditLocked;
   const hasPartialCreditRestriction = Boolean(
     promoBreakdown.hasAnyCreditRestrictedItem && !promoBreakdown.isFullCreditLocked
@@ -316,7 +310,6 @@ export function Screen12CheckoutBilling({
   const finalGrandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
 
   // GỢI Ý TIỀN TIP THEO % GIÁ TRỊ CA PHỤC VỤ (5% · 10% · 15% · 20%, LÀM TRÒN 10.000đ)
-  // Luôn tính theo giá trị lẻ thực tế của dịch vụ + sản phẩm bán kèm (trước VAT 8% và trước trừ Kim Cương)
   const { tipBaseAmount } = useMemo(
     () =>
       resolveCheckoutTipBaseAmount({
@@ -328,16 +321,7 @@ export function Screen12CheckoutBilling({
         hasUnderMinkCombo,
         cartProducts,
       }),
-    [
-      servicePrice,
-      effectiveServiceCharge,
-      booking?.serviceName,
-      serviceName,
-      booking?.attributes?.hasUnderMink,
-      booking?.attributes?.underMinkServiceType,
-      hasUnderMinkCombo,
-      cartProducts,
-    ]
+    [servicePrice, effectiveServiceCharge, booking?.serviceName, serviceName, booking?.attributes?.hasUnderMink, booking?.attributes?.underMinkServiceType, hasUnderMinkCombo, cartProducts]
   );
 
   const percentTipSuggestions = useMemo(() => buildPercentageTipSuggestions(tipBaseAmount), [tipBaseAmount]);
@@ -499,17 +483,40 @@ export function Screen12CheckoutBilling({
               onToggle={() => setShowStaffRewards((prev) => !prev)}
               isDark={isDark}
             />
-            <button
-              onClick={handleProceed}
-              className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
-            >
-              Chốt đơn
-            </button>
+            {isSettled ? (
+              <span className="text-emerald-500 font-bold text-xs py-1 px-2.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                ✓ Đã chốt
+              </span>
+            ) : (
+              <button
+                onClick={handleProceed}
+                className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
+              >
+                Chốt đơn
+              </button>
+            )}
           </div>
         }
       />
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
+        {isSettled && (
+          <div
+            className={`rounded-2xl border p-3 text-xs flex items-center gap-2.5 shadow-2xs ${
+              isDark
+                ? 'bg-emerald-950/40 border-emerald-700/50 text-emerald-200'
+                : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-emerald-500 shrink-0" />
+            <div className="leading-relaxed">
+              <strong className="block text-[12px] font-bold">ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)</strong>
+              <span className="text-[11px] opacity-90">
+                Mọi thông tin dịch vụ, khuyến mãi, cấn trừ Kim Cương và thanh toán đã được khóa sổ, không thể chỉnh sửa.
+              </span>
+            </div>
+          </div>
+        )}
         {showStaffRewards && booking?.isTrainingCvlOrder && actor?.tier === 'CC' && (
           <div
             className={`rounded-2xl border p-3 text-xs ${
@@ -578,10 +585,13 @@ export function Screen12CheckoutBilling({
           tipAmount={tipAmount}
           effectiveDiamondUsed={effectiveDiamondUsed}
           diamondDiscountAmount={diamondDiscountAmount}
+          customerDiamondBalance={customerDiamondBalance}
+          maxDiamondCanUse={maxDiamondCanUse}
+          isSettled={isSettled}
           finalGrandTotal={finalGrandTotal}
           showStaffRewards={showStaffRewards}
           onToggleShowStaffRewards={() => setShowStaffRewards((prev) => !prev)}
-          onEditService={onEditService}
+          onEditService={isSettled ? undefined : onEditService}
         />
 
         <CheckoutTipAndDiamondSection
@@ -606,6 +616,7 @@ export function Screen12CheckoutBilling({
           onSetDiamondUsed={setDiamondUsed}
           isCreditLockedByPromotion={isCreditLockedByPromotion}
           hasPartialCreditRestriction={hasPartialCreditRestriction}
+          isSettled={isSettled}
         />
 
         <CheckoutPaymentMethodSection
@@ -632,6 +643,7 @@ export function Screen12CheckoutBilling({
           fileInputRef={fileInputRef}
           onCaptureProof={handleCaptureProof}
           onProceed={handleProceed}
+          isSettled={isSettled}
         />
       </div>
 

@@ -195,4 +195,88 @@ describe('Screen12CheckoutBilling custom Diamond input & 3-way split payment', (
     fireEvent.blur(diamondInput);
     expect((screen.getByTestId('diamond-custom-input') as HTMLInputElement).value).toBe('1.250');
   });
+
+  it('displays Diamond balance calculation row in receipt summary and updates after deduction', () => {
+    render(
+      <Screen12CheckoutBilling
+        booking={makeBooking({
+          diamondBalance: 200,
+          billing: {
+            subtotal: 880000,
+            serviceTotal: 880000,
+            productTotal: 0,
+            paymentMethod: 'VIETQR',
+            tipAmount: 0,
+            tipCvShare: 0,
+            tipCcShare: 0,
+            diamondUsed: 0,
+            diamondDiscountAmount: 0,
+            grandTotal: 950400,
+          },
+        })}
+        onBack={() => {}}
+        onChoosePayment={vi.fn()}
+      />
+    );
+
+    // Initial state: diamondUsed = 0, should show customer has 200 Diamonds (200.000đ)
+    expect(screen.getByText(/Ví Kim Cương khách có:/i)).toBeTruthy();
+    expect(screen.getByText(/=\s*200\.000đ/i)).toBeTruthy();
+    expect(screen.getByText(/Có thể dùng tối đa 200 💎/i)).toBeTruthy();
+
+    // Now deduct 50 Diamonds using preset button
+    fireEvent.click(screen.getByRole('button', { name: /50 💎/i }));
+    expect(screen.getByText(/Cấn trừ Kim Cương:/i)).toBeTruthy();
+    expect(screen.getAllByText(/-50\.000đ/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/còn 150 💎/i)).toBeTruthy();
+  });
+
+  it('strictly locks all editing controls and displays completed status when booking is already settled', () => {
+    const onChoosePayment = vi.fn();
+    render(
+      <Screen12CheckoutBilling
+        booking={makeBooking({
+          status: 'DONE',
+          orderState: 'Completed',
+          diamondBalance: 200,
+          billing: {
+            subtotal: 880000,
+            serviceTotal: 880000,
+            productTotal: 0,
+            paymentMethod: 'VIETQR',
+            settlementStatus: 'SETTLED_COMPLETED',
+            tipAmount: 50000,
+            tipCvShare: 35000,
+            tipCcShare: 10000,
+            diamondUsed: 50,
+            diamondDiscountAmount: 50000,
+            grandTotal: 950400,
+            completedAt: '2026-11-15T12:00:00.000Z',
+          },
+        })}
+        onBack={() => {}}
+        onChoosePayment={onChoosePayment}
+      />
+    );
+
+    // 1. Navigation bar displays ✓ Đã chốt instead of Chốt đơn button
+    expect(screen.getByText('✓ Đã chốt')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Chốt đơn' })).toBeNull();
+
+    // 2. Settlement Lock Banner is prominently displayed
+    expect(screen.getAllByText(/ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN \(COMPLETED\)/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/không thể chỉnh sửa/i).length).toBeGreaterThan(0);
+
+    // 3. Edit Service pencil is hidden
+    expect(screen.queryByRole('button', { name: 'Đổi dịch vụ' })).toBeNull();
+
+    // 4. Diamond input and stepper buttons are disabled
+    const diamondInput = screen.getByTestId('diamond-custom-input') as HTMLInputElement;
+    expect(diamondInput.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Giảm 1 Kim Cương' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tăng 1 Kim Cương' })).toBeDisabled();
+
+    // 5. Bottom action displays completed card instead of proceed button
+    expect(screen.getAllByText(/ĐÃ CHỐT THANH TOÁN \(COMPLETED\)/i).length).toBeGreaterThan(0);
+  });
 });

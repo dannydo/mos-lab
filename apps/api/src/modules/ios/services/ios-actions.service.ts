@@ -125,6 +125,32 @@ export async function executeIosBookingAction(
       };
     }
 
+    const isAlreadySettledOrder =
+      current.orderState === 'Completed' || current.billing?.settlementStatus === 'SETTLED_COMPLETED';
+    const MUTATIVE_ACTIONS_AFTER_SETTLE = new Set([
+      'CHECK_IN',
+      'SAVE_CONSULTATION',
+      'SAVE_CONSULTATION_DRAFT',
+      'ASSIGN_STAFF',
+      'START_TIMER',
+      'FINISH_TIMER',
+      'SAVE_PHOTO',
+      'SAVE_SURVEY',
+      'UPDATE_CART_PRODUCTS',
+      'SAVE_PROMOTION',
+      'SAVE_TIP',
+    ]);
+
+    if (isAlreadySettledOrder && action !== 'RESET_DEMO' && MUTATIVE_ACTIONS_AFTER_SETTLE.has(action)) {
+      return {
+        statusCode: 409,
+        payload: {
+          success: false,
+          error: 'Đơn hàng đã được chốt thanh toán và đối soát hoàn tất. Không thể chỉnh sửa thông tin.',
+        },
+      };
+    }
+
     let nextOverride: BookingOverrideRecord | null = null;
 
     if (action === 'CHECK_IN') {

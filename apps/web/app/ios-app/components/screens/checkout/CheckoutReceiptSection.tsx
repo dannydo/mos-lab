@@ -68,6 +68,9 @@ export interface CheckoutReceiptSectionProps {
   tipAmount: number;
   effectiveDiamondUsed: number;
   diamondDiscountAmount: number;
+  customerDiamondBalance?: number;
+  maxDiamondCanUse?: number;
+  isSettled?: boolean;
   finalGrandTotal: number;
   showStaffRewards: boolean;
   onToggleShowStaffRewards?: () => void;
@@ -111,6 +114,9 @@ export function CheckoutReceiptSection({
   tipAmount,
   effectiveDiamondUsed,
   diamondDiscountAmount,
+  customerDiamondBalance,
+  maxDiamondCanUse,
+  isSettled = false,
   finalGrandTotal,
   showStaffRewards,
   onToggleShowStaffRewards,
@@ -207,7 +213,7 @@ export function CheckoutReceiptSection({
                 <span className={`text-[13px] font-extrabold text-[var(--mos-text)] tracking-tight`}>
                   {serviceName}
                 </span>
-                {onEditService && (
+                {onEditService && !isSettled && (
                   <button
                     type="button"
                     onClick={onEditService}
@@ -301,7 +307,7 @@ export function CheckoutReceiptSection({
                 discountAmount={serviceDiscountAmount}
                 testIdPrefix="service"
                 onOpenPicker={
-                  onOpenItemPromotionPicker
+                  !isSettled && onOpenItemPromotionPicker
                     ? () =>
                         onOpenItemPromotionPicker({
                           scope: 'service',
@@ -311,7 +317,7 @@ export function CheckoutReceiptSection({
                         })
                     : undefined
                 }
-                onClear={onClearItemPromotion ? () => onClearItemPromotion({ scope: 'service' }) : undefined}
+                onClear={!isSettled && onClearItemPromotion ? () => onClearItemPromotion({ scope: 'service' }) : undefined}
               />
             </div>
 
@@ -561,7 +567,7 @@ export function CheckoutReceiptSection({
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {onRemoveScannedUnit && (
+                    {onRemoveScannedUnit && !isSettled && (
                       <ReceiptScannedSerialChips
                         isDark={isDark}
                         productName={displayProductName}
@@ -577,7 +583,7 @@ export function CheckoutReceiptSection({
                       discountAmount={lineDiscount}
                       testIdPrefix={`product-${idx}`}
                       onOpenPicker={
-                        onOpenItemPromotionPicker
+                        !isSettled && onOpenItemPromotionPicker
                           ? () =>
                               onOpenItemPromotionPicker({
                                 scope: 'product',
@@ -590,7 +596,7 @@ export function CheckoutReceiptSection({
                           : undefined
                       }
                       onClear={
-                        onClearItemPromotion
+                        !isSettled && onClearItemPromotion
                           ? () =>
                               onClearItemPromotion({
                                 scope: 'product',
@@ -620,7 +626,7 @@ export function CheckoutReceiptSection({
             );
           })}
 
-          {onOpenProductQrScanner && (
+          {onOpenProductQrScanner && !isSettled && (
             <ReceiptQuickScanProductRow isDark={isDark} onOpenScanner={onOpenProductQrScanner} />
           )}
 
@@ -634,6 +640,8 @@ export function CheckoutReceiptSection({
             tipAmount={tipAmount}
             effectiveDiamondUsed={effectiveDiamondUsed}
             diamondDiscountAmount={diamondDiscountAmount}
+            customerDiamondBalance={customerDiamondBalance}
+            maxDiamondCanUse={maxDiamondCanUse}
             finalGrandTotal={finalGrandTotal}
             showStaffRewards={showStaffRewards}
           />

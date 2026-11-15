@@ -28,6 +28,7 @@ export interface CheckoutTipAndDiamondSectionProps {
   onSetDiamondUsed: (val: number) => void;
   isCreditLockedByPromotion?: boolean;
   hasPartialCreditRestriction?: boolean;
+  isSettled?: boolean;
 }
 
 export function CheckoutTipAndDiamondSection({
@@ -52,6 +53,7 @@ export function CheckoutTipAndDiamondSection({
   onSetDiamondUsed,
   isCreditLockedByPromotion = false,
   hasPartialCreditRestriction = false,
+  isSettled = false,
 }: CheckoutTipAndDiamondSectionProps) {
   const [customDiamondDraft, setCustomDiamondDraft] = useState<string | null>(null);
   return (
@@ -71,10 +73,17 @@ export function CheckoutTipAndDiamondSection({
         >
           {/* Hàng 1: Tip theo mốc cố định + nút Khác */}
           <div>
-            <div
-              className={`text-[10.5px] ${isDark ? 'text-neutral-400' : 'text-gray-400'} font-semibold mb-1 uppercase tracking-wide`}
-            >
-              Mốc tip thông dụng:
+            <div className="flex items-center justify-between mb-1">
+              <span
+                className={`text-[10.5px] ${isDark ? 'text-neutral-400' : 'text-gray-400'} font-semibold uppercase tracking-wide`}
+              >
+                Mốc tip thông dụng:
+              </span>
+              {isSettled && (
+                <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  ✓ Đã chốt tip ({tipAmount.toLocaleString('vi-VN')}đ)
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-6 gap-1">
               {[
@@ -89,18 +98,26 @@ export function CheckoutTipAndDiamondSection({
                   <button
                     key={p.value}
                     type="button"
+                    disabled={isSettled}
                     aria-pressed={isSelected}
                     onClick={() => {
+                      if (isSettled) return;
                       onSetTipAmount(p.value);
                       onSetActiveTipPercent(null);
                       onSetIsCustomTipOpen(false);
                     }}
-                    className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
-                      isSelected
-                        ? 'bg-[#FFB400] text-black shadow-xs font-black'
-                        : isDark
-                          ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
-                          : 'bg-[#F2F2F7] hover:bg-gray-200 text-gray-700'
+                    className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums active:scale-95 ${
+                      isSettled
+                        ? isSelected
+                          ? 'bg-[#FFB400]/80 text-black shadow-xs font-black cursor-not-allowed'
+                          : isDark
+                            ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : isSelected
+                          ? 'bg-[#FFB400] text-black shadow-xs font-black cursor-pointer'
+                          : isDark
+                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 cursor-pointer'
+                            : 'bg-[#F2F2F7] hover:bg-gray-200 text-gray-700 cursor-pointer'
                     }`}
                   >
                     {p.label}
@@ -109,16 +126,19 @@ export function CheckoutTipAndDiamondSection({
               })}
               <button
                 type="button"
-                onClick={() => onSetIsCustomTipOpen(!isCustomTipOpen)}
-                className={`py-2 rounded-xl text-[11px] font-extrabold text-center transition-all cursor-pointer active:scale-95 ${
-                  isCustomTipOpen ||
-                  (tipAmount > 0 &&
-                    ![0, 50000, 100000, 200000, 500000].includes(tipAmount) &&
-                    activeTipPercent === null)
-                    ? 'bg-purple-600 text-white shadow-xs font-black'
-                    : isDark
-                      ? 'bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800'
-                      : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                disabled={isSettled}
+                onClick={() => !isSettled && onSetIsCustomTipOpen(!isCustomTipOpen)}
+                className={`py-2 rounded-xl text-[11px] font-extrabold text-center transition-all active:scale-95 ${
+                  isSettled
+                    ? 'bg-neutral-800/40 text-neutral-600 border border-neutral-800 cursor-not-allowed'
+                    : isCustomTipOpen ||
+                        (tipAmount > 0 &&
+                          ![0, 50000, 100000, 200000, 500000].includes(tipAmount) &&
+                          activeTipPercent === null)
+                      ? 'bg-purple-600 text-white shadow-xs font-black cursor-pointer'
+                      : isDark
+                        ? 'bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800 cursor-pointer'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 cursor-pointer'
                 }`}
               >
                 {isCustomTipOpen ? '✕ Đóng' : 'Khác ⌨️'}
@@ -152,19 +172,27 @@ export function CheckoutTipAndDiamondSection({
                     <button
                       key={opt.percent}
                       type="button"
+                      disabled={isSettled}
                       data-percent={opt.percent}
                       aria-pressed={isSelected}
                       onClick={() => {
+                        if (isSettled) return;
                         onSetTipAmount(opt.tipAmount);
                         onSetActiveTipPercent(opt.percent);
                         onSetIsCustomTipOpen(false);
                       }}
-                      className={`py-2 px-1.5 rounded-xl text-center transition-all cursor-pointer active:scale-95 border ${
-                        isSelected
-                          ? 'bg-amber-500 text-black border-amber-600 shadow-xs font-black'
-                          : isDark
-                            ? 'bg-amber-950/30 hover:bg-amber-900/40 text-amber-200 border-amber-600/40'
-                            : 'bg-amber-50/70 hover:bg-amber-100/70 text-amber-950 border-amber-200/80'
+                      className={`py-2 px-1.5 rounded-xl text-center transition-all active:scale-95 border ${
+                        isSettled
+                          ? isSelected
+                            ? 'bg-amber-500/80 text-black border-amber-600 shadow-xs font-black cursor-not-allowed'
+                            : isDark
+                              ? 'bg-amber-950/20 text-neutral-600 border-neutral-800 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-amber-500 text-black border-amber-600 shadow-xs font-black cursor-pointer'
+                            : isDark
+                              ? 'bg-amber-950/30 hover:bg-amber-900/40 text-amber-200 border-amber-600/40 cursor-pointer'
+                              : 'bg-amber-50/70 hover:bg-amber-100/70 text-amber-950 border-amber-200/80 cursor-pointer'
                       }`}
                     >
                       <div className="text-[13px] font-black leading-tight tabular-nums">{opt.label}</div>
@@ -370,8 +398,11 @@ export function CheckoutTipAndDiamondSection({
             </div>
           ) : customerDiamondBalance > 0 ? (
             <>
-              <div className={`text-[11px] text-[var(--mos-text-muted)] font-medium`}>
-                Chọn số Kim Cương dùng để cấn trừ (1 💎 = 1.000đ):
+              <div className="flex items-center justify-between text-[11px] text-[var(--mos-text-muted)] font-medium">
+                <span>Chọn số Kim Cương cấn trừ (1 💎 = 1.000đ):</span>
+                <span className="font-bold text-cyan-600 dark:text-cyan-400 tabular-nums">
+                  Quy đổi ví: {(customerDiamondBalance * 1000).toLocaleString('vi-VN')}đ
+                </span>
               </div>
               {hasPartialCreditRestriction && (
                 <div
@@ -390,43 +421,43 @@ export function CheckoutTipAndDiamondSection({
               {/* Quick Presets */}
               <div className="grid grid-cols-5 gap-1.5">
                 {[0, 50, 100, 200].map((preset) => {
-                  const disabled = preset > maxDiamondCanUse;
+                  const disabled = preset > maxDiamondCanUse || isSettled;
                   const isSelected = effectiveDiamondUsed === preset;
                   return (
                     <button
                       key={preset}
                       type="button"
                       disabled={disabled}
-                      onClick={() => onSetDiamondUsed(preset)}
-                      className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
+                      onClick={() => !isSettled && onSetDiamondUsed(preset)}
+                      className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums active:scale-95 ${
                         disabled
                           ? isDark
                             ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed'
                             : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                           : isSelected
-                            ? 'bg-cyan-600 text-white shadow-xs font-black'
+                            ? 'bg-cyan-600 text-white shadow-xs font-black cursor-pointer'
                             : isDark
-                              ? 'bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-800'
-                              : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-100'
+                              ? 'bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-800 cursor-pointer'
+                              : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-100 cursor-pointer'
                       }`}
                     >
-                      {preset} 💎
+                      {preset === 0 ? '0 💎' : `${preset} 💎 (${preset}K)`}
                     </button>
                   );
                 })}
                 {/* Max Button */}
                 <button
                   type="button"
-                  disabled={maxDiamondCanUse <= 0}
-                  onClick={() => onSetDiamondUsed(maxDiamondCanUse)}
-                  className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums cursor-pointer active:scale-95 ${
-                    maxDiamondCanUse <= 0
+                  disabled={maxDiamondCanUse <= 0 || isSettled}
+                  onClick={() => !isSettled && onSetDiamondUsed(maxDiamondCanUse)}
+                  className={`py-2 rounded-xl text-[12px] font-extrabold text-center transition-all tabular-nums active:scale-95 ${
+                    maxDiamondCanUse <= 0 || isSettled
                       ? isDark
                         ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed'
                         : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                       : effectiveDiamondUsed === maxDiamondCanUse && maxDiamondCanUse > 0
-                        ? 'bg-cyan-600 text-white shadow-xs font-black'
-                        : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-xs font-black'
+                        ? 'bg-cyan-600 text-white shadow-xs font-black cursor-pointer'
+                        : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-xs font-black cursor-pointer'
                   }`}
                 >
                   {maxDiamondCanUse.toLocaleString('vi-VN')} 💎
@@ -443,19 +474,20 @@ export function CheckoutTipAndDiamondSection({
                   <button
                     type="button"
                     aria-label="Giảm 1 Kim Cương"
-                    disabled={effectiveDiamondUsed <= 0}
+                    disabled={effectiveDiamondUsed <= 0 || isSettled}
                     onClick={() => {
+                      if (isSettled) return;
                       setCustomDiamondDraft(null);
                       onSetDiamondUsed(Math.max(0, effectiveDiamondUsed - 1));
                     }}
-                    className={`w-8 h-8 rounded-lg font-black text-sm flex items-center justify-center border transition-all cursor-pointer active:scale-95 ${
-                      effectiveDiamondUsed <= 0
+                    className={`w-8 h-8 rounded-lg font-black text-sm flex items-center justify-center border transition-all active:scale-95 ${
+                      effectiveDiamondUsed <= 0 || isSettled
                         ? isDark
                           ? 'bg-neutral-900 border-neutral-800 text-neutral-600 cursor-not-allowed'
                           : 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
                         : isDark
-                          ? 'bg-neutral-800 border-neutral-700 text-cyan-300 hover:bg-neutral-700'
-                          : 'bg-white border-cyan-200 text-cyan-800 hover:bg-cyan-50'
+                          ? 'bg-neutral-800 border-neutral-700 text-cyan-300 hover:bg-neutral-700 cursor-pointer'
+                          : 'bg-white border-cyan-200 text-cyan-800 hover:bg-cyan-50 cursor-pointer'
                     }`}
                   >
                     −
@@ -466,15 +498,18 @@ export function CheckoutTipAndDiamondSection({
                       inputMode="numeric"
                       aria-label="Nhập số Kim Cương sử dụng"
                       data-testid="diamond-custom-input"
+                      disabled={isSettled}
                       value={
                         customDiamondDraft !== null ? customDiamondDraft : effectiveDiamondUsed.toLocaleString('vi-VN')
                       }
-                      onFocus={() =>
+                      onFocus={() => {
+                        if (isSettled) return;
                         setCustomDiamondDraft(
                           effectiveDiamondUsed > 0 ? effectiveDiamondUsed.toLocaleString('vi-VN') : '0'
-                        )
-                      }
+                        );
+                      }}
                       onChange={(e) => {
+                        if (isSettled) return;
                         const rawDigits = e.target.value.replace(/\D/g, '');
                         if (rawDigits === '') {
                           setCustomDiamondDraft('');
@@ -487,9 +522,13 @@ export function CheckoutTipAndDiamondSection({
                       }}
                       onBlur={() => setCustomDiamondDraft(null)}
                       className={`w-28 h-8 px-6 rounded-lg border text-center text-[13px] font-black tabular-nums outline-none transition-colors ${
-                        isDark
-                          ? 'bg-neutral-900 border-cyan-700/70 text-cyan-200 focus:border-cyan-400'
-                          : 'bg-white border-cyan-300 text-cyan-950 focus:border-cyan-600'
+                        isSettled
+                          ? isDark
+                            ? 'bg-neutral-900/60 border-neutral-800 text-neutral-500 cursor-not-allowed'
+                            : 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                          : isDark
+                            ? 'bg-neutral-900 border-cyan-700/70 text-cyan-200 focus:border-cyan-400'
+                            : 'bg-white border-cyan-300 text-cyan-950 focus:border-cyan-600'
                       }`}
                     />
                     <span className="absolute right-2 text-[11px] pointer-events-none">💎</span>
@@ -497,19 +536,20 @@ export function CheckoutTipAndDiamondSection({
                   <button
                     type="button"
                     aria-label="Tăng 1 Kim Cương"
-                    disabled={effectiveDiamondUsed >= maxDiamondCanUse}
+                    disabled={effectiveDiamondUsed >= maxDiamondCanUse || isSettled}
                     onClick={() => {
+                      if (isSettled) return;
                       setCustomDiamondDraft(null);
                       onSetDiamondUsed(Math.min(maxDiamondCanUse, effectiveDiamondUsed + 1));
                     }}
-                    className={`w-8 h-8 rounded-lg font-black text-sm flex items-center justify-center border transition-all cursor-pointer active:scale-95 ${
-                      effectiveDiamondUsed >= maxDiamondCanUse
+                    className={`w-8 h-8 rounded-lg font-black text-sm flex items-center justify-center border transition-all active:scale-95 ${
+                      effectiveDiamondUsed >= maxDiamondCanUse || isSettled
                         ? isDark
                           ? 'bg-neutral-900 border-neutral-800 text-neutral-600 cursor-not-allowed'
                           : 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
                         : isDark
-                          ? 'bg-neutral-800 border-neutral-700 text-cyan-300 hover:bg-neutral-700'
-                          : 'bg-white border-cyan-200 text-cyan-800 hover:bg-cyan-50'
+                          ? 'bg-neutral-800 border-neutral-700 text-cyan-300 hover:bg-neutral-700 cursor-pointer'
+                          : 'bg-white border-cyan-200 text-cyan-800 hover:bg-cyan-50 cursor-pointer'
                     }`}
                   >
                     +
@@ -541,17 +581,19 @@ export function CheckoutTipAndDiamondSection({
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onSetDiamondUsed(0)}
-                    className={`text-[10px] font-bold ${
-                      isDark
-                        ? 'text-neutral-400 hover:text-rose-400 bg-neutral-800 border-neutral-700'
-                        : 'text-gray-500 hover:text-red-600 bg-white border-gray-200'
-                    } px-2 py-1 rounded-lg border shrink-0 ml-1 cursor-pointer`}
-                  >
-                    Bỏ dùng
-                  </button>
+                  {!isSettled && (
+                    <button
+                      type="button"
+                      onClick={() => onSetDiamondUsed(0)}
+                      className={`text-[10px] font-bold ${
+                        isDark
+                          ? 'text-neutral-400 hover:text-rose-400 bg-neutral-800 border-neutral-700'
+                          : 'text-gray-500 hover:text-red-600 bg-white border-gray-200'
+                      } px-2 py-1 rounded-lg border shrink-0 ml-1 cursor-pointer`}
+                    >
+                      Bỏ dùng
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div
@@ -563,6 +605,21 @@ export function CheckoutTipAndDiamondSection({
                 >
                   Chưa dùng Kim Cương · Giữ nguyên {customerDiamondBalance.toLocaleString('vi-VN')} 💎 trong ví cho các
                   ca sau
+                </div>
+              )}
+
+              {isSettled && (
+                <div
+                  className={`rounded-xl border py-2 px-3 text-[11px] font-semibold flex items-center gap-2 ${
+                    isDark
+                      ? 'bg-neutral-900/90 border-neutral-800 text-neutral-300'
+                      : 'bg-gray-100 border-gray-300 text-gray-700'
+                  }`}
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>
+                    Đơn hàng đã được chốt thanh toán. Số Kim Cương sử dụng ({effectiveDiamondUsed} 💎) đã được khóa sổ và không thể chỉnh sửa.
+                  </span>
                 </div>
               )}
             </>

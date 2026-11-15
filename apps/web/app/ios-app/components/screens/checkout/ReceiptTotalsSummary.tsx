@@ -14,6 +14,8 @@ export interface ReceiptTotalsSummaryProps {
   tipAmount: number;
   effectiveDiamondUsed: number;
   diamondDiscountAmount: number;
+  customerDiamondBalance?: number;
+  maxDiamondCanUse?: number;
   finalGrandTotal: number;
   showStaffRewards: boolean;
 }
@@ -28,9 +30,12 @@ export function ReceiptTotalsSummary({
   tipAmount,
   effectiveDiamondUsed,
   diamondDiscountAmount,
+  customerDiamondBalance,
+  maxDiamondCanUse,
   finalGrandTotal,
   showStaffRewards,
 }: ReceiptTotalsSummaryProps) {
+  const currentDiamondBalance = customerDiamondBalance ?? booking?.diamondBalance ?? 0;
   return (
     <>
       <div
@@ -82,14 +87,14 @@ export function ReceiptTotalsSummary({
             </span>
           </div>
         )}
-        {effectiveDiamondUsed > 0 && (
+        {effectiveDiamondUsed > 0 ? (
           <div
             className={`flex items-center justify-between font-bold px-2.5 py-1.5 rounded-xl border ${
               isDark ? 'text-cyan-300 bg-cyan-950/40 border-cyan-800/60' : 'text-cyan-800 bg-cyan-50/80 border-cyan-200'
             }`}
           >
             <div className="flex items-center gap-1.5">
-              <span>💎 Thanh toán Kim Cương:</span>
+              <span>💎 Cấn trừ Kim Cương:</span>
               <span
                 className={`text-[10px] font-black px-1.5 py-0.5 rounded border tabular-nums ${
                   isDark ? 'text-cyan-300 bg-neutral-900 border-cyan-700' : 'text-cyan-800 bg-white border-cyan-300'
@@ -98,11 +103,37 @@ export function ReceiptTotalsSummary({
                 {effectiveDiamondUsed} 💎
               </span>
             </div>
-            <span className="font-black tabular-nums whitespace-nowrap shrink-0">
-              -{diamondDiscountAmount.toLocaleString('vi-VN')}đ
+            <div className="flex items-center gap-2">
+              <span className="font-black tabular-nums whitespace-nowrap shrink-0">
+                -{diamondDiscountAmount.toLocaleString('vi-VN')}đ
+              </span>
+              <span className="text-[10.5px] font-normal opacity-80 tabular-nums">
+                (còn {Math.max(0, currentDiamondBalance - effectiveDiamondUsed).toLocaleString('vi-VN')} 💎)
+              </span>
+            </div>
+          </div>
+        ) : currentDiamondBalance > 0 ? (
+          <div
+            className={`flex items-center justify-between font-medium px-2.5 py-1.5 rounded-xl border text-[11.5px] ${
+              isDark ? 'text-cyan-300/90 bg-cyan-950/20 border-cyan-900/50' : 'text-cyan-900 bg-cyan-50/60 border-cyan-200/80'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <span>💎 Ví Kim Cương khách có:</span>
+              <span className="font-bold tabular-nums">
+                {currentDiamondBalance.toLocaleString('vi-VN')} 💎
+              </span>
+              <span className="opacity-75 text-[10.5px]">
+                (= {(currentDiamondBalance * 1000).toLocaleString('vi-VN')}đ)
+              </span>
+            </div>
+            <span className="text-[10.5px] font-semibold opacity-85">
+              {maxDiamondCanUse && maxDiamondCanUse > 0
+                ? `Có thể dùng tối đa ${maxDiamondCanUse.toLocaleString('vi-VN')} 💎`
+                : 'Chưa cấn trừ'}
             </span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Total Row */}
