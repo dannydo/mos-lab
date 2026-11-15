@@ -287,10 +287,10 @@ export function useIosBookingsSync({
         }
 
         if (data?.success && Array.isArray(data.bookings)) {
-          if (!isAdmin && data.storeId && Number(data.storeId) !== effectiveStoreId) {
+          if (!isAdmin && !isSimulationMode && data.storeId && Number(data.storeId) !== effectiveStoreId) {
             setSelectedStoreIdState(Number(data.storeId));
           }
-          setBookings((prev) => mergeServerBookingsWithLocalState(prev, data.bookings, selectedDateOffset));
+          setBookings((prev) => mergeServerBookingsWithLocalState(prev, data.bookings, selectedDateOffset, storeId));
           if (data.counts) {
             setCounts(data.counts);
           }
@@ -408,15 +408,16 @@ export function useIosBookingsSync({
 
   const setSelectedStoreId = useCallback(
     (newStoreId: number) => {
-      if (!isAdmin || isTechnicianRole) return;
+      if ((!isAdmin && !isSimulationMode) || (isTechnicianRole && !isAdmin && !isSimulationMode)) return;
       setSelectedStoreIdState(newStoreId);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('mos_ios_selected_store_id', String(newStoreId));
       }
+      setBookings([]);
       setScopeModeState('STORE_ALL');
       void refreshDb({ storeId: newStoreId, scope: 'STORE_ALL' });
     },
-    [refreshDb, isTechnicianRole, setScopeModeState, setSelectedStoreIdState]
+    [refreshDb, isAdmin, isSimulationMode, isTechnicianRole, setBookings, setScopeModeState, setSelectedStoreIdState]
   );
 
   const handleDateOffsetChange = useCallback(

@@ -242,6 +242,7 @@ function IosAppInner() {
       currentBranch={state.currentBranch}
       availableBranches={state.availableBranches}
       totalStoreBookingsCount={state.totalStoreBookingsCount}
+      isSimulationMode={state.isSimulationMode}
       onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
     />
   );
@@ -255,13 +256,10 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={state.isAdmin ? state.setSelectedStoreId : undefined}
+          onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
-          onRoleChange={(r) => {
-            state.setRole(r);
-            state.setIsSettingsOpen(false);
-          }}
+          onRoleChange={(r) => { state.setRole(r); state.setIsSettingsOpen(false); }}
           onBack={() => state.setIsSettingsOpen(false)}
         />
       );
@@ -274,10 +272,7 @@ function IosAppInner() {
           bookings={state.bookings}
           currentBranch={state.currentBranch}
           isDemoMode={isDemoMode}
-          onSelectBooking={(id) => {
-            state.setRole('CVL');
-            handleSelectBookingFromList(id);
-          }}
+          onSelectBooking={(id) => { state.setRole('CVL'); handleSelectBookingFromList(id); }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
       );
@@ -296,10 +291,7 @@ function IosAppInner() {
           staffStats={state.staffStats}
           bookings={state.bookings}
           isDemoMode={isDemoMode}
-          onBack={() => {
-            state.setActiveTab('booking');
-            state.setCurrentStep(1);
-          }}
+          onBack={() => { state.setActiveTab('booking'); state.setCurrentStep(1); }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
       );
@@ -604,7 +596,7 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={state.isAdmin ? state.setSelectedStoreId : undefined}
+          onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           isSimulationMode={state.isSimulationMode}

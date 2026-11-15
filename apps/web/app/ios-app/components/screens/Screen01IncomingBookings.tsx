@@ -47,6 +47,7 @@ interface Screen01IncomingBookingsProps {
   availableBranches?: IosBranchConfig[];
   totalStoreBookingsCount?: number;
   onOpenCreateBooking?: () => void;
+  isSimulationMode?: boolean;
 }
 
 export function Screen01IncomingBookings({
@@ -67,6 +68,7 @@ export function Screen01IncomingBookings({
   onScopeModeChange,
   onOpenProfileMenu,
   isAdmin = false,
+  isSimulationMode = false,
   onRevertToIncoming,
   selectedStoreId = 6,
   onSelectStoreId,
@@ -83,8 +85,8 @@ export function Screen01IncomingBookings({
     setAvatarLoadError(false);
   }, [actor?.avatar]);
 
-  // Invariant (UI-010): Chỉ Admin thực sự VÀ khi không ở vai trò Chuyên Viên (CV/CVL/CVLL) mới được đổi chi nhánh
-  const canSwitchBranch = Boolean(isAdmin && role !== 'CVL' && role !== 'CVLL' && role !== 'CV');
+  // Invariant (UI-010): Chỉ Admin thực sự (khi không ở vai trò CV) HOẶC khi đang ở Sandbox Mode mới được đổi chi nhánh
+  const canSwitchBranch = Boolean((isAdmin && role !== 'CVL' && role !== 'CVLL' && role !== 'CV') || isSimulationMode);
 
   const effectiveBranch = useMemo(() => {
     if (currentBranch) return currentBranch;

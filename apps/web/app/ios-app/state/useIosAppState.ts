@@ -100,7 +100,15 @@ export function useIosAppState(
   const [selectedDateOffset, setSelectedDateOffset] = useState<number>(0);
 
   // Quản lý chi nhánh được chọn (mặc định Đề Thám storeId=6, hoặc Estella Place storeId=16)
-  const [selectedStoreId, setSelectedStoreIdState] = useState<number>(6);
+  const [selectedStoreId, setSelectedStoreIdState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const savedStore = window.localStorage.getItem('mos_ios_selected_store_id');
+      if (savedStore && (Number(savedStore) === 6 || Number(savedStore) === 16)) {
+        return Number(savedStore);
+      }
+    }
+    return 6;
+  });
 
   const prevDemoModeRef = useRef<boolean>(isDemoMode);
   useEffect(() => {
@@ -173,19 +181,34 @@ export function useIosAppState(
   );
 
   const canSwitchRole = Boolean(isAdmin);
-  const actor = resolveActorProfile(role, loggedInUser);
+  const rawActor = resolveActorProfile(role, loggedInUser);
 
   // Invariant (UI-010 & Chuyên Viên / CC Salon Anchor):
   // - Chuyên Viên (CV/CVL/CVLL) và CC không phải Admin luôn thuộc về chi nhánh gốc đang làm việc của mình.
-  // - Chỉ Admin/Super Admin ở vai trò không phải Chuyên Viên (CC/STORE/ADMIN) mới xem/đổi chi nhánh tùy chọn.
+  // - Admin/Super Admin VÀ người dùng trong Sandbox Mode (Phòng tập luyện mô phỏng) được toàn quyền chọn chi nhánh vận hành (DT / EP).
   const isTechnicianRole = role === 'CVL' || role === 'CVLL' || role === 'CV';
   const ccAssignedStoreId =
-    !isAdmin && role === 'CC' ? Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0) : 0;
-  const effectiveStoreId = isTechnicianRole
-    ? actor.storeId || 6
-    : ccAssignedStoreId > 0
-      ? ccAssignedStoreId
-      : selectedStoreId;
+    !isAdmin && !isSimulationMode && role === 'CC' ? Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0) : 0;
+  const effectiveStoreId =
+    isAdmin || isSimulationMode
+      ? selectedStoreId
+      : isTechnicianRole
+        ? rawActor.storeId || 6
+        : ccAssignedStoreId > 0
+          ? ccAssignedStoreId
+          : selectedStoreId;
+
+  const actor = useMemo(() => {
+    if ((isAdmin || isSimulationMode) && rawActor.storeId !== effectiveStoreId) {
+      return {
+        ...rawActor,
+        storeId: effectiveStoreId,
+        branchCode: effectiveStoreId === 16 ? 'EP' : 'DT',
+        branchName: effectiveStoreId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
+      };
+    }
+    return rawActor;
+  }, [rawActor, isAdmin, isSimulationMode, effectiveStoreId]);
 
   const currentBranch = useMemo(() => {
     return IOS_AVAILABLE_BRANCHES.find((b) => b.id === effectiveStoreId) || IOS_AVAILABLE_BRANCHES[0];
