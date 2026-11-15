@@ -17,6 +17,7 @@ import type {
   IosCreateBookingResponse,
   IosSimulationMenteeOption,
   IosSimulationAttemptSummary,
+  IosUpdateSimulationAttemptRequest,
 } from '@mos-lab/shared';
 
 export interface IosPromotionsResponse {
@@ -145,6 +146,26 @@ export const iosApi = {
         '/ios/simulation/attempts',
         {
           params,
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
+      return res.data;
+    },
+
+    async updateSimulationAttempt(
+      attemptId: string,
+      payload: IosUpdateSimulationAttemptRequest,
+      options?: ApiRequestOptions
+    ): Promise<{
+      success: boolean;
+      attempt: IosSimulationAttemptSummary;
+    }> {
+      const res = await api.patch<{ success: boolean; attempt: IosSimulationAttemptSummary }>(
+        `/ios/simulation/attempts/${encodeURIComponent(attemptId)}`,
+        payload,
+        {
           signal: options?.signal,
           priority: options?.priority,
           timeout: options?.timeout,

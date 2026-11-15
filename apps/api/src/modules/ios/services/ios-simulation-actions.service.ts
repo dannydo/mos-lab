@@ -17,9 +17,13 @@ import { executeIosBookingAction, ExecuteIosActionResult } from './ios-actions.s
 import { computeBookingFinancials } from './ios-bookings-formatters.js';
 import {
   appendSimulationAttempt,
+  buildSimulationAttemptSnapshot,
+  hasAttemptWorthySimulationWork,
+  loadSimulationAttempts,
+} from './ios-simulation-attempts.service.js';
+import {
   findSimulationCustomBookingById,
   getSimulationOverrideRepository,
-  loadSimulationAttempts,
   resolveSimulationContextActor,
 } from './ios-simulation.service.js';
 
@@ -205,124 +209,6 @@ async function assertCvlSimulationAccess(
     }
   }
   return null;
-}
-
-function buildSimulationAttemptSnapshot(params: {
-  sourceAction: IosSimulationAttemptSourceAction;
-  bookingId: number;
-  actorStaffId: number;
-  actorStaffName: string;
-  override: BookingOverrideRecord;
-  meta: ResolvedBookingMeta;
-}): Omit<IosSimulationAttemptSummary, 'attemptNumber'> {
-  const { sourceAction, bookingId, actorStaffId, actorStaffName, override, meta } = params;
-  const cartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts) ? override.cartProducts : [];
-  const selectedCombo = override.selectedCombo || null;
-  const selectedUnderCombo = override.selectedUnderCombo || null;
-
-  const financials = computeBookingFinancials({
-    servicePrice: meta.servicePrice,
-    upgradePrice: meta.upgradePrice,
-    serviceName: meta.serviceName,
-    isComboLive: meta.isComboLive,
-    hasUnderMink: Boolean(override.attributes?.hasUnderMink),
-    underMinkServiceType: override.attributes?.underMinkServiceType,
-    hasUnderMinkCombo: meta.hasUnderMinkCombo,
-    selectedCombo,
-    selectedUnderCombo,
-    comboRedemption: override.comboRedemption || null,
-    cartProducts,
-    overrideBilling: override.billing || {},
-    assignedStaffId: meta.assignedStaffId || actorStaffId,
-    checkInStaffId: Number(override.checkInStaffId || actorStaffId),
-    checkOutStaffId: Number(override.checkOutStaffId || actorStaffId),
-    activeStaffId: actorStaffId,
-    dbOrderState: override.orderState || 'Completed',
-    promotionId: override.promotionId ?? null,
-    appliedPromotion: override.appliedPromotion ?? null,
-    servicePromotion: override.servicePromotion ?? null,
-    comboPromotion: override.comboPromotion ?? null,
-    underComboPromotion: override.underComboPromotion ?? null,
-  });
-
-  const tipAmount = Number(financials.billing.tipAmount || 0);
-  const tipBreakdown = calculateActorTipBreakdown(
-    {
-      assignedStaffId: meta.assignedStaffId || actorStaffId,
-      checkInStaffId: Number(override.checkInStaffId || actorStaffId),
-      checkOutStaffId: Number(override.checkOutStaffId || actorStaffId),
-    },
-    { staffId: actorStaffId },
-    tipAmount
-  );
-
-  const upsellProducts = cartProducts.map((item) => {
-    const qty = Math.max(1, Number(item.quantity || 1));
-    return {
-      productName: item.productName,
-      quantity: qty,
-      totalPrice: Number(item.price || 0) * qty,
-    };
-  });
-  const upsellTotal = upsellProducts.reduce((sum, p) => sum + p.totalPrice, 0);
-  const comboBonusAmount = Number(financials.cvRewardBreakdown.comboBonusAmount || 0);
-  const serumBonusAmount = Number(financials.cvRewardBreakdown.serumBonusAmount || 0);
-  const cvRotationPoints =
-    meta.cvRotationPoints ??
-    Number(
-      (
-        1 +
-        (selectedCombo ? 1 : 0) +
-        (selectedUnderCombo ? 1 : 0) +
-        (override.attributes?.hasUnderMink ? 0.5 : 0)
-      ).toFixed(1)
-    );
-
-  const createdAt = String(override.completedAt || new Date().toISOString());
-  return {
-    attemptId: `sim_att_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    bookingId,
-    orderNumber: meta.orderNumber,
-    customerId: meta.customerId,
-    customerName: meta.customerName,
-    staffId: actorStaffId,
-    staffName: actorStaffName,
-    createdAt,
-    sourceAction,
-    statusAtSnapshot: (override.status || 'CHECKED_IN') as IosSimulationAttemptSummary['statusAtSnapshot'],
-    serviceName: meta.serviceName,
-    servicePrice: Number(financials.billing.serviceTotal ?? meta.servicePrice),
-    selectedStyle: override.attributes?.style || undefined,
-    selectedComboName: selectedCombo?.name || null,
-    selectedComboPrice: Number(selectedCombo?.price || 0),
-    selectedUnderComboName: selectedUnderCombo?.name || null,
-    selectedUnderComboPrice: Number(selectedUnderCombo?.price || 0),
-    upsellProducts,
-    upsellTotal,
-    promotionName: financials.billing.promotionName || null,
-    promotionDiscountAmount: Number(financials.billing.promotionDiscountAmount || 0),
-    grandTotal: Number(financials.billing.grandTotal || 0),
-    tipAmount,
-    tipActorShare: Number(tipBreakdown.actorEarnedAmount || 0),
-    comboBonusAmount,
-    serumBonusAmount,
-    cvRotationPoints,
-    totalEstimatedReward: comboBonusAmount + serumBonusAmount + Number(tipBreakdown.actorEarnedAmount || 0),
-    elapsedSeconds: Number(override.progress?.elapsedSeconds || 0),
-    notes: override.notes ? String(override.notes) : undefined,
-  };
-}
-
-function hasAttemptWorthySimulationWork(override: BookingOverrideRecord): boolean {
-  return Boolean(
-    override.selectedCombo ||
-    override.selectedUnderCombo ||
-    override.comboRedemption ||
-    (Array.isArray(override.cartProducts) && override.cartProducts.length > 0) ||
-    override.billing ||
-    override.attributes?.style ||
-    override.status === 'DONE'
-  );
 }
 
 export async function executeIosSimulationBookingAction(
@@ -567,6 +453,102 @@ export async function executeIosSimulationBookingAction(
           simulationFastForwardUnlocked: true,
           updatedOverride: nextOverride,
           override: nextOverride,
+          savedAt: nowIso,
+        },
+      };
+    });
+  }
+
+  if (action === 'SIM_APPLY_ATTEMPT') {
+    return simRepo.withBookingLock(bookingId, async () => {
+      const current = (await simRepo.loadBookingOverride(bookingId)) || {};
+      const forbidden = await assertCvlSimulationAccess(authUser, bookingId, current, body);
+      if (forbidden) return forbidden;
+
+      const attemptId = String(body.attemptId || '').trim();
+      const allAttempts = await loadSimulationAttempts(actorStaffId, bookingId, baseStore);
+      const targetAttempt = allAttempts.find((a) => a.attemptId === attemptId);
+      if (!targetAttempt) {
+        return {
+          statusCode: 404,
+          payload: {
+            success: false,
+            error: `Không tìm thấy kịch bản mô phỏng #${attemptId} để nạp vào bàn làm việc.`,
+          },
+        };
+      }
+
+      const meta = await resolveBookingBaseMeta(actorStaffId, bookingId, current, body, baseStore);
+      const effectiveCustomerId = meta.customerId;
+      const nowIso = new Date().toISOString();
+
+      const restoredOverride: BookingOverrideRecord = {
+        ...current,
+        _simForceIncoming: undefined,
+        _simResetAt: undefined,
+        ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
+        status: 'CHECKED_IN',
+        orderState: 'Check-in',
+        checkInStaffId: current.checkInStaffId || actorStaffId,
+        checkInStaffName: current.checkInStaffName || actorStaffName,
+        checkInStaffTier: current.checkInStaffTier || authUser.careerTier || 'CVL',
+        attributes: {
+          ...(current.attributes || {}),
+          ...(targetAttempt.selectedStyle ? { style: targetAttempt.selectedStyle } : {}),
+        },
+        selectedCombo: targetAttempt.selectedComboName
+          ? {
+              id: 'restored-combo',
+              name: targetAttempt.selectedComboName,
+              price: targetAttempt.selectedComboPrice,
+              sessions: 5,
+            }
+          : null,
+        selectedUnderCombo: targetAttempt.selectedUnderComboName
+          ? {
+              id: 'restored-under-combo',
+              name: targetAttempt.selectedUnderComboName,
+              price: targetAttempt.selectedUnderComboPrice,
+              sessions: 5,
+            }
+          : null,
+        cartProducts: (targetAttempt.upsellProducts || []).map((p, idx) => ({
+          productId: idx + 1,
+          productName: p.productName,
+          price: p.totalPrice / (p.quantity || 1),
+          quantity: p.quantity,
+          totalPrice: p.totalPrice,
+        })),
+        appliedPromotion: targetAttempt.promotionName
+          ? {
+              id: 'restored-promo',
+              name: targetAttempt.promotionName,
+              discountAmount: targetAttempt.promotionDiscountAmount,
+            }
+          : null,
+        billing: {
+          totalAmount: Math.max(0, targetAttempt.grandTotal - targetAttempt.tipAmount),
+          grandTotal: targetAttempt.grandTotal,
+          tipAmount: targetAttempt.tipAmount,
+          paymentMethod: 'VIETQR',
+        },
+      };
+
+      await simRepo.saveBookingOverride(bookingId, restoredOverride);
+
+      return {
+        statusCode: 200,
+        payload: {
+          success: true,
+          bookingId,
+          action,
+          simulationMode: true,
+          nextStep: 3,
+          appliedAttempt: targetAttempt,
+          simulationAttemptCount: allAttempts.length,
+          simulationFastForwardUnlocked: allAttempts.length >= 1,
+          updatedOverride: restoredOverride,
+          override: restoredOverride,
           savedAt: nowIso,
         },
       };

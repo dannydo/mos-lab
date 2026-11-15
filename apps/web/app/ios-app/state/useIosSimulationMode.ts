@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { IosBookingItem, IosSimulationAttemptSummary, IosSimulationMenteeOption } from '@mos-lab/shared';
+import type {
+  IosBookingItem,
+  IosSimulationAttemptSummary,
+  IosSimulationMenteeOption,
+  IosUpdateSimulationAttemptRequest,
+} from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import type { IosUserRole } from './iosActorProfile';
 import {
@@ -417,6 +422,154 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     [refreshDb, setActiveBookingId, setActiveTab, setBookingSegment, setBookings, setCurrentStep]
   );
 
+  const handleUpdateSimulationAttempt = useCallback(
+    async (attemptId: string, updates: IosUpdateSimulationAttemptRequest) => {
+      setIsSimActionBusy(true);
+      setSimActionError(null);
+      try {
+        const res = await apiClient.ios.updateSimulationAttempt(attemptId, {
+          ...updates,
+          ...(selectedMenteeStaffId ? { menteeStaffId: selectedMenteeStaffId } : {}),
+        });
+        if (res?.success && res.attempt) {
+          const updated = res.attempt;
+          setAttemptsByBookingId((prev) => {
+            const existing = prev[updates.bookingId] || [];
+            return {
+              ...prev,
+              [updates.bookingId]: existing.map((a) => (a.attemptId === attemptId ? updated : a)),
+            };
+          });
+        } else {
+          throw new Error('Cập nhật kịch bản không thành công.');
+        }
+      } catch (err: any) {
+        setSimActionError(err?.message || 'Lỗi khi cập nhật kịch bản.');
+        throw err;
+      } finally {
+        setIsSimActionBusy(false);
+      }
+    },
+    [selectedMenteeStaffId]
+  );
+
+  const handleApplyAttemptToWorkspace = useCallback(
+    async (bookingId: number, attempt: IosSimulationAttemptSummary) => {
+      if (!isSimulationMode || isReadOnlyMentorView || !bookingId) return;
+      setIsSimActionBusy(true);
+      setSimActionError(null);
+      try {
+        const res = await postAction('SIM_APPLY_ATTEMPT', {
+          bookingId,
+          attemptId: attempt.attemptId,
+          simulationMode: true,
+        });
+        if (res?.success) {
+          clearLocalProgressSnapshot(bookingId);
+          setActiveServicingBookingId(null);
+          setActiveServicingStep(null);
+          setBookings((prev) =>
+            prev.map((item) =>
+              Number(item.id) === bookingId
+                ? {
+                    ...item,
+                    status: 'CHECKED_IN',
+                    orderState: 'Check-in',
+                    selectedStyle: attempt.selectedStyle,
+                    selectedCombo: attempt.selectedComboName
+                      ? {
+                          id: 'restored-combo',
+                          name: attempt.selectedComboName,
+                          price: attempt.selectedComboPrice,
+                          bonus:
+                            attempt.comboBonusAmount ||
+                            (attempt.selectedComboPrice >= 1_000_000 ? 50_000 : 30_000),
+                          sessions: 5,
+                        }
+                      : null,
+                    selectedUnderCombo: attempt.selectedUnderComboName
+                      ? {
+                          id: 'restored-under-combo',
+                          name: attempt.selectedUnderComboName,
+                          price: attempt.selectedUnderComboPrice,
+                          bonus: 20_000,
+                          sessions: 5,
+                        }
+                      : null,
+                    cartProducts: (attempt.upsellProducts || []).map((p, idx) => ({
+                      productId: idx + 1,
+                      productName: p.productName,
+                      price: p.totalPrice / (p.quantity || 1),
+                      quantity: p.quantity,
+                      totalPrice: p.totalPrice,
+                    })),
+                    appliedPromotion: attempt.promotionName
+                      ? ({
+                          promotionId: 9999,
+                          promotionKey: 'restored-promo',
+                          name: attempt.promotionName,
+                          discountAmount: attempt.promotionDiscountAmount,
+                          promotionType: 'AMOUNT',
+                          promotionApply: 'ORDER',
+                          discountPercentage: 0,
+                          exactlyAmount: 0,
+                          maxUsage: 9999,
+                          usedCount: 0,
+                          isOldUserDisabled: false,
+                          isAutoApplied: false,
+                        } as any)
+                      : null,
+                    billing: item.billing
+                      ? {
+                          ...item.billing,
+                          totalAmount: Math.max(0, attempt.grandTotal - attempt.tipAmount),
+                          grandTotal: attempt.grandTotal,
+                          tipAmount: attempt.tipAmount,
+                          serviceTotal: attempt.servicePrice,
+                          comboTotal: attempt.selectedComboPrice,
+                          productTotal: attempt.upsellTotal,
+                        }
+                      : ({
+                          totalAmount: Math.max(0, attempt.grandTotal - attempt.tipAmount),
+                          subtotal: Math.max(0, attempt.grandTotal - attempt.tipAmount),
+                          grandTotal: attempt.grandTotal,
+                          tipAmount: attempt.tipAmount,
+                          serviceTotal: attempt.servicePrice,
+                          comboTotal: attempt.selectedComboPrice,
+                          productTotal: attempt.upsellTotal,
+                          tipCvShare: Math.round(attempt.tipAmount * 0.8),
+                          tipCcShare: Math.round(attempt.tipAmount * 0.2),
+                          paymentMethod: 'VIETQR',
+                        } as any),
+                    simulationAttemptCount: Math.max(item.simulationAttemptCount || 0, attempt.attemptNumber || 1),
+                    simulationFastForwardUnlocked: true,
+                  }
+                : item
+            )
+          );
+          setActiveBookingId(bookingId);
+          setActiveTab('booking');
+          setCurrentStep(3);
+          void refreshDb();
+        } else {
+          setSimActionError(res?.data?.error || 'Không thể nạp kịch bản vào bàn làm việc.');
+        }
+      } finally {
+        setIsSimActionBusy(false);
+      }
+    },
+    [
+      isReadOnlyMentorView,
+      isSimulationMode,
+      postAction,
+      refreshDb,
+      setActiveBookingId,
+      setActiveTab,
+      setBookings,
+      setCurrentStep,
+    ]
+  );
+
   return {
     isSimulationMode,
     isReadOnlyMentorView,
@@ -440,5 +593,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     handleSimResetToIncoming,
     handleSimFastForwardToUpsell,
     handleBookingCreated,
+    handleUpdateSimulationAttempt,
+    handleApplyAttemptToWorkspace,
   };
 }

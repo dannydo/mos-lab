@@ -585,6 +585,21 @@ export interface IosSimulationAttemptSummary {
   notes?: string;
 }
 
+export interface IosUpdateSimulationAttemptRequest {
+  bookingId: number;
+  menteeStaffId?: number;
+  notes?: string;
+  selectedStyle?: string;
+  selectedComboName?: string | null;
+  selectedComboPrice?: number;
+  selectedUnderComboName?: string | null;
+  selectedUnderComboPrice?: number;
+  upsellProducts?: Array<{ productName: string; quantity: number; totalPrice: number }>;
+  promotionName?: string | null;
+  promotionDiscountAmount?: number;
+  tipAmount?: number;
+}
+
 export interface IosSimulationMenteeOption {
   menteeStaffId: number;
   menteeName: string;

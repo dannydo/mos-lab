@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { X, Trophy, TrendingUp, Clock, RotateCcw, BarChart3, Loader2 } from 'lucide-react';
-import type { IosBookingItem, IosSimulationAttemptSummary } from '@mos-lab/shared';
+import React, { useMemo, useState } from 'react';
+import { X, Trophy, TrendingUp, Clock, RotateCcw, BarChart3, Loader2, Pencil, Play } from 'lucide-react';
+import type { IosBookingItem, IosSimulationAttemptSummary, IosUpdateSimulationAttemptRequest } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
+import { SimulationAttemptEditModal } from './SimulationAttemptEditModal';
 
 interface IosSimulationHistorySheetProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ interface IosSimulationHistorySheetProps {
   isBusy?: boolean;
   onRevertConsultation?: (bookingId: number) => void;
   onResetToIncoming?: (bookingId: number) => void;
+  onUpdateAttempt?: (attemptId: string, updates: IosUpdateSimulationAttemptRequest) => Promise<void>;
+  onApplyAttempt?: (bookingId: number, attempt: IosSimulationAttemptSummary) => void;
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -34,9 +37,12 @@ export function IosSimulationHistorySheet({
   isBusy = false,
   onRevertConsultation,
   onResetToIncoming,
+  onUpdateAttempt,
+  onApplyAttempt,
 }: IosSimulationHistorySheetProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const [editingAttempt, setEditingAttempt] = useState<IosSimulationAttemptSummary | null>(null);
 
   const bestMetrics = useMemo(() => {
     if (!attempts || attempts.length === 0) return { bestRewardId: '', bestRevenueId: '' };
@@ -243,6 +249,18 @@ export function IosSimulationHistorySheet({
                     </div>
                   </div>
 
+                  {a.notes && (
+                    <div
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] leading-relaxed border ${
+                        isDark
+                          ? 'bg-neutral-950/50 border-amber-500/20 text-amber-300'
+                          : 'bg-amber-50/70 border-amber-200 text-amber-800'
+                      }`}
+                    >
+                      <span className="font-bold opacity-75">Ghi chú:</span> {a.notes}
+                    </div>
+                  )}
+
                   {mins > 0 && (
                     <div className="flex items-center justify-between text-[10px] opacity-65 pt-0.5 tabular-nums">
                       <span className="inline-flex items-center gap-1">
@@ -251,6 +269,46 @@ export function IosSimulationHistorySheet({
                       <span>
                         {new Date(a.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Scenario Action Buttons: Edit & Apply */}
+                  {!isReadOnly && (
+                    <div
+                      className={`flex items-center justify-end gap-1.5 pt-1.5 border-t ${
+                        isDark ? 'border-neutral-800/80' : 'border-neutral-200'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => setEditingAttempt(a)}
+                        aria-label={`Chỉnh sửa kịch bản PA #${a.attemptNumber}`}
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50 ${
+                          isDark
+                            ? 'bg-neutral-900 border-amber-500/40 text-amber-400 hover:bg-neutral-800'
+                            : 'bg-white border-amber-400 text-amber-700 hover:bg-amber-50'
+                        }`}
+                      >
+                        <Pencil className="w-3 h-3 text-amber-500" />
+                        <span>Chỉnh sửa kịch bản</span>
+                      </button>
+
+                      {onApplyAttempt && booking && booking.id > 0 && (
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => {
+                            onClose();
+                            onApplyAttempt(booking.id, a);
+                          }}
+                          aria-label={`Nạp kịch bản PA #${a.attemptNumber} vào bàn làm việc`}
+                          className="px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors bg-amber-500 hover:bg-amber-400 text-black shadow-xs disabled:opacity-50"
+                        >
+                          <Play className="w-3 h-3 fill-black" />
+                          <span>Nạp kịch bản</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -294,6 +352,32 @@ export function IosSimulationHistorySheet({
               Reset về Chờ đón
             </button>
           </div>
+        )}
+
+        {/* Edit Modal */}
+        {editingAttempt && (
+          <SimulationAttemptEditModal
+            isOpen={Boolean(editingAttempt)}
+            onClose={() => setEditingAttempt(null)}
+            attempt={editingAttempt}
+            bookingId={booking?.id || 0}
+            isBusy={isBusy}
+            onSave={async (attemptId, updates) => {
+              if (onUpdateAttempt) {
+                await onUpdateAttempt(attemptId, updates);
+              }
+              setEditingAttempt(null);
+            }}
+            onApplyToWorkspace={
+              onApplyAttempt && booking && booking.id > 0
+                ? (updatedAttempt) => {
+                    setEditingAttempt(null);
+                    onClose();
+                    onApplyAttempt(booking.id, updatedAttempt);
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
     </div>

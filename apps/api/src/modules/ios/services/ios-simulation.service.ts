@@ -22,6 +22,7 @@ import {
   IosCartProductItem,
   IosSimulationAttemptSummary,
   IosSimulationMenteeOption,
+  IosUpdateSimulationAttemptRequest,
   NaturalLashConsultationAttributes,
   SafeAny,
 } from '@mos-lab/shared';
@@ -29,10 +30,18 @@ import {
 export const SIM_BOOKING_OVERRIDE_PREFIX = 'IOS_SIM_BK_OVR:';
 export const SIM_NATURAL_LASH_PREFIX = 'IOS_SIM_NLASH:';
 export const SIM_CUSTOM_BOOKING_PREFIX = 'IOS_SIM_CUSTOM_BK:';
-export const SIM_ATTEMPT_PREFIX = 'IOS_SIM_ATTEMPTS:';
 export const SIM_AVATAR_PREFIX = 'IOS_SIM_AVT:';
 export const SIM_COMBO_EXPIRY_PREFIX = 'IOS_SIM_COMBO_EXP:';
 export const SIM_SETTLE_PREFIX = 'IOS_SIM_SETTLE:';
+
+export {
+  SIM_ATTEMPT_PREFIX,
+  getSimAttemptsKey,
+  loadSimulationAttempts,
+  loadSimulationAttemptCountsBatch,
+  appendSimulationAttempt,
+  updateSimulationAttempt,
+} from './ios-simulation-attempts.service.js';
 
 export const SIM_NLASH_CLEARED_TOMBSTONE = JSON.stringify({ __simCleared: true });
 
@@ -63,10 +72,6 @@ export function getSimNaturalLashKey(staffId: number, customerId: number): strin
 
 export function getSimCustomBookingsKey(staffId: number, date: string): string {
   return `${SIM_CUSTOM_BOOKING_PREFIX}${staffId}:${date.slice(0, 10)}`;
-}
-
-export function getSimAttemptsKey(staffId: number, bookingId: number): string {
-  return `${SIM_ATTEMPT_PREFIX}${staffId}:${bookingId}`;
 }
 
 function isSimClearedTombstone(raw: string | null | undefined): boolean {
@@ -313,75 +318,6 @@ export async function saveSimulationCustomBooking(
     isSimulationDraftBooking: true,
   });
   await store.upsert(key, JSON.stringify(next));
-}
-
-export async function loadSimulationAttempts(
-  staffId: number,
-  bookingId: number,
-  baseStore?: CrmConfigStoreAdapter
-): Promise<IosSimulationAttemptSummary[]> {
-  const store = resolveBaseStore(baseStore);
-  const raw = await store.getOne(getSimAttemptsKey(staffId, bookingId));
-  return safeParseArray<IosSimulationAttemptSummary>(raw).sort(
-    (a, b) => Number(a.attemptNumber || 0) - Number(b.attemptNumber || 0)
-  );
-}
-
-export async function loadSimulationAttemptCountsBatch(
-  staffId: number,
-  bookingIds: number[],
-  baseStore?: CrmConfigStoreAdapter
-): Promise<Map<number, { count: number; latestAttemptId?: string }>> {
-  const store = resolveBaseStore(baseStore);
-  const result = new Map<number, { count: number; latestAttemptId?: string }>();
-  const uniqueIds = Array.from(new Set(bookingIds.filter((id) => Number.isFinite(id) && id > 0)));
-  if (uniqueIds.length === 0) return result;
-
-  const keys = uniqueIds.map((id) => getSimAttemptsKey(staffId, id));
-  const rawMap = await store.getMany(keys);
-  for (const id of uniqueIds) {
-    const list = safeParseArray<IosSimulationAttemptSummary>(rawMap.get(getSimAttemptsKey(staffId, id)));
-    if (list.length > 0) {
-      result.set(id, {
-        count: list.length,
-        latestAttemptId: list[list.length - 1]?.attemptId,
-      });
-    }
-  }
-  return result;
-}
-
-export async function appendSimulationAttempt(
-  staffId: number,
-  bookingId: number,
-  draft: Omit<IosSimulationAttemptSummary, 'attemptNumber'>,
-  baseStore?: CrmConfigStoreAdapter
-): Promise<IosSimulationAttemptSummary> {
-  const store = resolveBaseStore(baseStore);
-  const key = getSimAttemptsKey(staffId, bookingId);
-  const existing = await loadSimulationAttempts(staffId, bookingId, store);
-
-  // Deduplicate rapid repeated saves for the exact same completed timestamp
-  const matchingExisting = existing.find(
-    (entry) =>
-      entry.attemptId === draft.attemptId ||
-      (draft.sourceAction !== 'COMPLETE_ORDER' &&
-        entry.sourceAction === 'COMPLETE_ORDER' &&
-        Math.abs(new Date(draft.createdAt).getTime() - new Date(entry.createdAt).getTime()) < 5000 &&
-        Number(entry.grandTotal) === Number(draft.grandTotal) &&
-        (entry.selectedComboName || '') === (draft.selectedComboName || ''))
-  );
-  if (matchingExisting) {
-    return matchingExisting;
-  }
-
-  const saved: IosSimulationAttemptSummary = {
-    ...draft,
-    attemptNumber: existing.length + 1,
-  };
-  const next = [...existing, saved];
-  await store.upsert(key, JSON.stringify(next));
-  return saved;
 }
 
 export async function resolveSimulationContextActor(

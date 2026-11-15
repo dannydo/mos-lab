@@ -23,6 +23,7 @@ import {
   listAccessibleSimulationMentees,
   loadSimulationAttempts,
   resolveSimulationContextActor,
+  updateSimulationAttempt,
 } from './services/ios-simulation.service.js';
 import {
   executeIosSimulationBookingAction,
@@ -405,4 +406,107 @@ test('UI-010 & CC Mentorship RBAC: Mentors read-only on paired CVL, blocked on u
 
   // Verify attempt key prefix helper works cleanly
   assert.equal(getSimAttemptsKey(CVL_A.legacyStaffId!, 771121), 'IOS_SIM_ATTEMPTS:46272:771121');
+});
+
+test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', async () => {
+  const store = createInMemoryConfigStore();
+  const staffId = CVL_A.legacyStaffId!;
+  const bookingId = 88228;
+
+  // 1. Create completed attempt
+  const completeRes = await executeIosSimulationBookingAction(
+    null,
+    CVL_A,
+    {
+      bookingId,
+      customerId: 60228,
+      action: 'COMPLETE_ORDER',
+      paymentMethod: 'VIETQR',
+      billing: {
+        totalAmount: 500000,
+        grandTotal: 500000,
+        tipAmount: 0,
+        paymentMethod: 'VIETQR',
+      },
+      simBookingMeta: {
+        customerId: 60228,
+        customerName: 'Trang Đỗ',
+        orderNumber: '88228',
+        serviceName: 'Thiết Kế Wings 1D',
+        servicePrice: 500000,
+      },
+    },
+    store
+  );
+  assert.equal(completeRes.statusCode, 200);
+
+  const initialAttempts = await loadSimulationAttempts(staffId, bookingId, store);
+  assert.equal(initialAttempts.length, 1);
+  const targetAttempt = initialAttempts[0];
+  assert.equal(targetAttempt.notes, undefined);
+
+  // 2. Update saved scenario notes, combo, upsell, discount, and tip
+  const updated = await updateSimulationAttempt(
+    staffId,
+    bookingId,
+    targetAttempt.attemptId,
+    {
+      bookingId,
+      notes: 'Kịch bản Chốt Combo 5L VIP + Serum dưỡng mi',
+      selectedStyle: 'Katun',
+      selectedComboName: 'Gói 5 Lần',
+      selectedComboPrice: 1850000,
+      selectedUnderComboName: 'Mi Dưới 3 Lần',
+      selectedUnderComboPrice: 450000,
+      upsellProducts: [{ productName: 'Serum Dưỡng Mi Wings', quantity: 1, totalPrice: 299000 }],
+      promotionName: 'Tri Ân Khách Cũ',
+      promotionDiscountAmount: 100000,
+      tipAmount: 50000,
+    },
+    store
+  );
+
+  assert.equal(updated.notes, 'Kịch bản Chốt Combo 5L VIP + Serum dưỡng mi');
+  assert.equal(updated.selectedStyle, 'Katun');
+  assert.equal(updated.selectedComboName, 'Gói 5 Lần');
+  assert.equal(updated.selectedComboPrice, 1850000);
+  assert.equal(updated.selectedUnderComboName, 'Mi Dưới 3 Lần');
+  assert.equal(updated.selectedUnderComboPrice, 450000);
+  assert.equal(updated.upsellTotal, 299000);
+  assert.equal(updated.promotionDiscountAmount, 100000);
+  assert.equal(updated.tipAmount, 50000);
+  // grandTotal = 500000 (service) + 1850000 (combo) + 450000 (under) + 299000 (upsell) - 100000 (promo) + 50000 (tip) = 3049000
+  assert.equal(updated.grandTotal, 3049000);
+  // comboBonus = 50000, serumBonus = 20000, tipShare = 40000, serviceShare = 50000 -> 160000
+  assert.equal(updated.comboBonusAmount, 50000);
+  assert.equal(updated.serumBonusAmount, 20000);
+  assert.equal(updated.totalEstimatedReward, 160000);
+
+  // 3. Verify updating nonexistent attempt throws 404
+  await assert.rejects(
+    () => updateSimulationAttempt(staffId, bookingId, 'nonexistent-id', { bookingId }, store),
+    (err: any) => err.statusCode === 404
+  );
+
+  // 4. Test SIM_APPLY_ATTEMPT: Load the updated scenario back into the active booking
+  const applyRes = await executeIosSimulationBookingAction(
+    null,
+    CVL_A,
+    {
+      bookingId,
+      customerId: 60228,
+      action: 'SIM_APPLY_ATTEMPT',
+      attemptId: targetAttempt.attemptId,
+    },
+    store
+  );
+  assert.equal(applyRes.statusCode, 200);
+  assert.equal(applyRes.payload.nextStep, 3);
+  const appliedOverride = applyRes.payload.updatedOverride;
+  assert.equal(appliedOverride.status, 'CHECKED_IN');
+  assert.equal(appliedOverride.selectedCombo?.name, 'Gói 5 Lần');
+  assert.equal(appliedOverride.selectedUnderCombo?.name, 'Mi Dưới 3 Lần');
+  assert.equal(appliedOverride.cartProducts?.length, 1);
+  assert.equal(appliedOverride.cartProducts?.[0]?.productName, 'Serum Dưỡng Mi Wings');
+  assert.equal(appliedOverride.billing?.grandTotal, 3049000);
 });

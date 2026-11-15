@@ -666,6 +666,8 @@ function IosAppInner() {
           isBusy={state.isSimActionBusy}
           onRevertConsultation={state.handleSimRevertConsultation}
           onResetToIncoming={state.handleSimResetToIncoming}
+          onUpdateAttempt={state.handleUpdateSimulationAttempt}
+          onApplyAttempt={state.handleApplyAttemptToWorkspace}
         />
       </div>
     </div>

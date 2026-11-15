@@ -20,6 +20,7 @@ import {
   listAccessibleSimulationMentees,
   loadSimulationAttempts,
   resolveSimulationContextActor,
+  updateSimulationAttempt,
 } from './services/ios-simulation.service.js';
 import {
   createIosDualModeBooking,
@@ -196,6 +197,39 @@ export async function iosRoutes(fastify: FastifyInstance) {
         success: false,
         attempts: [],
         error: error?.message || 'Fetch simulation attempts failed',
+      });
+    }
+  });
+
+  // PATCH /api/ios/simulation/attempts/:attemptId
+  fastify.patch('/ios/simulation/attempts/:attemptId', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, error: 'Forbidden' });
+      }
+      const params = request.params as { attemptId: string };
+      const body = (request.body || {}) as SafeAny;
+      const bookingId = Number(body.bookingId || (request.query as SafeAny)?.bookingId || 0);
+      if (!bookingId || bookingId <= 0) {
+        return reply.status(400).send({ success: false, error: 'Thiếu bookingId.' });
+      }
+      const requestedMenteeId = body.menteeStaffId ? Number(body.menteeStaffId) : undefined;
+      const ctx = await resolveSimulationContextActor(fastify, authUser, requestedMenteeId);
+      if (ctx.isReadOnlyMentorView) {
+        return reply.status(403).send({
+          success: false,
+          error: 'Mentor ở chế độ chỉ xem, không thể chỉnh sửa kịch bản của mentee.',
+        });
+      }
+      const updated = await updateSimulationAttempt(ctx.targetStaffId, bookingId, params.attemptId, body);
+      return reply.send({ success: true, attempt: updated });
+    } catch (error: SafeAny) {
+      const statusCode = error?.statusCode === 404 ? 404 : error?.statusCode === 403 ? 403 : 500;
+      return reply.status(statusCode).send({
+        success: false,
+        error: error?.message || 'Cập nhật kịch bản mô phỏng thất bại.',
       });
     }
   });
