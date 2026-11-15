@@ -395,10 +395,22 @@ export async function executeIosBookingAction(
         await persistRetainLashCountsToLegacy(bookingId, incomingProgress, bridgeDepsOverride?.getPool);
       }
 
+      const resolvedAssignedStaffId = Number(
+        body.assignedStaffId ||
+        current.assignedStaffId ||
+        (actorStaffId > 0 ? actorStaffId : 0)
+      );
+      const resolvedAssignedStaffName =
+        current.assignedStaffName && current.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+          ? current.assignedStaffName
+          : actorStaffName || undefined;
+
       nextOverride = {
         ...current,
         status: 'SERVICING',
         orderState: body.orderState || 'Service End',
+        ...(resolvedAssignedStaffId > 0 ? { assignedStaffId: resolvedAssignedStaffId } : {}),
+        ...(resolvedAssignedStaffName ? { assignedStaffName: resolvedAssignedStaffName } : {}),
         progress: {
           ...(current.progress || {}),
           ...incomingProgress,
@@ -598,7 +610,9 @@ export async function executeIosBookingAction(
 
       if (canRunStepSync) {
         const stepCheckInStaffId = Number(nextOverride.checkInStaffId || current.checkInStaffId || actorStaffId);
-        const stepAssignedStaffId = Number(nextOverride.assignedStaffId ?? current.assignedStaffId ?? 0);
+        const stepAssignedStaffId = Number(
+          nextOverride.assignedStaffId ?? current.assignedStaffId ?? (actorStaffId > 0 ? actorStaffId : 0)
+        );
         const stepCheckOutStaffId = Number(nextOverride.checkOutStaffId || current.checkOutStaffId || actorStaffId);
 
         const stepSync = await syncIosStepWithLegacyPhp(

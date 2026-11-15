@@ -56,12 +56,14 @@ function mapOverrideOrderStateToLegacyServiceState(rawOrderState: string | undef
   const normalized = String(rawOrderState || '').trim();
   switch (normalized) {
     case 'Preparation':
+    case 'Photo before auto-saved':
       return 'Preparation';
     case 'Service Start':
     case 'ServiceStart':
       return 'ServiceStart';
     case 'Service Cleaned':
     case 'ServiceCleaned':
+    case 'Photo cleaned auto-saved':
       return 'ServiceCleaned';
     case 'Service End':
     case 'ServiceEnd':
@@ -392,6 +394,16 @@ export async function syncIosStepWithLegacyPhp(
         if (!consultRes.ok) {
           return { synced: false, status: 'DEFERRED', warning: consultRes.warning };
         }
+      }
+      if (activeOrderServiceIds.length === 0) {
+        await refreshOrderServiceIds();
+      }
+      if (activeOrderServiceIds.length === 0) {
+        return {
+          synced: false,
+          status: 'DEFERRED',
+          warning: 'No legacy order_service found for progress sync.',
+        };
       }
       for (const osId of activeOrderServiceIds) {
         const res =

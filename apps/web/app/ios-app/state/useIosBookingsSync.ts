@@ -181,12 +181,28 @@ export function useIosBookingsSync({
         };
 
         if (data?.success !== false) {
-          if (data?.progress || data?.override?.billing || data?.simulationAttemptCount !== undefined) {
+          if (data?.progress || data?.override || data?.simulationAttemptCount !== undefined) {
             setBookings((prev) =>
               prev.map((b) =>
                 Number(b.id) === targetBookingId
                   ? {
                       ...b,
+                      ...(data?.override?.assignedStaffId
+                        ? {
+                            assignedStaffId: Number(data.override.assignedStaffId),
+                            assignedStaffName: data.override.assignedStaffName || b.assignedStaffName,
+                          }
+                        : {}),
+                      ...(data?.override?.orderState
+                        ? {
+                            orderState: data.override.orderState,
+                          }
+                        : {}),
+                      ...(data?.override?.status
+                        ? {
+                            status: data.override.status,
+                          }
+                        : {}),
                       ...(data?.simulationAttemptCount !== undefined
                         ? {
                             simulationAttemptCount: Number(data.simulationAttemptCount),

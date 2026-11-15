@@ -444,3 +444,138 @@ test('Graceful non-blocking fallback marks legacyStepSyncStatus as DEFERRED and 
   assert.equal(persisted?.status, 'CHECKED_IN');
   assert.equal(persisted?.legacyStepSyncStatus, 'DEFERRED');
 });
+
+test('MOS-BUG-231: UPDATE_PROGRESS Preparation and Photo before auto-saved assign technician and move legacy order out of Incoming to Preparation', async () => {
+  const store = createInMemoryConfigStore();
+  const repo = createOverrideRepository(store);
+  const harness = createBridgeHarness('Confirmed');
+  await repo.saveCustomerNaturalLashProfile(88991, COMPLETE_ATTRS);
+
+  // Technician enters Screen 06 and starts task (Preparation) without explicit prior ASSIGN_STAFF
+  const prepRes = await executeIosBookingAction(
+    cvlActor,
+    {
+      bookingId: 140300,
+      customerId: 88991,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Preparation',
+      progress: {
+        startedAt: '2026-11-15T15:00:00.000Z',
+        timerRunning: true,
+        currentStep: 7,
+      },
+    },
+    repo,
+    harness.deps
+  );
+
+  assert.equal(prepRes.statusCode, 200);
+  assert.equal(prepRes.payload.legacyStepSyncStatus, 'SYNCED');
+  assert.equal(prepRes.payload.override.assignedStaffId, 46272);
+  assert.equal(prepRes.payload.override.legacySyncedOrderState, 'Preparation');
+  assert.equal(prepRes.payload.override.progress.lastLegacyProgressState, 'Preparation');
+
+  // Verify full legacy sync chain: check-in -> consultation -> progress/update(Preparation)
+  assert.deepEqual(
+    harness.phpCalls.map((c) => c.endpoint),
+    ['/order/booking/check-in', '/order/booking/consultation', '/order/service/progress/update']
+  );
+  assert.equal(harness.phpCalls[2].payload.service_state, 'Preparation');
+  assert.equal(harness.phpCalls[2].payload.assigned_staff_id, '46272');
+
+  // Now technician takes Before photo: 'Photo before auto-saved'
+  // Should deduplicate since legacy is already in Preparation
+  const beforePhotoRes = await executeIosBookingAction(
+    cvlActor,
+    {
+      bookingId: 140300,
+      customerId: 88991,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Photo before auto-saved',
+      progress: {
+        beforePhotoUrl: 'https://cdn.wingslashes.com/photos/before_140300.jpg',
+        currentStep: 7,
+      },
+    },
+    repo,
+    harness.deps
+  );
+
+  assert.equal(beforePhotoRes.statusCode, 200);
+  assert.equal(beforePhotoRes.payload.legacyStepSyncStatus, 'SKIPPED');
+  // Deduplicated: no additional PHP call
+  assert.equal(harness.phpCalls.length, 3);
+
+  // If a booking directly auto-saves Before Photo without prior Preparation sync:
+  const directHarness = createBridgeHarness('Confirmed');
+  const directBeforePhotoRes = await executeIosBookingAction(
+    cvlActor,
+    {
+      bookingId: 140301,
+      customerId: 88991,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Photo before auto-saved',
+      progress: {
+        beforePhotoUrl: 'https://cdn.wingslashes.com/photos/before_140301.jpg',
+        currentStep: 7,
+      },
+    },
+    repo,
+    directHarness.deps
+  );
+
+  assert.equal(directBeforePhotoRes.statusCode, 200);
+  assert.equal(directBeforePhotoRes.payload.legacyStepSyncStatus, 'SYNCED');
+  assert.equal(directBeforePhotoRes.payload.override.legacySyncedOrderState, 'Preparation');
+  assert.equal(directBeforePhotoRes.payload.override.assignedStaffId, 46272);
+  assert.equal(directHarness.phpCalls[2].endpoint, '/order/service/progress/update');
+  assert.equal(directHarness.phpCalls[2].payload.service_state, 'Preparation');
+});
+
+test('MOS-BUG-231: Photo cleaned auto-saved maps to ServiceCleaned and Photo after auto-saved maps to ServiceEnd', async () => {
+  const store = createInMemoryConfigStore();
+  const repo = createOverrideRepository(store);
+  const harness = createBridgeHarness('Consultation');
+
+  // Cleaned photo autosave
+  const cleanedRes = await executeIosBookingAction(
+    cvlActor,
+    {
+      bookingId: 140302,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Photo cleaned auto-saved',
+      progress: {
+        cleanedPhotoUrl: 'https://cdn.wingslashes.com/cleaned.jpg',
+      },
+    },
+    repo,
+    harness.deps
+  );
+
+  assert.equal(cleanedRes.statusCode, 200);
+  assert.equal(cleanedRes.payload.legacyStepSyncStatus, 'SYNCED');
+  assert.equal(cleanedRes.payload.override.legacySyncedOrderState, 'ServiceCleaned');
+  assert.equal(harness.phpCalls[0].endpoint, '/order/service/progress/update');
+  assert.equal(harness.phpCalls[0].payload.service_state, 'ServiceCleaned');
+
+  // After photo autosave
+  const afterRes = await executeIosBookingAction(
+    cvlActor,
+    {
+      bookingId: 140302,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Photo after auto-saved',
+      progress: {
+        afterPhotoUrl: 'https://cdn.wingslashes.com/after.jpg',
+      },
+    },
+    repo,
+    harness.deps
+  );
+
+  assert.equal(afterRes.statusCode, 200);
+  assert.equal(afterRes.payload.legacyStepSyncStatus, 'SYNCED');
+  assert.equal(afterRes.payload.override.legacySyncedOrderState, 'ServiceEnd');
+  assert.equal(harness.phpCalls[1].endpoint, '/order/service/progress/update');
+  assert.equal(harness.phpCalls[1].payload.service_state, 'ServiceEnd');
+});

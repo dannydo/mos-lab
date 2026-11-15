@@ -89,20 +89,40 @@ export function useIosBookingList({
         })) as { success?: boolean; progress?: Record<string, any>; cloudSyncedAt?: string; [key: string]: any };
 
         if (data?.success !== false) {
-          if (data?.progress) {
+          if (data?.progress || data?.override) {
             setBookings((prev) =>
               prev.map((b) =>
                 Number(b.id) === targetBookingId
                   ? {
                       ...b,
-                      progress: {
-                        elapsedSeconds: b.progress?.elapsedSeconds ?? 0,
-                        timerRunning: b.progress?.timerRunning ?? false,
-                        ...(b.progress || {}),
-                        ...data.progress,
-                        cloudSynced: true,
-                        cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
-                      },
+                      ...(data?.override?.assignedStaffId
+                        ? {
+                            assignedStaffId: Number(data.override.assignedStaffId),
+                            assignedStaffName: data.override.assignedStaffName || b.assignedStaffName,
+                          }
+                        : {}),
+                      ...(data?.override?.orderState
+                        ? {
+                            orderState: data.override.orderState,
+                          }
+                        : {}),
+                      ...(data?.override?.status
+                        ? {
+                            status: data.override.status,
+                          }
+                        : {}),
+                      ...(data?.progress
+                        ? {
+                            progress: {
+                              elapsedSeconds: b.progress?.elapsedSeconds ?? 0,
+                              timerRunning: b.progress?.timerRunning ?? false,
+                              ...(b.progress || {}),
+                              ...data.progress,
+                              cloudSynced: true,
+                              cloudSyncedAt: data.cloudSyncedAt || new Date().toISOString(),
+                            },
+                          }
+                        : {}),
                     }
                   : b
               )
