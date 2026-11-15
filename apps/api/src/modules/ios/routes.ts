@@ -15,10 +15,12 @@ import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
 import { scanIosProductByCode } from './services/ios-product-scan.service.js';
 import { fetchIosPromotionsForActor, resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
-import { executeIosSimulationBookingAction } from './services/ios-simulation-actions.service.js';
+import {
+  executeIosSimulationBookingAction,
+  loadOrReconcileSimulationAttemptsForActor,
+} from './services/ios-simulation-actions.service.js';
 import {
   listAccessibleSimulationMentees,
-  loadSimulationAttempts,
   resolveSimulationContextActor,
   updateSimulationAttempt,
 } from './services/ios-simulation.service.js';
@@ -189,7 +191,10 @@ export async function iosRoutes(fastify: FastifyInstance) {
       }
       const requestedMenteeId = query.menteeStaffId ? Number(query.menteeStaffId) : undefined;
       const ctx = await resolveSimulationContextActor(fastify, authUser, requestedMenteeId, query.date);
-      const attempts = await loadSimulationAttempts(ctx.targetStaffId, bookingId);
+      const attempts = await loadOrReconcileSimulationAttemptsForActor(ctx.targetStaffId, bookingId, {
+        actorStaffName: ctx.targetStaffName,
+        isReadOnlyMentorView: ctx.isReadOnlyMentorView,
+      });
       return reply.send({ success: true, attempts, isReadOnlyMentorView: ctx.isReadOnlyMentorView });
     } catch (error: SafeAny) {
       const statusCode = error?.statusCode === 403 ? 403 : 500;

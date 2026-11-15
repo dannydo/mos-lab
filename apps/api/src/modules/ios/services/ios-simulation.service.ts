@@ -34,6 +34,8 @@ export const SIM_AVATAR_PREFIX = 'IOS_SIM_AVT:';
 export const SIM_COMBO_EXPIRY_PREFIX = 'IOS_SIM_COMBO_EXP:';
 export const SIM_SETTLE_PREFIX = 'IOS_SIM_SETTLE:';
 
+import { hasCompletedSimulationSnapshot } from './ios-simulation-attempts.service.js';
+
 export {
   SIM_ATTEMPT_PREFIX,
   getSimAttemptsKey,
@@ -41,6 +43,8 @@ export {
   loadSimulationAttemptCountsBatch,
   appendSimulationAttempt,
   updateSimulationAttempt,
+  hasCompletedSimulationSnapshot,
+  reconcileSimulationAttemptsForBooking,
 } from './ios-simulation-attempts.service.js';
 
 export const SIM_NLASH_CLEARED_TOMBSTONE = JSON.stringify({ __simCleared: true });
@@ -596,6 +600,36 @@ export function enrichSimulationBookings(params: {
         attributes: nl ? ({ ...nl } as IosBookingItem['attributes']) : undefined,
       };
     }
+
+    if (
+      override &&
+      (override.status === 'INCOMING' ||
+        override.status === 'CHECKED_IN' ||
+        (override.status === 'SERVICING' &&
+          !override.progress?.completedAt &&
+          !override.billing?.completedAt &&
+          !override.completedAt))
+    ) {
+      return {
+        ...booking,
+        status: override.status,
+        orderState:
+          override.orderState ||
+          (override.status === 'CHECKED_IN'
+            ? 'Check-in'
+            : override.status === 'SERVICING'
+              ? 'Preparation'
+              : 'Confirmed'),
+        ...(override.status === 'CHECKED_IN'
+          ? {
+              progress: undefined,
+              survey: undefined,
+              billing: override.billing && !override.billing.completedAt ? booking.billing : undefined,
+            }
+          : {}),
+      };
+    }
+
     return booking;
   });
 
@@ -609,8 +643,17 @@ export function enrichSimulationBookings(params: {
   combined.sort((a, b) => String(a.timeSlot || '').localeCompare(String(b.timeSlot || '')));
 
   return combined.map((b) => {
+    const override = simOverridesMap[String(b.id)];
     const meta = attemptMetaMap.get(Number(b.id));
-    const attemptCount = meta?.count || 0;
+    const rawCount = meta?.count || 0;
+    const attemptCount =
+      rawCount > 0
+        ? rawCount
+        : hasCompletedSimulationSnapshot(override, {
+              isLiveCompleted: b.status === 'DONE' && !override?._simForceIncoming,
+            })
+          ? 1
+          : 0;
     return {
       ...b,
       isSimulationBooking: true,

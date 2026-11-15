@@ -111,10 +111,10 @@ export function useIosBookingsSync({
           setActiveBookingId(idNum);
 
           const cached = await getLocalProgressSnapshotAsync(idNum);
-          if (cached) {
+          if (cached && cached.status !== 'DONE' && !cached.completedAt) {
             setBookings((prev) =>
               prev.map((b) =>
-                b.id === idNum
+                b.id === idNum && b.status !== 'DONE' && !b.billing?.completedAt
                   ? {
                       ...b,
                       status: 'SERVICING',

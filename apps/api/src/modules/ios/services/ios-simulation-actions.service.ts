@@ -20,6 +20,7 @@ import {
   buildSimulationAttemptSnapshot,
   hasAttemptWorthySimulationWork,
   loadSimulationAttempts,
+  reconcileSimulationAttemptsForBooking,
 } from './ios-simulation-attempts.service.js';
 import {
   findSimulationCustomBookingById,
@@ -56,6 +57,8 @@ interface ResolvedBookingMeta {
   assignedStaffId: number;
   assignedStaffTier?: string;
   cvRotationPoints?: number;
+  isLiveCompleted?: boolean;
+  isCustomDraftCompleted?: boolean;
 }
 
 function pickNaturalLashOnly(
@@ -91,14 +94,15 @@ async function resolveBookingBaseMeta(
       customerId: Number(customDraft.customerId || override.customerId || 0),
       customerName: customDraft.customerName || 'Khách tập luyện',
       orderNumber: customDraft.orderNumber || `SIM-${bookingId}`,
-      serviceName: override.upgradedServiceName || customDraft.serviceName || 'Classic 1D',
-      servicePrice: Number(customDraft.servicePrice || 550000),
+      serviceName: override.upgradedServiceName || override.serviceName || customDraft.serviceName || 'Classic 1D',
+      servicePrice: Number(override.servicePrice ?? customDraft.servicePrice ?? 550000),
       upgradePrice: Number(override.upgradePrice ?? customDraft.upgradePrice ?? 0),
-      isComboLive: Boolean(customDraft.comboLiveStatus?.isComboLive),
+      isComboLive: Boolean(customDraft.comboLiveStatus?.isComboLive || override.comboRedemption),
       hasUnderMinkCombo: Boolean(customDraft.underMinkComboStatus?.hasUnderCombo),
       assignedStaffId: Number(override.assignedStaffId || customDraft.assignedStaffId || staffId),
       assignedStaffTier: override.assignedStaffTier || customDraft.assignedStaffTier,
       cvRotationPoints: customDraft.cvRotationPoints,
+      isCustomDraftCompleted: customDraft.status === 'DONE',
     };
   }
 
@@ -109,7 +113,7 @@ async function resolveBookingBaseMeta(
     try {
       const pool = getLegacyPool();
       const [rows] = await pool.query<mysql.RowDataPacket[]>(
-        `SELECT o.id, o.order_key, o.user_id, o.total_price, up.full_name, os.assigned_staff_id, sl.service_name AS service_name
+        `SELECT o.id, o.order_number, o.order_state, o.order_key, o.user_id, o.total_price, up.full_name, os.assigned_staff_id, sl.service_name AS service_name
          FROM \`order\` o
          LEFT JOIN user_profile up ON up.user_id = o.user_id
          LEFT JOIN order_service os ON os.order_id = o.id
@@ -121,18 +125,31 @@ async function resolveBookingBaseMeta(
       );
       if (rows.length > 0) {
         const row = rows[0];
+        const fallbackServicePrice =
+          override.servicePrice !== undefined
+            ? Number(override.servicePrice)
+            : bodyMeta.servicePrice !== undefined
+              ? Number(bodyMeta.servicePrice)
+              : Number(row.total_price) > 0
+                ? Number(row.total_price)
+                : 550000;
         return {
           customerId: Number(row.user_id || override.customerId || bodyMeta.customerId || 0),
           customerName: String(row.full_name || bodyMeta.customerName || `Khách #${bookingId}`),
-          orderNumber: String(bodyMeta.orderNumber || `#${row.id}`),
-          serviceName: String(override.upgradedServiceName || bodyMeta.serviceName || row.service_name || 'Dịch vụ mi'),
-          servicePrice: Number(bodyMeta.servicePrice ?? row.total_price ?? 0),
+          orderNumber: String(
+            bodyMeta.orderNumber || (row.order_number ? `BK-${row.order_number}` : `BK-${row.id}`)
+          ),
+          serviceName: String(
+            override.upgradedServiceName || override.serviceName || bodyMeta.serviceName || row.service_name || 'Dịch vụ mi'
+          ),
+          servicePrice: fallbackServicePrice,
           upgradePrice: Number(override.upgradePrice ?? bodyMeta.upgradePrice ?? 0),
-          isComboLive: Boolean(bodyMeta.isComboLive),
+          isComboLive: Boolean(bodyMeta.isComboLive ?? override.comboRedemption),
           hasUnderMinkCombo: Boolean(bodyMeta.hasUnderMinkCombo),
           assignedStaffId: Number(override.assignedStaffId || row.assigned_staff_id || staffId),
           assignedStaffTier: override.assignedStaffTier || bodyMeta.assignedStaffTier,
           cvRotationPoints: bodyMeta.cvRotationPoints ? Number(bodyMeta.cvRotationPoints) : undefined,
+          isLiveCompleted: String(row.order_state || '') === 'Completed',
         };
       }
     } catch {
@@ -144,10 +161,10 @@ async function resolveBookingBaseMeta(
     customerId: Number(override.customerId || body?.customerId || bodyMeta.customerId || 0),
     customerName: String(bodyMeta.customerName || body?.customerName || `Khách #${bookingId}`),
     orderNumber: String(bodyMeta.orderNumber || `#${bookingId}`),
-    serviceName: String(override.upgradedServiceName || bodyMeta.serviceName || 'Dịch vụ mi'),
-    servicePrice: Number(bodyMeta.servicePrice || 550000),
+    serviceName: String(override.upgradedServiceName || override.serviceName || bodyMeta.serviceName || 'Dịch vụ mi'),
+    servicePrice: Number(override.servicePrice ?? bodyMeta.servicePrice ?? 550000),
     upgradePrice: Number(override.upgradePrice ?? bodyMeta.upgradePrice ?? 0),
-    isComboLive: Boolean(bodyMeta.isComboLive),
+    isComboLive: Boolean(bodyMeta.isComboLive ?? override.comboRedemption),
     hasUnderMinkCombo: Boolean(bodyMeta.hasUnderMinkCombo),
     assignedStaffId: Number(override.assignedStaffId || staffId),
     assignedStaffTier: override.assignedStaffTier || bodyMeta.assignedStaffTier,
@@ -251,7 +268,10 @@ export async function executeIosSimulationBookingAction(
       const meta = await resolveBookingBaseMeta(actorStaffId, bookingId, current, body, baseStore);
       const effectiveCustomerId = meta.customerId;
       let attemptSnapshot: IosSimulationAttemptSummary | null = null;
-      if (hasAttemptWorthySimulationWork(current)) {
+      const preExistingAttempts = await loadSimulationAttempts(actorStaffId, bookingId, baseStore);
+      const shouldCaptureBaselineCompleted =
+        preExistingAttempts.length === 0 && Boolean(meta.isLiveCompleted || meta.isCustomDraftCompleted);
+      if (hasAttemptWorthySimulationWork(current) || shouldCaptureBaselineCompleted) {
         attemptSnapshot = await appendSimulationAttempt(
           actorStaffId,
           bookingId,
@@ -260,7 +280,9 @@ export async function executeIosSimulationBookingAction(
             bookingId,
             actorStaffId,
             actorStaffName,
-            override: current,
+            override: hasAttemptWorthySimulationWork(current)
+              ? current
+              : { ...current, status: 'DONE', orderState: 'Completed' },
             meta,
           }),
           baseStore
@@ -466,7 +488,18 @@ export async function executeIosSimulationBookingAction(
       if (forbidden) return forbidden;
 
       const attemptId = String(body.attemptId || '').trim();
-      const allAttempts = await loadSimulationAttempts(actorStaffId, bookingId, baseStore);
+      const meta = await resolveBookingBaseMeta(actorStaffId, bookingId, current, body, baseStore);
+      const allAttempts = await reconcileSimulationAttemptsForBooking({
+        staffId: actorStaffId,
+        bookingId,
+        actorStaffName,
+        override: current,
+        isLiveCompleted: meta.isLiveCompleted,
+        isCustomDraftCompleted: meta.isCustomDraftCompleted,
+        persistIfMissing: true,
+        meta,
+        baseStore,
+      });
       const targetAttempt = allAttempts.find((a) => a.attemptId === attemptId);
       if (!targetAttempt) {
         return {
@@ -478,7 +511,6 @@ export async function executeIosSimulationBookingAction(
         };
       }
 
-      const meta = await resolveBookingBaseMeta(actorStaffId, bookingId, current, body, baseStore);
       const effectiveCustomerId = meta.customerId;
       const nowIso = new Date().toISOString();
 
@@ -486,6 +518,10 @@ export async function executeIosSimulationBookingAction(
         ...current,
         _simForceIncoming: undefined,
         _simResetAt: undefined,
+        completedAt: undefined,
+        checkedOutAt: undefined,
+        progress: undefined,
+        survey: undefined,
         ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
         status: 'CHECKED_IN',
         orderState: 'Check-in',
@@ -578,7 +614,8 @@ export async function executeIosSimulationBookingAction(
         override: savedOverride,
         meta,
       }),
-      baseStore
+      baseStore,
+      { updateLatestIfSameCompletion: preOverride.status === 'DONE' }
     );
     const allAttempts = await loadSimulationAttempts(actorStaffId, bookingId, baseStore);
     result.payload = {
@@ -596,4 +633,34 @@ export async function executeIosSimulationBookingAction(
   }
 
   return result;
+}
+
+export async function loadOrReconcileSimulationAttemptsForActor(
+  staffId: number,
+  bookingId: number,
+  options?: {
+    actorStaffName?: string;
+    isReadOnlyMentorView?: boolean;
+    baseStore?: CrmConfigStoreAdapter;
+  }
+): Promise<IosSimulationAttemptSummary[]> {
+  const existing = await loadSimulationAttempts(staffId, bookingId, options?.baseStore);
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  const simRepo = getSimulationOverrideRepository(staffId, options?.baseStore);
+  const override = await simRepo.loadBookingOverride(bookingId);
+  const meta = await resolveBookingBaseMeta(staffId, bookingId, override || {}, {}, options?.baseStore);
+  return reconcileSimulationAttemptsForBooking({
+    staffId,
+    bookingId,
+    actorStaffName: options?.actorStaffName || `Nhân sự #${staffId}`,
+    override,
+    isLiveCompleted: meta.isLiveCompleted,
+    isCustomDraftCompleted: meta.isCustomDraftCompleted,
+    persistIfMissing: !options?.isReadOnlyMentorView,
+    meta,
+    baseStore: options?.baseStore,
+  });
 }

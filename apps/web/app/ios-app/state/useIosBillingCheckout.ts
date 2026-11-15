@@ -22,11 +22,13 @@ import type {
   IosPaymentMethod,
   IosPromotionOption,
   IosSettlementStatus,
+  IosSimulationAttemptSummary,
   PercentTipSuggestionItem,
 } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import { ActiveActorProfile } from './iosActorProfile';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServicingStep } from './offlineSync';
+import { buildSimBookingMetaPayload } from './useIosSimulationMode';
 import {
   applyCartProductsUpdateToBookingDraft,
   applyTargetPromotionToBookingDraft,
@@ -66,6 +68,9 @@ export interface UpsellPayload {
 
 export interface UseIosBillingCheckoutParams {
   activeBookingId: number;
+  activeBooking?: BookingItem;
+  isSimulationMode?: boolean;
+  onSimulationAttemptSaved?: (bookingId: number, attempt: IosSimulationAttemptSummary | undefined) => void;
   actor: ActiveActorProfile;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
   updateActiveBooking: (updater: (prev: BookingItem) => BookingItem) => void;
@@ -77,6 +82,9 @@ export interface UseIosBillingCheckoutParams {
 
 export function useIosBillingCheckout({
   activeBookingId,
+  activeBooking,
+  isSimulationMode = false,
+  onSimulationAttemptSaved,
   actor,
   cvPlusRules,
   updateActiveBooking,
@@ -85,6 +93,20 @@ export function useIosBillingCheckout({
   setCurrentStep,
   setBookingSegment,
 }: UseIosBillingCheckoutParams) {
+  const dispatchCompleteOrder = useCallback(
+    (payload: Record<string, any>) => {
+      const simMeta =
+        isSimulationMode && activeBooking ? { simBookingMeta: buildSimBookingMetaPayload(activeBooking) } : {};
+      void postAction('COMPLETE_ORDER', { ...simMeta, ...payload }).then((res) => {
+        if (res?.data?.attemptSnapshot) {
+          onSimulationAttemptSaved?.(activeBookingId, res.data.attemptSnapshot);
+        }
+        return refreshDb?.();
+      });
+    },
+    [activeBooking, activeBookingId, isSimulationMode, onSimulationAttemptSaved, postAction, refreshDb]
+  );
+
   // Step 12 -> 13: Go To Billing with Upsell
   const handleGoToBilling = useCallback(
     (upsellPayload?: UpsellPayload) => {
@@ -466,26 +488,14 @@ export function useIosBillingCheckout({
         };
       });
 
-      void postAction('COMPLETE_ORDER', {
-        ...promoActionSnapshot,
-        billing: calculatedBilling,
-        status: 'DONE',
-        completedAt,
-      }).then(() => refreshDb?.());
-
+      dispatchCompleteOrder({ ...promoActionSnapshot, billing: calculatedBilling, status: 'DONE', completedAt });
       setActiveServicingBookingId(null);
       setActiveServicingStep(null);
-
-      saveLocalProgressSnapshot(activeBookingId, {
-        status: 'DONE',
-        completedAt,
-        currentStep: 1,
-      });
-
+      saveLocalProgressSnapshot(activeBookingId, { status: 'DONE', completedAt, currentStep: 1 });
       setBookingSegment('DONE');
       setCurrentStep(15);
     },
-    [activeBookingId, actor, postAction, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]
+    [activeBookingId, actor, dispatchCompleteOrder, setBookingSegment, setCurrentStep, updateActiveBooking]
   );
 
   // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
@@ -569,20 +579,14 @@ export function useIosBillingCheckout({
         };
       });
 
-      void postAction('COMPLETE_ORDER', { billing: calculatedBilling, status: 'DONE', completedAt }).then(() =>
-        refreshDb?.()
-      );
+      dispatchCompleteOrder({ billing: calculatedBilling, status: 'DONE', completedAt });
       setActiveServicingBookingId(null);
       setActiveServicingStep(null);
-      saveLocalProgressSnapshot(activeBookingId, {
-        status: 'DONE',
-        completedAt,
-        currentStep: 1,
-      });
+      saveLocalProgressSnapshot(activeBookingId, { status: 'DONE', completedAt, currentStep: 1 });
       setBookingSegment('DONE');
       setCurrentStep(15);
     },
-    [activeBookingId, actor, postAction, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]
+    [activeBookingId, actor, dispatchCompleteOrder, setBookingSegment, setCurrentStep, updateActiveBooking]
   );
 
   // Step 15: Finish Order
@@ -609,19 +613,15 @@ export function useIosBillingCheckout({
     });
     setActiveServicingBookingId(null);
     setActiveServicingStep(null);
-    saveLocalProgressSnapshot(activeBookingId, {
-      status: 'DONE',
-      completedAt,
-      currentStep: 1,
-    });
+    saveLocalProgressSnapshot(activeBookingId, { status: 'DONE', completedAt, currentStep: 1 });
     if (!alreadyCompleted) {
-      void postAction('COMPLETE_ORDER', { status: 'DONE', completedAt }).then(() => refreshDb?.());
+      dispatchCompleteOrder({ status: 'DONE', completedAt });
     } else {
       void refreshDb?.();
     }
     setBookingSegment('DONE');
     setCurrentStep(1);
-  }, [activeBookingId, postAction, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]);
+  }, [activeBookingId, dispatchCompleteOrder, refreshDb, setBookingSegment, setCurrentStep, updateActiveBooking]);
 
   return {
     handleGoToBilling,

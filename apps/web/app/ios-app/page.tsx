@@ -662,8 +662,14 @@ function IosAppInner() {
           booking={state.bookings.find((b) => Number(b.id) === Number(state.historyBookingId)) || state.activeBooking}
           attempts={state.historyBookingId ? state.attemptsByBookingId[state.historyBookingId] || [] : []}
           isLoading={state.historyLoading}
+          error={state.historyError}
           isReadOnly={state.isReadOnlyMentorView}
           isBusy={state.isSimActionBusy}
+          onRetryLoad={() => {
+            if (state.historyBookingId) {
+              void state.loadAttemptsForBooking(state.historyBookingId);
+            }
+          }}
           onRevertConsultation={state.handleSimRevertConsultation}
           onResetToIncoming={state.handleSimResetToIncoming}
           onUpdateAttempt={state.handleUpdateSimulationAttempt}
