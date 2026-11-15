@@ -132,7 +132,15 @@ export function useIosAppState(
         const parsed = JSON.parse(raw);
         setLoggedInUser(parsed);
         const userIsAdmin = isAdminOrSuperAdminRole(parsed?.role);
-        const lockedRole = resolveLockedIosRoleForUser(parsed?.role, initialRole);
+        const savedRole = userIsAdmin
+          ? (window.localStorage.getItem('mos_ios_selected_role') as IosUserRole | null)
+          : null;
+        const allowedRoles: readonly IosUserRole[] = ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'];
+        const effectiveRequestedRole =
+          userIsAdmin && savedRole && allowedRoles.includes(savedRole) && initialRole === 'CVL'
+            ? savedRole
+            : initialRole;
+        const lockedRole = resolveLockedIosRoleForUser(parsed?.role, effectiveRequestedRole);
         setRoleState(lockedRole);
         setScopeModeState(userIsAdmin ? 'STORE_ALL' : lockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
 
@@ -246,6 +254,13 @@ export function useIosAppState(
         setScopeModeState('MY_CUSTOMERS');
       } else if (effectiveRole === 'CVLL' || effectiveRole === 'CC' || effectiveRole === 'STORE') {
         setScopeModeState('STORE_ALL');
+      }
+      if (typeof window !== 'undefined' && isAdminOrSuperAdminRole(loggedInUser?.role)) {
+        try {
+          window.localStorage.setItem('mos_ios_selected_role', effectiveRole);
+        } catch {
+          // ignore
+        }
       }
     },
     [loggedInUser]

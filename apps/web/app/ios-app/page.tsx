@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   canAccessIosConsultationApp,
   hasCompleteNaturalLashSet,
+  isAdminOrSuperAdminRole,
   isCvRole,
   isDoneBookingPendingCheckout,
   resolveLockedIosRoleForUser,
@@ -147,7 +148,12 @@ function IosAppInner() {
         return;
       }
 
-      const lockedRole = resolveLockedIosRoleForUser(userRole, roleParam);
+      const userIsAdmin = isAdminOrSuperAdminRole(userRole);
+      const savedRole = userIsAdmin ? (window.localStorage.getItem('mos_ios_selected_role') as IosUserRole | null) : null;
+      const allowedRoles: readonly IosUserRole[] = ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'];
+      const effectiveRoleParam =
+        roleParam || (userIsAdmin && savedRole && allowedRoles.includes(savedRole) ? savedRole : undefined);
+      const lockedRole = resolveLockedIosRoleForUser(userRole, effectiveRoleParam);
       state.setRole(lockedRole);
       setAuthorized(true);
     } catch {

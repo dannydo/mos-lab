@@ -60,86 +60,119 @@ export const EMPTY_LIVE_BOOKING_PLACEHOLDER: BookingItem = {
 };
 
 export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): ActiveActorProfile {
-  const userRole = String(loggedInUser?.role || '').toLowerCase();
-  const isActualCvUser =
-    userRole === 'cvl' ||
-    userRole === 'cvll' ||
-    userRole === 'cv' ||
-    userRole === 'cv_plus' ||
-    userRole === 'cv_plus_plus' ||
-    userRole === 'technician';
-
   // Chi nhánh gốc của tài khoản người dùng đăng nhập (nếu có)
   const userAssignedStoreId = Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0);
   const userAvatar = loggedInUser?.avatarUrl || loggedInUser?.avatar;
   const parsedLegacyStaffId = Number(loggedInUser?.legacyStaffId) || 0;
+  const hasAuthUser = Boolean(
+    loggedInUser && (loggedInUser.displayName || loggedInUser.username || parsedLegacyStaffId > 0)
+  );
+  const authName = loggedInUser?.displayName || loggedInUser?.username;
+  const authStaffId = parsedLegacyStaffId || (Number(loggedInUser?.id) > 0 ? Number(loggedInUser.id) : 0);
+  const authAvatar = hasAuthUser
+    ? resolveStaffAvatarUrl(userAvatar, authStaffId || undefined, authName)
+    : undefined;
+  const storeId = userAssignedStoreId || 6;
+  const branchCode = storeId === 16 ? 'EP' : 'DT';
+  const branchName = storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám';
 
   if (role === 'CVLL') {
-    const staffId = isActualCvUser ? parsedLegacyStaffId || 13783 : 13783;
-    const avatarStaffId = isActualCvUser ? parsedLegacyStaffId || undefined : 13783;
-    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Chuyên Viên 2 Lông';
-    const storeId = userAssignedStoreId || 6;
+    const staffId = hasAuthUser ? authStaffId || 13783 : 13783;
+    const name = hasAuthUser && authName ? authName : 'Chuyên Viên 2 Lông';
+    const avatar = hasAuthUser ? authAvatar : resolveStaffAvatarUrl(undefined, 13783, 'Chuyên Viên 2 Lông');
     return {
       staffId,
       name,
       tier: 'CVLL',
       badgeLabel: 'CVLL · Chuyên Viên Tự Chủ Cấp Cao',
-      avatar: resolveStaffAvatarUrl(isActualCvUser ? userAvatar : undefined, avatarStaffId, name),
+      avatar,
       storeId,
-      branchCode: storeId === 16 ? 'EP' : 'DT',
-      branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
+      branchCode,
+      branchName,
     };
   }
+
   if (role === 'CVL') {
     const isThaoLy =
-      isActualCvUser &&
-      (Number(loggedInUser?.legacyStaffId) === 46272 || loggedInUser?.displayName?.toLowerCase()?.includes('thảo ly'));
+      hasAuthUser &&
+      (authStaffId === 46272 || authName?.toLowerCase()?.includes('thảo ly'));
     const defaultStaffId = isThaoLy ? 46272 : 13783;
     const defaultName = isThaoLy ? 'Thảo Ly' : 'Khanh Cao';
-    const staffId = isActualCvUser ? parsedLegacyStaffId || defaultStaffId : defaultStaffId;
-    const avatarStaffId = isActualCvUser ? parsedLegacyStaffId || undefined : defaultStaffId;
-    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : defaultName;
-    const storeId = userAssignedStoreId || 6; // Khanh Cao & Thảo Ly thuộc Chi nhánh Đề Thám (DT - 6)
+    const staffId = hasAuthUser ? authStaffId || defaultStaffId : defaultStaffId;
+    const name = hasAuthUser && authName ? authName : defaultName;
+    const avatar = hasAuthUser ? authAvatar : resolveStaffAvatarUrl(undefined, defaultStaffId, defaultName);
     return {
       staffId,
       name,
       tier: 'CVL',
       badgeLabel: 'CVL · Chuyên Viên Tự Chủ',
-      avatar: resolveStaffAvatarUrl(isActualCvUser ? userAvatar : undefined, avatarStaffId, name),
+      avatar,
       storeId,
-      branchCode: storeId === 16 ? 'EP' : 'DT',
-      branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
+      branchCode,
+      branchName,
     };
   }
+
   if (role === 'CV') {
-    const staffId = isActualCvUser ? parsedLegacyStaffId || 49076 : 49076;
-    const avatarStaffId = isActualCvUser ? parsedLegacyStaffId || undefined : 49076;
-    const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Phương Nhi';
-    const storeId = userAssignedStoreId || 6;
+    const staffId = hasAuthUser ? authStaffId || 49076 : 49076;
+    const name = hasAuthUser && authName ? authName : 'Phương Nhi';
+    const avatar = hasAuthUser ? authAvatar : resolveStaffAvatarUrl(undefined, 49076, 'Phương Nhi');
     return {
       staffId,
       name,
       tier: 'CV',
       badgeLabel: 'CV · Chuyên Viên Kỹ Thuật',
-      avatar: resolveStaffAvatarUrl(isActualCvUser ? userAvatar : undefined, avatarStaffId, name),
+      avatar,
       storeId,
-      branchCode: storeId === 16 ? 'EP' : 'DT',
-      branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
+      branchCode,
+      branchName,
     };
   }
-  const isActualCcUser = isCcRole(loggedInUser?.role);
-  const staffId = isActualCcUser ? parsedLegacyStaffId || 37790 : 37790;
-  const avatarStaffId = isActualCcUser ? parsedLegacyStaffId || undefined : 37790;
-  const name = isActualCcUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Diễm Hương';
-  const storeId = userAssignedStoreId || 6;
+
+  if (role === 'STORE') {
+    const staffId = hasAuthUser ? authStaffId || 1 : 1;
+    const name = hasAuthUser && authName ? authName : 'Quản Lý Cửa Hàng';
+    const avatar = hasAuthUser ? authAvatar : undefined;
+    return {
+      staffId,
+      name,
+      tier: 'ADMIN',
+      badgeLabel: 'STORE · Quản Lý Cửa Hàng',
+      avatar,
+      storeId,
+      branchCode,
+      branchName,
+    };
+  }
+
+  if (role === 'INVENTORY') {
+    const staffId = hasAuthUser ? authStaffId || 1 : 1;
+    const name = hasAuthUser && authName ? authName : 'Quản Lý Kho';
+    const avatar = hasAuthUser ? authAvatar : undefined;
+    return {
+      staffId,
+      name,
+      tier: 'ADMIN',
+      badgeLabel: 'KHO · Quản Lý Kho',
+      avatar,
+      storeId,
+      branchCode,
+      branchName,
+    };
+  }
+
+  // Default: CC (Client Consultant)
+  const staffId = hasAuthUser ? authStaffId || 37790 : 37790;
+  const name = hasAuthUser && authName ? authName : 'Diễm Hương';
+  const avatar = hasAuthUser ? authAvatar : resolveStaffAvatarUrl(undefined, 37790, 'Diễm Hương');
   return {
     staffId,
     name,
     tier: 'CC',
     badgeLabel: 'CC · Tư Vấn Viên',
-    avatar: resolveStaffAvatarUrl(isActualCcUser ? userAvatar : undefined, avatarStaffId, name),
+    avatar,
     storeId,
-    branchCode: storeId === 16 ? 'EP' : 'DT',
-    branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
+    branchCode,
+    branchName,
   };
 }
