@@ -848,6 +848,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
               />
               <MosChatMobileComposer
                 onOpenActionSheet={() => setActionSheetOpen(true)}
+                onOpenCKEditor={() => setCkEditorOpen(true)}
                 onOpenStickerSheet={(pack = 'emoji') => {
                   setStickerPickerInitialPack(pack);
                   setStickerPickerOpen(true);
@@ -935,12 +936,14 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile */}
       <MosChatRichEditorModal
         open={ckEditorOpen}
+        zIndex={2000}
         onClose={() => setCkEditorOpen(false)}
         initialValue={composerText}
         initialMode="compact"
         title="Soạn thảo phong phú (CKEditor)"
         onApply={(text) => {
           setComposerText(text);
+          antdMessage.success('Đã áp dụng nội dung CKEditor vào ô chat');
         }}
         onSend={async (text) => {
           if (text.trim()) {
@@ -1061,7 +1064,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       >
         <div className="space-y-3.5 py-2">
           <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Nội dung công việc *</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">
+              Nội dung công việc *
+            </label>
             <Input.TextArea
               rows={3}
               value={taskTitle}
@@ -1121,7 +1126,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1.5">Thời hạn hoàn thành (Deadline)</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1.5">
+              Thời hạn hoàn thành (Deadline)
+            </label>
             <MosChatMobileDateTimePicker
               value={taskDueAt}
               onChange={(d) => setTaskDueAt(d)}

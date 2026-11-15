@@ -1,7 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles, User, Film, Play } from 'lucide-react';
+import {
+  Plus,
+  SendHorizontal,
+  Mic,
+  Smile,
+  X,
+  Loader2,
+  FileText,
+  File,
+  Sparkles,
+  User,
+  Film,
+  Play,
+  FilePenLine,
+} from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import type { MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -26,6 +40,7 @@ import { cleanQuotedText } from '../utils/quoteUtils';
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
   onOpenStickerSheet: (pack?: MosChatStickerPackId) => void;
+  onOpenCKEditor?: () => void;
   attachedImages?: MosChatImageAttachment[];
   onRemoveAttachment?: (id: string) => void;
   isUploadingImages?: boolean;
@@ -39,6 +54,7 @@ export interface MosChatMobileComposerProps {
 export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   onOpenActionSheet,
   onOpenStickerSheet,
+  onOpenCKEditor,
   attachedImages = [],
   onRemoveAttachment,
   isUploadingImages = false,
@@ -494,6 +510,20 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] resize-none max-h-[110px] py-1 leading-snug"
             style={{ outline: 'none', boxShadow: 'none' }}
           />
+
+          {/* Quick CKEditor Format Button */}
+          {onOpenCKEditor && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onOpenCKEditor}
+              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              aria-label="Soạn thảo định dạng (CKEditor)"
+              title="Soạn thảo định dạng (CKEditor)"
+            >
+              <FilePenLine className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Quick Emoji / Sticker Icon */}
           <button

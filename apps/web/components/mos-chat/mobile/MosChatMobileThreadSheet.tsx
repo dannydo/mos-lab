@@ -31,6 +31,7 @@ import {
   Play,
   FileText,
   File,
+  FilePenLine,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
@@ -974,7 +975,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold truncate leading-tight">{att.name}</p>
-                              <span className="text-[10px] text-[var(--mos-text-muted)] uppercase font-bold">{ext}</span>
+                              <span className="text-[10px] text-[var(--mos-text-muted)] uppercase font-bold">
+                                {ext}
+                              </span>
                             </div>
                           </div>
                         );
@@ -1067,7 +1070,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   aria-label={linkedTask.done ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
                 >
                   {linkedTask.done ? (
-                    <CheckCircle2 className={`w-5 h-5 fill-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <CheckCircle2
+                      className={`w-5 h-5 fill-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
+                    />
                   ) : (
                     <Square className="w-5 h-5 text-[var(--mos-text-muted)]" />
                   )}
@@ -1281,7 +1286,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     />
                     <div
                       className={`text-[9.5px] truncate font-medium ${
-                        active ? (isDark ? 'text-purple-300 font-bold' : 'text-purple-700 font-bold') : 'text-[var(--mos-text-muted)]'
+                        active
+                          ? isDark
+                            ? 'text-purple-300 font-bold'
+                            : 'text-purple-700 font-bold'
+                          : 'text-[var(--mos-text-muted)]'
                       }`}
                     >
                       {s.label}
@@ -1785,10 +1794,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               🤖
             </div>
             <div className="flex-1 min-w-0">
-              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span> Đang suy nghĩ và phân tích luồng thảo
-              luận...
+              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span>{' '}
+              Đang suy nghĩ và phân tích luồng thảo luận...
             </div>
-            <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+            <Loader2
+              className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}
+            />
           </div>
         )}
 
@@ -2124,6 +2135,17 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               title="Xuống dòng (Shift+Enter)"
             >
               <CornerDownLeft className="w-4 h-4" />
+            </button>
+            {/* Quick CKEditor Format Button inside Thread */}
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setCkEditorOpen(true)}
+              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              aria-label="Soạn thảo định dạng (CKEditor)"
+              title="Soạn thảo định dạng (CKEditor)"
+            >
+              <FilePenLine className="w-4 h-4" />
             </button>
             {/* Sticker & Emoji Button */}
             <button
@@ -2490,12 +2512,14 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile Thread */}
       <MosChatRichEditorModal
         open={ckEditorOpen}
+        zIndex={2000}
         onClose={() => setCkEditorOpen(false)}
         initialValue={text}
         initialMode="compact"
         title="Soạn thảo phong phú (CKEditor)"
         onApply={(newText) => {
           setText(newText);
+          antdMessage.success('Đã áp dụng nội dung CKEditor vào ô chat luồng');
         }}
         onSend={async (textToSend) => {
           if (textToSend.trim()) {
