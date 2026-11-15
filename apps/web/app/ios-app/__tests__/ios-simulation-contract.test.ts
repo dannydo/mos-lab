@@ -3,6 +3,7 @@ import {
   IOS_SIM_BOOKING_ID_MIN,
   isIosSyntheticSimBookingId,
   filterBookingsForCvlScope,
+  resolveCustomerBookingTab,
   MOS_BIBLE_COMMANDMENTS,
   type IosBookingItem,
 } from '@mos-lab/shared';
@@ -129,5 +130,51 @@ describe('mOS iOS App — Simulation Sandbox & Dual Booking Contract', () => {
 
     const scoped = filterBookingsForCvlScope([sampleBooking], 46272, { isToday: true });
     expect(scoped).toHaveLength(1);
+  });
+
+  it('keeps restored simulation scenarios in SERVICING and finished scenarios in DONE across reloads', () => {
+    const appliedScenarioBooking: IosBookingItem = {
+      id: 339580,
+      orderNumber: 'BK-28',
+      customerName: 'Trâm',
+      customerPhone: '0909',
+      customerId: 50415,
+      customerVisits: 5,
+      customerNote: '',
+      timeSlot: '10:00 (90m)',
+      serviceName: 'Volume 2D',
+      servicePrice: 550000,
+      serviceDuration: 90,
+      assignedStaffId: 45103,
+      assignedStaffTier: 'CVL',
+      status: 'CHECKED_IN',
+      orderState: 'Check-in',
+      progress: undefined,
+      billing: {
+        subtotal: 4240000,
+        vatRate: 0.08,
+        vatAmount: 0,
+        serviceTotal: 0,
+        comboTotal: 4240000,
+        productTotal: 0,
+        paymentMethod: 'VIETQR',
+        tipAmount: 0,
+        tipCvShare: 0,
+        tipCcShare: 0,
+        grandTotal: 4240000,
+      },
+    };
+    expect(resolveCustomerBookingTab(appliedScenarioBooking)).toBe('SERVICING');
+
+    const completedScenarioBooking: IosBookingItem = {
+      ...appliedScenarioBooking,
+      status: 'DONE',
+      orderState: 'Completed',
+      billing: {
+        ...appliedScenarioBooking.billing!,
+        completedAt: '2026-11-15T06:00:00.000Z',
+      },
+    };
+    expect(resolveCustomerBookingTab(completedScenarioBooking)).toBe('DONE');
   });
 });

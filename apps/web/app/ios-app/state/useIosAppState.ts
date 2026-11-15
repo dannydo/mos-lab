@@ -507,6 +507,9 @@ export function useIosAppState(
     handleFinishOrder,
   } = useIosBillingCheckout({
     activeBookingId,
+    activeBooking,
+    isSimulationMode,
+    onSimulationAttemptSaved: simulation.upsertAttemptInCache,
     actor,
     cvPlusRules: staffStats?.cvPlusRules,
     updateActiveBooking,

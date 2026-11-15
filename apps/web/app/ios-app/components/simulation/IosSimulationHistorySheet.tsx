@@ -13,8 +13,10 @@ interface IosSimulationHistorySheetProps {
   booking?: IosBookingItem;
   attempts: IosSimulationAttemptSummary[];
   isLoading?: boolean;
+  error?: string | null;
   isReadOnly?: boolean;
   isBusy?: boolean;
+  onRetryLoad?: () => void;
   onRevertConsultation?: (bookingId: number) => void;
   onResetToIncoming?: (bookingId: number) => void;
   onUpdateAttempt?: (attemptId: string, updates: IosUpdateSimulationAttemptRequest) => Promise<void>;
@@ -33,8 +35,10 @@ export function IosSimulationHistorySheet({
   booking,
   attempts,
   isLoading = false,
+  error = null,
   isReadOnly = false,
   isBusy = false,
+  onRetryLoad,
   onRevertConsultation,
   onResetToIncoming,
   onUpdateAttempt,
@@ -116,6 +120,26 @@ export function IosSimulationHistorySheet({
             <div className="py-12 flex flex-col items-center justify-center gap-2 text-xs opacity-70">
               <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
               <span>Đang tải lịch sử phương án mô phỏng...</span>
+            </div>
+          ) : attempts.length === 0 && error ? (
+            <div
+              className={`rounded-2xl p-6 text-center border space-y-2 ${
+                isDark
+                  ? 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
+            >
+              <div className="text-[13px] font-black text-rose-500">Không tải được lịch sử phương án</div>
+              <p className="text-[11.5px] leading-relaxed">{error}</p>
+              {onRetryLoad && (
+                <button
+                  type="button"
+                  onClick={onRetryLoad}
+                  className="mt-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-[11.5px] font-black cursor-pointer"
+                >
+                  Tải lại phương án
+                </button>
+              )}
             </div>
           ) : attempts.length === 0 ? (
             <div

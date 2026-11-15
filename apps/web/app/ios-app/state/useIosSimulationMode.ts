@@ -82,6 +82,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
   const [isHistorySheetOpen, setIsHistorySheetOpen] = useState<boolean>(false);
   const [historyBookingId, setHistoryBookingId] = useState<number | null>(null);
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [attemptsByBookingId, setAttemptsByBookingId] = useState<Record<number, IosSimulationAttemptSummary[]>>({});
   const [simActionError, setSimActionError] = useState<string | null>(null);
   const [isSimActionBusy, setIsSimActionBusy] = useState<boolean>(false);
@@ -156,6 +157,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     async (bookingId: number) => {
       if (!bookingId || bookingId <= 0) return [];
       setHistoryLoading(true);
+      setHistoryError(null);
       try {
         const res = await apiClient.ios.listSimulationAttempts({
           bookingId,
@@ -165,8 +167,9 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
           setAttemptsByBookingId((prev) => ({ ...prev, [bookingId]: res.attempts }));
           return res.attempts;
         }
+        setHistoryError((res as any)?.error || 'Không thể tải danh sách phương án mô phỏng.');
       } catch {
-        // ignore network error gracefully
+        setHistoryError('Kết nối máy chủ bị gián đoạn khi tải kịch bản mô phỏng.');
       } finally {
         setHistoryLoading(false);
       }
@@ -174,6 +177,22 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     },
     [attemptsByBookingId, selectedMenteeStaffId]
   );
+
+  const upsertAttemptInCache = useCallback((bookingId: number, attempt: IosSimulationAttemptSummary | undefined) => {
+    if (!bookingId || !attempt?.attemptId) return;
+    setAttemptsByBookingId((prev) => {
+      const currentList = prev[bookingId] || [];
+      const existingIdx = currentList.findIndex((item) => item.attemptId === attempt.attemptId);
+      const nextList =
+        existingIdx >= 0
+          ? currentList.map((item, idx) => (idx === existingIdx ? attempt : item))
+          : [...currentList, attempt];
+      return {
+        ...prev,
+        [bookingId]: nextList.sort((a, b) => Number(a.attemptNumber || 0) - Number(b.attemptNumber || 0)),
+      };
+    });
+  }, []);
 
   const openHistoryForBooking = useCallback(
     (bookingId: number) => {
@@ -581,6 +600,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     setIsHistorySheetOpen,
     historyBookingId,
     historyLoading,
+    historyError,
     attemptsByBookingId,
     simActionError,
     setSimActionError,
@@ -589,6 +609,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     selectMenteeStaffId,
     loadAttemptsForBooking,
     openHistoryForBooking,
+    upsertAttemptInCache,
     handleSimRevertConsultation,
     handleSimResetToIncoming,
     handleSimFastForwardToUpsell,

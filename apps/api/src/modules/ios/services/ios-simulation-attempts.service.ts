@@ -73,11 +73,40 @@ export async function appendSimulationAttempt(
   staffId: number,
   bookingId: number,
   draft: Omit<IosSimulationAttemptSummary, 'attemptNumber'>,
-  baseStore?: CrmConfigStoreAdapter
+  baseStore?: CrmConfigStoreAdapter,
+  options?: { updateLatestIfSameCompletion?: boolean }
 ): Promise<IosSimulationAttemptSummary> {
   const store = resolveBaseStore(baseStore);
   const key = getSimAttemptsKey(staffId, bookingId);
   const existing = await loadSimulationAttempts(staffId, bookingId, store);
+
+  // Step 13 payment -> Step 14 tip -> Step 15 finish on the exact same completed checkout updates the latest attempt in place
+  if (
+    options?.updateLatestIfSameCompletion &&
+    draft.sourceAction === 'COMPLETE_ORDER' &&
+    existing.length > 0 &&
+    existing[existing.length - 1]?.sourceAction === 'COMPLETE_ORDER'
+  ) {
+    const latest = existing[existing.length - 1];
+    const resolvedServiceName =
+      draft.serviceName && draft.serviceName !== 'Dịch vụ mi' ? draft.serviceName : latest.serviceName;
+    const resolvedCustomerName =
+      draft.customerName && !draft.customerName.startsWith('Khách #') ? draft.customerName : latest.customerName;
+    const resolvedOrderNumber =
+      draft.orderNumber && draft.orderNumber !== `#${bookingId}` ? draft.orderNumber : latest.orderNumber;
+    const updated: IosSimulationAttemptSummary = {
+      ...draft,
+      attemptId: latest.attemptId,
+      attemptNumber: latest.attemptNumber,
+      serviceName: resolvedServiceName,
+      customerName: resolvedCustomerName,
+      orderNumber: resolvedOrderNumber,
+      notes: draft.notes ?? latest.notes,
+    };
+    const next = [...existing.slice(0, -1), updated];
+    await store.upsert(key, JSON.stringify(next));
+    return updated;
+  }
 
   // Deduplicate rapid repeated saves for the exact same completed timestamp
   const matchingExisting = existing.find(
@@ -203,6 +232,22 @@ export function hasAttemptWorthySimulationWork(override: BookingOverrideRecord):
   );
 }
 
+export function hasCompletedSimulationSnapshot(
+  override?: BookingOverrideRecord | null,
+  options?: { isLiveCompleted?: boolean; isCustomDraftCompleted?: boolean }
+): boolean {
+  if (override?._simForceIncoming) return false;
+  if (options?.isLiveCompleted || options?.isCustomDraftCompleted) return true;
+  if (!override) return false;
+  if (override.status === 'DONE' || Boolean(override.billing?.completedAt) || Boolean(override.completedAt)) {
+    return true;
+  }
+  return Boolean(
+    hasAttemptWorthySimulationWork(override) &&
+      (Boolean(override.progress?.completedAt) || Boolean(override.checkedOutAt))
+  );
+}
+
 export function buildSimulationAttemptSnapshot(params: {
   sourceAction: IosSimulationAttemptSourceAction;
   bookingId: number;
@@ -286,7 +331,13 @@ export function buildSimulationAttemptSnapshot(params: {
       ).toFixed(1)
     );
 
-  const createdAt = String(override.completedAt || new Date().toISOString());
+  const createdAt = String(
+    override.completedAt ||
+      override.billing?.completedAt ||
+      override.progress?.completedAt ||
+      override.checkedOutAt ||
+      new Date().toISOString()
+  );
   return {
     attemptId: `sim_att_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     bookingId,
@@ -319,4 +370,69 @@ export function buildSimulationAttemptSnapshot(params: {
     elapsedSeconds: Number(override.progress?.elapsedSeconds || 0),
     notes: override.notes ? String(override.notes) : undefined,
   };
+}
+
+export async function reconcileSimulationAttemptsForBooking(params: {
+  staffId: number;
+  bookingId: number;
+  actorStaffName: string;
+  override?: BookingOverrideRecord | null;
+  isLiveCompleted?: boolean;
+  isCustomDraftCompleted?: boolean;
+  persistIfMissing?: boolean;
+  meta: {
+    customerId: number;
+    customerName: string;
+    orderNumber: string;
+    serviceName: string;
+    servicePrice: number;
+    upgradePrice?: number;
+    isComboLive?: boolean;
+    hasUnderMinkCombo?: boolean;
+    assignedStaffId?: number;
+    assignedStaffTier?: string;
+    cvRotationPoints?: number;
+  };
+  baseStore?: CrmConfigStoreAdapter;
+}): Promise<IosSimulationAttemptSummary[]> {
+  const {
+    staffId,
+    bookingId,
+    actorStaffName,
+    override,
+    isLiveCompleted = false,
+    isCustomDraftCompleted = false,
+    persistIfMissing = true,
+    meta,
+    baseStore,
+  } = params;
+
+  const existing = await loadSimulationAttempts(staffId, bookingId, baseStore);
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  if (!hasCompletedSimulationSnapshot(override, { isLiveCompleted, isCustomDraftCompleted })) {
+    return [];
+  }
+
+  const effectiveOverride: BookingOverrideRecord = {
+    ...(override || {}),
+    status: 'DONE',
+  };
+  const draft = buildSimulationAttemptSnapshot({
+    sourceAction: 'COMPLETE_ORDER',
+    bookingId,
+    actorStaffId: staffId,
+    actorStaffName,
+    override: effectiveOverride,
+    meta,
+  });
+
+  if (persistIfMissing) {
+    const saved = await appendSimulationAttempt(staffId, bookingId, draft, baseStore);
+    return [saved];
+  }
+
+  return [{ ...draft, attemptNumber: 1 }];
 }

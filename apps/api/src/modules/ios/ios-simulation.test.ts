@@ -27,8 +27,10 @@ import {
 } from './services/ios-simulation.service.js';
 import {
   executeIosSimulationBookingAction,
+  loadOrReconcileSimulationAttemptsForActor,
   SIM_TRAINING_SAMPLE_PHOTOS,
 } from './services/ios-simulation-actions.service.js';
+import { resolveCustomerBookingTab } from '@mos-lab/shared';
 import { createIosDualModeBooking } from './services/ios-booking-create.service.js';
 import { CvlTrainingMentorshipService } from '../kpi/services/cvl-training-mentorship.service.js';
 
@@ -509,4 +511,153 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
   assert.equal(appliedOverride.cartProducts?.length, 1);
   assert.equal(appliedOverride.cartProducts?.[0]?.productName, 'Serum Dưỡng Mi Wings');
   assert.equal(appliedOverride.billing?.grandTotal, 3049000);
+});
+
+test('MOS-BUG-230: reconciles missing attempts for completed/checked-out scenarios and preserves state across reopen & apply', async () => {
+  const store = createInMemoryConfigStore();
+  const staffId = CVL_A.legacyStaffId!;
+  const bookingId = 339580;
+  const simRepo = getSimulationOverrideRepository(staffId, store);
+
+  // 1. Reproduce #BK-28 state: completed progress + checkedOutAt + combo sale, but IOS_SIM_ATTEMPTS is empty
+  await simRepo.saveBookingOverride(bookingId, {
+    status: 'SERVICING',
+    orderState: 'Photo after auto-saved',
+    assignedStaffId: staffId,
+    assignedStaffName: CVL_A.displayName,
+    serviceName: 'Volume 2D',
+    servicePrice: 550000,
+    checkedOutAt: '2026-11-15T06:00:00.189Z',
+    selectedCombo: { id: 'c10', name: 'Combo 10 tặng 6 · Volume 2D 550', price: 4240000, sessions: 16 },
+    comboRedemption: { isRedeemed: true, comboName: 'Combo Volume 2D', deductSessions: 1 },
+    attributes: { ...COMPLETE_NLASH_ATTRS, style: 'Classic' },
+    progress: { elapsedSeconds: 3000, timerRunning: false, completedAt: '2026-11-15T05:58:00.000Z' },
+  });
+
+  // enrichSimulationBookings must reflect >= 1 attempt so UI banner & list count match
+  const simOvrs = await simRepo.loadBookingOverridesBatch([bookingId]);
+  const enrichedBefore = enrichSimulationBookings({
+    mappedBookings: [
+      {
+        ...BASE_NGOC_PHAM,
+        id: bookingId,
+        orderNumber: 'BK-28',
+        customerName: 'Trâm',
+        status: 'DONE',
+        orderState: 'Completed',
+        assignedStaffId: staffId,
+      },
+    ],
+    customDraftBookings: [],
+    simOverridesMap: simOvrs,
+    simNaturalLashMap: {},
+    attemptMetaMap: new Map(),
+    targetStaffId: staffId,
+    isReadOnlyMentorView: false,
+  });
+  assert.equal(enrichedBefore[0].simulationAttemptCount, 1);
+
+  // Reconcile when user opens IosSimulationHistorySheet -> must not be empty!
+  const reconciled = await loadOrReconcileSimulationAttemptsForActor(staffId, bookingId, {
+    actorStaffName: CVL_A.displayName,
+    baseStore: store,
+  });
+  assert.equal(reconciled.length, 1);
+  assert.equal(reconciled[0].attemptNumber, 1);
+  assert.equal(reconciled[0].selectedComboName, 'Combo 10 tặng 6 · Volume 2D 550');
+  assert.equal(reconciled[0].selectedComboPrice, 4240000);
+  assert.ok(reconciled[0].grandTotal >= 4240000);
+
+  // Applying that reconciled PA #1 clears completedAt/progress so live 'Completed' order stays CHECKED_IN
+  const applyRes = await executeIosSimulationBookingAction(
+    null,
+    CVL_A,
+    {
+      bookingId,
+      customerId: 50415,
+      action: 'SIM_APPLY_ATTEMPT',
+      attemptId: reconciled[0].attemptId,
+    },
+    store
+  );
+  assert.equal(applyRes.statusCode, 200);
+  const appliedOvr = applyRes.payload.updatedOverride;
+  assert.equal(appliedOvr?.status, 'CHECKED_IN');
+  assert.equal(appliedOvr?.progress, undefined);
+  assert.equal(appliedOvr?.completedAt, undefined);
+
+  const enrichedAfterApply = enrichSimulationBookings({
+    mappedBookings: [
+      {
+        ...BASE_NGOC_PHAM,
+        id: bookingId,
+        orderNumber: 'BK-28',
+        customerName: 'Trâm',
+        status: 'DONE',
+        orderState: 'Completed',
+        assignedStaffId: staffId,
+      },
+    ],
+    customDraftBookings: [],
+    simOverridesMap: await simRepo.loadBookingOverridesBatch([bookingId]),
+    simNaturalLashMap: {},
+    attemptMetaMap: new Map([[bookingId, { count: reconciled.length, latestAttemptId: reconciled[0].attemptId }]]),
+    targetStaffId: staffId,
+    isReadOnlyMentorView: false,
+  });
+  assert.equal(enrichedAfterApply[0].status, 'CHECKED_IN');
+  assert.equal(resolveCustomerBookingTab(enrichedAfterApply[0]), 'SERVICING');
+
+  // 2. Step 13 payment + Step 14 tip COMPLETE_ORDER updates same attempt without duplication
+  const bookingId2 = 88230;
+  await executeIosSimulationBookingAction(
+    null,
+    CVL_A,
+    {
+      bookingId: bookingId2,
+      customerId: 60230,
+      action: 'COMPLETE_ORDER',
+      paymentMethod: 'VIETQR',
+      billing: { totalAmount: 550000, grandTotal: 594000, tipAmount: 0, paymentMethod: 'VIETQR' },
+      simBookingMeta: {
+        customerId: 60230,
+        customerName: 'Khách Tip',
+        orderNumber: 'BK-230',
+        serviceName: 'Volume 2D',
+        servicePrice: 550000,
+      },
+    },
+    store
+  );
+  await executeIosSimulationBookingAction(
+    null,
+    CVL_A,
+    {
+      bookingId: bookingId2,
+      customerId: 60230,
+      action: 'COMPLETE_ORDER',
+      paymentMethod: 'VIETQR',
+      billing: { totalAmount: 550000, grandTotal: 694000, tipAmount: 100000, paymentMethod: 'VIETQR' },
+    },
+    store
+  );
+  // Late UPDATE_PROGRESS after checkout must NOT downgrade status back to SERVICING
+  const lateProgressRes = await executeIosSimulationBookingAction(
+    null,
+    CVL_A,
+    {
+      bookingId: bookingId2,
+      action: 'UPDATE_PROGRESS',
+      orderState: 'Photo after auto-saved',
+      progress: { elapsedSeconds: 3000, timerRunning: false },
+    },
+    store
+  );
+  assert.equal(lateProgressRes.statusCode, 200);
+  assert.equal(lateProgressRes.payload.updatedOverride?.status, 'DONE');
+
+  const attempts2 = await loadSimulationAttempts(staffId, bookingId2, store);
+  assert.equal(attempts2.length, 1);
+  assert.equal(attempts2[0].tipAmount, 100000);
+  assert.equal(attempts2[0].serviceName, 'Volume 2D');
 });

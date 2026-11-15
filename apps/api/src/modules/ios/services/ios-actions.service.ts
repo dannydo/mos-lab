@@ -405,10 +405,11 @@ export async function executeIosBookingAction(
           ? current.assignedStaffName
           : actorStaffName || undefined;
 
+      const preserveDoneState = current.status === 'DONE' && !body.forceReopenServicing;
       nextOverride = {
         ...current,
-        status: 'SERVICING',
-        orderState: body.orderState || 'Service End',
+        status: preserveDoneState ? 'DONE' : 'SERVICING',
+        orderState: preserveDoneState ? current.orderState || 'Completed' : body.orderState || 'Service End',
         ...(resolvedAssignedStaffId > 0 ? { assignedStaffId: resolvedAssignedStaffId } : {}),
         ...(resolvedAssignedStaffName ? { assignedStaffName: resolvedAssignedStaffName } : {}),
         progress: {
