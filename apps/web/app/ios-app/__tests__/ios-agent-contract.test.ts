@@ -104,7 +104,7 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
       expect(scoped.find((b) => b.id === 1)?.isNextQueueCustomer).toBe(true);
       expect(scoped.find((b) => b.id === 3)?.bookingAccessTag).toBe('MY_BOOKED_CUSTOMER');
 
-      // 2+ unassigned customers at the same head start time (11:00) -> show all in that slot
+      // MOS-BUG-227: 2+ unassigned customers at the same head start time (11:00) -> strictly show only the 1 head customer in queue
       const sameSlot = [
         makeBooking({ id: 11, timeSlot: '11:00 - 12:30' }),
         makeBooking({ id: 12, timeSlot: '11:00 - 12:00' }),
@@ -115,9 +115,9 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
           isToday: true,
           now: new Date('2026-11-13T10:45:00+07:00'),
         }).map((b) => b.id)
-      ).toEqual([11, 12]);
+      ).toEqual([11]);
 
-      // Late unassigned INCOMING customer(s) + next upcoming slot -> show both late and next slot
+      // MOS-BUG-227: Late unassigned INCOMING customer(s) + next upcoming slot -> strictly show only the single earliest late customer at the head of the queue
       const lateAndNext = [
         makeBooking({ id: 21, timeSlot: '10:30 - 12:00' }),
         makeBooking({ id: 22, timeSlot: '11:00 - 12:30' }),
@@ -129,9 +129,9 @@ describe('mOS iOS App — AI-Agent Architectural & Business Contract Suite', () 
           isToday: true,
           now: new Date('2026-11-13T10:45:00+07:00'),
         }).map((b) => b.id)
-      ).toEqual([21, 22, 23]);
+      ).toEqual([21]);
 
-      // Non-today view (e.g. tomorrow) -> 10:30 is not considered late
+      // Non-today view (e.g. tomorrow) -> 10:30 is not considered late, earliest upcoming slot customer is chosen
       expect(
         filterBookingsForCvlScope(lateAndNext, myStaffId, {
           isToday: false,
