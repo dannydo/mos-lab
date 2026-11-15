@@ -39,6 +39,10 @@ import {
   formatBackendAiMessage,
   toggleReactionState,
   hasUserReacted as hasUserReactedHelper,
+  getMessageReadBreakdown as getMessageReadBreakdownHelper,
+  getThreadReplyReadBreakdown as getThreadReplyReadBreakdownHelper,
+  calculateStoppedReadersByMsgId,
+  calculateStoppedReadersByReplyId,
 } from '../utils/chat-helpers';
 import type {
   MosChatActiveSubtab,
@@ -46,6 +50,7 @@ import type {
   MosChatMobileView,
   MosChatSidebarFilter,
   MosChatReactionUsersTarget,
+  MosChatSeenUsersTarget,
 } from '../types/mos-chat-types';
 
 async function convertAttachmentToDataUrl(attachment?: MosChatImageAttachment): Promise<string | undefined> {
@@ -365,6 +370,16 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     setReactionUsersTarget(null);
   }, []);
 
+  const [seenUsersTarget, setSeenUsersTarget] = useState<MosChatSeenUsersTarget | null>(null);
+
+  const openSeenUsersSheet = useCallback((target: MosChatSeenUsersTarget) => {
+    setSeenUsersTarget(target);
+  }, []);
+
+  const closeSeenUsersSheet = useCallback(() => {
+    setSeenUsersTarget(null);
+  }, []);
+
   const activeConversation = useMemo(() => {
     if (activeConvId === AI_COPILOT_CONV_ID) {
       return aiCopilotConversation;
@@ -386,6 +401,55 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const threadReplies = useMemo(() => {
     return activeThreadMsg?.thread || [];
   }, [activeThreadMsg]);
+
+  const getMessageReadBreakdown = useCallback(
+    (conv: MosChatConversation | null | undefined, msg: MosChatMessage) => {
+      return getMessageReadBreakdownHelper(conv, msg, effectiveUser?.id);
+    },
+    [effectiveUser?.id]
+  );
+
+  const getThreadReplyReadBreakdown = useCallback(
+    (parentMsg: MosChatMessage, reply: MosChatThreadReply) => {
+      return getThreadReplyReadBreakdownHelper(activeConversation, parentMsg, reply, effectiveUser?.id);
+    },
+    [activeConversation, effectiveUser?.id]
+  );
+
+  const stoppedReadersByMsgId = useMemo(() => {
+    return calculateStoppedReadersByMsgId(activeConversation, effectiveUser?.id);
+  }, [activeConversation, effectiveUser?.id]);
+
+  const stoppedReadersByReplyId = useMemo(() => {
+    return calculateStoppedReadersByReplyId(activeThreadMsg, effectiveUser?.id, activeConversation?.isSelf);
+  }, [activeThreadMsg, activeConversation?.isSelf, effectiveUser?.id]);
+
+  const openSeenUsersSheetForMessage = useCallback(
+    (msg: MosChatMessage) => {
+      const breakdown = getMessageReadBreakdown(activeConversation, msg);
+      setSeenUsersTarget({
+        messageId: msg.id,
+        scopeLabel: 'Người đã xem tin nhắn',
+        seenBy: breakdown.seenBy,
+        unseenBy: breakdown.unseenBy,
+      });
+    },
+    [activeConversation, getMessageReadBreakdown]
+  );
+
+  const openSeenUsersSheetForReply = useCallback(
+    (parentMsg: MosChatMessage, reply: MosChatThreadReply) => {
+      const breakdown = getThreadReplyReadBreakdown(parentMsg, reply);
+      setSeenUsersTarget({
+        messageId: parentMsg.id,
+        replyId: reply.id,
+        scopeLabel: 'Người đã xem phản hồi',
+        seenBy: breakdown.seenBy,
+        unseenBy: breakdown.unseenBy,
+      });
+    },
+    [getThreadReplyReadBreakdown]
+  );
 
   // Total unread count
   const totalUnreadCount = useMemo(() => {
@@ -1949,6 +2013,15 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       reactionUsersTarget,
       openReactionUsersSheet,
       closeReactionUsersSheet,
+      seenUsersTarget,
+      openSeenUsersSheet,
+      openSeenUsersSheetForMessage,
+      openSeenUsersSheetForReply,
+      closeSeenUsersSheet,
+      getMessageReadBreakdown,
+      getThreadReplyReadBreakdown,
+      stoppedReadersByMsgId,
+      stoppedReadersByReplyId,
       togglePinMessage,
       deleteMessage,
       deleteThreadReply,
@@ -2015,6 +2088,15 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       reactionUsersTarget,
       openReactionUsersSheet,
       closeReactionUsersSheet,
+      seenUsersTarget,
+      openSeenUsersSheet,
+      openSeenUsersSheetForMessage,
+      openSeenUsersSheetForReply,
+      closeSeenUsersSheet,
+      getMessageReadBreakdown,
+      getThreadReplyReadBreakdown,
+      stoppedReadersByMsgId,
+      stoppedReadersByReplyId,
       togglePinMessage,
       deleteMessage,
       deleteThreadReply,

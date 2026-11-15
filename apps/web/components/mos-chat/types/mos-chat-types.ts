@@ -14,6 +14,8 @@ import type {
   MosChatMissionSummary,
   MosChatMissionActionType,
   MosChatThreadMoveMode,
+  MosChatReadReceiptEntry,
+  MosChatThreadReadReceiptEntry,
   UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
@@ -28,6 +30,26 @@ export interface MosChatReactionUsersTarget {
   reactions?: Record<string, number>;
   reactionUsers?: Record<string, Array<number | string>>;
   initialEmoji?: string;
+}
+
+export interface MosChatSeenUsersTarget {
+  messageId?: string;
+  replyId?: string;
+  scopeLabel?: string;
+  seenBy: Array<{
+    staffId: number;
+    displayName: string;
+    role: string;
+    avatarUrl?: string | null;
+    readAt?: string | null;
+  }>;
+  unseenBy: Array<{
+    staffId: number;
+    displayName: string;
+    role: string;
+    avatarUrl?: string | null;
+    readAt?: string | null;
+  }>;
 }
 
 export interface MosChatContextValue {
@@ -88,6 +110,27 @@ export interface MosChatContextValue {
     initialEmoji?: string
   ) => void;
   closeReactionUsersSheet: () => void;
+  seenUsersTarget: MosChatSeenUsersTarget | null;
+  openSeenUsersSheet: (target: MosChatSeenUsersTarget) => void;
+  openSeenUsersSheetForMessage: (msg: MosChatMessage) => void;
+  openSeenUsersSheetForReply: (parentMsg: MosChatMessage, reply: MosChatThreadReply) => void;
+  closeSeenUsersSheet: () => void;
+  getMessageReadBreakdown: (
+    conv: MosChatConversation | null | undefined,
+    msg: MosChatMessage
+  ) => {
+    seenBy: MosChatReadReceiptEntry[];
+    unseenBy: MosChatReadReceiptEntry[];
+  };
+  getThreadReplyReadBreakdown: (
+    parentMsg: MosChatMessage,
+    reply: MosChatThreadReply
+  ) => {
+    seenBy: MosChatThreadReadReceiptEntry[];
+    unseenBy: MosChatThreadReadReceiptEntry[];
+  };
+  stoppedReadersByMsgId: Record<string, MosChatReadReceiptEntry[]>;
+  stoppedReadersByReplyId: Record<string, MosChatThreadReadReceiptEntry[]>;
   togglePinMessage: (msgId: string) => Promise<void>;
   deleteMessage: (msgId: string) => Promise<void>;
   deleteThreadReply: (parentMsgId: string, replyId: string) => Promise<void>;

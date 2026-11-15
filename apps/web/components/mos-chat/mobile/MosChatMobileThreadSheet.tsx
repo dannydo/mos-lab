@@ -114,6 +114,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     executeMissionAction,
     isAiThinking,
     openCustomerDetail,
+    getMessageReadBreakdown,
+    getThreadReplyReadBreakdown,
+    stoppedReadersByReplyId,
+    stoppedReadersByMsgId,
+    openSeenUsersSheetForReply,
+    openSeenUsersSheetForMessage,
   } = useMosChat();
 
   const [text, setText] = useState<string>('');
@@ -123,6 +129,15 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const isParentFromMe = activeThreadMsg ? isUserMessageOwner(activeThreadMsg, currentUser) : false;
+  const parentBreakdown =
+    activeThreadMsg && getMessageReadBreakdown
+      ? getMessageReadBreakdown(activeConversation, activeThreadMsg)
+      : { seenBy: [], unseenBy: [] };
+  const stoppedReadersForParent =
+    (stoppedReadersByMsgId && activeThreadMsg && stoppedReadersByMsgId[activeThreadMsg.id]) || [];
+  const isParentSeen = parentBreakdown.seenBy.length > 0;
 
   // Auto mark open thread as read
   useEffect(() => {
@@ -818,31 +833,77 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             </div>
           )}
 
-          <div className="flex items-center gap-2 mb-1.5">
-            {activeThreadMsg.isAiBot || activeThreadMsg.senderId === 'wings-ai-copilot' ? (
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-            ) : (
-              <MosChatAvatar
-                size="sm"
-                src={activeThreadMsg.senderAvatar}
-                name={activeThreadMsg.senderName}
-                staffId={activeThreadMsg.senderId}
-                staffDirectory={staffDirectory}
-              />
-            )}
-            <span className="text-xs font-bold text-[var(--mos-text)]">{activeThreadMsg.senderName}</span>
-            {activeThreadMsg.senderRole && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-medium uppercase border border-[var(--mos-surface-border)]">
-                {activeThreadMsg.senderRole}
-              </span>
-            )}
-            <span className="text-[10px] text-[var(--mos-text-muted)] tabular-nums flex items-center gap-1">
-              {activeThreadMsg.editedAt && <span className="italic">đã sửa</span>}
-              <span>{dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}</span>
-            </span>
-          </div>
+          {(() => {
+            const isParentFromMe = isUserMessageOwner(activeThreadMsg, currentUser);
+            const parentBreakdown = getMessageReadBreakdown
+              ? getMessageReadBreakdown(activeConversation, activeThreadMsg)
+              : { seenBy: [], unseenBy: [] };
+            const stoppedReadersForParent = (stoppedReadersByMsgId && stoppedReadersByMsgId[activeThreadMsg.id]) || [];
+            const isParentSeen = parentBreakdown.seenBy.length > 0;
+
+            return (
+              <>
+                <div className="flex items-center gap-2 mb-1.5">
+                  {activeThreadMsg.isAiBot || activeThreadMsg.senderId === 'wings-ai-copilot' ? (
+                    <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                  ) : (
+                    <MosChatAvatar
+                      size="sm"
+                      src={activeThreadMsg.senderAvatar}
+                      name={activeThreadMsg.senderName}
+                      staffId={activeThreadMsg.senderId}
+                      staffDirectory={staffDirectory}
+                    />
+                  )}
+                  <span className="text-xs font-bold text-[var(--mos-text)]">{activeThreadMsg.senderName}</span>
+                  {activeThreadMsg.senderRole && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-medium uppercase border border-[var(--mos-surface-border)]">
+                      {activeThreadMsg.senderRole}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-[var(--mos-text-muted)] tabular-nums flex items-center gap-1">
+                    {activeThreadMsg.editedAt && <span className="italic">đã sửa</span>}
+                    <span>{dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}</span>
+                    {isParentFromMe && !activeThreadMsg.isDeleted && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openSeenUsersSheetForMessage?.(activeThreadMsg);
+                        }}
+                        className={`inline-flex items-center gap-0.5 active:scale-90 transition-transform cursor-pointer select-none leading-none ${
+                          isParentSeen
+                            ? 'text-emerald-500 dark:text-emerald-400 font-bold'
+                            : isDark
+                              ? 'text-slate-400'
+                              : 'text-slate-500'
+                        }`}
+                        title={
+                          isParentSeen
+                            ? `Đã xem bởi ${parentBreakdown.seenBy.map((s) => s.displayName).join(', ')} (Nhấn để xem)`
+                            : 'Đã gửi · Chưa có người xem'
+                        }
+                        aria-label="Xem người đã đọc tin nhắn gốc"
+                      >
+                        {isParentSeen ? (
+                          <CheckCheck className="w-3.5 h-3.5 stroke-[2.3]" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5 stroke-[2.2]" />
+                        )}
+                        {parentBreakdown.seenBy.length > 1 && (
+                          <span className="text-[9.5px] tabular-nums font-bold">
+                            {parentBreakdown.seenBy.length}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
 
           {/* Parent Message Content */}
           {activeThreadMsg.isDeleted ? (
@@ -1054,6 +1115,44 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 </button>
               </div>
             )}
+
+          {/* Mini Seen Avatars Stack for Parent Message (MOS-BUG-229) */}
+          {!activeThreadMsg.isDeleted && stoppedReadersForParent.length > 0 && (
+            <div className="mt-2 pt-1.5 flex items-center gap-1 select-none border-t border-[var(--mos-surface-border)]">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openSeenUsersSheetForMessage?.(activeThreadMsg);
+                }}
+                className="inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-transform"
+                title={`Đã xem đến đây: ${stoppedReadersForParent.map((s) => s.displayName).join(', ')}`}
+                aria-label="Xem người đã đọc đến tin nhắn gốc này"
+              >
+                <div className="flex items-center -space-x-1.5">
+                  {stoppedReadersForParent.slice(0, 4).map((r) => (
+                    <div
+                      key={`mobile-parent-mini-seen-${r.staffId}-${r.displayName}`}
+                      className="rounded-full ring-1.5 ring-[var(--mos-surface)] shrink-0 overflow-hidden"
+                    >
+                      <MosChatAvatar
+                        size="xs"
+                        src={r.avatarUrl}
+                        name={r.displayName}
+                        staffId={r.staffId}
+                        staffDirectory={staffDirectory}
+                      />
+                    </div>
+                  ))}
+                  {stoppedReadersForParent.length > 4 && (
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-extrabold bg-[var(--mos-surface-muted)] text-[var(--mos-text)] ring-1.5 ring-[var(--mos-surface)] tabular-nums">
+                      +{stoppedReadersForParent.length - 4}
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+          )}
 
           {/* Interactive Main Task Card embedded in Parent Message */}
           {linkedTask ? (
@@ -1456,6 +1555,14 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             String(reply.senderId) === String(currentUser?.id) ||
             String(reply.senderName) === String(currentUser?.fullName || currentUser?.name);
 
+          const replyBreakdown =
+            activeThreadMsg && getThreadReplyReadBreakdown
+              ? getThreadReplyReadBreakdown(activeThreadMsg, reply)
+              : { seenBy: [], unseenBy: [] };
+          const stoppedReadersForReply =
+            (stoppedReadersByReplyId && stoppedReadersByReplyId[reply.id]) || [];
+          const isReplySeen = replyBreakdown.seenBy.length > 0;
+
           const swipeOffset = swipeOffsetMap[reply.id] || 0;
           const showHeartFly = showHeartFlyReplyId === reply.id;
 
@@ -1733,10 +1840,40 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   >
                     {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
                     <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
-                    {isMe && (
-                      <CheckCheck
-                        className={`w-3.5 h-3.5 ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
-                      />
+                    {isMe && !reply.isDeleted && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeThreadMsg && openSeenUsersSheetForReply) {
+                            openSeenUsersSheetForReply(activeThreadMsg, reply);
+                          }
+                        }}
+                        className={`inline-flex items-center gap-0.5 active:scale-90 transition-transform cursor-pointer select-none leading-none ${
+                          isReplySeen
+                            ? 'text-emerald-500 dark:text-emerald-400 font-bold'
+                            : isDark
+                              ? 'text-slate-400'
+                              : 'text-slate-500'
+                        }`}
+                        title={
+                          isReplySeen
+                            ? `Đã xem bởi ${replyBreakdown.seenBy.map((s) => s.displayName).join(', ')} (Nhấn để xem)`
+                            : 'Đã gửi · Chưa có người xem'
+                        }
+                        aria-label="Xem người đã đọc phản hồi này"
+                      >
+                        {isReplySeen ? (
+                          <CheckCheck className="w-3.5 h-3.5 stroke-[2.3]" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5 stroke-[2.2]" />
+                        )}
+                        {replyBreakdown.seenBy.length > 1 && (
+                          <span className="text-[9.5px] tabular-nums font-bold">
+                            {replyBreakdown.seenBy.length}
+                          </span>
+                        )}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1806,6 +1943,50 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     aria-label="Xem người thả cảm xúc"
                   >
                     <Users className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {/* Mini Seen Avatars Stack for Thread Reply (MOS-BUG-229) */}
+              {!reply.isDeleted && stoppedReadersForReply.length > 0 && (
+                <div
+                  className={`mt-1 flex items-center gap-1 select-none px-1 ${
+                    isMe ? 'self-end' : 'self-start'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (activeThreadMsg && openSeenUsersSheetForReply) {
+                        openSeenUsersSheetForReply(activeThreadMsg, reply);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-transform"
+                    title={`Đã xem đến đây: ${stoppedReadersForReply.map((s) => s.displayName).join(', ')}`}
+                    aria-label="Xem người đã đọc đến phản hồi này"
+                  >
+                    <div className="flex items-center -space-x-1.5">
+                      {stoppedReadersForReply.slice(0, 4).map((r) => (
+                        <div
+                          key={`mobile-reply-mini-seen-${reply.id}-${r.staffId}-${r.displayName}`}
+                          className="rounded-full ring-1.5 ring-[var(--mos-surface)] shrink-0 overflow-hidden"
+                        >
+                          <MosChatAvatar
+                            size="xs"
+                            src={r.avatarUrl}
+                            name={r.displayName}
+                            staffId={r.staffId}
+                            staffDirectory={staffDirectory}
+                          />
+                        </div>
+                      ))}
+                      {stoppedReadersForReply.length > 4 && (
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-extrabold bg-[var(--mos-surface-muted)] text-[var(--mos-text)] ring-1.5 ring-[var(--mos-surface)] tabular-nums">
+                          +{stoppedReadersForReply.length - 4}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 </div>
               )}
@@ -2259,6 +2440,40 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
             {/* Actions List */}
             <div className="space-y-1 divide-y divide-[var(--mos-surface-border)]">
+              {/* View Who Read Subthread Reply (MOS-BUG-229) */}
+              {!actionSheetReply.isDeleted && (() => {
+                const breakdown =
+                  activeThreadMsg && getThreadReplyReadBreakdown
+                    ? getThreadReplyReadBreakdown(activeThreadMsg, actionSheetReply)
+                    : { seenBy: [], unseenBy: [] };
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const replyObj = actionSheetReply;
+                      setActionSheetReply(null);
+                      if (activeThreadMsg && openSeenUsersSheetForReply) {
+                        openSeenUsersSheetForReply(activeThreadMsg, replyObj);
+                      }
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface-muted)] hover:opacity-90 rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                      <span className={`font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                        Xem người đã đọc
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
+                      <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                        {breakdown.seenBy.length} đã xem
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
+                    </div>
+                  </button>
+                );
+              })()}
+
               {Object.values(actionSheetReply.reactions || {}).reduce((s, c) => s + c, 0) > 0 && (
                 <button
                   type="button"

@@ -15,6 +15,7 @@ import {
   ChevronRight,
   SmilePlus,
   ArrowLeft,
+  UserCheck,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatMessage } from '@mos-lab/shared';
@@ -56,6 +57,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
     deleteMessage,
     setReplyingToMessage,
     currentUser,
+    openSeenUsersSheetForMessage,
+    getMessageReadBreakdown,
+    activeConversation,
   } = useMosChat();
   const [showFullPicker, setShowFullPicker] = useState<boolean>(false);
 
@@ -210,6 +214,37 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
 
             {/* Actions List */}
             <div className="space-y-1 divide-y divide-[var(--mos-surface-border)]">
+              {/* View who read this message (MOS-BUG-229) */}
+              {!message.isDeleted && (() => {
+                const readBreakdown =
+                  message && getMessageReadBreakdown
+                    ? getMessageReadBreakdown(activeConversation, message)
+                    : { seenBy: [], unseenBy: [] };
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      openSeenUsersSheetForMessage?.(message);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                      <span className={`font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                        Xem người đã đọc
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
+                      <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                        {readBreakdown.seenBy.length} đã xem
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
+                    </div>
+                  </button>
+                );
+              })()}
+
               {totalReactions > 0 && (
                 <button
                   type="button"
