@@ -58,7 +58,7 @@ export function ScreenSettingsRoleSwitch({
       name: (
         <span className="inline-flex items-center gap-1">
           <CvFeather1Badge />
-          <span>· Chuyên Viên Tự Chủ (Thảo Ly)</span>
+          <span>· Chuyên Viên Tự Chủ</span>
         </span>
       ),
       desc: (
@@ -82,7 +82,7 @@ export function ScreenSettingsRoleSwitch({
     },
     {
       id: 'CC',
-      name: 'Tư Vấn Viên (Client Consultant · Diễm Hương)',
+      name: 'Tư Vấn Viên (Client Consultant · CC)',
       desc: 'Xem tất cả khách chờ đón, đang làm & đã xong tại chi nhánh đang làm việc; tiếp đón, Check-in, Bán Combo & POS theo quy chế CC',
       icon: Sparkles,
     },

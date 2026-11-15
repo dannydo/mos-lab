@@ -108,7 +108,18 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
 
   const roleGroup = resolveQuickSwitchRoleGroup(userRole);
   const featherTier = normalizeCvFeatherRole(String(userRole || ''));
-  const consultRoleParam = roleGroup === 'CC' ? 'CC' : featherTier === 'CVLL' ? 'CVLL' : 'CVL';
+  const savedAdminRole =
+    typeof window !== 'undefined' && roleGroup === 'ADMIN_MANAGER'
+      ? (window.localStorage.getItem('mos_ios_selected_role') as string | null)
+      : null;
+  const consultRoleParam =
+    roleGroup === 'CC'
+      ? 'CC'
+      : featherTier === 'CVLL'
+        ? 'CVLL'
+        : savedAdminRole === 'CC' || savedAdminRole === 'CVLL' || savedAdminRole === 'CVL'
+          ? savedAdminRole
+          : 'CVL';
   const showConsultIcon = canAccessConsultationApp(userRole);
 
   const items: QuickSwitchItem[] = React.useMemo(() => {

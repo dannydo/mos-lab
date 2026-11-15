@@ -203,6 +203,71 @@ describe('iOS State, SDK Integration & Live/Demo Mode Contract', () => {
     expect(demoCc.avatar).toBe(KNOWN_STAFF_AVATARS['37790']);
   });
 
+  it('resolves Admin Khải (or any authenticated admin) to their own real account across CC, CVL, CVLL roles (MOS-BUG-233)', () => {
+    const adminKhai = {
+      id: 6,
+      role: 'admin',
+      displayName: 'Nguyễn Quang Khải',
+      legacyStaffId: 45103,
+      avatarUrl: 'https://lh3.googleusercontent.com/khai-avatar',
+    };
+
+    // 1. In CC role: MUST show Khải's account, NOT dummy Diễm Hương
+    const ccActor = resolveActorProfile('CC', adminKhai);
+    expect(ccActor.name).toBe('Nguyễn Quang Khải');
+    expect(ccActor.staffId).toBe(45103);
+    expect(ccActor.avatar).toBe('https://lh3.googleusercontent.com/khai-avatar');
+    expect(ccActor.tier).toBe('CC');
+    expect(ccActor.badgeLabel).toBe('CC · Tư Vấn Viên');
+
+    // 2. In CVL role: MUST show Khải's account, NOT dummy Khanh Cao/Thảo Ly
+    const cvlActor = resolveActorProfile('CVL', adminKhai);
+    expect(cvlActor.name).toBe('Nguyễn Quang Khải');
+    expect(cvlActor.staffId).toBe(45103);
+    expect(cvlActor.avatar).toBe('https://lh3.googleusercontent.com/khai-avatar');
+    expect(cvlActor.tier).toBe('CVL');
+
+    // 3. In CVLL role: MUST show Khải's account
+    const cvllActor = resolveActorProfile('CVLL', adminKhai);
+    expect(cvllActor.name).toBe('Nguyễn Quang Khải');
+    expect(cvllActor.staffId).toBe(45103);
+    expect(cvllActor.avatar).toBe('https://lh3.googleusercontent.com/khai-avatar');
+    expect(cvllActor.tier).toBe('CVLL');
+  });
+
+  it('persists and restores Admin selected role via localStorage mos_ios_selected_role', async () => {
+    window.localStorage.setItem(
+      'mos_user',
+      JSON.stringify({
+        id: 6,
+        role: 'admin',
+        displayName: 'Nguyễn Quang Khải',
+        legacyStaffId: 45103,
+      })
+    );
+    window.localStorage.setItem('mos_ios_selected_role', 'CC');
+
+    vi.spyOn(apiClient.ios, 'getBookings').mockResolvedValue({
+      success: true,
+      bookings: [],
+      counts: { incoming: 0, servicing: 0, done: 0, cancel: 0 },
+    } as any);
+
+    const { result } = renderHook(() => useIosAppState(1, true, 'CVL', undefined, false));
+
+    await waitFor(() => {
+      expect(result.current.role).toBe('CC');
+      expect(result.current.actor.name).toBe('Nguyễn Quang Khải');
+    });
+
+    // Test that changing role updates localStorage
+    act(() => {
+      result.current.setRole('CVLL');
+    });
+    expect(result.current.role).toBe('CVLL');
+    expect(window.localStorage.getItem('mos_ios_selected_role')).toBe('CVLL');
+  });
+
   it('refreshes stale mos_user via apiClient.auth.me when mos_token exists on mount', async () => {
     window.localStorage.setItem('mos_token', 'test-token');
     window.localStorage.setItem('mos_user', JSON.stringify({ id: 58, role: 'cc', displayName: 'Thục Nghi' }));
