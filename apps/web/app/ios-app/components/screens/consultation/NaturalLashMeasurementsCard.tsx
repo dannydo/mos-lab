@@ -2,7 +2,12 @@
 
 import React from 'react';
 import { Info } from 'lucide-react';
-import { DualThumbRangeSlider } from './DualThumbRangeSlider';
+import {
+  DualThumbRangeSlider,
+  DEFAULT_NATURAL_LENGTH_PRESETS,
+  DEFAULT_NATURAL_THICKNESS_PRESETS,
+  DEFAULT_NATURAL_COUNT_PRESETS,
+} from './DualThumbRangeSlider';
 import type { NATURAL_LASH_LENGTH_OPTIONS, NATURAL_LASH_THICKNESS_OPTIONS } from '../NaturalLashAssessmentData';
 import type { ConsultationInfoModalPayload } from './ConsultationTypes';
 
@@ -147,6 +152,7 @@ export function NaturalLashMeasurementsCard({
             isMissingAlert={showMandatoryLashCheckAlert && !naturalLengthRange}
             inputRef={lengthInputRef}
             isDark={isDark}
+            presets={DEFAULT_NATURAL_LENGTH_PRESETS}
           />
         </div>
 
@@ -217,6 +223,7 @@ export function NaturalLashMeasurementsCard({
             isMissingAlert={showMandatoryLashCheckAlert && !naturalThicknessRange}
             inputRef={thicknessInputRef}
             isDark={isDark}
+            presets={DEFAULT_NATURAL_THICKNESS_PRESETS}
           />
         </div>
 
@@ -279,6 +286,7 @@ export function NaturalLashMeasurementsCard({
             isMissingAlert={showMandatoryLashCheckAlert && !naturalCountRange}
             inputRef={countInputRef}
             isDark={isDark}
+            presets={DEFAULT_NATURAL_COUNT_PRESETS}
           />
         </div>
 
