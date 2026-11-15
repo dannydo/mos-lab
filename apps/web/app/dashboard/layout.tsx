@@ -6,12 +6,9 @@ import { Layout, Button, Avatar, Space, Dropdown, Drawer, theme, message, Tag } 
 import {
   TeamOutlined,
   CalendarOutlined,
-  BarChartOutlined,
-  LogoutOutlined,
   LeftOutlined,
   RightOutlined,
   SolutionOutlined,
-  ClockCircleOutlined,
   HeartOutlined,
   ShareAltOutlined,
   AudioOutlined,
@@ -20,11 +17,13 @@ import {
   BgColorsOutlined,
 } from '@ant-design/icons';
 import {
+  BarChart3,
   BookOpenCheck,
   CalendarPlus,
   Clock3,
   EllipsisVertical,
   ExternalLink,
+  LogOut,
   Menu,
   MessageSquare,
   Moon,
@@ -33,6 +32,7 @@ import {
   Search,
   Sun,
   UserRound,
+  Users,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -73,7 +73,6 @@ const AvatarPromptModal = dynamic(() => import('../../components/avatar/AvatarPr
 const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
-import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
 import { HeaderNotificationCenter } from '../../components/notification-center/HeaderNotificationCenter';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
@@ -764,10 +763,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const mobileUtilityMenu = {
+  const utilityMenu = {
     items: [
       ...(!isCvAccount
         ? [
+            {
+              key: 'cv-schedule',
+              icon: <Users size={16} aria-hidden />,
+              label: (
+                <span className="flex items-center justify-between gap-3">
+                  <span>Lịch CV & Hàng chờ tua</span>
+                  {workingCvCount > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-emerald-500 leading-none">
+                      {workingCvCount}
+                    </span>
+                  )}
+                </span>
+              ),
+              onClick: () => setIsCvDrawerOpen(true),
+            },
+            {
+              key: 'book-appointment',
+              icon: <CalendarPlus size={16} aria-hidden />,
+              label: 'Book lịch hẹn',
+              onClick: () => setIsBookingWizardOpen(true),
+            },
             {
               key: 'mos-bible',
               icon: <BookOpenCheck size={16} aria-hidden />,
@@ -780,8 +800,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ? [
             {
               key: 'pending-allocation',
-              icon: <ClockCircleOutlined />,
-              label: `${pendingAllocationCount} đợt data chờ xác nhận`,
+              icon: <Clock3 size={16} aria-hidden />,
+              label: (
+                <span className="flex items-center justify-between gap-3">
+                  <span>Đợt data chờ xác nhận</span>
+                  <span className="inline-flex items-center rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-500 leading-none">
+                    {pendingAllocationCount}
+                  </span>
+                </span>
+              ),
               onClick: () => setIsPendingAllocationOpen(true),
             },
           ]
@@ -790,7 +817,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ? [
             {
               key: 'telesales-dashboard',
-              icon: <BarChartOutlined />,
+              icon: <BarChart3 size={16} aria-hidden />,
               label: 'KPI Đội Telesales',
               onClick: () => {
                 setSelectedMemberId('DD');
@@ -803,7 +830,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ? [
             {
               key: 'exit-impersonation',
-              icon: <LogoutOutlined />,
+              icon: <LogOut size={16} aria-hidden />,
               danger: true,
               label: 'Thoát giả lập',
               onClick: handleExitImpersonation,
@@ -963,25 +990,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {isMobileTier && (
                   <HeaderIconButton action="navigation" label="Mở điều hướng" icon={Menu} onClick={toggleSidebar} />
                 )}
-                {isMobileTier && !isCvAccount && (
+                {!isCvAccount && (
                   <HeaderIconButton
                     action="quick-search"
                     label="Tìm nhanh KH hoặc SĐT"
                     icon={Search}
                     onClick={() => setIsQuickSearchOpen(true)}
                   />
-                )}
-                {!isCvAccount && (
-                  <>
-                    <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
-                    <HeaderIconButton
-                      action="book-appointment"
-                      label="Book lịch"
-                      icon={CalendarPlus}
-                      tone="accent"
-                      onClick={() => setIsBookingWizardOpen(true)}
-                    />
-                  </>
                 )}
                 <HeaderRoleQuickSwitch userRole={user?.role} unreadChatCount={mosChatUnreadCount} />
               </div>
@@ -1109,30 +1124,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 )}
 
-                {!isCvAccount && pendingAllocationCount > 0 && (
-                  <HeaderIconButton
-                    action="pending-allocation"
-                    className="dashboard-desktop-only"
-                    label={`${pendingAllocationCount} đợt data chờ xác nhận`}
-                    desktopLabel={`${pendingAllocationCount} đợt data`}
-                    icon={Clock3}
-                    onClick={() => setIsPendingAllocationOpen(true)}
-                    tone="accent"
-                  />
-                )}
-
-                {!isCvAccount && (
-                  <HeaderIconButton
-                    action="mos-bible"
-                    className="dashboard-desktop-only"
-                    label="Mở Kinh Thánh mOS theo trang hiện tại"
-                    icon={BookOpenCheck}
-                    onClick={() => setIsMosBibleOpen(true)}
-                  />
-                )}
-
-                {isMobileTier && (mobileUtilityMenu.items?.length || 0) > 0 && (
-                  <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow>
+                {(utilityMenu.items?.length || 0) > 0 && (
+                  <Dropdown menu={utilityMenu} placement="bottomRight" arrow>
                     <HeaderActionIndicator
                       variant="status"
                       active={pendingAllocationCount > 0}
@@ -1142,8 +1135,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         action="utilities"
                         label={
                           pendingAllocationCount > 0
-                            ? `Thao tác phụ, ${pendingAllocationCount} đợt data chờ xác nhận`
-                            : 'Thao tác phụ'
+                            ? `Menu tiện ích, ${pendingAllocationCount} đợt data chờ xác nhận`
+                            : 'Menu tiện ích'
                         }
                         icon={EllipsisVertical}
                         showTooltip={false}
@@ -1255,7 +1248,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
               </div>
             </Header>
-            <HeaderRoleQuickSwitch variant="sub-header" userRole={user?.role} unreadChatCount={mosChatUnreadCount} />
 
             <Content
               className={`dashboard-content${

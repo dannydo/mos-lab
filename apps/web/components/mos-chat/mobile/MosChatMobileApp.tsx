@@ -50,9 +50,11 @@ import { useMosChatVoiceCall } from '../utils/useMosChatVoiceCall';
 import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
 import { useMosChatWebPush } from '../utils/useMosChatWebPush';
 import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
-import { BellRing } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MobileThemeSheet } from '../../theme/MobileThemeSheet';
+import '../../../app/ios-app/ios-typography.css';
+import { useIosFontScale } from '../../../app/ios-app/state/useIosFontScale';
+import { IosFontSizeControl } from '../../../app/ios-app/components/ui-kit/IosFontSizeControl';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -102,9 +104,15 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     updateSpaceConfig,
   } = useMosChat();
 
+  const resolvedFontStaffId =
+    Number((currentUser as { legacyStaffId?: unknown; id?: unknown } | null)?.legacyStaffId ?? currentUser?.id) ||
+    undefined;
+  useIosFontScale(resolvedFontStaffId);
+
   const [spaceConfigModalOpen, setSpaceConfigModalOpen] = useState<boolean>(false);
   const [spaceMembersModalOpen, setSpaceMembersModalOpen] = useState<boolean>(false);
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
+  const [newDmModalOpen, setNewDmModalOpen] = useState<boolean>(false);
   const [ckEditorOpen, setCkEditorOpen] = useState<boolean>(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
@@ -744,7 +752,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     <div
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-hidden ${
+      className={`ios-app-font-scope flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-hidden ${
         standalone ? 'h-[100dvh] w-screen fixed inset-0 z-50' : 'h-full w-full'
       }`}
     >
@@ -781,43 +789,17 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         }}
         onOpenPushSettings={() => setPushModalOpen(true)}
         onOpenThemeSheet={() => setThemeSheetOpen(true)}
+        onOpenNewDm={() => setNewDmModalOpen(true)}
         isPushSubscribed={webPush.isSubscribed}
         onCallRoom={handleCallCurrentRoom}
         onClose={onClose}
       />
 
-      {/* Push Notification Call Ring Activation Banner on Mobile */}
-      {!webPush.isSubscribed && (
-        <div
-          data-testid="mos-chat-mobile-push-banner"
-          className={`border-b px-3.5 py-2 flex items-center justify-between gap-2.5 text-xs z-30 shrink-0 ${
-            isDark
-              ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
-              : 'bg-amber-50 border-amber-200 text-amber-900'
-          }`}
-          role="alert"
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <BellRing className={`w-4 h-4 shrink-0 animate-bounce ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-            <span className="truncate">
-              {webPush.needsIosHomeScreen
-                ? 'Thêm vào Màn hình chính để bật chuông khi khóa máy'
-                : 'Bật chuông cuộc gọi & tin nhắn khi khóa máy'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setPushModalOpen(true)}
-            className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold text-[11px] shrink-0 active:scale-95 transition-transform cursor-pointer"
-          >
-            {webPush.needsIosHomeScreen ? 'Xem cách làm' : 'Bật ngay'}
-          </button>
-        </div>
-      )}
-
       {/* Dynamic Screen View */}
       {mobileView === 'inbox' && (
         <MosChatMobileInbox
+          newDmModalOpen={newDmModalOpen}
+          onNewDmModalOpenChange={setNewDmModalOpen}
           onOpenSearchSheet={(q) => {
             setSearchInitialQuery(q || '');
             setSearchInitialScope('ALL');
@@ -1061,7 +1043,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       >
         <div className="space-y-3.5 py-2">
           <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Nội dung công việc *</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">
+              Nội dung công việc *
+            </label>
             <Input.TextArea
               rows={3}
               value={taskTitle}
@@ -1121,7 +1105,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1.5">Thời hạn hoàn thành (Deadline)</label>
+            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1.5">
+              Thời hạn hoàn thành (Deadline)
+            </label>
             <MosChatMobileDateTimePicker
               value={taskDueAt}
               onChange={(d) => setTaskDueAt(d)}
@@ -1261,7 +1247,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         />
       )}
 
-      <MobileThemeSheet open={themeSheetOpen} onClose={() => setThemeSheetOpen(false)} />
+      <MobileThemeSheet
+        open={themeSheetOpen}
+        onClose={() => setThemeSheetOpen(false)}
+        fontControl={<IosFontSizeControl isDark={isDark} staffId={resolvedFontStaffId} />}
+      />
     </div>
   );
 };

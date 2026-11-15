@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import type { IosSimulationMenteeOption } from '@mos-lab/shared';
 import { ActiveActorProfile, IosUserRole, IosBranchConfig } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from './CvFeatherLabels';
 import { IosFontSizeControl } from './IosFontSizeControl';
@@ -10,6 +11,7 @@ import {
   Award,
   Lock,
   ChevronRight,
+  ChevronDown,
   X,
   Shield,
   LogOut,
@@ -38,6 +40,9 @@ interface IosProfileMenuSheetProps {
   isAdmin?: boolean;
   isSimulationMode?: boolean;
   onToggleSimulationMode?: () => void;
+  menteesList?: IosSimulationMenteeOption[];
+  selectedMenteeStaffId?: number;
+  onSelectMentee?: (staffId: number | undefined) => void;
   onOpenCreateBooking?: () => void;
 }
 
@@ -59,13 +64,22 @@ export function IosProfileMenuSheet({
   isAdmin = false,
   isSimulationMode = false,
   onToggleSimulationMode,
+  menteesList = [],
+  selectedMenteeStaffId,
+  onSelectMentee,
   onOpenCreateBooking,
 }: IosProfileMenuSheetProps) {
   const { themeMode } = useTheme();
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [actor?.avatar]);
 
   if (!isOpen) return null;
 
   const actorName = actor?.name || 'Thảo Ly';
+  const actorInitial = (actorName || 'W').trim().charAt(0).toUpperCase();
   const isCvl = role === 'CVL';
   const isCvll = role === 'CVLL';
   const isDark = themeMode === 'dark';
@@ -110,14 +124,16 @@ export function IosProfileMenuSheet({
           >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400 bg-amber-400 text-black font-black text-lg flex items-center justify-center shrink-0 shadow-md">
-                <img
-                  src={actor?.avatar || 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png'}
-                  alt={actorName}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLElement).style.display = 'none';
-                  }}
-                />
+                {actor?.avatar && !avatarLoadError ? (
+                  <img
+                    src={actor.avatar}
+                    alt={actorName}
+                    className="w-full h-full object-cover"
+                    onError={() => setAvatarLoadError(true)}
+                  />
+                ) : (
+                  <span>{actorInitial}</span>
+                )}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -327,6 +343,42 @@ export function IosProfileMenuSheet({
                 </div>
                 <ChevronRight className="w-4 h-4 text-neutral-400" />
               </button>
+            )}
+
+            {isSimulationMode && menteesList.length > 0 && onSelectMentee && (
+              <div
+                className={`w-full p-2.5 rounded-2xl border flex items-center justify-between gap-2 ${
+                  isDark
+                    ? 'bg-pink-500/10 border-pink-400/30 text-pink-100'
+                    : 'bg-pink-50 border-pink-300 text-pink-950'
+                }`}
+              >
+                <span className="text-[11px] font-bold shrink-0">Xem bài tập:</span>
+                <div className="relative flex-1 max-w-[210px]">
+                  <select
+                    value={selectedMenteeStaffId ? String(selectedMenteeStaffId) : ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      onSelectMentee(val ? Number(val) : undefined);
+                      onClose();
+                    }}
+                    className={`w-full appearance-none pl-2.5 pr-6 py-1 rounded-xl text-[11px] font-bold border truncate cursor-pointer focus:outline-none ${
+                      isDark
+                        ? 'bg-neutral-900 border-pink-400/35 text-pink-200'
+                        : 'bg-white border-pink-300 text-neutral-900'
+                    }`}
+                    aria-label="Chọn bài tập mô phỏng trong menu"
+                  >
+                    <option value="">Sandbox của tôi</option>
+                    {menteesList.map((m) => (
+                      <option key={m.menteeStaffId} value={String(m.menteeStaffId)}>
+                        {m.menteeName}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 opacity-70" />
+                </div>
+              </div>
             )}
 
             {onOpenCreateBooking && (

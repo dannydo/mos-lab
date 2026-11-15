@@ -97,7 +97,9 @@ describe('IosSimulationWorkspaceBar Overlay & Stacking Contract', () => {
     expect(onRevertConsultation).toHaveBeenCalledWith(771121);
   });
 
-  it('renders Mentor Mentee selector cleanly in its dedicated sub-row without crushing top actions', () => {
+  it('collapses Mentor Mentee selector into a single minimalist pill popover without rendering a second header row', () => {
+    const onSelectMentee = vi.fn();
+
     render(
       <IosSimulationWorkspaceBar
         isSimulationMode={true}
@@ -113,7 +115,7 @@ describe('IosSimulationWorkspaceBar Overlay & Stacking Contract', () => {
           },
         ]}
         selectedMenteeStaffId={undefined}
-        onSelectMentee={vi.fn()}
+        onSelectMentee={onSelectMentee}
         activeBooking={SAMPLE_BOOKING}
         currentStep={7}
         onOpenCreateBooking={vi.fn()}
@@ -124,8 +126,99 @@ describe('IosSimulationWorkspaceBar Overlay & Stacking Contract', () => {
       />
     );
 
-    expect(screen.getByText('Xem bài tập:')).toBeTruthy();
-    expect(screen.getByLabelText('Chọn Chuyên Viên cần xem bài tập luyện')).toBeTruthy();
-    expect(screen.getByText('Sandbox của tôi')).toBeTruthy();
+    // No static second sub-row "Xem bài tập:" in the bar
+    expect(screen.queryByText('Xem bài tập:')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Chọn bài tập mô phỏng' })).toBeNull();
+
+    const selectorPill = screen.getByRole('button', { name: 'Chọn bài tập mô phỏng' });
+    expect(selectorPill.textContent).toContain('Sandbox của tôi');
+
+    fireEvent.click(selectorPill);
+
+    const dialog = screen.getByRole('dialog', { name: 'Chọn bài tập mô phỏng' });
+    expect(dialog.parentElement).toBe(document.body);
+    fireEvent.click(screen.getByText('Thảo Vy'));
+    expect(onSelectMentee).toHaveBeenCalledWith(46272);
+    expect(screen.queryByRole('dialog', { name: 'Chọn bài tập mô phỏng' })).toBeNull();
+  });
+
+  it('renders a 1px bright pink pointer-events-none screen border when simulation mode is enabled and removes it when disabled', () => {
+    const { rerender } = render(
+      <IosSimulationWorkspaceBar
+        isSimulationMode={true}
+        isReadOnlyMentorView={false}
+        menteesList={[]}
+        activeBooking={SAMPLE_BOOKING}
+        currentStep={1}
+        onOpenCreateBooking={vi.fn()}
+        onOpenHistory={vi.fn()}
+        onRevertConsultation={vi.fn()}
+        onResetToIncoming={vi.fn()}
+        onExitSimulation={vi.fn()}
+      />
+    );
+
+    const borderOverlay = screen.getByTestId('simulation-screen-border');
+    expect(borderOverlay.parentElement).toBe(document.body);
+    expect(borderOverlay.className).toContain('pointer-events-none');
+    expect(borderOverlay.className).toContain('fixed inset-0');
+    const frame = borderOverlay.firstElementChild as HTMLElement;
+    expect(frame.className).toContain('border');
+    expect(frame.className).toContain('border-pink-400');
+
+    rerender(
+      <IosSimulationWorkspaceBar
+        isSimulationMode={false}
+        isReadOnlyMentorView={false}
+        menteesList={[]}
+        activeBooking={SAMPLE_BOOKING}
+        currentStep={1}
+        onOpenCreateBooking={vi.fn()}
+        onOpenHistory={vi.fn()}
+        onRevertConsultation={vi.fn()}
+        onResetToIncoming={vi.fn()}
+        onExitSimulation={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('simulation-screen-border')).toBeNull();
+  });
+
+  it('omits + Lịch button and uses icon-only buttons for Revert and Exit (X) in header', () => {
+    const onExitSimulation = vi.fn();
+
+    render(
+      <IosSimulationWorkspaceBar
+        isSimulationMode={true}
+        isReadOnlyMentorView={false}
+        menteesList={[]}
+        activeBooking={SAMPLE_BOOKING}
+        currentStep={7}
+        onOpenCreateBooking={vi.fn()}
+        onOpenHistory={vi.fn()}
+        onRevertConsultation={vi.fn()}
+        onResetToIncoming={vi.fn()}
+        onExitSimulation={onExitSimulation}
+      />
+    );
+
+    expect(screen.queryByText('Lịch')).toBeNull();
+    expect(screen.queryByText('Đặt lịch')).toBeNull();
+    expect(screen.queryByText('Revert')).toBeNull();
+    expect(screen.queryByText('Thoát')).toBeNull();
+
+    const revertBtn = screen.getByRole('button', { name: 'Revert kịch bản mô phỏng' });
+    expect(revertBtn.textContent?.trim()).toBe('');
+
+    const historyBtn = screen.getByRole('button', { name: 'Lịch sử phương án mô phỏng' });
+    const exitBtn = screen.getByRole('button', { name: 'Thoát chế độ Mô phỏng' });
+    expect(exitBtn.textContent?.trim()).toBe('');
+
+    const allButtons = screen.getAllByRole('button');
+    expect(allButtons.indexOf(revertBtn)).toBeLessThan(allButtons.indexOf(historyBtn));
+    expect(allButtons.indexOf(historyBtn)).toBeLessThan(allButtons.indexOf(exitBtn));
+
+    fireEvent.click(exitBtn);
+    expect(onExitSimulation).toHaveBeenCalledTimes(1);
   });
 });

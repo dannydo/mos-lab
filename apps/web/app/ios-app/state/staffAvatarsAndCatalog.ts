@@ -6,6 +6,7 @@ export const KNOWN_STAFF_AVATARS: Record<string, string> = {
   '46272': 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png', // Thảo Ly (CVL)
   '25337': 'https://cdn.wingslashes.com/uploads/user/avatar/955/thumbnail/26955.jpg', // Tuyết Nhi ❤️ (CV)
   '49076': 'https://cdn.wingslashes.com/uploads/user/avatar/693/thumbnail/50693.png', // Phương Nhi (CV)
+  '34295': 'https://cdn.wingslashes.com/uploads/user/avatar/912/thumbnail/35912.png', // Thục Nghi (CC)
   '37790': 'https://cdn.wingslashes.com/uploads/user/avatar/407/thumbnail/39407.png', // Diễm Hương (CC)
   '51540': 'https://cdn.wingslashes.com/uploads/user/avatar/157/thumbnail/53157.png', // Bảo Hân CC
   '45103': 'https://cdn.wingslashes.com/uploads/user/avatar/720/thumbnail/46720.png', // Nguyễn Quang Khải
@@ -35,6 +36,7 @@ export function resolveStaffAvatarUrl(
     if (s.includes('thảo ly')) return KNOWN_STAFF_AVATARS['46272'];
     if (s.includes('tuyết nhi')) return KNOWN_STAFF_AVATARS['25337'];
     if (s.includes('phương nhi')) return KNOWN_STAFF_AVATARS['49076'];
+    if (s.includes('thục nghi')) return KNOWN_STAFF_AVATARS['34295'];
     if (s.includes('diễm hương')) return KNOWN_STAFF_AVATARS['37790'];
     if (s.includes('bảo hân')) return KNOWN_STAFF_AVATARS['51540'];
     if (s.includes('khải')) return KNOWN_STAFF_AVATARS['45103'];

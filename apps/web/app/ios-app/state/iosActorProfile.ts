@@ -71,9 +71,12 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
 
   // Chi nhánh gốc của tài khoản người dùng đăng nhập (nếu có)
   const userAssignedStoreId = Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0);
+  const userAvatar = loggedInUser?.avatarUrl || loggedInUser?.avatar;
+  const parsedLegacyStaffId = Number(loggedInUser?.legacyStaffId) || 0;
 
   if (role === 'CVLL') {
-    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 13783 : 13783;
+    const staffId = isActualCvUser ? parsedLegacyStaffId || 13783 : 13783;
+    const avatarStaffId = isActualCvUser ? parsedLegacyStaffId || undefined : 13783;
     const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Chuyên Viên 2 Lông';
     const storeId = userAssignedStoreId || 6;
     return {
@@ -81,7 +84,7 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
       name,
       tier: 'CVLL',
       badgeLabel: 'CVLL · Chuyên Viên Tự Chủ Cấp Cao',
-      avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+      avatar: resolveStaffAvatarUrl(isActualCvUser ? userAvatar : undefined, avatarStaffId, name),
       storeId,
       branchCode: storeId === 16 ? 'EP' : 'DT',
       branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
@@ -93,7 +96,8 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
       (Number(loggedInUser?.legacyStaffId) === 46272 || loggedInUser?.displayName?.toLowerCase()?.includes('thảo ly'));
     const defaultStaffId = isThaoLy ? 46272 : 13783;
     const defaultName = isThaoLy ? 'Thảo Ly' : 'Khanh Cao';
-    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || defaultStaffId : defaultStaffId;
+    const staffId = isActualCvUser ? parsedLegacyStaffId || defaultStaffId : defaultStaffId;
+    const avatarStaffId = isActualCvUser ? parsedLegacyStaffId || undefined : defaultStaffId;
     const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : defaultName;
     const storeId = userAssignedStoreId || 6; // Khanh Cao & Thảo Ly thuộc Chi nhánh Đề Thám (DT - 6)
     return {
@@ -101,14 +105,15 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
       name,
       tier: 'CVL',
       badgeLabel: 'CVL · Chuyên Viên Tự Chủ',
-      avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+      avatar: resolveStaffAvatarUrl(isActualCvUser ? userAvatar : undefined, avatarStaffId, name),
       storeId,
       branchCode: storeId === 16 ? 'EP' : 'DT',
       branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
   if (role === 'CV') {
-    const staffId = isActualCvUser ? Number(loggedInUser?.legacyStaffId) || 49076 : 49076;
+    const staffId = isActualCvUser ? parsedLegacyStaffId || 49076 : 49076;
+    const avatarStaffId = isActualCvUser ? parsedLegacyStaffId || undefined : 49076;
     const name = isActualCvUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Phương Nhi';
     const storeId = userAssignedStoreId || 6;
     return {
@@ -116,14 +121,15 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
       name,
       tier: 'CV',
       badgeLabel: 'CV · Chuyên Viên Kỹ Thuật',
-      avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+      avatar: resolveStaffAvatarUrl(isActualCvUser ? userAvatar : undefined, avatarStaffId, name),
       storeId,
       branchCode: storeId === 16 ? 'EP' : 'DT',
       branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',
     };
   }
   const isActualCcUser = isCcRole(loggedInUser?.role);
-  const staffId = isActualCcUser ? Number(loggedInUser?.legacyStaffId) || 37790 : 37790;
+  const staffId = isActualCcUser ? parsedLegacyStaffId || 37790 : 37790;
+  const avatarStaffId = isActualCcUser ? parsedLegacyStaffId || undefined : 37790;
   const name = isActualCcUser && loggedInUser?.displayName ? loggedInUser.displayName : 'Diễm Hương';
   const storeId = userAssignedStoreId || 6;
   return {
@@ -131,7 +137,7 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
     name,
     tier: 'CC',
     badgeLabel: 'CC · Tư Vấn Viên',
-    avatar: resolveStaffAvatarUrl(loggedInUser?.avatar, staffId, name),
+    avatar: resolveStaffAvatarUrl(isActualCcUser ? userAvatar : undefined, avatarStaffId, name),
     storeId,
     branchCode: storeId === 16 ? 'EP' : 'DT',
     branchName: storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám',

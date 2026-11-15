@@ -19,11 +19,12 @@ import {
 } from 'lucide-react';
 import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole, type SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
-import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { resolveMediaUrl } from '../../lib/api-client';
+import { getBugReportBadgeSummary, openBugReport, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
 import AvatarCropModal from '../avatar/AvatarCropModal';
 import { ThemeSelector } from '../theme/ThemeSelector';
+import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -208,8 +209,12 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
     setAdminOmiCallEnabled,
   } = useOmiCall();
 
-  const { preferences, ready: bugReportReady, setVisible: setBugReportVisible } = useBugReportLauncherPreferences();
   const isCv = isCvRole(user?.role);
+  const bugBadge = React.useSyncExternalStore(subscribeBugReportBadgeSummary, getBugReportBadgeSummary, () => ({
+    actionRequiredCount: 0,
+    unreadCount: 0,
+  }));
+  const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
 
   const roleBadge = getRoleBadge(user?.role, token);
   const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
@@ -331,125 +336,106 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         )}
       </div>
 
-      {/* Section 1: Quick Toggles (OmiCall & UI Launchers) */}
-      <div className="p-2 space-y-1">
-        <div className="px-2 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-          {canAccessOmiCall ? 'Tổng đài & Tiện ích' : 'Tiện ích'}
-        </div>
-
-        {/* Admin Unified OmiCall Master Toggle (Off by default, can turn On anytime) */}
-        {isAdmin && (
-          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-              <span
-                className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                  adminOmiCallEnabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/10 text-slate-400'
-                }`}
-              >
-                <PhoneCall size={15} />
-              </span>
-              <div className="min-w-0">
-                <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
-                  Bật công cụ OmiCall tổng đài
-                </div>
-                <div
-                  className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
-                  style={{ color: token.colorTextSecondary }}
-                >
-                  <span
-                    className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-                      adminOmiCallEnabled ? 'bg-emerald-500' : 'bg-slate-400'
-                    }`}
-                  />
-                  <span className="truncate">
-                    {adminOmiCallEnabled ? 'Đang bật · Đã kết nối tổng đài & nút gọi' : 'Đang tắt (mặc định)'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Switch
-              size="small"
-              checked={adminOmiCallEnabled}
-              aria-label="Bật công cụ OmiCall tổng đài cho Admin"
-              onChange={(checked) => setAdminOmiCallEnabled(checked)}
-            />
+      {/* Section 1: Quick Toggles (OmiCall) */}
+      {(isAdmin || isGrowthMember) && (
+        <div className="p-2 space-y-1">
+          <div className="px-2 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            {canAccessOmiCall ? 'Tổng đài & Tiện ích' : 'Tiện ích'}
           </div>
-        )}
 
-        {/* Growth & Booking Toggles (Only visible for Growth department members, non-admin) */}
-        {!isAdmin && isGrowthMember && (
-          <>
-            {/* OmiCall Ready Toggle */}
+          {/* Admin Unified OmiCall Master Toggle (Off by default, can turn On anytime) */}
+          {isAdmin && (
             <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
               <div className="flex items-center gap-2.5 min-w-0 pr-2">
                 <span
-                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${callStatus.iconBg}`}
-                  style={{ color: callStatus.iconColor }}
+                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                    adminOmiCallEnabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/10 text-slate-400'
+                  }`}
                 >
                   <PhoneCall size={15} />
                 </span>
                 <div className="min-w-0">
                   <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
-                    Nhận cuộc gọi tổng đài
+                    Bật công cụ OmiCall tổng đài
                   </div>
                   <div
                     className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
                     style={{ color: token.colorTextSecondary }}
                   >
-                    <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${callStatus.dotClass}`} />
-                    <span className="truncate">{callStatus.text}</span>
+                    <span
+                      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+                        adminOmiCallEnabled ? 'bg-emerald-500' : 'bg-slate-400'
+                      }`}
+                    />
+                    <span className="truncate">
+                      {adminOmiCallEnabled ? 'Đang bật · Đã kết nối tổng đài & nút gọi' : 'Đang tắt (mặc định)'}
+                    </span>
                   </div>
                 </div>
               </div>
               <Switch
                 size="small"
-                checked={omicallReady}
-                aria-label="Bật nhận cuộc gọi tổng đài OmiCall"
-                onChange={(checked) => setOmicallReady(checked)}
+                checked={adminOmiCallEnabled}
+                aria-label="Bật công cụ OmiCall tổng đài cho Admin"
+                onChange={(checked) => setAdminOmiCallEnabled(checked)}
               />
             </div>
+          )}
 
-            {/* Floating Call Launcher Toggle */}
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-500 dark:text-slate-400">
-                  <Radio size={15} />
-                </span>
-                <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
-                  Nút gọi nổi màn hình
+          {/* Growth & Booking Toggles (Only visible for Growth department members, non-admin) */}
+          {!isAdmin && isGrowthMember && (
+            <>
+              {/* OmiCall Ready Toggle */}
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <span
+                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${callStatus.iconBg}`}
+                    style={{ color: callStatus.iconColor }}
+                  >
+                    <PhoneCall size={15} />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
+                      Nhận cuộc gọi tổng đài
+                    </div>
+                    <div
+                      className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${callStatus.dotClass}`} />
+                      <span className="truncate">{callStatus.text}</span>
+                    </div>
+                  </div>
                 </div>
+                <Switch
+                  size="small"
+                  checked={omicallReady}
+                  aria-label="Bật nhận cuộc gọi tổng đài OmiCall"
+                  onChange={(checked) => setOmicallReady(checked)}
+                />
               </div>
-              <Switch
-                size="small"
-                checked={floatingLauncherVisible}
-                aria-label="Hiển thị nút gọi nổi OmiCall"
-                onChange={setFloatingLauncherVisible}
-              />
-            </div>
-          </>
-        )}
 
-        {/* Bug Report Launcher Toggle */}
-        {!isCv && (
-          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <MessageSquareWarning size={15} />
-              </span>
-              <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
-                Nút phản hồi / báo lỗi
+              {/* Floating Call Launcher Toggle */}
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-500 dark:text-slate-400">
+                    <Radio size={15} />
+                  </span>
+                  <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
+                    Nút gọi nổi màn hình
+                  </div>
+                </div>
+                <Switch
+                  size="small"
+                  checked={floatingLauncherVisible}
+                  aria-label="Hiển thị nút gọi nổi OmiCall"
+                  onChange={setFloatingLauncherVisible}
+                />
               </div>
-            </div>
-            <Switch
-              size="small"
-              checked={bugReportReady && preferences.visible}
-              disabled={!bugReportReady}
-              aria-label="Hiển thị nút phản hồi mOS"
-              onChange={setBugReportVisible}
-            />
-          </div>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Section 2: Display Density & Tools */}
       <div className="p-2 pt-1 border-t space-y-1.5" style={{ borderColor: token.colorBorderSecondary }}>
@@ -556,6 +542,32 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             <ChevronRight size={14} className="text-slate-400 shrink-0" />
           </button>
         )}
+
+        {/* Bug Report & Feature Request Button */}
+        {!isCv && (
+          <button
+            type="button"
+            data-user-menu-bug-report
+            onClick={() => {
+              setOpen(false);
+              openBugReport(undefined, { preferHistoryIfPending: true });
+            }}
+            className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+          >
+            <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
+              <MessageSquareWarning size={16} className="text-amber-500 shrink-0" />
+              Báo lỗi / Góp ý
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              {bugAttentionCount > 0 && (
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                  {bugAttentionCount > 99 ? '99+' : bugAttentionCount} mới
+                </span>
+              )}
+              <ChevronRight size={14} className="text-slate-400 shrink-0" />
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Section 3: Logout & Exit Impersonation */}
@@ -593,20 +605,30 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         arrow={{ pointAtCenter: true }}
         popupRender={() => dropdownContent}
       >
-        <button
-          type="button"
-          className="mos-header-avatar-action"
-          data-header-action="user-menu"
-          aria-label="Mở menu người dùng"
-          aria-haspopup="menu"
-          title="Mở menu người dùng"
-        >
-          <Avatar
-            className="mos-header-avatar"
-            src={avatarUrl}
-            icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
-          />
-        </button>
+        <HeaderActionIndicator variant="status" active={bugAttentionCount > 0} color={token.colorWarning}>
+          <button
+            type="button"
+            className="mos-header-avatar-action"
+            data-header-action="user-menu"
+            aria-label={
+              bugAttentionCount > 0
+                ? `Mở menu người dùng, có ${bugAttentionCount} phản hồi báo lỗi cần xem`
+                : 'Mở menu người dùng'
+            }
+            aria-haspopup="menu"
+            title={
+              bugAttentionCount > 0
+                ? `Mở menu người dùng (${bugAttentionCount} phản hồi báo lỗi mới)`
+                : 'Mở menu người dùng'
+            }
+          >
+            <Avatar
+              className="mos-header-avatar"
+              src={avatarUrl}
+              icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
+            />
+          </button>
+        </HeaderActionIndicator>
       </Dropdown>
 
       {/* Avatar Crop & AI Scoring Modal */}

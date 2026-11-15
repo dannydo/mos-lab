@@ -161,8 +161,49 @@ export function captureBugReportContext(
   };
 }
 
-export function openBugReport(error?: unknown): void {
+export interface BugReportBadgeSummary {
+  actionRequiredCount: number;
+  unreadCount: number;
+}
+
+const DEFAULT_BUG_REPORT_BADGE_SUMMARY: BugReportBadgeSummary = {
+  actionRequiredCount: 0,
+  unreadCount: 0,
+};
+
+let currentBugReportBadgeSummary: BugReportBadgeSummary = DEFAULT_BUG_REPORT_BADGE_SUMMARY;
+const bugReportBadgeListeners = new Set<() => void>();
+
+export function getBugReportBadgeSummary(): BugReportBadgeSummary {
+  return currentBugReportBadgeSummary;
+}
+
+export function setBugReportBadgeSummary(summary: BugReportBadgeSummary): void {
+  const next: BugReportBadgeSummary = {
+    actionRequiredCount: Math.max(0, Number(summary.actionRequiredCount) || 0),
+    unreadCount: Math.max(0, Number(summary.unreadCount) || 0),
+  };
+  if (
+    next.actionRequiredCount === currentBugReportBadgeSummary.actionRequiredCount &&
+    next.unreadCount === currentBugReportBadgeSummary.unreadCount
+  ) {
+    return;
+  }
+  currentBugReportBadgeSummary = next;
+  bugReportBadgeListeners.forEach((listener) => listener());
+}
+
+export function subscribeBugReportBadgeSummary(listener: () => void): () => void {
+  bugReportBadgeListeners.add(listener);
+  return () => {
+    bugReportBadgeListeners.delete(listener);
+  };
+}
+
+export function openBugReport(error?: unknown, options?: { preferHistoryIfPending?: boolean }): void {
   if (typeof window === 'undefined') return;
-  const detail = error ? { errorBoundary: recordClientError(error) } : {};
+  const detail: { errorBoundary?: BugReportClientError; preferHistoryIfPending?: boolean } = {};
+  if (error) detail.errorBoundary = recordClientError(error);
+  if (options?.preferHistoryIfPending) detail.preferHistoryIfPending = true;
   window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail }));
 }

@@ -168,4 +168,65 @@ describe('iOS State, SDK Integration & Live/Demo Mode Contract', () => {
       })
     );
   });
+
+  it('resolves CC Thục Nghi with her own avatar and never falls back to Diễm Hương (37790)', () => {
+    const withFullAuth = resolveActorProfile('CC', {
+      id: 58,
+      role: 'cc',
+      displayName: 'Thục Nghi',
+      legacyStaffId: 34295,
+      avatarUrl: 'https://lh3.googleusercontent.com/thuc-nghi-avatar',
+    });
+    expect(withFullAuth.staffId).toBe(34295);
+    expect(withFullAuth.name).toBe('Thục Nghi');
+    expect(withFullAuth.avatar).toBe('https://lh3.googleusercontent.com/thuc-nghi-avatar');
+
+    const withStaleLocalUser = resolveActorProfile('CC', {
+      id: 58,
+      role: 'cc',
+      displayName: 'Thục Nghi',
+    });
+    expect(withStaleLocalUser.name).toBe('Thục Nghi');
+    expect(withStaleLocalUser.avatar).toBe(KNOWN_STAFF_AVATARS['34295']);
+    expect(withStaleLocalUser.avatar).not.toBe(KNOWN_STAFF_AVATARS['37790']);
+
+    const unknownCc = resolveActorProfile('CC', {
+      id: 999,
+      role: 'cc',
+      displayName: 'Minh Anh',
+    });
+    expect(unknownCc.name).toBe('Minh Anh');
+    expect(unknownCc.avatar).toBeUndefined();
+
+    const demoCc = resolveActorProfile('CC');
+    expect(demoCc.staffId).toBe(37790);
+    expect(demoCc.avatar).toBe(KNOWN_STAFF_AVATARS['37790']);
+  });
+
+  it('refreshes stale mos_user via apiClient.auth.me when mos_token exists on mount', async () => {
+    window.localStorage.setItem('mos_token', 'test-token');
+    window.localStorage.setItem('mos_user', JSON.stringify({ id: 58, role: 'cc', displayName: 'Thục Nghi' }));
+    vi.spyOn(apiClient.ios, 'getBookings').mockResolvedValue({
+      success: true,
+      bookings: [],
+      counts: { incoming: 0, servicing: 0, done: 0, cancel: 0 },
+    } as any);
+    const meSpy = vi.spyOn(apiClient.auth, 'me').mockResolvedValue({
+      id: 58,
+      username: 'thucnghitran2104@gmail.com',
+      displayName: 'Thục Nghi',
+      role: 'cc',
+      isActive: true,
+      legacyStaffId: 34295,
+      avatarUrl: 'https://lh3.googleusercontent.com/thuc-nghi-fresh',
+    } as any);
+
+    const { result } = renderHook(() => useIosAppState(1, true, 'CC', undefined, false));
+
+    await waitFor(() => {
+      expect(meSpy).toHaveBeenCalledTimes(1);
+      expect(result.current.actor.staffId).toBe(34295);
+    });
+    expect(result.current.actor.avatar).toBe('https://lh3.googleusercontent.com/thuc-nghi-fresh');
+  });
 });

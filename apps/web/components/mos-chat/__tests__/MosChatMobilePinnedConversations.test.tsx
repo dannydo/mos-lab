@@ -119,7 +119,7 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
     expect(dannyIdx).toBeLessThan(buiIdx);
   });
 
-  it('filters to only pinned conversations when tapping the "Đã ghim" chip', async () => {
+  it('filters to only pinned conversations via inbox [⋯] menu and displays dismissible active pill', async () => {
     render(
       <MosChatProvider currentUser={{ id: 2, name: 'Quang Khải', role: 'CV' }}>
         <MosChatMobileApp standalone={true} />
@@ -130,9 +130,12 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
       expect(screen.getByText('Core Team')).toBeInTheDocument();
     });
 
-    // Tap "Đã ghim" filter chip
-    const pinnedChip = screen.getByRole('button', { name: /^Đã ghim/i });
-    fireEvent.click(pinnedChip);
+    // Open inbox [⋯] menu and tap "Lọc hội thoại đã ghim"
+    fireEvent.click(screen.getByLabelText('Mở menu tiện ích & điều hướng'));
+    fireEvent.click(screen.getByLabelText('Lọc hội thoại đã ghim'));
+
+    // Dismissible "Đã ghim" active filter pill is rendered
+    expect(screen.getByLabelText('Bỏ lọc đã ghim')).toBeInTheDocument();
 
     // Core Team (Space) and Danny Do (DM) should be visible
     expect(screen.getByText('Core Team')).toBeInTheDocument();
@@ -141,9 +144,13 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
     // Unpinned General Discussion and Bùi Sinh Nguyên should be filtered out
     expect(screen.queryByText('General Discussion')).not.toBeInTheDocument();
     expect(screen.queryByText('Bùi Sinh Nguyên')).not.toBeInTheDocument();
+
+    // Tapping dismissible pill resets back to all conversations
+    fireEvent.click(screen.getByLabelText('Bỏ lọc đã ghim'));
+    expect(screen.getByText('General Discussion')).toBeInTheDocument();
   });
 
-  it('allows pinning/unpinning a conversation from the conversation action bottom sheet', async () => {
+  it('allows pinning/unpinning a conversation via context menu / long press without per-row ⋮ button', async () => {
     render(
       <MosChatProvider currentUser={{ id: 2, name: 'Quang Khải', role: 'CV' }}>
         <MosChatMobileApp standalone={true} />
@@ -154,10 +161,11 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
       expect(screen.getByText('Core Team')).toBeInTheDocument();
     });
 
-    // Tap action button on Core Team (which is currently pinned)
-    const moreBtns = screen.getAllByLabelText('Tác vụ cuộc trò chuyện');
-    expect(moreBtns.length).toBeGreaterThan(0);
-    fireEvent.click(moreBtns[0]); // Core Team is at index 0
+    // Per-row ⋮ button was removed in Apple-minimalist refactor
+    expect(screen.queryAllByLabelText('Tác vụ cuộc trò chuyện')).toHaveLength(0);
+
+    // Trigger context menu / long-press on Core Team row
+    fireEvent.contextMenu(screen.getByText('Core Team'));
 
     // Bottom sheet should open with option to unpin
     await waitFor(() => {

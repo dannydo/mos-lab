@@ -185,26 +185,36 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     vi.clearAllMocks();
   });
 
-  it('renders iPhone 12 inbox with conversation list, search bar, and filter chips', async () => {
+  const openInboxMenuTasks = () => {
+    fireEvent.click(screen.getByLabelText('Mở menu tiện ích & điều hướng'));
+    fireEvent.click(screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)'));
+  };
+
+  it('renders Apple-minimalist iPhone inbox with single top bar, search bar, and 3 filter chips', async () => {
     render(
       <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
         <MosChatMobileApp standalone={true} />
       </MosChatProvider>
     );
 
-    // Verify app header
-    expect(screen.getByText('mOS Chat')).toBeTruthy();
-    expect(screen.getByText('Wings Enterprise Hub')).toBeTruthy();
+    // Verify Apple-minimalist header: single "Chat" title, no standalone top switcher bar or subtitle
+    expect(screen.getByRole('heading', { name: /Chat/i })).toBeTruthy();
+    expect(screen.queryByText('Wings Enterprise Hub')).toBeNull();
+    expect(screen.queryByTestId('header-role-quick-switch-bar')).toBeNull();
+    expect(screen.getByLabelText('Mở menu tiện ích & điều hướng')).toBeTruthy();
+    expect(screen.getByLabelText('Soạn tin nhắn DM mới')).toBeTruthy();
 
-    // Verify filter chips
+    // Verify simplified 3 filter chips
     expect(screen.getByText('Tất cả')).toBeTruthy();
     expect(screen.getByText('Chưa đọc')).toBeTruthy();
-    expect(screen.getByText('Kho Công việc')).toBeTruthy();
+    expect(screen.getByText('Kênh')).toBeTruthy();
+    expect(screen.queryByText('Tin Trực Tiếp')).toBeNull();
 
-    // Verify conversation item rendered
+    // Verify conversation item rendered without per-row ⋮ button
     await waitFor(() => {
       expect(screen.getByText('Shop Operations')).toBeTruthy();
     });
+    expect(screen.queryAllByLabelText('Tác vụ cuộc trò chuyện')).toHaveLength(0);
   });
 
   it('navigates into chat room when tapping conversation and renders iMessage composer', async () => {
@@ -244,20 +254,20 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(backButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Wings Enterprise Hub')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: /Chat/i })).toBeTruthy();
+      expect(screen.getByLabelText('Mở menu tiện ích & điều hướng')).toBeTruthy();
     });
   });
 
-  it('allows toggling between Chat and Tasks view with full checklist functionality', async () => {
+  it('allows toggling between Chat and Tasks view from inbox menu with full checklist functionality', async () => {
     render(
       <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
         <MosChatMobileApp standalone={true} />
       </MosChatProvider>
     );
 
-    // Click on Kho Công việc in inbox
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    // Open inbox [⋯] menu and tap Kho Công việc
+    openInboxMenuTasks();
 
     // Verifies Tasks tab is active
     await waitFor(() => {
@@ -270,7 +280,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(backButton);
 
     await waitFor(() => {
-      expect(screen.getByText('mOS Chat')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: /Chat/i })).toBeTruthy();
     });
   });
 
@@ -329,7 +339,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     });
 
     // Type "Mai" into search bar
-    const searchInput = screen.getByPlaceholderText('Tìm kiếm đồng nghiệp, kênh, tin nhắn...');
+    const searchInput = screen.getByPlaceholderText('Tìm kiếm...');
     fireEvent.change(searchInput, { target: { value: 'Mai' } });
 
     // Should display matching colleague section
@@ -918,7 +928,8 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     const plusBtn = screen.getByRole('button', { name: 'Tác vụ đính kèm' });
     fireEvent.click(plusBtn);
 
-    // Tap "Giao việc & Hạn chót"
+    // Expand advanced tools & tap "Giao việc & Hạn chót"
+    fireEvent.click(screen.getByTestId('mobile-action-sheet-advanced-toggle'));
     await waitFor(() => {
       expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
     });
@@ -969,7 +980,8 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     const plusBtn = screen.getByRole('button', { name: 'Tác vụ đính kèm' });
     fireEvent.click(plusBtn);
 
-    // Tap "Giao việc & Hạn chót"
+    // Expand advanced tools & tap "Giao việc & Hạn chót"
+    fireEvent.click(screen.getByTestId('mobile-action-sheet-advanced-toggle'));
     await waitFor(() => {
       expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
     });
@@ -1016,9 +1028,8 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    // Click on Kho Công việc in inbox
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    // Open Kho Công việc via inbox [⋯] menu
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Kho Công Việc & Nhắc Hẹn')).toBeTruthy();
@@ -1051,8 +1062,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
@@ -1081,8 +1091,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Kho Công Việc & Nhắc Hẹn')).toBeTruthy();
@@ -1128,8 +1137,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
@@ -1170,8 +1178,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
@@ -1219,8 +1226,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
@@ -1332,8 +1338,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </MosChatProvider>
     );
 
-    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
-    fireEvent.click(tasksPill);
+    openInboxMenuTasks();
 
     await waitFor(() => {
       expect(screen.getByText('Triển khai Gate Control trên iPhone')).toBeTruthy();
@@ -1678,8 +1683,9 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       expect(screen.getByLabelText('Tác vụ đính kèm')).toBeTruthy();
     });
 
-    // Open action sheet
+    // Open action sheet & expand advanced tools for Wings AI
     fireEvent.click(screen.getByLabelText('Tác vụ đính kèm'));
+    fireEvent.click(screen.getByTestId('mobile-action-sheet-advanced-toggle'));
 
     await waitFor(() => {
       expect(screen.getByText('Trợ lý Wings AI')).toBeTruthy();
@@ -1750,13 +1756,11 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       expect(screen.getByText('Phản hồi từ MAI trên Desktop')).toBeTruthy();
     });
 
-    expect(apiClient.ai.listSessions).toHaveBeenCalledWith(
-      expect.objectContaining({ scope: 'mos-chat-private' })
-    );
+    expect(apiClient.ai.listSessions).toHaveBeenCalledWith(expect.objectContaining({ scope: 'mos-chat-private' }));
     expect(apiClient.ai.getSession).toHaveBeenCalledWith('sess-sync-desktop');
   });
 
-  it('renders mobile push notification banner when not subscribed and opens push modal on tap', async () => {
+  it('hides sticky push banner from inbox and opens push modal from inbox [⋯] menu', async () => {
     render(
       <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
         <MosChatMobileApp standalone={true} />
@@ -1764,19 +1768,25 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('mos-chat-mobile-push-banner')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: /Chat/i })).toBeTruthy();
     });
+    expect(screen.queryByTestId('mos-chat-mobile-push-banner')).toBeNull();
 
-    const bannerBtn = screen.getByRole('button', { name: /Bật ngay/i });
-    expect(bannerBtn).toBeTruthy();
-    fireEvent.click(bannerBtn);
+    // Open inbox utility menu and tap push settings item
+    fireEvent.click(screen.getByLabelText('Mở menu tiện ích & điều hướng'));
+    const inboxMenu = screen.getByTestId('mos-chat-inbox-more-menu');
+    expect(inboxMenu.className).not.toContain('hidden');
+
+    fireEvent.click(within(inboxMenu).getByTestId('mos-chat-menu-push-item'));
 
     expect(screen.getByText(/Chuông báo Cuộc gọi khi Khóa máy/i)).toBeTruthy();
   });
 
-  it('opens MobileThemeSheet from header palette button and switches mobile chat between Dark and Light themes', async () => {
+  it('opens MobileThemeSheet from inbox [⋯] menu, switches themes, and syncs per-user Dynamic Type font scale', async () => {
     window.localStorage.clear();
-    render(
+    window.localStorage.setItem('mos_ios_font_scale:user:99', '1.08');
+
+    const { container } = render(
       <ThemeProvider>
         <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
           <MosChatMobileApp standalone={true} />
@@ -1784,11 +1794,25 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       </ThemeProvider>
     );
 
-    const themeBtn = await screen.findByRole('button', { name: /Giao diện & Chủ đề/i });
+    // Root mobile container applies Dynamic Type class and persisted per-user scale
+    const scopedRoot = container.querySelector('.ios-app-font-scope');
+    expect(scopedRoot).not.toBeNull();
+    expect(document.documentElement.style.getPropertyValue('--ios-font-scale')).toBe('1.08');
+
+    // Open inbox [⋯] menu and tap theme & font item
+    fireEvent.click(screen.getByLabelText('Mở menu tiện ích & điều hướng'));
+    const inboxMenu = screen.getByTestId('mos-chat-inbox-more-menu');
+    const themeBtn = within(inboxMenu).getByRole('button', { name: /Giao diện & Chủ đề/i });
     fireEvent.click(themeBtn);
 
     const dialog = await screen.findByRole('dialog', { name: /Chọn giao diện & tông màu/i });
     expect(dialog).toBeTruthy();
+
+    // Font scale control from /ios-app is embedded and synced to user 99 storage key
+    expect(within(dialog).getByText('Cỡ chữ cá nhân:')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tăng cỡ chữ' }));
+    expect(window.localStorage.getItem('mos_ios_font_scale:user:99')).toBe('1.16');
+    expect(document.documentElement.style.getPropertyValue('--ios-font-scale')).toBe('1.16');
 
     fireEvent.click(within(dialog).getByRole('button', { name: /Nền Sáng/i }));
     await waitFor(() => {
@@ -1796,11 +1820,43 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       expect(document.documentElement.classList.contains('light-theme')).toBe(true);
     });
 
-    const blushBtn = within(dialog).getByText(/Blush Blossom/i).closest('button');
+    const blushBtn = within(dialog)
+      .getByText(/Blush Blossom/i)
+      .closest('button');
     expect(blushBtn).not.toBeNull();
     fireEvent.click(blushBtn!);
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe('blush');
+    });
+  });
+
+  it('renders minimalist iMessage room header with only [📞] and [⋯] and places Tasks inside [⋯] menu', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Gọi thoại nội bộ mOS')).toBeTruthy();
+      expect(screen.getByLabelText('Mở menu tùy chọn phòng chat')).toBeTruthy();
+    });
+
+    const roomMenu = screen.getByTestId('mos-chat-room-more-menu');
+    expect(roomMenu.className).toContain('hidden');
+
+    fireEvent.click(screen.getByLabelText('Mở menu tùy chọn phòng chat'));
+    expect(roomMenu.className).not.toContain('hidden');
+
+    fireEvent.click(within(roomMenu).getByLabelText('Xem danh sách công việc'));
+    await waitFor(() => {
+      expect(screen.getByText('Kho Công Việc & Nhắc Hẹn')).toBeTruthy();
     });
   });
 
@@ -1825,12 +1881,15 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     const plusBtn = screen.getByRole('button', { name: 'Tác vụ đính kèm' });
     fireEvent.click(plusBtn);
 
-    // Verify "Soạn thảo CKEditor" is present in Action Sheet
-    await waitFor(() => {
-      expect(screen.getByText('Soạn thảo CKEditor')).toBeTruthy();
-    });
+    // Core 4 items visible; advanced grid hidden until expanded
+    const advancedGrid = screen.getByTestId('mobile-action-sheet-advanced-grid');
+    expect(advancedGrid.className).toContain('hidden');
 
-    // Tap "Soạn thảo CKEditor"
+    // Expand advanced tools & tap "Soạn thảo CKEditor"
+    fireEvent.click(screen.getByTestId('mobile-action-sheet-advanced-toggle'));
+    expect(advancedGrid.className).not.toContain('hidden');
+    expect(screen.getByText('Soạn thảo CKEditor')).toBeTruthy();
+
     fireEvent.click(screen.getByText('Soạn thảo CKEditor'));
 
     // Verify CKEditor modal opens

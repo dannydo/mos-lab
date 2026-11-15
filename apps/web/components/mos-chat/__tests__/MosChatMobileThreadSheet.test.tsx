@@ -623,11 +623,20 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     // Click [+] button
     fireEvent.click(plusBtn);
 
-    // Verify Action Sheet "Tác vụ đính kèm & Tiện ích" is displayed
+    // Verify Action Sheet "Tác vụ đính kèm & Tiện ích" shows 4 core actions and collapses advanced grid
     expect(screen.getByText('Tác vụ đính kèm & Tiện ích')).toBeTruthy();
-    expect(screen.getByText('Thẻ khách / Booking')).toBeTruthy();
-    expect(screen.getByText('Đính kèm tệp / PDF')).toBeTruthy();
     expect(screen.getByText('Gửi hình ảnh')).toBeTruthy();
+    expect(screen.getByText('Gửi video')).toBeTruthy();
+    expect(screen.getByText('Đính kèm tệp / PDF')).toBeTruthy();
+    expect(screen.getByText('Thẻ khách / Booking')).toBeTruthy();
+
+    const advancedGrid = screen.getByTestId('mobile-action-sheet-advanced-grid');
+    expect(advancedGrid.className).toContain('hidden');
+
+    // Expand advanced tools & verify secondary items
+    fireEvent.click(screen.getByTestId('mobile-action-sheet-advanced-toggle'));
+    expect(advancedGrid.className).not.toContain('hidden');
+
     expect(screen.getByText('Soạn thảo CKEditor')).toBeTruthy();
     expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
     expect(screen.getByText('Quy trình công việc')).toBeTruthy();
@@ -675,8 +684,9 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
       expect(screen.getByLabelText('Tác vụ đính kèm')).toBeTruthy();
     });
 
-    // Open action sheet
+    // Open action sheet & expand advanced tools
     fireEvent.click(screen.getByLabelText('Tác vụ đính kèm'));
+    fireEvent.click(screen.getByTestId('mobile-action-sheet-advanced-toggle'));
 
     // Tap "Soạn thảo CKEditor"
     await waitFor(() => {
@@ -717,9 +727,7 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
       done: false,
       createdAt: new Date().toISOString(),
       remindAt: new Date().toISOString(),
-      checklist: [
-        { id: 'chk-1', title: 'Subtask 1: Soi máy quạt', done: false },
-      ],
+      checklist: [{ id: 'chk-1', title: 'Subtask 1: Soi máy quạt', done: false }],
     };
 
     const mockMsgWithTask = {

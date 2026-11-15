@@ -216,9 +216,9 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       style={{
         transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : 'none',
         transition: 'transform 0.15s ease-out',
-        paddingBottom: isKeyboardOpen ? '8px' : 'max(env(safe-area-inset-bottom, 14px), 12px)',
+        paddingBottom: isKeyboardOpen ? '6px' : 'max(env(safe-area-inset-bottom, 6px), 6px)',
       }}
-      className="sticky bottom-0 z-30 bg-[var(--mos-surface)] backdrop-blur-md border-t border-[var(--mos-surface-border)] px-3 pt-2 shadow-lg"
+      className="sticky bottom-0 z-30 bg-[var(--mos-surface)]/95 backdrop-blur-xl border-t border-[var(--mos-surface-border)] px-2.5 pt-1.5 shadow-sm"
     >
       {/* Autocomplete when typing @mention */}
       <MosChatMobileMentionAutocomplete
@@ -471,19 +471,19 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       )}
 
       {/* Main Composer Row */}
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-1.5">
         {/* [+] Action Sheet Button */}
         <button
           type="button"
           onClick={onOpenActionSheet}
-          className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text)] active:scale-90 transition-transform shrink-0 mb-0.5"
+          className="w-8 h-8 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text)] active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer"
           aria-label="Tác vụ đính kèm"
         >
-          <Plus className="w-5 h-5 text-[var(--mos-accent)]" />
+          <Plus className="w-4 h-4 text-[var(--mos-accent)]" />
         </button>
 
         {/* Text Input Box */}
-        <div className="flex-1 min-h-[38px] max-h-[120px] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-2xl px-3 py-1.5 flex items-center gap-2 focus-within:border-[var(--mos-accent)] transition-colors">
+        <div className="flex-1 min-h-[36px] max-h-[120px] bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-[20px] px-3 py-1 flex items-center gap-1.5 focus-within:border-[var(--mos-accent)] transition-colors">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -491,7 +491,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] resize-none max-h-[110px] py-1 leading-snug"
+            className="flex-1 bg-transparent border-none outline-none focus:outline-none focus-visible:outline-none text-sm text-[var(--mos-text)] placeholder-[var(--mos-text-muted)] resize-none max-h-[110px] py-0.5 leading-snug"
             style={{ outline: 'none', boxShadow: 'none' }}
           />
 
@@ -500,7 +500,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onOpenStickerSheet('emoji')}
-            className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-90 transition-transform shrink-0"
+            className="p-1 text-[var(--mos-text-muted)] hover:text-[var(--mos-accent)] active:scale-90 transition-transform shrink-0 cursor-pointer"
             aria-label="Biểu cảm Emoji & Nhãn dán"
             title="Biểu cảm Emoji & Nhãn dán"
           >
@@ -514,7 +514,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             type="button"
             onClick={handleSend}
             disabled={isSending || isUploadingImages}
-            className="w-9 h-9 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-md active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
+            className="w-8 h-8 rounded-full bg-[var(--mos-accent)] flex items-center justify-center text-[var(--mos-accent-contrast)] shadow-sm active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50 cursor-pointer"
             aria-label="Gửi tin nhắn"
           >
             {isSending || isUploadingImages ? (
@@ -527,7 +527,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           <button
             type="button"
             onClick={onOpenActionSheet}
-            className="w-9 h-9 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text-muted)] active:scale-90 transition-transform shrink-0 mb-0.5"
+            className="w-8 h-8 rounded-full bg-[var(--mos-surface-muted)] hover:opacity-90 border border-[var(--mos-surface-border)] flex items-center justify-center text-[var(--mos-text-muted)] active:scale-90 transition-transform shrink-0 mb-0.5 cursor-pointer"
             aria-label="Ghi âm giọng nói"
           >
             <Mic className="w-4 h-4 text-[var(--mos-text-muted)]" />

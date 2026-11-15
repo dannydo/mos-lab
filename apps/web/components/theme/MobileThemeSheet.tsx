@@ -13,10 +13,7 @@ interface MobileThemeSelectorBlockProps {
  * Shared 3-mode (Light / Dark / Auto) + Core Theme Palette selector block
  * reused across /ios-app (IosProfileMenuSheet) and /chat mobile (MobileThemeSheet).
  */
-export const MobileThemeSelectorBlock: React.FC<MobileThemeSelectorBlockProps> = ({
-  compact = false,
-  fontControl,
-}) => {
+export const MobileThemeSelectorBlock: React.FC<MobileThemeSelectorBlockProps> = ({ compact = false, fontControl }) => {
   const {
     coreThemeId,
     themeId,
@@ -215,12 +212,13 @@ export const MobileThemeSelectorBlock: React.FC<MobileThemeSelectorBlockProps> =
 interface MobileThemeSheetProps {
   open: boolean;
   onClose: () => void;
+  fontControl?: React.ReactNode;
 }
 
 /**
  * Reusable mobile bottom-sheet for switching Light / Dark / Auto and Core Theme Palettes.
  */
-export const MobileThemeSheet: React.FC<MobileThemeSheetProps> = ({ open, onClose }) => {
+export const MobileThemeSheet: React.FC<MobileThemeSheetProps> = ({ open, onClose, fontControl }) => {
   if (!open) return null;
 
   return (
@@ -269,7 +267,7 @@ export const MobileThemeSheet: React.FC<MobileThemeSheetProps> = ({ open, onClos
           </button>
         </div>
 
-        <MobileThemeSelectorBlock compact={false} />
+        <MobileThemeSelectorBlock compact={false} fontControl={fontControl} />
       </div>
     </div>
   );

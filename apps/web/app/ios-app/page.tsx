@@ -556,7 +556,6 @@ function IosAppInner() {
           isBusy={state.isSimActionBusy}
           simActionError={state.simActionError}
           onDismissError={() => state.setSimActionError(null)}
-          onOpenCreateBooking={() => state.setIsCreateBookingOpen(true)}
           onOpenHistory={state.openHistoryForBooking}
           onRevertConsultation={state.handleSimRevertConsultation}
           onResetToIncoming={state.handleSimResetToIncoming}
@@ -610,6 +609,9 @@ function IosAppInner() {
           isAdmin={state.isAdmin}
           isSimulationMode={state.isSimulationMode}
           onToggleSimulationMode={state.toggleSimulationMode}
+          menteesList={state.menteesList}
+          selectedMenteeStaffId={state.selectedMenteeStaffId}
+          onSelectMentee={state.selectMenteeStaffId}
           onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
           onRoleChange={(r) => {
             state.setRole(r);

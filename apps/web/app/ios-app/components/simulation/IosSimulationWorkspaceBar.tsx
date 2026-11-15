@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, FlaskConical, History, RotateCcw, Plus, Eye, ChevronDown, AlertCircle } from 'lucide-react';
+import { X, FlaskConical, History, RotateCcw, Eye, ChevronDown, AlertCircle, Check } from 'lucide-react';
 import type { IosBookingItem, IosSimulationMenteeOption } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -83,7 +83,7 @@ interface IosSimulationWorkspaceBarProps {
   isBusy?: boolean;
   simActionError?: string | null;
   onDismissError?: () => void;
-  onOpenCreateBooking: () => void;
+  onOpenCreateBooking?: () => void;
   onOpenHistory: (bookingId: number) => void;
   onRevertConsultation: (bookingId: number) => void;
   onResetToIncoming: (bookingId: number) => void;
@@ -102,7 +102,6 @@ export function IosSimulationWorkspaceBar({
   isBusy = false,
   simActionError,
   onDismissError,
-  onOpenCreateBooking,
   onOpenHistory,
   onRevertConsultation,
   onResetToIncoming,
@@ -111,25 +110,28 @@ export function IosSimulationWorkspaceBar({
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [isRevertMenuOpen, setIsRevertMenuOpen] = useState(false);
+  const [isMenteeMenuOpen, setIsMenteeMenuOpen] = useState(false);
   const barRef = useRef<HTMLDivElement | null>(null);
-  const [popoverTop, setPopoverTop] = useState<number>(44);
+  const [popoverTop, setPopoverTop] = useState<number>(32);
 
   const updatePopoverTop = () => {
     const rect = barRef.current?.getBoundingClientRect();
-    setPopoverTop(rect ? Math.max(8, Math.round(rect.bottom + 6)) : 44);
+    setPopoverTop(rect ? Math.max(8, Math.round(rect.bottom + 4)) : 32);
   };
 
   useEffect(() => {
     setIsRevertMenuOpen(false);
+    setIsMenteeMenuOpen(false);
   }, [activeBooking?.id, currentStep, isSimulationMode]);
 
   useEffect(() => {
-    if (!isRevertMenuOpen) return;
+    if (!isRevertMenuOpen && !isMenteeMenuOpen) return;
     updatePopoverTop();
     const handleResize = () => updatePopoverTop();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsRevertMenuOpen(false);
+        setIsMenteeMenuOpen(false);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -138,7 +140,13 @@ export function IosSimulationWorkspaceBar({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isRevertMenuOpen]);
+  }, [isRevertMenuOpen, isMenteeMenuOpen]);
+
+  const hasMentees = Boolean(menteesList.length > 0 && onSelectMentee);
+  const selectedMentee = useMemo(
+    () => menteesList.find((m) => Number(m.menteeStaffId) === Number(selectedMenteeStaffId)),
+    [menteesList, selectedMenteeStaffId]
+  );
 
   const showBookingActions = useMemo(() => {
     if (!activeBooking || activeBooking.id <= 0) return false;
@@ -148,268 +156,342 @@ export function IosSimulationWorkspaceBar({
   if (!isSimulationMode) return null;
 
   return (
-    <div ref={barRef} className="shrink-0 z-[45] relative">
-      <div
-        className={`px-2.5 py-1.5 border-b flex items-center justify-between gap-1.5 transition-colors ${
-          isDark ? 'bg-amber-950/70 border-amber-500/40 text-amber-100' : 'bg-amber-50 border-amber-300 text-amber-950'
-        }`}
-      >
-        {/* Left: Mode badge + attempt indicator */}
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide uppercase leading-none shrink-0 ${
-              isDark ? 'bg-amber-500 text-black' : 'bg-amber-500 text-black shadow-2xs'
-            }`}
-          >
-            <FlaskConical className="w-3 h-3 shrink-0" />
-            <span>MÔ PHỎNG</span>
-          </span>
+    <>
+      <div ref={barRef} className="shrink-0 z-[45] relative">
+        <div
+          className={`h-7 px-2.5 border-b flex items-center justify-between gap-1.5 transition-colors ${
+            isDark
+              ? 'bg-pink-500/10 border-pink-400/25 text-pink-100'
+              : 'bg-pink-50/90 border-pink-300/70 text-pink-950'
+          }`}
+        >
+          {/* Left: Minimalist Simulation / Mentee pill + inline PA indicator */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            {hasMentees ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRevertMenuOpen(false);
+                  setIsMenteeMenuOpen((prev) => {
+                    const next = !prev;
+                    if (next) updatePopoverTop();
+                    return next;
+                  });
+                }}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-black tracking-wide leading-none min-w-0 max-w-[205px] transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-pink-500/20 hover:bg-pink-500/30 text-pink-200'
+                    : 'bg-pink-500/15 hover:bg-pink-500/25 text-pink-800'
+                }`}
+                aria-label="Chọn bài tập mô phỏng"
+                aria-expanded={isMenteeMenuOpen}
+                title="Chuyển giữa Sandbox của tôi và bài tập của Chuyên Viên"
+              >
+                <FlaskConical className="w-2.5 h-2.5 shrink-0 text-pink-400" />
+                <span className="truncate">{selectedMentee ? selectedMentee.menteeName : 'Sandbox của tôi'}</span>
+                <ChevronDown
+                  className={`w-2.5 h-2.5 shrink-0 transition-transform ${isMenteeMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+            ) : (
+              <span
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-black tracking-wide uppercase leading-none shrink-0 ${
+                  isDark ? 'bg-pink-500/20 text-pink-200' : 'bg-pink-500/15 text-pink-800'
+                }`}
+              >
+                <FlaskConical className="w-2.5 h-2.5 shrink-0 text-pink-400" />
+                <span>Mô phỏng</span>
+              </span>
+            )}
 
-          {activeBooking && activeBooking.id > 0 && (
-            <span
-              className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border tabular-nums shrink-0 leading-none ${
-                isDark
-                  ? 'bg-neutral-900/80 border-amber-500/30 text-amber-300'
-                  : 'bg-white border-amber-300 text-amber-900'
-              }`}
-            >
-              PA #{Math.max(1, (activeBooking.simulationAttemptCount || 0) + (activeBooking.status === 'DONE' ? 0 : 1))}
-            </span>
-          )}
+            {activeBooking && activeBooking.id > 0 && (
+              <span
+                className={`text-[10px] font-extrabold tabular-nums shrink-0 leading-none ${
+                  isDark ? 'text-pink-300/90' : 'text-pink-700'
+                }`}
+              >
+                · PA #
+                {Math.max(1, (activeBooking.simulationAttemptCount || 0) + (activeBooking.status === 'DONE' ? 0 : 1))}
+              </span>
+            )}
 
-          {isReadOnlyMentorView && (
-            <span
-              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold shrink-0 leading-none ${
-                isDark
-                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                  : 'bg-sky-100 text-sky-800 border border-sky-200'
-              }`}
-              title={
-                simulationActorStaffName ? `Đang xem dữ liệu tập luyện của ${simulationActorStaffName}` : undefined
-              }
-            >
-              <Eye className="w-2.5 h-2.5" />
-              <span>Chỉ xem</span>
-            </span>
-          )}
-        </div>
+            {isReadOnlyMentorView && (
+              <span
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-bold shrink-0 leading-none ${
+                  isDark ? 'bg-sky-500/20 text-sky-300' : 'bg-sky-100 text-sky-800'
+                }`}
+                title={
+                  simulationActorStaffName ? `Đang xem dữ liệu tập luyện của ${simulationActorStaffName}` : undefined
+                }
+              >
+                <Eye className="w-2.5 h-2.5" />
+                <span>Xem</span>
+              </span>
+            )}
+          </div>
 
-        {/* Right: Quick Simulation Workspace Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          {!isReadOnlyMentorView && (
+          {/* Right: Minimalist Flat Ghost Icon Actions */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {showBookingActions && activeBooking && (
+              <>
+                {!isReadOnlyMentorView && (
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      setIsMenteeMenuOpen(false);
+                      setIsRevertMenuOpen((prev) => {
+                        const next = !prev;
+                        if (next) updatePopoverTop();
+                        return next;
+                      });
+                    }}
+                    className={`inline-flex items-center justify-center p-1 rounded-md transition-colors active:scale-95 cursor-pointer leading-none ${
+                      isDark ? 'text-pink-200 hover:bg-pink-500/20' : 'text-pink-800 hover:bg-pink-500/15'
+                    }`}
+                    aria-label="Revert kịch bản mô phỏng"
+                    title="Hoàn tác / làm lại kịch bản tư vấn cho khách này"
+                  >
+                    <RotateCcw className={`w-3.5 h-3.5 ${isBusy ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => onOpenHistory(activeBooking.id)}
+                  className={`inline-flex items-center gap-0.5 px-1.5 py-1 rounded-md text-[10px] font-extrabold transition-colors active:scale-95 cursor-pointer leading-none tabular-nums ${
+                    isDark ? 'text-pink-200 hover:bg-pink-500/20' : 'text-pink-800 hover:bg-pink-500/15'
+                  }`}
+                  aria-label="Lịch sử phương án mô phỏng"
+                  title="So sánh các phương án tư vấn & chốt đơn"
+                >
+                  <History className="w-3.5 h-3.5 text-pink-400" />
+                  {(activeBooking.simulationAttemptCount ?? 0) > 0 && (
+                    <span>{activeBooking.simulationAttemptCount}</span>
+                  )}
+                </button>
+              </>
+            )}
+
             <button
               type="button"
               disabled={isBusy}
-              onClick={onOpenCreateBooking}
-              className={`inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10.5px] font-extrabold transition-all active:scale-95 cursor-pointer leading-none ${
-                isDark
-                  ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+              onClick={onExitSimulation}
+              className={`inline-flex items-center justify-center p-1 rounded-md transition-colors active:scale-95 cursor-pointer leading-none ${
+                isDark ? 'text-pink-300 hover:bg-pink-500/25' : 'text-pink-700 hover:bg-pink-500/15'
               }`}
-              title="Đặt lịch khách mới hoặc khách quen để tập luyện"
+              aria-label="Thoát chế độ Mô phỏng"
+              title="Thoát chế độ Mô phỏng, quay về dữ liệu thực tế"
             >
-              <Plus className="w-3 h-3" />
-              <span>{showBookingActions ? 'Lịch' : 'Đặt lịch'}</span>
+              <X className="w-3.5 h-3.5" />
             </button>
-          )}
-
-          {showBookingActions && activeBooking && (
-            <>
-              <button
-                type="button"
-                disabled={isBusy}
-                onClick={() => onOpenHistory(activeBooking.id)}
-                className={`inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10.5px] font-extrabold transition-all active:scale-95 cursor-pointer leading-none tabular-nums border ${
-                  isDark
-                    ? 'bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border-neutral-700'
-                    : 'bg-white hover:bg-neutral-100 text-neutral-800 border-neutral-300'
-                }`}
-                title="So sánh các phương án tư vấn & chốt đơn"
-              >
-                <History className="w-3 h-3 text-amber-500" />
-                <span>
-                  {(activeBooking.simulationAttemptCount ?? 0) > 0 ? activeBooking.simulationAttemptCount : 'PA'}
-                </span>
-              </button>
-
-              {!isReadOnlyMentorView && (
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => {
-                    setIsRevertMenuOpen((prev) => {
-                      const next = !prev;
-                      if (next) updatePopoverTop();
-                      return next;
-                    });
-                  }}
-                  className={`inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10.5px] font-black transition-all active:scale-95 cursor-pointer leading-none border ${
-                    isDark
-                      ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/50'
-                      : 'bg-amber-200/80 hover:bg-amber-300 text-amber-950 border-amber-400'
-                  }`}
-                  title="Hoàn tác / làm lại kịch bản tư vấn cho khách này"
-                >
-                  <RotateCcw className={`w-3 h-3 ${isBusy ? 'animate-spin' : ''}`} />
-                  <span>Revert</span>
-                </button>
-              )}
-            </>
-          )}
-
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onExitSimulation}
-            className={`inline-flex items-center gap-0.5 px-1.5 py-1 rounded-lg text-[10.5px] font-bold transition-all active:scale-95 cursor-pointer leading-none border ${
-              isDark
-                ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/30'
-                : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-300'
-            }`}
-            title="Thoát chế độ Mô phỏng, quay về dữ liệu thực tế"
-          >
-            <X className="w-3 h-3" />
-            <span>Thoát</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Dedicated Mentor Mentee Selector Sub-row */}
-      {menteesList.length > 0 && onSelectMentee && (
-        <div
-          className={`px-2.5 py-1 border-b flex items-center justify-between gap-2 text-[10.5px] ${
-            isDark
-              ? 'bg-neutral-950/90 border-amber-500/25 text-amber-200/90'
-              : 'bg-amber-100/60 border-amber-200 text-amber-950'
-          }`}
-        >
-          <span className="font-bold shrink-0 opacity-85">Xem bài tập:</span>
-          <div className="relative flex-1 max-w-[260px]">
-            <select
-              value={selectedMenteeStaffId ? String(selectedMenteeStaffId) : ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                onSelectMentee(val ? Number(val) : undefined);
-              }}
-              className={`w-full appearance-none pl-2.5 pr-6 py-0.5 rounded-lg text-[10.5px] font-bold border truncate cursor-pointer focus:outline-none ${
-                isDark
-                  ? 'bg-neutral-900 border-neutral-700 text-amber-200'
-                  : 'bg-white border-amber-300 text-neutral-800'
-              }`}
-              aria-label="Chọn Chuyên Viên cần xem bài tập luyện"
-            >
-              <option value="">Sandbox của tôi</option>
-              {menteesList.map((m) => (
-                <option key={m.menteeStaffId} value={String(m.menteeStaffId)}>
-                  {m.menteeName}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3 h-3 pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 opacity-70" />
           </div>
         </div>
-      )}
 
-      {/* Revert 2-Level Portal Dialog */}
-      {isRevertMenuOpen &&
-        activeBooking &&
-        !isReadOnlyMentorView &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div
-            className="ios-app-font-scope fixed inset-0 z-[80] flex justify-center select-none"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Hoàn tác kịch bản mô phỏng"
-          >
+        {/* Mentee Selector Popover Portal */}
+        {isMenteeMenuOpen &&
+          hasMentees &&
+          typeof document !== 'undefined' &&
+          createPortal(
             <div
-              className="fixed inset-0 bg-black/55 backdrop-blur-xs"
-              onClick={() => setIsRevertMenuOpen(false)}
-              data-testid="sim-revert-backdrop"
-            />
-            <div className="relative w-full max-w-[430px] h-full pointer-events-none">
+              className="ios-app-font-scope fixed inset-0 z-[80] flex justify-center select-none"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Chọn bài tập mô phỏng"
+            >
               <div
-                style={{ top: `${popoverTop}px` }}
-                onClick={(e) => e.stopPropagation()}
-                className={`pointer-events-auto absolute right-2.5 w-[min(300px,calc(100vw-20px))] rounded-2xl border p-3 shadow-2xl z-10 space-y-2 ${
-                  isDark ? 'bg-[#1C1C1E] border-amber-500/40 text-white' : 'bg-white border-amber-300 text-neutral-900'
-                }`}
-              >
-                <div className="px-1 flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-500">
-                    Làm lại ca · {activeBooking.customerName}
-                  </span>
+                className="fixed inset-0 bg-black/55 backdrop-blur-xs"
+                onClick={() => setIsMenteeMenuOpen(false)}
+                data-testid="sim-mentee-backdrop"
+              />
+              <div className="relative w-full max-w-[430px] h-full pointer-events-none">
+                <div
+                  style={{ top: `${popoverTop}px` }}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`pointer-events-auto absolute left-2.5 w-[min(280px,calc(100vw-20px))] rounded-2xl border p-2 shadow-2xl z-10 space-y-1 max-h-[65dvh] overflow-y-auto ${
+                    isDark ? 'bg-[#1C1C1E] border-pink-400/35 text-white' : 'bg-white border-pink-300 text-neutral-900'
+                  }`}
+                >
+                  <div className="px-1.5 py-1 flex items-center justify-between">
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-pink-400">
+                      Xem bài tập mô phỏng
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsMenteeMenuOpen(false)}
+                      aria-label="Đóng danh sách bài tập"
+                      className="p-0.5 rounded-md opacity-70 hover:opacity-100 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setIsRevertMenuOpen(false)}
-                    aria-label="Đóng"
-                    className="p-0.5 rounded-md opacity-70 hover:opacity-100 cursor-pointer"
+                    onClick={() => {
+                      onSelectMentee?.(undefined);
+                      setIsMenteeMenuOpen(false);
+                    }}
+                    className={`w-full px-2.5 py-2 rounded-xl flex items-center justify-between text-xs font-bold transition-colors cursor-pointer ${
+                      !selectedMenteeStaffId
+                        ? isDark
+                          ? 'bg-pink-500/20 text-pink-200'
+                          : 'bg-pink-50 text-pink-800'
+                        : isDark
+                          ? 'hover:bg-neutral-800 text-neutral-200'
+                          : 'hover:bg-neutral-100 text-neutral-800'
+                    }`}
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <span>Sandbox của tôi</span>
+                    {!selectedMenteeStaffId && <Check className="w-3.5 h-3.5 text-pink-400" />}
+                  </button>
+
+                  {menteesList.map((m) => {
+                    const isSelected = Number(selectedMenteeStaffId) === Number(m.menteeStaffId);
+                    return (
+                      <button
+                        key={m.menteeStaffId}
+                        type="button"
+                        onClick={() => {
+                          onSelectMentee?.(m.menteeStaffId);
+                          setIsMenteeMenuOpen(false);
+                        }}
+                        className={`w-full px-2.5 py-2 rounded-xl flex items-center justify-between text-xs font-bold transition-colors cursor-pointer ${
+                          isSelected
+                            ? isDark
+                              ? 'bg-pink-500/20 text-pink-200'
+                              : 'bg-pink-50 text-pink-800'
+                            : isDark
+                              ? 'hover:bg-neutral-800 text-neutral-200'
+                              : 'hover:bg-neutral-100 text-neutral-800'
+                        }`}
+                      >
+                        <span className="truncate">{m.menteeName}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-pink-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+
+        {/* Revert 2-Level Portal Dialog */}
+        {isRevertMenuOpen &&
+          activeBooking &&
+          !isReadOnlyMentorView &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <div
+              className="ios-app-font-scope fixed inset-0 z-[80] flex justify-center select-none"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Hoàn tác kịch bản mô phỏng"
+            >
+              <div
+                className="fixed inset-0 bg-black/55 backdrop-blur-xs"
+                onClick={() => setIsRevertMenuOpen(false)}
+                data-testid="sim-revert-backdrop"
+              />
+              <div className="relative w-full max-w-[430px] h-full pointer-events-none">
+                <div
+                  style={{ top: `${popoverTop}px` }}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`pointer-events-auto absolute right-2.5 w-[min(300px,calc(100vw-20px))] rounded-2xl border p-3 shadow-2xl z-10 space-y-2 ${
+                    isDark
+                      ? 'bg-[#1C1C1E] border-amber-500/40 text-white'
+                      : 'bg-white border-amber-300 text-neutral-900'
+                  }`}
+                >
+                  <div className="px-1 flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-amber-500">
+                      Làm lại ca · {activeBooking.customerName}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsRevertMenuOpen(false)}
+                      aria-label="Đóng"
+                      className="p-0.5 rounded-md opacity-70 hover:opacity-100 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      setIsRevertMenuOpen(false);
+                      onRevertConsultation(activeBooking.id);
+                    }}
+                    className={`w-full p-2.5 rounded-xl border text-left transition-all active:scale-98 cursor-pointer ${
+                      isDark
+                        ? 'bg-neutral-900 hover:bg-neutral-800 border-amber-500/40 text-white'
+                        : 'bg-amber-50/70 hover:bg-amber-100 border-amber-300 text-neutral-900'
+                    }`}
+                  >
+                    <div className="text-[12px] font-black">↺ Thử lại Tư vấn (Giữ đo mi 7/7)</div>
+                    <div className={`text-[10.5px] mt-0.5 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                      Lưu kết quả hiện tại vào Lịch sử PA và quay lại Bước 3 để đổi Combo / Upsell.
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      setIsRevertMenuOpen(false);
+                      onResetToIncoming(activeBooking.id);
+                    }}
+                    className={`w-full p-2.5 rounded-xl border text-left transition-all active:scale-98 cursor-pointer ${
+                      isDark
+                        ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-200'
+                        : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-800'
+                    }`}
+                  >
+                    <div className="text-[12px] font-black">⟲ Reset toàn bộ về Chờ đón</div>
+                    <div className={`text-[10.5px] mt-0.5 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                      Xóa thông số tập luyện đã đo &amp; đưa khách trở về Bước 1 (Chờ đón).
+                    </div>
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => {
-                    setIsRevertMenuOpen(false);
-                    onRevertConsultation(activeBooking.id);
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all active:scale-98 cursor-pointer ${
-                    isDark
-                      ? 'bg-neutral-900 hover:bg-neutral-800 border-amber-500/40 text-white'
-                      : 'bg-amber-50/70 hover:bg-amber-100 border-amber-300 text-neutral-900'
-                  }`}
-                >
-                  <div className="text-[12px] font-black">↺ Thử lại Tư vấn (Giữ đo mi 7/7)</div>
-                  <div className={`text-[10.5px] mt-0.5 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                    Lưu kết quả hiện tại vào Lịch sử PA và quay lại Bước 3 để đổi Combo / Upsell.
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => {
-                    setIsRevertMenuOpen(false);
-                    onResetToIncoming(activeBooking.id);
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all active:scale-98 cursor-pointer ${
-                    isDark
-                      ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-200'
-                      : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-800'
-                  }`}
-                >
-                  <div className="text-[12px] font-black">⟲ Reset toàn bộ về Chờ đón</div>
-                  <div className={`text-[10.5px] mt-0.5 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                    Xóa thông số tập luyện đã đo &amp; đưa khách trở về Bước 1 (Chờ đón).
-                  </div>
-                </button>
               </div>
+            </div>,
+            document.body
+          )}
+
+        {/* Action feedback error banner */}
+        {simActionError && (
+          <div
+            className={`px-3 py-1.5 border-b flex items-center justify-between gap-2 text-[11px] font-bold ${
+              isDark ? 'bg-rose-950/90 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+              <span className="truncate">{simActionError}</span>
             </div>
+            {onDismissError && (
+              <button type="button" onClick={onDismissError} className="shrink-0 p-0.5 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            data-testid="simulation-screen-border"
+            className="pointer-events-none fixed inset-0 z-[95] flex justify-center"
+          >
+            <div className="w-full max-w-[430px] h-full border border-pink-400" />
           </div>,
           document.body
         )}
-
-      {/* Action feedback error banner */}
-      {simActionError && (
-        <div
-          className={`px-3 py-1.5 border-b flex items-center justify-between gap-2 text-[11px] font-bold ${
-            isDark ? 'bg-rose-950/90 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-800'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 min-w-0">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-            <span className="truncate">{simActionError}</span>
-          </div>
-          {onDismissError && (
-            <button type="button" onClick={onDismissError} className="shrink-0 p-0.5 cursor-pointer">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    </>
   );
 }

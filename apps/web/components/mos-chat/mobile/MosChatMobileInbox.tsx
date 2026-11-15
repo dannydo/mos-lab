@@ -1,20 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useRef } from 'react';
-import {
-  Search,
-  X,
-  Hash,
-  MessageSquare,
-  Users,
-  Sparkles,
-  CheckSquare,
-  UserPlus,
-  MessageSquareReply,
-  Pin,
-  PinOff,
-  MoreVertical,
-} from 'lucide-react';
+import { Search, X, Hash, MessageSquare, Users, Sparkles, UserPlus, MessageSquareReply, Pin } from 'lucide-react';
 import { Modal } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -39,9 +26,15 @@ const formatStaffRole = (role?: string) => {
 
 export interface MosChatMobileInboxProps {
   onOpenSearchSheet?: (initialQuery?: string) => void;
+  newDmModalOpen?: boolean;
+  onNewDmModalOpenChange?: (open: boolean) => void;
 }
 
-export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSearchSheet }) => {
+export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({
+  onOpenSearchSheet,
+  newDmModalOpen: controlledNewDmModalOpen,
+  onNewDmModalOpenChange,
+}) => {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
   const {
@@ -53,7 +46,6 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
     searchQuery,
     setSearchQuery,
     setMobileView,
-    setActiveSubtab,
     staffDirectory,
     currentUser,
     startDirectMessage,
@@ -62,7 +54,14 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
     markConversationAsRead,
   } = useMosChat();
 
-  const [newDmModalOpen, setNewDmModalOpen] = useState<boolean>(false);
+  const [internalNewDmModalOpen, setInternalNewDmModalOpen] = useState<boolean>(false);
+  const newDmModalOpen = controlledNewDmModalOpen ?? internalNewDmModalOpen;
+  const setNewDmModalOpen = (next: boolean) => {
+    onNewDmModalOpenChange?.(next);
+    if (controlledNewDmModalOpen === undefined) {
+      setInternalNewDmModalOpen(next);
+    }
+  };
   const [modalSearchQuery, setModalSearchQuery] = useState<string>('');
   const [modalDeptFilter, setModalDeptFilter] = useState<'ALL' | 'CV' | 'CC' | 'TELESALES' | 'ADMIN'>('ALL');
   const [convActionTarget, setConvActionTarget] = useState<MosChatConversation | null>(null);
@@ -185,10 +184,7 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
     const showPinnedSubHeader =
       sidebarFilter !== 'pinned' && isPinned && (!prevItem || prevItem.id === AI_COPILOT_CONV_ID);
     const showUnpinnedSubHeader =
-      sidebarFilter !== 'pinned' &&
-      !isPinned &&
-      c.id !== AI_COPILOT_CONV_ID &&
-      isPrevPinned;
+      sidebarFilter !== 'pinned' && !isPinned && c.id !== AI_COPILOT_CONV_ID && isPrevPinned;
 
     return (
       <React.Fragment key={c.id}>
@@ -244,12 +240,8 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
           }}
           role="button"
           tabIndex={0}
-          className={`w-full px-4 py-3 flex items-center gap-3 active:bg-[var(--mos-surface-muted)] transition-colors border-b border-[var(--mos-surface-border)] select-none ${
-            isSelected
-              ? 'bg-[var(--mos-surface-raised)]'
-              : isPinned
-                ? 'bg-amber-500/[0.04]'
-                : 'bg-transparent'
+          className={`w-full px-3.5 py-2.5 flex items-center gap-3 active:bg-[var(--mos-surface-muted)] transition-colors border-b border-[var(--mos-surface-border)] select-none ${
+            isSelected ? 'bg-[var(--mos-surface-raised)]' : isPinned ? 'bg-amber-500/[0.04]' : 'bg-transparent'
           }`}
           style={{
             borderLeft: isPinned ? '3px solid #f59e0b' : undefined,
@@ -258,12 +250,12 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
           {/* Avatar or Icon */}
           <div className="relative shrink-0">
             {isAiCopilot ? (
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-                <Sparkles className="w-6 h-6 animate-pulse" />
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shadow-indigo-500/20">
+                <Sparkles className="w-5 h-5 animate-pulse" />
               </div>
             ) : isSpace ? (
               <div
-                className="w-12 h-12 rounded-2xl border flex items-center justify-center font-bold text-2xl shadow-sm"
+                className="w-11 h-11 rounded-2xl border flex items-center justify-center font-bold text-xl shadow-xs"
                 style={{
                   background: `${c.color || '#f59e0b'}22`,
                   borderColor: `${c.color || '#f59e0b'}44`,
@@ -273,12 +265,12 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
                 {c.avatar && isSpaceEmoji(c.avatar) ? (
                   <span className="select-none leading-none">{c.avatar}</span>
                 ) : (
-                  <Hash className="w-6 h-6" />
+                  <Hash className="w-5 h-5" />
                 )}
               </div>
             ) : (
               <MosChatAvatar
-                size={48}
+                size={44}
                 shape="square"
                 src={c.avatar}
                 name={c.name}
@@ -311,7 +303,9 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
               {timeStr && (
                 <span
                   className={`text-[11px] shrink-0 tabular-nums ${
-                    unread > 0 ? `${isDark ? 'text-amber-400' : 'text-amber-600'} font-semibold` : 'text-[var(--mos-text-muted)]'
+                    unread > 0
+                      ? `${isDark ? 'text-amber-400' : 'text-amber-600'} font-semibold`
+                      : 'text-[var(--mos-text-muted)]'
                   }`}
                 >
                   {timeStr}
@@ -341,22 +335,9 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
                   </span>
                 )}
                 {unread > 0 && (
-                  <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-rose-500 rounded-full tabular-nums shadow-sm shadow-rose-500/40">
+                  <span className="min-w-[18px] h-[18px] px-1.5 inline-flex items-center justify-center leading-none text-[10px] font-bold text-white bg-rose-500 rounded-full tabular-nums shadow-xs shadow-rose-500/40">
                     {unread > 99 ? '99+' : unread}
                   </span>
-                )}
-                {!isAiCopilot && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConvActionTarget(c);
-                    }}
-                    className="p-1 rounded-md text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] active:bg-[var(--mos-surface-muted)]"
-                    aria-label="Tác vụ cuộc trò chuyện"
-                  >
-                    <MoreVertical className="w-3.5 h-3.5" />
-                  </button>
                 )}
               </div>
             </div>
@@ -368,9 +349,9 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--background)] text-[var(--mos-text)] overflow-hidden select-none">
-      {/* Search Input Bar + New DM Button */}
-      <div className="px-4 pt-2.5 pb-2 flex items-center gap-2">
-        <div className="relative flex-1 flex items-center bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] rounded-xl px-3 py-2 text-sm text-[var(--mos-text)] focus-within:border-[var(--mos-accent)] transition-colors">
+      {/* Slim Apple-Style Search Input Bar */}
+      <div className="px-3.5 pt-2 pb-1.5">
+        <div className="relative h-9 flex items-center bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-xl px-3 text-sm text-[var(--mos-text)] focus-within:border-[var(--mos-accent)] transition-colors">
           <button
             type="button"
             onClick={() => onOpenSearchSheet?.(searchQuery.trim())}
@@ -378,7 +359,7 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
             aria-label="Tìm kiếm tin nhắn sâu"
             title="Tìm kiếm tin nhắn sâu"
           >
-            <Search className="w-4 h-4 text-[var(--mos-accent)]" />
+            <Search className="w-4 h-4 text-[var(--mos-text-muted)]" />
           </button>
           <input
             type="text"
@@ -389,7 +370,7 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
                 onOpenSearchSheet?.(searchQuery.trim());
               }
             }}
-            placeholder="Tìm kiếm đồng nghiệp, kênh, tin nhắn..."
+            placeholder="Tìm kiếm..."
             className="w-full bg-transparent border-none outline-none text-xs text-[var(--mos-text)] placeholder-[var(--mos-text-muted)]"
           />
           {searchQuery && (
@@ -403,35 +384,30 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
             </button>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setNewDmModalOpen(true)}
-          className="w-9 h-9 rounded-xl bg-[var(--mos-accent)] hover:opacity-90 text-[var(--mos-accent-contrast)] flex items-center justify-center font-bold active:scale-95 transition-transform shrink-0 shadow-sm cursor-pointer"
-          title="Tin nhắn mới / Danh bạ"
-          aria-label="Soạn tin nhắn DM mới"
-        >
-          <UserPlus className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Deep Message Search Banner when typing */}
       {searchQuery.trim() && (
-        <div className="px-4 pb-2">
+        <div className="px-3.5 pb-1.5">
           <button
             type="button"
             onClick={() => onOpenSearchSheet?.(searchQuery.trim())}
-            className={`w-full px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between text-xs active:scale-[0.98] transition-all cursor-pointer shadow-sm shadow-amber-500/10 text-left ${
+            className={`w-full px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between text-xs active:scale-[0.98] transition-all cursor-pointer shadow-xs shadow-amber-500/10 text-left ${
               isDark ? 'text-amber-300' : 'text-amber-800'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
               <Search className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
               <span className="truncate">
-                Tìm <strong className={isDark ? 'text-amber-200' : 'text-amber-900'}>&ldquo;{searchQuery.trim()}&rdquo;</strong> trong toàn bộ tin nhắn...
+                Tìm{' '}
+                <strong className={isDark ? 'text-amber-200' : 'text-amber-900'}>
+                  &ldquo;{searchQuery.trim()}&rdquo;
+                </strong>{' '}
+                trong toàn bộ tin nhắn...
               </span>
             </div>
             <span
-              className={`text-[11px] font-bold bg-amber-500/20 px-2 py-0.5 rounded-full shrink-0 ml-2 ${
+              className={`inline-flex items-center justify-center leading-none text-[11px] font-bold bg-amber-500/20 px-2 py-1 rounded-full shrink-0 ml-2 ${
                 isDark ? 'text-amber-400' : 'text-amber-700'
               }`}
             >
@@ -441,35 +417,13 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
         </div>
       )}
 
-      {/* Filter Chips - Tin Trực Tiếp placed adjacent to Tất cả for instant mobile reach */}
-      <div className="px-4 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-[var(--mos-surface-border)]">
-        <button
-          type="button"
-          aria-label="Kho Công việc & Nhắc hẹn (Tasks)"
-          onClick={() => {
-            setActiveSubtab('tasks');
-            setMobileView('room');
-          }}
-          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 flex items-center gap-1.5 active:scale-95 transition-transform ${
-            isDark ? 'text-amber-400' : 'text-amber-700'
-          }`}
-        >
-          <CheckSquare className="w-3.5 h-3.5" />
-          <span>Kho Công việc</span>
-        </button>
+      {/* Minimal 3 Filter Pills: [Tất cả · Chưa đọc · Kênh] + Dismissible Pinned/DM Pill when active */}
+      <div className="px-3.5 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-[var(--mos-surface-border)]">
         {(
           [
             { id: 'all', label: 'Tất cả' },
-            { id: 'dms', label: 'Tin Trực Tiếp' },
-            { id: 'spaces', label: 'Kênh Không Gian' },
             { id: 'unread', label: 'Chưa đọc' },
-            {
-              id: 'pinned',
-              label:
-                pinnedConvIds && pinnedConvIds.size > 0
-                  ? `Đã ghim (${pinnedConvIds.size})`
-                  : 'Đã ghim',
-            },
+            { id: 'spaces', label: 'Kênh' },
           ] as const
         ).map((chip) => {
           const active = sidebarFilter === chip.id;
@@ -478,16 +432,28 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
               key={chip.id}
               type="button"
               onClick={() => setSidebarFilter(chip.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all active:scale-95 ${
+              className={`inline-flex items-center justify-center leading-none px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
                 active
-                  ? 'bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-bold shadow-sm'
-                  : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] hover:text-[var(--mos-text)] border border-[var(--mos-surface-border)]'
+                  ? 'bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-bold shadow-xs'
+                  : 'bg-[var(--mos-surface-muted)] text-[var(--mos-text-muted)] font-medium hover:text-[var(--mos-text)] border border-[var(--mos-surface-border)]'
               }`}
             >
               {chip.label}
             </button>
           );
         })}
+
+        {(sidebarFilter === 'pinned' || sidebarFilter === 'dms') && (
+          <button
+            type="button"
+            onClick={() => setSidebarFilter('all')}
+            className="inline-flex items-center justify-center gap-1 leading-none px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-[var(--mos-accent)] text-[var(--mos-accent-contrast)] shadow-xs transition-all active:scale-95 cursor-pointer"
+            aria-label={sidebarFilter === 'pinned' ? 'Bỏ lọc đã ghim' : 'Bỏ lọc tin trực tiếp'}
+          >
+            <span>{sidebarFilter === 'pinned' ? 'Đã ghim' : 'Tin trực tiếp'}</span>
+            <X className="w-3 h-3 shrink-0" />
+          </button>
+        )}
       </div>
 
       {/* Search Result & Conversation List */}
@@ -565,8 +531,12 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
         {filteredConversations.length === 0 && (!searchQuery.trim() || matchedStaffFromSearch.length === 0) ? (
           <div className="flex flex-col items-center justify-center p-8 text-center text-[var(--mos-text-muted)] mt-12">
             <MessageSquare className="w-12 h-12 text-[var(--mos-text-muted)] opacity-50 mb-3" />
-            <p className="text-sm font-medium text-[var(--mos-text)]">Không tìm thấy cuộc trò chuyện hay đồng nghiệp nào</p>
-            <p className="text-xs text-[var(--mos-text-muted)] mt-1">Thử đổi từ khóa hoặc chạm nút (+) để tìm danh bạ</p>
+            <p className="text-sm font-medium text-[var(--mos-text)]">
+              Không tìm thấy cuộc trò chuyện hay đồng nghiệp nào
+            </p>
+            <p className="text-xs text-[var(--mos-text-muted)] mt-1">
+              Thử đổi từ khóa hoặc chạm nút soạn tin nhắn ở góc trên
+            </p>
           </div>
         ) : (
           filteredConversations.map(renderConversationItem)
@@ -809,7 +779,9 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-base font-bold text-[var(--mos-text)] truncate">{convActionTarget.name}</h3>
                   {pinnedConvIds?.has(convActionTarget.id) && (
-                    <Pin className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`} />
+                    <Pin
+                      className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`}
+                    />
                   )}
                 </div>
                 <p className="text-xs text-[var(--mos-text-muted)] truncate">
@@ -878,7 +850,9 @@ export const MosChatMobileInbox: React.FC<MosChatMobileInboxProps> = ({ onOpenSe
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <div className="text-sm font-semibold text-[var(--mos-text)]">Đánh dấu đã đọc</div>
-                  <div className="text-[11px] text-[var(--mos-text-muted)]">Xóa các thông báo chưa đọc của cuộc trò chuyện này</div>
+                  <div className="text-[11px] text-[var(--mos-text-muted)]">
+                    Xóa các thông báo chưa đọc của cuộc trò chuyện này
+                  </div>
                 </div>
               </button>
 

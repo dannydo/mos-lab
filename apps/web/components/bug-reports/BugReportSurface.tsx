@@ -35,22 +35,18 @@ import {
   type RequestClassificationJob,
 } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
-import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '../../lib/bug-report-launcher';
-import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
+import {
+  captureBugReportContext,
+  OPEN_BUG_REPORT_EVENT,
+  recordClientError,
+  setBugReportBadgeSummary,
+} from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
-import {
-  AdaptiveModal,
-  AdaptiveOverlayFooter,
-  AppIcon,
-  HeaderActionIndicator,
-  IconButton,
-  IconText,
-  RichTextEditor,
-} from '../ui';
+import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconButton, IconText, RichTextEditor } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { GuidedRequestConversation } from './GuidedRequestConversation';
-import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
+import { BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import {
   carryRequestDraft,
   createRequestDrafts,
@@ -58,14 +54,10 @@ import {
   updateRequestDraft,
   type RequestDraftView,
 } from './bug-report-drafts';
-import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
 const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
 const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
-const LAUNCHER_SIZE = 44;
-const LAUNCHER_MARGIN = 12;
-const DRAG_THRESHOLD = 4;
 const EXPERT_DETAILS_PREFERENCE_KEY = 'mos_bug_report_expert_details_v1';
 
 const FEATURE_AUDIENCE_OPTIONS: Array<{ value: FeatureRequestAudience; label: string }> = [
@@ -117,7 +109,6 @@ export function BugReportSurface() {
   const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
-  const [externalWorkflowOpen, setExternalWorkflowOpen] = React.useState(false);
   const [activeView, setActiveView] = React.useState<'bug' | 'feature' | 'history'>('bug');
   const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
   const [drafts, setDrafts] = React.useState(createRequestDrafts);
@@ -135,29 +126,10 @@ export function BugReportSurface() {
   const [context, setContext] = React.useState<BugReportContext | null>(null);
   const [classification, setClassification] = React.useState<RequestClassificationJob | null>(null);
   const [conversationSessionId, setConversationSessionId] = React.useState<string | null>(null);
-  const [launcherPosition, setLauncherPosition] = React.useState<BugReportLauncherPosition | null>(null);
-  const [dragging, setDragging] = React.useState(false);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
-  const dragRef = React.useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-    moved: boolean;
-    latest: BugReportLauncherPosition;
-  } | null>(null);
-  const suppressClickUntilRef = React.useRef(0);
   const announcedNotificationsRef = React.useRef(new Set<number>());
   const handledReviewLinkRef = React.useRef<string | null>(null);
   const classificationVersionRef = React.useRef(0);
-  const {
-    preferences,
-    ready: launcherPreferencesReady,
-    setPosition: persistLauncherPosition,
-  } = useBugReportLauncherPreferences();
-  const savedLauncherX = preferences.position?.x ?? null;
-  const savedLauncherY = preferences.position?.y ?? null;
   const activeRequestView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
   const activeDraft = drafts[activeRequestView];
   const descriptionFieldId = activeRequestView === 'feature' ? 'mos-feature-description' : 'mos-bug-description';
@@ -210,16 +182,6 @@ export function BugReportSurface() {
   }, [pathname]);
 
   React.useEffect(() => {
-    const handleWorkflowVisibility = (event: Event) => {
-      const customEvent = event as CustomEvent<{ open?: boolean }>;
-      setExternalWorkflowOpen(Boolean(customEvent.detail?.open));
-    };
-
-    window.addEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
-    return () => window.removeEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
-  }, []);
-
-  React.useEffect(() => {
     if (!enabled) return;
     apiClient.release
       .get()
@@ -250,14 +212,18 @@ export function BugReportSurface() {
   );
 
   React.useEffect(() => {
-    if (!enabled) return;
-    const onOpen = (event: Event) => {
-      const detail = (event as CustomEvent<{ errorBoundary?: BugReportClientError }>).detail;
-      showReporter(detail?.errorBoundary || null);
-    };
-    window.addEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
-    return () => window.removeEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
-  }, [enabled, showReporter]);
+    setBugReportBadgeSummary({
+      actionRequiredCount: enabled ? myBugs.actionRequiredCount : 0,
+      unreadCount: enabled ? myBugs.unreadCount : 0,
+    });
+  }, [enabled, myBugs.actionRequiredCount, myBugs.unreadCount]);
+
+  React.useEffect(
+    () => () => {
+      setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (!open || activeView === 'history') return;
@@ -362,6 +328,32 @@ export function BugReportSurface() {
 
   React.useEffect(() => {
     if (!enabled) return;
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ errorBoundary?: BugReportClientError; preferHistoryIfPending?: boolean }>)
+        .detail;
+      if (detail?.preferHistoryIfPending && (myBugs.actionRequiredCount || myBugs.unreadCount)) {
+        showHistory(
+          myBugs.data.find((item) => item.clarification.status === 'WAITING_REPORTER' || item.canReview)?.key ||
+            myBugs.notifications.find((item) => !item.readAt)?.reportKey
+        );
+        return;
+      }
+      showReporter(detail?.errorBoundary || null);
+    };
+    window.addEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
+  }, [
+    enabled,
+    myBugs.actionRequiredCount,
+    myBugs.data,
+    myBugs.notifications,
+    myBugs.unreadCount,
+    showHistory,
+    showReporter,
+  ]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
     const key = new URLSearchParams(window.location.search).get('bugReview');
     if (key && handledReviewLinkRef.current !== key) {
       handledReviewLinkRef.current = key;
@@ -387,43 +379,6 @@ export function BugReportSurface() {
     });
   }, [myBugs.notifications, showHistory]);
 
-  React.useEffect(() => {
-    if (!launcherPreferencesReady || dragging) return;
-    if (savedLauncherX === null || savedLauncherY === null) {
-      setLauncherPosition(null);
-      return;
-    }
-    const next = clampBugReportLauncherPosition(
-      { x: savedLauncherX, y: savedLauncherY },
-      { width: window.innerWidth, height: window.innerHeight },
-      LAUNCHER_SIZE,
-      LAUNCHER_MARGIN
-    );
-    setLauncherPosition(next);
-    if (next.x !== savedLauncherX || next.y !== savedLauncherY) {
-      persistLauncherPosition(next);
-    }
-  }, [dragging, launcherPreferencesReady, persistLauncherPosition, savedLauncherX, savedLauncherY]);
-
-  React.useEffect(() => {
-    if (!enabled) return;
-    const onResize = () => {
-      setLauncherPosition((current) => {
-        if (!current) return current;
-        const next = clampBugReportLauncherPosition(
-          current,
-          { width: window.innerWidth, height: window.innerHeight },
-          LAUNCHER_SIZE,
-          LAUNCHER_MARGIN
-        );
-        if (next.x !== current.x || next.y !== current.y) persistLauncherPosition(next);
-        return next;
-      });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [enabled, persistLauncherPosition]);
-
   const closeReporter = React.useCallback(() => {
     if (submitting) return;
     setOpen(false);
@@ -436,56 +391,6 @@ export function BugReportSurface() {
     }
     window.setTimeout(() => previousFocusRef.current?.focus?.(), 0);
   }, [submitting]);
-
-  const beginLauncherDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const origin = { x: bounds.left, y: bounds.top };
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: origin.x,
-      originY: origin.y,
-      moved: false,
-      latest: origin,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }, []);
-
-  const moveLauncher = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (!drag.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) return;
-    drag.moved = true;
-    setDragging(true);
-    drag.latest = clampBugReportLauncherPosition(
-      { x: drag.originX + deltaX, y: drag.originY + deltaY },
-      { width: window.innerWidth, height: window.innerHeight },
-      LAUNCHER_SIZE,
-      LAUNCHER_MARGIN
-    );
-    setLauncherPosition(drag.latest);
-  }, []);
-
-  const finishLauncherDrag = React.useCallback(
-    (event: React.PointerEvent<HTMLButtonElement>) => {
-      const drag = dragRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) return;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-      if (drag.moved) {
-        suppressClickUntilRef.current = Date.now() + 300;
-        persistLauncherPosition(drag.latest);
-      }
-      dragRef.current = null;
-      setDragging(false);
-    },
-    [persistLauncherPosition]
-  );
 
   const addFiles = async (selected: File[], draftView: RequestDraftView) => {
     const available = Math.max(0, MAX_ATTACHMENTS - drafts[draftView].files.length);
@@ -673,71 +578,6 @@ export function BugReportSurface() {
 
   return (
     <>
-      {launcherPreferencesReady && preferences.visible && !open && !workflowOpen && !externalWorkflowOpen ? (
-        <HeaderActionIndicator
-          variant="count"
-          count={myBugs.actionRequiredCount || myBugs.unreadCount}
-          surface="accent"
-          style={{
-            position: 'fixed',
-            left: launcherPosition ? launcherPosition.x : 'max(12px, env(safe-area-inset-left))',
-            top: launcherPosition ? launcherPosition.y : undefined,
-            bottom: launcherPosition ? undefined : 'max(14px, env(safe-area-inset-bottom))',
-            zIndex: BUG_REPORT_Z_INDEX.LAUNCHER,
-            width: LAUNCHER_SIZE,
-            height: LAUNCHER_SIZE,
-            transition: dragging ? 'none' : undefined,
-          }}
-        >
-          <Button
-            type="primary"
-            shape="circle"
-            aria-label={
-              myBugs.actionRequiredCount
-                ? `Phản hồi mOS — ${myBugs.actionRequiredCount} yêu cầu đang chờ bạn phản hồi hoặc xác nhận`
-                : myBugs.unreadCount
-                  ? `Phản hồi mOS — ${myBugs.unreadCount} cập nhật mới đang chờ bạn xem`
-                  : 'Phản hồi mOS'
-            }
-            title={
-              myBugs.actionRequiredCount
-                ? `${myBugs.actionRequiredCount} yêu cầu đang chờ bạn phản hồi hoặc xác nhận — bấm để mở Yêu cầu của tôi, kéo để di chuyển`
-                : myBugs.unreadCount
-                  ? `${myBugs.unreadCount} cập nhật mới đang chờ bạn xem — bấm để mở Yêu cầu của tôi, kéo để di chuyển`
-                  : 'Báo lỗi hoặc yêu cầu chức năng — kéo để di chuyển'
-            }
-            data-bug-report-launcher
-            onPointerDown={beginLauncherDrag}
-            onPointerMove={moveLauncher}
-            onPointerUp={finishLauncherDrag}
-            onPointerCancel={finishLauncherDrag}
-            onClick={(event) => {
-              if (Date.now() < suppressClickUntilRef.current) {
-                event.preventDefault();
-                return;
-              }
-              if (myBugs.actionRequiredCount || myBugs.unreadCount) {
-                showHistory(
-                  myBugs.data.find((item) => item.clarification.status === 'WAITING_REPORTER' || item.canReview)?.key ||
-                    myBugs.notifications.find((item) => !item.readAt)?.reportKey
-                );
-                return;
-              }
-              showReporter(null);
-            }}
-            icon={<AppIcon icon={MessageSquareWarning} size={18} />}
-            style={{
-              width: LAUNCHER_SIZE,
-              minWidth: LAUNCHER_SIZE,
-              height: LAUNCHER_SIZE,
-              cursor: dragging ? 'grabbing' : 'grab',
-              touchAction: 'none',
-              boxShadow: token.boxShadowSecondary,
-            }}
-          />
-        </HeaderActionIndicator>
-      ) : null}
-
       <AdaptiveModal
         intent={activeView === 'history' ? 'data' : 'form'}
         width={activeView === 'history' ? 'min(1200px, calc(100vw - 48px))' : undefined}

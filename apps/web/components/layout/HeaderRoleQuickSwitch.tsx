@@ -63,18 +63,21 @@ export interface HeaderRoleQuickSwitchProps {
   userRole?: string | null;
   unreadChatCount?: number;
   onOpenChat?: () => void;
+  onNavigate?: () => void;
   /**
    * - 'header-icon': renders the consultation HeaderIconButton + desktop quick-links inside dashboard-header
    * - 'sub-header': renders the sleek quick-switch link bar right below dashboard-header on mobile/tablet (or all tiers for CV🪶/CC)
    * - 'standalone-bar': renders the dark top quick-switch bar on /ios-app and /chat
+   * - 'menu-list': renders compact grouped quick-switch pills inside a mobile overflow menu
    */
-  variant?: 'header-icon' | 'sub-header' | 'standalone-bar';
+  variant?: 'header-icon' | 'sub-header' | 'standalone-bar' | 'menu-list';
 }
 
 export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
   userRole,
   unreadChatCount = 0,
   onOpenChat,
+  onNavigate,
   variant = 'header-icon',
 }) => {
   let pathname = '';
@@ -275,6 +278,7 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
   };
 
   const handleNavigate = (item: QuickSwitchItem) => {
+    onNavigate?.();
     if (item.key === 'chat' && onOpenChat) {
       onOpenChat();
       return;
@@ -416,7 +420,54 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
     );
   }
 
-  // 3. 'standalone-bar': Compact top bar on /ios-app and /chat
+  // 3. 'menu-list': Compact grouped quick-switch section inside mobile overflow menus
+  if (variant === 'menu-list') {
+    const menuItems = items.filter((item) => item.key !== 'chat');
+    if (menuItems.length === 0) return null;
+    const isDark = themeMode === 'dark';
+
+    return (
+      <nav
+        aria-label="Chuyển nhanh phân hệ"
+        data-testid="header-role-quick-switch-menu"
+        className="pt-2 mt-1.5 border-t border-[var(--mos-surface-border)]"
+      >
+        <div className="px-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--mos-text-muted)]">
+          Chuyển nhanh phân hệ
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 px-1 pt-1.5 pb-0.5">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isItemActive(item);
+            return (
+              <button
+                key={item.key}
+                type="button"
+                data-header-quick-link={item.key}
+                aria-label={item.label}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => handleNavigate(item)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold leading-none transition-colors active:scale-95 cursor-pointer ${
+                  active
+                    ? 'bg-[var(--mos-accent)] border-[var(--mos-accent)] text-[var(--mos-accent-contrast)] font-bold'
+                    : item.accent
+                      ? isDark
+                        ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
+                        : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                      : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-[var(--mos-text)] hover:opacity-85'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{item.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
+
+  // 4. 'standalone-bar': Compact top bar on /ios-app and /chat
   if (items.length === 0) return null;
 
   return (

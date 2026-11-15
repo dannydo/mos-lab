@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { apiClient } from '~/lib/api-client';
 import {
   isAdminOrSuperAdminRole,
   resolveLockedIosRoleForUser,
@@ -116,6 +117,7 @@ export function useIosAppState(
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let cancelled = false;
     try {
       const raw = window.localStorage.getItem('mos_user');
       if (raw) {
@@ -134,9 +136,32 @@ export function useIosAppState(
           }
         }
       }
+
+      // Làm tươi profile từ /auth/me để tự động vá các phiên cũ thiếu legacyStaffId / avatarUrl
+      if (window.localStorage.getItem('mos_token') && typeof apiClient?.auth?.me === 'function') {
+        void Promise.resolve(apiClient.auth.me())
+          .then((freshUser) => {
+            if (cancelled || !freshUser || !freshUser.id) return;
+            setLoggedInUser((prev: any) => {
+              const merged = { ...(prev || {}), ...freshUser };
+              try {
+                window.localStorage.setItem('mos_user', JSON.stringify(merged));
+              } catch {
+                // ignore storage quota errors
+              }
+              return merged;
+            });
+          })
+          .catch(() => {
+            // ignore offline / expired token
+          });
+      }
     } catch {
       // ignore
     }
+    return () => {
+      cancelled = true;
+    };
   }, [initialRole]);
 
   const isAdmin = Boolean(

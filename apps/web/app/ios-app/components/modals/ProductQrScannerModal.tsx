@@ -245,7 +245,7 @@ export function ProductQrScannerModal({
       <div
         className={`relative ${
           isDark ? 'bg-[#1C1C1E] text-white border-neutral-800' : 'bg-white text-neutral-900 border-neutral-200'
-        } rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-4 sm:p-5 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto z-10 border`}
+        } rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-3.5 sm:p-5 shadow-2xl space-y-3 max-h-[92vh] overflow-y-auto z-10 border`}
       >
         {/* Header: Title Left, Close Right */}
         <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-[var(--mos-surface-border)]">
@@ -284,7 +284,10 @@ export function ProductQrScannerModal({
             isDark ? 'bg-black border-neutral-800' : 'bg-neutral-950 border-neutral-300'
           }`}
         >
-          <div className="relative w-full aspect-[16/10] flex items-center justify-center">
+          <div
+            data-testid="qr-camera-viewport"
+            className="relative w-full aspect-square max-h-[48dvh] min-h-[300px] sm:aspect-[4/3] sm:max-h-[420px] flex items-center justify-center"
+          >
             <video
               ref={videoRef}
               playsInline
@@ -295,12 +298,15 @@ export function ProductQrScannerModal({
             <canvas ref={canvasRef} className="hidden" />
 
             {cameraStatus === 'active' && (
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-4">
-                <div className="w-44 h-44 rounded-2xl border-2 border-[#FFB400] shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] relative">
-                  <span className="absolute -top-0.5 -left-0.5 w-5 h-5 border-t-4 border-l-4 border-[#FFB400] rounded-tl-xl" />
-                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 border-t-4 border-r-4 border-[#FFB400] rounded-tr-xl" />
-                  <span className="absolute -bottom-0.5 -left-0.5 w-5 h-5 border-b-4 border-l-4 border-[#FFB400] rounded-bl-xl" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 border-b-4 border-r-4 border-[#FFB400] rounded-br-xl" />
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-3">
+                <div
+                  data-testid="qr-scan-reticle"
+                  className="w-[74%] max-w-[280px] aspect-square rounded-2xl border-2 border-[#FFB400] shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] relative"
+                >
+                  <span className="absolute -top-0.5 -left-0.5 w-6 h-6 border-t-4 border-l-4 border-[#FFB400] rounded-tl-xl" />
+                  <span className="absolute -top-0.5 -right-0.5 w-6 h-6 border-t-4 border-r-4 border-[#FFB400] rounded-tr-xl" />
+                  <span className="absolute -bottom-0.5 -left-0.5 w-6 h-6 border-b-4 border-l-4 border-[#FFB400] rounded-bl-xl" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-6 h-6 border-b-4 border-r-4 border-[#FFB400] rounded-br-xl" />
                 </div>
                 <span className="mt-2.5 text-[11px] font-bold text-white bg-black/65 px-2.5 py-1 rounded-full">
                   Đưa tem QR trên hộp vào khung vàng

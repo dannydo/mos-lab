@@ -77,6 +77,11 @@ export function Screen01IncomingBookings({
 }: Screen01IncomingBookingsProps) {
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [actor?.avatar]);
 
   // Invariant (UI-010): Chỉ Admin thực sự VÀ khi không ở vai trò Chuyên Viên (CV/CVL/CVLL) mới được đổi chi nhánh
   const canSwitchBranch = Boolean(isAdmin && role !== 'CVL' && role !== 'CVLL' && role !== 'CV');
@@ -277,17 +282,23 @@ export function Screen01IncomingBookings({
             {role === 'CVLL' ? <CvFeather2Badge /> : role === 'CVL' ? <CvFeather1Badge /> : role}
           </span>
           <div
-            className="w-6 h-6 rounded-full overflow-hidden border shrink-0"
-            style={{ borderColor: 'var(--mos-accent)', backgroundColor: 'var(--mos-surface)' }}
+            className="w-6 h-6 rounded-full overflow-hidden border shrink-0 flex items-center justify-center text-[10px] font-black"
+            style={{
+              borderColor: 'var(--mos-accent)',
+              backgroundColor: 'var(--mos-surface)',
+              color: 'var(--mos-accent)',
+            }}
           >
-            <img
-              src={actor?.avatar || 'https://cdn.wingslashes.com/uploads/user/avatar/889/thumbnail/47889.png'}
-              alt={actorName}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
+            {actor?.avatar && !avatarLoadError ? (
+              <img
+                src={actor.avatar}
+                alt={actorName}
+                className="w-full h-full object-cover"
+                onError={() => setAvatarLoadError(true)}
+              />
+            ) : (
+              <span>{(actorName || 'W').trim().charAt(0).toUpperCase()}</span>
+            )}
           </div>
         </button>
       </div>

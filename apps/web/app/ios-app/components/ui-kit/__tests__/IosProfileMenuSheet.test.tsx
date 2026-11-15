@@ -245,4 +245,61 @@ describe('IosProfileMenuSheet Theme & Mode Switching', () => {
     expect(document.documentElement.style.getPropertyValue('--ios-font-scale')).toBe('0.85');
     expect(window.localStorage.getItem('mos_ios_font_scale:user:37790')).toBe('0.85');
   });
+
+  it('renders initial-letter fallback instead of Thảo Ly avatar when actor has no avatarUrl', () => {
+    const unknownCcActor: ActiveActorProfile = {
+      staffId: 999,
+      name: 'Minh Anh',
+      tier: 'CC',
+      badgeLabel: 'CC · Tư Vấn Viên',
+      storeId: 6,
+      branchName: 'Chi nhánh Đề Thám',
+    };
+
+    render(<IosProfileMenuSheet isOpen={true} onClose={vi.fn()} actor={unknownCcActor} role="CC" />);
+
+    expect(screen.getByText('M')).toBeInTheDocument();
+    expect(screen.queryByAltText('Minh Anh')).not.toBeInTheDocument();
+  });
+
+  it('syncs Mentee selector inside IosProfileMenuSheet when simulation mode is enabled', () => {
+    const onSelectMentee = vi.fn();
+    const onClose = vi.fn();
+    const ccActor: ActiveActorProfile = {
+      staffId: 34295,
+      name: 'Thục Nghi',
+      tier: 'CC',
+      badgeLabel: 'CC · Tư Vấn Viên',
+      storeId: 6,
+      branchName: 'Chi nhánh Đề Thám',
+    };
+
+    render(
+      <IosProfileMenuSheet
+        isOpen={true}
+        onClose={onClose}
+        actor={ccActor}
+        role="CC"
+        isSimulationMode={true}
+        onToggleSimulationMode={vi.fn()}
+        menteesList={[
+          {
+            menteeStaffId: 46272,
+            menteeName: 'Thảo Vy',
+            mentorStaffId: 34295,
+            mentorName: 'Thục Nghi',
+            startDate: '2026-11-01',
+            endDate: '2026-11-30',
+          },
+        ]}
+        selectedMenteeStaffId={undefined}
+        onSelectMentee={onSelectMentee}
+      />
+    );
+
+    const select = screen.getByLabelText('Chọn bài tập mô phỏng trong menu') as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: '46272' } });
+    expect(onSelectMentee).toHaveBeenCalledWith(46272);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
