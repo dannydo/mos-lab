@@ -2171,9 +2171,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             {/* Quick CKEditor Format Button inside Thread */}
             <button
               type="button"
+              onPointerDown={(e) => e.preventDefault()}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setCkEditorOpen(true)}
-              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0 cursor-pointer"
               aria-label="Soạn thảo định dạng (CKEditor)"
               title="Soạn thảo định dạng (CKEditor)"
             >
