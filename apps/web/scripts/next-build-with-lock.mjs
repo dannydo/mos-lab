@@ -64,6 +64,21 @@ async function acquireBuildLock() {
   }
 }
 
+/**
+ * Ensure `next build` gets a 4GB V8 heap ceiling unless the caller already
+ * configured `--max-old-space-size`, preventing Node 20's default 2GB OOM in CI.
+ */
+function buildNextEnv() {
+  const existing = process.env.NODE_OPTIONS || '';
+  if (existing.includes('--max-old-space-size')) {
+    return process.env;
+  }
+  return {
+    ...process.env,
+    NODE_OPTIONS: `${existing} --max-old-space-size=4096`.trim(),
+  };
+}
+
 function runNextBuild() {
   return new Promise((resolve, reject) => {
     const executable = process.platform === 'win32' ? 'next.cmd' : 'next';
@@ -73,7 +88,7 @@ function runNextBuild() {
     // production default untouched, but allow that worker to opt into the
     // stable Webpack compiler for a deterministic quality gate.
     const compilerArgs = process.env.MOS_NEXT_BUILD_COMPILER === 'turbopack' ? [] : ['--webpack'];
-    const child = spawn(executable, ['build', ...compilerArgs], { env: process.env, stdio: 'inherit' });
+    const child = spawn(executable, ['build', ...compilerArgs], { env: buildNextEnv(), stdio: 'inherit' });
     child.once('error', reject);
     child.once('exit', (code, signal) => {
       if (code === 0) resolve();
