@@ -174,4 +174,94 @@ describe('MosChatRichEditorModal', () => {
     const modalWrap = document.querySelector('.ant-modal-wrap');
     expect(modalWrap).toBeTruthy();
   });
+
+  it('handles mobile touch formatting without losing selected text (MOS-FEAT-225)', () => {
+    render(
+      <MosChatRichEditorModal
+        open={true}
+        onClose={vi.fn()}
+        initialValue="Khuyến mãi mùa hè Wings"
+        initialMode="compact"
+        onApply={vi.fn()}
+        onSend={vi.fn()}
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText(/Gõ nhanh nội dung/i) as HTMLTextAreaElement;
+    expect(textarea.value).toBe('Khuyến mãi mùa hè Wings');
+
+    // Simulate mobile touch selection: user highlights "Khuyến mãi" (indices 0..10)
+    textarea.setSelectionRange(0, 10);
+    fireEvent.select(textarea);
+    fireEvent.touchEnd(textarea);
+
+    // Tap Bold button with onPointerDown
+    const boldBtn = screen.getByRole('button', { name: /In đậm/i });
+    fireEvent.pointerDown(boldBtn);
+    fireEvent.click(boldBtn);
+
+    // Should wrap "Khuyến mãi" in **Khuyến mãi**
+    expect(textarea.value).toBe('**Khuyến mãi** mùa hè Wings');
+  });
+
+  it('exposes headings H1, H2, H3 and Table in toolbar in compact/mobile mode (MOS-FEAT-225)', () => {
+    render(
+      <MosChatRichEditorModal
+        open={true}
+        onClose={vi.fn()}
+        initialValue="Thông báo quan trọng"
+        initialMode="compact"
+        onApply={vi.fn()}
+        onSend={vi.fn()}
+      />
+    );
+
+    // Verify H1, H2, H3, Table, and Divider are present in the toolbar
+    const h1Btn = screen.getByRole('button', { name: /Tiêu đề H1/i });
+    const h2Btn = screen.getByRole('button', { name: /Tiêu đề H2/i });
+    const h3Btn = screen.getByRole('button', { name: /Tiêu đề H3/i });
+    const tableBtn = screen.getByRole('button', { name: /Chèn bảng/i });
+    const dividerBtn = screen.getByRole('button', { name: /Đường kẻ phân cách/i });
+
+    expect(h1Btn).toBeInTheDocument();
+    expect(h2Btn).toBeInTheDocument();
+    expect(h3Btn).toBeInTheDocument();
+    expect(tableBtn).toBeInTheDocument();
+    expect(dividerBtn).toBeInTheDocument();
+
+    const textarea = screen.getByPlaceholderText(/Gõ nhanh nội dung/i) as HTMLTextAreaElement;
+    textarea.setSelectionRange(0, 0);
+
+    fireEvent.click(h1Btn);
+    expect(textarea.value).toBe('# Thông báo quan trọng');
+  });
+
+  it('renders responsive mobile footer with fully visible and clickable buttons (MOS-FEAT-225)', () => {
+    const handleApply = vi.fn();
+    const handleSend = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <MosChatRichEditorModal
+        open={true}
+        onClose={handleClose}
+        initialValue="Nội dung cần lưu"
+        initialMode="compact"
+        onApply={handleApply}
+        onSend={handleSend}
+      />
+    );
+
+    const applyBtn = screen.getByRole('button', { name: /Áp dụng vào chat/i });
+    const sendBtn = screen.getByRole('button', { name: /Gửi tin nhắn ngay/i });
+    const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
+
+    expect(applyBtn).toBeInTheDocument();
+    expect(sendBtn).toBeInTheDocument();
+    expect(cancelBtn).toBeInTheDocument();
+
+    fireEvent.click(applyBtn);
+    expect(handleApply).toHaveBeenCalledWith('Nội dung cần lưu');
+    expect(handleClose).toHaveBeenCalled();
+  });
 });

@@ -515,9 +515,10 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           {onOpenCKEditor && (
             <button
               type="button"
+              onPointerDown={(e) => e.preventDefault()}
               onMouseDown={(e) => e.preventDefault()}
               onClick={onOpenCKEditor}
-              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0 cursor-pointer"
               aria-label="Soạn thảo định dạng (CKEditor)"
               title="Soạn thảo định dạng (CKEditor)"
             >

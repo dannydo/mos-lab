@@ -300,13 +300,53 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
   const [cursorPos, setCursorPos] = useState<number>(0);
   const [showCompactPreview, setShowCompactPreview] = useState<boolean>(false);
 
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth > 0) {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+  const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
+  const [visibleHeight, setVisibleHeight] = useState<number>(0);
+  const lastSelectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // iOS Safari / Chrome Android Virtual Keyboard & Viewport listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (window.visualViewport) {
+        const vv = window.visualViewport;
+        const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        setKeyboardOffset(offset);
+        setVisibleHeight(vv.height);
+      } else {
+        setVisibleHeight(window.innerHeight);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('scroll', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, []);
 
   // Sync initialValue when modal opens
   useEffect(() => {
     if (open) {
       setContent(initialValue);
       setCursorPos(initialValue.length);
+      lastSelectionRef.current = { start: initialValue.length, end: initialValue.length };
       if (initialMode) {
         setViewMode(initialMode);
       } else if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -333,8 +373,12 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
   const toggleLinePrefix = useCallback(
     (targetPrefix: string, stripPattern: RegExp) => {
       const textarea = textareaRef.current;
-      const start = textarea?.selectionStart ?? content.length;
-      const end = textarea?.selectionEnd ?? content.length;
+      let start = textarea?.selectionStart ?? content.length;
+      let end = textarea?.selectionEnd ?? content.length;
+      if (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end) {
+        start = lastSelectionRef.current.start;
+        end = lastSelectionRef.current.end;
+      }
       const lineStart = content.lastIndexOf('\n', start - 1) + 1;
       const nextNewline = content.indexOf('\n', start);
       const lineEnd = nextNewline === -1 ? content.length : nextNewline;
@@ -362,6 +406,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const nextEnd = Math.max(lineStart, end + delta);
       setContent(nextVal);
       setCursorPos(nextStart);
+      lastSelectionRef.current = { start: nextStart, end: nextEnd };
       setTimeout(() => {
         textarea?.focus();
         textarea?.setSelectionRange(nextStart, nextEnd);
@@ -379,8 +424,12 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const textarea = textareaRef.current;
       if (!textarea) return;
 
-      const start = textarea.selectionStart ?? content.length;
-      const end = textarea.selectionEnd ?? content.length;
+      let start = textarea.selectionStart ?? content.length;
+      let end = textarea.selectionEnd ?? content.length;
+      if (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end) {
+        start = lastSelectionRef.current.start;
+        end = lastSelectionRef.current.end;
+      }
       const selected = content.substring(start, end);
 
       const before = content.substring(0, start);
@@ -392,6 +441,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         const nextCursor = start - openTag.length;
         setContent(nextVal);
         setCursorPos(nextCursor);
+        lastSelectionRef.current = { start: nextCursor, end: nextCursor };
         setTimeout(() => {
           textarea.focus();
           textarea.setSelectionRange(nextCursor, nextCursor);
@@ -409,6 +459,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         const nextVal = before + unwrapped + after;
         setContent(nextVal);
         setCursorPos(start + unwrapped.length);
+        lastSelectionRef.current = { start, end: start + unwrapped.length };
         setTimeout(() => {
           textarea.focus();
           textarea.setSelectionRange(start, start + unwrapped.length);
@@ -433,6 +484,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
           const nextVal = before + unwrappedLine + after;
           setContent(nextVal);
           setCursorPos(start + unwrappedLine.length);
+          lastSelectionRef.current = { start, end: start + unwrappedLine.length };
           setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start, start + unwrappedLine.length);
@@ -443,6 +495,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         const nextVal = before + wrappedLine + after;
         setContent(nextVal);
         setCursorPos(start + wrappedLine.length);
+        lastSelectionRef.current = { start, end: start + wrappedLine.length };
         setTimeout(() => {
           textarea.focus();
           textarea.setSelectionRange(start, start + wrappedLine.length);
@@ -455,6 +508,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const nextCursor = selected ? start + wrapped.length : start + openTag.length;
       setContent(nextVal);
       setCursorPos(nextCursor);
+      lastSelectionRef.current = selected ? { start, end: start + wrapped.length } : { start: nextCursor, end: nextCursor };
       setTimeout(() => {
         textarea.focus();
         if (selected) {
@@ -484,8 +538,12 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const textarea = textareaRef.current;
       if (!textarea) return;
 
-      const start = textarea.selectionStart ?? content.length;
-      const end = textarea.selectionEnd ?? content.length;
+      let start = textarea.selectionStart ?? content.length;
+      let end = textarea.selectionEnd ?? content.length;
+      if (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end) {
+        start = lastSelectionRef.current.start;
+        end = lastSelectionRef.current.end;
+      }
       const selected = content.substring(start, end);
 
       switch (formatType) {
@@ -586,7 +644,12 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
 
       const nextVal = content.substring(0, start) + replacement + content.substring(end);
       setContent(nextVal);
-      setCursorPos(start + cursorOffset);
+      const nextCursor = start + cursorOffset;
+      setCursorPos(nextCursor);
+      lastSelectionRef.current =
+        selected && formatType !== 'clear'
+          ? { start, end: start + replacement.length }
+          : { start: nextCursor, end: nextCursor };
       setTimeout(() => {
         textarea.focus();
         if (selected && formatType !== 'clear') {
@@ -652,17 +715,32 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         footer={null}
         zIndex={zIndex}
         width={
-          isFullscreen ? '98vw' : isCompactMode ? 'min(580px, calc(100vw - 16px))' : 'min(1000px, calc(100vw - 16px))'
+          isMobile
+            ? '100vw'
+            : isFullscreen
+              ? '98vw'
+              : isCompactMode
+                ? 'min(580px, calc(100vw - 16px))'
+                : 'min(1000px, calc(100vw - 16px))'
         }
-        style={{ top: isFullscreen ? 10 : isCompactMode ? 16 : 28, maxWidth: 'calc(100vw - 16px)', margin: '0 auto' }}
+        style={{
+          top: isMobile ? (keyboardOffset > 0 ? 4 : 8) : isFullscreen ? 10 : isCompactMode ? 16 : 28,
+          maxWidth: isMobile ? 'calc(100vw - 8px)' : 'calc(100vw - 16px)',
+          margin: '0 auto',
+          paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : undefined,
+        }}
         styles={{
           content: {
             padding: 0,
-            borderRadius: isFullscreen ? 12 : 20,
+            borderRadius: isMobile ? 16 : isFullscreen ? 12 : 20,
             overflow: 'hidden',
             background: surfaceBg,
             border: `1px solid ${borderCol}`,
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            maxHeight:
+              isMobile && visibleHeight > 0
+                ? `${Math.min(visibleHeight - (keyboardOffset > 0 ? 8 : 16), 720)}px`
+                : undefined,
           },
         }}
         closable={true}
@@ -670,8 +748,18 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       >
         <div
           className={`flex flex-col select-text transition-all ${
-            isCompactMode ? 'min-h-[280px] max-h-[72vh]' : 'h-[82vh] max-h-[900px]'
+            isMobile
+              ? 'h-full max-h-[82vh]'
+              : isCompactMode
+                ? 'min-h-[280px] max-h-[72vh]'
+                : 'h-[82vh] max-h-[900px]'
           }`}
+          style={{
+            maxHeight:
+              isMobile && visibleHeight > 0
+                ? `${Math.max(260, Math.min(visibleHeight - (keyboardOffset > 0 ? 24 : 36), 700))}px`
+                : undefined,
+          }}
         >
           {/* Header */}
           <div
@@ -845,6 +933,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="In đậm"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('bold')}
                   className={getBtnClass(activeFormats.bold)}
@@ -858,6 +947,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="In nghiêng"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('italic')}
                   className={getBtnClass(activeFormats.italic)}
@@ -871,6 +961,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Gạch chân"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('underline')}
                   className={getBtnClass(activeFormats.underline)}
@@ -893,6 +984,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                         <button
                           type="button"
                           aria-label={`Màu chữ ${c.label}`}
+                          onPointerDown={(e) => e.preventDefault()}
                           onClick={() => handleApplyColor(c.hex)}
                           className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
                           style={{ background: c.hex }}
@@ -908,6 +1000,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   <button
                     type="button"
                     aria-label="Chọn màu chữ"
+                    onPointerDown={(e) => e.preventDefault()}
                     onMouseDown={(e) => e.preventDefault()}
                     className="w-7 h-7 rounded-lg flex flex-col items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shrink-0"
                     style={{ color: token.colorText }}
@@ -922,6 +1015,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Gạch ngang"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('strike')}
                   className={getBtnClass(activeFormats.strike)}
@@ -940,6 +1034,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Danh sách dấu đầu dòng"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('bullet')}
                   className={getBtnClass(activeFormats.bullet)}
@@ -953,6 +1048,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Danh sách số thứ tự"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('number')}
                   className={getBtnClass(activeFormats.number)}
@@ -966,6 +1062,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Danh sách việc cần làm"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('todo')}
                   className={getBtnClass(activeFormats.todo)}
@@ -984,6 +1081,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Trích dẫn"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('quote')}
                   className={getBtnClass(activeFormats.quote)}
@@ -997,6 +1095,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Chèn liên kết"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('link')}
                   className={getBtnClass(false)}
@@ -1014,6 +1113,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Mã nội dòng"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('code')}
                   className={getBtnClass(activeFormats.code)}
@@ -1027,6 +1127,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 <button
                   type="button"
                   aria-label="Khối mã đa dòng"
+                  onPointerDown={(e) => e.preventDefault()}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('codeblock')}
                   className={getBtnClass(false)}
@@ -1037,63 +1138,90 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
               </Tooltip>
             </div>
 
-            {/* Extended Studio Tools (shown in non-compact modes) */}
+            {/* Headings & Tables & Dividers: Available in all modes via horizontal scrolling */}
+            <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
+            <div className="flex items-center gap-0.5">
+              <Tooltip title="Tiêu đề chính lớn (# H1)">
+                <button
+                  type="button"
+                  aria-label="Tiêu đề H1"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleFormat('h1')}
+                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-bold text-[11.5px] cursor-pointer ${
+                    activeFormats.h1 ? 'bg-amber-500/20 text-amber-400' : 'text-amber-500 hover:bg-white/10'
+                  }`}
+                >
+                  H1
+                </button>
+              </Tooltip>
+              <Tooltip title="Tiêu đề nhánh (## H2)">
+                <button
+                  type="button"
+                  aria-label="Tiêu đề H2"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleFormat('h2')}
+                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-semibold text-[11px] cursor-pointer ${
+                    activeFormats.h2 ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-white/10'
+                  }`}
+                  style={{ color: token.colorText }}
+                >
+                  H2
+                </button>
+              </Tooltip>
+              <Tooltip title="Tiêu đề nhỏ (### H3)">
+                <button
+                  type="button"
+                  aria-label="Tiêu đề H3"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleFormat('h3')}
+                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-medium text-[10.5px] cursor-pointer ${
+                    activeFormats.h3 ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-white/10'
+                  }`}
+                  style={{ color: token.colorText }}
+                >
+                  H3
+                </button>
+              </Tooltip>
+              <Tooltip title="Chèn bảng dữ liệu Markdown">
+                <button
+                  type="button"
+                  aria-label="Chèn bảng"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleFormat('table')}
+                  className={getBtnClass(false)}
+                  style={{ color: token.colorText }}
+                >
+                  <Table size={14} />
+                </button>
+              </Tooltip>
+              <Tooltip title="Đường kẻ phân cách ngang (---)">
+                <button
+                  type="button"
+                  aria-label="Đường kẻ phân cách"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleFormat('divider')}
+                  className={getBtnClass(false)}
+                  style={{ color: token.colorText }}
+                >
+                  <Minus size={15} />
+                </button>
+              </Tooltip>
+            </div>
+
+            {/* Extended Studio Diagrams (Mermaid, KaTeX - shown in non-compact modes) */}
             {!isCompactMode && (
               <>
                 <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
                 <div className="flex items-center gap-0.5">
-                  <Tooltip title="Tiêu đề chính lớn (# H1)">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleFormat('h1')}
-                      className={`h-7 px-1.5 rounded-md flex items-center justify-center font-bold text-[11.5px] cursor-pointer ${
-                        activeFormats.h1 ? 'bg-amber-500/20 text-amber-400' : 'text-amber-500 hover:bg-white/10'
-                      }`}
-                    >
-                      H1
-                    </button>
-                  </Tooltip>
-                  <Tooltip title="Tiêu đề nhánh (## H2)">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleFormat('h2')}
-                      className={`h-7 px-1.5 rounded-md flex items-center justify-center font-semibold text-[11px] cursor-pointer ${
-                        activeFormats.h2 ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-white/10'
-                      }`}
-                      style={{ color: token.colorText }}
-                    >
-                      H2
-                    </button>
-                  </Tooltip>
-                  <Tooltip title="Tiêu đề nhỏ (### H3)">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleFormat('h3')}
-                      className={`h-7 px-1.5 rounded-md flex items-center justify-center font-medium text-[10.5px] cursor-pointer ${
-                        activeFormats.h3 ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-white/10'
-                      }`}
-                      style={{ color: token.colorText }}
-                    >
-                      H3
-                    </button>
-                  </Tooltip>
-                  <Tooltip title="Chèn bảng dữ liệu Markdown">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleFormat('table')}
-                      className={getBtnClass(false)}
-                      style={{ color: token.colorText }}
-                    >
-                      <Table size={14} />
-                    </button>
-                  </Tooltip>
                   <Tooltip title="Sơ đồ quy trình tương tác Mermaid (```mermaid)">
                     <button
                       type="button"
+                      onPointerDown={(e) => e.preventDefault()}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleFormat('mermaid')}
                       className="h-7 px-1.5 rounded-md flex items-center gap-1 text-[11px] font-medium text-purple-400 hover:bg-purple-500/10 cursor-pointer"
@@ -1105,23 +1233,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   <Tooltip title="Công thức toán học KaTeX ($$ formula $$)">
                     <button
                       type="button"
+                      onPointerDown={(e) => e.preventDefault()}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleFormat('math')}
                       className="h-7 px-1.5 rounded-md flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
                     >
                       <Sigma size={13} />
                       <span>KaTeX</span>
-                    </button>
-                  </Tooltip>
-                  <Tooltip title="Đường kẻ phân cách ngang (---)">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleFormat('divider')}
-                      className={getBtnClass(false)}
-                      style={{ color: token.colorText }}
-                    >
-                      <Minus size={15} />
                     </button>
                   </Tooltip>
                 </div>
@@ -1135,6 +1253,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
               <button
                 type="button"
                 aria-label="Xóa định dạng"
+                onPointerDown={(e) => e.preventDefault()}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleFormat('clear')}
                 className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer opacity-75 hover:opacity-100"
@@ -1149,6 +1268,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
               <Tooltip title="Gắn tag @MAI để gọi mOS AI">
                 <button
                   type="button"
+                  onPointerDown={(e) => e.preventDefault()}
                   onClick={() => {
                     setContent((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                   }}
@@ -1170,10 +1290,30 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 value={content}
                 onChange={(e) => {
                   setContent(e.target.value);
-                  setCursorPos(e.target.selectionStart ?? e.target.value.length);
+                  const pos = e.target.selectionStart ?? e.target.value.length;
+                  setCursorPos(pos);
+                  lastSelectionRef.current = { start: pos, end: e.target.selectionEnd ?? pos };
                 }}
-                onClick={(e) => setCursorPos(e.currentTarget.selectionStart ?? 0)}
-                onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart ?? 0)}
+                onClick={(e) => {
+                  const pos = e.currentTarget.selectionStart ?? 0;
+                  setCursorPos(pos);
+                  lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                }}
+                onKeyUp={(e) => {
+                  const pos = e.currentTarget.selectionStart ?? 0;
+                  setCursorPos(pos);
+                  lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                }}
+                onSelect={(e) => {
+                  const pos = e.currentTarget.selectionStart ?? 0;
+                  setCursorPos(pos);
+                  lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                }}
+                onTouchEnd={(e) => {
+                  const pos = e.currentTarget.selectionStart ?? 0;
+                  setCursorPos(pos);
+                  lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                }}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                     e.preventDefault();
@@ -1270,10 +1410,30 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     value={content}
                     onChange={(e) => {
                       setContent(e.target.value);
-                      setCursorPos(e.target.selectionStart ?? e.target.value.length);
+                      const pos = e.target.selectionStart ?? e.target.value.length;
+                      setCursorPos(pos);
+                      lastSelectionRef.current = { start: pos, end: e.target.selectionEnd ?? pos };
                     }}
-                    onClick={(e) => setCursorPos(e.currentTarget.selectionStart ?? 0)}
-                    onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart ?? 0)}
+                    onClick={(e) => {
+                      const pos = e.currentTarget.selectionStart ?? 0;
+                      setCursorPos(pos);
+                      lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                    }}
+                    onKeyUp={(e) => {
+                      const pos = e.currentTarget.selectionStart ?? 0;
+                      setCursorPos(pos);
+                      lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                    }}
+                    onSelect={(e) => {
+                      const pos = e.currentTarget.selectionStart ?? 0;
+                      setCursorPos(pos);
+                      lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                    }}
+                    onTouchEnd={(e) => {
+                      const pos = e.currentTarget.selectionStart ?? 0;
+                      setCursorPos(pos);
+                      lastSelectionRef.current = { start: pos, end: e.currentTarget.selectionEnd ?? pos };
+                    }}
                     onKeyDown={(e) => {
                       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
                         e.preventDefault();
@@ -1344,23 +1504,26 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
 
           {/* Footer Controls */}
           <div
-            className="flex items-center justify-between px-4 py-2.5 border-t shrink-0"
+            className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 border-t shrink-0 flex-wrap gap-2"
             style={{ borderColor: borderCol, background: toolbarBg }}
           >
-            <div className="flex items-center gap-2 text-[11.5px]" style={{ color: token.colorTextSecondary }}>
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-[11.5px]" style={{ color: token.colorTextSecondary }}>
               <HelpCircle size={14} className="text-amber-500 shrink-0" />
               <span className="hidden sm:inline">
                 {isCompactMode
                   ? 'Bản gọn gõ nhanh: Nhấn • để liệt kê ý, Enter tự tiếp nối dòng mới.'
                   : 'Hỗ trợ bảng biểu, sơ đồ Mermaid, công thức KaTeX, danh sách việc cần làm và các phím tắt soạn thảo.'}
               </span>
+              <span className="sm:hidden text-[10.5px] opacity-75 font-medium">
+                CKEditor Mobile
+              </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8.5 px-3.5 rounded-xl border flex items-center justify-center text-[12px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                className="h-8 px-2.5 sm:px-3 rounded-xl border flex items-center justify-center text-[11.5px] sm:text-[12px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
                 style={{ borderColor: borderCol, color: token.colorText }}
               >
                 Hủy
@@ -1372,7 +1535,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   onApply(content);
                   onClose();
                 }}
-                className="h-8.5 px-3.5 rounded-xl border flex items-center justify-center gap-1.5 text-[12px] font-semibold hover:bg-amber-500/10 transition-colors cursor-pointer text-amber-500 border-amber-500/40"
+                className="h-8 px-2.5 sm:px-3.5 rounded-xl border flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-semibold hover:bg-amber-500/10 transition-colors cursor-pointer text-amber-500 border-amber-500/40"
               >
                 <Check size={14} />
                 <span>Áp dụng vào chat</span>
@@ -1386,7 +1549,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   onClose();
                 }}
                 disabled={!content.trim()}
-                className={`h-8.5 px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-[12px] font-bold shadow-md transition-all cursor-pointer ${
+                className={`h-8 px-3 sm:px-3.5 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-bold shadow-md transition-all cursor-pointer ${
                   content.trim()
                     ? 'bg-[#d4a84b] hover:bg-[#c3973a] text-slate-950 active:scale-95'
                     : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'
