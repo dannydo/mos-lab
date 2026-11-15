@@ -814,27 +814,24 @@ a[href] {
   cursor: pointer;
 }
 
-/* Scoped contrast guard for mobile Chat outgoing (`isMe`) bubbles using `--mos-accent` fill.
-   Keeps `MosChatRichText` desktop defaults intact while ensuring bold/link/bullet accents stay
-   high-contrast against light or dark `--mos-accent` backgrounds. */
-.mos-accent-bubble-ink,
-.mos-accent-bubble-ink p,
-.mos-accent-bubble-ink li,
-.mos-accent-bubble-ink strong,
-.mos-accent-bubble-ink b,
-.mos-accent-bubble-ink h1,
-.mos-accent-bubble-ink h2,
-.mos-accent-bubble-ink h3,
-.mos-accent-bubble-ink h4,
-.mos-accent-bubble-ink h5,
-.mos-accent-bubble-ink h6,
-.mos-accent-bubble-ink a,
-.mos-accent-bubble-ink .text-amber-300,
-.mos-accent-bubble-ink .text-amber-400,
-.mos-accent-bubble-ink .text-amber-800,
-.mos-accent-bubble-ink .text-sky-400,
-.mos-accent-bubble-ink .text-sky-600 {
-  color: var(--mos-accent-contrast) !important;
+:root {
+  --mos-accent-soft: rgba(212, 168, 75, 0.16);
+  --mos-accent-border: rgba(212, 168, 75, 0.38);
+}
+
+.light-theme {
+  --mos-accent-soft: rgba(133, 91, 14, 0.12);
+  --mos-accent-border: rgba(133, 91, 14, 0.34);
+}
+
+.dark-theme {
+  --mos-accent-soft: rgba(212, 168, 75, 0.16);
+  --mos-accent-border: rgba(212, 168, 75, 0.38);
+}
+
+/* Legacy bubble class kept for backwards compatibility */
+.mos-accent-bubble-ink {
+  color: var(--mos-text);
 }
 
 /* Reporter history is a decision surface. At Laptop Large and above, retain
