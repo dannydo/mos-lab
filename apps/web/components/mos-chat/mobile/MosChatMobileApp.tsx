@@ -833,6 +833,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
               />
               <MosChatMobileComposer
                 onOpenActionSheet={() => setActionSheetOpen(true)}
+                onOpenCKEditor={() => setCkEditorOpen(true)}
                 onOpenStickerSheet={(pack = 'emoji') => {
                   setStickerPickerInitialPack(pack);
                   setStickerPickerOpen(true);
@@ -946,12 +947,14 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile */}
       <MosChatRichEditorModal
         open={ckEditorOpen}
+        zIndex={2000}
         onClose={() => setCkEditorOpen(false)}
         initialValue={composerText}
         initialMode="compact"
         title="Soạn thảo phong phú (CKEditor)"
         onApply={(text) => {
           setComposerText(text);
+          antdMessage.success('Đã áp dụng nội dung CKEditor vào ô chat');
         }}
         onSend={async (text) => {
           if (text.trim()) {

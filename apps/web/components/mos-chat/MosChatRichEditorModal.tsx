@@ -68,6 +68,7 @@ export interface MosChatRichEditorModalProps {
   isDark?: boolean;
   canUseAiCopilot?: boolean;
   initialMode?: RichEditorViewMode;
+  zIndex?: number;
 }
 
 export const QUICK_TEXT_COLORS = [
@@ -284,6 +285,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
   isDark = true,
   canUseAiCopilot = true,
   initialMode,
+  zIndex = 2000,
 }) => {
   const { token } = antdTheme.useToken();
   const [content, setContent] = useState(initialValue);
@@ -398,7 +400,11 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       }
 
       // Nếu đoạn văn bản được chọn đã bọc sẵn -> Gỡ bọc
-      if (selected.startsWith(openTag) && selected.endsWith(closeTag) && selected.length >= openTag.length + closeTag.length) {
+      if (
+        selected.startsWith(openTag) &&
+        selected.endsWith(closeTag) &&
+        selected.length >= openTag.length + closeTag.length
+      ) {
         const unwrapped = selected.slice(openTag.length, -closeTag.length);
         const nextVal = before + unwrapped + after;
         setContent(nextVal);
@@ -644,7 +650,10 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         open={open}
         onCancel={onClose}
         footer={null}
-        width={isFullscreen ? '98vw' : isCompactMode ? 'min(580px, calc(100vw - 16px))' : 'min(1000px, calc(100vw - 16px))'}
+        zIndex={zIndex}
+        width={
+          isFullscreen ? '98vw' : isCompactMode ? 'min(580px, calc(100vw - 16px))' : 'min(1000px, calc(100vw - 16px))'
+        }
         style={{ top: isFullscreen ? 10 : isCompactMode ? 16 : 28, maxWidth: 'calc(100vw - 16px)', margin: '0 auto' }}
         styles={{
           content: {
@@ -1394,6 +1403,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       {/* Insert Link Modal */}
       <Modal
         open={linkModalOpen}
+        zIndex={zIndex + 10}
         onCancel={() => setLinkModalOpen(false)}
         onOk={handleInsertLink}
         title="Chèn liên kết URL"

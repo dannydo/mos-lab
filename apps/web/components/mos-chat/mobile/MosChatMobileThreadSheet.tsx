@@ -31,6 +31,7 @@ import {
   Play,
   FileText,
   File,
+  FilePenLine,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
@@ -2167,6 +2168,17 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             >
               <CornerDownLeft className="w-4 h-4" />
             </button>
+            {/* Quick CKEditor Format Button inside Thread */}
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setCkEditorOpen(true)}
+              className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              aria-label="Soạn thảo định dạng (CKEditor)"
+              title="Soạn thảo định dạng (CKEditor)"
+            >
+              <FilePenLine className="w-4 h-4" />
+            </button>
             {/* Sticker & Emoji Button */}
             <button
               type="button"
@@ -2532,12 +2544,14 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile Thread */}
       <MosChatRichEditorModal
         open={ckEditorOpen}
+        zIndex={2000}
         onClose={() => setCkEditorOpen(false)}
         initialValue={text}
         initialMode="compact"
         title="Soạn thảo phong phú (CKEditor)"
         onApply={(newText) => {
           setText(newText);
+          antdMessage.success('Đã áp dụng nội dung CKEditor vào ô chat luồng');
         }}
         onSend={async (textToSend) => {
           if (textToSend.trim()) {

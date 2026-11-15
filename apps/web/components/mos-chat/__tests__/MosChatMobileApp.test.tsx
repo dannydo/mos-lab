@@ -1912,4 +1912,32 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       expect(composerInput.value).toBe('**Thông báo quan trọng từ mobile CKEditor**');
     });
   });
+
+  it('allows opening CKEditor directly via quick format icon in mobile composer (MOS-BUG-222)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
+    });
+
+    // Tap quick CKEditor button in composer
+    const quickCkBtn = screen.getByLabelText('Soạn thảo định dạng (CKEditor)');
+    expect(quickCkBtn).toBeTruthy();
+    fireEvent.click(quickCkBtn);
+
+    // Verify CKEditor modal opens
+    await waitFor(() => {
+      expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeTruthy();
+    });
+  });
 });

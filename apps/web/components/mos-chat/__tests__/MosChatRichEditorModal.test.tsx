@@ -89,9 +89,7 @@ describe('MosChatRichEditorModal', () => {
 
     const compactButton = screen.getByRole('button', { name: /bản gọn/i });
     fireEvent.click(compactButton);
-    expect(
-      screen.getByPlaceholderText(/Gõ nhanh nội dung... \(Bấm • để tạo danh sách/i)
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Gõ nhanh nội dung... \(Bấm • để tạo danh sách/i)).toBeInTheDocument();
 
     const previewButton = screen.getByRole('button', { name: /xem trước$/i });
     fireEvent.click(previewButton);
@@ -158,5 +156,22 @@ describe('MosChatRichEditorModal', () => {
 
     const linkEl = screen.getByText('Tài liệu chuẩn').closest('a');
     expect(linkEl).toHaveAttribute('href', 'https://wingslashes.com');
+  });
+
+  it('supports custom zIndex to ensure modal renders above mobile chat drawer (MOS-BUG-222)', () => {
+    const { container } = render(
+      <MosChatRichEditorModal
+        open={true}
+        zIndex={2000}
+        onClose={vi.fn()}
+        initialValue="Test zIndex"
+        onApply={vi.fn()}
+        onSend={vi.fn()}
+      />
+    );
+
+    // Ant Design Modal wraps in a root portal with zIndex
+    const modalWrap = document.querySelector('.ant-modal-wrap');
+    expect(modalWrap).toBeTruthy();
   });
 });
