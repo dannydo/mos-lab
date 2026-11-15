@@ -751,8 +751,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           request.body as CreateBugReportCommentRequest
         );
         fastify.cache?.invalidatePattern('^bug-reports:mine:');
-        // Only enqueue follow-up if ticket is actively waiting for reporter clarification
-        if (data.report.clarification?.status === 'WAITING_REPORTER') {
+        // Enqueue follow-up if ticket needs Agent clarification handling (transitioned to or is PENDING_AGENT)
+        if (data.report.clarification?.status === 'PENDING_AGENT') {
           if (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_COMMENT', data.report.updatedAt))
             RequestClassifierWorkerHub.notify('inbox_follow_up_available');
         }
