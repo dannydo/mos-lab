@@ -1142,9 +1142,10 @@ function isBookingAssignedToStaff(b: IosBookingItem, activeStaffId: number): boo
  * CVL is strictly forbidden from viewing customers assigned to other Chuyên Viên.
  * CVL may ONLY view:
  * 1. Customers booked/assigned/checked-in/checked-out by this CVL.
- * 2. Unassigned lobby queue customers (Đầu tua):
- *    - Any late unassigned INCOMING customers (today, start time < now, not yet arrived).
- *    - Plus ALL unassigned customers in the next upcoming time slot (so 2+ customers at the same start time are all shown).
+ * 2. Exactly ONE unassigned lobby queue customer at the head of the queue (Đầu tua):
+ *    - Prioritizing any late unassigned INCOMING customer (today, start time < now, not yet arrived),
+ *      followed by the customer with the earliest scheduled start time.
+ *    - Never showing 2 or more unassigned queue customers (MOS-BUG-227).
  */
 export function filterBookingsForCvlScope<T extends IosBookingItem>(
   bookings: T[],
@@ -1177,24 +1178,24 @@ export function filterBookingsForCvlScope<T extends IosBookingItem>(
     })
     .filter((item): item is { index: number; startMinutes: number | null; isLate: boolean } => item !== null);
 
-  const nonLateCandidates = unassignedCandidates.filter((c) => !c.isLate);
-  const nonLateStartMinutes = nonLateCandidates.map((c) => c.startMinutes).filter((m): m is number => m !== null);
-  const nextUpcomingSlotMinutes = nonLateStartMinutes.length > 0 ? Math.min(...nonLateStartMinutes) : null;
-  const firstFallbackUpcomingIndex =
-    nextUpcomingSlotMinutes === null && nonLateCandidates.length > 0 ? nonLateCandidates[0].index : null;
-
-  const includedUnassignedIndexes = new Set<number>();
-  for (const c of unassignedCandidates) {
-    if (c.isLate) {
-      includedUnassignedIndexes.add(c.index);
-    } else if (nextUpcomingSlotMinutes !== null) {
-      if (c.startMinutes === nextUpcomingSlotMinutes) {
-        includedUnassignedIndexes.add(c.index);
-      }
-    } else if (c.index === firstFallbackUpcomingIndex) {
-      includedUnassignedIndexes.add(c.index);
+  // Sort unassigned candidates to strictly pick the single head customer of the queue (Đầu tua):
+  // 1. Late customers come first
+  // 2. Earlier start time comes first
+  // 3. Original order (index) as tie-breaker
+  unassignedCandidates.sort((a, b) => {
+    if (a.isLate && !b.isLate) return -1;
+    if (!a.isLate && b.isLate) return 1;
+    if (a.startMinutes !== null && b.startMinutes !== null) {
+      if (a.startMinutes !== b.startMinutes) return a.startMinutes - b.startMinutes;
+    } else if (a.startMinutes !== null && b.startMinutes === null) {
+      return -1;
+    } else if (a.startMinutes === null && b.startMinutes !== null) {
+      return 1;
     }
-  }
+    return a.index - b.index;
+  });
+
+  const headUnassignedIndex = unassignedCandidates.length > 0 ? unassignedCandidates[0].index : null;
 
   const result: T[] = [];
 
@@ -1210,7 +1211,7 @@ export function filterBookingsForCvlScope<T extends IosBookingItem>(
       continue;
     }
 
-    if (includedUnassignedIndexes.has(i)) {
+    if (headUnassignedIndex !== null && i === headUnassignedIndex) {
       result.push({
         ...b,
         isUnassignedQueue: true,
