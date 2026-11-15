@@ -99,7 +99,13 @@ apps/web/app/ios-app/
 2. Implement the handler branch in `apps/api/src/modules/ios/services/ios-actions.service.ts` using atomic `loadBookingOverride(bookingId)` + `saveBookingOverride(bookingId, next)` (never write a global JSON blob).
 3. Call `apiClient.ios.executeBookingAction({ bookingId, action: 'YOUR_ACTION', ... })` from the appropriate `state/` sub-hook (or `enqueueOfflineAction` if offline-capable).
 
-### Recipe C — Verification Checklist Before Handoff
+### Recipe C — Simulation Training Sandbox (`OPS-004`)
+
+- Simulation state lives in `state/useIosSimulationMode.ts` (`?sim=1` or toggle inside `IosProfileMenuSheet`) and isolates IndexedDB / `localStorage` under `SIM_*` keys in `state/offlineSync.ts` (never enqueuing into offline pending queue).
+- UI components: `components/simulation/IosSimulationWorkspaceBar.tsx`, `IosSimulationHistorySheet.tsx`, `components/modals/booking/IosCreateBookingSheet.tsx`, `components/screens/checkout/SimulationReceiptReplayBar.tsx`.
+- Attempt #1 requires all 15 steps (photo steps offer _"Dùng ảnh mẫu tập luyện"_); Attempt #2+ unlocks _"⚡ Tua nhanh kỹ thuật → Upsell & Checkout"_ via `SIM_FAST_FORWARD_TO_UPSELL`.
+
+### Recipe D — Verification Checklist Before Handoff
 
 ```bash
 pnpm check:ui-contract

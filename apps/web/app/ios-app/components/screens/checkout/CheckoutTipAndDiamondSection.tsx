@@ -345,7 +345,7 @@ export function CheckoutTipAndDiamondSection({
               isDark ? 'text-cyan-300 bg-cyan-950/50 border-cyan-800' : 'text-cyan-800 bg-cyan-50 border-cyan-200'
             } border px-2 py-0.5 rounded-full tabular-nums`}
           >
-            Số dư: {customerDiamondBalance} 💎
+            Số dư: {customerDiamondBalance.toLocaleString('vi-VN')} 💎
           </span>
         </div>
         <div
@@ -364,8 +364,8 @@ export function CheckoutTipAndDiamondSection({
             >
               <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>
-                Khuyến mãi đang chọn không áp dụng chung với Ví Kim Cương (đã khóa · giữ nguyên {customerDiamondBalance}{' '}
-                💎).
+                Khuyến mãi đang chọn không áp dụng chung với Ví Kim Cương (đã khóa · giữ nguyên{' '}
+                {customerDiamondBalance.toLocaleString('vi-VN')} 💎).
               </span>
             </div>
           ) : customerDiamondBalance > 0 ? (
@@ -382,7 +382,8 @@ export function CheckoutTipAndDiamondSection({
                       : 'bg-amber-50 border-amber-200 text-amber-900'
                   }`}
                 >
-                  Chỉ cấn trừ tối đa {maxDiamondCanUse} 💎 cho các mục không gắn khuyến mãi khóa Kim Cương.
+                  Chỉ cấn trừ tối đa {maxDiamondCanUse.toLocaleString('vi-VN')} 💎 cho các mục không gắn khuyến mãi khóa
+                  Kim Cương.
                 </div>
               )}
 
@@ -428,7 +429,7 @@ export function CheckoutTipAndDiamondSection({
                         : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-xs font-black'
                   }`}
                 >
-                  {maxDiamondCanUse} 💎
+                  {maxDiamondCanUse.toLocaleString('vi-VN')} 💎
                 </button>
               </div>
 
@@ -463,11 +464,16 @@ export function CheckoutTipAndDiamondSection({
                     <input
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
                       aria-label="Nhập số Kim Cương sử dụng"
                       data-testid="diamond-custom-input"
-                      value={customDiamondDraft !== null ? customDiamondDraft : String(effectiveDiamondUsed)}
-                      onFocus={() => setCustomDiamondDraft(String(effectiveDiamondUsed))}
+                      value={
+                        customDiamondDraft !== null ? customDiamondDraft : effectiveDiamondUsed.toLocaleString('vi-VN')
+                      }
+                      onFocus={() =>
+                        setCustomDiamondDraft(
+                          effectiveDiamondUsed > 0 ? effectiveDiamondUsed.toLocaleString('vi-VN') : '0'
+                        )
+                      }
                       onChange={(e) => {
                         const rawDigits = e.target.value.replace(/\D/g, '');
                         if (rawDigits === '') {
@@ -476,11 +482,11 @@ export function CheckoutTipAndDiamondSection({
                           return;
                         }
                         const parsed = Math.min(maxDiamondCanUse, Math.max(0, Number.parseInt(rawDigits, 10) || 0));
-                        setCustomDiamondDraft(String(parsed));
+                        setCustomDiamondDraft(parsed.toLocaleString('vi-VN'));
                         onSetDiamondUsed(parsed);
                       }}
                       onBlur={() => setCustomDiamondDraft(null)}
-                      className={`w-24 h-8 px-6 rounded-lg border text-center text-[13px] font-black tabular-nums outline-none transition-colors ${
+                      className={`w-28 h-8 px-6 rounded-lg border text-center text-[13px] font-black tabular-nums outline-none transition-colors ${
                         isDark
                           ? 'bg-neutral-900 border-cyan-700/70 text-cyan-200 focus:border-cyan-400'
                           : 'bg-white border-cyan-300 text-cyan-950 focus:border-cyan-600'
@@ -522,12 +528,13 @@ export function CheckoutTipAndDiamondSection({
                     <span className="text-base leading-none">💎</span>
                     <div className="min-w-0">
                       <div className={`font-extrabold ${isDark ? 'text-cyan-200' : 'text-cyan-950'} truncate`}>
-                        Đã trừ {effectiveDiamondUsed} 💎 (-{diamondDiscountAmount.toLocaleString('vi-VN')}đ)
+                        Đã trừ {effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 (-
+                        {diamondDiscountAmount.toLocaleString('vi-VN')}đ)
                       </div>
                       <div className={`text-[10px] ${isDark ? 'text-cyan-300' : 'text-cyan-800'} font-medium`}>
                         Số dư ví còn lại sau ca:{' '}
                         <strong className={isDark ? 'text-cyan-100' : 'text-cyan-950'}>
-                          {customerDiamondBalance - effectiveDiamondUsed} 💎
+                          {(customerDiamondBalance - effectiveDiamondUsed).toLocaleString('vi-VN')} 💎
                         </strong>{' '}
                         (quy đổi{' '}
                         {((customerDiamondBalance - effectiveDiamondUsed) * diamondRate).toLocaleString('vi-VN')}đ)
@@ -554,7 +561,8 @@ export function CheckoutTipAndDiamondSection({
                       : 'bg-gray-50 border-gray-200 text-gray-500'
                   } border rounded-xl py-2 px-3 text-center text-[11px] font-medium`}
                 >
-                  Chưa dùng Kim Cương · Giữ nguyên {customerDiamondBalance} 💎 trong ví cho các ca sau
+                  Chưa dùng Kim Cương · Giữ nguyên {customerDiamondBalance.toLocaleString('vi-VN')} 💎 trong ví cho các
+                  ca sau
                 </div>
               )}
             </>

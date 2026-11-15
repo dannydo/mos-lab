@@ -1,4 +1,3 @@
-import mysql from 'mysql2/promise';
 import {
   hasCompleteNaturalLashAttributes,
   IosPromotionOption,
@@ -13,6 +12,11 @@ import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
 import { settleIosOrderWithLegacyPhp, SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
+import {
+  persistRetainLashCountsToLegacy,
+  STEP_SYNC_ELIGIBLE_ACTIONS,
+  syncIosStepWithLegacyPhp,
+} from './ios-legacy-step-sync.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
 import {
   applyTargetedPromotionToOverride,
@@ -28,50 +32,19 @@ export interface ExecuteIosActionResult {
   payload: Record<string, SafeAny>;
 }
 
-async function persistRetainLashCountsToLegacy(bookingId: number, incomingProgress: Record<string, SafeAny>) {
-  if (incomingProgress.retainLashCountLeft === undefined && !incomingProgress.retainLashes) {
-    return;
-  }
-
-  let progressPool: mysql.Pool | null = null;
-  try {
-    progressPool = getLegacyPool();
-  } catch {
-    return;
-  }
-
-  try {
-    const leftVal = incomingProgress.retainLashCountLeft ?? incomingProgress.retainLashes?.left;
-    const rightVal = incomingProgress.retainLashCountRight ?? incomingProgress.retainLashes?.right;
-    if (leftVal === undefined || rightVal === undefined) {
-      return;
-    }
-
-    const [osRows] = await progressPool.query<mysql.RowDataPacket[]>(
-      'SELECT id FROM order_service WHERE order_id = ? ORDER BY id ASC LIMIT 1',
-      [Number(bookingId)]
-    );
-    if (osRows.length > 0) {
-      const osId = osRows[0].id;
-      const groupKey = String(Math.floor(Date.now() / 1000));
-      await progressPool.query(
-        `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_value, group_key, date_created)
-         VALUES (11, 1, 'service-retain-attribute', ?, 17, ?, ?, NOW()),
-                (11, 1, 'service-retain-attribute', ?, 18, ?, ?, NOW())`,
-        [osId, String(leftVal), groupKey, osId, String(rightVal), groupKey]
-      );
-    }
-  } catch (dbErr) {
-    console.warn('[ios-actions] Failed to persist retain lash counts to legacy DB:', dbErr);
-  }
+export interface ExecuteIosActionOptions {
+  simulationMode?: boolean;
+  enableLegacyStepSync?: boolean;
 }
 
 export async function executeIosBookingAction(
   authUser: IosAuthContext,
   body: SafeAny,
   repo: IosOverrideRepository = defaultIosOverrideRepo,
-  bridgeDepsOverride?: Partial<SettleLegacyOrderBridgeDeps>
+  bridgeDepsOverride?: Partial<SettleLegacyOrderBridgeDeps>,
+  options?: ExecuteIosActionOptions
 ): Promise<ExecuteIosActionResult> {
+  const isSimulationMode = Boolean(options?.simulationMode);
   const bookingId = Number(body?.bookingId || 0);
   const action = String(body?.action || '').toUpperCase();
   const isLockedCvl = authUser.careerTier === 'CVL';
@@ -110,7 +83,8 @@ export async function executeIosBookingAction(
   }
 
   return repo.withBookingLock(bookingId, async () => {
-    const current: BookingOverrideRecord = (await repo.loadBookingOverride(bookingId)) || {};
+    const rawCurrent: BookingOverrideRecord = (await repo.loadBookingOverride(bookingId)) || {};
+    const { _simForceIncoming: _simForceIncomingDropped, _simResetAt: _simResetAtDropped, ...current } = rawCurrent;
     const effectiveCustomerId = Number(
       body?.customerId || current.customerId || INITIAL_BOOKINGS.find((b) => b.id === bookingId)?.customerId || 0
     );
@@ -352,6 +326,7 @@ export async function executeIosBookingAction(
       }
 
       if (
+        !isSimulationMode &&
         incomingProgress.beforePhotoUrl &&
         typeof incomingProgress.beforePhotoUrl === 'string' &&
         incomingProgress.beforePhotoUrl.startsWith('data:image/')
@@ -363,6 +338,7 @@ export async function executeIosBookingAction(
         );
       }
       if (
+        !isSimulationMode &&
         incomingProgress.cleanedPhotoUrl &&
         typeof incomingProgress.cleanedPhotoUrl === 'string' &&
         incomingProgress.cleanedPhotoUrl.startsWith('data:image/')
@@ -374,6 +350,7 @@ export async function executeIosBookingAction(
         );
       }
       if (
+        !isSimulationMode &&
         incomingProgress.afterPhotoUrl &&
         typeof incomingProgress.afterPhotoUrl === 'string' &&
         incomingProgress.afterPhotoUrl.startsWith('data:image/')
@@ -385,7 +362,12 @@ export async function executeIosBookingAction(
         );
       }
 
-      await persistRetainLashCountsToLegacy(bookingId, incomingProgress);
+      if (
+        !isSimulationMode &&
+        (repo === defaultIosOverrideRepo || Boolean(bridgeDepsOverride) || Boolean(options?.enableLegacyStepSync))
+      ) {
+        await persistRetainLashCountsToLegacy(bookingId, incomingProgress, bridgeDepsOverride?.getPool);
+      }
 
       nextOverride = {
         ...current,
@@ -400,7 +382,7 @@ export async function executeIosBookingAction(
       };
     } else if (action === 'UPDATE_CUSTOMER_AVATAR') {
       let avatarUrl = String(body.customerAvatar || '').trim();
-      if (avatarUrl && avatarUrl.startsWith('data:image/')) {
+      if (!isSimulationMode && avatarUrl && avatarUrl.startsWith('data:image/')) {
         avatarUrl = await persistProgressPhotoToCloud(bookingId, 'avatar', avatarUrl);
       }
       nextOverride = {
@@ -527,21 +509,28 @@ export async function executeIosBookingAction(
         completedAt: completedAtIso,
       };
 
-      const settlement = await settleIosOrderWithLegacyPhp(
-        {
-          bookingId,
-          mergedOverride: draftOverride,
-          checkInStaffId,
-          assignedStaffId,
-          checkOutStaffId,
-          settlementActorTier: trustedSettlementTier,
-        },
-        {
-          loadSettlementReceipt: (id) => repo.loadSettlementReceipt(id),
-          saveSettlementReceipt: (id, receipt) => repo.saveSettlementReceipt(id, receipt),
-          ...bridgeDepsOverride,
-        }
-      );
+      const settlement = isSimulationMode
+        ? {
+            settledAt: completedAtIso,
+            orderState: 'Completed',
+            settlementStatus: 'DEMO_ONLY' as const,
+            bankTransferRef: undefined,
+          }
+        : await settleIosOrderWithLegacyPhp(
+            {
+              bookingId,
+              mergedOverride: draftOverride,
+              checkInStaffId,
+              assignedStaffId,
+              checkOutStaffId,
+              settlementActorTier: trustedSettlementTier,
+            },
+            {
+              loadSettlementReceipt: (id) => repo.loadSettlementReceipt(id),
+              saveSettlementReceipt: (id, receipt) => repo.saveSettlementReceipt(id, receipt),
+              ...bridgeDepsOverride,
+            }
+          );
 
       nextOverride = {
         ...draftOverride,
@@ -554,7 +543,9 @@ export async function executeIosBookingAction(
         },
       };
 
-      invalidateStaffStatsCache([actorStaffId, assignedStaffId, checkInStaffId, checkOutStaffId]);
+      if (!isSimulationMode) {
+        invalidateStaffStatsCache([actorStaffId, assignedStaffId, checkInStaffId, checkOutStaffId]);
+      }
     } else if (action === 'REVERT_TO_INCOMING') {
       nextOverride = {
         status: 'INCOMING',
@@ -572,6 +563,62 @@ export async function executeIosBookingAction(
 
     if (action !== 'RESET_DEMO' && nextOverride) {
       await repo.saveBookingOverride(bookingId, nextOverride);
+
+      const canRunStepSync =
+        !isSimulationMode &&
+        !body?.demoMode &&
+        STEP_SYNC_ELIGIBLE_ACTIONS.has(action) &&
+        (repo === defaultIosOverrideRepo || Boolean(bridgeDepsOverride) || Boolean(options?.enableLegacyStepSync));
+
+      if (canRunStepSync) {
+        const stepCheckInStaffId = Number(nextOverride.checkInStaffId || current.checkInStaffId || actorStaffId);
+        const stepAssignedStaffId = Number(nextOverride.assignedStaffId ?? current.assignedStaffId ?? 0);
+        const stepCheckOutStaffId = Number(nextOverride.checkOutStaffId || current.checkOutStaffId || actorStaffId);
+
+        const stepSync = await syncIosStepWithLegacyPhp(
+          {
+            bookingId,
+            action,
+            mergedOverride: nextOverride,
+            actorStaffId,
+            checkInStaffId: stepCheckInStaffId,
+            assignedStaffId: stepAssignedStaffId,
+            checkOutStaffId: stepCheckOutStaffId,
+            isSimulationMode,
+            isDemoRequest: Boolean(body?.demoMode),
+            previousLastLegacyProgressState: current.progress?.lastLegacyProgressState,
+          },
+          bridgeDepsOverride
+        );
+
+        const enrichedOverride: BookingOverrideRecord = {
+          ...nextOverride,
+          legacyStepSyncStatus: stepSync.status,
+          ...(stepSync.legacyOrderState ? { legacySyncedOrderState: stepSync.legacyOrderState } : {}),
+          ...(stepSync.synced ? { legacyStepSyncedAt: new Date().toISOString() } : {}),
+          ...(stepSync.lastLegacyProgressState && nextOverride.progress
+            ? {
+                progress: {
+                  ...nextOverride.progress,
+                  lastLegacyProgressState: stepSync.lastLegacyProgressState,
+                },
+              }
+            : {}),
+        };
+        if (stepSync.warning) {
+          enrichedOverride.legacyStepSyncWarning = stepSync.warning;
+        } else {
+          delete enrichedOverride.legacyStepSyncWarning;
+        }
+        nextOverride = enrichedOverride;
+        await repo.saveBookingOverride(bookingId, nextOverride);
+
+        if (stepSync.synced) {
+          invalidateStaffStatsCache(
+            [actorStaffId, stepAssignedStaffId, stepCheckInStaffId, stepCheckOutStaffId].filter((id) => id > 0)
+          );
+        }
+      }
     }
 
     const nowIso = new Date().toISOString();
@@ -584,6 +631,7 @@ export async function executeIosBookingAction(
         override: nextOverride,
         updatedOverride: nextOverride ?? undefined,
         settlementStatus: nextOverride?.billing?.settlementStatus,
+        legacyStepSyncStatus: nextOverride?.legacyStepSyncStatus,
         cloudSynced: true,
         cloudSyncedAt: nowIso,
         savedAt: nowIso,

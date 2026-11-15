@@ -32,6 +32,11 @@ interface ConsultationNotesAndFooterPanelProps {
   handleSubmit: () => void;
   comboPurchaseTotal: number;
   showStaffRewards?: boolean;
+  bookingId?: number;
+  isSimulationMode?: boolean;
+  isReadOnlyMentorView?: boolean;
+  simulationAttemptCount?: number;
+  onSimFastForwardToUpsell?: (bookingId: number) => void;
 }
 
 export function ConsultationNotesAndFooterPanel({
@@ -60,6 +65,11 @@ export function ConsultationNotesAndFooterPanel({
   handleSubmit,
   comboPurchaseTotal,
   showStaffRewards = false,
+  bookingId,
+  isSimulationMode = false,
+  isReadOnlyMentorView = false,
+  simulationAttemptCount = 0,
+  onSimFastForwardToUpsell,
 }: ConsultationNotesAndFooterPanelProps) {
   return (
     <>
@@ -337,6 +347,36 @@ export function ConsultationNotesAndFooterPanel({
                     ? 'LƯU TƯ VẤN & CHỌN CHUYÊN VIÊN LÀM MI →'
                     : 'LƯU TƯ VẤN & BẮT ĐẦU LÀM MI'}
               </button>
+            )}
+
+            {isSimulationMode && bookingId && bookingId > 0 && !isReadOnlyMentorView && (
+              <div className="mt-2">
+                {simulationAttemptCount >= 1 &&
+                (isNaturalLashComplete || !mustCompleteNaturalLashBeforeProceeding) &&
+                onSimFastForwardToUpsell ? (
+                  <button
+                    type="button"
+                    onClick={() => onSimFastForwardToUpsell(bookingId)}
+                    className={`w-full py-2.5 px-4 rounded-xl border font-extrabold text-[12px] active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      isDark
+                        ? 'bg-amber-950/50 hover:bg-amber-900/60 border-amber-500/50 text-amber-300'
+                        : 'bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-900'
+                    }`}
+                  >
+                    <span>⚡ Tua nhanh kỹ thuật → Upsell & Checkout (PA #{simulationAttemptCount + 1})</span>
+                  </button>
+                ) : simulationAttemptCount === 0 ? (
+                  <div
+                    className={`text-center text-[10.5px] font-semibold px-2 py-1.5 rounded-xl border ${
+                      isDark
+                        ? 'bg-neutral-900/70 border-neutral-800 text-neutral-400'
+                        : 'bg-neutral-50 border-neutral-200 text-neutral-600'
+                    }`}
+                  >
+                    Phương án #1: Hoàn tất đủ 15 bước quy trình · Từ PA #2 mở khóa Tua nhanh đến Upsell & Checkout
+                  </div>
+                ) : null}
+              </div>
             )}
           </div>
         </>

@@ -25,6 +25,13 @@ import {
 import { buildDemoCvSelfSpeedProfile, fetchLiveCvSelfSpeedProfiles } from './ios-cv-self-speed.service.js';
 import { collectPromotionIdsFromSources, fetchPromotionsByIds } from './ios-promotions.service.js';
 import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
+import {
+  enrichSimulationBookings,
+  getSimulationOverrideRepository,
+  loadSimulationAttemptCountsBatch,
+  loadSimulationCustomBookings,
+  resolveSimulationContextActor,
+} from './ios-simulation.service.js';
 
 export function resolveTodayVietnamDate(): string {
   try {
@@ -82,7 +89,23 @@ export async function queryIosBookingsList(
 
   const defaultLimit = scope === 'STORE_ALL' ? 200 : 100;
   const limit = Math.min(Math.max(Number(query.limit) || defaultLimit, 1), 250);
-  const isDemoMode = isIosDemoModeRequested(query.demo);
+  const isSimulationMode = isIosDemoModeRequested(query.sim);
+  const isDemoMode = !isSimulationMode && isIosDemoModeRequested(query.demo);
+
+  const simCtx = isSimulationMode
+    ? await resolveSimulationContextActor(
+        fastify,
+        authUser,
+        query.menteeStaffId ? Number(query.menteeStaffId) : undefined,
+        targetDate
+      )
+    : null;
+  const simEffectiveRole = simCtx?.isReadOnlyMentorView ? 'CVL' : effectiveRole;
+  const simScope = simCtx?.isReadOnlyMentorView ? 'MY_CUSTOMERS' : scope;
+  const simActiveStaffId = simCtx ? simCtx.targetStaffId : activeStaffId;
+  const simCanViewFullPhone = simCtx?.isReadOnlyMentorView
+    ? false
+    : canViewUnmaskedCustomerPhone(simEffectiveRole) && (!isAdmin || simEffectiveRole !== 'CVL');
   const { yearNum, monthNum } = resolveYearMonthFromDate(targetDate);
   const monthFirstDay = `${yearNum}-${String(monthNum).padStart(2, '0')}-01`;
   const monthLastDay = new Date(Date.UTC(yearNum, monthNum, 0)).toISOString().slice(0, 10);
@@ -163,11 +186,16 @@ export async function queryIosBookingsList(
   }
 
   const pool = getLegacyPool();
+  const simDraftBookings =
+    isSimulationMode && simCtx ? await loadSimulationCustomBookings(simCtx.targetStaffId, targetDate) : [];
+  const activeRepo =
+    isSimulationMode && simCtx ? getSimulationOverrideRepository(simCtx.targetStaffId) : defaultIosOverrideRepo;
+
   let [{ orders, customerContext }, staffStats] = await Promise.all([
     fetchLiveOrderSnapshots(pool, { storeId, targetDate, limit }),
     fetchLiveStaffMonthlyStats(
       pool,
-      activeStaffId,
+      simActiveStaffId,
       targetDate,
       (meta, msg) => fastify.log.warn(meta, msg),
       activeTrainingPairs
@@ -175,82 +203,95 @@ export async function queryIosBookingsList(
   ]);
 
   const liveOrderIds = orders.map((o) => o.id);
-  const liveCustomerIds = Array.from(new Set(orders.map((o) => Number(o.user_id)).filter((id) => id > 0)));
+  const allOrderIds = Array.from(new Set([...liveOrderIds, ...simDraftBookings.map((b) => Number(b.id))]));
+  const liveCustomerIds = Array.from(
+    new Set(
+      [...orders.map((o) => Number(o.user_id)), ...simDraftBookings.map((b) => Number(b.customerId))].filter(
+        (id) => id > 0
+      )
+    )
+  );
 
-  const [overrides, customerAvatarMap, customerNaturalLashMap, customerComboExpiryMap] = await Promise.all([
-    defaultIosOverrideRepo.loadBookingOverridesBatch(liveOrderIds),
-    defaultIosOverrideRepo.loadCustomerAvatarsBatch(liveCustomerIds),
-    defaultIosOverrideRepo.loadCustomerNaturalLashProfilesBatch(liveCustomerIds),
-    defaultIosOverrideRepo.loadCustomerComboExpiryOverridesBatch(liveCustomerIds),
-  ]);
+  const [overrides, customerAvatarMap, customerNaturalLashMap, customerComboExpiryMap, attemptMetaMap] =
+    await Promise.all([
+      activeRepo.loadBookingOverridesBatch(allOrderIds),
+      activeRepo.loadCustomerAvatarsBatch(liveCustomerIds),
+      activeRepo.loadCustomerNaturalLashProfilesBatch(liveCustomerIds),
+      activeRepo.loadCustomerComboExpiryOverridesBatch(liveCustomerIds),
+      isSimulationMode && simCtx
+        ? loadSimulationAttemptCountsBatch(simCtx.targetStaffId, allOrderIds)
+        : Promise.resolve(new Map<number, { count: number; latestAttemptId?: string }>()),
+    ]);
 
   const promoIds = collectPromotionIdsFromSources(orders, overrides);
   const promotionsById = await fetchPromotionsByIds(pool, promoIds);
 
-  // Tự động đối soát & hạch toán bù (Idempotent Backfill) cho các ca đã DONE trên /ios-app nhưng chưa chốt Legacy DB
+  // Tự động đối soát & hạch toán bù (Idempotent Backfill) — TUYỆT ĐỐI BỎ QUA trong Simulation Mode
   let reconciledAny = false;
-  for (const row of orders) {
-    const orderId = Number(row.id);
-    const ovr = overrides[String(orderId)];
-    if (!ovr || ovr.status !== 'DONE' || row.order_state === 'Completed') continue;
+  if (!isSimulationMode) {
+    for (const row of orders) {
+      const orderId = Number(row.id);
+      const ovr = overrides[String(orderId)];
+      if (!ovr || ovr.status !== 'DONE' || row.order_state === 'Completed') continue;
 
-    const settleStatus = String(ovr.billing?.settlementStatus || '');
-    if (
-      settleStatus === 'SETTLED_COMPLETED' ||
-      settleStatus === 'PENDING_COUNTER_SETTLEMENT' ||
-      settleStatus === 'DEMO_ONLY'
-    ) {
-      continue;
-    }
-
-    await defaultIosOverrideRepo.withBookingLock(orderId, async () => {
-      const freshOvr: BookingOverrideRecord = (await defaultIosOverrideRepo.loadBookingOverride(orderId)) || ovr;
-      const assignedStaffId = Number(freshOvr.assignedStaffId || freshOvr.checkOutStaffId || activeStaffId);
-      const checkInStaffId = Number(freshOvr.checkInStaffId || assignedStaffId || activeStaffId);
-      const checkOutStaffId = Number(freshOvr.checkOutStaffId || assignedStaffId || activeStaffId);
-
-      const settlement = await settleIosOrderWithLegacyPhp(
-        {
-          bookingId: orderId,
-          mergedOverride: freshOvr,
-          checkInStaffId,
-          assignedStaffId,
-          checkOutStaffId,
-        },
-        {
-          loadSettlementReceipt: (id) => defaultIosOverrideRepo.loadSettlementReceipt(id),
-          saveSettlementReceipt: (id, receipt) => defaultIosOverrideRepo.saveSettlementReceipt(id, receipt),
-        }
-      );
-
+      const settleStatus = String(ovr.billing?.settlementStatus || '');
       if (
-        settlement.settlementStatus === 'SETTLED_COMPLETED' ||
-        settlement.settlementStatus === 'PENDING_COUNTER_SETTLEMENT'
+        settleStatus === 'SETTLED_COMPLETED' ||
+        settleStatus === 'PENDING_COUNTER_SETTLEMENT' ||
+        settleStatus === 'DEMO_ONLY'
       ) {
-        const updatedOvr: BookingOverrideRecord = {
-          ...freshOvr,
-          orderState: settlement.orderState,
-          billing: {
-            ...(freshOvr.billing || {}),
-            settlementStatus: settlement.settlementStatus,
-            ...(settlement.bankTransferRef ? { bankTransferRef: settlement.bankTransferRef } : {}),
-            legacySyncedAt: settlement.settledAt,
-          },
-        };
-        await defaultIosOverrideRepo.saveBookingOverride(orderId, updatedOvr);
-        overrides[String(orderId)] = updatedOvr;
-        reconciledAny = true;
-        invalidateStaffStatsCache([activeStaffId, assignedStaffId, checkInStaffId, checkOutStaffId]);
+        continue;
       }
-    });
+
+      await defaultIosOverrideRepo.withBookingLock(orderId, async () => {
+        const freshOvr: BookingOverrideRecord = (await defaultIosOverrideRepo.loadBookingOverride(orderId)) || ovr;
+        const assignedStaffId = Number(freshOvr.assignedStaffId || freshOvr.checkOutStaffId || activeStaffId);
+        const checkInStaffId = Number(freshOvr.checkInStaffId || assignedStaffId || activeStaffId);
+        const checkOutStaffId = Number(freshOvr.checkOutStaffId || assignedStaffId || activeStaffId);
+
+        const settlement = await settleIosOrderWithLegacyPhp(
+          {
+            bookingId: orderId,
+            mergedOverride: freshOvr,
+            checkInStaffId,
+            assignedStaffId,
+            checkOutStaffId,
+          },
+          {
+            loadSettlementReceipt: (id) => defaultIosOverrideRepo.loadSettlementReceipt(id),
+            saveSettlementReceipt: (id, receipt) => defaultIosOverrideRepo.saveSettlementReceipt(id, receipt),
+          }
+        );
+
+        if (
+          settlement.settlementStatus === 'SETTLED_COMPLETED' ||
+          settlement.settlementStatus === 'PENDING_COUNTER_SETTLEMENT'
+        ) {
+          const updatedOvr: BookingOverrideRecord = {
+            ...freshOvr,
+            orderState: settlement.orderState,
+            billing: {
+              ...(freshOvr.billing || {}),
+              settlementStatus: settlement.settlementStatus,
+              ...(settlement.bankTransferRef ? { bankTransferRef: settlement.bankTransferRef } : {}),
+              legacySyncedAt: settlement.settledAt,
+            },
+          };
+          await defaultIosOverrideRepo.saveBookingOverride(orderId, updatedOvr);
+          overrides[String(orderId)] = updatedOvr;
+          reconciledAny = true;
+          invalidateStaffStatsCache([activeStaffId, assignedStaffId, checkInStaffId, checkOutStaffId]);
+        }
+      });
+    }
   }
 
-  if (reconciledAny) {
+  if (!isSimulationMode && reconciledAny) {
     [{ orders, customerContext }, staffStats] = await Promise.all([
       fetchLiveOrderSnapshots(pool, { storeId, targetDate, limit }),
       fetchLiveStaffMonthlyStats(
         pool,
-        activeStaffId,
+        simActiveStaffId,
         targetDate,
         (meta, msg) => fastify.log.warn(meta, msg),
         activeTrainingPairs
@@ -258,7 +299,7 @@ export async function queryIosBookingsList(
     ]);
   }
 
-  const allMappedBookings = mapLiveOrdersToBookings({
+  const baseMappedBookings = mapLiveOrdersToBookings({
     orders,
     customerContext,
     overrides,
@@ -268,48 +309,69 @@ export async function queryIosBookingsList(
     storeId,
     targetDate,
     todayVn,
-    activeStaffId,
-    canViewFullPhone,
+    activeStaffId: simActiveStaffId,
+    canViewFullPhone: simCanViewFullPhone,
     activeTrainingPairs,
     promotionsById,
   });
 
+  const allMappedBookings =
+    isSimulationMode && simCtx
+      ? enrichSimulationBookings({
+          mappedBookings: baseMappedBookings,
+          customDraftBookings: simDraftBookings,
+          simOverridesMap: overrides,
+          simNaturalLashMap: customerNaturalLashMap,
+          attemptMetaMap,
+          targetStaffId: simCtx.targetStaffId,
+          isReadOnlyMentorView: simCtx.isReadOnlyMentorView,
+        })
+      : baseMappedBookings;
+
   const { effectiveList, counts } = applyIosScopeAndCounts(allMappedBookings, {
-    effectiveRole,
-    scope,
-    activeStaffId,
+    effectiveRole: simEffectiveRole,
+    scope: simScope,
+    activeStaffId: simActiveStaffId,
     targetDate,
     todayVn,
   });
 
   const speedStaffIds = Array.from(
-    new Set([activeStaffId, ...effectiveList.map((b) => Number(b.assignedStaffId || 0)).filter((id) => id > 0)])
+    new Set([simActiveStaffId, ...effectiveList.map((b) => Number(b.assignedStaffId || 0)).filter((id) => id > 0)])
   );
   const speedProfilesMap = await fetchLiveCvSelfSpeedProfiles(pool, speedStaffIds, (meta, msg) =>
     fastify.log.warn(meta, msg)
   );
   const staffStatsWithSpeed = {
     ...staffStats,
-    cvSelfSpeedHistory: speedProfilesMap.get(activeStaffId),
+    cvSelfSpeedHistory: speedProfilesMap.get(simActiveStaffId),
   };
   const enrichedLiveList = effectiveList.map((b) => ({
     ...b,
-    cvSelfSpeedHistory: speedProfilesMap.get(Number(b.assignedStaffId) || activeStaffId),
+    cvSelfSpeedHistory: speedProfilesMap.get(Number(b.assignedStaffId) || simActiveStaffId),
   }));
 
   return {
     success: true,
     source: 'mysql_live',
     demoMode: false,
+    ...(isSimulationMode && simCtx
+      ? {
+          simulationMode: true,
+          simulationActorStaffId: simCtx.targetStaffId,
+          simulationActorStaffName: simCtx.targetStaffName,
+          isReadOnlyMentorView: simCtx.isReadOnlyMentorView,
+        }
+      : { simulationMode: false }),
     storeId,
     segment,
-    role: effectiveRole,
-    scope,
-    activeStaffId,
+    role: simEffectiveRole,
+    scope: simScope,
+    activeStaffId: simActiveStaffId,
     targetDate,
     counts,
     count: enrichedLiveList.length,
-    ...(effectiveRole !== 'CVL' ? { totalStoreCount: allMappedBookings.length } : {}),
+    ...(simEffectiveRole !== 'CVL' ? { totalStoreCount: allMappedBookings.length } : {}),
     bookings: enrichedLiveList,
     staffStats: staffStatsWithSpeed,
     timestamp: new Date().toISOString(),

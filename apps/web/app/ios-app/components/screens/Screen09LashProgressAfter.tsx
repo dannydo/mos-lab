@@ -13,6 +13,7 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
+import { getClientTrainingSamplePhoto } from '../simulation/IosSimulationWorkspaceBar';
 import { Camera, Zap, CheckCircle2, Clock, CloudUpload, CloudCheck, CloudOff, Maximize2, Check } from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
@@ -20,6 +21,7 @@ interface Screen09LashProgressAfterProps {
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
   onAutoSavePhoto?: (photoUrl: string) => Promise<any> | void;
+  isSimulationMode?: boolean;
 }
 
 export function Screen09LashProgressAfter({
@@ -27,6 +29,7 @@ export function Screen09LashProgressAfter({
   onBack,
   onSavePhoto,
   onAutoSavePhoto,
+  isSimulationMode = false,
 }: Screen09LashProgressAfterProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const isSelectingRef = useRef<boolean>(false);
@@ -369,6 +372,37 @@ export function Screen09LashProgressAfter({
             <Camera className="w-4 h-4 text-amber-400" />
             <span>{afterPhotoPreview ? 'Chụp lại After' : 'Chụp Bằng Camera'}</span>
           </button>
+
+          {isSimulationMode && (
+            <button
+              type="button"
+              onClick={() => {
+                const sampleUrl = getClientTrainingSamplePhoto('after');
+                setAfterPhotoPreview(sampleUrl);
+                setIsPhotoDeclined(false);
+                setCloudSyncStatus('uploading');
+                saveLocalProgressSnapshot(bookingId, {
+                  afterPhotoUrl: sampleUrl,
+                  actualMinutes,
+                  targetMinutes,
+                  currentStep: 10,
+                  afterPhotoSavedAt: new Date().toISOString(),
+                });
+                if (onAutoSavePhoto) {
+                  void Promise.resolve(onAutoSavePhoto(sampleUrl)).finally(() => setCloudSyncStatus('synced'));
+                } else {
+                  setCloudSyncStatus('synced');
+                }
+              }}
+              className={`w-full py-2 px-3 rounded-xl border text-[12px] font-bold active:scale-98 transition-all cursor-pointer ${
+                isDark
+                  ? 'bg-amber-950/40 hover:bg-amber-950/70 border-amber-500/40 text-amber-300'
+                  : 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'
+              }`}
+            >
+              Dùng ảnh mẫu tập luyện (After)
+            </button>
+          )}
 
           {/* Nút ngoại lệ: Khách từ chối chụp ảnh */}
           {!afterPhotoPreview && (

@@ -36,6 +36,50 @@ const PAYMENT_CHANNELS: ReadonlyArray<{
   { id: 'CASH', field: 'cashAmount', label: 'Tiền mặt (Cash)' },
 ];
 
+export function formatThousandSeparatedInput(
+  rawValue: string,
+  prevFormatted = '',
+  selectionStart?: number | null
+): { formatted: string; numeric: number; nextCaretDigits: number } {
+  let working = rawValue;
+  let caretPos = selectionStart ?? rawValue.length;
+
+  // If user pressed Backspace right after a '.' separator, remove the digit before that separator
+  if (
+    prevFormatted &&
+    rawValue.length === prevFormatted.length - 1 &&
+    rawValue.replace(/\D/g, '') === prevFormatted.replace(/\D/g, '') &&
+    caretPos > 0
+  ) {
+    working = rawValue.slice(0, caretPos - 1) + rawValue.slice(caretPos);
+    caretPos = Math.max(0, caretPos - 1);
+  }
+
+  const nextCaretDigits = working.slice(0, caretPos).replace(/\D/g, '').length;
+  const digits = working.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!digits) {
+    return { formatted: '', numeric: 0, nextCaretDigits: 0 };
+  }
+  const numeric = Math.max(0, Number.parseInt(digits, 10) || 0);
+  return {
+    formatted: numeric.toLocaleString('vi-VN'),
+    numeric,
+    nextCaretDigits,
+  };
+}
+
+function caretIndexAfterNDigits(formatted: string, digitCount: number): number {
+  if (digitCount <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i += 1) {
+    if (/\d/.test(formatted[i])) {
+      seen += 1;
+      if (seen === digitCount) return i + 1;
+    }
+  }
+  return formatted.length;
+}
+
 export function CheckoutPaymentMethodSection({
   isDark,
   showStaffRewards = false,
@@ -131,8 +175,8 @@ export function CheckoutPaymentMethodSection({
               <span>✓</span> ĐÃ THANH TOÁN 100% BẰNG VÍ KIM CƯƠNG
             </div>
             <div className={`text-[11px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium`}>
-              Đã cấn trừ đủ {effectiveDiamondUsed} 💎 (-{diamondDiscountAmount.toLocaleString('vi-VN')}đ). Không cần thu
-              thêm tiền mặt hay chuyển khoản.
+              Đã cấn trừ đủ {effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 (-
+              {diamondDiscountAmount.toLocaleString('vi-VN')}đ). Không cần thu thêm tiền mặt hay chuyển khoản.
             </div>
           </div>
         ) : (
@@ -246,25 +290,40 @@ export function CheckoutPaymentMethodSection({
                         <input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
                           aria-label={`Số tiền ${m.label}`}
                           data-testid={`payment-split-input-${m.id}`}
                           value={isFocused ? draftAmountStr : channelAmount.toLocaleString('vi-VN')}
                           onFocus={() => {
                             setFocusedField(m.id);
-                            setDraftAmountStr(channelAmount > 0 ? String(channelAmount) : '');
+                            setDraftAmountStr(channelAmount > 0 ? channelAmount.toLocaleString('vi-VN') : '');
                           }}
                           onChange={(e) => {
-                            const digits = e.target.value.replace(/\D/g, '');
-                            setDraftAmountStr(digits);
-                            const parsed = digits ? Math.max(0, Number.parseInt(digits, 10) || 0) : 0;
-                            onChangeSplitAmount(m.id, parsed);
+                            const inputEl = e.currentTarget;
+                            const { formatted, numeric, nextCaretDigits } = formatThousandSeparatedInput(
+                              inputEl.value,
+                              draftAmountStr,
+                              inputEl.selectionStart
+                            );
+                            setDraftAmountStr(formatted);
+                            onChangeSplitAmount(m.id, numeric);
+                            if (typeof window !== 'undefined') {
+                              window.requestAnimationFrame(() => {
+                                if (document.activeElement === inputEl) {
+                                  const pos = caretIndexAfterNDigits(formatted, nextCaretDigits);
+                                  try {
+                                    inputEl.setSelectionRange(pos, pos);
+                                  } catch {
+                                    // ignore non-selectable input edge cases
+                                  }
+                                }
+                              });
+                            }
                           }}
                           onBlur={() => {
                             setFocusedField(null);
                             setDraftAmountStr('');
                           }}
-                          className={`w-32 h-8 px-2.5 pr-6 rounded-xl border text-right text-[13px] font-black tabular-nums outline-none transition-colors ${
+                          className={`w-36 h-8 pl-2.5 pr-6 rounded-xl border text-right text-[13px] font-black tabular-nums outline-none transition-colors ${
                             isDark
                               ? 'bg-neutral-950 border-neutral-700 text-emerald-300 focus:border-emerald-400'
                               : 'bg-white border-gray-300 text-gray-900 focus:border-emerald-600'
@@ -286,7 +345,14 @@ export function CheckoutPaymentMethodSection({
                       <button
                         type="button"
                         data-testid={`payment-fill-remaining-${m.id}`}
-                        onClick={() => onChangeSplitAmount(m.id, suggestedFillTarget)}
+                        onClick={() => {
+                          if (focusedField === m.id) {
+                            setDraftAmountStr(
+                              suggestedFillTarget > 0 ? suggestedFillTarget.toLocaleString('vi-VN') : ''
+                            );
+                          }
+                          onChangeSplitAmount(m.id, suggestedFillTarget);
+                        }}
                         className={`text-[10.5px] font-bold px-2.5 py-0.5 rounded-full border tabular-nums cursor-pointer active:scale-95 ${
                           remainingDelta > 0
                             ? isDark
@@ -436,7 +502,7 @@ export function CheckoutPaymentMethodSection({
           }`}
         >
           {finalGrandTotal === 0
-            ? `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed} 💎 · 0đ)`
+            ? `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 · 0đ)`
             : !isAllocationValid
               ? `Vui Lòng Chia Đủ ${finalGrandTotal.toLocaleString('vi-VN')}đ`
               : needsPosProof

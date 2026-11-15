@@ -29,6 +29,7 @@ import {
   calculateActorTipBreakdown,
 } from './useIosBillingCheckout';
 import type { ActorTipBreakdown } from './useIosBillingCheckout';
+import { useIosSimulationMode, IOS_SIM_MODE_SESSION_KEY } from './useIosSimulationMode';
 
 export {
   IOS_AVAILABLE_BRANCHES,
@@ -54,10 +55,21 @@ export function useIosAppState(
   enabled: boolean = true,
   initialRole: IosUserRole = 'CVL',
   initialBookingId?: number,
-  isDemoMode: boolean = false
+  isDemoMode: boolean = false,
+  initialSimMode: boolean = false
 ) {
   const [bookings, setBookings] = useState<BookingItem[]>(() => (isDemoMode ? INITIAL_BOOKINGS : []));
   const [activeBookingId, setActiveBookingId] = useState<number>(initialBookingId ?? (isDemoMode ? 336695 : 0));
+  const [isSimulationMode, setIsSimulationMode] = useState<boolean>(() => {
+    if (initialSimMode) return true;
+    if (typeof window !== 'undefined') {
+      return window.sessionStorage.getItem(IOS_SIM_MODE_SESSION_KEY) === '1';
+    }
+    return false;
+  });
+  const [selectedMenteeStaffId, setSelectedMenteeStaffId] = useState<number | undefined>(undefined);
+  const [isReadOnlyMentorView, setIsReadOnlyMentorView] = useState<boolean>(false);
+  const [simulationActorStaffName, setSimulationActorStaffName] = useState<string | undefined>(undefined);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
   const [consultationReturnStep, setConsultationReturnStep] = useState<number | null>(null);
 
@@ -215,8 +227,21 @@ export function useIosAppState(
 
   const visibleBookings = useMemo(() => {
     const shouldFilterCvl = role === 'CVL' || (role !== 'CC' && role !== 'STORE' && scopeMode === 'MY_CUSTOMERS');
+    const effectiveStaffId = isSimulationMode && selectedMenteeStaffId ? selectedMenteeStaffId : actor.staffId;
+    const baseScoped = shouldFilterCvl
+      ? filterBookingsForCvlScope(bookings, effectiveStaffId, { isToday: selectedDateOffset === 0 })
+      : bookings;
+    const includedIds = new Set(baseScoped.map((b) => Number(b.id)));
     const list = shouldFilterCvl
-      ? filterBookingsForCvlScope(bookings, actor.staffId, { isToday: selectedDateOffset === 0 })
+      ? [
+          ...baseScoped,
+          ...bookings.filter(
+            (b) =>
+              b.isSimulationDraftBooking &&
+              Number(b.assignedStaffId || 0) === Number(effectiveStaffId) &&
+              !includedIds.has(Number(b.id))
+          ),
+        ]
       : bookings;
 
     return list.map((b) => {
@@ -244,7 +269,17 @@ export function useIosAppState(
         customerPhone: maskedPhone,
       };
     });
-  }, [bookings, role, scopeMode, actor.staffId, activeServicingBooking, isAdmin, selectedDateOffset]);
+  }, [
+    bookings,
+    role,
+    scopeMode,
+    actor.staffId,
+    activeServicingBooking,
+    isAdmin,
+    selectedDateOffset,
+    isSimulationMode,
+    selectedMenteeStaffId,
+  ]);
 
   const counts: SegmentCounts = useMemo(() => {
     let incoming = 0;
@@ -276,6 +311,25 @@ export function useIosAppState(
     [activeBookingId]
   );
 
+  const targetDateStr = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDateOffset);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+  }, [selectedDateOffset]);
+
+  const onSimulationMetaLoaded = useCallback(
+    (meta: { isReadOnlyMentorView?: boolean; simulationActorStaffName?: string; simulationActorStaffId?: number }) => {
+      setIsReadOnlyMentorView(Boolean(meta.isReadOnlyMentorView));
+      setSimulationActorStaffName(meta.simulationActorStaffName);
+    },
+    []
+  );
+
   const {
     totalStoreCount,
     staffStats,
@@ -290,6 +344,10 @@ export function useIosAppState(
   } = useIosBookingsSync({
     enabled,
     isDemoMode,
+    isSimulationMode,
+    menteeStaffId: selectedMenteeStaffId,
+    isReadOnlyMentorView,
+    onSimulationMetaLoaded,
     isAdmin,
     role,
     isTechnicianRole,
@@ -308,6 +366,26 @@ export function useIosAppState(
     selectedDateOffset,
     setSelectedDateOffset,
     setBookings,
+  });
+
+  const simulation = useIosSimulationMode({
+    enabled,
+    isSimulationMode,
+    setIsSimulationMode,
+    selectedMenteeStaffId,
+    setSelectedMenteeStaffId,
+    isReadOnlyMentorView,
+    role,
+    isAdmin,
+    targetDate: targetDateStr,
+    activeBooking,
+    setActiveBookingId,
+    setCurrentStep,
+    setActiveTab,
+    setBookingSegment,
+    setBookings,
+    postAction,
+    refreshDb,
   });
 
   const {
@@ -432,11 +510,14 @@ export function useIosAppState(
     handleRevertToIncoming,
     selectedDateOffset,
     handleDateOffsetChange,
+    targetDateStr,
     selectedStoreId: effectiveStoreId,
     setSelectedStoreId,
     currentBranch,
     availableBranches: IOS_AVAILABLE_BRANCHES,
     handleUpdateCustomerAvatar,
     handleAutoSaveConsultationDraft,
+    simulationActorStaffName,
+    ...simulation,
   };
 }

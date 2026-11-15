@@ -46,6 +46,7 @@ interface Screen01IncomingBookingsProps {
   currentBranch?: IosBranchConfig;
   availableBranches?: IosBranchConfig[];
   totalStoreBookingsCount?: number;
+  onOpenCreateBooking?: () => void;
 }
 
 export function Screen01IncomingBookings({
@@ -72,6 +73,7 @@ export function Screen01IncomingBookings({
   currentBranch,
   availableBranches = IOS_AVAILABLE_BRANCHES,
   totalStoreBookingsCount,
+  onOpenCreateBooking,
 }: Screen01IncomingBookingsProps) {
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
@@ -419,6 +421,20 @@ export function Screen01IncomingBookings({
                 style={{ backgroundColor: 'var(--mos-accent)', color: 'var(--mos-accent-contrast)' }}
               >
                 Về lại Hôm nay
+              </button>
+            )}
+            {onOpenCreateBooking && bookingSegment === 'INCOMING' && (
+              <button
+                type="button"
+                onClick={onOpenCreateBooking}
+                className="ml-2 px-3.5 py-1.5 rounded-full font-extrabold text-[11px] border shadow-xs active:scale-95 transition-transform cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--mos-surface)',
+                  borderColor: 'var(--mos-accent)',
+                  color: 'var(--mos-accent)',
+                }}
+              >
+                + Tạo Lịch Hẹn
               </button>
             )}
           </div>

@@ -437,6 +437,55 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'OPS-004',
+    book: 'SERVICE',
+    title: 'Phòng Tập Luyện Mô Phỏng /ios-app trên Data Thật & Đặt Lịch Kép (Simulation Sandbox & Dual-Mode Booking)',
+    summary:
+      'CVL, CVLL, CC và Admin được tập luyện trọn quy trình Booking → Chờ đón → Đang làm → Đã xong ngay trên dữ liệu khách hàng thật realtime trong sandbox riêng từng nhân sự (crm_config IOS_SIM_*), tuyệt đối không ghi xuống Legacy DB hay làm ảnh hưởng ca vận hành thật; riêng chức năng Đặt Lịch Mới hoạt động ở cả chế độ Mô Phỏng lẫn Trực Tiếp.',
+    commandments: [
+      '1. Cách ly tuyệt đối Sandbox Tập Luyện theo từng Chuyên Viên: Mọi thay đổi check-in, đo mi thật 7/7, kế hoạch tư vấn, upsell, thanh toán và đơn nháp mô phỏng lưu riêng theo cặp <staffId>:<bookingId/customerId> dưới prefix IOS_SIM_*; tuyệt đối không ghi IOS_BK_OVR, IOS_CUST_NLASH, order Legacy DB, settleIosOrderWithLegacyPhp hay máy in bill LAN.',
+      '2. Phạm vi hiển thị & bảo mật UI-010 đồng nhất Live Mode: Ai đăng nhập chỉ thấy đúng khách hàng trong phạm vi cho phép của mình (CVL chỉ thấy khách đầu tua chưa phân công, khách book đích danh của mình và đơn tập luyện mình tự tạo; số điện thoại luôn che). Mentor CC trong kỳ cặp Training và Admin có quyền xem chỉ-đọc (read-only) nhật ký mô phỏng của Mentee CVL.',
+      '3. Đặt Lịch Hẹn 2 chế độ cho cả Khách Mới & Khách Quay Lại: Ở chế độ Mô Phỏng tạo đơn nháp sandbox (bookingId >= 900000000); ở chế độ Live tạo khách hàng mới (nếu Lần 1) và ghi nhận đơn thật vào Legacy DB.',
+      '4. Lần thử đầu tiên (Phương án #1) phải đi đủ 15 bước quy chuẩn; từ Phương án #2 trở đi mở khóa nút "Tua nhanh kỹ thuật → Upsell & Checkout" sau bước Tư Vấn để tập trung luyện tập kịch bản bán hàng & so sánh doanh số/thưởng giữa các phương án.',
+      '5. Hỗ trợ Hoàn Tác 2 cấp (Revert): "Thử lại kịch bản tư vấn" giữ nguyên check-in & hồ sơ mi thật 7/7 để lên lại phương án bán hàng mới; "Reset về Chờ đón" đưa ca về trạng thái INCOMING ban đầu và xóa hồ sơ mi thật sandbox để tập lại từ đầu.',
+      '6. Đồng bộ tức thì từng bước ở Live Mode vs Cô lập tuyệt đối ở Simulation Mode: Ở Live Mode, mọi thao tác chuyển bước (Check-in, Lưu tư vấn / Tư vấn & Check-in nhanh, Phân công kỹ thuật, Bắt đầu/cập nhật tiến trình nối mi, Khảo sát hoàn tất kỹ thuật, Chuyển Checkout / Upsell, và Hoàn tác về Chờ đón) được đồng bộ ngay lập tức sang Legacy PHP (WingsLashes /1/order/*) để iOS App cũ và bảng điều hành cập nhật realtime (nếu Legacy PHP ngoại tuyến sẽ ghi nhận DEFERRED không làm kẹt máy và tự bù khi hoàn tất đơn). Ngược lại, Simulation Mode (IOS_SIM_*) và Demo Mode (?demo=1) tạo 0 request tới Legacy PHP hay Legacy DB ở mọi bước.',
+    ],
+    rationale:
+      'Cho phép CVL thực hành mạnh tay trên dữ liệu khách hàng thật (như chọn gói, nâng cấp 1 lông -> 2 lông/Thiết kế, kết hợp dưỡng mi và thanh toán) rồi hoàn tác ngay để thử nhiều chiến lược tư vấn khác nhau mà không sợ sai số liệu quầy thu ngân.',
+    examples: [
+      'Hai CVL A và B cùng mở Phòng Tập Luyện Mô Phỏng trên cùng khách hàng Ngọc Phạm (#771121) cùng lúc không bị đụng khóa hay ghi đè trạng thái của nhau.',
+      'CVL tạo thử 3 Phương án tư vấn khác nhau cho khách Ngọc Phạm và mở Bảng So Sánh Phương Án để chọn ra kịch bản tối ưu doanh thu, điểm xoay tua và thưởng CV.',
+    ],
+    tags: [
+      'simulation',
+      'mô phỏng',
+      'training',
+      'cvl',
+      'revert',
+      'booking',
+      'sandbox',
+      'mentor',
+      'ios-app',
+      'live-step-sync',
+    ],
+    routeScopes: ['/ios-app'],
+    status: 'ACTIVE',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-15',
+    sources: [
+      { label: 'Sandbox Mô Phỏng Backend', reference: 'apps/api/src/modules/ios/services/ios-simulation.service.ts' },
+      {
+        label: 'Đồng Bộ Từng Bước Live Mode Legacy PHP',
+        reference: 'apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts',
+      },
+      { label: 'Đặt Lịch Kép /ios-app', reference: 'apps/api/src/modules/ios/services/ios-booking-create.service.ts' },
+      {
+        label: 'UI Phòng Tập Luyện Mô Phỏng',
+        reference: 'apps/web/app/ios-app/components/simulation/IosSimulationWorkspaceBar.tsx',
+      },
+    ],
+  },
+  {
     id: 'CC-001',
     book: 'PEOPLE',
     title: 'Không mượn danh người khác làm CC hay CV',

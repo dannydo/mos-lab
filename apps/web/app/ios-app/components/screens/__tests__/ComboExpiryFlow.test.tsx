@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Screen02CheckInProfile } from '../Screen02CheckInProfile';
+import { Screen03ConsultationMatrix } from '../Screen03ConsultationMatrix';
 import { Screen11ProductUpsell } from '../Screen11ProductUpsell';
 import { Screen12CheckoutBilling } from '../Screen12CheckoutBilling';
 import { Screen14ThermalReceiptDone } from '../Screen14ThermalReceiptDone';
@@ -307,5 +308,81 @@ describe('Combo Expiry (COMBO-004): Lock, Revival, Early-Renewal Bonus & Admin W
     expect(screen.getByText('Ghi chú: CS cập nhật note Cc')).toBeInTheDocument();
     expect(screen.queryByText(/Ví Mi Trên/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Ví Mi Dưới/i)).not.toBeInTheDocument();
+  });
+
+  it('QuickCheckInComboCard & ConsultationServiceAndUpgradeCard display explicit "Mới (X)" and "Dặm (Y)" labels on Combo Live toggle buttons', () => {
+    const comboOneAndFour: BookingItem = {
+      ...activeComboBooking,
+      comboLiveStatus: {
+        ...activeComboBooking.comboLiveStatus!,
+        remainingSessions: 5,
+        normalRemaining: 1,
+        retainRemaining: 4,
+      },
+    };
+
+    const { unmount } = render(
+      <Screen02CheckInProfile
+        booking={{ ...comboOneAndFour, status: 'INCOMING' }}
+        actor={{ staffId: 46272, name: 'Thảo Ly', tier: 'CVL', badgeLabel: 'CVL' }}
+        onBack={vi.fn()}
+        onCheckIn={vi.fn()}
+        onQuickCheckIn={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Mới (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dặm (4)' })).toBeInTheDocument();
+    unmount();
+
+    render(<Screen03ConsultationMatrix booking={comboOneAndFour} onBack={vi.fn()} onSave={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Mới (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dặm (4)' })).toBeInTheDocument();
+  });
+
+  it('CheckInStaffAndProfileCards centers all 4 HỒ SƠ MI THẬT cells for both measured attributes and "—" placeholders', () => {
+    const { rerender } = render(
+      <Screen02CheckInProfile
+        booking={{ ...activeComboBooking, status: 'INCOMING' }}
+        actor={{ staffId: 46272, name: 'Thảo Ly', tier: 'CVL', badgeLabel: 'CVL' }}
+        onBack={vi.fn()}
+        onCheckIn={vi.fn()}
+      />
+    );
+
+    const measuredGrid = screen.getByTestId('checkin-natural-lash-grid');
+    expect(measuredGrid).toHaveClass('text-center');
+    expect(measuredGrid.children).toHaveLength(4);
+    Array.from(measuredGrid.children).forEach((cell) => {
+      expect(cell).toHaveClass('items-center', 'justify-center', 'text-center');
+    });
+
+    rerender(
+      <Screen02CheckInProfile
+        booking={{
+          ...activeComboBooking,
+          status: 'INCOMING',
+          customerVisits: 8,
+          attributes: {
+            ...baseAttributes,
+            naturalLashCount: '',
+            naturalLashDensity: '',
+            naturalLashLength: '',
+            naturalLashThickness: '',
+            eyeShape: '',
+          },
+        }}
+        actor={{ staffId: 46272, name: 'Thảo Ly', tier: 'CVL', badgeLabel: 'CVL' }}
+        onBack={vi.fn()}
+        onCheckIn={vi.fn()}
+      />
+    );
+
+    const placeholderGrid = screen.getByTestId('checkin-natural-lash-grid');
+    expect(placeholderGrid).toHaveClass('text-center');
+    expect(placeholderGrid.children).toHaveLength(4);
+    Array.from(placeholderGrid.children).forEach((cell) => {
+      expect(cell).toHaveClass('items-center', 'justify-center', 'text-center');
+    });
+    expect(within(placeholderGrid).getAllByText('—')).toHaveLength(4);
   });
 });

@@ -167,13 +167,27 @@ export function mapLiveOrdersToBookings(params: {
         Boolean(r.assigned_staff_id && Number(r.assigned_staff_id) > 0);
       const isUnassignedQueue = !override.assignedStaffId && isDbUnassigned && !checkInStaffId && !isServicingOrDone;
 
+      const overrideAssignedId = Number(override.assignedStaffId || 0);
+      const dbAssignedId = Number(r.assigned_staff_id || 0);
       const assignedStaffId = isUnassignedQueue
         ? 0
-        : Number(override.assignedStaffId ?? r.assigned_staff_id ?? checkInStaffId ?? 0);
-      const assignedStaffName = isUnassignedQueue
-        ? 'Chờ phân công (Đầu tua)'
-        : override.assignedStaffName ||
-          (r.staff_name && r.staff_name !== 'Chưa phân công' ? r.staff_name : checkInStaffName || 'Chuyên Viên');
+        : overrideAssignedId > 0
+          ? overrideAssignedId
+          : dbAssignedId > 0
+            ? dbAssignedId
+            : 0;
+      const assignedStaffName =
+        assignedStaffId <= 0
+          ? 'Chờ phân công (Đầu tua)'
+          : overrideAssignedId > 0 &&
+              override.assignedStaffName &&
+              override.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+            ? override.assignedStaffName
+            : r.staff_name && r.staff_name !== 'Chưa phân công'
+              ? r.staff_name
+              : override.assignedStaffName && override.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+                ? override.assignedStaffName
+                : checkInStaffName || 'Chuyên Viên';
 
       const comboInfo = customerContext.comboBalanceMap.get(customerId) || {
         isComboLive: false,

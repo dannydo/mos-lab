@@ -13,8 +13,33 @@ export interface OfflineAction {
 
 const OFFLINE_ACTIONS_STORAGE_KEY = 'mos_ios_offline_actions';
 const PROGRESS_STORAGE_PREFIX = 'mos_ios_progress_booking_';
+const SIM_PROGRESS_STORAGE_PREFIX = 'mos_ios_sim_progress_booking_';
 export const ACTIVE_SERVICING_BOOKING_KEY = 'mos_ios_active_servicing_id';
 export const ACTIVE_SERVICING_STEP_KEY = 'mos_ios_active_servicing_step';
+export const SIM_ACTIVE_SERVICING_BOOKING_KEY = 'mos_ios_sim_active_servicing_id';
+export const SIM_ACTIVE_SERVICING_STEP_KEY = 'mos_ios_sim_active_servicing_step';
+
+let simulationNamespaceEnabled = false;
+
+export function setOfflineSyncSimulationNamespace(enabled: boolean) {
+  simulationNamespaceEnabled = Boolean(enabled);
+}
+
+export function isOfflineSyncSimulationNamespace(): boolean {
+  return simulationNamespaceEnabled;
+}
+
+function getActiveBookingKey(simOverride?: boolean): string {
+  return (simOverride ?? simulationNamespaceEnabled) ? SIM_ACTIVE_SERVICING_BOOKING_KEY : ACTIVE_SERVICING_BOOKING_KEY;
+}
+
+function getActiveStepKey(simOverride?: boolean): string {
+  return (simOverride ?? simulationNamespaceEnabled) ? SIM_ACTIVE_SERVICING_STEP_KEY : ACTIVE_SERVICING_STEP_KEY;
+}
+
+function getProgressPrefix(simOverride?: boolean): string {
+  return (simOverride ?? simulationNamespaceEnabled) ? SIM_PROGRESS_STORAGE_PREFIX : PROGRESS_STORAGE_PREFIX;
+}
 
 const DB_NAME = 'mos_ios_app_db';
 const DB_VERSION = 1;
@@ -77,7 +102,7 @@ export async function getFromIndexedDb(key: string): Promise<any> {
 export function getActiveServicingBookingId(): number | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(ACTIVE_SERVICING_BOOKING_KEY);
+    const raw = window.localStorage.getItem(getActiveBookingKey());
     return raw ? Number(raw) : null;
   } catch {
     return null;
@@ -91,7 +116,7 @@ export async function getActiveServicingBookingIdAsync(): Promise<number | null>
   const syncId = getActiveServicingBookingId();
   if (syncId) return syncId;
   try {
-    const idbId = await getFromIndexedDb(ACTIVE_SERVICING_BOOKING_KEY);
+    const idbId = await getFromIndexedDb(getActiveBookingKey());
     if (idbId) {
       const num = Number(idbId);
       setActiveServicingBookingId(num);
@@ -109,7 +134,7 @@ export async function getActiveServicingBookingIdAsync(): Promise<number | null>
 export function getActiveServicingStep(): number | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(ACTIVE_SERVICING_STEP_KEY);
+    const raw = window.localStorage.getItem(getActiveStepKey());
     return raw ? Number(raw) : null;
   } catch {
     return null;
@@ -123,7 +148,7 @@ export async function getActiveServicingStepAsync(): Promise<number | null> {
   const syncStep = getActiveServicingStep();
   if (syncStep) return syncStep;
   try {
-    const idbStep = await getFromIndexedDb(ACTIVE_SERVICING_STEP_KEY);
+    const idbStep = await getFromIndexedDb(getActiveStepKey());
     if (idbStep) {
       const num = Number(idbStep);
       setActiveServicingStep(num);
@@ -141,14 +166,16 @@ export async function getActiveServicingStepAsync(): Promise<number | null> {
 export function setActiveServicingBookingId(bookingId: number | null) {
   if (typeof window === 'undefined') return;
   try {
+    const bkKey = getActiveBookingKey();
+    const stepKey = getActiveStepKey();
     if (bookingId) {
-      window.localStorage.setItem(ACTIVE_SERVICING_BOOKING_KEY, String(bookingId));
-      void saveToIndexedDb(ACTIVE_SERVICING_BOOKING_KEY, bookingId);
+      window.localStorage.setItem(bkKey, String(bookingId));
+      void saveToIndexedDb(bkKey, bookingId);
     } else {
-      window.localStorage.removeItem(ACTIVE_SERVICING_BOOKING_KEY);
-      window.localStorage.removeItem(ACTIVE_SERVICING_STEP_KEY);
-      void saveToIndexedDb(ACTIVE_SERVICING_BOOKING_KEY, null);
-      void saveToIndexedDb(ACTIVE_SERVICING_STEP_KEY, null);
+      window.localStorage.removeItem(bkKey);
+      window.localStorage.removeItem(stepKey);
+      void saveToIndexedDb(bkKey, null);
+      void saveToIndexedDb(stepKey, null);
     }
   } catch (err) {
     console.warn('[OfflineSync] Failed to set active servicing booking ID:', err);
@@ -161,12 +188,13 @@ export function setActiveServicingBookingId(bookingId: number | null) {
 export function setActiveServicingStep(step: number | null) {
   if (typeof window === 'undefined') return;
   try {
+    const stepKey = getActiveStepKey();
     if (step) {
-      window.localStorage.setItem(ACTIVE_SERVICING_STEP_KEY, String(step));
-      void saveToIndexedDb(ACTIVE_SERVICING_STEP_KEY, step);
+      window.localStorage.setItem(stepKey, String(step));
+      void saveToIndexedDb(stepKey, step);
     } else {
-      window.localStorage.removeItem(ACTIVE_SERVICING_STEP_KEY);
-      void saveToIndexedDb(ACTIVE_SERVICING_STEP_KEY, null);
+      window.localStorage.removeItem(stepKey);
+      void saveToIndexedDb(stepKey, null);
     }
   } catch (err) {
     console.warn('[OfflineSync] Failed to set active servicing step:', err);
@@ -202,6 +230,10 @@ export function enqueueOfflineAction(action: string, bookingId: number, payload:
   };
 
   if (typeof window === 'undefined') return item;
+  // Never mix Simulation actions into the live offline queue
+  if (simulationNamespaceEnabled || payload?.simulationMode || String(action || '').startsWith('SIM_')) {
+    return item;
+  }
 
   try {
     const current = getPendingActions();
@@ -230,6 +262,11 @@ export function removeOfflineAction(id: string) {
 
 // In-memory cache to guarantee synchronous reads never lose data even if localStorage throws QuotaExceededError
 const progressMemoryCache = new Map<number, any>();
+const simProgressMemoryCache = new Map<number, any>();
+
+function getProgressMemoryCache(simOverride?: boolean): Map<number, any> {
+  return (simOverride ?? simulationNamespaceEnabled) ? simProgressMemoryCache : progressMemoryCache;
+}
 
 /**
  * Lưu snapshot tiến độ ca làm vào memory, IndexedDB và localStorage phòng vệ
@@ -237,7 +274,9 @@ const progressMemoryCache = new Map<number, any>();
 export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
   if (typeof window === 'undefined' || !bookingId) return;
   try {
-    const existing = progressMemoryCache.get(bookingId) || getLocalProgressSnapshot(bookingId) || {};
+    const cacheMap = getProgressMemoryCache();
+    const prefix = getProgressPrefix();
+    const existing = cacheMap.get(bookingId) || getLocalProgressSnapshot(bookingId) || {};
     const merged = {
       ...existing,
       ...progress,
@@ -246,27 +285,28 @@ export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
     };
 
     // 1. Luôn cập nhật bộ nhớ RAM ngay tức thì
-    progressMemoryCache.set(bookingId, merged);
+    cacheMap.set(bookingId, merged);
 
     // 2. Lưu vào IndexedDB (dung lượng gigabytes, lưu trữ an toàn ảnh base64 mà không sợ tràn quota)
-    void saveToIndexedDb(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, merged);
+    void saveToIndexedDb(`${prefix}${bookingId}`, merged);
 
     // 3. Lưu phòng vệ vào localStorage (có cơ chế dọn dẹp chống QuotaExceededError)
     try {
-      window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(merged));
+      window.localStorage.setItem(`${prefix}${bookingId}`, JSON.stringify(merged));
     } catch (lsErr) {
       console.warn('[OfflineSync] LocalStorage quota exceeded, pruning old keys and retrying:', lsErr);
       try {
         // Dọn dẹp snapshot của các ca làm khác khỏi localStorage để nhường chỗ
         for (let i = 0; i < window.localStorage.length; i++) {
           const k = window.localStorage.key(i);
-          if (k && k.startsWith(PROGRESS_STORAGE_PREFIX) && k !== `${PROGRESS_STORAGE_PREFIX}${bookingId}`) {
+          if (k && k.startsWith(prefix) && k !== `${prefix}${bookingId}`) {
             window.localStorage.removeItem(k);
           }
         }
-        // Xóa queue offline actions cũ nếu quá lớn
-        window.localStorage.removeItem(OFFLINE_ACTIONS_STORAGE_KEY);
-        window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(merged));
+        if (!simulationNamespaceEnabled) {
+          window.localStorage.removeItem(OFFLINE_ACTIONS_STORAGE_KEY);
+        }
+        window.localStorage.setItem(`${prefix}${bookingId}`, JSON.stringify(merged));
       } catch {
         // Nếu vẫn đầy, lưu bản metadata nhẹ vào localStorage (ảnh thật đã nằm an toàn trong IndexedDB và RAM)
         try {
@@ -276,7 +316,7 @@ export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
             cleanedPhotoUrl: merged.cleanedPhotoUrl ? '[persisted_in_idb]' : undefined,
             afterPhotoUrl: merged.afterPhotoUrl ? '[persisted_in_idb]' : undefined,
           };
-          window.localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`, JSON.stringify(lightweight));
+          window.localStorage.setItem(`${prefix}${bookingId}`, JSON.stringify(lightweight));
         } catch {
           // ignore
         }
@@ -341,17 +381,19 @@ function sanitizeProgressSnapshot<T extends Record<string, unknown>>(snap: T): T
  */
 export function getLocalProgressSnapshot(bookingId: number) {
   if (typeof window === 'undefined' || !bookingId) return null;
+  const cacheMap = getProgressMemoryCache();
+  const prefix = getProgressPrefix();
   // Ưu tiên đọc từ RAM cache trước
-  const inMem = progressMemoryCache.get(bookingId);
+  const inMem = cacheMap.get(bookingId);
   if (inMem) return sanitizeProgressSnapshot(inMem);
   try {
-    const raw = window.localStorage.getItem(`${PROGRESS_STORAGE_PREFIX}${bookingId}`);
+    const raw = window.localStorage.getItem(`${prefix}${bookingId}`);
     if (raw) {
       const parsed = sanitizeProgressSnapshot(JSON.parse(raw));
       if (parsed.beforePhotoUrl === '[persisted_in_idb]') delete parsed.beforePhotoUrl;
       if (parsed.cleanedPhotoUrl === '[persisted_in_idb]') delete parsed.cleanedPhotoUrl;
       if (parsed.afterPhotoUrl === '[persisted_in_idb]') delete parsed.afterPhotoUrl;
-      progressMemoryCache.set(bookingId, parsed);
+      cacheMap.set(bookingId, parsed);
       return parsed;
     }
   } catch (err) {
@@ -364,15 +406,17 @@ export function getLocalProgressSnapshot(bookingId: number) {
  * Đọc snapshot tiến độ ca làm bất đồng bộ (luôn load từ IndexedDB để phục hồi 100% ảnh After/Before kể cả khi localStorage bị đầy)
  */
 export async function getLocalProgressSnapshotAsync(bookingId: number) {
+  const cacheMap = getProgressMemoryCache();
+  const prefix = getProgressPrefix();
   const memOrLs = getLocalProgressSnapshot(bookingId) || {};
   try {
-    const idbSnap = await getFromIndexedDb(`${PROGRESS_STORAGE_PREFIX}${bookingId}`);
+    const idbSnap = await getFromIndexedDb(`${prefix}${bookingId}`);
     if (idbSnap) {
       const merged = sanitizeProgressSnapshot({
         ...memOrLs,
         ...idbSnap,
       });
-      progressMemoryCache.set(bookingId, merged);
+      cacheMap.set(bookingId, merged);
       return merged;
     }
   } catch {
@@ -388,9 +432,11 @@ export function clearLocalProgressSnapshot(bookingId: number) {
   if (typeof window === 'undefined' || !bookingId) return;
   try {
     const idNum = Number(bookingId);
-    progressMemoryCache.delete(idNum);
-    window.localStorage.removeItem(`${PROGRESS_STORAGE_PREFIX}${idNum}`);
-    void saveToIndexedDb(`${PROGRESS_STORAGE_PREFIX}${idNum}`, null);
+    const cacheMap = getProgressMemoryCache();
+    const prefix = getProgressPrefix();
+    cacheMap.delete(idNum);
+    window.localStorage.removeItem(`${prefix}${idNum}`);
+    void saveToIndexedDb(`${prefix}${idNum}`, null);
     const activeId = getActiveServicingBookingId();
     if (activeId && Number(activeId) === idNum) {
       setActiveServicingBookingId(null);

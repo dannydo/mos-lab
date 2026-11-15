@@ -54,7 +54,7 @@ export interface SettleLegacyOrderResult {
   warning?: string;
 }
 
-const DEMO_BOOKING_IDS = new Set<number>(INITIAL_BOOKINGS.map((b) => Number(b.id)));
+export const DEMO_BOOKING_IDS = new Set<number>(INITIAL_BOOKINGS.map((b) => Number(b.id)));
 
 export function resolveLegacyPhpApiConfig(): { baseUrl: string; hostHeader?: string } {
   const explicit = String(process.env.LEGACY_PHP_API_URL || '').trim();
@@ -407,8 +407,8 @@ export async function settleIosOrderWithLegacyPhp(
       catalog,
     });
 
-    // Bước 1: Check-in (nếu đơn đang ở New / Confirmed) để gắn check_in_staff_id chuẩn xác
-    if (['New', 'Confirmed', ''].includes(catalog.currentOrderState)) {
+    // Bước 1: Check-in (nếu đơn đang ở New / Confirmed / Parking) để gắn check_in_staff_id chuẩn xác
+    if (['New', 'Confirmed', 'Parking', ''].includes(catalog.currentOrderState)) {
       await callPhp(
         '/order/booking/check-in',
         withAuth(checkInStaffId, {

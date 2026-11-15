@@ -64,6 +64,9 @@ export interface Screen03ConsultationMatrixProps {
     selectedUnderCombo?: BookingItem['selectedUnderCombo'] | null,
     notes?: string
   ) => Promise<any> | void;
+  isSimulationMode?: boolean;
+  isReadOnlyMentorView?: boolean;
+  onSimFastForwardToUpsell?: (bookingId: number) => void;
 }
 
 export interface PendingOverrideState {

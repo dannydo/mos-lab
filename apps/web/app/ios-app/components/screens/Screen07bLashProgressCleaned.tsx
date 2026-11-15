@@ -15,6 +15,7 @@ import { resolveDisplayServiceName, parseDaysSinceLastVisit } from './LashMateri
 import { compressLashImage } from '../../utils/imageCompressor';
 import { CleanedCustomerAndSpecHeader } from './servicing/CleanedCustomerAndSpecHeader';
 import { RetainLashCounterSection } from './servicing/RetainLashCounterSection';
+import { getClientTrainingSamplePhoto } from '../simulation/IosSimulationWorkspaceBar';
 import { EyeOff, Camera, Sparkles } from 'lucide-react';
 
 interface Screen07bLashProgressCleanedProps {
@@ -22,6 +23,7 @@ interface Screen07bLashProgressCleanedProps {
   onBack: () => void;
   onSavePhoto: (photoUrl: string, retainLashes?: { left: number; right: number }) => void;
   onAutoSavePhoto?: (photoUrl: string, retainLashes?: { left: number; right: number }) => Promise<any> | void;
+  isSimulationMode?: boolean;
 }
 
 export function Screen07bLashProgressCleaned({
@@ -29,6 +31,7 @@ export function Screen07bLashProgressCleaned({
   onBack,
   onSavePhoto,
   onAutoSavePhoto,
+  isSimulationMode = false,
 }: Screen07bLashProgressCleanedProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const isSelectingRef = useRef<boolean>(false);
@@ -425,6 +428,46 @@ export function Screen07bLashProgressCleaned({
             <Camera className="w-4 h-4 text-amber-400" />
             <span>{photoPreview ? 'Chụp lại Camera' : 'Chụp Bằng Camera'}</span>
           </button>
+
+          {isSimulationMode && (
+            <button
+              type="button"
+              onClick={() => {
+                const sampleUrl = getClientTrainingSamplePhoto('cleaned');
+                setPhotoPreview(sampleUrl);
+                setIsPhotoDeclined(false);
+                setCloudSyncStatus('uploading');
+                const currentLeft = leftLashCount !== '' ? parseInt(leftLashCount, 10) : undefined;
+                const currentRight = rightLashCount !== '' ? parseInt(rightLashCount, 10) : undefined;
+                const retainData =
+                  currentLeft !== undefined && currentRight !== undefined
+                    ? { left: currentLeft, right: currentRight }
+                    : undefined;
+                if (bookingId) {
+                  saveLocalProgressSnapshot(bookingId, {
+                    cleanedPhotoUrl: sampleUrl,
+                    cleanedPhotoSavedAt: new Date().toISOString(),
+                    bookingId,
+                    currentStep: 8,
+                  });
+                }
+                if (onAutoSavePhoto) {
+                  void Promise.resolve(onAutoSavePhoto(sampleUrl, retainData)).finally(() =>
+                    setCloudSyncStatus('synced')
+                  );
+                } else {
+                  setCloudSyncStatus('synced');
+                }
+              }}
+              className={`w-full py-2 px-3 rounded-xl border text-[12px] font-bold active:scale-98 transition-all cursor-pointer ${
+                isDark
+                  ? 'bg-amber-950/40 hover:bg-amber-950/70 border-amber-500/40 text-amber-300'
+                  : 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'
+              }`}
+            >
+              Dùng ảnh mẫu tập luyện (Vệ sinh)
+            </button>
+          )}
 
           {/* Nút ngoại lệ: Khách từ chối chụp ảnh */}
           {!photoPreview && (

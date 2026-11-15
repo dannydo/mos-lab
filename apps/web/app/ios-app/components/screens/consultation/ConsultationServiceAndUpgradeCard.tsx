@@ -428,7 +428,7 @@ export function ConsultationServiceAndUpgradeCard({
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>{isAlwaysFullSet ? 'Mới' : isComboLive ? comboNormalRemaining : 'Mới'}</span>
+          <span>{isAlwaysFullSet || !isComboLive ? 'Mới' : `Mới (${comboNormalRemaining})`}</span>
         </button>
 
         <button
@@ -445,7 +445,7 @@ export function ConsultationServiceAndUpgradeCard({
           title={isComboLive && !hasComboRetainRemaining ? 'Gói đã hết lần Dặm' : undefined}
         >
           <RotateCw className="w-3.5 h-3.5 shrink-0" />
-          <span>{isAlwaysFullSet ? 'Dặm' : isComboLive ? comboRetainRemaining : 'Dặm'}</span>
+          <span>{isAlwaysFullSet || !isComboLive ? 'Dặm' : `Dặm (${comboRetainRemaining})`}</span>
         </button>
       </div>
 

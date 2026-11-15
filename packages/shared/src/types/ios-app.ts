@@ -9,6 +9,13 @@ export type CustomerBookingTab = 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
 export type IosBookingStatus = 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
 export type IosSettlementStatus = 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
 
+export const IOS_SIM_BOOKING_ID_MIN = 900_000_000;
+
+export function isIosSyntheticSimBookingId(bookingId: number | string | null | undefined): boolean {
+  const num = Number(bookingId);
+  return Number.isFinite(num) && num >= IOS_SIM_BOOKING_ID_MIN;
+}
+
 export interface IosBranchConfig {
   id: number;
   code: string;
@@ -392,6 +399,12 @@ export interface IosBookingItem {
   branchName?: string;
   lastVisitDate?: string;
   lashHistory?: LashHistoryItem[];
+  isSimulationBooking?: boolean;
+  isSimulationDraftBooking?: boolean;
+  simulationAttemptCount?: number;
+  simulationLatestAttemptId?: string;
+  simulationFastForwardUnlocked?: boolean;
+  simulationReadOnly?: boolean;
   selectedCombo?: IosSelectedCombo | null;
   selectedUnderCombo?: IosSelectedUnderCombo | null;
   comboRedemption?: IosComboRedemption | null;
@@ -470,12 +483,18 @@ export interface IosBookingListQuery {
   date?: string;
   limit?: number;
   demo?: boolean | '1' | '0';
+  sim?: boolean | '1' | '0';
+  menteeStaffId?: number;
 }
 
 export interface IosBookingListResponse {
   success: boolean;
   source?: 'mysql_live' | 'demo_mode';
   demoMode?: boolean;
+  simulationMode?: boolean;
+  simulationActorStaffId?: number;
+  simulationActorStaffName?: string;
+  isReadOnlyMentorView?: boolean;
   storeId?: number;
   segment?: string;
   role?: string;
@@ -503,11 +522,16 @@ export type IosBookingActionType =
   | 'SAVE_PROMOTION'
   | 'COMPLETE_CHECKOUT'
   | 'UPDATE_CUSTOMER_AVATAR'
-  | 'RESET_DEMO';
+  | 'RESET_DEMO'
+  | 'REVERT_TO_INCOMING'
+  | 'SIM_REVERT_CONSULTATION'
+  | 'SIM_RESET_TO_INCOMING'
+  | 'SIM_FAST_FORWARD_TO_UPSELL';
 
 export interface IosBookingActionPayload {
   bookingId: number;
   action: IosBookingActionType | string;
+  simulationMode?: boolean;
   actorStaffId?: number;
   actorStaffName?: string;
   actorStaffTier?: string;
@@ -518,8 +542,101 @@ export interface IosBookingActionResponse {
   success: boolean;
   bookingId?: number;
   action?: string;
+  simulationMode?: boolean;
+  attemptSnapshot?: IosSimulationAttemptSummary | null;
   updatedOverride?: Record<string, unknown>;
   savedAt?: string;
+  error?: string;
+}
+
+export type IosSimulationAttemptSourceAction = 'COMPLETE_ORDER' | 'SIM_REVERT_CONSULTATION' | 'SIM_RESET_TO_INCOMING';
+
+export interface IosSimulationAttemptSummary {
+  attemptId: string;
+  attemptNumber: number;
+  bookingId: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  staffId: number;
+  staffName?: string;
+  createdAt: string;
+  sourceAction: IosSimulationAttemptSourceAction;
+  statusAtSnapshot: IosBookingStatus;
+  serviceName: string;
+  servicePrice: number;
+  selectedStyle?: string;
+  selectedComboName?: string | null;
+  selectedComboPrice: number;
+  selectedUnderComboName?: string | null;
+  selectedUnderComboPrice: number;
+  upsellProducts: Array<{ productName: string; quantity: number; totalPrice: number }>;
+  upsellTotal: number;
+  promotionName?: string | null;
+  promotionDiscountAmount: number;
+  grandTotal: number;
+  tipAmount: number;
+  tipActorShare: number;
+  comboBonusAmount: number;
+  serumBonusAmount: number;
+  cvRotationPoints: number;
+  totalEstimatedReward: number;
+  elapsedSeconds: number;
+  notes?: string;
+}
+
+export interface IosSimulationMenteeOption {
+  menteeStaffId: number;
+  menteeName: string;
+  mentorStaffId: number;
+  mentorName: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface IosCustomerLookupCandidate {
+  customerId: number;
+  fullName: string;
+  maskedPhone: string;
+  customerVisits: number;
+  lastVisitDate?: string | null;
+  hasActiveCombo: boolean;
+  comboName?: string | null;
+  remainingSessions?: number;
+  naturalLashRecorded: boolean;
+}
+
+export interface IosBookingServiceCatalogItem {
+  serviceId: number;
+  serviceName: string;
+  serviceGroup: string;
+  price: number;
+  durationMinute: number;
+}
+
+export interface IosCreateBookingRequest {
+  simulationMode?: boolean;
+  date?: string;
+  timeSlot?: string;
+  customerMode: 'NEW' | 'EXISTING';
+  existingCustomerId?: number;
+  customerName?: string;
+  customerPhone?: string;
+  serviceId?: number;
+  serviceName?: string;
+  servicePrice?: number;
+  serviceDuration?: number;
+  assignedStaffId?: number;
+  bookingNote?: string;
+  storeId?: number;
+}
+
+export interface IosCreateBookingResponse {
+  success: boolean;
+  simulationMode: boolean;
+  booking?: IosBookingItem;
+  bookingId?: number;
+  customerId?: number;
   error?: string;
 }
 

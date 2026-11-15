@@ -14,6 +14,8 @@ import {
   Shield,
   LogOut,
   Building2,
+  FlaskConical,
+  CalendarPlus,
 } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { MobileThemeSelectorBlock } from '../../../../components/theme/MobileThemeSheet';
@@ -34,6 +36,9 @@ interface IosProfileMenuSheetProps {
   onSelectBranch?: (storeId: number) => void;
   availableBranches?: IosBranchConfig[];
   isAdmin?: boolean;
+  isSimulationMode?: boolean;
+  onToggleSimulationMode?: () => void;
+  onOpenCreateBooking?: () => void;
 }
 
 export function IosProfileMenuSheet({
@@ -52,6 +57,9 @@ export function IosProfileMenuSheet({
   onSelectBranch,
   availableBranches = [],
   isAdmin = false,
+  isSimulationMode = false,
+  onToggleSimulationMode,
+  onOpenCreateBooking,
 }: IosProfileMenuSheetProps) {
   const { themeMode } = useTheme();
 
@@ -274,6 +282,87 @@ export function IosProfileMenuSheet({
 
           {/* Quick Action Navigation Rows */}
           <div className="space-y-1 pt-1">
+            {onToggleSimulationMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onToggleSimulationMode();
+                }}
+                className={`w-full p-2.5 rounded-2xl active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer border text-left ${
+                  isSimulationMode
+                    ? isDark
+                      ? 'bg-amber-950/60 hover:bg-amber-950/80 border-amber-500/50 text-amber-100'
+                      : 'bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-950'
+                    : isDark
+                      ? 'bg-neutral-900/80 hover:bg-neutral-800 border-neutral-800/80 text-white'
+                      : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200/80 text-neutral-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center">
+                    <FlaskConical className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold flex items-center gap-1.5">
+                      <span>Phòng Tập Luyện (Mô Phỏng)</span>
+                      <span
+                        className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-full leading-none ${
+                          isSimulationMode
+                            ? 'bg-amber-500 text-black'
+                            : isDark
+                              ? 'bg-neutral-800 text-amber-400'
+                              : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {isSimulationMode ? 'ĐANG BẬT' : 'SANDBOX'}
+                      </span>
+                    </div>
+                    <div className="text-[10.5px] text-neutral-400">
+                      {isSimulationMode
+                        ? 'Bấm để thoát Mô phỏng · Quay về sảnh thật'
+                        : 'Thực hành tư vấn, checkout & Revert thoải mái trên data thật'}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-neutral-400" />
+              </button>
+            )}
+
+            {onOpenCreateBooking && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenCreateBooking();
+                }}
+                className={`w-full p-2.5 rounded-2xl active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer border text-left ${
+                  isDark
+                    ? 'bg-neutral-900/80 hover:bg-neutral-800 border-neutral-800/80 text-white'
+                    : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200/80 text-neutral-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                    <CalendarPlus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                      {isSimulationMode
+                        ? 'Đặt Lịch Mô Phỏng (+ Khách Mới / Quen)'
+                        : 'Tạo Lịch Hẹn Khách Mới / Khách Quen'}
+                    </div>
+                    <div className="text-[10.5px] text-neutral-400">
+                      {isSimulationMode
+                        ? 'Tạo lịch tập luyện trong Sandbox không ghi MySQL'
+                        : 'Thêm nhanh booking vào hàng đợi Chờ đón'}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-neutral-400" />
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {

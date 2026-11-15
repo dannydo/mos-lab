@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '~/lib/api-client';
 import { Screen12CheckoutBilling } from '../Screen12CheckoutBilling';
+import { formatThousandSeparatedInput } from '../checkout/CheckoutPaymentMethodSection';
 import type { BookingItem } from '../../../state/mockData';
 
 function makeBooking(overrides: Partial<BookingItem> = {}): BookingItem {
@@ -99,15 +100,25 @@ describe('Screen12CheckoutBilling custom Diamond input & 3-way split payment', (
     // Enter Split Payment mode
     fireEvent.click(screen.getByTestId('toggle-split-payment-btn'));
 
-    // Enter 400,000đ Bank QR and 300,000đ POS
-    const qrInput = screen.getByTestId('payment-split-input-VIETQR');
+    // Enter 1,000,000đ while focused -> immediately formatted with thousand separator and conflict-free right padding
+    const qrInput = screen.getByTestId('payment-split-input-VIETQR') as HTMLInputElement;
+    expect(qrInput.className).toContain('pl-2.5');
+    expect(qrInput.className).toContain('pr-6');
+    expect(qrInput.className).not.toContain('px-2.5');
+
     fireEvent.focus(qrInput);
+    fireEvent.change(qrInput, { target: { value: '1000000' } });
+    expect(qrInput.value).toBe('1.000.000');
+
+    // Enter 400,000đ Bank QR and 300,000đ POS
     fireEvent.change(qrInput, { target: { value: '400000' } });
+    expect(qrInput.value).toBe('400.000');
     fireEvent.blur(qrInput);
 
-    const posInput = screen.getByTestId('payment-split-input-POS');
+    const posInput = screen.getByTestId('payment-split-input-POS') as HTMLInputElement;
     fireEvent.focus(posInput);
     fireEvent.change(posInput, { target: { value: '300000' } });
+    expect(posInput.value).toBe('300.000');
     fireEvent.blur(posInput);
 
     // Remaining 200,400đ should be flagged until Cash fills the remainder
@@ -134,5 +145,54 @@ describe('Screen12CheckoutBilling custom Diamond input & 3-way split payment', (
       posAmount: 300000,
       cashAmount: 200400,
     });
+  });
+
+  it('formats thousand-separated amounts live, handles Backspace across dots, and formats 4-digit Diamond counts', () => {
+    expect(formatThousandSeparatedInput('9388400')).toEqual({
+      formatted: '9.388.400',
+      numeric: 9388400,
+      nextCaretDigits: 7,
+    });
+    expect(formatThousandSeparatedInput('1000.000', '1.000.000', 1)).toEqual({
+      formatted: '0',
+      numeric: 0,
+      nextCaretDigits: 0,
+    });
+    expect(formatThousandSeparatedInput('1234.000', '1.234.000', 1)).toEqual({
+      formatted: '234.000',
+      numeric: 234000,
+      nextCaretDigits: 0,
+    });
+
+    render(
+      <Screen12CheckoutBilling
+        booking={makeBooking({
+          servicePrice: 3000000,
+          diamondBalance: 2500,
+          billing: {
+            subtotal: 3000000,
+            serviceTotal: 3000000,
+            productTotal: 0,
+            paymentMethod: 'VIETQR',
+            tipAmount: 0,
+            tipCvShare: 0,
+            tipCcShare: 0,
+            diamondUsed: 0,
+            diamondDiscountAmount: 0,
+            grandTotal: 3240000,
+          },
+        })}
+        onBack={() => {}}
+        onChoosePayment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Số dư: 2\.500 💎/)).toBeTruthy();
+    const diamondInput = screen.getByTestId('diamond-custom-input') as HTMLInputElement;
+    fireEvent.focus(diamondInput);
+    fireEvent.change(diamondInput, { target: { value: '1250' } });
+    expect(diamondInput.value).toBe('1.250');
+    fireEvent.blur(diamondInput);
+    expect((screen.getByTestId('diamond-custom-input') as HTMLInputElement).value).toBe('1.250');
   });
 });

@@ -134,9 +134,7 @@ export function CheckInStaffAndProfileCards({
               </span>
             </div>
             <span
-              className={`text-[11px] font-bold truncate w-full mt-1 ${
-                isDark ? 'text-[#FFB400]' : 'text-amber-700'
-              }`}
+              className={`text-[11px] font-bold truncate w-full mt-1 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}
             >
               {checkInStaffName.replace(/\s*\(.*?\)/g, '')}
             </span>
@@ -242,9 +240,7 @@ export function CheckInStaffAndProfileCards({
           <div className="flex items-center gap-1.5 min-w-0">
             <span
               className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10.5px] font-extrabold truncate leading-none ${
-                isDark
-                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                isDark ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-blue-50 text-blue-700 border-blue-200'
               }`}
             >
               <svg className="w-3.5 h-3.5 -rotate-90 shrink-0" viewBox="0 0 16 16" aria-hidden="true">
@@ -406,7 +402,9 @@ export function CheckInStaffAndProfileCards({
                 isDark ? 'text-red-300' : 'text-red-800'
               }`}
             >
-              <AlertTriangle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+              <AlertTriangle
+                className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+              />
               <span>{customerNote}</span>
             </p>
           </div>
@@ -471,34 +469,34 @@ export function CheckInStaffAndProfileCards({
               </span>
             )}
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
-            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-2 py-2 flex flex-col justify-between">
+          <div className="grid grid-cols-4 gap-1.5 text-center" data-testid="checkin-natural-lash-grid">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-1.5 py-2 flex flex-col items-center justify-center text-center">
               <span className="text-[var(--mos-text-muted)] text-[9.5px] font-semibold">Số sợi</span>
-              <div className="font-extrabold text-[12px] text-[var(--mos-accent)] mt-0.5 truncate">
+              <div className="w-full text-center font-extrabold text-[12px] text-[var(--mos-accent)] mt-0.5 truncate">
                 {resolveNaturalLashCountLabel(
                   booking?.attributes?.naturalLashCount || booking?.attributes?.naturalLashDensity
                 ) || '—'}
               </div>
             </div>
-            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-2 py-2 flex flex-col justify-between">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-1.5 py-2 flex flex-col items-center justify-center text-center">
               <span className="text-[var(--mos-text-muted)] text-[9.5px] font-semibold">Độ dài</span>
-              <div className="font-extrabold text-[12px] text-[var(--mos-text)] mt-0.5 truncate">
+              <div className="w-full text-center font-extrabold text-[12px] text-[var(--mos-text)] mt-0.5 truncate">
                 {booking?.attributes?.naturalLashLength
                   ? booking.attributes.naturalLashLength.replace(/\s*mm/gi, '').split('(')[0].trim()
                   : '—'}
               </div>
             </div>
-            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-2 py-2 flex flex-col justify-between">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-1.5 py-2 flex flex-col items-center justify-center text-center">
               <span className="text-[var(--mos-text-muted)] text-[9.5px] font-semibold">Độ dày</span>
-              <div className="font-extrabold text-[11px] text-[var(--mos-text)] mt-0.5 truncate">
+              <div className="w-full text-center font-extrabold text-[11px] text-[var(--mos-text)] mt-0.5 truncate">
                 {booking?.attributes?.naturalLashThickness
                   ? booking.attributes.naturalLashThickness.replace(/\s*mm/gi, '').split('(')[0].trim()
                   : '—'}
               </div>
             </div>
-            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-2 py-2 flex flex-col justify-between">
+            <div className="bg-[var(--mos-surface-raised)] border border-[var(--mos-surface-border)] rounded-xl px-1.5 py-2 flex flex-col items-center justify-center text-center">
               <span className="text-[var(--mos-text-muted)] text-[9.5px] font-semibold">Dáng mắt</span>
-              <div className="font-extrabold text-[11px] text-[var(--mos-text)] mt-0.5 truncate">
+              <div className="w-full text-center font-extrabold text-[11px] text-[var(--mos-text)] mt-0.5 truncate">
                 {booking?.attributes?.eyeShape ? booking.attributes.eyeShape.split('(')[0].trim() : '—'}
               </div>
             </div>

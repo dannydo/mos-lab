@@ -13,6 +13,7 @@ import {
 } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
+import { getClientTrainingSamplePhoto } from '../simulation/IosSimulationWorkspaceBar';
 import {
   Eye,
   Camera,
@@ -30,6 +31,7 @@ interface Screen07LashProgressBeforeProps {
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
   onAutoSavePhoto?: (photoUrl: string) => Promise<any> | void;
+  isSimulationMode?: boolean;
 }
 
 export function Screen07LashProgressBefore({
@@ -37,6 +39,7 @@ export function Screen07LashProgressBefore({
   onBack,
   onSavePhoto,
   onAutoSavePhoto,
+  isSimulationMode = false,
 }: Screen07LashProgressBeforeProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const isSelectingRef = useRef<boolean>(false);
@@ -406,6 +409,38 @@ export function Screen07LashProgressBefore({
             <Camera className="w-4 h-4 text-amber-400" />
             <span>{photoPreview ? 'Chụp lại Camera' : 'Chụp Bằng Camera'}</span>
           </button>
+
+          {isSimulationMode && (
+            <button
+              type="button"
+              onClick={() => {
+                const sampleUrl = getClientTrainingSamplePhoto('before');
+                setPhotoPreview(sampleUrl);
+                setIsPhotoDeclined(false);
+                setCloudSyncStatus('uploading');
+                if (bookingId) {
+                  saveLocalProgressSnapshot(bookingId, {
+                    beforePhotoUrl: sampleUrl,
+                    beforePhotoSavedAt: new Date().toISOString(),
+                    bookingId,
+                    currentStep: 7,
+                  });
+                }
+                if (onAutoSavePhoto) {
+                  void Promise.resolve(onAutoSavePhoto(sampleUrl)).finally(() => setCloudSyncStatus('synced'));
+                } else {
+                  setCloudSyncStatus('synced');
+                }
+              }}
+              className={`w-full py-2 px-3 rounded-xl border text-[12px] font-bold active:scale-98 transition-all cursor-pointer ${
+                isDark
+                  ? 'bg-amber-950/40 hover:bg-amber-950/70 border-amber-500/40 text-amber-300'
+                  : 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'
+              }`}
+            >
+              Dùng ảnh mẫu tập luyện (Before)
+            </button>
+          )}
 
           {/* Nút ngoại lệ: Khách từ chối chụp ảnh */}
           {!photoPreview && (

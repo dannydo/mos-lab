@@ -28,6 +28,14 @@ import type {
 export interface UseIosBookingsSyncParams {
   enabled: boolean;
   isDemoMode: boolean;
+  isSimulationMode?: boolean;
+  menteeStaffId?: number;
+  isReadOnlyMentorView?: boolean;
+  onSimulationMetaLoaded?: (meta: {
+    isReadOnlyMentorView?: boolean;
+    simulationActorStaffName?: string;
+    simulationActorStaffId?: number;
+  }) => void;
   isAdmin?: boolean;
   role: IosUserRole;
   isTechnicianRole: boolean;
@@ -51,6 +59,10 @@ export interface UseIosBookingsSyncParams {
 export function useIosBookingsSync({
   enabled,
   isDemoMode,
+  isSimulationMode = false,
+  menteeStaffId,
+  isReadOnlyMentorView = false,
+  onSimulationMetaLoaded,
   isAdmin = false,
   role,
   isTechnicianRole,
@@ -132,15 +144,21 @@ export function useIosBookingsSync({
 
   const postAction = useCallback(
     async (action: string, payload: Record<string, any> = {}) => {
+      if (isReadOnlyMentorView) {
+        return { success: false, error: 'Mentor đang ở chế độ chỉ đọc.' };
+      }
       const targetBookingId = payload.bookingId !== undefined ? Number(payload.bookingId) : activeBookingId;
+      const isSimAction = isSimulationMode || Boolean(payload.simulationMode) || String(action).startsWith('SIM_');
 
       if (payload.progress) {
         saveLocalProgressSnapshot(targetBookingId, payload.progress);
       }
 
       if (typeof window !== 'undefined' && !navigator.onLine) {
-        enqueueOfflineAction(action, targetBookingId, payload);
-        return { success: false, offlineQueued: true };
+        if (!isSimAction) {
+          enqueueOfflineAction(action, targetBookingId, payload);
+        }
+        return { success: false, offlineQueued: !isSimAction };
       }
 
       try {
@@ -150,16 +168,33 @@ export function useIosBookingsSync({
           actorStaffId: actor.staffId,
           actorStaffName: actor.name,
           actorStaffTier: actor.tier,
+          ...(isSimulationMode ? { simulationMode: true } : {}),
           ...payload,
-        })) as { success?: boolean; progress?: Record<string, any>; cloudSyncedAt?: string; [key: string]: any };
+        })) as {
+          success?: boolean;
+          progress?: Record<string, any>;
+          cloudSyncedAt?: string;
+          simulationAttemptCount?: number;
+          simulationFastForwardUnlocked?: boolean;
+          attemptSnapshot?: Record<string, any>;
+          [key: string]: any;
+        };
 
         if (data?.success !== false) {
-          if (data?.progress || data?.override?.billing) {
+          if (data?.progress || data?.override?.billing || data?.simulationAttemptCount !== undefined) {
             setBookings((prev) =>
               prev.map((b) =>
                 Number(b.id) === targetBookingId
                   ? {
                       ...b,
+                      ...(data?.simulationAttemptCount !== undefined
+                        ? {
+                            simulationAttemptCount: Number(data.simulationAttemptCount),
+                            simulationFastForwardUnlocked: Boolean(
+                              data.simulationFastForwardUnlocked ?? Number(data.simulationAttemptCount) >= 1
+                            ),
+                          }
+                        : {}),
                       ...(data?.override?.billing
                         ? {
                             billing: {
@@ -195,15 +230,19 @@ export function useIosBookingsSync({
           return { success: true, data };
         }
 
-        enqueueOfflineAction(action, targetBookingId, payload);
-        return { success: false };
+        if (!isSimAction) {
+          enqueueOfflineAction(action, targetBookingId, payload);
+        }
+        return { success: false, data };
       } catch (err) {
-        console.warn('[useIosBookingsSync] Failed to persist action, queued offline:', action, err);
-        enqueueOfflineAction(action, targetBookingId, payload);
+        console.warn('[useIosBookingsSync] Failed to persist action:', action, err);
+        if (!isSimAction) {
+          enqueueOfflineAction(action, targetBookingId, payload);
+        }
         return { success: false, error: err };
       }
     },
-    [activeBookingId, actor.staffId, actor.name, actor.tier, setBookings]
+    [activeBookingId, actor.staffId, actor.name, actor.tier, isReadOnlyMentorView, isSimulationMode, setBookings]
   );
 
   const refreshDb = useCallback(
@@ -233,10 +272,19 @@ export function useIosBookingsSync({
             staffId: effStaffId,
             date: targetDateStr,
             limit: 200,
-            ...(isDemoMode ? { demo: true } : {}),
+            ...(isDemoMode && !isSimulationMode ? { demo: true } : {}),
+            ...(isSimulationMode ? { sim: true, ...(menteeStaffId ? { menteeStaffId } : {}) } : {}),
           },
           options?.isPolling ? { isPolling: true } : undefined
         );
+
+        if (isSimulationMode) {
+          onSimulationMetaLoaded?.({
+            isReadOnlyMentorView: data?.isReadOnlyMentorView,
+            simulationActorStaffName: data?.simulationActorStaffName,
+            simulationActorStaffId: data?.simulationActorStaffId,
+          });
+        }
 
         if (data?.success && Array.isArray(data.bookings)) {
           if (!isAdmin && data.storeId && Number(data.storeId) !== effectiveStoreId) {
@@ -347,6 +395,9 @@ export function useIosBookingsSync({
       getDateStrForOffset,
       effectiveStoreId,
       isDemoMode,
+      isSimulationMode,
+      menteeStaffId,
+      onSimulationMetaLoaded,
       activeBookingIdRef,
       setActiveBookingId,
       setBookings,
@@ -463,14 +514,23 @@ export function useIosBookingsSync({
       }
 
       try {
-        await postAction('REVERT_TO_INCOMING', { bookingId: idNum });
+        await postAction(isSimulationMode ? 'SIM_RESET_TO_INCOMING' : 'REVERT_TO_INCOMING', { bookingId: idNum });
       } catch (err) {
-        console.warn('Failed to post REVERT_TO_INCOMING:', err);
+        console.warn('Failed to post revert to incoming action:', err);
       }
 
       void refreshDb();
     },
-    [activeBookingIdRef, postAction, refreshDb, setActiveTab, setBookingSegment, setBookings, setCurrentStep]
+    [
+      activeBookingIdRef,
+      isSimulationMode,
+      postAction,
+      refreshDb,
+      setActiveTab,
+      setBookingSegment,
+      setBookings,
+      setCurrentStep,
+    ]
   );
 
   return {

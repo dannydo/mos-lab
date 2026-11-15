@@ -30,6 +30,9 @@ export function Screen03ConsultationMatrix({
   onSave,
   onUpdateAvatar,
   onAutoSaveDraft,
+  isSimulationMode = false,
+  isReadOnlyMentorView = false,
+  onSimFastForwardToUpsell,
 }: Screen03ConsultationMatrixProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -310,6 +313,11 @@ export function Screen03ConsultationMatrix({
           triggerMandatoryLashCheckGuard={diagnostic.triggerMandatoryLashCheckGuard}
           handleSubmit={pricing.handleSubmit}
           comboPurchaseTotal={pricing.comboPurchaseTotal}
+          bookingId={booking?.id}
+          isSimulationMode={isSimulationMode}
+          isReadOnlyMentorView={isReadOnlyMentorView}
+          simulationAttemptCount={booking?.simulationAttemptCount}
+          onSimFastForwardToUpsell={onSimFastForwardToUpsell}
         />
       </div>
 

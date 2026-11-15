@@ -15,6 +15,10 @@ import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
+import { IosSimulationWorkspaceBar } from './components/simulation/IosSimulationWorkspaceBar';
+import { IosSimulationHistorySheet } from './components/simulation/IosSimulationHistorySheet';
+import { IosCreateBookingSheet } from './components/modals/booking/IosCreateBookingSheet';
+import { SimulationReceiptReplayBar } from './components/screens/checkout/SimulationReceiptReplayBar';
 import './ios-typography.css';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
@@ -116,12 +120,13 @@ function IosAppInner() {
   const roleParam = searchParams.get('role')?.toUpperCase() as IosUserRole | undefined;
   const bookingIdStr = searchParams.get('bookingId');
   const isDemoMode = searchParams.get('demo') === '1' || searchParams.get('demo') === 'true';
+  const isSimModeParam = searchParams.get('sim') === '1' || searchParams.get('sim') === 'true';
   const initialStep = stepStr ? parseInt(stepStr, 10) : 1;
   const initialBookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : undefined;
   const initialRole: IosUserRole =
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
 
-  const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId, isDemoMode);
+  const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId, isDemoMode, isSimModeParam);
   useIosFontScale(state.actor?.staffId);
 
   useEffect(() => {
@@ -237,6 +242,7 @@ function IosAppInner() {
       currentBranch={state.currentBranch}
       availableBranches={state.availableBranches}
       totalStoreBookingsCount={state.totalStoreBookingsCount}
+      onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
     />
   );
 
@@ -342,6 +348,9 @@ function IosAppInner() {
             onSave={state.handleSaveConsultation}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
             onAutoSaveDraft={state.handleAutoSaveConsultationDraft}
+            isSimulationMode={state.isSimulationMode}
+            isReadOnlyMentorView={state.isReadOnlyMentorView}
+            onSimFastForwardToUpsell={state.handleSimFastForwardToUpsell}
           />
         );
       case 4:
@@ -383,6 +392,7 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(6)}
             onSavePhoto={state.handleSaveBeforePhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('before', url)}
+            isSimulationMode={state.isSimulationMode}
           />
         );
       case 8:
@@ -394,6 +404,7 @@ function IosAppInner() {
             onAutoSavePhoto={(url, retainLashes) =>
               state.handleAutoSavePhoto('cleaned', url, retainLashes ? { retainLashes } : undefined)
             }
+            isSimulationMode={state.isSimulationMode}
           />
         );
       case 9:
@@ -414,6 +425,7 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(9)}
             onSavePhoto={state.handleSaveAfterPhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('after', url)}
+            isSimulationMode={state.isSimulationMode}
           />
         );
       case 11:
@@ -475,6 +487,19 @@ function IosAppInner() {
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
             onFinishOrder={state.handleFinishOrder}
+            simulationReplaySlot={
+              state.isSimulationMode ? (
+                <SimulationReceiptReplayBar
+                  bookingId={currentBooking.id}
+                  attemptCount={currentBooking.simulationAttemptCount}
+                  isReadOnlyMentorView={state.isReadOnlyMentorView}
+                  isBusy={state.isSimActionBusy}
+                  onRevertConsultation={state.handleSimRevertConsultation}
+                  onOpenHistory={state.openHistoryForBooking}
+                  onResetToIncoming={state.handleSimResetToIncoming}
+                />
+              ) : undefined
+            }
             onBack={() => {
               state.setActiveServicingBookingId(null);
               state.setBookingSegment('DONE');
@@ -519,6 +544,25 @@ function IosAppInner() {
         className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden transition-colors"
         style={{ backgroundColor: 'var(--background)' }}
       >
+        <IosSimulationWorkspaceBar
+          isSimulationMode={state.isSimulationMode}
+          isReadOnlyMentorView={state.isReadOnlyMentorView}
+          simulationActorStaffName={state.simulationActorStaffName}
+          menteesList={state.menteesList}
+          selectedMenteeStaffId={state.selectedMenteeStaffId}
+          onSelectMentee={state.selectMenteeStaffId}
+          activeBooking={state.activeBooking}
+          currentStep={state.currentStep}
+          isBusy={state.isSimActionBusy}
+          simActionError={state.simActionError}
+          onDismissError={() => state.setSimActionError(null)}
+          onOpenCreateBooking={() => state.setIsCreateBookingOpen(true)}
+          onOpenHistory={state.openHistoryForBooking}
+          onRevertConsultation={state.handleSimRevertConsultation}
+          onResetToIncoming={state.handleSimResetToIncoming}
+          onExitSimulation={state.toggleSimulationMode}
+        />
+
         {/* Screen Body */}
         <div
           className="flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors"
@@ -534,7 +578,9 @@ function IosAppInner() {
             activeTab={state.activeTab}
             onTabChange={handleTabChange}
             onCenterPlusClick={() => {
-              if (state.activeServicingBooking) {
+              if (state.isSimulationMode && !state.activeServicingBooking) {
+                state.setIsCreateBookingOpen(true);
+              } else if (state.activeServicingBooking) {
                 state.handleResumeServicing(state.activeServicingBooking.id);
               } else {
                 state.setActiveTab('booking');
@@ -562,6 +608,9 @@ function IosAppInner() {
           onSelectBranch={state.isAdmin ? state.setSelectedStoreId : undefined}
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
+          isSimulationMode={state.isSimulationMode}
+          onToggleSimulationMode={state.toggleSimulationMode}
+          onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
           onRoleChange={(r) => {
             state.setRole(r);
             setIsProfileSheetOpen(false);
@@ -600,6 +649,29 @@ function IosAppInner() {
               window.location.replace('/login');
             }
           }}
+        />
+
+        <IosCreateBookingSheet
+          isOpen={state.isCreateBookingOpen}
+          onClose={() => state.setIsCreateBookingOpen(false)}
+          isSimulationMode={state.isSimulationMode}
+          selectedStoreId={state.selectedStoreId}
+          branchName={state.currentBranch?.name}
+          targetDate={state.targetDateStr}
+          actorStaffId={state.actor?.staffId}
+          onCreated={state.handleBookingCreated}
+        />
+
+        <IosSimulationHistorySheet
+          isOpen={state.isHistorySheetOpen}
+          onClose={() => state.setIsHistorySheetOpen(false)}
+          booking={state.bookings.find((b) => Number(b.id) === Number(state.historyBookingId)) || state.activeBooking}
+          attempts={state.historyBookingId ? state.attemptsByBookingId[state.historyBookingId] || [] : []}
+          isLoading={state.historyLoading}
+          isReadOnly={state.isReadOnlyMentorView}
+          isBusy={state.isSimActionBusy}
+          onRevertConsultation={state.handleSimRevertConsultation}
+          onResetToIncoming={state.handleSimResetToIncoming}
         />
       </div>
     </div>

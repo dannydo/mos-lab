@@ -414,7 +414,7 @@ export function QuickCheckInComboCard({
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>{isComboLive ? preset.normalRemaining : 'Mới'}</span>
+          <span>{isComboLive ? `Mới (${preset.normalRemaining})` : 'Mới'}</span>
         </button>
 
         <button
@@ -427,7 +427,7 @@ export function QuickCheckInComboCard({
           }`}
         >
           <RotateCw className="w-3.5 h-3.5 shrink-0" />
-          <span>{isComboLive ? preset.retainRemaining : 'Dặm'}</span>
+          <span>{isComboLive ? `Dặm (${preset.retainRemaining})` : 'Dặm'}</span>
         </button>
       </div>
     </div>

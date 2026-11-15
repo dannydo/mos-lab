@@ -15,6 +15,17 @@ import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
 import { scanIosProductByCode } from './services/ios-product-scan.service.js';
 import { fetchIosPromotionsForActor, resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
+import { executeIosSimulationBookingAction } from './services/ios-simulation-actions.service.js';
+import {
+  listAccessibleSimulationMentees,
+  loadSimulationAttempts,
+  resolveSimulationContextActor,
+} from './services/ios-simulation.service.js';
+import {
+  createIosDualModeBooking,
+  fetchIosBookingServiceCatalog,
+  lookupIosCustomersForBooking,
+} from './services/ios-booking-create.service.js';
 
 export { hasAnyNaturalLashAttribute, hasCompleteNaturalLashAttributes, validateNaturalLashConsultationSave };
 export type { NaturalLashConsultationAttributes };
@@ -54,7 +65,8 @@ export async function iosRoutes(fastify: FastifyInstance) {
       return reply.send(responsePayload);
     } catch (error: SafeAny) {
       fastify.log.error(error, 'Error fetching bookings from /api/ios/bookings');
-      return reply.status(500).send({
+      const statusCode = error?.statusCode === 403 ? 403 : 500;
+      return reply.status(statusCode).send({
         success: false,
         error: error?.message || 'Database query error',
         counts: { incoming: 0, servicing: 0, done: 0, cancel: 0 },
@@ -78,13 +90,112 @@ export async function iosRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const result = await executeIosBookingAction(authUser, request.body as SafeAny);
+      const body = request.body as SafeAny;
+      const actionStr = String(body?.action || '').toUpperCase();
+      const isSimulationRequest = Boolean(body?.simulationMode) || actionStr.startsWith('SIM_');
+      const result = isSimulationRequest
+        ? await executeIosSimulationBookingAction(fastify, authUser, body)
+        : await executeIosBookingAction(authUser, body);
       return reply.status(result.statusCode).send(result.payload);
     } catch (error: SafeAny) {
       fastify.log.error(error, 'Error executing /api/ios/bookings POST action');
-      return reply.status(500).send({
+      const statusCode = error?.statusCode === 403 ? 403 : 500;
+      return reply.status(statusCode).send({
         success: false,
         error: error?.message || 'Action execution error',
+      });
+    }
+  });
+
+  // GET /api/ios/customers/lookup
+  fastify.get('/ios/customers/lookup', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, customers: [], error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, customers: [], error: 'Forbidden' });
+      }
+      const query = request.query as Record<string, string | undefined>;
+      const customers = await lookupIosCustomersForBooking(fastify, authUser, String(query.q || ''));
+      return reply.send({ success: true, customers });
+    } catch (error: SafeAny) {
+      return reply.status(500).send({ success: false, customers: [], error: error?.message || 'Lookup failed' });
+    }
+  });
+
+  // GET /api/ios/services/catalog
+  fastify.get('/ios/services/catalog', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, services: [], error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, services: [], error: 'Forbidden' });
+      }
+      const services = await fetchIosBookingServiceCatalog(fastify);
+      return reply.send({ success: true, services });
+    } catch (error: SafeAny) {
+      return reply.status(500).send({ success: false, services: [], error: error?.message || 'Catalog failed' });
+    }
+  });
+
+  // POST /api/ios/bookings/create
+  fastify.post('/ios/bookings/create', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, simulationMode: false, error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, simulationMode: false, error: 'Forbidden' });
+      }
+      const result = await createIosDualModeBooking(fastify, authUser, request.body as SafeAny);
+      return reply.status(result.statusCode).send(result.payload);
+    } catch (error: SafeAny) {
+      return reply.status(500).send({
+        success: false,
+        simulationMode: Boolean((request.body as SafeAny)?.simulationMode),
+        error: error?.message || 'Create booking failed',
+      });
+    }
+  });
+
+  // GET /api/ios/simulation/mentees
+  fastify.get('/ios/simulation/mentees', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, mentees: [], error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, mentees: [], error: 'Forbidden' });
+      }
+      const query = request.query as Record<string, string | undefined>;
+      const mentees = await listAccessibleSimulationMentees(fastify, authUser, query.date);
+      return reply.send({ success: true, mentees });
+    } catch (error: SafeAny) {
+      return reply.status(500).send({ success: false, mentees: [], error: error?.message || 'Fetch mentees failed' });
+    }
+  });
+
+  // GET /api/ios/simulation/attempts
+  fastify.get('/ios/simulation/attempts', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, attempts: [], error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, attempts: [], error: 'Forbidden' });
+      }
+      const query = request.query as Record<string, string | undefined>;
+      const bookingId = Number(query.bookingId || 0);
+      if (!bookingId || bookingId <= 0) {
+        return reply.status(400).send({ success: false, attempts: [], error: 'Thiếu bookingId.' });
+      }
+      const requestedMenteeId = query.menteeStaffId ? Number(query.menteeStaffId) : undefined;
+      const ctx = await resolveSimulationContextActor(fastify, authUser, requestedMenteeId, query.date);
+      const attempts = await loadSimulationAttempts(ctx.targetStaffId, bookingId);
+      return reply.send({ success: true, attempts, isReadOnlyMentorView: ctx.isReadOnlyMentorView });
+    } catch (error: SafeAny) {
+      const statusCode = error?.statusCode === 403 ? 403 : 500;
+      return reply.status(statusCode).send({
+        success: false,
+        attempts: [],
+        error: error?.message || 'Fetch simulation attempts failed',
       });
     }
   });

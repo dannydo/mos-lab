@@ -24,6 +24,8 @@ apps/api/src/modules/ios/
     ├── ios-bookings-formatters.ts            # Avatar/time/phone formatters + shared financial & tip breakdown math
     ├── ios-bookings-mapper.service.ts        # Pure mappers: mapLiveOrdersToBookings, buildDemoModeBookings, CVL scope
     ├── ios-bookings-query.service.ts         # Orchestrates GET /ios/bookings (Live Mode vs ?demo=1 mode)
+    ├── ios-legacy-bridge.service.ts          # End-of-order Legacy PHP settlement bridge (COMPLETE_ORDER)
+    ├── ios-legacy-step-sync.service.ts       # Real-time step-by-step Live Mode sync to Legacy PHP (/1/order/*)
     └── ios-actions.service.ts                # Executes POST /ios/bookings state transitions with per-booking locks
 ```
 
@@ -56,6 +58,18 @@ apps/api/src/modules/ios/
 ### D. Batch SQL Discipline (Zero Correlated Subqueries)
 
 - `ios-bookings-sql.service.ts` fetches `order` rows for `targetDate` first, then runs parameterized `IN (?)` batch queries via `Promise.all` (`order_service`, `user_contact`, `total_visits`, `lashHistory` with `LIMIT 800`, `user_service_balance`, `user_balance`). Never add per-row correlated subqueries inside `SELECT FROM \`order\``.
+
+### E. Real-Time Workflow Simulation Sandbox (`OPS-004`)
+
+- Activated via `GET/POST /ios/bookings` with `sim=1` / `simulationMode: true` (`ios-simulation.service.ts` + `ios-simulation-actions.service.ts` + `ios-booking-create.service.ts`).
+- Writes **exclusively** to `CVL`-namespaced keys (`IOS_SIM_BK_OVR:<staffId>:<bookingId>`, `IOS_SIM_NLASH:<staffId>:<customerId>`, `IOS_SIM_CUSTOM_BK:<staffId>:<date>`, `IOS_SIM_ATTEMPTS:<staffId>:<bookingId>`). Never mutates live `IOS_BK_OVR`, `IOS_CUST_NLASH`, `IOS_LEGACY_SETTLE`, MySQL `management.*`, or LAN receipt printers.
+- Mentor (`CC` paired via `CvlTrainingMentorshipService`) and `ADMIN` inspect mentee sandboxes strictly read-only (`403` on mutations). Fast-forward (`SIM_FAST_FORWARD_TO_UPSELL`) requires Attempt #2+ (`simulationAttemptCount >= 1`).
+
+### F. Live Mode Step-by-Step Legacy PHP Sync (`ios-legacy-step-sync.service.ts`)
+
+- In Live Mode (`!simulationMode`, `!demoMode`, non-demo `bookingId < 900_000_000`), every intermediate `POST /ios/bookings` workflow step (`CHECK_IN`, `SAVE_CONSULTATION`, `ASSIGN_STAFF`, `START_SERVICE`, `UPDATE_PROGRESS` / `SAVE_PROGRESS`, `COMPLETE_SURVEY` / `SAVE_SURVEY`, `SAVE_UPSELL_AND_CHECKOUT`, `REVERT_TO_INCOMING`) immediately calls the corresponding Legacy PHP `/1/order/*` endpoint so `WingsBeauty` (legacy iOS app) sees live state transitions in real time without waiting for `COMPLETE_ORDER`.
+- Unassigned queue (`Dau tua`) check-ins by `CC`/`CVLL` strip `assigned_staff_id` on `/order/booking/check-in` and omit `assigned_staff` / `assigned_staff_id` on `ASSIGN_OTHER` consultations so `order_service.assigned_staff_id` is never overwritten with `0`.
+- Non-blocking fallback: PHP/network errors degrade gracefully to `legacyStepSyncStatus: 'DEFERRED'` (HTTP `200`, local override saved), and `settleIosOrderWithLegacyPhp` at `COMPLETE_ORDER` reconciles idempotently. Simulation Mode & `DEMO_BOOKING_IDS` always perform `0` Legacy PHP/DB calls.
 
 ---
 

@@ -11,6 +11,12 @@ import type {
   IosAdminComboExpiryActionResponse,
   IosScanProductRequest,
   IosScanProductResponse,
+  IosCustomerLookupCandidate,
+  IosBookingServiceCatalogItem,
+  IosCreateBookingRequest,
+  IosCreateBookingResponse,
+  IosSimulationMenteeOption,
+  IosSimulationAttemptSummary,
 } from '@mos-lab/shared';
 
 export interface IosPromotionsResponse {
@@ -41,6 +47,9 @@ export const iosApi = {
       if (typeof params?.demo === 'boolean') {
         normalizedParams.demo = params.demo ? '1' : undefined;
       }
+      if (typeof params?.sim === 'boolean') {
+        normalizedParams.sim = params.sim ? '1' : undefined;
+      }
       const res = await api.get<IosBookingListResponse>('/ios/bookings', {
         params: normalizedParams,
         signal: options?.signal,
@@ -60,6 +69,87 @@ export const iosApi = {
         priority: options?.priority,
         timeout: options?.timeout,
       });
+      return res.data;
+    },
+
+    async lookupCustomers(
+      query: string,
+      options?: ApiRequestOptions
+    ): Promise<{
+      success: boolean;
+      customers: IosCustomerLookupCandidate[];
+    }> {
+      const res = await api.get<{ success: boolean; customers: IosCustomerLookupCandidate[] }>(
+        '/ios/customers/lookup',
+        {
+          params: { q: query },
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
+      return res.data;
+    },
+
+    async getServiceCatalog(options?: ApiRequestOptions): Promise<{
+      success: boolean;
+      services: IosBookingServiceCatalogItem[];
+    }> {
+      const res = await api.get<{ success: boolean; services: IosBookingServiceCatalogItem[] }>(
+        '/ios/services/catalog',
+        {
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
+      return res.data;
+    },
+
+    async createBooking(
+      payload: IosCreateBookingRequest,
+      options?: ApiRequestOptions
+    ): Promise<IosCreateBookingResponse> {
+      const res = await api.post<IosCreateBookingResponse>('/ios/bookings/create', payload, {
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
+      return res.data;
+    },
+
+    async listSimulationMentees(
+      date?: string,
+      options?: ApiRequestOptions
+    ): Promise<{
+      success: boolean;
+      mentees: IosSimulationMenteeOption[];
+    }> {
+      const res = await api.get<{ success: boolean; mentees: IosSimulationMenteeOption[] }>('/ios/simulation/mentees', {
+        params: date ? { date } : undefined,
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
+      return res.data;
+    },
+
+    async listSimulationAttempts(
+      params: { bookingId: number; menteeStaffId?: number },
+      options?: ApiRequestOptions
+    ): Promise<{
+      success: boolean;
+      attempts: IosSimulationAttemptSummary[];
+    }> {
+      const res = await api.get<{ success: boolean; attempts: IosSimulationAttemptSummary[] }>(
+        '/ios/simulation/attempts',
+        {
+          params,
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
       return res.data;
     },
 

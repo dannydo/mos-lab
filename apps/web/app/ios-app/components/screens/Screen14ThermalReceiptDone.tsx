@@ -25,6 +25,7 @@ interface Screen14ThermalReceiptDoneProps {
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
   onFinishOrder: () => void;
   onBack?: () => void;
+  simulationReplaySlot?: React.ReactNode;
 }
 
 export function Screen14ThermalReceiptDone({
@@ -33,6 +34,7 @@ export function Screen14ThermalReceiptDone({
   cvPlusRules,
   onFinishOrder,
   onBack,
+  simulationReplaySlot,
 }: Screen14ThermalReceiptDoneProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -601,6 +603,8 @@ export function Screen14ThermalReceiptDone({
           </div>
         )}
       </div>
+
+      {simulationReplaySlot && <div className="pt-2">{simulationReplaySlot}</div>}
 
       {/* Bottom Action Area */}
       <div className="pt-3">
