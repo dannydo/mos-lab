@@ -21,6 +21,9 @@ import { MosChatMobileReactionUsersSheet } from './MosChatMobileReactionUsersShe
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
 import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
+import { MosChatFilesPane } from '../components/MosChatFilesPane';
+import { MosChatGoogleWorkspaceDrawer } from '../components/MosChatGoogleWorkspaceDrawer';
+import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import { MosChatMobileTaskDetailSheet } from './MosChatMobileTaskDetailSheet';
 import { MosChatMobileEditTaskModal } from './MosChatMobileEditTaskModal';
 import { MosChatMobileNegotiateTaskModal } from './MosChatMobileNegotiateTaskModal';
@@ -64,7 +67,7 @@ export interface MosChatMobileAppProps {
     conversationId?: string;
     messageId?: string;
     threadRootMessageId?: string;
-    openTab?: 'chat' | 'tasks' | 'pinned';
+    openTab?: MosChatActiveSubtab;
     taskId?: string;
     timestamp?: number;
   } | null;
@@ -878,6 +881,32 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
               onBackToChat={() => setActiveSubtab('chat')}
             />
           )}
+
+          {activeSubtab === 'files' && (
+            <MosChatFilesPane
+              activeConversation={activeConversation}
+              setActiveSubtab={setActiveSubtab}
+              navigateToMessage={(convId, msgId) => {
+                if (convId) setActiveConvId(convId);
+                setActiveSubtab('chat');
+                setTimeout(() => {
+                  const el = document.getElementById(`mos-chat-msg-${msgId}`);
+                  if (el && typeof el.scrollIntoView === 'function') {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-500/10');
+                    setTimeout(() => {
+                      el.classList.remove('ring-2', 'ring-emerald-400', 'bg-emerald-500/10');
+                    }, 2500);
+                  }
+                }, 150);
+              }}
+              isDark={isDark}
+              surfaceBg="var(--mos-surface)"
+              surfaceRaised="var(--mos-surface-muted)"
+              borderColor="var(--mos-surface-border)"
+              isMobile={true}
+            />
+          )}
         </>
       )}
 
@@ -1251,6 +1280,15 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         open={themeSheetOpen}
         onClose={() => setThemeSheetOpen(false)}
         fontControl={<IosFontSizeControl isDark={isDark} staffId={resolvedFontStaffId} />}
+      />
+
+      <MosChatGoogleWorkspaceDrawer
+        isMobile={true}
+        isDark={isDark}
+        activeConversationId={activeConversation?.id}
+        onPostAiReplyToChat={(replyText, docTitle) => {
+          void sendMessage(`✨ **Phân tích AI (${docTitle}):**\n\n${replyText}`);
+        }}
       />
     </div>
   );

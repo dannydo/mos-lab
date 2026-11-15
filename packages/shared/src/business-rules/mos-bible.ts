@@ -2246,6 +2246,53 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'iOS Bookings API Route Guard', reference: 'apps/web/app/api/ios/bookings/route.ts' },
     ],
   },
+  {
+    id: 'UI-011',
+    book: 'SYSTEM',
+    title: 'Google Workspace (Sheets & Docs) Reader Plugin & Service Account Security Trong mOS Chat',
+    summary:
+      'Mọi đường dẫn Google Sheets và Google Docs gửi trong mOS Chat được biến thành Smart Chip + Thẻ Preview mini chuẩn Google Chat Workspace, mở Khung đọc song song Dual-Mode (mOS Fast Reader + Google Live View) ngay bên cạnh, gom tập trung tại mục Tài liệu (Files) phòng chat và tự động nạp ngữ cảnh cho @AI/@MAI cùng mOS Mission.',
+    commandments: [
+      'Hiển Thị Chuẩn Google Chat Workspace: URL Google Sheets / Docs được thu gọn thành Smart Chip nội dòng kèm thẻ Preview mini dưới tin nhắn (hiển thị tên file, dãy chip các tab như NVL / Mi, 3–5 dòng quanh ô/vùng range=D17 hoặc đoạn trích dẫn Docs). Trên thanh đầu phòng chat luôn có mục Tài liệu (Files) để tra cứu toàn bộ link Workspace và tệp đã gửi.',
+      'Khung Đọc Song Song Kép (Dual-Mode Split Canvas): Bấm vào Smart Chip hoặc Thẻ Preview sẽ mở Khung đọc song song bên phải (nút đóng [✕] đặt tại góc trên bên phải). Mặc định dùng mOS Fast Reader (tự chọn đúng gid, tự cuộn & tô sáng ô range, lọc tìm tức thì, chữ số tabular-nums, chuẩn Light/Dark Theme và iOS/Safari), kèm nút chuyển 1 chạm sang Google Live View (Iframe) để xem/sửa nguyên bản.',
+      'Xác Thực Đa Tầng Không Rào Cản: (1) File bật "Bất kỳ ai có liên kết" (PUBLIC_LINK) đọc trực tiếp không cần đăng nhập; (2) File nội bộ chia sẻ cho Service Account Wings (wings-sheets-sa@wings-lashes.iam.gserviceaccount.com) đọc qua Google Drive v3 / Sheets v4 (riêng Google Docs dùng Drive Export HTML thay cho Docs API); (3) File chưa chia sẻ trả trạng thái NEEDS_SHARE kèm nút copy email mOS Bot 1 chạm.',
+      'Bảo Vệ Lớp Service Account (Chống Lộ File Nhạy Cảm): File PUBLIC_LINK mở cho toàn bộ thành viên phòng chat. Riêng file khóa riêng tư chỉ đọc được qua Service Account (SERVICE_ACCOUNT) chỉ được bung dữ liệu khi người gửi tin nhắn chứa link HOẶC người đang xem giữ vai trò Quản trị / Quản lý (admin, super_admin, manager, fm, cho, boss). Nếu không thỏa điều kiện, API trả RESTRICTED_ROLE.',
+      'Tích Hợp AI 3 Điểm Chạm & Mission Snapshot: (1) Thanh AI nhanh ngay trong Khung đọc; (2) Tự động phát hiện và nạp cấu trúc các tab + dữ liệu quanh range vào ngữ cảnh khi gọi @AI / @MAI; (3) Khi bấm 🚀 tạo Ticket mOS Mission từ tin nhắn/thread chứa link Sheet/Docs, hệ thống tự đính kèm snapshot bảng các tab và dữ liệu mẫu vào mô tả Ticket.',
+    ],
+    rationale:
+      'Giúp nhân sự Kho, Điều hành, Chuyên Viên và AI đọc hiểu tức thì bảng tính nhiều tab và tài liệu quy trình ngay trong mOS Chat như Google Chat Workspace mà không vướng cảnh báo OAuth hay rò rỉ file nội bộ nhạy cảm.',
+    examples: [
+      'Bảo Hân (Admin) gửi link Google Sheet Kho Đề Thám (#gid=516151439&range=D17) vào nhóm Kho ĐT - EP: cả phòng xem được tab NVL, Mi và nhảy thẳng tới ô D17 trong mOS Fast Reader; @AI trả lời được ngay số liệu trên cả 2 tab.',
+    ],
+    tags: [
+      'google sheets',
+      'google docs',
+      'google workspace',
+      'mos-chat',
+      'smart chip',
+      'fast reader',
+      'service account',
+      'tài liệu phòng chat',
+      'AI context',
+      'mission snapshot',
+    ],
+    routeScopes: ['/dashboard/chat', '/chat', '/dashboard'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-15',
+    sources: [
+      { label: 'Shared Google Workspace URL Parser', reference: 'packages/shared/src/utils/google-workspace-link.ts' },
+      {
+        label: 'Backend Google Workspace Service',
+        reference: 'apps/api/src/modules/chat/chat-google-workspace.service.ts',
+      },
+      {
+        label: 'Split Canvas Reader UI',
+        reference: 'apps/web/components/mos-chat/components/MosChatGoogleWorkspaceDrawer.tsx',
+      },
+      { label: 'Chat Room Files Pane', reference: 'apps/web/components/mos-chat/components/MosChatFilesPane.tsx' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

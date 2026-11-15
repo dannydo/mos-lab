@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MosChatRichText, decodeHtmlEntities } from '../MosChatRichText';
 
@@ -448,5 +448,42 @@ describe('MosChatRichText', () => {
     // Multi-level numbered item (*2.1.) should render as numbered marker 2.1.
     expect(screen.getByText('2.1.')).toBeDefined();
     expect(screen.getByText(/Thông tin gói: Combo VIP/)).toBeDefined();
+  });
+
+  it('renders Google Workspace Smart Chip for Sheets URL with D17 and dispatches open event on click while keeping normal links as anchor tags', () => {
+    const sheetsUrl =
+      'https://docs.google.com/spreadsheets/d/1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ/edit?gid=516151439#gid=516151439&range=D17';
+    const normalUrl = 'https://wingslashes.com/guide';
+    const msg = `Xem bảng này: ${sheetsUrl} và tham khảo ${normalUrl}`;
+
+    const dispatched: Array<Record<string, unknown>> = [];
+    const onOpen = (event: Event) => {
+      dispatched.push((event as CustomEvent).detail as Record<string, unknown>);
+    };
+    window.addEventListener('mos-chat:open-google-workspace', onOpen);
+
+    try {
+      const { container } = render(<MosChatRichText content={msg} isDark={true} />);
+
+      const chip = container.querySelector('[data-google-workspace-chip="true"]') as HTMLElement | null;
+      expect(chip).not.toBeNull();
+      expect(chip?.textContent).toContain('D17');
+
+      const normalAnchor = container.querySelector(`a[href="${normalUrl}"]`) as HTMLAnchorElement | null;
+      expect(normalAnchor).not.toBeNull();
+      expect(container.querySelector(`a[href="${sheetsUrl}"]`)).toBeNull();
+
+      const chipButton = chip?.querySelector('button') as HTMLButtonElement | null;
+      expect(chipButton).not.toBeNull();
+      fireEvent.click(chipButton!);
+      expect(dispatched.length).toBe(1);
+      expect(dispatched[0]).toMatchObject({
+        url: sheetsUrl,
+        gid: '516151439',
+        range: 'D17',
+      });
+    } finally {
+      window.removeEventListener('mos-chat:open-google-workspace', onOpen);
+    }
   });
 });

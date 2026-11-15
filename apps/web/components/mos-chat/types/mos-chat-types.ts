@@ -20,7 +20,7 @@ import type {
 
 export type MosChatMobileView = 'inbox' | 'room' | 'thread';
 export type MosChatSidebarFilter = 'all' | 'unread' | 'spaces' | 'dms' | 'pinned';
-export type MosChatActiveSubtab = 'chat' | 'tasks' | 'pinned';
+export type MosChatActiveSubtab = 'chat' | 'tasks' | 'pinned' | 'files';
 
 export interface MosChatReactionUsersTarget {
   messageId: string;
@@ -73,9 +73,7 @@ export interface MosChatContextValue {
   reactToMessage: (msgId: string, emoji: string, replyId?: string) => Promise<void>;
   hasUserReacted: (
     target:
-      | { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> }
-      | undefined
-      | null,
+      { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> } | undefined | null,
     emoji: string
   ) => boolean;
   reactionUsersTarget: MosChatReactionUsersTarget | null;

@@ -38,6 +38,7 @@ import {
 } from '../bug-reports/inbox-implementation-version.js';
 import { InboxPlanService, inboxPlanEventVersion } from '../bug-reports/inbox-plan.service.js';
 import { RequestClassifierWorkerHub } from '../bug-reports/request-classifier-worker-hub.js';
+import { ChatGoogleWorkspaceService } from './chat-google-workspace.service.js';
 
 function formatTimeLabel(date: Date = new Date()): string {
   return new Intl.DateTimeFormat('vi-VN', {
@@ -879,7 +880,29 @@ export class ChatMissionBridgeService {
       descriptionSections.push(`### 👑 Chỉ đạo của Super Admin Danny\n${requestedNote}`);
     }
 
-    const description = descriptionSections.join('\n\n---\n\n').slice(0, 2000);
+    try {
+      const workspaceSnapshot = await ChatGoogleWorkspaceService.buildMissionSnapshotMarkdown({
+        text: combinedForInference,
+        viewer: {
+          id: user.id,
+          role: user.role,
+          username: user.username,
+          displayName: user.displayName,
+        },
+        sender: {
+          id: targetMsg.senderId,
+          role: targetMsg.senderRole,
+          displayName: targetMsg.senderName,
+        },
+      });
+      if (workspaceSnapshot) {
+        descriptionSections.push(workspaceSnapshot);
+      }
+    } catch {
+      // non-blocking
+    }
+
+    const description = descriptionSections.join('\n\n---\n\n').slice(0, 8000);
     const searchNormalized = removeVietnameseTones(`${title} ${description} /dashboard/chat`);
 
     // Gather all attachments from root message + thread replies

@@ -1,3 +1,5 @@
+import type { MosChatGoogleWorkspaceKind, ParsedGoogleWorkspaceRange } from '../utils/google-workspace-link.js';
+
 export type MosChatPresenceStatus = 'active' | 'dnd' | 'away';
 
 export type MosChatTaskPriority = 'URGENT' | 'HIGH' | 'NORMAL';
@@ -1220,4 +1222,85 @@ export interface MosChatWebPushNotificationPayload {
     threadRootMessageId?: string;
     url?: string;
   };
+}
+
+// ================= GOOGLE WORKSPACE (SHEETS & DOCS) IN-CHAT READER =================
+
+export type MosChatGoogleWorkspaceAccessStatus =
+  'PUBLIC_LINK' | 'SERVICE_ACCOUNT' | 'NEEDS_SHARE' | 'RESTRICTED_ROLE' | 'NOT_FOUND' | 'ERROR';
+
+export interface MosChatGoogleSheetTabSummary {
+  sheetId: number;
+  gid: string;
+  title: string;
+  rowCount?: number;
+  columnCount?: number;
+}
+
+export interface MosChatGoogleSheetActiveTabData {
+  gid: string;
+  title: string;
+  totalRows: number;
+  totalCols: number;
+  rows: string[][];
+  truncated?: boolean;
+  /** 1-based row numbers matching rows[] */
+  snippetRowStart?: number;
+  /** Preview rows around range / top of sheet for inline chat card */
+  snippetRows?: Array<{
+    rowNumber: number;
+    cells: string[];
+  }>;
+  snippetColStart?: number;
+  snippetColHeaders?: string[];
+}
+
+export interface MosChatGoogleDocHeading {
+  id: string;
+  level: 1 | 2 | 3 | 4;
+  text: string;
+}
+
+export interface MosChatGoogleDocSection {
+  id: string;
+  type: 'heading' | 'paragraph' | 'list' | 'table';
+  level?: 1 | 2 | 3 | 4;
+  text?: string;
+  items?: string[];
+  rows?: string[][];
+}
+
+export interface MosChatGoogleWorkspacePreviewQuery {
+  url: string;
+  gid?: string;
+  range?: string;
+  conversationId?: string;
+  messageId?: string;
+  refresh?: boolean;
+}
+
+export interface MosChatGoogleWorkspacePreviewResponse {
+  success: boolean;
+  kind: MosChatGoogleWorkspaceKind;
+  fileId: string;
+  canonicalUrl: string;
+  embedUrl: string;
+  title: string;
+  accessStatus: MosChatGoogleWorkspaceAccessStatus;
+  serviceAccountEmail: string;
+  statusMessage?: string | null;
+  modifiedTime?: string | null;
+  requestedGid?: string | null;
+  requestedRange?: string | null;
+  parsedRange?: ParsedGoogleWorkspaceRange | null;
+  /** Google Sheets specific */
+  tabs?: MosChatGoogleSheetTabSummary[];
+  activeTab?: MosChatGoogleSheetActiveTabData | null;
+  /** Google Docs specific */
+  headings?: MosChatGoogleDocHeading[];
+  sections?: MosChatGoogleDocSection[];
+  excerpt?: string | null;
+  plainText?: string | null;
+  cached?: boolean;
+  fetchedAt: string;
 }

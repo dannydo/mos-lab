@@ -45,6 +45,7 @@ import type {
   MosChatPresenceStatus,
   SafeAny,
 } from '@mos-lab/shared';
+import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 
 export interface MosChatSidebarSection {
@@ -87,8 +88,8 @@ export interface MosChatSidebarProps {
   setSearchQuery: (q: string) => void;
   sidebarFilter: 'all' | 'unread' | 'spaces';
   setSidebarFilter: (f: 'all' | 'unread' | 'spaces') => void;
-  activeSubtab: 'chat' | 'tasks' | 'pinned';
-  setActiveSubtab: (t: 'chat' | 'tasks' | 'pinned') => void;
+  activeSubtab: MosChatActiveSubtab;
+  setActiveSubtab: (t: MosChatActiveSubtab) => void;
 
   sidebarSections: MosChatSidebarSection[];
   visibleConversations: MosChatConversation[];

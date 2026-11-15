@@ -40,11 +40,16 @@ import {
 } from '@mos-lab/shared';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard, formatReactionUsersTooltip } from '../utils/chat-helpers';
+import {
+  buildMaiUrgentVoiceAnnouncement,
+  copyMessageToClipboard,
+  formatReactionUsersTooltip,
+} from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
 import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
 import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
+import { MosChatGoogleWorkspaceCardList } from './MosChatGoogleWorkspaceCard';
 
 const MainMessageInlineEditor: React.FC<{
   initialText: string;
@@ -1233,6 +1238,17 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         </button>
                       </Tooltip>
                     </div>
+                  )}
+
+                  {/* Google Sheets & Docs Mini Workspace Preview Card */}
+                  {!m.isDeleted && m.text && (
+                    <MosChatGoogleWorkspaceCardList
+                      text={m.text}
+                      conversationId={activeConversation?.id}
+                      messageId={m.id}
+                      isDark={isDark}
+                      isMe={isMine}
+                    />
                   )}
 
                   {/* Customer Card Attachment */}

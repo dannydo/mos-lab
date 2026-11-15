@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useMemo, useCallback, useContext } from 'react';
-import { Copy, ExternalLink, AtSign, Check } from 'lucide-react';
+import { Copy, ExternalLink, AtSign, Check, FileSpreadsheet, FileText } from 'lucide-react';
 import { message as antdMessage } from 'antd';
-import { removeVietnameseTones } from '@mos-lab/shared';
+import { removeVietnameseTones, parseGoogleWorkspaceUrl, type ParsedGoogleWorkspaceLink } from '@mos-lab/shared';
 import { MosChatContext } from './context/MosChatContext';
 import { parsePureStickerMessage, MosChatStickerVisual } from './mos-chat-stickers';
 import { MosChatMermaidBlock } from './MosChatMermaidBlock';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from './MosChatMathBlock';
 import { parseQuoteMeta, isStandardQuote } from './utils/quoteUtils';
+import { openGoogleWorkspaceReader, useGoogleWorkspaceCachedMeta } from './utils/google-workspace-bridge';
 
 export interface MosChatRichTextProps {
   content?: string | null;
@@ -49,6 +50,96 @@ export const decodeHtmlEntities = (str: string): string => {
       }
     });
 };
+
+/**
+ * Smart Chip phong cách Google Chat Workspace cho liên kết Google Sheets & Google Docs
+ */
+const MosChatGoogleSmartChip: React.FC<{
+  parsed: ParsedGoogleWorkspaceLink;
+  customLabel?: string;
+  isDark: boolean;
+}> = React.memo(({ parsed, customLabel, isDark }) => {
+  const cachedMeta = useGoogleWorkspaceCachedMeta(parsed.rawUrl);
+  const isSheet = parsed.kind === 'spreadsheet';
+  const cleanCustom = customLabel && !/^https?:\/\//i.test(customLabel.trim()) ? customLabel.trim() : null;
+  const primaryLabel = cachedMeta?.title || cleanCustom || (isSheet ? 'Google Sheet' : 'Google Docs');
+  const rangeLabel = parsed.range || parsed.parsedRange?.label || null;
+
+  return (
+    <span
+      data-google-workspace-chip="true"
+      data-google-workspace-kind={parsed.kind}
+      data-google-workspace-file-id={parsed.fileId}
+      className={`inline-flex items-center gap-1 align-middle max-w-full rounded-lg border px-2 py-0.5 text-[12px] font-semibold transition-all shadow-xs ${
+        isSheet
+          ? isDark
+            ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-200 hover:bg-emerald-500/25 hover:border-emerald-400/55'
+            : 'bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100'
+          : isDark
+            ? 'bg-sky-500/15 border-sky-500/35 text-sky-200 hover:bg-sky-500/25 hover:border-sky-400/55'
+            : 'bg-sky-50 border-sky-300 text-sky-900 hover:bg-sky-100'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openGoogleWorkspaceReader({
+            url: parsed.rawUrl,
+            gid: parsed.gid,
+            range: parsed.range,
+            initialMode: 'fast',
+          });
+        }}
+        title={`Đọc ${primaryLabel} ngay bên cạnh`}
+        className="inline-flex items-center gap-1.5 min-w-0 cursor-pointer text-left leading-tight focus:outline-none"
+      >
+        {isSheet ? (
+          <FileSpreadsheet size={13} className={`shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+        ) : (
+          <FileText size={13} className={`shrink-0 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
+        )}
+        <span className="truncate max-w-[230px]">{primaryLabel}</span>
+        {cachedMeta?.tabTitle && (
+          <span
+            className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+              isDark ? 'bg-white/10 text-emerald-300' : 'bg-white text-emerald-700 border border-emerald-200'
+            }`}
+          >
+            {cachedMeta.tabTitle}
+          </span>
+        )}
+        {rangeLabel && (
+          <span
+            className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[10px] font-extrabold tabular-nums shrink-0 ${
+              isDark
+                ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
+                : 'bg-amber-100 text-amber-900 border border-amber-300'
+            }`}
+          >
+            {rangeLabel}
+          </span>
+        )}
+      </button>
+      <a
+        href={parsed.canonicalUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Mở liên kết gốc trên Google"
+        title="Mở trên Google"
+        className={`inline-flex items-center justify-center p-0.5 rounded transition-opacity opacity-70 hover:opacity-100 shrink-0 ${
+          isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+        }`}
+      >
+        <ExternalLink size={11} />
+      </a>
+    </span>
+  );
+});
+
+MosChatGoogleSmartChip.displayName = 'MosChatGoogleSmartChip';
 
 /**
  * Kiểm tra xem một dòng có phải là dòng phân cách bảng Markdown (|---|---| hoặc |:---|:---:|---:|) không
@@ -254,23 +345,31 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             if (aMatch) {
               const linkHref = aMatch[1].trim();
               const linkLabel = aMatch[2];
-              elements.push(
-                <a
-                  key={key}
-                  href={linkHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                    isDark
-                      ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
-                      : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
-                  }`}
-                >
-                  <span>{parseInlineRichText(linkLabel, `${key}-a`, depth + 1)}</span>
-                  <ExternalLink size={10} className="inline shrink-0 opacity-70" />
-                </a>
-              );
+              const gwParsed = parseGoogleWorkspaceUrl(linkHref);
+              if (gwParsed) {
+                const plainLabel = decodeHtmlEntities(linkLabel.replace(/<[^>]+>/g, '').trim());
+                elements.push(
+                  <MosChatGoogleSmartChip key={key} parsed={gwParsed} customLabel={plainLabel} isDark={isDark} />
+                );
+              } else {
+                elements.push(
+                  <a
+                    key={key}
+                    href={linkHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`inline-flex items-center gap-0.5 break-all font-medium ${
+                      isDark
+                        ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                        : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
+                    }`}
+                  >
+                    <span>{parseInlineRichText(linkLabel, `${key}-a`, depth + 1)}</span>
+                    <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+                  </a>
+                );
+              }
             } else {
               elements.push(fullMatch);
             }
@@ -281,23 +380,35 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             if (mdLinkMatch) {
               const linkLabel = mdLinkMatch[1];
               const linkHref = mdLinkMatch[2];
-              elements.push(
-                <a
-                  key={key}
-                  href={linkHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                    isDark
-                      ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
-                      : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
-                  }`}
-                >
-                  <span>{decodeHtmlEntities(linkLabel)}</span>
-                  <ExternalLink size={10} className="inline shrink-0 opacity-70" />
-                </a>
-              );
+              const gwParsed = parseGoogleWorkspaceUrl(linkHref);
+              if (gwParsed) {
+                elements.push(
+                  <MosChatGoogleSmartChip
+                    key={key}
+                    parsed={gwParsed}
+                    customLabel={decodeHtmlEntities(linkLabel)}
+                    isDark={isDark}
+                  />
+                );
+              } else {
+                elements.push(
+                  <a
+                    key={key}
+                    href={linkHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`inline-flex items-center gap-0.5 break-all font-medium ${
+                      isDark
+                        ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                        : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
+                    }`}
+                  >
+                    <span>{decodeHtmlEntities(linkLabel)}</span>
+                    <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+                  </a>
+                );
+              }
             } else {
               elements.push(fullMatch);
             }
@@ -469,23 +580,28 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           }
           // 19. Link URL thuần
           else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
-            elements.push(
-              <a
-                key={key}
-                href={fullMatch}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                  isDark
-                    ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
-                    : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
-                }`}
-              >
-                <span>{fullMatch}</span>
-                <ExternalLink size={10} className="inline shrink-0 opacity-70" />
-              </a>
-            );
+            const gwParsed = parseGoogleWorkspaceUrl(fullMatch);
+            if (gwParsed) {
+              elements.push(<MosChatGoogleSmartChip key={key} parsed={gwParsed} isDark={isDark} />);
+            } else {
+              elements.push(
+                <a
+                  key={key}
+                  href={fullMatch}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className={`inline-flex items-center gap-0.5 break-all font-medium ${
+                    isDark
+                      ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                      : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
+                  }`}
+                >
+                  <span>{fullMatch}</span>
+                  <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+                </a>
+              );
+            }
           }
           // 20. KaTeX Block Math inline $$...$$
           else if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$') && fullMatch.length > 2) {

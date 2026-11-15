@@ -53,9 +53,14 @@ import {
 } from '@mos-lab/shared';
 import { MosChatThreadChecklist } from './MosChatThreadChecklist';
 import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
+import { MosChatGoogleWorkspaceCardList } from './MosChatGoogleWorkspaceCard';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
-import { buildMaiUrgentVoiceAnnouncement, copyMessageToClipboard, formatReactionUsersTooltip } from '../utils/chat-helpers';
+import {
+  buildMaiUrgentVoiceAnnouncement,
+  copyMessageToClipboard,
+  formatReactionUsersTooltip,
+} from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { findSourceMessage, scrollToMessageAndFlash, cleanQuotedText, formatQuotePayload } from '../utils/quoteUtils';
 import { syncTextareaHeightSmart } from './MosChatComposer';
@@ -1168,6 +1173,15 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                   </Tooltip>
                 </div>
               )}
+            {!activeThreadMessage.isDeleted && activeThreadMessage.text && (
+              <MosChatGoogleWorkspaceCardList
+                text={activeThreadMessage.text}
+                conversationId={activeConversation?.id}
+                messageId={activeThreadMessage.id}
+                isDark={isDark}
+                compact={true}
+              />
+            )}
             {renderMessageAttachments(
               activeThreadMessage.attachments,
               true,
@@ -1480,6 +1494,17 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                           </div>
                         )}
                       </>
+                    )}
+
+                    {r.text && (
+                      <MosChatGoogleWorkspaceCardList
+                        text={r.text}
+                        conversationId={activeConversation?.id}
+                        messageId={r.id}
+                        isDark={isDark}
+                        isMe={isReplyMine}
+                        compact={true}
+                      />
                     )}
 
                     {renderMessageAttachments(r.attachments, true, isReplyMine)}

@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import axios from 'axios';
-import type {
-  AiChatAction,
-  AiChatContext,
-  AiAssistantChatResponse,
-  AiChatSession,
-  AiChatMessage,
-  SafeAny,
+import {
+  extractGoogleWorkspaceLinksFromText,
+  type AiChatAction,
+  type AiChatContext,
+  type AiAssistantChatResponse,
+  type AiChatSession,
+  type AiChatMessage,
+  type SafeAny,
 } from '@mos-lab/shared';
 
 import type { PrismaClient as CrmPrismaClient } from '../../generated/crm-client/index.js';
@@ -15,6 +16,7 @@ import type { FastifyInstance } from 'fastify';
 import { LiveCustomerContextService } from './live-customer-context.service.js';
 import { StaffCareerContextService } from './staff-career-context.service.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
+import { ChatGoogleWorkspaceService } from '../chat/chat-google-workspace.service.js';
 import {
   appendBotMessageToChatConversation,
   appendBotThreadReplyToChatConversation,
@@ -740,6 +742,54 @@ export class AiAssistantService {
       targetChatThreadId = parts[1];
     }
 
+    // 4c. Auto-load live Google Sheets / Docs context if message or recent room history references a Workspace link
+    let liveGoogleWorkspaceText = '';
+    try {
+      const viewerRole =
+        context?.myRole ||
+        (await crm.crmStaff.findUnique({ where: { id: staffId }, select: { role: true } }))?.role ||
+        'staff';
+      const viewerActor = {
+        id: staffId,
+        role: viewerRole,
+        displayName: context?.userName,
+      };
+      let textToInspect = [trimmedMessage, ...recentMessages.slice(-4).map((m) => m.content)].join('\n');
+      let linkSenderActor: { id?: string | number; role?: string; displayName?: string } | null = null;
+
+      if (extractGoogleWorkspaceLinksFromText(textToInspect).length === 0 && targetChatConvId && crm?.crmChatMessage) {
+        const recentLinkMsg = await crm.crmChatMessage
+          .findFirst({
+            where: {
+              conversationId: targetChatConvId,
+              isDeleted: false,
+              text: { contains: 'docs.google.com/' },
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { text: true, senderId: true, senderRole: true, senderName: true },
+          })
+          .catch(() => null);
+        if (recentLinkMsg?.text) {
+          textToInspect = recentLinkMsg.text;
+          linkSenderActor = {
+            id: recentLinkMsg.senderId,
+            role: recentLinkMsg.senderRole,
+            displayName: recentLinkMsg.senderName,
+          };
+        }
+      }
+
+      if (extractGoogleWorkspaceLinksFromText(textToInspect).length > 0) {
+        liveGoogleWorkspaceText = await ChatGoogleWorkspaceService.buildAiContextForText({
+          text: textToInspect,
+          viewer: viewerActor,
+          sender: linkSenderActor,
+        });
+      }
+    } catch {
+      // non-blocking
+    }
+
     // 5. PRIMARY ENGINE: Route through Antigravity (AG) Desktop Bridge
     try {
       const agContextInfo = `[Ngữ cảnh màn hình: Trang=${context?.page || context?.pathname || 'customers'}, Bộ lọc hiện tại=${JSON.stringify(
@@ -749,7 +799,7 @@ export class AiAssistantService {
 
       const promptForAg = `${SYSTEM_PROMPT_ASSISTANT}
 
-${liveCustomerText ? `${liveCustomerText}\n` : ''}${liveStaffCareerText ? `${liveStaffCareerText}\n` : ''}${agContextInfo}
+${liveCustomerText ? `${liveCustomerText}\n` : ''}${liveStaffCareerText ? `${liveStaffCareerText}\n` : ''}${liveGoogleWorkspaceText ? `${liveGoogleWorkspaceText}\n` : ''}${agContextInfo}
 
 [Yêu cầu]:
 ${trimmedMessage}
@@ -829,7 +879,7 @@ Quy định phản hồi:
           // Add current context and live customer metrics
           const contextStr = `\n${liveCustomerText ? `${liveCustomerText}\n` : ''}${
             liveStaffCareerText ? `${liveStaffCareerText}\n` : ''
-          }[Ngữ cảnh màn hình: Trang=${
+          }${liveGoogleWorkspaceText ? `${liveGoogleWorkspaceText}\n` : ''}[Ngữ cảnh màn hình: Trang=${
             context?.page || context?.pathname || 'customers'
           }, Bộ lọc hiện tại=${JSON.stringify(context?.currentFilter || {})}, Số khách đang chọn=${
             context?.selectedCustomerCount || 0

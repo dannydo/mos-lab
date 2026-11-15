@@ -17,11 +17,13 @@ import {
   BellRing,
   X,
   Palette,
+  FolderOpen,
 } from 'lucide-react';
 import { Modal } from 'antd';
 import { useTheme } from '../../../context/ThemeContext';
 import { useMosChat } from '../context/MosChatContext';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
+import { countConversationSharedWorkspaceItems } from '../components/MosChatFilesPane';
 import { MosChatAvatar } from '../MosChatAvatar';
 import HeaderRoleQuickSwitch from '../../layout/HeaderRoleQuickSwitch';
 
@@ -90,6 +92,10 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
 
   const openTaskCount = tasks.filter((t) => !t.done).length;
   const pinnedConvCount = pinnedConvIds?.size || 0;
+  const filesCount = React.useMemo(
+    () => countConversationSharedWorkspaceItems(activeConversation),
+    [activeConversation]
+  );
   const [moreMenuOpen, setMoreMenuOpen] = React.useState(false);
   const [inboxMenuOpen, setInboxMenuOpen] = React.useState(false);
 
@@ -581,7 +587,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
             data-testid="mos-chat-room-more-btn"
             onClick={() => setMoreMenuOpen((prev) => !prev)}
             className={`w-8 h-8 relative rounded-full flex items-center justify-center transition-colors active:scale-95 cursor-pointer ${
-              moreMenuOpen || activeSubtab === 'pinned' || activeSubtab === 'tasks'
+              moreMenuOpen || activeSubtab === 'pinned' || activeSubtab === 'tasks' || activeSubtab === 'files'
                 ? isDark
                   ? 'bg-amber-500/20 text-amber-400'
                   : 'bg-amber-50 text-amber-700'
@@ -666,6 +672,28 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   }`}
                 >
                   {pinnedMessages.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMoreMenuOpen(false);
+                setActiveSubtab(activeSubtab === 'files' ? 'chat' : 'files');
+              }}
+              className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
+              aria-label="Xem tài liệu và Google Sheet"
+            >
+              <FolderOpen className={`w-4 h-4 shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+              <span className="flex-1">Tài liệu & Google Sheet</span>
+              {filesCount > 0 && (
+                <span
+                  className={`inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[11px] font-bold tabular-nums ${
+                    isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-800'
+                  }`}
+                >
+                  {filesCount}
                 </span>
               )}
             </button>
@@ -817,6 +845,29 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
             type="button"
             onClick={() => setActiveSubtab('chat')}
             className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 font-bold text-[11px] active:scale-95 transition-transform cursor-pointer"
+          >
+            Quay lại Chat
+          </button>
+        </div>
+      )}
+
+      {/* Slim Return Bar when viewing Files & Google Workspace tab */}
+      {activeSubtab === 'files' && (
+        <div
+          className={`px-3 py-1.5 border-t flex items-center justify-between text-xs ${
+            isDark ? 'bg-emerald-500/15 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200'
+          }`}
+        >
+          <div
+            className={`flex items-center gap-1.5 font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}
+          >
+            <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+            <span className="tabular-nums">Đang xem Tài liệu & Google Workspace ({filesCount})</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveSubtab('chat')}
+            className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 font-bold text-[11px] active:scale-95 transition-transform cursor-pointer"
           >
             Quay lại Chat
           </button>

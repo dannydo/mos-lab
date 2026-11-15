@@ -41,6 +41,7 @@ import {
 import { speakText, stopSpeaking } from '../../voice-assistant/speech-utils';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
+import { MosChatGoogleWorkspaceCardList } from '../components/MosChatGoogleWorkspaceCard';
 import { MosChatVideoPlayer } from '../components/MosChatVideoPlayer';
 
 export interface MosChatMobileMessageItemProps {
@@ -415,6 +416,18 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {/* Rich Text / Markdown / Mermaid / Sticker Render */}
             <MosChatRichText content={message.text} isMe={isMe} isDark={isDark} />
 
+            {/* Google Sheets & Docs Mini Workspace Card */}
+            {!message.isDeleted && message.text && (
+              <MosChatGoogleWorkspaceCardList
+                text={message.text}
+                conversationId={message.conversationId}
+                messageId={message.id}
+                isDark={isDark}
+                isMe={isMe}
+                compact={true}
+              />
+            )}
+
             {/* Customer Card Attachment */}
             {message.customerCard && (
               <MosChatCustomerCardAttachment
@@ -646,7 +659,9 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                   }`}
                 >
                   {isSpeaking ? (
-                    <VolumeX className={`w-3.5 h-3.5 animate-pulse ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                    <VolumeX
+                      className={`w-3.5 h-3.5 animate-pulse ${isDark ? 'text-purple-400' : 'text-purple-600'}`}
+                    />
                   ) : (
                     <Volume2 className="w-3.5 h-3.5" />
                   )}
@@ -716,7 +731,11 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                   )}
                   <span
                     className={`text-[10px] font-semibold tabular-nums ${
-                      isReacted ? (isDark ? 'text-amber-300 font-bold' : 'text-amber-800 font-bold') : 'text-[var(--mos-text-muted)]'
+                      isReacted
+                        ? isDark
+                          ? 'text-amber-300 font-bold'
+                          : 'text-amber-800 font-bold'
+                        : 'text-[var(--mos-text-muted)]'
                     }`}
                   >
                     {count}

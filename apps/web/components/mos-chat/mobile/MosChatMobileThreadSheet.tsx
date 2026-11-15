@@ -51,6 +51,7 @@ import { uploadMultipleChatImages } from '../utils/chat-upload';
 import { cleanQuotedText, formatQuotePayload } from '../utils/quoteUtils';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
+import { MosChatGoogleWorkspaceCardList } from '../components/MosChatGoogleWorkspaceCard';
 import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
 import type {
   MosChatCustomerCard,
@@ -859,6 +860,15 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 }
                 isDark={isDark}
               />
+              {activeThreadMsg.text && (
+                <MosChatGoogleWorkspaceCardList
+                  text={activeThreadMsg.text}
+                  conversationId={activeConversation?.id}
+                  messageId={activeThreadMsg.id}
+                  isDark={isDark}
+                  compact={true}
+                />
+              )}
             </div>
           )}
 
@@ -974,7 +984,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold truncate leading-tight">{att.name}</p>
-                              <span className="text-[10px] text-[var(--mos-text-muted)] uppercase font-bold">{ext}</span>
+                              <span className="text-[10px] text-[var(--mos-text-muted)] uppercase font-bold">
+                                {ext}
+                              </span>
                             </div>
                           </div>
                         );
@@ -1067,7 +1079,9 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   aria-label={linkedTask.done ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
                 >
                   {linkedTask.done ? (
-                    <CheckCircle2 className={`w-5 h-5 fill-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <CheckCircle2
+                      className={`w-5 h-5 fill-emerald-500/20 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
+                    />
                   ) : (
                     <Square className="w-5 h-5 text-[var(--mos-text-muted)]" />
                   )}
@@ -1281,7 +1295,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                     />
                     <div
                       className={`text-[9.5px] truncate font-medium ${
-                        active ? (isDark ? 'text-purple-300 font-bold' : 'text-purple-700 font-bold') : 'text-[var(--mos-text-muted)]'
+                        active
+                          ? isDark
+                            ? 'text-purple-300 font-bold'
+                            : 'text-purple-700 font-bold'
+                          : 'text-[var(--mos-text-muted)]'
                       }`}
                     >
                       {s.label}
@@ -1678,6 +1696,16 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   <div className="select-text">
                     <MosChatRichText content={reply.text} isMe={isMe} isDark={isDark} />
+                    {reply.text && (
+                      <MosChatGoogleWorkspaceCardList
+                        text={reply.text}
+                        conversationId={activeConversation?.id}
+                        messageId={reply.id}
+                        isDark={isDark}
+                        isMe={isMe}
+                        compact={true}
+                      />
+                    )}
                   </div>
 
                   {/* Customer Card Attachment for Reply */}
@@ -1785,10 +1813,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               🤖
             </div>
             <div className="flex-1 min-w-0">
-              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span> Đang suy nghĩ và phân tích luồng thảo
-              luận...
+              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span>{' '}
+              Đang suy nghĩ và phân tích luồng thảo luận...
             </div>
-            <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+            <Loader2
+              className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}
+            />
           </div>
         )}
 

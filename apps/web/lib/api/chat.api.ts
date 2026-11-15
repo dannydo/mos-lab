@@ -41,6 +41,8 @@ import type {
   SearchMosChatMessagesQuery,
   SearchMosChatMessagesResponse,
   MosChatSearchResultItem,
+  MosChatGoogleWorkspacePreviewQuery,
+  MosChatGoogleWorkspacePreviewResponse,
   EndMosChatVoiceCallResponse,
   ListActiveMosChatVoiceCallsResponse,
   MosChatPushConfigResponse,
@@ -429,6 +431,23 @@ export const chatApi = {
     }): Promise<{ success: boolean; sent: number; failed: number }> => {
       const res = await api.post('/chat/push/test', payload || {});
       return res.data;
+    },
+    previewGoogleWorkspace: async (
+      params: MosChatGoogleWorkspacePreviewQuery,
+      options?: ApiRequestOptions
+    ): Promise<MosChatGoogleWorkspacePreviewResponse> => {
+      const query: Record<string, string> = { url: params.url };
+      if (params.conversationId) query.conversationId = params.conversationId;
+      if (params.messageId) query.messageId = params.messageId;
+      if (params.gid) query.gid = params.gid;
+      if (params.range) query.range = params.range;
+      if (params.refresh) query.refresh = 'true';
+      return dedupeApiGet<MosChatGoogleWorkspacePreviewResponse>(
+        '/chat/google-workspace/preview',
+        query,
+        params.refresh ? 0 : 15000,
+        options
+      );
     },
   },
 };

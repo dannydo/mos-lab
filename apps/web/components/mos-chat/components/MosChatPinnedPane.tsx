@@ -2,12 +2,13 @@ import React from 'react';
 import { Pin, CornerDownRight, MessageSquare, PinOff, Copy } from 'lucide-react';
 import { Tooltip } from 'antd';
 import type { MosChatConversation, MosChatMessage } from '@mos-lab/shared';
+import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import { copyMessageToClipboard } from '../utils/chat-helpers';
 
 export interface MosChatPinnedPaneProps {
   pinnedMessages: MosChatMessage[];
   activeConversation: MosChatConversation | null;
-  setActiveSubtab: (tab: 'chat' | 'tasks' | 'pinned') => void;
+  setActiveSubtab: (tab: MosChatActiveSubtab) => void;
   surfaceBg: string;
   borderColor: string;
   borderStrong: string;

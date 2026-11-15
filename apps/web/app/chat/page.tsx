@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { isCvRole } from '@mos-lab/shared';
+import type { MosChatActiveSubtab } from '../../components/mos-chat/types/mos-chat-types';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 
@@ -56,7 +57,7 @@ function ChatPageContent() {
   const msgId =
     searchParams?.get('chatMsgId') || searchParams?.get('messageId') || searchParams?.get('msgId') || undefined;
   const threadRootMessageId = searchParams?.get('threadId') || searchParams?.get('threadRootMessageId') || undefined;
-  const tab = searchParams?.get('tab') as 'chat' | 'tasks' | 'pinned' | undefined;
+  const tab = searchParams?.get('tab') as MosChatActiveSubtab | undefined;
   const taskId = searchParams?.get('taskId') || undefined;
 
   const targetNavigation = useMemo(() => {

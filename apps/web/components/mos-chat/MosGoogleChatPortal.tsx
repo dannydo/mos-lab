@@ -77,6 +77,7 @@ import {
   EyeOff,
   FolderPlus,
   FolderKanban,
+  FolderOpen,
   ArrowUp,
   ArrowDown,
   RotateCcw,
@@ -252,10 +253,12 @@ import { MosChatModals } from './components/MosChatModals';
 import { MosChatSearchModal } from './components/MosChatSearchModal';
 import type { MosChatSearchResultItem } from '@mos-lab/shared';
 import { MosChatReactionUsersModal } from './components/MosChatReactionUsersModal';
-import type { MosChatReactionUsersTarget } from './types/mos-chat-types';
+import type { MosChatActiveSubtab, MosChatReactionUsersTarget } from './types/mos-chat-types';
 import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
 import { MosChatPinnedPane } from './components/MosChatPinnedPane';
+import { MosChatFilesPane, countConversationSharedWorkspaceItems } from './components/MosChatFilesPane';
+import { MosChatGoogleWorkspaceDrawer } from './components/MosChatGoogleWorkspaceDrawer';
 import {
   MosChatDockedWindows,
   DOCKED_STORAGE_KEY_V2,
@@ -288,7 +291,7 @@ export interface MosGoogleChatPortalProps {
     conversationId?: string;
     messageId?: string;
     timestamp?: number;
-    openTab?: 'chat' | 'tasks' | 'pinned';
+    openTab?: MosChatActiveSubtab;
     taskId?: string;
   } | null;
 }
@@ -473,7 +476,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [activeConvId, setActiveConvId] = useState<string>(
     () => readStoredPersonalLayout(personalLayoutStorageKey).activeConvId
   );
-  const [activeSubtab, setActiveSubtab] = useState<'chat' | 'tasks' | 'pinned'>('chat');
+  const [activeSubtab, setActiveSubtab] = useState<MosChatActiveSubtab>('chat');
   const [pinnedBannerIndex, setPinnedBannerIndex] = useState<number>(0);
   const [sidebarFilter, setSidebarFilter] = useState<'all' | 'unread' | 'spaces'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -2267,9 +2270,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       messageId: item.id,
                     }
                   );
-                } else if (
-                  !openRef.current || activeConvIdRef.current !== conv.id || activeSubtab !== 'chat'
-                ) {
+                } else if (!openRef.current || activeConvIdRef.current !== conv.id || activeSubtab !== 'chat') {
                   const senderLabel = item.senderName || conv.name || 'Đồng nghiệp';
                   const preview = item.text
                     ? item.text.length > 90
@@ -2849,7 +2850,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         participantStaffId?: number;
         participantName?: string;
         customerCard?: MosChatCustomerCard;
-        openTab?: 'chat' | 'tasks' | 'pinned';
+        openTab?: MosChatActiveSubtab;
         taskId?: string;
       }>;
       const detail = customEv.detail || {};
@@ -3069,6 +3070,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const pinnedMessages = useMemo(() => {
     return (activeConversation?.messages || []).filter((m) => m.pinned);
   }, [activeConversation?.messages]);
+
+  const workspaceSharedItemsCount = useMemo(() => {
+    return countConversationSharedWorkspaceItems(activeConversation);
+  }, [activeConversation]);
 
   const allUserConversations = useMemo<MosChatConversation[]>(() => {
     return aiCopilotConversation ? [aiCopilotConversation, ...visibleConversations] : [...visibleConversations];
@@ -3577,9 +3582,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
 
         // Pinned Trumps Hidden (MOS-BUG-216): Khi ghim thì tự động bỏ khỏi hiddenIds
-        const nextHidden = exists
-          ? (prev.hiddenIds || [])
-          : (prev.hiddenIds || []).filter((id) => id !== convId);
+        const nextHidden = exists ? prev.hiddenIds || [] : (prev.hiddenIds || []).filter((id) => id !== convId);
 
         const nextConvOrder: Record<string, string[]> = { ...(prev.conversationOrder || {}) };
         const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
@@ -10995,6 +10998,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       <span>{activeConversation?.messages.filter((m) => m.pinned).length || 0}</span>
                     </button>
                   </Tooltip>
+
+                  <Tooltip title={`Tài liệu, Google Sheets & Docs (${workspaceSharedItemsCount})`}>
+                    <button
+                      type="button"
+                      aria-label="Tab tài liệu"
+                      onClick={() => setActiveSubtab('files')}
+                      className="h-7 px-1.5 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums transition-colors"
+                      style={{
+                        background: activeSubtab === 'files' ? surfaceBg : 'transparent',
+                        color: activeSubtab === 'files' ? '#10b981' : token.colorTextSecondary,
+                      }}
+                    >
+                      <FolderOpen size={14} />
+                      <span>{workspaceSharedItemsCount}</span>
+                    </button>
+                  </Tooltip>
                 </div>
 
                 {/* ── Header Right: Essential Icons + ⋯ More Overflow ── */}
@@ -11622,6 +11641,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   renderMessageAttachments={renderMessageAttachments}
                 />
               )}
+
+              {/* VIEW 4: FILES & GOOGLE WORKSPACE DOCUMENTS */}
+              {activeSubtab === 'files' && (
+                <MosChatFilesPane
+                  activeConversation={activeConversation}
+                  setActiveSubtab={setActiveSubtab}
+                  navigateToMessage={navigateToMessage}
+                  isDark={isDark}
+                  surfaceBg={surfaceBg}
+                  surfaceRaised={surfaceRaised}
+                  borderColor={borderColor}
+                  borderStrong={borderStrong}
+                  isMobile={isMobile}
+                />
+              )}
             </div>
 
             {/* RIGHT SIDE THREAD PANE (Google Spaces Threading) */}
@@ -11757,6 +11791,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               setIsUrgentSendThread={setIsUrgentSendThread}
               setTriggerWorkflowModalOpen={setTriggerWorkflowModalOpen}
               setInitialWorkflowCode={setInitialWorkflowCode}
+            />
+
+            {/* RIGHT SIDE SPLIT READER: GOOGLE SHEETS & DOCS WORKSPACE */}
+            <MosChatGoogleWorkspaceDrawer
+              isMobile={isMobile}
+              isDark={isDark}
+              activeConversationId={activeConversation?.id}
+              surfaceBg={surfaceBg}
+              surfaceRaised={surfaceRaised}
+              canvasBg={canvasBg}
+              borderColor={borderColor}
+              onPostAiReplyToChat={(replyText, docTitle) => {
+                if (activeConversation?.id) {
+                  void handleSendMessage(activeConversation.id, `✨ **Phân tích AI (${docTitle}):**\n\n${replyText}`);
+                }
+              }}
             />
           </>
         )}
