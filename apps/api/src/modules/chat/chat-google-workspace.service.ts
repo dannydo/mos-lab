@@ -244,7 +244,7 @@ function stripTags(html: string): string {
     .trim();
 }
 
-export function parseCsvRows(csvText: string, maxRows = 300, maxCols = 26): string[][] {
+export function parseCsvRows(csvText: string, maxRows = 300, maxCols = 52): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = '';
@@ -754,7 +754,7 @@ export class ChatGoogleWorkspaceService {
 
           let rows: string[][] = [];
           if (targetTab) {
-            const safeSheetName = `'${targetTab.title.replace(/'/g, "''")}'!A1:Z300`;
+            const safeSheetName = `'${targetTab.title.replace(/'/g, "''")}'!A1:AZ300`;
             const valRes = await fetchImpl(
               `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
                 parsed.fileId
@@ -782,7 +782,7 @@ export class ChatGoogleWorkspaceService {
                 totalRows,
                 totalCols,
                 rows,
-                truncated: totalRows > 300 || totalCols > 26,
+                truncated: totalRows > 300 || totalCols > 52,
                 snippetRowStart: snippet.snippetRowStart,
                 snippetRows: snippet.snippetRows,
                 snippetColStart: snippet.snippetColStart,
@@ -874,7 +874,7 @@ export class ChatGoogleWorkspaceService {
         let rows: string[][] = [];
         if (csvRes.ok) {
           const csvText = await csvRes.text();
-          rows = parseCsvRows(csvText, 300, 26);
+          rows = parseCsvRows(csvText, 300, 52);
         }
 
         const maxCols = rows.reduce((acc, r) => Math.max(acc, r.length), 0);
@@ -902,7 +902,7 @@ export class ChatGoogleWorkspaceService {
               totalRows: rows.length,
               totalCols: maxCols,
               rows,
-              truncated: rows.length >= 300,
+              truncated: rows.length >= 300 || maxCols >= 52,
               snippetRowStart: snippet.snippetRowStart,
               snippetRows: snippet.snippetRows,
               snippetColStart: snippet.snippetColStart,

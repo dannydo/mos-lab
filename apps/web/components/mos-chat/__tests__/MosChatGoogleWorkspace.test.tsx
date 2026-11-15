@@ -5,7 +5,11 @@ import type { MosChatConversation, MosChatGoogleWorkspacePreviewResponse } from 
 import { apiClient } from '../../../lib/api-client';
 import { clearGoogleWorkspaceClientCache, openGoogleWorkspaceReader } from '../utils/google-workspace-bridge';
 import { MosChatGoogleWorkspaceCardList } from '../components/MosChatGoogleWorkspaceCard';
-import { MosChatGoogleWorkspaceDrawer } from '../components/MosChatGoogleWorkspaceDrawer';
+import {
+  MOS_CHAT_GW_DRAWER_SESSION_KEY,
+  MOS_CHAT_GW_DRAWER_WIDTH_KEY,
+  MosChatGoogleWorkspaceDrawer,
+} from '../components/MosChatGoogleWorkspaceDrawer';
 import { MosChatFilesPane, countConversationSharedWorkspaceItems } from '../components/MosChatFilesPane';
 
 vi.mock('../../../lib/api-client', () => ({
@@ -25,6 +29,7 @@ const DOCS_URL = 'https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz
 
 describe('mOS Chat Google Workspace Reader & Files Integration', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     clearGoogleWorkspaceClientCache();
     vi.clearAllMocks();
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -344,5 +349,171 @@ describe('mOS Chat Google Workspace Reader & Files Integration', () => {
     expect(screen.queryByTestId('mos-chat-files-gw-item')).toBeNull();
     expect(screen.getAllByTestId('mos-chat-files-att-item')).toHaveLength(1);
     expect(screen.getByText('bao-cao-kho.png')).toBeDefined();
+  });
+
+  it('renders all columns A..H even when leading/empty rows are [] and clears D17 lock when switching tabs', async () => {
+    const initialTabPreview: MosChatGoogleWorkspacePreviewResponse = {
+      success: true,
+      kind: 'spreadsheet',
+      fileId: '1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ',
+      title: '[HR][2025] TỔNG HỢP',
+      accessStatus: 'SERVICE_ACCOUNT',
+      requestedRange: 'D17',
+      parsedRange: {
+        label: 'D17',
+        anchorCell: 'D17',
+        startCol: 3,
+        endCol: 3,
+        startRow: 17,
+        endRow: 17,
+      },
+      tabs: [
+        { sheetId: 516151439, gid: '516151439', title: 'ORDER KHO NVL', rowCount: 40 },
+        { sheetId: 998877, gid: '998877', title: 'DROPDOWN', rowCount: 1000 },
+      ],
+      activeTab: {
+        gid: '516151439',
+        title: 'ORDER KHO NVL',
+        totalRows: 20,
+        totalCols: 8,
+        rows: [
+          [],
+          [],
+          ['A3', 'B3', 'C3', 'D3', 'E3', 'F3'],
+          ...Array.from({ length: 14 }, (_, idx) => [`R${idx + 4}`, 'Val B', 'Val C', idx === 13 ? 'Target D17' : 'D']),
+        ],
+      },
+      serviceAccountEmail: 'wings-sheets-sa@wings-lashes.iam.gserviceaccount.com',
+      canonicalUrl: SHEETS_URL,
+      embedUrl: `${SHEETS_URL}&rm=minimal`,
+      fetchedAt: new Date().toISOString(),
+    };
+
+    const dropdownTabPreview: MosChatGoogleWorkspacePreviewResponse = {
+      ...initialTabPreview,
+      activeTab: {
+        gid: '998877',
+        title: 'DROPDOWN',
+        totalRows: 1000,
+        totalCols: 8,
+        rows: [[], ['', 'Danh mục B', 'Danh mục C', 'Danh mục D', 'Danh mục E', 'Danh mục F']],
+      },
+    };
+
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockImplementation(async (params) => {
+      if (params.gid === '998877') return dropdownTabPreview;
+      return initialTabPreview;
+    });
+
+    const { container } = render(<MosChatGoogleWorkspaceDrawer isDark={true} activeConversationId="space-kho" />);
+
+    act(() => {
+      openGoogleWorkspaceReader({
+        url: SHEETS_URL,
+        gid: '516151439',
+        range: 'D17',
+        conversationId: 'space-kho',
+      });
+    });
+
+    await waitFor(() => {
+      const headers = Array.from(container.querySelectorAll('thead th')).map((th) => th.textContent?.trim());
+      expect(headers).toEqual(['#', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+    });
+    expect(screen.getByText('Đang trỏ: D17')).toBeDefined();
+
+    // Switch to DROPDOWN tab and confirm D17 lock clears while B, C, D... stay visible
+    fireEvent.click(screen.getByRole('button', { name: /DROPDOWN/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Danh mục B')).toBeDefined();
+      expect(screen.getByText('Danh mục D')).toBeDefined();
+    });
+    expect(screen.queryByText('Đang trỏ: D17')).toBeNull();
+    const headersAfterSwitch = Array.from(container.querySelectorAll('thead th')).map((th) => th.textContent?.trim());
+    expect(headersAfterSwitch).toEqual(['#', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+  });
+
+  it('resizes right drawer wider than 1000px via left drag handle and persists both width and open session across F5 remount', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 1920 });
+
+    const mockPreview: MosChatGoogleWorkspacePreviewResponse = {
+      success: true,
+      kind: 'spreadsheet',
+      fileId: '1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ',
+      title: '[HR][2025] TỔNG HỢP',
+      accessStatus: 'PUBLIC_LINK',
+      tabs: [
+        { sheetId: 516151439, gid: '516151439', title: 'NVL', rowCount: 40 },
+        { sheetId: 998877, gid: '998877', title: 'BẢNG LƯƠNG', rowCount: 1000 },
+      ],
+      activeTab: {
+        gid: '516151439',
+        title: 'NVL',
+        totalRows: 10,
+        totalCols: 6,
+        rows: [['Mã', 'Tên', 'Cột C', 'Cột D', 'Cột E', 'Cột F']],
+      },
+      serviceAccountEmail: 'wings-sheets-sa@wings-lashes.iam.gserviceaccount.com',
+      canonicalUrl: SHEETS_URL,
+      embedUrl: `${SHEETS_URL}&rm=minimal`,
+      fetchedAt: new Date().toISOString(),
+    };
+
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockResolvedValue(mockPreview);
+
+    const view1 = render(<MosChatGoogleWorkspaceDrawer isDark={true} activeConversationId="space-kho" />);
+
+    act(() => {
+      openGoogleWorkspaceReader({
+        url: SHEETS_URL,
+        gid: '516151439',
+        range: 'D17',
+        conversationId: 'space-kho',
+      });
+    });
+
+    const drawer = await screen.findByTestId('google-workspace-split-drawer');
+    expect(drawer.style.width).toBe('680px');
+
+    // Switch tab before drag & reload
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /BẢNG LƯƠNG/ })).toBeDefined();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /BẢNG LƯƠNG/ }));
+
+    // Drag left handle wider (680 + (1240 - 680) = 1240px > 1000px)
+    const handle = screen.getByTestId('gw-reader-resize-handle');
+    fireEvent.mouseDown(handle, { clientX: 1240, button: 0 });
+    fireEvent.mouseMove(window, { clientX: 680 });
+    fireEvent.mouseUp(window);
+
+    expect(drawer.style.width).toBe('1240px');
+    expect(window.localStorage.getItem(MOS_CHAT_GW_DRAWER_WIDTH_KEY)).toBe('1240');
+    expect(window.localStorage.getItem(MOS_CHAT_GW_DRAWER_SESSION_KEY)).toContain('998877');
+
+    // Simulate F5 reload by unmounting, wiping in-memory client cache, and mounting fresh without calling openGoogleWorkspaceReader
+    view1.unmount();
+    clearGoogleWorkspaceClientCache();
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockClear();
+
+    render(<MosChatGoogleWorkspaceDrawer isDark={true} activeConversationId="space-kho" />);
+
+    const restoredDrawer = await screen.findByTestId('google-workspace-split-drawer');
+    expect(restoredDrawer.style.width).toBe('1240px');
+
+    await waitFor(() => {
+      expect(apiClient.chat.previewGoogleWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gid: '998877',
+        })
+      );
+    });
+
+    // Closing drawer clears session open state so next F5 stays closed, while width stays persisted
+    fireEvent.click(screen.getByLabelText('Đóng trình đọc tài liệu'));
+    expect(screen.queryByTestId('google-workspace-split-drawer')).toBeNull();
+    expect(window.localStorage.getItem(MOS_CHAT_GW_DRAWER_SESSION_KEY)).toBeNull();
+    expect(window.localStorage.getItem(MOS_CHAT_GW_DRAWER_WIDTH_KEY)).toBe('1240');
   });
 });

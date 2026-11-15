@@ -77,10 +77,8 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
               cells: cells.slice(colStart, colStart + 5),
             }));
       if (snippetRows.length === 0) return null;
-      const maxCols = Math.max(
-        1,
-        Math.min(5, tab.snippetColHeaders?.length || 0, ...snippetRows.map((r) => r.cells.length))
-      );
+      const maxRowLen = snippetRows.reduce((max, r) => Math.max(max, r.cells.length), 0);
+      const maxCols = Math.max(1, Math.min(5, Math.max(tab.snippetColHeaders?.length || 0, maxRowLen)));
       const colHeaders = Array.from({ length: maxCols }, (_, idx) => {
         if (tab.snippetColHeaders && tab.snippetColHeaders[idx]) {
           return tab.snippetColHeaders[idx];

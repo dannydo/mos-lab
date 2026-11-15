@@ -31,14 +31,117 @@ import {
   type OpenGoogleWorkspaceReaderPayload,
 } from '../utils/google-workspace-bridge';
 
+export const MOS_CHAT_GW_DRAWER_WIDTH_KEY = 'mos_chat_gw_drawer_width_v1';
+export const MOS_CHAT_GW_DRAWER_SESSION_KEY = 'mos_chat_gw_drawer_session_v1';
+
+const MIN_GW_DRAWER_WIDTH = 380;
+const DEFAULT_GW_DRAWER_WIDTH = 680;
+const MAX_FAST_GRID_COLS = 52;
+
+interface StoredGwDrawerSession {
+  open: boolean;
+  payload: OpenGoogleWorkspaceReaderPayload | null;
+  selectedGid?: string | null;
+  readerMode: 'fast' | 'embed';
+  updatedAt: number;
+}
+
+export function getMaxAllowedGwDrawerWidth(basisWidth?: number): number {
+  const fallback = typeof window !== 'undefined' && window.innerWidth > 0 ? window.innerWidth : 1920;
+  const basis = basisWidth && basisWidth > 0 ? basisWidth : fallback;
+  return Math.max(MIN_GW_DRAWER_WIDTH, Math.min(Math.round(basis * 0.86), basis - 280));
+}
+
+export function clampGwDrawerWidth(width: number, basisWidth?: number): number {
+  if (!Number.isFinite(width)) return DEFAULT_GW_DRAWER_WIDTH;
+  const maxAllowed = getMaxAllowedGwDrawerWidth(basisWidth);
+  return Math.max(MIN_GW_DRAWER_WIDTH, Math.min(maxAllowed, Math.round(width)));
+}
+
+function readStoredGwDrawerWidth(basisWidth?: number): number {
+  const fallbackDefault = clampGwDrawerWidth(DEFAULT_GW_DRAWER_WIDTH, basisWidth);
+  if (typeof window === 'undefined') return fallbackDefault;
+  try {
+    const raw = window.localStorage.getItem(MOS_CHAT_GW_DRAWER_WIDTH_KEY);
+    if (!raw) return fallbackDefault;
+    const num = Number(raw);
+    if (!Number.isFinite(num) || num <= 0) return fallbackDefault;
+    return clampGwDrawerWidth(num, basisWidth);
+  } catch {
+    return fallbackDefault;
+  }
+}
+
+function writeStoredGwDrawerWidth(width: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(MOS_CHAT_GW_DRAWER_WIDTH_KEY, String(Math.round(width)));
+  } catch {
+    // ignore storage quota error
+  }
+}
+
+function sanitizePayloadForStorage(
+  payload: OpenGoogleWorkspaceReaderPayload | null
+): OpenGoogleWorkspaceReaderPayload | null {
+  if (!payload || !payload.url) return null;
+  return {
+    url: payload.url,
+    gid: payload.gid ?? null,
+    range: payload.range ?? null,
+    conversationId: payload.conversationId,
+    messageId: payload.messageId,
+    initialMode: payload.initialMode,
+  };
+}
+
+function readStoredGwDrawerSession(): StoredGwDrawerSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(MOS_CHAT_GW_DRAWER_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredGwDrawerSession>;
+    if (!parsed || parsed.open !== true || !parsed.payload?.url) return null;
+    return {
+      open: true,
+      payload: sanitizePayloadForStorage(parsed.payload),
+      selectedGid: parsed.selectedGid ?? undefined,
+      readerMode: parsed.readerMode === 'embed' ? 'embed' : 'fast',
+      updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredGwDrawerSession(session: StoredGwDrawerSession): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(MOS_CHAT_GW_DRAWER_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // ignore storage quota error
+  }
+}
+
+function clearStoredGwDrawerSession(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(MOS_CHAT_GW_DRAWER_SESSION_KEY);
+  } catch {
+    // ignore storage error
+  }
+}
+
 export interface MosChatGoogleWorkspaceDrawerProps {
   isMobile?: boolean;
   isDark: boolean;
   activeConversationId?: string;
+  portalOpen?: boolean;
   surfaceBg?: string;
   surfaceRaised?: string;
   canvasBg?: string;
   borderColor?: string;
+  onEnsureContainerWidth?: (desiredDrawerWidth: number) => void;
   onPostAiReplyToChat?: (replyText: string, docTitle: string) => void;
 }
 
@@ -73,17 +176,38 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     isMobile = false,
     isDark,
     activeConversationId,
+    portalOpen = true,
     surfaceBg,
     surfaceRaised,
     canvasBg,
     borderColor,
+    onEnsureContainerWidth,
     onPostAiReplyToChat,
   }) => {
-    const [open, setOpen] = useState(false);
-    const [payload, setPayload] = useState<OpenGoogleWorkspaceReaderPayload | null>(null);
-    const [readerMode, setReaderMode] = useState<'fast' | 'embed'>('fast');
-    const [expandedWidth, setExpandedWidth] = useState(false);
-    const [selectedGid, setSelectedGid] = useState<string | null | undefined>(undefined);
+    const [viewportWidth, setViewportWidth] = useState<number>(() =>
+      typeof window !== 'undefined' && window.innerWidth > 0 ? window.innerWidth : 1920
+    );
+    const [open, setOpen] = useState<boolean>(() => Boolean(readStoredGwDrawerSession()?.open));
+    const [payload, setPayload] = useState<OpenGoogleWorkspaceReaderPayload | null>(
+      () => readStoredGwDrawerSession()?.payload ?? null
+    );
+    const [readerMode, setReaderMode] = useState<'fast' | 'embed'>(
+      () => readStoredGwDrawerSession()?.readerMode ?? 'fast'
+    );
+    const [drawerWidth, setDrawerWidth] = useState<number>(() => readStoredGwDrawerWidth());
+    const [isResizing, setIsResizing] = useState<boolean>(false);
+    const [hoverResizeHandle, setHoverResizeHandle] = useState<boolean>(false);
+    const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
+    const [selectedGid, setSelectedGid] = useState<string | null | undefined>(() => {
+      const stored = readStoredGwDrawerSession();
+      if (!stored?.open) return undefined;
+      if (stored.selectedGid !== undefined && stored.selectedGid !== null && stored.selectedGid !== '') {
+        return stored.selectedGid;
+      }
+      return (
+        stored.payload?.gid ?? (stored.payload?.url ? parseGoogleWorkspaceUrl(stored.payload.url)?.gid : undefined)
+      );
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCell, setSelectedCell] = useState<{
       address: string;
@@ -101,7 +225,127 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
 
     const targetCellRef = useRef<HTMLTableCellElement | null>(null);
     const docBodyRef = useRef<HTMLDivElement | null>(null);
+    const gridScrollRef = useRef<HTMLDivElement | null>(null);
     const lastAutoScrolledKeyRef = useRef<string>('');
+    const drawerWidthRef = useRef<number>(drawerWidth);
+    const previousStandardWidthRef = useRef<number>(DEFAULT_GW_DRAWER_WIDTH);
+    const dragOriginRef = useRef<{ startX: number; startWidth: number }>({
+      startX: 0,
+      startWidth: drawerWidth,
+    });
+    const activePointerIdRef = useRef<number | null>(null);
+    const onEnsureContainerWidthRef = useRef(onEnsureContainerWidth);
+
+    useEffect(() => {
+      onEnsureContainerWidthRef.current = onEnsureContainerWidth;
+    }, [onEnsureContainerWidth]);
+
+    useEffect(() => {
+      drawerWidthRef.current = drawerWidth;
+    }, [drawerWidth]);
+
+    // Persist open document / active tab / reader mode so F5 keeps the reader intact
+    useEffect(() => {
+      if (!open || !payload?.url) {
+        clearStoredGwDrawerSession();
+        return;
+      }
+      writeStoredGwDrawerSession({
+        open: true,
+        payload: sanitizePayloadForStorage(payload),
+        selectedGid: selectedGid ?? null,
+        readerMode,
+        updatedAt: Date.now(),
+      });
+    }, [open, payload, selectedGid, readerMode]);
+
+    // Keep docked parent container wide enough when drawer expands
+    useEffect(() => {
+      if (!open || !portalOpen || isMobile) return;
+      onEnsureContainerWidthRef.current?.(drawerWidth);
+    }, [open, portalOpen, isMobile, drawerWidth]);
+
+    // Re-clamp width smoothly when viewport resizes
+    useEffect(() => {
+      if (typeof window === 'undefined') return;
+      const handleWindowResize = () => {
+        const nextVw = window.innerWidth > 0 ? window.innerWidth : 1920;
+        setViewportWidth(nextVw);
+        const clamped = clampGwDrawerWidth(drawerWidthRef.current, nextVw);
+        if (clamped !== drawerWidthRef.current) {
+          drawerWidthRef.current = clamped;
+          setDrawerWidth(clamped);
+          writeStoredGwDrawerWidth(clamped);
+        }
+      };
+      window.addEventListener('resize', handleWindowResize);
+      return () => window.removeEventListener('resize', handleWindowResize);
+    }, []);
+
+    // Drag-to-resize mouse/pointer tracking on left edge
+    useEffect(() => {
+      if (!isResizing || typeof window === 'undefined') return;
+
+      const prevCursor = document.body.style.cursor;
+      const bodyStyle = document.body.style as CSSStyleDeclaration & { webkitUserSelect?: string };
+      const prevWebkitUserSelect = bodyStyle.webkitUserSelect ?? '';
+      const prevUserSelect = document.body.style.userSelect;
+      document.body.style.cursor = 'col-resize';
+      bodyStyle.webkitUserSelect = 'none';
+      document.body.style.userSelect = 'none';
+
+      const applyClientX = (clientX: number) => {
+        const currentVw = window.innerWidth > 0 ? window.innerWidth : 1920;
+        const { startX, startWidth } = dragOriginRef.current;
+        const deltaX = startX - clientX;
+        const nextWidth = clampGwDrawerWidth(startWidth + deltaX, currentVw);
+        drawerWidthRef.current = nextWidth;
+        setDrawerWidth(nextWidth);
+        writeStoredGwDrawerWidth(nextWidth);
+        onEnsureContainerWidthRef.current?.(nextWidth);
+      };
+
+      const finishResize = () => {
+        activePointerIdRef.current = null;
+        writeStoredGwDrawerWidth(drawerWidthRef.current);
+        setIsResizing(false);
+        setLiveAnnouncement(`Khung đọc tài liệu rộng ${drawerWidthRef.current} pixel`);
+      };
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        applyClientX(moveEvent.clientX);
+      };
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        if (activePointerIdRef.current !== null && moveEvent.pointerId !== activePointerIdRef.current) return;
+        if (moveEvent.pointerType === 'mouse') return;
+        applyClientX(moveEvent.clientX);
+      };
+
+      const handlePointerDone = (endEvent: PointerEvent) => {
+        if (activePointerIdRef.current !== null && endEvent.pointerId !== activePointerIdRef.current) return;
+        finishResize();
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', finishResize);
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerDone);
+      window.addEventListener('pointercancel', handlePointerDone);
+      window.addEventListener('blur', finishResize);
+
+      return () => {
+        document.body.style.cursor = prevCursor;
+        bodyStyle.webkitUserSelect = prevWebkitUserSelect;
+        document.body.style.userSelect = prevUserSelect;
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', finishResize);
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerDone);
+        window.removeEventListener('pointercancel', handlePointerDone);
+        window.removeEventListener('blur', finishResize);
+      };
+    }, [isResizing]);
 
     const parsedUrl = useMemo(() => (payload?.url ? parseGoogleWorkspaceUrl(payload.url) : null), [payload?.url]);
 
@@ -164,35 +408,49 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
       }
     });
 
+    const initialLinkGid = payload?.gid ?? parsedUrl?.gid ?? undefined;
+    const activeTabComparison = selectedGid && selectedGid !== '' ? String(selectedGid) : undefined;
+    const activeRangeQuery =
+      !activeTabComparison || !initialLinkGid || activeTabComparison === String(initialLinkGid)
+        ? (payload?.range ?? parsedUrl?.range)
+        : undefined;
+
     const { data, loading, error, reload } = useGoogleWorkspacePreview(payload?.url, {
       gid: selectedGid,
-      range: payload?.range ?? parsedUrl?.range,
+      range: activeRangeQuery,
       conversationId: payload?.conversationId || activeConversationId,
       messageId: payload?.messageId,
-      enabled: open && Boolean(payload?.url),
+      enabled: open && portalOpen && Boolean(payload?.url),
     });
 
-    const isSheet = (data?.kind || parsedUrl?.kind) === 'spreadsheet';
-    const effectiveRange = data?.parsedRange || parsedUrl?.parsedRange || null;
-    const effectiveRangeLabel =
-      data?.requestedRange || payload?.range || parsedUrl?.range || effectiveRange?.label || null;
+    const firstTabGid = data?.tabs?.[0]?.gid ? String(data.tabs[0].gid) : undefined;
+    const isOnInitialRangeTab =
+      !activeTabComparison ||
+      (initialLinkGid
+        ? activeTabComparison === String(initialLinkGid)
+        : !firstTabGid || activeTabComparison === firstTabGid);
 
-    // Derive full grid with row numbers
+    const isSheet = (data?.kind || parsedUrl?.kind) === 'spreadsheet';
+    const effectiveRange = isOnInitialRangeTab ? data?.parsedRange || parsedUrl?.parsedRange || null : null;
+    const effectiveRangeLabel = isOnInitialRangeTab
+      ? data?.requestedRange || payload?.range || parsedUrl?.range || effectiveRange?.label || null
+      : null;
+
+    // Derive full grid with row numbers (never collapse columns when some rows are trailing-empty [])
     const sheetGrid = useMemo(() => {
       if (!isSheet || !data?.activeTab) return null;
       const tab = data.activeTab;
       const rawRows = tab.rows || [];
       const rowOffset =
         tab.snippetRowStart && tab.snippetRowStart > 1 && rawRows.length <= 20 ? tab.snippetRowStart : 1;
-      const colCount = Math.max(
-        1,
-        Math.min(
-          26,
-          tab.totalCols || 0,
-          ...rawRows.map((r) => r.length),
-          effectiveRange ? effectiveRange.endCol + 1 : 0
-        )
+      const maxRowCols = rawRows.reduce((max, r) => Math.max(max, r.length), 0);
+      const desiredCols = Math.max(
+        maxRowCols,
+        effectiveRange ? effectiveRange.endCol + 1 : 0,
+        Math.min(tab.totalCols || 0, 26),
+        5
       );
+      const colCount = Math.max(1, Math.min(MAX_FAST_GRID_COLS, desiredCols));
       const colLetters = Array.from({ length: colCount }, (_, i) => columnIndexToLetter(i));
       const needle = searchQuery.trim().toLowerCase();
 
@@ -229,7 +487,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
 
     // Auto-scroll to highlighted anchor cell (e.g. D17) on open/tab load
     useEffect(() => {
-      if (!open || readerMode !== 'fast' || !isSheet || !data?.activeTab || !effectiveRange) return;
+      if (!open || !portalOpen || readerMode !== 'fast' || !isSheet || !data?.activeTab || !effectiveRange) return;
       const scrollKey = `${data.fileId}:${data.activeTab.gid}:${effectiveRange.label}`;
       if (lastAutoScrolledKeyRef.current === scrollKey) return;
       const anchorVal = data.activeTab.rows?.[effectiveRange.startRow - 1]?.[effectiveRange.startCol] ?? '';
@@ -242,7 +500,60 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
         lastAutoScrolledKeyRef.current = scrollKey;
       }, 120);
       return () => clearTimeout(timer);
-    }, [open, readerMode, isSheet, data, effectiveRange, scrollToTargetRange]);
+    }, [open, portalOpen, readerMode, isSheet, data, effectiveRange, scrollToTargetRange]);
+
+    const handleCloseDrawer = useCallback(() => {
+      clearStoredGwDrawerSession();
+      setIsResizing(false);
+      setOpen(false);
+    }, []);
+
+    const handleToggleExpandWidth = useCallback(() => {
+      const basis = typeof window !== 'undefined' && window.innerWidth > 0 ? window.innerWidth : viewportWidth;
+      const wideTarget = clampGwDrawerWidth(Math.round(basis * 0.72), basis);
+      const wideThreshold = Math.max(820, wideTarget - 40);
+      const currentlyWide = drawerWidthRef.current >= wideThreshold;
+      let nextWidth: number;
+      if (currentlyWide) {
+        const prevStd =
+          previousStandardWidthRef.current < wideThreshold ? previousStandardWidthRef.current : DEFAULT_GW_DRAWER_WIDTH;
+        nextWidth = clampGwDrawerWidth(prevStd, basis);
+      } else {
+        previousStandardWidthRef.current = drawerWidthRef.current;
+        nextWidth = wideTarget;
+      }
+      drawerWidthRef.current = nextWidth;
+      setDrawerWidth(nextWidth);
+      writeStoredGwDrawerWidth(nextWidth);
+      onEnsureContainerWidthRef.current?.(nextWidth);
+      setLiveAnnouncement(`Khung đọc tài liệu rộng ${nextWidth} pixel`);
+    }, [viewportWidth]);
+
+    const handleResetDefaultWidth = useCallback(() => {
+      const basis = typeof window !== 'undefined' && window.innerWidth > 0 ? window.innerWidth : viewportWidth;
+      const nextWidth = clampGwDrawerWidth(DEFAULT_GW_DRAWER_WIDTH, basis);
+      drawerWidthRef.current = nextWidth;
+      setDrawerWidth(nextWidth);
+      writeStoredGwDrawerWidth(nextWidth);
+      setLiveAnnouncement(`Khung đọc tài liệu đặt lại mặc định ${nextWidth} pixel`);
+    }, [viewportWidth]);
+
+    const handleHandleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        const basis = typeof window !== 'undefined' && window.innerWidth > 0 ? window.innerWidth : viewportWidth;
+        const step = e.shiftKey ? 96 : 32;
+        const delta = e.key === 'ArrowLeft' ? step : -step;
+        const nextWidth = clampGwDrawerWidth(drawerWidthRef.current + delta, basis);
+        drawerWidthRef.current = nextWidth;
+        setDrawerWidth(nextWidth);
+        writeStoredGwDrawerWidth(nextWidth);
+        onEnsureContainerWidthRef.current?.(nextWidth);
+        setLiveAnnouncement(`Khung đọc tài liệu rộng ${nextWidth} pixel`);
+      },
+      [viewportWidth]
+    );
 
     const handleCopyText = async (textToCopy: string, label: string) => {
       try {
@@ -270,6 +581,9 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     const docTitle = data?.title || (isSheet ? 'Google Sheets' : 'Google Docs');
     const canonicalHref = data?.canonicalUrl || parsedUrl?.canonicalUrl || payload.url;
     const embedHref = data?.embedUrl || parsedUrl?.embedUrl || payload.url;
+    const expandedPresetWidth = clampGwDrawerWidth(Math.round(viewportWidth * 0.72), viewportWidth);
+    const expandedWidth = drawerWidth >= Math.max(820, expandedPresetWidth - 40);
+    const maxDrawerWidth = getMaxAllowedGwDrawerWidth(viewportWidth);
 
     const containerClass = isMobile
       ? 'fixed inset-0 z-[1300] flex flex-col w-full h-[100dvh]'
@@ -278,12 +592,13 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     const containerStyle: React.CSSProperties = isMobile
       ? { background: bgSurface, color: isDark ? '#f8fafc' : '#0f172a' }
       : {
-          width: expandedWidth ? 'min(64vw, 880px)' : 'min(48vw, 560px)',
-          minWidth: 380,
+          width: drawerWidth,
+          minWidth: MIN_GW_DRAWER_WIDTH,
+          maxWidth: 'calc(100% - 240px)',
           background: bgSurface,
-          borderLeft: `1px solid ${bColor}`,
+          borderLeft: `1px solid ${isResizing || hoverResizeHandle ? '#d4a84b' : bColor}`,
           color: isDark ? '#f8fafc' : '#0f172a',
-          transition: 'width 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: isResizing ? 'none' : 'width 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
         };
 
     return (
@@ -293,6 +608,104 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
         className={containerClass}
         style={containerStyle}
       >
+        {!isMobile && (
+          <div className="sr-only" aria-live="polite">
+            {liveAnnouncement}
+          </div>
+        )}
+
+        {/* LEFT EDGE DRAG-TO-RESIZE HANDLE */}
+        {!isMobile && (
+          <Tooltip title="Kéo sang trái/phải để đổi độ rộng (hỗ trợ mũi tên Trái/Phải · Nhấp đúp để đặt lại 680px)">
+            <div
+              data-testid="gw-reader-resize-handle"
+              data-no-chat-autofocus="true"
+              role="separator"
+              tabIndex={0}
+              aria-orientation="vertical"
+              aria-valuenow={drawerWidth}
+              aria-valuemin={MIN_GW_DRAWER_WIDTH}
+              aria-valuemax={maxDrawerWidth}
+              aria-label="Thay đổi độ rộng khung đọc tài liệu bằng kéo thả hoặc phím mũi tên trái phải"
+              onMouseDown={(e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                dragOriginRef.current = {
+                  startX: e.clientX,
+                  startWidth: drawerWidthRef.current,
+                };
+                setIsResizing(true);
+              }}
+              onPointerDown={(e) => {
+                if (e.pointerType === 'mouse' || e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                activePointerIdRef.current = e.pointerId;
+                dragOriginRef.current = {
+                  startX: e.clientX,
+                  startWidth: drawerWidthRef.current,
+                };
+                setIsResizing(true);
+              }}
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleResetDefaultWidth();
+              }}
+              onKeyDown={handleHandleKeyDown}
+              onMouseEnter={() => setHoverResizeHandle(true)}
+              onMouseLeave={() => setHoverResizeHandle(false)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: -5,
+                width: 10,
+                cursor: 'col-resize',
+                touchAction: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                zIndex: 35,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <div
+                className="rounded-full transition-all"
+                style={{
+                  width: isResizing || hoverResizeHandle ? 3.5 : 1.5,
+                  height: isResizing || hoverResizeHandle ? 72 : 40,
+                  background:
+                    isResizing || hoverResizeHandle
+                      ? '#d4a84b'
+                      : isDark
+                        ? 'rgba(148, 163, 184, 0.35)'
+                        : 'rgba(100, 116, 139, 0.3)',
+                  boxShadow: isResizing ? '0 0 10px rgba(212, 168, 75, 0.65)' : 'none',
+                }}
+              />
+              {isResizing && (
+                <div
+                  data-testid="gw-reader-width-badge"
+                  className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                  style={{
+                    position: 'absolute',
+                    right: 14,
+                    background: '#111827',
+                    color: '#d4a84b',
+                    border: '1px solid rgba(212, 168, 75, 0.45)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {drawerWidth}px
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        )}
+
         {/* TOP HEADER: Title on LEFT, Mode Switch + Controls + [X] Close strictly on RIGHT */}
         <div
           className="h-[52px] px-3 flex items-center justify-between gap-2 shrink-0"
@@ -367,7 +780,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                 <button
                   type="button"
                   aria-label={expandedWidth ? 'Thu chuẩn độ rộng' : 'Mở rộng khung đọc'}
-                  onClick={() => setExpandedWidth((v) => !v)}
+                  onClick={handleToggleExpandWidth}
                   className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
                 >
                   {expandedWidth ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
@@ -391,7 +804,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               <button
                 type="button"
                 aria-label="Đóng trình đọc tài liệu"
-                onClick={() => setOpen(false)}
+                onClick={handleCloseDrawer}
                 className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
               >
                 <X size={16} />
@@ -647,7 +1060,8 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               data-testid="gw-reader-embed-iframe"
               src={embedHref}
               title={docTitle}
-              className="w-full flex-1 border-0 bg-white"
+              className="block w-full flex-1 border-0 bg-white"
+              style={{ pointerEvents: isResizing ? 'none' : 'auto' }}
               allow="clipboard-read; clipboard-write"
             />
           </div>
@@ -747,17 +1161,23 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               isSheet &&
               (data.accessStatus === 'PUBLIC_LINK' || data.accessStatus === 'SERVICE_ACCOUNT') &&
               sheetGrid && (
-                <div className="flex-1 overflow-auto min-h-0">
-                  <table className="w-full border-collapse text-[11.5px] tabular-nums">
+                <div ref={gridScrollRef} className="flex-1 overflow-auto min-h-0">
+                  <table className="min-w-full w-max border-collapse text-[11.5px] tabular-nums">
                     <thead className="sticky top-0 z-10">
                       <tr className={isDark ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-600'}>
-                        <th className="sticky left-0 z-20 w-10 px-2 py-1.5 text-center font-bold border-b border-r border-slate-500/25 bg-inherit">
+                        <th
+                          className={`sticky left-0 z-20 w-11 px-2 py-1.5 text-center font-bold border-b border-r border-slate-500/25 ${
+                            isDark ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
                           #
                         </th>
                         {sheetGrid.colLetters.map((letter) => (
                           <th
                             key={letter}
-                            className="min-w-[96px] max-w-[240px] px-2.5 py-1.5 text-center font-bold border-b border-r border-slate-500/20"
+                            className={`min-w-[110px] max-w-[260px] px-2.5 py-1.5 text-center font-bold border-b border-r border-slate-500/20 ${
+                              isDark ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-600'
+                            }`}
                           >
                             {letter}
                           </th>
@@ -835,8 +1255,8 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                   </table>
                   {sheetGrid.truncated && (
                     <div className="p-2.5 text-center text-[11px] opacity-70 border-t border-slate-500/20">
-                      Đang hiển thị {sheetGrid.totalRows} dòng đầu tiên để tối ưu tốc độ. Chuyển sang chế độ Google Trực
-                      tiếp để xem thêm.
+                      Đang hiển thị tối đa {sheetGrid.totalRows} dòng và {sheetGrid.colCount} cột đầu tiên để tối ưu tốc
+                      độ. Chuyển sang chế độ Google Trực tiếp để xem thêm.
                     </div>
                   )}
                 </div>
@@ -960,6 +1380,8 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                   onClick={() => {
                     setSelectedGid(tab.gid);
                     setSelectedCell(null);
+                    gridScrollRef.current?.scrollTo?.({ top: 0, left: 0 });
+                    docBodyRef.current?.scrollTo?.({ top: 0, left: 0 });
                   }}
                   className={`inline-flex items-center justify-center gap-1.5 leading-none px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold shrink-0 cursor-pointer border transition-colors ${
                     active

@@ -11798,10 +11798,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               isMobile={isMobile}
               isDark={isDark}
               activeConversationId={activeConversation?.id}
+              portalOpen={Boolean(standalone || open)}
               surfaceBg={surfaceBg}
               surfaceRaised={surfaceRaised}
               canvasBg={canvasBg}
               borderColor={borderColor}
+              onEnsureContainerWidth={(desiredDrawerWidth) => {
+                if (standalone || maximizedRef.current || isMobile || typeof window === 'undefined') return;
+                const maxPortal = Math.max(520, window.innerWidth - 56);
+                const needed = Math.min(maxPortal, Math.round(desiredDrawerWidth + sidebarWidthRef.current + 320));
+                if (needed > panelWidthRef.current) {
+                  panelWidthRef.current = needed;
+                  setPanelWidth(needed);
+                  persistPersonalLayout({ panelWidth: needed });
+                }
+              }}
               onPostAiReplyToChat={(replyText, docTitle) => {
                 if (activeConversation?.id) {
                   void handleSendMessage(activeConversation.id, `✨ **Phân tích AI (${docTitle}):**\n\n${replyText}`);
