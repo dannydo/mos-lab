@@ -515,7 +515,6 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           {onOpenCKEditor && (
             <button
               type="button"
-              onPointerDown={(e) => e.preventDefault()}
               onMouseDown={(e) => e.preventDefault()}
               onClick={onOpenCKEditor}
               className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0 cursor-pointer"

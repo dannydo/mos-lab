@@ -372,7 +372,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
           </div>
           <button
             type="button"
-            onPointerDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               setDismissedAtIndex(mentionMatch.atIndex);
               onClose?.();
@@ -399,7 +399,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                   type="button"
                   role="option"
                   aria-selected="false"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCandidateClick(item)}
                   className="w-full px-3 py-2 flex items-center gap-2.5 text-left hover:bg-[var(--mos-surface-muted)] active:bg-[var(--mos-surface-muted)] transition-colors cursor-pointer min-h-[44px]"
                 >
@@ -473,7 +473,7 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
                   type="button"
                   role="option"
                   aria-selected="false"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleCandidateClick(item)}
                   className="w-full px-3 py-2 flex items-center gap-2.5 text-left hover:bg-[var(--mos-surface-muted)] active:bg-[var(--mos-surface-muted)] transition-colors cursor-pointer min-h-[44px] opacity-90"
                 >

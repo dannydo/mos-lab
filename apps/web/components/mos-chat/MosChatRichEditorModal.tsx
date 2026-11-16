@@ -275,6 +275,17 @@ export function handleSmartListEnterKey(
   return { handled: false, nextText: text, nextCursor: selectionStart };
 }
 
+const EditorTooltip: React.FC<{
+  title: React.ReactNode;
+  disabled?: boolean;
+  children: React.ReactElement;
+  [key: string]: unknown;
+}> = ({ title, disabled, children, ...rest }) => {
+  const child = Object.keys(rest).length > 0 ? React.cloneElement(children, rest) : children;
+  if (disabled) return child;
+  return <Tooltip title={title}>{child}</Tooltip>;
+};
+
 export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
   open,
   onClose,
@@ -367,18 +378,45 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
     return { chars, words, lines };
   }, [content]);
 
+  const captureSelection = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const isFocused = typeof document !== 'undefined' && document.activeElement === textarea;
+    if (!isFocused) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? start;
+    lastSelectionRef.current = { start, end };
+  }, []);
+
+  const getEffectiveSelection = useCallback(
+    (textarea: HTMLTextAreaElement | null) => {
+      const maxLen = content.length;
+      const clamp = (n: number) => Math.max(0, Math.min(n, maxLen));
+      if (!textarea) {
+        return {
+          start: clamp(lastSelectionRef.current.start),
+          end: clamp(lastSelectionRef.current.end),
+        };
+      }
+      const isFocused = typeof document !== 'undefined' && document.activeElement === textarea;
+      let start = clamp(textarea.selectionStart ?? maxLen);
+      let end = clamp(textarea.selectionEnd ?? maxLen);
+      if (!isFocused || (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end)) {
+        start = clamp(lastSelectionRef.current.start);
+        end = clamp(lastSelectionRef.current.end);
+      }
+      return { start, end };
+    },
+    [content.length]
+  );
+
   /**
    * Toggle prefix on the current line (e.g., • , 1. , - [ ] , > , # )
    */
   const toggleLinePrefix = useCallback(
     (targetPrefix: string, stripPattern: RegExp) => {
       const textarea = textareaRef.current;
-      let start = textarea?.selectionStart ?? content.length;
-      let end = textarea?.selectionEnd ?? content.length;
-      if (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end) {
-        start = lastSelectionRef.current.start;
-        end = lastSelectionRef.current.end;
-      }
+      const { start, end } = getEffectiveSelection(textarea);
       const lineStart = content.lastIndexOf('\n', start - 1) + 1;
       const nextNewline = content.indexOf('\n', start);
       const lineEnd = nextNewline === -1 ? content.length : nextNewline;
@@ -412,7 +450,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         textarea?.setSelectionRange(nextStart, nextEnd);
       }, 0);
     },
-    [content]
+    [content, getEffectiveSelection]
   );
 
   /**
@@ -424,12 +462,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const textarea = textareaRef.current;
       if (!textarea) return;
 
-      let start = textarea.selectionStart ?? content.length;
-      let end = textarea.selectionEnd ?? content.length;
-      if (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end) {
-        start = lastSelectionRef.current.start;
-        end = lastSelectionRef.current.end;
-      }
+      const { start, end } = getEffectiveSelection(textarea);
       const selected = content.substring(start, end);
 
       const before = content.substring(0, start);
@@ -538,12 +571,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const textarea = textareaRef.current;
       if (!textarea) return;
 
-      let start = textarea.selectionStart ?? content.length;
-      let end = textarea.selectionEnd ?? content.length;
-      if (start === end && lastSelectionRef.current.start !== lastSelectionRef.current.end) {
-        start = lastSelectionRef.current.start;
-        end = lastSelectionRef.current.end;
-      }
+      const { start, end } = getEffectiveSelection(textarea);
       const selected = content.substring(start, end);
 
       switch (formatType) {
@@ -659,7 +687,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         }
       }, 0);
     },
-    [content, activeColor, toggleInlineWrapper, toggleLinePrefix]
+    [content, activeColor, toggleInlineWrapper, toggleLinePrefix, getEffectiveSelection]
   );
 
   const handleInsertLink = () => {
@@ -669,14 +697,15 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
 
     const textarea = textareaRef.current;
     if (textarea) {
-      const start = textarea.selectionStart ?? content.length;
-      const end = textarea.selectionEnd ?? content.length;
+      const { start, end } = getEffectiveSelection(textarea);
       const nextVal = content.substring(0, start) + linkMd + content.substring(end);
       setContent(nextVal);
-      setCursorPos(start + linkMd.length);
+      const nextPos = start + linkMd.length;
+      setCursorPos(nextPos);
+      lastSelectionRef.current = { start: nextPos, end: nextPos };
       setTimeout(() => {
         textarea.focus();
-        textarea.setSelectionRange(start + linkMd.length, start + linkMd.length);
+        textarea.setSelectionRange(nextPos, nextPos);
       }, 0);
     } else {
       setContent((prev) => `${prev} ${linkMd}`);
@@ -800,9 +829,10 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   open={templatePopoverOpen}
                   onOpenChange={setTemplatePopoverOpen}
                   trigger="click"
-                  placement="bottomRight"
+                  placement={isMobile ? 'bottom' : 'bottomRight'}
+                  zIndex={zIndex + 20}
                   content={
-                    <div className="w-72 p-1 space-y-1">
+                    <div className="w-[min(288px,calc(100vw-32px))] max-h-[45vh] overflow-y-auto p-1 space-y-1">
                       <div className="text-[11px] font-bold uppercase tracking-wider px-2 py-1 text-amber-500 flex items-center gap-1.5">
                         <Sparkles size={13} />
                         <span>Mẫu soạn thảo sẵn</span>
@@ -831,6 +861,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     style={{ borderColor: borderCol, color: token.colorText }}
                   >
                     <Sparkles size={13} className="text-amber-500" />
+                    <span className="sm:hidden">Mẫu</span>
                     <span className="hidden sm:inline">Mẫu nhanh</span>
                   </button>
                 </Popover>
@@ -841,7 +872,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 className="flex items-center p-0.5 rounded-lg border shrink-0"
                 style={{ borderColor: borderCol, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)' }}
               >
-                <Tooltip title="Bản gọn (Type nhanh): Khung nhỏ gọn kiểu Google Chat, tự xuống dòng dấu đầu dòng • khi nhấn Enter">
+                <EditorTooltip disabled={isMobile} title="Bản gọn (Type nhanh): Khung nhỏ gọn kiểu Google Chat, tự xuống dòng dấu đầu dòng • khi nhấn Enter">
                   <button
                     type="button"
                     data-testid="rich-editor-mode-compact"
@@ -855,9 +886,9 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     <Zap size={12} />
                     <span>Bản gọn</span>
                   </button>
-                </Tooltip>
+                </EditorTooltip>
 
-                <Tooltip title="Chỉ soạn thảo (Soạn mã Markdown / Text)">
+                <EditorTooltip disabled={isMobile} title="Chỉ soạn thảo (Soạn mã Markdown / Text)">
                   <button
                     type="button"
                     onClick={() => setViewMode('edit')}
@@ -870,9 +901,9 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     <FileText size={12} />
                     <span className="hidden md:inline">Soạn thảo</span>
                   </button>
-                </Tooltip>
+                </EditorTooltip>
 
-                <Tooltip title="Xem song song: Soạn thảo bên trái, Xem trước bên phải">
+                <EditorTooltip disabled={isMobile} title="Xem song song: Soạn thảo bên trái, Xem trước bên phải">
                   <button
                     type="button"
                     onClick={() => setViewMode('split')}
@@ -885,9 +916,9 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     <Columns2 size={12} />
                     <span className="hidden md:inline">Song song</span>
                   </button>
-                </Tooltip>
+                </EditorTooltip>
 
-                <Tooltip title="Xem trước trực quan (WYSIWYG Preview)">
+                <EditorTooltip disabled={isMobile} title="Xem trước trực quan (WYSIWYG Preview)">
                   <button
                     type="button"
                     onClick={() => setViewMode('preview')}
@@ -900,12 +931,12 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     <Eye size={12} />
                     <span className="hidden md:inline">Xem trước</span>
                   </button>
-                </Tooltip>
+                </EditorTooltip>
               </div>
 
               {/* Fullscreen Toggle */}
               {!isCompactMode && (
-                <Tooltip title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}>
+                <EditorTooltip disabled={isMobile} title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}>
                   <button
                     type="button"
                     onClick={() => setIsFullscreen((prev) => !prev)}
@@ -914,14 +945,16 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   >
                     {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
                   </button>
-                </Tooltip>
+                </EditorTooltip>
               )}
             </div>
           </div>
 
           {/* Formatting Toolbar (Sleek Google-Chat style in Compact Mode, Full Studio in other modes) */}
           <div
-            className="flex items-center gap-1 px-3.5 py-2 border-b overflow-x-auto no-scrollbar shrink-0 select-none"
+            className={`flex items-center gap-1 px-3.5 py-2 border-b shrink-0 select-none ${
+              isMobile ? 'flex-wrap gap-y-1.5' : 'overflow-x-auto no-scrollbar'
+            }`}
             style={{
               borderColor: borderCol,
               background: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(250, 250, 250, 0.95)',
@@ -929,11 +962,11 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
           >
             {/* Core Inline Styles: B, I, U, A (Color), S */}
             <div className="flex items-center gap-0.5">
-              <Tooltip title="In đậm (⌘B)">
+              <EditorTooltip disabled={isMobile} title="In đậm (⌘B)">
                 <button
                   type="button"
                   aria-label="In đậm"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('bold')}
                   className={getBtnClass(activeFormats.bold)}
@@ -941,13 +974,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Bold size={14} strokeWidth={2.5} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
-              <Tooltip title="In nghiêng (⌘I)">
+              <EditorTooltip disabled={isMobile} title="In nghiêng (⌘I)">
                 <button
                   type="button"
                   aria-label="In nghiêng"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('italic')}
                   className={getBtnClass(activeFormats.italic)}
@@ -955,13 +988,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Italic size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
-              <Tooltip title="Gạch chân (⌘U)">
+              <EditorTooltip disabled={isMobile} title="Gạch chân (⌘U)">
                 <button
                   type="button"
                   aria-label="Gạch chân"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('underline')}
                   className={getBtnClass(activeFormats.underline)}
@@ -969,7 +1002,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Underline size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
               {/* [A] Text Color Picker */}
               <Popover
@@ -977,45 +1010,46 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 onOpenChange={setColorPopoverOpen}
                 trigger="click"
                 placement="bottom"
+                zIndex={zIndex + 20}
                 content={
                   <div className="p-1.5 flex items-center gap-1.5">
                     {QUICK_TEXT_COLORS.map((c) => (
-                      <Tooltip key={c.id} title={c.label}>
+                      <EditorTooltip key={c.id} disabled={isMobile} title={c.label}>
                         <button
                           type="button"
                           aria-label={`Màu chữ ${c.label}`}
-                          onPointerDown={(e) => e.preventDefault()}
+                          onPointerDown={captureSelection}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => handleApplyColor(c.hex)}
-                          className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                          className="w-7 h-7 sm:w-6 sm:h-6 rounded-full border border-white/20 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
                           style={{ background: c.hex }}
                         >
                           {activeColor === c.hex && <Check size={12} className="text-slate-950 stroke-[3]" />}
                         </button>
-                      </Tooltip>
+                      </EditorTooltip>
                     ))}
                   </div>
                 }
               >
-                <Tooltip title="Màu chữ nổi bật (A)">
-                  <button
-                    type="button"
-                    aria-label="Chọn màu chữ"
-                    onPointerDown={(e) => e.preventDefault()}
-                    onMouseDown={(e) => e.preventDefault()}
-                    className="w-7 h-7 rounded-lg flex flex-col items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shrink-0"
-                    style={{ color: token.colorText }}
-                  >
-                    <span className="font-bold text-[12px] leading-none">A</span>
-                    <span className="w-3.5 h-[2.5px] rounded-full mt-0.5" style={{ background: activeColor }} />
-                  </button>
-                </Tooltip>
+                <button
+                  type="button"
+                  aria-label="Chọn màu chữ"
+                  title={isMobile ? undefined : 'Màu chữ nổi bật (A)'}
+                  onPointerDown={captureSelection}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="w-7 h-7 rounded-lg flex flex-col items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shrink-0"
+                  style={{ color: token.colorText }}
+                >
+                  <span className="font-bold text-[12px] leading-none">A</span>
+                  <span className="w-3.5 h-[2.5px] rounded-full mt-0.5" style={{ background: activeColor }} />
+                </button>
               </Popover>
 
-              <Tooltip title="Gạch ngang (~~text~~)">
+              <EditorTooltip disabled={isMobile} title="Gạch ngang (~~text~~)">
                 <button
                   type="button"
                   aria-label="Gạch ngang"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('strike')}
                   className={getBtnClass(activeFormats.strike)}
@@ -1023,18 +1057,18 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Strikethrough size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
             </div>
 
             <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
 
             {/* Lists: Bullet (•), Numbered (1.), Checklist ([ ]) */}
             <div className="flex items-center gap-0.5">
-              <Tooltip title="Danh sách dấu đầu dòng (• Mục) — Nhấn Enter để tự động thêm dấu • dòng tiếp theo">
+              <EditorTooltip disabled={isMobile} title="Danh sách dấu đầu dòng (• Mục) — Nhấn Enter để tự động thêm dấu • dòng tiếp theo">
                 <button
                   type="button"
                   aria-label="Danh sách dấu đầu dòng"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('bullet')}
                   className={getBtnClass(activeFormats.bullet)}
@@ -1042,13 +1076,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <List size={15} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
-              <Tooltip title="Danh sách đánh số (1. Mục) — Nhấn Enter để tự động tăng số thứ tự">
+              <EditorTooltip disabled={isMobile} title="Danh sách đánh số (1. Mục) — Nhấn Enter để tự động tăng số thứ tự">
                 <button
                   type="button"
                   aria-label="Danh sách số thứ tự"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('number')}
                   className={getBtnClass(activeFormats.number)}
@@ -1056,13 +1090,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <ListOrdered size={15} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
-              <Tooltip title="Danh sách việc cần làm (- [ ] Todo)">
+              <EditorTooltip disabled={isMobile} title="Danh sách việc cần làm (- [ ] Todo)">
                 <button
                   type="button"
                   aria-label="Danh sách việc cần làm"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('todo')}
                   className={getBtnClass(activeFormats.todo)}
@@ -1070,18 +1104,18 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <ListTodo size={15} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
             </div>
 
             <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
 
             {/* Quote & Link & Code (matching Google Chat bar) */}
             <div className="flex items-center gap-0.5">
-              <Tooltip title="Trích dẫn (> Trích dẫn)">
+              <EditorTooltip disabled={isMobile} title="Trích dẫn (> Trích dẫn)">
                 <button
                   type="button"
                   aria-label="Trích dẫn"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('quote')}
                   className={getBtnClass(activeFormats.quote)}
@@ -1089,13 +1123,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Quote size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
-              <Tooltip title="Chèn liên kết URL [Tên](https://...)">
+              <EditorTooltip disabled={isMobile} title="Chèn liên kết URL [Tên](https://...)">
                 <button
                   type="button"
                   aria-label="Chèn liên kết"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('link')}
                   className={getBtnClass(false)}
@@ -1103,17 +1137,17 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <LinkIcon size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
             </div>
 
             <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
 
             <div className="flex items-center gap-0.5">
-              <Tooltip title="Mã nội dòng (`code`)">
+              <EditorTooltip disabled={isMobile} title="Mã nội dòng (`code`)">
                 <button
                   type="button"
                   aria-label="Mã nội dòng"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('code')}
                   className={getBtnClass(activeFormats.code)}
@@ -1121,13 +1155,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Code size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
 
-              <Tooltip title="Khối mã đa dòng (```)">
+              <EditorTooltip disabled={isMobile} title="Khối mã đa dòng (```)">
                 <button
                   type="button"
                   aria-label="Khối mã đa dòng"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('codeblock')}
                   className={getBtnClass(false)}
@@ -1135,61 +1169,61 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <SquareCode size={14} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
             </div>
 
             {/* Headings & Tables & Dividers: Available in all modes via horizontal scrolling */}
             <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
             <div className="flex items-center gap-0.5">
-              <Tooltip title="Tiêu đề chính lớn (# H1)">
+              <EditorTooltip disabled={isMobile} title="Tiêu đề chính lớn (# H1)">
                 <button
                   type="button"
                   aria-label="Tiêu đề H1"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('h1')}
-                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-bold text-[11.5px] cursor-pointer ${
+                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-bold text-[11.5px] cursor-pointer shrink-0 ${
                     activeFormats.h1 ? 'bg-amber-500/20 text-amber-400' : 'text-amber-500 hover:bg-white/10'
                   }`}
                 >
                   H1
                 </button>
-              </Tooltip>
-              <Tooltip title="Tiêu đề nhánh (## H2)">
+              </EditorTooltip>
+              <EditorTooltip disabled={isMobile} title="Tiêu đề nhánh (## H2)">
                 <button
                   type="button"
                   aria-label="Tiêu đề H2"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('h2')}
-                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-semibold text-[11px] cursor-pointer ${
+                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-semibold text-[11px] cursor-pointer shrink-0 ${
                     activeFormats.h2 ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-white/10'
                   }`}
                   style={{ color: token.colorText }}
                 >
                   H2
                 </button>
-              </Tooltip>
-              <Tooltip title="Tiêu đề nhỏ (### H3)">
+              </EditorTooltip>
+              <EditorTooltip disabled={isMobile} title="Tiêu đề nhỏ (### H3)">
                 <button
                   type="button"
                   aria-label="Tiêu đề H3"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('h3')}
-                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-medium text-[10.5px] cursor-pointer ${
+                  className={`h-7 px-1.5 rounded-md flex items-center justify-center font-medium text-[10.5px] cursor-pointer shrink-0 ${
                     activeFormats.h3 ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-white/10'
                   }`}
                   style={{ color: token.colorText }}
                 >
                   H3
                 </button>
-              </Tooltip>
-              <Tooltip title="Chèn bảng dữ liệu Markdown">
+              </EditorTooltip>
+              <EditorTooltip disabled={isMobile} title="Chèn bảng dữ liệu Markdown">
                 <button
                   type="button"
                   aria-label="Chèn bảng"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('table')}
                   className={getBtnClass(false)}
@@ -1197,12 +1231,12 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Table size={14} />
                 </button>
-              </Tooltip>
-              <Tooltip title="Đường kẻ phân cách ngang (---)">
+              </EditorTooltip>
+              <EditorTooltip disabled={isMobile} title="Đường kẻ phân cách ngang (---)">
                 <button
                   type="button"
                   aria-label="Đường kẻ phân cách"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleFormat('divider')}
                   className={getBtnClass(false)}
@@ -1210,7 +1244,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 >
                   <Minus size={15} />
                 </button>
-              </Tooltip>
+              </EditorTooltip>
             </div>
 
             {/* Extended Studio Diagrams (Mermaid, KaTeX - shown in non-compact modes) */}
@@ -1218,57 +1252,57 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
               <>
                 <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
                 <div className="flex items-center gap-0.5">
-                  <Tooltip title="Sơ đồ quy trình tương tác Mermaid (```mermaid)">
+                  <EditorTooltip disabled={isMobile} title="Sơ đồ quy trình tương tác Mermaid (```mermaid)">
                     <button
                       type="button"
-                      onPointerDown={(e) => e.preventDefault()}
+                      onPointerDown={captureSelection}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleFormat('mermaid')}
-                      className="h-7 px-1.5 rounded-md flex items-center gap-1 text-[11px] font-medium text-purple-400 hover:bg-purple-500/10 cursor-pointer"
+                      className="h-7 px-1.5 rounded-md flex items-center gap-1 text-[11px] font-medium text-purple-400 hover:bg-purple-500/10 cursor-pointer shrink-0"
                     >
                       <GitFork size={13} />
                       <span>Mermaid</span>
                     </button>
-                  </Tooltip>
-                  <Tooltip title="Công thức toán học KaTeX ($$ formula $$)">
+                  </EditorTooltip>
+                  <EditorTooltip disabled={isMobile} title="Công thức toán học KaTeX ($$ formula $$)">
                     <button
                       type="button"
-                      onPointerDown={(e) => e.preventDefault()}
+                      onPointerDown={captureSelection}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleFormat('math')}
-                      className="h-7 px-1.5 rounded-md flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                      className="h-7 px-1.5 rounded-md flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-500/10 cursor-pointer shrink-0"
                     >
                       <Sigma size={13} />
                       <span>KaTeX</span>
                     </button>
-                  </Tooltip>
+                  </EditorTooltip>
                 </div>
               </>
             )}
 
-            <div className="h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
+            <div className="hidden sm:block h-4 w-[1px] bg-zinc-700/40 shrink-0 mx-1" />
 
             {/* Clear Format */}
-            <Tooltip title="Xóa ký tự định dạng của đoạn đã chọn">
+            <EditorTooltip disabled={isMobile} title="Xóa ký tự định dạng của đoạn đã chọn">
               <button
                 type="button"
                 aria-label="Xóa định dạng"
-                onPointerDown={(e) => e.preventDefault()}
+                onPointerDown={captureSelection}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleFormat('clear')}
-                className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer opacity-75 hover:opacity-100"
+                className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer opacity-75 hover:opacity-100 shrink-0"
                 style={{ color: token.colorTextSecondary }}
               >
                 <RotateCcw size={13} />
               </button>
-            </Tooltip>
+            </EditorTooltip>
 
             {/* MAI trigger */}
             {canUseAiCopilot && (
-              <Tooltip title="Gắn tag @MAI để gọi mOS AI">
+              <EditorTooltip disabled={isMobile} title="Gắn tag @MAI để gọi mOS AI">
                 <button
                   type="button"
-                  onPointerDown={(e) => e.preventDefault()}
+                  onPointerDown={captureSelection}
                   onClick={() => {
                     setContent((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                   }}
@@ -1277,7 +1311,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   <Bot size={13} />
                   <span>@MAI</span>
                 </button>
-              </Tooltip>
+              </EditorTooltip>
             )}
           </div>
 
@@ -1388,11 +1422,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
             </div>
           ) : (
             /* STUDIO SPLIT / EDIT / PREVIEW MODES */
-            <div className="flex-1 flex overflow-hidden min-h-0">
+            <div className={`flex-1 flex overflow-hidden min-h-0 ${viewMode === 'split' ? 'flex-col md:flex-row' : ''}`}>
               {/* Editor Pane (Left / Full) */}
               {viewMode !== 'preview' && (
                 <div
-                  className={`flex-1 flex flex-col min-w-0 ${viewMode === 'split' ? 'border-r' : ''}`}
+                  className={`flex-1 flex flex-col min-w-0 min-h-0 ${
+                    viewMode === 'split' ? 'border-b md:border-b-0 md:border-r' : ''
+                  }`}
                   style={{ borderColor: borderCol }}
                 >
                   <div
@@ -1572,7 +1608,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         title="Chèn liên kết URL"
         okText="Chèn liên kết"
         cancelText="Hủy"
-        width={420}
+        width={isMobile ? 'min(420px, calc(100vw - 24px))' : 420}
         destroyOnHidden
       >
         <div className="space-y-3 pt-2">

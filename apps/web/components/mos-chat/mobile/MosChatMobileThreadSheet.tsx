@@ -2352,7 +2352,6 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             {/* Quick CKEditor Format Button inside Thread */}
             <button
               type="button"
-              onPointerDown={(e) => e.preventDefault()}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setCkEditorOpen(true)}
               className="p-1 text-[var(--mos-text-muted)] hover:text-amber-400 active:scale-90 transition-transform shrink-0 cursor-pointer"
@@ -2764,6 +2763,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         onClose={() => setCkEditorOpen(false)}
         initialValue={text}
         initialMode="compact"
+        isDark={isDark}
         title="Soạn thảo phong phú (CKEditor)"
         onApply={(newText) => {
           setText(newText);

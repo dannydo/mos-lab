@@ -952,6 +952,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         onClose={() => setCkEditorOpen(false)}
         initialValue={composerText}
         initialMode="compact"
+        isDark={isDark}
         title="Soạn thảo phong phú (CKEditor)"
         onApply={(text) => {
           setComposerText(text);
