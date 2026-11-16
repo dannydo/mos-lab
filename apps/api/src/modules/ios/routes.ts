@@ -11,6 +11,7 @@ import { getLegacyPool, registerIosPoolShutdown } from './services/db-pools.js';
 import { resolveIosAuth } from './services/ios-auth.service.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { executeAdminComboExpiryAction } from './services/ios-combo-expiry.service.js';
+import { getIosCustomerHistory } from './services/ios-customer-history.service.js';
 import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
 import { scanIosProductByCode } from './services/ios-product-scan.service.js';
@@ -275,6 +276,29 @@ export async function iosRoutes(fastify: FastifyInstance) {
         success: false,
         error: error?.message || 'Promotion query error',
         promotions: [],
+      });
+    }
+  });
+
+  // GET /api/ios/customers/:customerId/history (Lịch sử đi & chi tiêu khách hàng — MOS-FEAT-235)
+  fastify.get('/ios/customers/:customerId/history', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      }
+      const params = (request.params || {}) as { customerId?: string };
+      const query = (request.query || {}) as { bookingId?: string; sim?: string };
+      const customerId = Number(params.customerId || 0);
+      const bookingId = query.bookingId ? Number(query.bookingId) : undefined;
+      const sim = query.sim === '1' || query.sim === 'true';
+      const result = await getIosCustomerHistory(authUser, customerId, { bookingId, sim });
+      return reply.status(result.statusCode).send(result.payload);
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'Error fetching /api/ios/customers/:customerId/history');
+      return reply.status(500).send({
+        success: false,
+        error: error?.message || 'Customer history fetch error',
       });
     }
   });

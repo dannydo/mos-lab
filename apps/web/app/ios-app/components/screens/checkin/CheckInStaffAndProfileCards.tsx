@@ -47,6 +47,7 @@ interface CheckInStaffAndProfileCardsProps {
   visits: number;
   isFirstTimeClient: boolean;
   onOpenLashHistory: (item: LashHistoryItem) => void;
+  onOpenFullHistory?: () => void;
 }
 
 export function CheckInStaffAndProfileCards({
@@ -72,6 +73,7 @@ export function CheckInStaffAndProfileCards({
   visits,
   isFirstTimeClient,
   onOpenLashHistory,
+  onOpenFullHistory,
 }: CheckInStaffAndProfileCardsProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -506,13 +508,25 @@ export function CheckInStaffAndProfileCards({
 
       {/* Section 4: History list */}
       <div>
-        <div className="flex items-center justify-between px-1 mb-1.5">
+        <div className="flex items-center justify-between gap-2 px-1 mb-1.5">
           <span className="text-[11px] font-semibold text-[var(--mos-text-muted)] uppercase tracking-wider">
             LỊCH SỬ LÀM MI GẦN NHẤT
           </span>
-          {(!isFirstTimeClient || (booking?.lashHistory && booking.lashHistory.length > 0)) && (
-            <span className="text-[10px] text-[var(--mos-accent)] font-bold">Chạm để xem chi tiết & 3 ảnh ↗</span>
-          )}
+          <div className="flex items-center gap-2">
+            {onOpenFullHistory && (
+              <button
+                type="button"
+                onClick={onOpenFullHistory}
+                data-testid="checkin-open-full-history-btn"
+                className="text-[11px] font-bold text-emerald-500 hover:underline leading-none"
+              >
+                Lịch sử &amp; Chi tiêu ›
+              </button>
+            )}
+            {(!isFirstTimeClient || (booking?.lashHistory && booking.lashHistory.length > 0)) && !onOpenFullHistory && (
+              <span className="text-[10px] text-[var(--mos-accent)] font-bold">Chạm để xem chi tiết &amp; 3 ảnh ↗</span>
+            )}
+          </div>
         </div>
         {isFirstTimeClient && (!booking?.lashHistory || booking.lashHistory.length === 0) ? (
           <div className="bg-[var(--mos-surface)] rounded-2xl p-3.5 shadow-sm border border-amber-500/40 flex items-start gap-2.5 text-[var(--mos-text)]">

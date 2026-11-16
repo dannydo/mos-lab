@@ -5,6 +5,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
+import { CustomerHistoryAndSpendingSheet } from '../ui-kit/CustomerHistoryAndSpendingSheet';
 import type { Screen03ConsultationMatrixProps } from './consultation/ConsultationTypes';
 import { useLashDesignSelection } from './consultation/useLashDesignSelection';
 import { useNaturalLashDiagnostic } from './consultation/useNaturalLashDiagnostic';
@@ -37,6 +38,7 @@ export function Screen03ConsultationMatrix({
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const design = useLashDesignSelection(booking);
   const diagnostic = useNaturalLashDiagnostic({
@@ -90,6 +92,7 @@ export function Screen03ConsultationMatrix({
           serviceName={pricing.serviceName}
           actorName={pricing.actorName}
           showStaffRewards={design.showStaffRewards}
+          onOpenCustomerHistory={() => setIsHistoryModalOpen(true)}
           avatarRingClass={pricing.avatarRingClass}
           onUpdateAvatar={onUpdateAvatar}
           isNewClient={diagnostic.isNewClient}
@@ -385,6 +388,21 @@ export function Screen03ConsultationMatrix({
         isAdmin={isAdmin}
         theme={isDark ? 'dark' : 'light'}
         onUpdated={onRefreshDb}
+      />
+
+      <CustomerHistoryAndSpendingSheet
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        booking={
+          booking || {
+            id: 0,
+            customerId: 0,
+            customerName: pricing.customerName,
+            customerPhone: pricing.customerPhone,
+            customerVisits: 1,
+          }
+        }
+        isSimulationMode={isSimulationMode}
       />
     </div>
   );

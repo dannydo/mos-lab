@@ -1482,3 +1482,91 @@ export function formatIosPaymentMethodLabel(params: {
   if (isPendingCounter) return 'Chờ Quầy thu Tiền mặt / POS';
   return 'Chuyển khoản QR (Bank)';
 }
+
+export type IosCustomerHistoryTab = 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS';
+
+export interface IosCustomerHistoryServiceDetail {
+  name: string;
+  serviceType?: string | null;
+  price: number;
+  isFix?: boolean;
+  isComboUsed?: boolean;
+}
+
+export interface IosCustomerHistoryStaffRef {
+  id?: number;
+  name: string;
+  avatar?: string | null;
+}
+
+export interface IosCustomerHistoryVisitItem {
+  orderId: number;
+  orderNumber: string;
+  bookingDateStart: string;
+  dateDisplay: string;
+  timeDisplay: string;
+  daysAgoLabel: string;
+  orderState: string;
+  statusLabel: string;
+  statusTone: 'completed' | 'upcoming' | 'servicing' | 'canceled';
+  serviceName: string;
+  services: IosCustomerHistoryServiceDetail[];
+  isFixOrder: boolean;
+  bookingNote: string | null;
+  branchId: number | null;
+  branchName: string;
+  staffNames: string[];
+  staffAvatars: IosCustomerHistoryStaffRef[];
+  diamondEarned: number;
+  diamondUsed: number;
+  totalPrice: number;
+  paidAmount: number;
+  discountAmount: number;
+  prepaidAmount: number;
+  debtAmount: number;
+  tipAmount: number;
+  paymentMethodLabel: string;
+}
+
+export interface IosCustomerDiamondTxnItem {
+  id: number;
+  orderId: number | null;
+  amount: number;
+  balanceAfter: number;
+  dateCreated: string;
+  dateDisplay: string;
+  timeDisplay: string;
+  daysAgoLabel: string;
+  note: string | null;
+  branchName: string | null;
+  type: 'EARN' | 'SPEND' | 'ADJUST';
+}
+
+export interface IosCustomerHistorySummary {
+  totalSpent: number;
+  completedVisits: number;
+  totalBookings: number;
+  canceledBookings: number;
+  fixCount: number;
+  avgSpendPerVisit: number;
+  diamondBalance: number;
+  totalDiamondEarned: number;
+  totalDiamondUsed: number;
+  totalDebt: number;
+  lastVisitDate: string | null;
+  firstVisitDate: string | null;
+}
+
+export interface IosCustomerHistoryResponse {
+  success: boolean;
+  customerId: number;
+  customerName: string;
+  customerPhone: string;
+  customerCode?: string | null;
+  summary: IosCustomerHistorySummary;
+  visits: IosCustomerHistoryVisitItem[];
+  payments: IosCustomerHistoryVisitItem[];
+  fixVisits: IosCustomerHistoryVisitItem[];
+  diamondTransactions: IosCustomerDiamondTxnItem[];
+  error?: string;
+}
