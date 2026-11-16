@@ -118,8 +118,8 @@ describe("AcademyLeadDrawer revenueVnd input", () => {
 });
 
 describe("AcademyLeadDrawer", () => {
-  it("renders Khóa học quan tâm field with options", () => {
-    const { container } = render(
+  it("renders Khóa học quan tâm field with seeded Khóa Bướm option and matches Vietnamese search keywords", async () => {
+    render(
       <AcademyLeadDrawer
         open={true}
         leadId={null}
@@ -130,7 +130,13 @@ describe("AcademyLeadDrawer", () => {
       />
     );
     expect(screen.getByText("Khóa học quan tâm")).toBeDefined();
-    const select = container.querySelector("#course");
-    expect(select).toBeDefined();
+    const selectInput = screen.getByRole("combobox", { name: "Khóa học quan tâm" });
+    expect(selectInput).toBeDefined();
+    fireEvent.mouseDown(selectInput);
+    fireEvent.change(selectInput, { target: { value: "dành cho bướm" } });
+    const matches = await screen.findAllByText(
+      /Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings/
+    );
+    expect(matches.length).toBeGreaterThan(0);
   });
 });

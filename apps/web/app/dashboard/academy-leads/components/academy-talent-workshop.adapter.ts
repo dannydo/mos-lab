@@ -1,5 +1,6 @@
 import {
   ACADEMY_TALENT_TIERS,
+  resolveAcademyCourseSelectionKind,
   type AcademyTalentAssessment,
   type AcademyTalentAssessmentQuote,
   type AcademyTalentAssessmentScores,
@@ -95,6 +96,7 @@ export function toAcademyTalentWorkshopPricing(
     // No price is recalculated here; Fastify remains the pricing source.
     lineItems: (quote.courses || []).map((course) => ({
       courseId: course.courseId,
+      code: course.code,
       name: course.name,
       listPriceVnd: course.listPriceVnd,
       promoPriceVnd: course.promoPriceVnd,
@@ -196,9 +198,7 @@ export function academyTalentCourseSelectionRules(
     courses.map((course) => [
       course.id,
       {
-        kind: /(^|[-_])combo($|[-_])|combo|tron goi|trọn gói/i.test(`${course.code} ${course.name}`)
-          ? 'COMBO'
-          : 'COURSE',
+        kind: resolveAcademyCourseSelectionKind(course),
       },
     ])
   );
