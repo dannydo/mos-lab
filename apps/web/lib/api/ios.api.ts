@@ -9,6 +9,7 @@ import type {
   IosPromotionOption,
   IosAdminComboExpiryActionPayload,
   IosAdminComboExpiryActionResponse,
+  IosCustomerHistoryResponse,
   IosScanProductRequest,
   IosScanProductResponse,
   IosCustomerLookupCandidate,
@@ -197,6 +198,20 @@ export const iosApi = {
       options?: ApiRequestOptions
     ): Promise<IosAdminComboExpiryActionResponse> {
       const res = await api.post<IosAdminComboExpiryActionResponse>('/ios/combo-balances/expiry', payload, {
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
+      return res.data;
+    },
+
+    async getCustomerHistory(
+      customerId: number,
+      params?: { bookingId?: number; sim?: boolean },
+      options?: ApiRequestOptions
+    ): Promise<IosCustomerHistoryResponse> {
+      const res = await api.get<IosCustomerHistoryResponse>(`/ios/customers/${customerId}/history`, {
+        params,
         signal: options?.signal,
         priority: options?.priority,
         timeout: options?.timeout,

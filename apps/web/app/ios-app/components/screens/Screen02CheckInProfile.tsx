@@ -17,7 +17,9 @@ import {
 } from './LashMaterialConstraintMatrix';
 import { resolveNaturalLashCountLabel } from './NaturalLashAssessmentData';
 import { CustomerAvatarPicker } from '../ui-kit/CustomerAvatarPicker';
+import { History } from 'lucide-react';
 import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
+import { CustomerHistoryAndSpendingSheet } from '../ui-kit/CustomerHistoryAndSpendingSheet';
 import { QuickCheckInComboCard } from './checkin/QuickCheckInComboCard';
 import { CheckInStaffAndProfileCards } from './checkin/CheckInStaffAndProfileCards';
 import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
@@ -181,6 +183,7 @@ export function Screen02CheckInProfile({
   const [selectedLashHistory, setSelectedLashHistory] = useState<LashHistoryItem | null>(null);
   const [isLashHistoryOpen, setIsLashHistoryOpen] = useState<boolean>(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
 
   const handleOpenLashHistory = (item: LashHistoryItem) => {
     setSelectedLashHistory(item);
@@ -477,13 +480,22 @@ export function Screen02CheckInProfile({
               );
             })()}
             <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">{customerPhone}</div>
-            <div className="text-[12px] text-[var(--mos-text-muted)] font-medium mt-0.5">
+            <div className="text-[12px] text-[var(--mos-text-muted)] font-medium mt-0.5 flex flex-wrap items-center justify-between gap-2">
               <span>
                 Lần ghé: <strong className="font-bold text-[var(--mos-text)]">{visits}</strong>
                 {preset.daysSinceLastVisit !== null && visits > 1 && (
                   <span className="text-[var(--mos-text-muted)] ml-1">· {preset.daysSinceLastVisit}N</span>
                 )}
               </span>
+              <button
+                type="button"
+                onClick={() => setIsHistoryModalOpen(true)}
+                data-testid="checkin-header-history-btn"
+                className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-2 py-1 text-[11px] font-bold text-emerald-500 hover:bg-emerald-500/25 leading-none"
+              >
+                <History className="h-3 w-3" />
+                <span>Lịch sử &amp; Chi tiêu</span>
+              </button>
             </div>
           </div>
         </div>
@@ -540,6 +552,7 @@ export function Screen02CheckInProfile({
           visits={visits}
           isFirstTimeClient={isFirstTimeClient}
           onOpenLashHistory={handleOpenLashHistory}
+          onOpenFullHistory={() => setIsHistoryModalOpen(true)}
         />
       </div>
 
@@ -588,6 +601,12 @@ export function Screen02CheckInProfile({
         onClose={() => setIsWalletModalOpen(false)}
         isAdmin={isAdmin}
         onUpdated={() => onRefreshDb?.()}
+      />
+
+      <CustomerHistoryAndSpendingSheet
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        booking={booking}
       />
     </div>
   );

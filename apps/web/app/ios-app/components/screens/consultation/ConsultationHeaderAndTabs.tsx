@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AlertTriangle, Sparkles, Check, Eye, Lock, Sliders, Save, Loader2, CloudOff } from 'lucide-react';
+import { AlertTriangle, Sparkles, Check, Eye, Lock, Sliders, Save, Loader2, CloudOff, History } from 'lucide-react';
 import { CustomerAvatarPicker } from '../../ui-kit/CustomerAvatarPicker';
 import type { BookingItem } from '../../../state/mockData';
 import type { ConsultationSaveStatus } from './ConsultationTypes';
@@ -86,6 +86,7 @@ interface ConsultationHeaderAndTabsProps {
   setActiveSubTab: (tab: 'SPECS' | 'PROFILE') => void;
   triggerMandatoryLashCheckGuard: () => void;
   showStaffRewards?: boolean;
+  onOpenCustomerHistory?: () => void;
 }
 
 export function ConsultationHeaderAndTabs({
@@ -110,6 +111,7 @@ export function ConsultationHeaderAndTabs({
   setActiveSubTab,
   triggerMandatoryLashCheckGuard,
   showStaffRewards = false,
+  onOpenCustomerHistory,
 }: ConsultationHeaderAndTabsProps) {
   return (
     <>
@@ -168,6 +170,21 @@ export function ConsultationHeaderAndTabs({
             )}
           </div>
         </div>
+        {onOpenCustomerHistory && (
+          <button
+            type="button"
+            onClick={onOpenCustomerHistory}
+            data-testid="open-customer-history-btn"
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-bold transition-colors leading-none ${
+              isDark
+                ? 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+            }`}
+          >
+            <History className="h-3.5 w-3.5" />
+            <span>Lịch sử</span>
+          </button>
+        )}
       </div>
 
       {/* Cảnh Báo Khách Mới Hoặc Tóm Tắt Mi Thật */}
