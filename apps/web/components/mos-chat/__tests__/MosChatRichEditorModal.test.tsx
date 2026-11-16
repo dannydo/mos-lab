@@ -264,4 +264,36 @@ describe('MosChatRichEditorModal', () => {
     expect(handleApply).toHaveBeenCalledWith('Nội dung cần lưu');
     expect(handleClose).toHaveBeenCalled();
   });
+
+  it('does not preventDefault on pointerdown so iOS WebKit tap fires click and restores caret after blur (MOS-FEAT-225)', () => {
+    render(
+      <MosChatRichEditorModal
+        open={true}
+        onClose={vi.fn()}
+        initialValue={'Dòng một\nDòng hai'}
+        initialMode="compact"
+        onApply={vi.fn()}
+        onSend={vi.fn()}
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText(/Gõ nhanh nội dung/i) as HTMLTextAreaElement;
+    textarea.focus();
+    // Place caret on the second line ("Dòng hai", index 11)
+    textarea.setSelectionRange(11, 11);
+    fireEvent.select(textarea);
+
+    const h1Btn = screen.getByRole('button', { name: /Tiêu đề H1/i });
+    const pdEvent = new Event('pointerdown', { bubbles: true, cancelable: true });
+    h1Btn.dispatchEvent(pdEvent);
+    // Critical for iOS Safari/WebKit: pointerdown MUST NOT be defaultPrevented
+    expect(pdEvent.defaultPrevented).toBe(false);
+
+    // Simulate mobile browser blurring textarea and resetting selectionStart to 0 before click
+    textarea.blur();
+    textarea.setSelectionRange(0, 0);
+    fireEvent.click(h1Btn);
+
+    expect(textarea.value).toBe('Dòng một\n# Dòng hai');
+  });
 });
