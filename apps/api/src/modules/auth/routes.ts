@@ -49,6 +49,36 @@ export async function authRoutes(fastify: FastifyInstance) {
     return !!roleRecord?.omicallAutoInit;
   };
 
+  const buildAuthUser = async (staffMember: SafeAny, includeTimestamps = true) => {
+    const [access, teamCodes] = await Promise.all([
+      resolveGrowthAndOmiCallAccess(staffMember),
+      TeamService.getActiveTeamCodesForStaff(fastify, staffMember.id, staffMember.legacyStaffId),
+    ]);
+    return {
+      user: {
+        id: staffMember.id,
+        username: staffMember.username,
+        displayName: staffMember.displayName,
+        role: staffMember.role as SafeAny,
+        isActive: staffMember.isActive,
+        avatarUrl: staffMember.avatarUrl,
+        legacyStaffId: staffMember.legacyStaffId,
+        omicallAutoInit: staffMember.omicallAutoInit,
+        isGrowthMember: access.isGrowthMember,
+        canAccessOmiCall: access.canAccessOmiCall,
+        teamCodes,
+        createdAt: staffMember.createdAt.toISOString(),
+        ...(includeTimestamps
+          ? {
+              lastLoginAt: staffMember.lastLoginAt ? staffMember.lastLoginAt.toISOString() : null,
+              lastActiveAt: staffMember.lastActiveAt ? staffMember.lastActiveAt.toISOString() : null,
+            }
+          : {}),
+      },
+      resolvedOmicallAutoInit: await resolveOmicallAutoInit(staffMember),
+    };
+  };
+
   // GET /api/auth/dev-directory (Local Dev Only)
   if (process.env.NODE_ENV !== 'production') {
     fastify.get(
@@ -186,25 +216,10 @@ export async function authRoutes(fastify: FastifyInstance) {
           data: { lastLoginAt: now, lastActiveAt: now },
         });
 
-        const access = await resolveGrowthAndOmiCallAccess(updatedStaff);
+        const authPayload = await buildAuthUser(updatedStaff, true);
         const response: LoginResponse = {
           token,
-          user: {
-            id: updatedStaff.id,
-            username: updatedStaff.username,
-            displayName: updatedStaff.displayName,
-            role: updatedStaff.role as SafeAny,
-            isActive: updatedStaff.isActive,
-            avatarUrl: updatedStaff.avatarUrl,
-            legacyStaffId: updatedStaff.legacyStaffId,
-            omicallAutoInit: updatedStaff.omicallAutoInit,
-            isGrowthMember: access.isGrowthMember,
-            canAccessOmiCall: access.canAccessOmiCall,
-            createdAt: updatedStaff.createdAt.toISOString(),
-            lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
-            lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
-          },
-          resolvedOmicallAutoInit: await resolveOmicallAutoInit(updatedStaff),
+          ...authPayload,
         };
 
         return response;
@@ -364,25 +379,10 @@ export async function authRoutes(fastify: FastifyInstance) {
           data: { lastLoginAt: now, lastActiveAt: now },
         });
 
-        const access = await resolveGrowthAndOmiCallAccess(updatedStaff);
+        const authPayload = await buildAuthUser(updatedStaff, true);
         const response: LoginResponse = {
           token,
-          user: {
-            id: updatedStaff.id,
-            username: updatedStaff.username,
-            displayName: updatedStaff.displayName,
-            role: updatedStaff.role as SafeAny,
-            isActive: updatedStaff.isActive,
-            avatarUrl: updatedStaff.avatarUrl,
-            legacyStaffId: updatedStaff.legacyStaffId,
-            omicallAutoInit: updatedStaff.omicallAutoInit,
-            isGrowthMember: access.isGrowthMember,
-            canAccessOmiCall: access.canAccessOmiCall,
-            createdAt: updatedStaff.createdAt.toISOString(),
-            lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
-            lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
-          },
-          resolvedOmicallAutoInit: await resolveOmicallAutoInit(updatedStaff),
+          ...authPayload,
         };
 
         return response;
@@ -428,25 +428,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const access = await resolveGrowthAndOmiCallAccess(staff);
-        return {
-          user: {
-            id: staff.id,
-            username: staff.username,
-            displayName: staff.displayName,
-            role: staff.role as SafeAny,
-            isActive: staff.isActive,
-            avatarUrl: staff.avatarUrl,
-            legacyStaffId: staff.legacyStaffId,
-            omicallAutoInit: staff.omicallAutoInit,
-            isGrowthMember: access.isGrowthMember,
-            canAccessOmiCall: access.canAccessOmiCall,
-            createdAt: staff.createdAt.toISOString(),
-            lastLoginAt: staff.lastLoginAt ? staff.lastLoginAt.toISOString() : null,
-            lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null,
-          },
-          resolvedOmicallAutoInit: await resolveOmicallAutoInit(staff),
-        };
+        return await buildAuthUser(staff, true);
       } catch (error: SafeAny) {
         fastify.log.error(error as Error, 'Get profile error:');
         return reply.status(500).send({
@@ -546,23 +528,10 @@ export async function authRoutes(fastify: FastifyInstance) {
 
         const token = fastify.jwt.sign(payload, { expiresIn: `${IMPERSONATION_SESSION_MINUTES}m` });
 
-        const access = await resolveGrowthAndOmiCallAccess(targetStaff);
+        const authPayload = await buildAuthUser(targetStaff, false);
         return {
           token,
-          user: {
-            id: targetStaff.id,
-            username: targetStaff.username,
-            displayName: targetStaff.displayName,
-            role: targetStaff.role as SafeAny,
-            isActive: targetStaff.isActive,
-            avatarUrl: targetStaff.avatarUrl,
-            legacyStaffId: targetStaff.legacyStaffId,
-            omicallAutoInit: targetStaff.omicallAutoInit,
-            isGrowthMember: access.isGrowthMember,
-            canAccessOmiCall: access.canAccessOmiCall,
-            createdAt: targetStaff.createdAt.toISOString(),
-          },
-          resolvedOmicallAutoInit: await resolveOmicallAutoInit(targetStaff),
+          ...authPayload,
           impersonation: {
             auditId: audit.id,
             expiresAt: expiresAt.toISOString(),

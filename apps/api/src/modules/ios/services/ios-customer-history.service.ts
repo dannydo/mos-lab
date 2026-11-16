@@ -62,8 +62,7 @@ function checkCvlCustomerHistoryScope(params: {
   }
 
   const touchedBefore =
-    orderRows.some((r) => Number(r.order_assigned_staff_id || 0) === actorStaffId) ||
-    serviceRows.some(hasStaffTouch);
+    orderRows.some((r) => Number(r.order_assigned_staff_id || 0) === actorStaffId) || serviceRows.some(hasStaffTouch);
 
   const hasUnassignedActive = orderRows.some((r) => {
     const oid = Number(r.order_id);
@@ -83,13 +82,10 @@ export async function getIosCustomerHistory(
   options?: CustomerHistoryQueryOptions,
   deps?: CustomerHistoryServiceDeps
 ): Promise<CustomerHistoryServiceResult> {
-  if (!canAccessIosConsultationApp(authUser.role)) {
+  if (!canAccessIosConsultationApp(authUser.role, authUser.teamCodes)) {
     return {
       statusCode: 403,
-      payload: buildEmptyCustomerHistoryResponse(
-        customerId,
-        'Tài khoản không có quyền truy cập hồ sơ iOS (UI-010).'
-      ),
+      payload: buildEmptyCustomerHistoryResponse(customerId, 'Tài khoản không có quyền truy cập hồ sơ iOS (UI-010).'),
     };
   }
 

@@ -3,8 +3,9 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { canAccessIosConsultationApp, hasCompleteNaturalLashSet, isAdminOrSuperAdminRole, isCvRole, isDoneBookingPendingCheckout, resolveLockedIosRoleForUser, } from '@mos-lab/shared';
+import { hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
+import { useIosSessionAuth } from './state/useIosSessionAuth';
 import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
@@ -122,37 +123,7 @@ function IosAppInner() {
 
   const state = useIosAppState(initialStep, authorized, initialRole, initialBookingId, isDemoMode, isSimModeParam);
   useIosFontScale(state.actor?.staffId);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const token = window.localStorage.getItem('mos_token');
-      const rawUser = window.localStorage.getItem('mos_user');
-      if (!token || !rawUser) {
-        window.location.replace('/login');
-        return;
-      }
-      const parsed = JSON.parse(rawUser);
-      const userRole = String(parsed?.role || '').trim();
-      const isAllowed = canAccessIosConsultationApp(userRole);
-
-      if (!isAllowed) {
-        window.location.replace(isCvRole(userRole) ? '/dashboard/cv' : '/dashboard');
-        return;
-      }
-
-      const userIsAdmin = isAdminOrSuperAdminRole(userRole);
-      const savedRole = userIsAdmin ? (window.localStorage.getItem('mos_ios_selected_role') as IosUserRole | null) : null;
-      const allowedRoles: readonly IosUserRole[] = ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'];
-      const effectiveRoleParam =
-        roleParam || (userIsAdmin && savedRole && allowedRoles.includes(savedRole) ? savedRole : undefined);
-      const lockedRole = resolveLockedIosRoleForUser(userRole, effectiveRoleParam);
-      state.setRole(lockedRole);
-      setAuthorized(true);
-    } catch {
-      window.location.replace('/login');
-    }
-  }, [roleParam]);
+  useIosSessionAuth(roleParam, state.setRole, setAuthorized);
 
   useEffect(() => {
     if (!authorized || state.currentStep !== 6) return;
@@ -242,6 +213,8 @@ function IosAppInner() {
       availableBranches={state.availableBranches}
       totalStoreBookingsCount={state.totalStoreBookingsCount}
       isSimulationMode={state.isSimulationMode}
+      userRole={state.loggedInUser?.role}
+      teamCodes={state.loggedInUser?.teamCodes}
       onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
     />
   );
@@ -258,7 +231,10 @@ function IosAppInner() {
           onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
-          onRoleChange={(r) => { state.setRole(r); state.setIsSettingsOpen(false); }}
+          onRoleChange={(r) => {
+            state.setRole(r);
+            state.setIsSettingsOpen(false);
+          }}
           onBack={() => state.setIsSettingsOpen(false)}
         />
       );
@@ -271,7 +247,10 @@ function IosAppInner() {
           bookings={state.bookings}
           currentBranch={state.currentBranch}
           isDemoMode={isDemoMode}
-          onSelectBooking={(id) => { state.setRole('CVL'); handleSelectBookingFromList(id); }}
+          onSelectBooking={(id) => {
+            state.setRole('CVL');
+            handleSelectBookingFromList(id);
+          }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
       );
@@ -290,7 +269,10 @@ function IosAppInner() {
           staffStats={state.staffStats}
           bookings={state.bookings}
           isDemoMode={isDemoMode}
-          onBack={() => { state.setActiveTab('booking'); state.setCurrentStep(1); }}
+          onBack={() => {
+            state.setActiveTab('booking');
+            state.setCurrentStep(1);
+          }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
       );

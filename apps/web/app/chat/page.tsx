@@ -7,6 +7,7 @@ import { isCvRole } from '@mos-lab/shared';
 import type { MosChatActiveSubtab } from '../../components/mos-chat/types/mos-chat-types';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { OmiCallProvider } from '../../context/OmiCallContext';
+import { apiClient } from '../../lib/api-client';
 
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 const MosChatMobileApp = dynamic(
@@ -39,6 +40,21 @@ function ChatPageContent() {
       const stored = window.localStorage.getItem('mos_user');
       if (stored) {
         setCurrentUser(JSON.parse(stored));
+      }
+      if (typeof apiClient?.auth?.me === 'function') {
+        void Promise.resolve(apiClient.auth.me())
+          .then((freshUser) => {
+            if (freshUser?.id) {
+              setCurrentUser((prev: any) => {
+                const merged = { ...(prev || {}), ...freshUser };
+                try {
+                  window.localStorage.setItem('mos_user', JSON.stringify(merged));
+                } catch {}
+                return merged;
+              });
+            }
+          })
+          .catch(() => {});
       }
     } catch {
       // ignore

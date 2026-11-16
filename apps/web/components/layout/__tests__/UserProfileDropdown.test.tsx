@@ -109,4 +109,54 @@ describe('UserProfileDropdown bug report integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mở menu người dùng' }));
     expect(screen.queryByText('Báo lỗi / Góp ý')).toBeNull();
   });
+
+  it('hides top-right avatar trigger on mobile when hideTrigger is true and supports externalOpen with General controls', () => {
+    const onExternalOpenChange = vi.fn();
+    const onOpenDailyCalls = vi.fn();
+    const onOpenTelesalesDashboard = vi.fn();
+
+    const { rerender } = render(
+      <UserProfileDropdown
+        user={{ id: 88, displayName: 'Đào Trần Vũ Vy', username: 'vy.dao', role: 'manager', teamCodes: ['CC'] }}
+        desktopDensity="standard"
+        setDesktopDensity={vi.fn()}
+        onOpenTelesalesDashboard={onOpenTelesalesDashboard}
+        onLogout={vi.fn()}
+        dailyCallsCount={7}
+        onOpenDailyCalls={onOpenDailyCalls}
+        hideTrigger={true}
+        externalOpen={false}
+        onExternalOpenChange={onExternalOpenChange}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /Mở menu người dùng/i })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /Hồ sơ & Cài đặt cá nhân/i })).toBeNull();
+
+    rerender(
+      <UserProfileDropdown
+        user={{ id: 88, displayName: 'Đào Trần Vũ Vy', username: 'vy.dao', role: 'manager', teamCodes: ['CC'] }}
+        desktopDensity="standard"
+        setDesktopDensity={vi.fn()}
+        onOpenTelesalesDashboard={onOpenTelesalesDashboard}
+        onLogout={vi.fn()}
+        dailyCallsCount={7}
+        onOpenDailyCalls={onOpenDailyCalls}
+        hideTrigger={true}
+        externalOpen={true}
+        onExternalOpenChange={onExternalOpenChange}
+      />
+    );
+
+    const dialog = screen.getByRole('dialog', { name: /Hồ sơ & Cài đặt cá nhân/i });
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText('MANAGER · Nhóm CC')).toBeInTheDocument();
+    expect(screen.getByText('Quản lý vận hành & Tư vấn chi nhánh (CC)')).toBeInTheDocument();
+    expect(screen.getByText('Cuộc gọi hôm nay')).toBeInTheDocument();
+    expect(screen.getByText('7 cuộc')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /KPI Đội Telesales/i }));
+    expect(onOpenTelesalesDashboard).toHaveBeenCalledTimes(1);
+    expect(onExternalOpenChange).toHaveBeenCalledWith(false);
+  });
 });

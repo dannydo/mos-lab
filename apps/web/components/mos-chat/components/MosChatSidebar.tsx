@@ -47,6 +47,7 @@ import type {
 } from '@mos-lab/shared';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
+import MosAppLauncher from '../../layout/MosAppLauncher';
 
 export interface MosChatSidebarSection {
   id: string;
@@ -253,34 +254,44 @@ export const MosChatSidebar: React.FC<MosChatSidebarProps> = React.memo(
           }}
         >
           <div className="flex items-center justify-between gap-1.5">
-            <Tooltip title="Đổi trạng thái: Đang hoạt động / Không làm phiền (Tắt chuông)">
-              <button
-                type="button"
-                onClick={() => setPresence((p) => (p === 'active' ? 'dnd' : 'active'))}
-                className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer min-w-0"
-                style={{
-                  background: surfaceRaised,
-                  border: `1px solid ${borderColor}`,
-                  color: token.colorText,
-                }}
-              >
-                {renderUserAvatarNode({
-                  staffId: currentUser?.id || 'me',
-                  name: currentUser?.displayName || currentUser?.username || 'Danny Do',
-                  username: currentUser?.username,
-                  rawAvatar: currentUser?.avatarUrl || currentUser?.avatar,
-                  bgColor: '#d4a84b',
-                  sizeClass: 'w-5 h-5',
-                  textSizeClass: 'text-[9.5px]',
-                })}
-                <span
-                  className="inline-block w-2 h-2 rounded-full shrink-0"
-                  style={{ background: presence === 'active' ? '#22c55e' : '#ef4444' }}
-                />
-                <span className="truncate">{presence === 'active' ? 'Đang hoạt động' : 'Không làm phiền'}</span>
-                <ChevronDown size={13} className="shrink-0" />
-              </button>
-            </Tooltip>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <MosAppLauncher
+                currentApp="chat"
+                userRole={currentUser?.role}
+                teamCodes={currentUser?.teamCodes}
+                displayName={currentUser?.displayName}
+                onAfterNavigate={() => onClose?.()}
+                shape="rounded"
+              />
+              <Tooltip title="Đổi trạng thái: Đang hoạt động / Không làm phiền (Tắt chuông)">
+                <button
+                  type="button"
+                  onClick={() => setPresence((p) => (p === 'active' ? 'dnd' : 'active'))}
+                  className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer min-w-0"
+                  style={{
+                    background: surfaceRaised,
+                    border: `1px solid ${borderColor}`,
+                    color: token.colorText,
+                  }}
+                >
+                  {renderUserAvatarNode({
+                    staffId: currentUser?.id || 'me',
+                    name: currentUser?.displayName || currentUser?.username || 'Danny Do',
+                    username: currentUser?.username,
+                    rawAvatar: currentUser?.avatarUrl || currentUser?.avatar,
+                    bgColor: '#d4a84b',
+                    sizeClass: 'w-5 h-5',
+                    textSizeClass: 'text-[9.5px]',
+                  })}
+                  <span
+                    className="inline-block w-2 h-2 rounded-full shrink-0"
+                    style={{ background: presence === 'active' ? '#22c55e' : '#ef4444' }}
+                  />
+                  <span className="truncate">{presence === 'active' ? 'Đang hoạt động' : 'Không làm phiền'}</span>
+                  <ChevronDown size={13} className="shrink-0" />
+                </button>
+              </Tooltip>
+            </div>
 
             <div className="flex items-center gap-1 shrink-0">
               {isDannyAccount && (

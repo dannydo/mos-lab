@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mOS Menu Sync — So Sánh 4 Phiên Bản Mockup (V1 – V4)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+      background: #06080f;
+      color: #f8fafc;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .hub-bar {
+      height: 52px;
+      padding: 0 16px;
+      background: #0e131f;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .hub-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .hub-badge {
+      background: #ffb400;
+      color: #000;
+      font-size: 10.5px;
+      font-weight: 900;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .hub-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+    }
+    .hub-tab {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      padding: 7px 13px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .hub-tab:hover { border-color: rgba(255, 180, 0, 0.45); color: #fff; }
+    .hub-tab.active {
+      background: #ffb400;
+      border-color: #ffb400;
+      color: #000;
+      font-weight: 800;
+    }
+    .hub-link {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #ffb400;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #06080f;
+    }
+  </style>
+</head>
+<body>
+  <div class="hub-bar">
+    <div class="hub-title">
+      <span class="hub-badge">4 MOCKUPS</span>
+      <span>Đồng bộ Menu Icon mOS</span>
+    </div>
+    <div class="hub-tabs" id="hubTabs">
+      <button class="hub-tab active" onclick="selectMock(0)">V1 · 9-Chấm App Launcher</button>
+      <button class="hub-tab" onclick="selectMock(1)">V2 · Pill Rail 1 Chạm</button>
+      <button class="hub-tab" onclick="selectMock(2)">V3 · Segmented Topbar</button>
+      <button class="hub-tab" onclick="selectMock(3)">V4 · Floating Thumb Dock</button>
+    </div>
+    <a id="openDirect" class="hub-link" href="./menu-sync-v1-app-launcher.html" target="_blank">Mở tab riêng ↗</a>
+  </div>
+  <iframe id="mockFrame" src="./menu-sync-v1-app-launcher.html"></iframe>
+
+  <script>
+    const MOCKS = [
+      './menu-sync-v1-app-launcher.html',
+      './menu-sync-v2-ecosystem-rail.html',
+      './menu-sync-v3-segmented-topbar.html',
+      './menu-sync-v4-floating-thumb-dock.html',
+    ];
+    function selectMock(idx) {
+      document.querySelectorAll('.hub-tab').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+      document.getElementById('mockFrame').src = MOCKS[idx];
+      document.getElementById('openDirect').href = MOCKS[idx];
+    }
+  </script>
+</body>
+</html>

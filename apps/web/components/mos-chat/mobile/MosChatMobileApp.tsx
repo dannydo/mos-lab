@@ -55,10 +55,9 @@ import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../componen
 import { useMosChatWebPush } from '../utils/useMosChatWebPush';
 import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
 import { useTheme } from '../../../context/ThemeContext';
-import { MobileThemeSheet } from '../../theme/MobileThemeSheet';
+import { UnifiedProfileSheet } from '../../profile/UnifiedProfileSheet';
 import '../../../app/ios-app/ios-typography.css';
 import { useIosFontScale } from '../../../app/ios-app/state/useIosFontScale';
-import { IosFontSizeControl } from '../../../app/ios-app/components/ui-kit/IosFontSizeControl';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -1284,10 +1283,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         />
       )}
 
-      <MobileThemeSheet
+      <UnifiedProfileSheet
         open={themeSheetOpen}
         onClose={() => setThemeSheetOpen(false)}
-        fontControl={<IosFontSizeControl isDark={isDark} staffId={resolvedFontStaffId} />}
+        appContext="chat"
+        user={currentUser}
       />
 
       <MosChatGoogleWorkspaceDrawer

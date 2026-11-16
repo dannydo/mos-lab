@@ -33,6 +33,7 @@ import {
   SidebarItemConfig,
   SidebarGroupConfig,
 } from '../../config/sidebar.config';
+import { buildEcosystemNavModel } from '../../config/ecosystem-nav';
 import { AppIcon } from '../ui/AppIcon';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { usePinnedLinks } from '../../hooks/usePinnedLinks';
@@ -43,8 +44,11 @@ interface SidebarNavProps {
   themeMode: string;
   token: SafeAny;
   userRole?: string;
+  teamCodes?: readonly string[] | null;
   userId?: number | string;
   userIdentity?: { username?: string | null; email?: string | null };
+  unreadChatCount?: number;
+  onOpenChat?: () => void;
   onNavigate?: () => void;
 }
 
@@ -118,8 +122,11 @@ function SidebarNavComponent({
   themeMode,
   token,
   userRole,
+  teamCodes,
   userId,
   userIdentity,
+  unreadChatCount = 0,
+  onOpenChat,
   onNavigate,
 }: SidebarNavProps) {
   const router = useRouter();
@@ -167,6 +174,26 @@ function SidebarNavComponent({
   const [academySidebarCampaigns, setAcademySidebarCampaigns] = useState<SafeAny[]>([]);
   const [academyAccess, setAcademyAccess] = useState(false);
   const [menuVisibility, setMenuVisibility] = useState<Record<string, boolean>>({});
+  const ecosystemModel = useMemo(
+    () =>
+      buildEcosystemNavModel({
+        userRole,
+        teamCodes,
+        unreadChatCount,
+        menuVisibility,
+      }),
+    [userRole, teamCodes, unreadChatCount, menuVisibility]
+  );
+
+  const handleEcosystemNavigate = (appKey: string, href: string) => {
+    if (appKey === 'chat' && onOpenChat) {
+      onOpenChat();
+      onNavigate?.();
+      return;
+    }
+    router.push(href);
+    onNavigate?.();
+  };
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({});
   const [bugInboxApprovalCount, setBugInboxApprovalCount] = useState(0);
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<string[]>([]);
@@ -772,7 +799,36 @@ function SidebarNavComponent({
   if (collapsed) {
     return (
       <nav aria-label="Main Navigation" className="sidebar-nav-container sidebar-compact-nav">
-        <ul className="sidebar-compact-list" role="menu">
+        <ul className="sidebar-compact-list" role="menu" data-testid="sidebar-ecosystem-switcher">
+          {ecosystemModel.coreApps.map((app) => {
+            const Icon = app.icon;
+            const isActive = app.key === 'general';
+            return (
+              <li className="sidebar-compact-item" key={`eco-rail-${app.key}`}>
+                <Tooltip placement="right" title={app.label} mouseEnterDelay={0.2}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-sidebar-eco-app={app.key}
+                    aria-label={app.label}
+                    className={`sidebar-rail-action ${isActive ? 'sidebar-rail-action--active' : ''}`}
+                    onClick={() => handleEcosystemNavigate(app.key, app.href)}
+                  >
+                    <span className="sidebar-rail-action__icon relative" aria-hidden>
+                      <AppIcon icon={Icon} size="sm" />
+                      {app.badgeCount && app.badgeCount > 0 ? (
+                        <span
+                          className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 pointer-events-none"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </span>
+                  </button>
+                </Tooltip>
+              </li>
+            );
+          })}
+          <li aria-hidden className="sidebar-rail-divider" role="separator" />
           {!isCvAccount && pinnedLinks.length > 0 && (
             <>
               {pinnedLinks.map((item) => {
@@ -919,6 +975,56 @@ function SidebarNavComponent({
   return (
     <>
       <nav aria-label="Main Navigation" className="sidebar-nav-container">
+        <div
+          className="px-2.5 pt-2.5 pb-2 mb-1 border-b"
+          style={{ borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)' }}
+          data-testid="sidebar-ecosystem-switcher"
+        >
+          <div
+            className="text-[10px] font-bold uppercase tracking-wider px-1.5 pb-1.5"
+            style={{ color: themeMode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.48)' }}
+          >
+            Hệ sinh thái mOS
+          </div>
+          <div className="flex flex-col gap-1">
+            {ecosystemModel.coreApps.map((app) => {
+              const Icon = app.icon;
+              const isActive = app.key === 'general';
+              return (
+                <button
+                  key={app.key}
+                  type="button"
+                  data-sidebar-eco-app={app.key}
+                  onClick={() => handleEcosystemNavigate(app.key, app.href)}
+                  className="w-full px-2.5 py-2 rounded-lg flex items-center gap-2.5 text-left text-xs font-semibold transition-all cursor-pointer active:scale-[0.99]"
+                  style={{
+                    background: isActive
+                      ? token.colorPrimaryBg
+                      : themeMode === 'dark'
+                        ? 'rgba(255,255,255,0.03)'
+                        : 'rgba(15,23,42,0.03)',
+                    color: isActive ? token.colorPrimary : token.colorText,
+                    border: `1px solid ${
+                      isActive
+                        ? token.colorPrimaryBorder
+                        : themeMode === 'dark'
+                          ? 'rgba(255,255,255,0.06)'
+                          : 'rgba(15,23,42,0.06)'
+                    }`,
+                  }}
+                >
+                  <AppIcon icon={Icon} size="sm" />
+                  <span className="flex-1 truncate">{app.label}</span>
+                  {app.badgeCount && app.badgeCount > 0 ? (
+                    <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums">
+                      {app.badgeCount > 99 ? '99+' : app.badgeCount}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <Menu
           theme={themeMode === 'dark' ? 'dark' : 'light'}
           mode="inline"

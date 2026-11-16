@@ -12,7 +12,6 @@ import {
   CrownOutlined,
   KeyOutlined,
 } from '@ant-design/icons';
-import { useRouter } from 'next/navigation';
 import { getDefaultRouteForRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
@@ -71,8 +70,6 @@ export default function LoginPage() {
   const [superAdminTarget, setSuperAdminTarget] = useState<DevStaff | null>(null);
   const [superAdminPass, setSuperAdminPass] = useState('');
 
-  const router = useRouter();
-
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
@@ -97,18 +94,28 @@ export default function LoginPage() {
   }, [showMockOptions, devStaffs.length]);
 
   // Check if already logged in
+  const resolvePostLoginRoute = (role?: string | null): string => {
+    if (typeof window !== 'undefined') {
+      const nextParam = new URLSearchParams(window.location.search).get('next');
+      if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
+        return nextParam;
+      }
+    }
+    return getDefaultRouteForRole(role);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('mos_token');
     const user = localStorage.getItem('mos_user');
     if (token && user) {
       try {
         const parsed = JSON.parse(user);
-        router.push(getDefaultRouteForRole(parsed?.role));
+        window.location.replace(resolvePostLoginRoute(parsed?.role));
       } catch {
-        router.push('/dashboard');
+        window.location.replace(resolvePostLoginRoute(null));
       }
     }
-  }, [router]);
+  }, []);
 
   // Load Google GIS script
   useEffect(() => {
@@ -148,6 +155,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async (googleResponse: SafeAny) => {
     setLoading(true);
+    let navigating = false;
     try {
       const data = await apiClient.auth.google({
         credential: googleResponse.credential,
@@ -160,18 +168,22 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google thành công! Chào mừng ${user.displayName}`);
-      router.push(getDefaultRouteForRole(user?.role));
+      navigating = true;
+      window.location.replace(resolvePostLoginRoute(user?.role));
     } catch (error) {
       console.error('Google login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Google thất bại.';
       message.error(errMsg);
     } finally {
-      setLoading(false);
+      if (!navigating) {
+        setLoading(false);
+      }
     }
   };
 
   const handleMockGoogleLogin = async (emailToMock = 'danhdo@gmail.com', nameToMock = 'Danh Do') => {
     setLoading(true);
+    let navigating = false;
     try {
       const data = await apiClient.auth.google({
         isMock: true,
@@ -186,18 +198,22 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google (Mock) thành công! Chào mừng ${user.displayName}`);
-      router.push(getDefaultRouteForRole(user?.role));
+      navigating = true;
+      window.location.replace(resolvePostLoginRoute(user?.role));
     } catch (error) {
       console.error('Mock login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Mock Google thất bại.';
       message.error(errMsg);
     } finally {
-      setLoading(false);
+      if (!navigating) {
+        setLoading(false);
+      }
     }
   };
 
   const executeLogin = async (username: string, password = '') => {
     setLoading(true);
+    let navigating = false;
     try {
       const data = await apiClient.auth.login({
         username,
@@ -211,14 +227,17 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập thành công! Chào mừng ${user.displayName}`);
-      router.push(getDefaultRouteForRole(user?.role));
+      navigating = true;
+      window.location.replace(resolvePostLoginRoute(user?.role));
     } catch (error) {
       console.error('Login error:', error);
       const errMsg =
         (error as SafeAny).response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.';
       message.error(errMsg);
     } finally {
-      setLoading(false);
+      if (!navigating) {
+        setLoading(false);
+      }
     }
   };
 

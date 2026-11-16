@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mOS Menu Sync Mockup V1 — App Launcher 9-Chấm (Google Workspace Style)</title>
+  <style>
+    :root {
+      --bg-canvas: #06080f;
+      --bg-surface: #0e131f;
+      --bg-surface-2: #161d2e;
+      --bg-muted: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #ffb400;
+      --accent-soft: rgba(255, 180, 0, 0.14);
+      --accent-border: rgba(255, 180, 0, 0.35);
+      --accent-contrast: #090d16;
+      --emerald: #10b981;
+      --blue: #38bdf8;
+      --rose: #f43f5e;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+    html.light {
+      --bg-canvas: #eef2f7;
+      --bg-surface: #ffffff;
+      --bg-surface-2: #f8fafc;
+      --bg-muted: rgba(15, 23, 42, 0.05);
+      --border: rgba(15, 23, 42, 0.1);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #d97706;
+      --accent-soft: rgba(245, 158, 11, 0.12);
+      --accent-border: rgba(217, 119, 6, 0.32);
+      --accent-contrast: #ffffff;
+      --shadow: 0 20px 45px rgba(15, 23, 42, 0.14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 18px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .toolbar {
+      max-width: 1320px;
+      margin: 0 auto 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+    .toolbar-title { display: flex; align-items: center; gap: 10px; }
+    .version-pill {
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .seg {
+      display: inline-flex;
+      background: var(--bg-muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .seg button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .seg button.active {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+    .stage {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 1040px) { .stage { grid-template-columns: 1fr; } }
+
+    /* Device Frame */
+    .device-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 8px 0;
+    }
+    .iphone-frame {
+      width: 390px;
+      height: 790px;
+      background: var(--bg-surface);
+      border: 8px solid #1e293b;
+      border-radius: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    html.light .iphone-frame { border-color: #cbd5e1; }
+    .desktop-frame {
+      width: 100%;
+      height: 720px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .status-bar {
+      height: 28px;
+      padding: 6px 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--bg-surface);
+      flex-shrink: 0;
+    }
+    .dynamic-island {
+      width: 96px;
+      height: 22px;
+      background: #000;
+      border-radius: 999px;
+      margin: 0 auto;
+    }
+    .app-header {
+      height: 52px;
+      padding: 0 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+    }
+    .hdr-left, .hdr-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-muted);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { border-color: var(--accent-border); }
+    .icon-btn.accent {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+      color: var(--accent);
+    }
+    .icon-btn.launcher-active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+    .badge-dot {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: var(--rose);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--bg-surface);
+    }
+    .app-identity {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 13.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .avatar-chip {
+      height: 32px;
+      padding: 2px 8px 2px 3px;
+      border-radius: 999px;
+      background: var(--bg-muted);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .avatar-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffb400, #f59e0b);
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .body-area {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--bg-canvas);
+      position: relative;
+    }
+    .sidebar-desktop {
+      width: 230px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sb-section {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      padding: 8px 8px 4px;
+      text-transform: uppercase;
+    }
+    .sb-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .sb-item:hover { background: var(--bg-muted); color: var(--text); }
+    .sb-item.active {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .sb-item .pill {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--rose);
+      color: #fff;
+    }
+    .main-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .desktop-frame .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+    .kpi-val { font-size: 18px; font-weight: 800; margin-top: 4px; color: var(--text); }
+
+    /* Launcher Popover / Sheet */
+    .launcher-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 40;
+      display: none;
+    }
+    .launcher-backdrop.open { display: block; }
+    .launcher-panel {
+      position: absolute;
+      top: 84px;
+      left: 12px;
+      right: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px;
+      z-index: 50;
+      box-shadow: var(--shadow);
+      display: none;
+      animation: popIn 0.16s ease-out;
+    }
+    .desktop-frame .launcher-panel {
+      top: 58px;
+      left: 16px;
+      right: auto;
+      width: 370px;
+    }
+    .launcher-panel.open { display: block; }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .launcher-user-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .role-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+    .app-tile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .app-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 6px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface-2);
+      color: var(--text);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .app-tile:hover { border-color: var(--accent-border); transform: translateY(-1px); }
+    .app-tile.current {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .app-tile-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tile-general { background: rgba(56, 189, 248, 0.16); color: #38bdf8; }
+    .tile-chat { background: rgba(16, 185, 129, 0.16); color: #10b981; }
+    .tile-ios { background: rgba(255, 180, 0, 0.18); color: var(--accent); }
+    .app-tile-name { font-size: 11.5px; font-weight: 800; line-height: 1.2; }
+    .app-tile-sub { font-size: 9.5px; color: var(--text-muted); font-weight: 600; }
+
+    .quick-dest-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .quick-dest-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--bg-muted);
+      color: var(--text);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-dest-btn:hover { border-color: var(--accent-border); color: var(--accent); }
+
+    /* Bottom iOS TabBar */
+    .ios-tabbar {
+      height: 62px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 4px 8px 10px;
+      flex-shrink: 0;
+    }
+    .ios-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .ios-tab.active { color: var(--accent); }
+
+    /* Notes Sidebar */
+    .notes-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .notes-panel h2 { font-size: 15px; font-weight: 800; }
+    .notes-panel h3 { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+    .notes-panel ul { padding-left: 16px; font-size: 12.5px; line-height: 1.55; color: var(--text-muted); }
+    .notes-panel li strong { color: var(--text); }
+    .chat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+    }
+    .booking-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 14px;
+      padding: 11px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .cta-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #000;
+      font-size: 11px;
+      font-weight: 800;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-title">
+      <span class="version-pill">V1 · APP LAUNCHER (9-CHẤM)</span>
+      <div>
+        <div style="font-weight: 800; font-size: 14px;">Google Workspace Style — Nút 9-Chấm Đồng Bộ Trên Cả 3 App</div>
+        <div style="font-size: 11.5px; color: var(--text-muted);">Bấm vào nút 9-chấm ở góc trái header của bất kỳ app nào để nhảy qua lại tức thì</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="appSeg">
+        <button class="active" onclick="setApp('general')">mOS General</button>
+        <button onclick="setApp('chat')">mOS Chat</button>
+        <button onclick="setApp('ios')">mOS iOS-App</button>
+      </div>
+      <div class="seg" id="deviceSeg">
+        <button class="active" onclick="setDevice('mobile')">iPhone (390px)</button>
+        <button onclick="setDevice('desktop')">Desktop</button>
+      </div>
+      <div class="seg" id="roleSeg">
+        <button class="active" onclick="setRole('manager_cc')">Vũ Vy (Manager+CC)</button>
+        <button onclick="setRole('cvl')">CV🪶 (CVL)</button>
+        <button onclick="setRole('cc')">CC</button>
+      </div>
+      <div class="seg" id="themeSeg">
+        <button class="active" onclick="setTheme('dark')">Tối</button>
+        <button onclick="setTheme('light')">Sáng</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="device-wrap">
+      <div id="deviceFrame" class="iphone-frame">
+        <div id="statusBar" class="status-bar">
+          <span class="tabular-nums">15:30</span>
+          <div class="dynamic-island"></div>
+          <span>5G · 92%</span>
+        </div>
+
+        <!-- UNIFIED TOP HEADER -->
+        <header class="app-header" id="appHeader"></header>
+
+        <!-- BODY -->
+        <div class="body-area">
+          <aside class="sidebar-desktop" id="desktopSidebar"></aside>
+          <main class="main-scroll" id="mainBody"></main>
+        </div>
+
+        <!-- BOTTOM TABBAR (ONLY IN IOS-APP) -->
+        <div class="ios-tabbar" id="iosTabbar" style="display:none;"></div>
+
+        <!-- LAUNCHER POPOVER -->
+        <div class="launcher-backdrop" id="launcherBackdrop" onclick="toggleLauncher(false)"></div>
+        <div class="launcher-panel" id="launcherPanel"></div>
+      </div>
+    </div>
+
+    <aside class="notes-panel">
+      <h2>Kiến trúc V1: 9-Dot App Launcher</h2>
+      <div>
+        <h3>Cách hoạt động</h3>
+        <ul>
+          <li><strong>1 icon duy nhất cố định ở góc trái</strong> của cả 3 header (<code>mOS General</code>, <code>mOS Chat</code>, <code>mOS iOS-App</code>): icon <strong>9-chấm (LayoutGrid)</strong>.</li>
+          <li>Không chiếm thêm chiều cao màn hình trên iPhone — đặc biệt giữ nguyên 100% không gian cho danh sách khách hàng ở <code>/ios-app</code> và khung chat ở <code>/chat</code>.</li>
+          <li><strong>Tách icon khỏi MAI AI:</strong> <code>mOS General</code> dùng <em>LayoutDashboard</em>, <code>mOS Chat</code> dùng <em>MessageSquare</em>, <code>iOS-App</code> dùng <em>ClipboardCheck + Feather Vector</em>, <code>MAI AI</code> giữ riêng <em>Sparkles</em>.</li>
+          <li><strong>Đào Trần Vũ Vy:</strong> Hệ thống nhận diện <code>role='manager'</code> + thành viên nhóm <code>CC</code> → mở khóa ô <strong>iOS-App (Vai trò CC)</strong> và các trang trọng tâm <strong>Hôm nay</strong>, <strong>KPI CC</strong>.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Đánh giá UX</h3>
+        <ul>
+          <li><strong>Ưu điểm:</strong> Siêu gọn, chuẩn Google Workspace / Microsoft 365, mở rộng thêm 6–10 phân hệ sau này không bị vỡ header.</li>
+          <li><strong>Nhược điểm:</strong> Cần <strong>2 chạm</strong> (mở 9-chấm → chọn app) thay vì 1 chạm trực tiếp.</li>
+        </ul>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; padding-top:4px; border-top:1px solid var(--border);">
+        <a href="./menu-sync-v2-ecosystem-rail.html" style="font-size:12px; font-weight:700; color:var(--accent);">Xem V2: Pill Rail 1 chạm →</a>
+        <a href="./menu-sync-v3-segmented-topbar.html" style="font-size:12px; font-weight:700; color:var(--text-muted);">Xem V3 →</a>
+        <a href="./menu-sync-v4-floating-thumb-dock.html" style="font-size:12px; font-weight:700; color:var(--text-muted);">Xem V4 →</a>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const state = { app: 'general', device: 'mobile', role: 'manager_cc', theme: 'dark', launcherOpen: false };
+
+    const ICONS = {
+      grid9: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>`,
+      general: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+      chat: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      iosApp: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M9 11l2 2 4-4"/></svg>`,
+      feather: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffb400" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>`,
+      search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+      bell: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
+      menu: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>`,
+      today: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>`,
+      chart: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>`,
+      wallet: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`,
+      trophy: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+      compose: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>`,
+      mai: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`
+    };
+
+    const ROLE_META = {
+      manager_cc: { name: 'Đào Trần Vũ Vy', badge: 'Manager · Nhóm CC', initial: 'V', canIos: true, links: ['today', 'cc', 'career'] },
+      cvl: { name: 'Thảo Ly', badge: `CV ${ICONS.feather}`, initial: 'L', canIos: true, links: ['cv', 'career'] },
+      cc: { name: 'Yến Vy', badge: 'CC Sảnh', initial: 'Y', canIos: true, links: ['today', 'cc', 'career'] },
+    };
+
+    function setApp(app) { state.app = app; state.launcherOpen = false; render(); }
+    function setDevice(device) { state.device = device; state.launcherOpen = false; render(); }
+    function setRole(role) { state.role = role; render(); }
+    function setTheme(theme) {
+      state.theme = theme;
+      document.documentElement.className = theme;
+      render();
+    }
+    function toggleLauncher(force) {
+      state.launcherOpen = typeof force === 'boolean' ? force : !state.launcherOpen;
+      render();
+    }
+
+    function updateSeg(id, matchFn) {
+      const btns = document.getElementById(id).querySelectorAll('button');
+      btns.forEach((b, i) => b.classList.toggle('active', matchFn(i)));
+    }
+
+    function render() {
+      updateSeg('appSeg', (i) => ['general', 'chat', 'ios'][i] === state.app);
+      updateSeg('deviceSeg', (i) => ['mobile', 'desktop'][i] === state.device);
+      updateSeg('roleSeg', (i) => ['manager_cc', 'cvl', 'cc'][i] === state.role);
+      updateSeg('themeSeg', (i) => ['dark', 'light'][i] === state.theme);
+
+      const frame = document.getElementById('deviceFrame');
+      frame.className = state.device === 'mobile' ? 'iphone-frame' : 'desktop-frame';
+      document.getElementById('statusBar').style.display = state.device === 'mobile' ? 'flex' : 'none';
+
+      const meta = ROLE_META[state.role];
+
+      // Header
+      const appTitles = {
+        general: `${ICONS.general} <span>mOS General</span>`,
+        chat: `${ICONS.chat} <span>mOS Chat</span>`,
+        ios: `${ICONS.iosApp} <span>Tư vấn KH</span>`,
+      };
+      document.getElementById('appHeader').innerHTML = `
+        <div class="hdr-left">
+          <button class="icon-btn ${state.launcherOpen ? 'launcher-active' : 'accent'}" onclick="toggleLauncher()" title="Mở bộ chuyển nhanh 3 App (9-chấm)">
+            ${ICONS.grid9}
+          </button>
+          ${state.app === 'general' && state.device === 'mobile' ? `<button class="icon-btn" title="Sidebar Menu">${ICONS.menu}</button>` : ''}
+          ${state.app === 'ios'
+            ? `<div style="display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--bg-muted);border:1px solid var(--border);font-size:11.5px;font-weight:800;"><span style="width:7px;height:7px;border-radius:50%;background:var(--emerald)"></span>ĐT · Hôm nay</div>`
+            : `<div class="app-identity">${appTitles[state.app]}</div>`
+          }
+        </div>
+        <div class="hdr-right">
+          ${state.app === 'general' ? `<button class="icon-btn" title="Tìm nhanh KH">${ICONS.search}</button>` : ''}
+          ${state.app === 'chat' ? `<button class="icon-btn accent" title="Tin nhắn mới">${ICONS.compose}</button>` : ''}
+          <button class="icon-btn" title="Thông báo">${ICONS.bell}<span class="badge-dot tabular-nums">3</span></button>
+          ${state.app !== 'chat' ? `<button class="icon-btn" onclick="setApp('chat')" title="Mở nhanh mOS Chat">${ICONS.chat}<span class="badge-dot tabular-nums">5</span></button>` : ''}
+          <button class="avatar-chip" onclick="toggleLauncher()">
+            <span class="avatar-circle">${meta.initial}</span>
+            <span style="display:${state.device === 'desktop' ? 'inline' : 'none'}">${meta.name}</span>
+          </button>
+        </div>
+      `;
+
+      // Desktop Sidebar
+      const sb = document.getElementById('desktopSidebar');
+      sb.style.display = state.device === 'desktop' && state.app === 'general' ? 'flex' : 'none';
+      sb.innerHTML = `
+        <div class="sb-section">Hệ sinh thái mOS</div>
+        <div class="sb-item active" onclick="setApp('general')">${ICONS.general}<span>Tổng quan mOS</span></div>
+        <div class="sb-item" onclick="setApp('chat')">${ICONS.chat}<span>mOS Chat</span><span class="pill tabular-nums">5</span></div>
+        ${meta.canIos ? `<div class="sb-item" onclick="setApp('ios')">${ICONS.iosApp}<span>iOS-App · Tư vấn KH</span></div>` : ''}
+        <div class="sb-section">Vận hành & Báo cáo</div>
+        ${state.role !== 'cvl' ? `<div class="sb-item">${ICONS.today}<span>Hôm nay</span></div>` : ''}
+        ${state.role !== 'cvl' ? `<div class="sb-item">${ICONS.chart}<span>Báo cáo CC</span></div>` : ''}
+        ${state.role === 'cvl' ? `<div class="sb-item">${ICONS.wallet}<span>Báo cáo Thu nhập CV</span></div>` : ''}
+        <div class="sb-item">${ICONS.trophy}<span>Lộ trình thăng tiến</span></div>
+      `;
+
+      // Main Body
+      const body = document.getElementById('mainBody');
+      if (state.app === 'general') {
+        body.innerHTML = `
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:700;">ĐANG ĐĂNG NHẬP</div>
+              <div style="font-size:15px;font-weight:800;margin-top:2px;">${meta.name}</div>
+            </div>
+            <span class="role-tag">${meta.badge}</span>
+          </div>
+          <div class="kpi-grid">
+            <div class="card"><div class="kpi-label">Khách Đang Chờ</div><div class="kpi-val tabular-nums">12</div></div>
+            <div class="card"><div class="kpi-label">Đang Làm Mi</div><div class="kpi-val tabular-nums" style="color:var(--accent)">8</div></div>
+            <div class="card"><div class="kpi-label">Hoàn Thành</div><div class="kpi-val tabular-nums" style="color:var(--emerald)">24</div></div>
+            <div class="card"><div class="kpi-label">Tin Chưa Đọc</div><div class="kpi-val tabular-nums">5</div></div>
+          </div>
+          <div class="card">
+            <div style="font-size:12.5px;font-weight:800;margin-bottom:6px;">Bấm nút 9-chấm góc trái để trải nghiệm đồng bộ</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">Từ mOS General, anh/chị Vũ Vy có thể mở Launcher 9-chấm để vào thẳng <strong>iOS-App</strong> (với quyền nhóm CC) hoặc sang <strong>mOS Chat</strong> mà không bị mất menu.</div>
+          </div>
+        `;
+      } else if (state.app === 'chat') {
+        body.innerHTML = `
+          <div class="chat-row">
+            <div style="width:36px;height:36px;border-radius:11px;background:rgba(168,85,247,0.18);display:flex;align-items:center;justify-content:center;">${ICONS.mai}</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:800;">MAI · Trợ lý mOS AI</div><div style="font-size:11.5px;color:var(--text-muted);">Đã tách icon Sparkles riêng cho MAI AI</div></div>
+            <span class="role-tag">AI</span>
+          </div>
+          <div class="chat-row">
+            <div style="width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;">#</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:800;">Sảnh Đề Thám · CC & CV</div><div style="font-size:11.5px;color:var(--text-muted);">Khách chị Minh Anh đã check-in tại quầy</div></div>
+            <span class="badge-dot tabular-nums" style="position:static;border:none;">3</span>
+          </div>
+          <div class="chat-row">
+            <div style="width:36px;height:36px;border-radius:11px;background:rgba(16,185,129,0.16);color:#10b981;display:flex;align-items:center;justify-content:center;font-weight:800;">YV</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:800;">Yến Vy (CC)</div><div style="font-size:11.5px;color:var(--text-muted);">Chị Vũ Vy ơi em chuyển ca khách VIP nhé</div></div>
+            <span class="badge-dot tabular-nums" style="position:static;border:none;">2</span>
+          </div>
+        `;
+      } else {
+        body.innerHTML = `
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;background:var(--accent-soft);border-color:var(--accent-border);">
+            <div style="font-size:12px;font-weight:800;color:var(--accent);">Quyền truy cập: ${meta.badge}</div>
+            <button class="cta-pill" onclick="toggleLauncher(true)">Đổi app ▾</button>
+          </div>
+          <div class="booking-card">
+            <div><div style="font-size:13px;font-weight:800;">Nguyễn Ngọc Hân · 15:30</div><div style="font-size:11.5px;color:var(--text-muted);">Combo Classic 7/7 · Đề Thám</div></div>
+            <button class="cta-pill">Tư vấn</button>
+          </div>
+          <div class="booking-card">
+            <div><div style="font-size:13px;font-weight:800;">Trần Thu Thảo · 16:00</div><div style="font-size:11.5px;color:var(--text-muted);">Dặm mi Volume · Book đích danh</div></div>
+            <button class="cta-pill">Check-in</button>
+          </div>
+        `;
+      }
+
+      // iOS Tabbar
+      const tabbar = document.getElementById('iosTabbar');
+      tabbar.style.display = state.app === 'ios' ? 'flex' : 'none';
+      tabbar.innerHTML = `
+        <div class="ios-tab active">${ICONS.today}<span>Khách Hàng</span></div>
+        <div class="ios-tab">${ICONS.iosApp}<span>Ca Làm Mi</span></div>
+        <div class="ios-tab">${ICONS.chart}<span>Hàng Chờ</span></div>
+        <div class="ios-tab">${ICONS.wallet}<span>Thu Nhập</span></div>
+      `;
+
+      // Launcher Panel
+      document.getElementById('launcherBackdrop').classList.toggle('open', state.launcherOpen);
+      const panel = document.getElementById('launcherPanel');
+      panel.classList.toggle('open', state.launcherOpen);
+      const destMap = {
+        today: { label: 'Hôm nay', icon: ICONS.today },
+        cc: { label: 'Báo cáo KPI CC', icon: ICONS.chart },
+        cv: { label: 'Thu nhập CV', icon: ICONS.wallet },
+        career: { label: 'Lộ trình', icon: ICONS.trophy },
+      };
+      panel.innerHTML = `
+        <div class="launcher-user-bar">
+          <div>
+            <div style="font-size:12.5px;font-weight:800;">${meta.name}</div>
+            <div style="font-size:10.5px;color:var(--text-muted);">Hệ sinh thái mOS đồng bộ</div>
+          </div>
+          <span class="role-tag">${meta.badge}</span>
+        </div>
+        <div class="app-tile-grid">
+          <button class="app-tile ${state.app === 'general' ? 'current' : ''}" onclick="setApp('general')">
+            <div class="app-tile-icon tile-general">${ICONS.general}</div>
+            <div class="app-tile-name">mOS General</div>
+            <div class="app-tile-sub">Quản trị</div>
+          </button>
+          <button class="app-tile ${state.app === 'chat' ? 'current' : ''}" onclick="setApp('chat')">
+            <span class="badge-dot tabular-nums" style="top:6px;right:8px;">5</span>
+            <div class="app-tile-icon tile-chat">${ICONS.chat}</div>
+            <div class="app-tile-name">mOS Chat</div>
+            <div class="app-tile-sub">Nội bộ & MAI</div>
+          </button>
+          <button class="app-tile ${state.app === 'ios' ? 'current' : ''}" onclick="setApp('ios')">
+            <div class="app-tile-icon tile-ios">${ICONS.iosApp}</div>
+            <div class="app-tile-name">iOS-App</div>
+            <div class="app-tile-sub">Tư vấn KH</div>
+          </button>
+        </div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Truy cập nhanh theo vai trò</div>
+        <div class="quick-dest-grid">
+          ${meta.links.map((k) => `<button class="quick-dest-btn" onclick="setApp('general')">${destMap[k].icon}<span>${destMap[k].label}</span></button>`).join('')}
+        </div>
+      `;
+    }
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mOS Menu Sync Mockup V2 — Persistent 1-Tap Ecosystem Pill Rail</title>
+  <style>
+    :root {
+      --bg-canvas: #06080f;
+      --bg-surface: #0e131f;
+      --bg-surface-2: #161d2e;
+      --bg-muted: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #ffb400;
+      --accent-soft: rgba(255, 180, 0, 0.14);
+      --accent-border: rgba(255, 180, 0, 0.35);
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+    html.light {
+      --bg-canvas: #eef2f7;
+      --bg-surface: #ffffff;
+      --bg-surface-2: #f8fafc;
+      --bg-muted: rgba(15, 23, 42, 0.05);
+      --border: rgba(15, 23, 42, 0.1);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #d97706;
+      --accent-soft: rgba(245, 158, 11, 0.12);
+      --accent-border: rgba(217, 119, 6, 0.32);
+      --shadow: 0 20px 45px rgba(15, 23, 42, 0.14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 18px;
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .toolbar {
+      max-width: 1320px; margin: 0 auto 16px; background: var(--bg-surface);
+      border: 1px solid var(--border); border-radius: 16px; padding: 12px 16px;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+      box-shadow: var(--shadow);
+    }
+    .version-pill { background: var(--accent); color: #000; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 999px; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .seg { display: inline-flex; background: var(--bg-muted); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; }
+    .seg button {
+      border: none; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600;
+      padding: 6px 10px; border-radius: 7px; cursor: pointer;
+    }
+    .seg button.active { background: var(--accent); color: #000; font-weight: 700; }
+    .stage { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 1fr 310px; gap: 18px; align-items: start; }
+    @media (max-width: 1040px) { .stage { grid-template-columns: 1fr; } }
+    .device-wrap { display: flex; justify-content: center; padding: 8px 0; }
+    .iphone-frame {
+      width: 390px; height: 790px; background: var(--bg-surface); border: 8px solid #1e293b;
+      border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow);
+    }
+    html.light .iphone-frame { border-color: #cbd5e1; }
+    .desktop-frame {
+      width: 100%; height: 720px; background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow);
+    }
+    .status-bar { height: 28px; padding: 6px 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .dynamic-island { width: 96px; height: 22px; background: #000; border-radius: 999px; }
+    .app-header {
+      height: 48px; padding: 0 12px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0;
+    }
+    .hdr-left, .hdr-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-muted); color: var(--text); display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; flex-shrink: 0;
+    }
+    .badge-dot {
+      position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px;
+      border-radius: 999px; background: var(--rose); color: #fff; font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-surface);
+    }
+    /* THE STAR OF V2: UNIFIED ECOSYSTEM PILL RAIL */
+    .eco-rail {
+      background: var(--bg-surface-2);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .eco-rail::-webkit-scrollbar { display: none; }
+    .eco-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text);
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .eco-pill:hover { border-color: var(--accent-border); }
+    .eco-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 800;
+    }
+    .eco-pill.highlight {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+      color: var(--accent);
+    }
+    .eco-divider { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+    .pill-cnt {
+      padding: 2px 5px; border-radius: 999px; background: var(--rose); color: #fff; font-size: 9.5px; font-weight: 800;
+    }
+    .body-area { flex: 1; display: flex; min-height: 0; overflow: hidden; background: var(--bg-canvas); }
+    .sidebar-desktop {
+      width: 226px; background: var(--bg-surface); border-right: 1px solid var(--border);
+      padding: 10px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+    }
+    .sb-section { font-size: 10px; font-weight: 800; color: var(--text-muted); padding: 8px 8px 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+    .sb-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .main-scroll { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .desktop-frame .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    .ios-tabbar {
+      height: 60px; background: var(--bg-surface); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-around; padding: 4px 8px 10px; flex-shrink: 0;
+    }
+    .ios-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: var(--text-muted); }
+    .ios-tab.active { color: var(--accent); }
+    .notes-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .notes-panel h2 { font-size: 15px; font-weight: 800; }
+    .notes-panel h3 { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+    .notes-panel ul { padding-left: 16px; font-size: 12.5px; line-height: 1.55; color: var(--text-muted); }
+    .notes-panel li strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="version-pill">V2 · 1-TAP ECOSYSTEM RAIL</span>
+      <div>
+        <div style="font-weight:800;font-size:14px;">Thanh Pill Rail 1 Chạm Cố Định Dưới Header Ở Cả 3 App</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">Nâng cấp chính thức cho <code>HeaderRoleQuickSwitch variant="sub-header"</code> bị bỏ quên trước đây</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="appSeg">
+        <button class="active" onclick="setApp('general')">mOS General</button>
+        <button onclick="setApp('chat')">mOS Chat</button>
+        <button onclick="setApp('ios')">mOS iOS-App</button>
+      </div>
+      <div class="seg" id="deviceSeg">
+        <button class="active" onclick="setDevice('mobile')">iPhone (390px)</button>
+        <button onclick="setDevice('desktop')">Desktop</button>
+      </div>
+      <div class="seg" id="roleSeg">
+        <button class="active" onclick="setRole('manager_cc')">Vũ Vy (Manager+CC)</button>
+        <button onclick="setRole('cvl')">CV🪶 (CVL)</button>
+      </div>
+      <div class="seg" id="themeSeg">
+        <button class="active" onclick="setTheme('dark')">Tối</button>
+        <button onclick="setTheme('light')">Sáng</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="device-wrap">
+      <div id="deviceFrame" class="iphone-frame">
+        <div id="statusBar" class="status-bar"><span class="tabular-nums">15:30</span><div class="dynamic-island"></div><span>5G · 92%</span></div>
+        <header class="app-header" id="appHeader"></header>
+        <nav class="eco-rail" id="ecoRail"></nav>
+        <div class="body-area">
+          <aside class="sidebar-desktop" id="desktopSidebar"></aside>
+          <main class="main-scroll" id="mainBody"></main>
+        </div>
+        <div class="ios-tabbar" id="iosTabbar" style="display:none;"></div>
+      </div>
+    </div>
+
+    <aside class="notes-panel">
+      <h2>Kiến trúc V2: 1-Tap Pill Rail</h2>
+      <div>
+        <h3>Điểm nhấn thiết kế</h3>
+        <ul>
+          <li>Tái cấu trúc <code>HeaderRoleQuickSwitch</code> thành <strong>1 thanh Pill Rail duy nhất</strong> chạy đồng bộ trên cả <strong>mOS General</strong>, <strong>mOS Chat</strong> và <strong>mOS iOS-App</strong>.</li>
+          <li><strong>1 chạm là chuyển ngay:</strong> <code>mOS General</code> · <code>mOS Chat (5)</code> · <code>iOS-App</code> | <code>Hôm nay</code> · <code>KPI CC</code> · <code>Lộ trình</code>.</li>
+          <li>Trên Desktop, cụm pill có thể nằm gọn ngay bên trái thanh Header (không cần hàng thứ 2) hoặc hiển thị cố định cho <code>CV🪶 / CC / Vũ Vy</code>.</li>
+          <li>Không còn nút ẩn trong dấu <code>⋯</code> của Chat hay Avatar sheet của iOS-App.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Đánh giá UX</h3>
+        <ul>
+          <li><strong>Ưu điểm:</strong> Trực quan nhất — nhân viên mở máy lên thấy ngay mình đang ở app nào và chỉ cần <strong>1 chạm</strong> để nhảy app khác.</li>
+          <li><strong>Nhược điểm:</strong> Trên iPhone chiếm thêm ~38px chiều cao dưới header (khi ở iOS-App sẽ có Header 48px + Rail 38px + Tabbar 60px).</li>
+        </ul>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--border);">
+        <a href="./menu-sync-v1-app-launcher.html" style="font-size:12px;font-weight:700;color:var(--text-muted);">← V1</a>
+        <a href="./menu-sync-v3-segmented-topbar.html" style="font-size:12px;font-weight:700;color:var(--accent);">Xem V3: Segmented Topbar →</a>
+        <a href="./menu-sync-v4-floating-thumb-dock.html" style="font-size:12px;font-weight:700;color:var(--text-muted);">Xem V4 →</a>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const state = { app: 'general', sub: 'overview', device: 'mobile', role: 'manager_cc', theme: 'dark' };
+    const ICONS = {
+      general: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+      chat: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      iosApp: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M9 11l2 2 4-4"/></svg>`,
+      today: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>`,
+      chart: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>`,
+      wallet: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`,
+      trophy: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+      menu: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>`,
+      bell: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
+      feather: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffb400" stroke-width="2.4"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/></svg>`
+    };
+    function setApp(app, sub = 'overview') { state.app = app; state.sub = sub; render(); }
+    function setDevice(d) { state.device = d; render(); }
+    function setRole(r) { state.role = r; render(); }
+    function setTheme(t) { state.theme = t; document.documentElement.className = t; render(); }
+    function updateSeg(id, fn) { document.getElementById(id).querySelectorAll('button').forEach((b, i) => b.classList.toggle('active', fn(i))); }
+    function render() {
+      updateSeg('appSeg', i => ['general', 'chat', 'ios'][i] === state.app);
+      updateSeg('deviceSeg', i => ['mobile', 'desktop'][i] === state.device);
+      updateSeg('roleSeg', i => ['manager_cc', 'cvl'][i] === state.role);
+      updateSeg('themeSeg', i => ['dark', 'light'][i] === state.theme);
+      document.getElementById('deviceFrame').className = state.device === 'mobile' ? 'iphone-frame' : 'desktop-frame';
+      document.getElementById('statusBar').style.display = state.device === 'mobile' ? 'flex' : 'none';
+
+      const name = state.role === 'manager_cc' ? 'Đào Trần Vũ Vy (Manager · CC)' : `Thảo Ly (CV ${ICONS.feather})`;
+      document.getElementById('appHeader').innerHTML = `
+        <div class="hdr-left">
+          ${state.app === 'general' && state.device === 'mobile' ? `<button class="icon-btn">${ICONS.menu}</button>` : ''}
+          <div style="font-weight:800;font-size:13.5px;display:flex;align-items:center;gap:6px;">
+            <span style="color:var(--accent)">${state.app === 'general' ? ICONS.general : state.app === 'chat' ? ICONS.chat : ICONS.iosApp}</span>
+            <span>${state.app === 'general' ? 'WINGS mOS' : state.app === 'chat' ? 'mOS Chat' : 'ĐT · Tư vấn KH'}</span>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <button class="icon-btn">${ICONS.bell}<span class="badge-dot tabular-nums">3</span></button>
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;">${state.role === 'manager_cc' ? 'V' : 'L'}</div>
+        </div>
+      `;
+
+      const subLinks = state.role === 'manager_cc'
+        ? [{ k: 'today', l: 'Hôm nay', ic: ICONS.today }, { k: 'cc', l: 'KPI CC', ic: ICONS.chart }, { k: 'career', l: 'Lộ trình', ic: ICONS.trophy }]
+        : [{ k: 'cv', l: 'Thu nhập CV', ic: ICONS.wallet }, { k: 'career', l: 'Lộ trình', ic: ICONS.trophy }];
+
+      document.getElementById('ecoRail').innerHTML = `
+        <button class="eco-pill ${state.app === 'general' && state.sub === 'overview' ? 'active' : ''}" onclick="setApp('general','overview')">${ICONS.general}<span>mOS General</span></button>
+        <button class="eco-pill ${state.app === 'chat' ? 'active' : ''}" onclick="setApp('chat')">${ICONS.chat}<span>mOS Chat</span><span class="pill-cnt tabular-nums">5</span></button>
+        <button class="eco-pill ${state.app === 'ios' ? 'active' : 'highlight'}" onclick="setApp('ios')">${ICONS.iosApp}<span>iOS-App</span></button>
+        <span class="eco-divider"></span>
+        ${subLinks.map(s => `<button class="eco-pill ${state.app === 'general' && state.sub === s.k ? 'active' : ''}" onclick="setApp('general','${s.k}')">${s.ic}<span>${s.l}</span></button>`).join('')}
+      `;
+
+      const sb = document.getElementById('desktopSidebar');
+      sb.style.display = state.device === 'desktop' && state.app === 'general' ? 'flex' : 'none';
+      sb.innerHTML = `
+        <div class="sb-section">3 Phân hệ chính</div>
+        <div class="sb-item ${state.sub === 'overview' ? 'active' : ''}" onclick="setApp('general','overview')">${ICONS.general}<span>mOS General</span></div>
+        <div class="sb-item" onclick="setApp('chat')">${ICONS.chat}<span>mOS Chat (5)</span></div>
+        <div class="sb-item" onclick="setApp('ios')">${ICONS.iosApp}<span>iOS-App Tư vấn</span></div>
+        <div class="sb-section">Nghiệp vụ trọng tâm</div>
+        ${subLinks.map(s => `<div class="sb-item ${state.sub === s.k ? 'active' : ''}" onclick="setApp('general','${s.k}')">${s.ic}<span>${s.l}</span></div>`).join('')}
+      `;
+
+      const body = document.getElementById('mainBody');
+      body.innerHTML = `
+        <div class="card">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;">TÀI KHOẢN & NGỮ CẢNH</div>
+          <div style="font-size:14.5px;font-weight:800;margin-top:3px;">${name}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Đang xem: <strong style="color:var(--accent)">${state.app.toUpperCase()} · ${state.sub}</strong></div>
+        </div>
+        <div class="kpi-grid">
+          <div class="card"><div style="font-size:11px;color:var(--text-muted);">Chờ đón</div><div class="tabular-nums" style="font-size:18px;font-weight:800;margin-top:4px;">12</div></div>
+          <div class="card"><div style="font-size:11px;color:var(--text-muted);">Đang làm</div><div class="tabular-nums" style="font-size:18px;font-weight:800;margin-top:4px;color:var(--accent);">8</div></div>
+          <div class="card"><div style="font-size:11px;color:var(--text-muted);">Hoàn thành</div><div class="tabular-nums" style="font-size:18px;font-weight:800;margin-top:4px;color:var(--emerald);">24</div></div>
+          <div class="card"><div style="font-size:11px;color:var(--text-muted);">Chat mới</div><div class="tabular-nums" style="font-size:18px;font-weight:800;margin-top:4px;">5</div></div>
+        </div>
+      `;
+
+      const tabbar = document.getElementById('iosTabbar');
+      tabbar.style.display = state.app === 'ios' ? 'flex' : 'none';
+      tabbar.innerHTML = `
+        <div class="ios-tab active">${ICONS.today}<span>Khách Hàng</span></div>
+        <div class="ios-tab">${ICONS.iosApp}<span>Ca Làm Mi</span></div>
+        <div class="ios-tab">${ICONS.chart}<span>Hàng Chờ</span></div>
+        <div class="ios-tab">${ICONS.wallet}<span>Thu Nhập</span></div>
+      `;
+    }
+    render();
+  </script>
+</body>
+</html>

@@ -176,9 +176,7 @@ describe('IosProfileMenuSheet Theme & Mode Switching', () => {
       />
     );
 
-    const profileTrigger = screen.getByTitle('Mở hồ sơ & chuyển vai trò');
-    expect(profileTrigger).toHaveTextContent('CC');
-    expect(profileTrigger).not.toHaveTextContent('CV');
+    expect(screen.queryByTitle('Mở hồ sơ & chuyển vai trò')).not.toBeInTheDocument();
     expect(screen.queryByText(/Chưa thể check-in/i)).not.toBeInTheDocument();
   });
 

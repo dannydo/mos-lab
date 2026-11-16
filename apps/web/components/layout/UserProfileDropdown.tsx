@@ -1,30 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dropdown, Avatar, Switch, Segmented, theme } from 'antd';
-import { ColumnHeightOutlined } from '@ant-design/icons';
-import {
-  PhoneCall,
-  Radio,
-  MessageSquareWarning,
-  BarChart3,
-  ChevronRight,
-  LogOut,
-  UserRound,
-  Camera,
-  Sparkles,
-  Sun,
-  Moon,
-  Phone,
-} from 'lucide-react';
-import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole, type SafeAny } from '@mos-lab/shared';
-import { useOmiCall } from '../../context/OmiCallContext';
-import { useResponsiveTier } from '../../hooks/useResponsiveTier';
+import { Avatar, theme } from 'antd';
+import { UserRound } from 'lucide-react';
+import { isCvRole, type SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../lib/api-client';
-import { getBugReportBadgeSummary, openBugReport, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
-import AvatarCropModal from '../avatar/AvatarCropModal';
-import { ThemeSelector } from '../theme/ThemeSelector';
+import { getBugReportBadgeSummary, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
 import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
+import { UnifiedProfileSheet } from '../profile/UnifiedProfileSheet';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -39,140 +22,10 @@ interface UserProfileDropdownProps {
   onToggleTheme?: () => void;
   dailyCallsCount?: number;
   onOpenDailyCalls?: () => void;
-}
-
-function getRoleBadge(role?: string | null, token?: SafeAny) {
-  const normalized = String(role || '')
-    .toLowerCase()
-    .trim();
-  if (normalized === 'super_admin') {
-    return {
-      label: 'Super Admin',
-      bg: 'rgba(245, 158, 11, 0.12)',
-      color: '#f59e0b',
-      border: 'rgba(245, 158, 11, 0.25)',
-    };
-  }
-  if (normalized === 'admin') {
-    return {
-      label: 'Admin',
-      bg: 'rgba(168, 85, 247, 0.12)',
-      color: '#a855f7',
-      border: 'rgba(168, 85, 247, 0.25)',
-    };
-  }
-  if (normalized === 'telesales' || normalized === 'booker') {
-    return {
-      label: 'Telesales',
-      bg: 'rgba(14, 165, 233, 0.12)',
-      color: '#0ea5e9',
-      border: 'rgba(14, 165, 233, 0.25)',
-    };
-  }
-  if (normalized === 'cc' || normalized === 'consultant') {
-    return {
-      label: 'Tư vấn (CC)',
-      bg: 'rgba(16, 185, 129, 0.12)',
-      color: '#10b981',
-      border: 'rgba(16, 185, 129, 0.25)',
-    };
-  }
-  const featherRole = normalizeCvFeatherRole(String(role || ''));
-  if (featherRole === 'CVLL' || normalized === 'cvll' || normalized === 'cv_plus_plus') {
-    return {
-      label: 'Chuyên Viên Cấp Cao (🪶CV🪶)',
-      bg: 'rgba(245, 158, 11, 0.14)',
-      color: '#f59e0b',
-      border: 'rgba(245, 158, 11, 0.3)',
-    };
-  }
-  if (featherRole === 'CVL' || normalized === 'cvl' || normalized === 'cv_plus') {
-    return {
-      label: 'Chuyên Viên Tự Chủ (CV🪶)',
-      bg: 'rgba(245, 158, 11, 0.12)',
-      color: '#d97706',
-      border: 'rgba(245, 158, 11, 0.25)',
-    };
-  }
-  if (normalized === 'technician' || normalized === 'ktv' || normalized === 'cv' || normalized === 'lt') {
-    return {
-      label: 'Chuyên Viên (CV)',
-      bg: 'rgba(20, 184, 166, 0.12)',
-      color: '#14b8a6',
-      border: 'rgba(20, 184, 166, 0.25)',
-    };
-  }
-  return {
-    label: role ? role.toUpperCase() : 'USER',
-    bg: token?.colorPrimaryBg || 'rgba(59, 130, 246, 0.12)',
-    color: token?.colorPrimary || '#3b82f6',
-    border: token?.colorPrimaryBorder || 'rgba(59, 130, 246, 0.25)',
-  };
-}
-
-function getCallStatusInfo({
-  isRegistered,
-  omicallReady,
-  callState,
-}: {
-  isRegistered: boolean;
-  omicallReady: boolean;
-  callState: string;
-}) {
-  if (callState === 'connected') {
-    return {
-      text: 'Đang trong cuộc gọi',
-      dotClass: 'bg-rose-500 animate-pulse',
-      iconBg: 'bg-rose-500/15',
-      iconColor: '#f43f5e',
-    };
-  }
-  if (callState === 'incoming') {
-    return {
-      text: 'Có cuộc gọi đến...',
-      dotClass: 'bg-amber-500 animate-bounce',
-      iconBg: 'bg-amber-500/15',
-      iconColor: '#f59e0b',
-    };
-  }
-  if (callState === 'ringing') {
-    return {
-      text: 'Đang đổ chuông...',
-      dotClass: 'bg-amber-500 animate-bounce',
-      iconBg: 'bg-amber-500/15',
-      iconColor: '#f59e0b',
-    };
-  }
-  if (callState === 'confirming') {
-    return {
-      text: 'Sẵn sàng gọi ra',
-      dotClass: 'bg-emerald-500',
-      iconBg: 'bg-emerald-500/15',
-      iconColor: '#10b981',
-    };
-  }
-  if (isRegistered) {
-    return {
-      text: 'Sẵn sàng nhận cuộc gọi',
-      dotClass: 'bg-emerald-500',
-      iconBg: 'bg-emerald-500/15',
-      iconColor: '#10b981',
-    };
-  }
-  if (omicallReady) {
-    return {
-      text: 'Đang kết nối tổng đài...',
-      dotClass: 'bg-sky-500 animate-pulse',
-      iconBg: 'bg-sky-500/15',
-      iconColor: '#0ea5e9',
-    };
-  }
-  return {
-    text: 'Chưa bật nhận cuộc gọi',
-    dotClass: 'bg-slate-400',
-    iconBg: 'bg-slate-500/10',
-    iconColor: 'var(--mos-text-tertiary, #94a3b8)',
-  };
+  /** Hide top-right avatar trigger on compact viewports where profile is opened via 9-dot Launcher or Utility menu */
+  hideTrigger?: boolean;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
@@ -184,30 +37,20 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onOpenTelesalesDashboard,
   onLogout,
   onAvatarUpdated,
-  themeMode,
-  onToggleTheme,
   dailyCallsCount = 0,
   onOpenDailyCalls,
+  hideTrigger = false,
+  externalOpen,
+  onExternalOpenChange,
 }) => {
-  const [open, setOpen] = useState(false);
-  const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const { token } = theme.useToken();
-  const responsiveTier = useResponsiveTier();
-  const isMobileTier = responsiveTier === 'mobile';
 
-  const {
-    isRegistered,
-    callState,
-    omicallReady,
-    setOmicallReady,
-    floatingLauncherVisible,
-    setFloatingLauncherVisible,
-    canAccessOmiCall,
-    isGrowthMember,
-    isAdmin,
-    adminOmiCallEnabled,
-    setAdminOmiCallEnabled,
-  } = useOmiCall();
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next);
+    onExternalOpenChange?.(next);
+  };
 
   const isCv = isCvRole(user?.role);
   const bugBadge = React.useSyncExternalStore(subscribeBugReportBadgeSummary, getBugReportBadgeSummary, () => ({
@@ -216,395 +59,14 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   }));
   const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
 
-  const roleBadge = getRoleBadge(user?.role, token);
-  const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
-
   const rawAvatar = user?.avatarUrl || user?.avatar;
   const avatarUrl = rawAvatar
     ? resolveMediaUrl(rawAvatar.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com'))
     : undefined;
 
-  const handleTelesalesClick = () => {
-    setOpen(false);
-    onOpenTelesalesDashboard();
-  };
-
-  const handleAvatarClick = () => {
-    setOpen(false);
-    setIsAvatarCropOpen(true);
-  };
-
-  const handleExitImpersonationClick = async () => {
-    setOpen(false);
-    await onExitImpersonation?.();
-  };
-
-  const handleLogoutClick = async () => {
-    setOpen(false);
-    await onLogout();
-  };
-
-  const dropdownContent = (
-    <div
-      className={`${isMobileTier ? 'w-[290px]' : 'w-[320px]'} overflow-hidden rounded-2xl shadow-2xl transition-all duration-200`}
-      style={{
-        background: token.colorBgElevated,
-        border: `1px solid ${token.colorBorderSecondary}`,
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* User Identity Header */}
-      <div
-        className="p-3.5 pb-3 border-b"
-        style={{
-          borderColor: token.colorBorderSecondary,
-          background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.04), transparent)',
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="relative shrink-0 group cursor-pointer"
-            onClick={handleAvatarClick}
-            title="Nhấp để đổi ảnh đại diện"
-          >
-            <Avatar
-              size={44}
-              src={avatarUrl}
-              icon={<UserRound size={22} />}
-              style={{
-                backgroundColor: token.colorPrimaryBg,
-                color: token.colorPrimary,
-              }}
-              className="ring-1 ring-white/10 group-hover:ring-amber-500 transition-all"
-            />
-            {/* Camera Overlay Icon */}
-            <div className="absolute inset-0 bg-black/45 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-amber-300">
-              <Camera size={16} />
-            </div>
-            {isRegistered && (
-              <span
-                className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-black"
-                title="Đang online tổng đài"
-              />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-semibold text-[14px] leading-tight text-slate-800 dark:text-slate-100 truncate">
-                {user?.displayName || 'Người dùng'}
-              </span>
-            </div>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span
-                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase leading-none"
-                style={{
-                  background: roleBadge.bg,
-                  color: roleBadge.color,
-                  border: `1px solid ${roleBadge.border}`,
-                }}
-              >
-                {roleBadge.label}
-              </span>
-              {user?.username && (
-                <span className="text-[11px] truncate" style={{ color: token.colorTextTertiary }}>
-                  @{user.username}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Impersonation Banner */}
-        {isImpersonating && (
-          <div
-            className="mt-2.5 flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs"
-            style={{
-              background: token.colorWarningBg,
-              border: `1px solid ${token.colorWarningBorder}`,
-              color: token.colorWarningText,
-            }}
-          >
-            <span className="font-medium">Đang giả lập người dùng</span>
-            <button
-              type="button"
-              onClick={handleExitImpersonationClick}
-              className="font-semibold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer"
-            >
-              Thoát
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Section 1: Quick Toggles (OmiCall) */}
-      {(isAdmin || isGrowthMember) && (
-        <div className="p-2 space-y-1">
-          <div className="px-2 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {canAccessOmiCall ? 'Tổng đài & Tiện ích' : 'Tiện ích'}
-          </div>
-
-          {/* Admin Unified OmiCall Master Toggle (Off by default, can turn On anytime) */}
-          {isAdmin && (
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <span
-                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                    adminOmiCallEnabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/10 text-slate-400'
-                  }`}
-                >
-                  <PhoneCall size={15} />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
-                    Bật công cụ OmiCall tổng đài
-                  </div>
-                  <div
-                    className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <span
-                      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-                        adminOmiCallEnabled ? 'bg-emerald-500' : 'bg-slate-400'
-                      }`}
-                    />
-                    <span className="truncate">
-                      {adminOmiCallEnabled ? 'Đang bật · Đã kết nối tổng đài & nút gọi' : 'Đang tắt (mặc định)'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Switch
-                size="small"
-                checked={adminOmiCallEnabled}
-                aria-label="Bật công cụ OmiCall tổng đài cho Admin"
-                onChange={(checked) => setAdminOmiCallEnabled(checked)}
-              />
-            </div>
-          )}
-
-          {/* Growth & Booking Toggles (Only visible for Growth department members, non-admin) */}
-          {!isAdmin && isGrowthMember && (
-            <>
-              {/* OmiCall Ready Toggle */}
-              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                  <span
-                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${callStatus.iconBg}`}
-                    style={{ color: callStatus.iconColor }}
-                  >
-                    <PhoneCall size={15} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
-                      Nhận cuộc gọi tổng đài
-                    </div>
-                    <div
-                      className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
-                      style={{ color: token.colorTextSecondary }}
-                    >
-                      <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${callStatus.dotClass}`} />
-                      <span className="truncate">{callStatus.text}</span>
-                    </div>
-                  </div>
-                </div>
-                <Switch
-                  size="small"
-                  checked={omicallReady}
-                  aria-label="Bật nhận cuộc gọi tổng đài OmiCall"
-                  onChange={(checked) => setOmicallReady(checked)}
-                />
-              </div>
-
-              {/* Floating Call Launcher Toggle */}
-              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-500 dark:text-slate-400">
-                    <Radio size={15} />
-                  </span>
-                  <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
-                    Nút gọi nổi màn hình
-                  </div>
-                </div>
-                <Switch
-                  size="small"
-                  checked={floatingLauncherVisible}
-                  aria-label="Hiển thị nút gọi nổi OmiCall"
-                  onChange={setFloatingLauncherVisible}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Section 2: Display Density & Tools */}
-      <div className="p-2 pt-1 border-t space-y-1.5" style={{ borderColor: token.colorBorderSecondary }}>
-        <div className="px-2 pt-1">
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-            <span className="flex items-center gap-1">
-              <ColumnHeightOutlined /> Mật độ hiển thị
-            </span>
-            {isMobileTier && (
-              <span className="text-[10px] normal-case font-normal text-slate-400">(Mobile: Compact)</span>
-            )}
-          </div>
-          <Segmented
-            block
-            size="small"
-            value={desktopDensity}
-            onChange={(val) => setDesktopDensity(val as 'compact' | 'standard' | 'comfortable')}
-            options={[
-              { label: 'Compact', value: 'compact' },
-              { label: 'Standard', value: 'standard' },
-              { label: 'Thoải mái', value: 'comfortable' },
-            ]}
-          />
-        </div>
-
-        {/* Theme Mode & Theme Studio */}
-        {onToggleTheme && (
-          <div className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/5">
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200 cursor-pointer"
-            >
-              {themeMode === 'dark' ? (
-                <Sun size={16} className="text-amber-500 shrink-0" />
-              ) : (
-                <Moon size={16} className="text-indigo-500 shrink-0" />
-              )}
-              <span>Giao diện: {themeMode === 'dark' ? 'Tối (Dark)' : 'Sáng (Light)'}</span>
-            </button>
-            <div className="flex items-center gap-1.5">
-              <ThemeSelector isAdmin={isAdminOrSuperAdminRole(user?.role)} />
-              <Switch
-                size="small"
-                checked={themeMode === 'dark'}
-                aria-label="Chuyển đổi giao diện Sáng/Tối"
-                onChange={() => onToggleTheme()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Daily Calls History Button */}
-        {!isCv && onOpenDailyCalls && (
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onOpenDailyCalls();
-            }}
-            className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-          >
-            <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
-              <Phone size={16} className="text-emerald-500 shrink-0" />
-              Cuộc gọi hôm nay
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              {dailyCallsCount > 0 && (
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums bg-emerald-500/15 text-emerald-500 border border-emerald-500/25">
-                  {dailyCallsCount} cuộc
-                </span>
-              )}
-              <ChevronRight size={14} className="text-slate-400 shrink-0" />
-            </span>
-          </button>
-        )}
-
-        {/* Change Avatar Button */}
-        <button
-          type="button"
-          onClick={handleAvatarClick}
-          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-        >
-          <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
-            <Camera size={16} className="text-amber-500 shrink-0" />
-            Đổi ảnh đại diện
-          </span>
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20">
-            <Sparkles size={10} /> AI Coach
-          </span>
-        </button>
-
-        {/* Telesales Dashboard Button */}
-        {!isCv && (
-          <button
-            type="button"
-            onClick={handleTelesalesClick}
-            className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-          >
-            <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
-              <BarChart3 size={16} className="text-amber-500 shrink-0" />
-              KPI Đội Telesales
-            </span>
-            <ChevronRight size={14} className="text-slate-400 shrink-0" />
-          </button>
-        )}
-
-        {/* Bug Report & Feature Request Button */}
-        {!isCv && (
-          <button
-            type="button"
-            data-user-menu-bug-report
-            onClick={() => {
-              setOpen(false);
-              openBugReport(undefined, { preferHistoryIfPending: true });
-            }}
-            className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-          >
-            <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
-              <MessageSquareWarning size={16} className="text-amber-500 shrink-0" />
-              Báo lỗi / Góp ý
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              {bugAttentionCount > 0 && (
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums bg-amber-500/15 text-amber-500 border border-amber-500/25">
-                  {bugAttentionCount > 99 ? '99+' : bugAttentionCount} mới
-                </span>
-              )}
-              <ChevronRight size={14} className="text-slate-400 shrink-0" />
-            </span>
-          </button>
-        )}
-      </div>
-
-      {/* Section 3: Logout & Exit Impersonation */}
-      <div className="p-2 pt-1 border-t space-y-0.5" style={{ borderColor: token.colorBorderSecondary }}>
-        {isImpersonating && (
-          <button
-            type="button"
-            onClick={handleExitImpersonationClick}
-            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left transition-colors hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-pointer text-[13px] font-medium"
-          >
-            <LogOut size={16} className="shrink-0" />
-            Thoát chế độ giả lập
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={handleLogoutClick}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left transition-colors hover:bg-rose-500/10 dark:hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 cursor-pointer text-[13px] font-medium"
-        >
-          <LogOut size={16} className="shrink-0" />
-          Đăng xuất
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <>
-      <Dropdown
-        open={open}
-        onOpenChange={setOpen}
-        trigger={['click']}
-        placement="bottomRight"
-        arrow={{ pointAtCenter: true }}
-        popupRender={() => dropdownContent}
-      >
+      {!hideTrigger && (
         <HeaderActionIndicator variant="status" active={bugAttentionCount > 0} color={token.colorWarning}>
           <button
             type="button"
@@ -615,12 +77,14 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 ? `Mở menu người dùng, có ${bugAttentionCount} phản hồi báo lỗi cần xem`
                 : 'Mở menu người dùng'
             }
-            aria-haspopup="menu"
+            aria-haspopup="dialog"
+            aria-expanded={open}
             title={
               bugAttentionCount > 0
                 ? `Mở menu người dùng (${bugAttentionCount} phản hồi báo lỗi mới)`
                 : 'Mở menu người dùng'
             }
+            onClick={() => setOpen(!open)}
           >
             <Avatar
               className="mos-header-avatar"
@@ -629,17 +93,22 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             />
           </button>
         </HeaderActionIndicator>
-      </Dropdown>
+      )}
 
-      {/* Avatar Crop & AI Scoring Modal */}
-      <AvatarCropModal
-        open={isAvatarCropOpen}
-        onClose={() => setIsAvatarCropOpen(false)}
-        currentUser={user}
-        onSuccess={(newAvatarUrl) => {
-          setIsAvatarCropOpen(false);
-          onAvatarUpdated?.(newAvatarUrl);
-        }}
+      <UnifiedProfileSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        appContext="general"
+        user={user}
+        isImpersonating={isImpersonating}
+        onExitImpersonation={onExitImpersonation}
+        desktopDensity={desktopDensity}
+        setDesktopDensity={setDesktopDensity}
+        onOpenTelesalesDashboard={onOpenTelesalesDashboard}
+        onLogout={onLogout}
+        onAvatarUpdated={onAvatarUpdated}
+        dailyCallsCount={dailyCallsCount}
+        onOpenDailyCalls={onOpenDailyCalls}
       />
     </>
   );

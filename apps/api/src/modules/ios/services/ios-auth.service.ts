@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { isAdminOrSuperAdminRole, normalizeCvFeatherRole, SafeAny } from '@mos-lab/shared';
+import { hasCcTeamMembership, isAdminOrSuperAdminRole, normalizeCvFeatherRole, SafeAny } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
 export interface IosAuthContext {
   id?: number;
@@ -8,6 +9,7 @@ export interface IosAuthContext {
   username?: string;
   displayName?: string;
   role?: string;
+  teamCodes?: string[];
   careerTier?: 'CVL' | 'CVLL' | 'CC' | 'ADMIN';
 }
 
@@ -44,10 +46,16 @@ export async function resolveIosAuth(
     });
 
     const rawRole = String(staff?.role || payload.role || '').toLowerCase();
-    const careerTier: IosAuthContext['careerTier'] =
-      normalizeCvFeatherRole(rawRole) || (isAdminOrSuperAdminRole(rawRole) ? 'ADMIN' : rawRole === 'cc' ? 'CC' : 'CVL');
-
     const legacyStaffId = staff?.legacyStaffId || payload.legacyStaffId || undefined;
+    const teamCodes = await TeamService.getActiveTeamCodesForStaff(
+      fastify,
+      Number(staff?.id || payload.id || 0),
+      legacyStaffId
+    );
+    const careerTier: IosAuthContext['careerTier'] =
+      normalizeCvFeatherRole(rawRole) ||
+      (isAdminOrSuperAdminRole(rawRole) ? 'ADMIN' : rawRole === 'cc' || hasCcTeamMembership(teamCodes) ? 'CC' : 'CVL');
+
     let clientStoreId: number | undefined;
     if (legacyStaffId) {
       try {
@@ -70,6 +78,7 @@ export async function resolveIosAuth(
       username: staff?.username || payload.username,
       displayName: staff?.displayName || payload.displayName,
       role: rawRole,
+      teamCodes,
       careerTier,
     };
   } catch {

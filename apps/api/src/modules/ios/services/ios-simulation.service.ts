@@ -330,7 +330,7 @@ export async function resolveSimulationContextActor(
   requestedMenteeStaffId?: number,
   targetDate?: string
 ): Promise<SimulationContextResolution> {
-  if (!canAccessIosConsultationApp(authUser.role)) {
+  if (!canAccessIosConsultationApp(authUser.role, authUser.teamCodes)) {
     throw new IosSimulationForbiddenError(
       'Tài khoản không có quyền truy cập Phòng Tập Luyện Mô Phỏng.',
       'IOS_FORBIDDEN'
@@ -397,7 +397,7 @@ export async function listAccessibleSimulationMentees(
   authUser: IosAuthContext,
   targetDate?: string
 ): Promise<IosSimulationMenteeOption[]> {
-  if (!canAccessIosConsultationApp(authUser.role) || authUser.careerTier === 'CVL') {
+  if (!canAccessIosConsultationApp(authUser.role, authUser.teamCodes) || authUser.careerTier === 'CVL') {
     return [];
   }
   const refDate = (targetDate || new Date().toISOString().slice(0, 10)).slice(0, 10);

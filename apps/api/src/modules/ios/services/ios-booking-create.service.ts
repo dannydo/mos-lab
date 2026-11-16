@@ -92,7 +92,7 @@ export async function lookupIosCustomersForBooking(
   authUser: IosAuthContext,
   queryText: string
 ): Promise<IosCustomerLookupCandidate[]> {
-  if (!canAccessIosConsultationApp(authUser.role)) {
+  if (!canAccessIosConsultationApp(authUser.role, authUser.teamCodes)) {
     return [];
   }
   const q = String(queryText || '').trim();
@@ -247,7 +247,7 @@ export async function createIosDualModeBooking(
   input: IosCreateBookingRequest,
   baseStore?: CrmConfigStoreAdapter
 ): Promise<{ statusCode: number; payload: IosCreateBookingResponse }> {
-  if (!canAccessIosConsultationApp(authUser.role)) {
+  if (!canAccessIosConsultationApp(authUser.role, authUser.teamCodes)) {
     return {
       statusCode: 403,
       payload: {

@@ -35,9 +35,14 @@ describe('DualThumbRangeSlider - Ấn Chọn Range (MOS-BUG-234)', () => {
     // Click preset -> immediately selects [8, 10] without any drag
     fireEvent.click(preset8to10);
     expect(onChange).toHaveBeenCalledWith([8, 10]);
+
+    // Sub-labels must stay hidden while unselected
+    expect(screen.queryByText('Ngắn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Chuẩn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Dài')).not.toBeInTheDocument();
   });
 
-  it('highlights active preset button when range matches exactly', () => {
+  it('highlights active preset button and reveals subLabel only for the selected range', () => {
     const onChange = vi.fn();
     render(
       <DualThumbRangeSlider
@@ -54,6 +59,9 @@ describe('DualThumbRangeSlider - Ấn Chọn Range (MOS-BUG-234)', () => {
 
     const activePreset = screen.getByRole('button', { name: /Chọn khoảng Dài 8 – 10 mm/i });
     expect(activePreset).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Chuẩn')).toBeInTheDocument();
+    expect(screen.queryByText('Ngắn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Dài')).not.toBeInTheDocument();
 
     // Click a different preset -> selects [10, 12]
     const nextPreset = screen.getByRole('button', { name: /Chọn khoảng Dài 10 – 12 mm/i });
@@ -125,14 +133,7 @@ describe('DualThumbRangeSlider - Ấn Chọn Range (MOS-BUG-234)', () => {
   it('supports direct pointer tap on track to set initial value', () => {
     const onChange = vi.fn();
     const { container } = render(
-      <DualThumbRangeSlider
-        min={5}
-        max={15}
-        step={1}
-        value={null}
-        onChange={onChange}
-        labelName="Dài"
-      />
+      <DualThumbRangeSlider min={5} max={15} step={1} value={null} onChange={onChange} labelName="Dài" />
     );
 
     const track = container.querySelector('[class*="cursor-pointer"]');
@@ -161,14 +162,7 @@ describe('DualThumbRangeSlider - Ấn Chọn Range (MOS-BUG-234)', () => {
   it('supports direct pointer tap on track to adjust existing range bounds', () => {
     const onChange = vi.fn();
     const { container } = render(
-      <DualThumbRangeSlider
-        min={5}
-        max={15}
-        step={1}
-        value={[7, 10]}
-        onChange={onChange}
-        labelName="Dài"
-      />
+      <DualThumbRangeSlider min={5} max={15} step={1} value={[7, 10]} onChange={onChange} labelName="Dài" />
     );
 
     const track = container.querySelector('[class*="cursor-pointer"]');

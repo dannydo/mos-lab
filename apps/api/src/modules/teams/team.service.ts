@@ -306,6 +306,55 @@ export class TeamService {
   }
 
   /**
+   * Returns active CRM team codes (uppercase) for a staff member across crmStaffId and legacyStaffId.
+   */
+  static async getActiveTeamCodesForStaff(
+    fastify: FastifyInstance,
+    crmStaffId: number,
+    legacyStaffId?: number | null
+  ): Promise<string[]> {
+    try {
+      const crm = fastify.prisma?.crm as SafeAny;
+      if (!crm?.crmTeamMember?.findMany) return [];
+
+      let resolvedLegacyId = Number(legacyStaffId || 0);
+      if (!resolvedLegacyId && crm?.crmStaff?.findUnique && crmStaffId > 0) {
+        const staffRow = await crm.crmStaff.findUnique({
+          where: { id: crmStaffId },
+          select: { legacyStaffId: true },
+        });
+        resolvedLegacyId = Number(staffRow?.legacyStaffId || 0);
+      }
+
+      const orFilters: SafeAny[] = [];
+      if (crmStaffId > 0) orFilters.push({ crmStaffId });
+      if (resolvedLegacyId > 0) orFilters.push({ legacyStaffId: resolvedLegacyId });
+      if (orFilters.length === 0) return [];
+
+      const rows = await crm.crmTeamMember.findMany({
+        where: {
+          isActive: true,
+          team: { isActive: true },
+          OR: orFilters,
+        },
+        select: { team: { select: { code: true } } },
+      });
+
+      const codes = new Set<string>();
+      for (const row of rows || []) {
+        const code = String(row?.team?.code || '')
+          .trim()
+          .toUpperCase();
+        if (code) codes.add(code);
+      }
+      return Array.from(codes);
+    } catch (err) {
+      fastify.log.error(err as SafeAny, `Error resolving active team codes for staff #${crmStaffId}`);
+      return [];
+    }
+  }
+
+  /**
    * List all teams with child teams (hierarchy) and member counts
    */
   static async listTeams(fastify: FastifyInstance): Promise<TeamListResponse> {

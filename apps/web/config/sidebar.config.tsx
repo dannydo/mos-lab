@@ -17,8 +17,11 @@ import {
 } from '@ant-design/icons';
 import {
   BookOpen,
+  BarChart3,
+  CalendarCheck,
   Egg,
   GraduationCap,
+  LayoutDashboard,
   Rocket,
   Presentation,
   Settings2,
@@ -27,6 +30,7 @@ import {
   UserRoundCog,
   UserRoundPlus,
   UsersRound,
+  Wallet,
   WalletCards,
   CalendarClock,
   MessageSquareWarning,
@@ -129,13 +133,13 @@ export function getSidebarGroups(
       {
         key: 'dashboard',
         label: 'Tổng quan',
-        icon: <DashboardOutlined />,
+        icon: <AppIcon icon={LayoutDashboard} size="sm" />,
         path: '/dashboard',
       },
       {
         key: 'today',
         label: 'Hôm nay',
-        icon: <ClockCircleOutlined />,
+        icon: <AppIcon icon={CalendarCheck} size="sm" />,
         path: '/dashboard/today',
       },
       {
@@ -477,13 +481,13 @@ export function getSidebarGroups(
       {
         key: 'cc',
         label: 'Báo Cáo CC',
-        icon: <SolutionOutlined />,
+        icon: <AppIcon icon={BarChart3} size="sm" />,
         path: '/dashboard/cc',
       },
       {
         key: 'cv',
         label: 'Báo Cáo CV',
-        icon: <TeamOutlined />,
+        icon: <AppIcon icon={Wallet} size="sm" />,
         path: '/dashboard/cv',
       },
       {

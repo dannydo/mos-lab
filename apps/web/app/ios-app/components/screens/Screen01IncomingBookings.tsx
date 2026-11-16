@@ -17,6 +17,7 @@ import { IncomingBookingCard } from './incoming/IncomingBookingCard';
 import { IncomingBookingsModals } from './incoming/IncomingBookingsModals';
 import { RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
+import MosAppLauncher from '../../../../components/layout/MosAppLauncher';
 
 interface Screen01IncomingBookingsProps {
   bookings: BookingItem[];
@@ -48,6 +49,8 @@ interface Screen01IncomingBookingsProps {
   totalStoreBookingsCount?: number;
   onOpenCreateBooking?: () => void;
   isSimulationMode?: boolean;
+  userRole?: string | null;
+  teamCodes?: readonly string[] | null;
 }
 
 export function Screen01IncomingBookings({
@@ -66,7 +69,6 @@ export function Screen01IncomingBookings({
   actor,
   scopeMode = 'STORE_ALL',
   onScopeModeChange,
-  onOpenProfileMenu,
   isAdmin = false,
   isSimulationMode = false,
   onRevertToIncoming,
@@ -76,14 +78,12 @@ export function Screen01IncomingBookings({
   availableBranches = IOS_AVAILABLE_BRANCHES,
   totalStoreBookingsCount,
   onOpenCreateBooking,
+  onOpenProfileMenu,
+  userRole,
+  teamCodes,
 }: Screen01IncomingBookingsProps) {
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
-  const [avatarLoadError, setAvatarLoadError] = useState(false);
-
-  useEffect(() => {
-    setAvatarLoadError(false);
-  }, [actor?.avatar]);
 
   // Invariant (UI-010): Chỉ Admin thực sự (khi không ở vai trò CV) HOẶC khi đang ở Sandbox Mode mới được đổi chi nhánh
   const canSwitchBranch = Boolean((isAdmin && role !== 'CVL' && role !== 'CVLL' && role !== 'CV') || isSimulationMode);
@@ -169,59 +169,69 @@ export function Screen01IncomingBookings({
     >
       {/* 1. Single Native iOS Navigation Bar (Clean 1-row layout) */}
       <div
-        className="h-12 px-3 border-b flex items-center justify-between z-10 flex-shrink-0 transition-colors"
+        className="h-12 px-3 border-b flex items-center justify-between gap-1.5 z-10 flex-shrink-0 transition-colors"
         style={{ backgroundColor: 'var(--mos-surface)', borderColor: 'var(--mos-surface-border)' }}
       >
-        {/* Left: Tên chi nhánh viết tắt siêu gọn ("ĐT" / "EP") + Live Refresh Indicator */}
-        <div
-          className="flex items-center gap-1 border rounded-full pl-2 pr-1.5 py-1 shadow-xs"
-          style={{
-            backgroundColor: 'var(--mos-surface-muted)',
-            borderColor: 'var(--mos-surface-border)',
-            color: 'var(--mos-text)',
-          }}
-        >
-          {canSwitchBranch ? (
-            <button
-              onClick={() => setIsBranchSheetOpen(true)}
-              className="flex items-center gap-1.5 active:scale-95 cursor-pointer transition-all select-none"
-              title={`${effectiveBranch.name} · Bấm để đổi chi nhánh (Admin)`}
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-[11.5px] font-black tracking-wider" style={{ color: 'var(--mos-text)' }}>
-                {effectiveBranch.code}
-              </span>
-              <ChevronDown className="w-3 h-3 shrink-0" style={{ color: 'var(--mos-text-muted)' }} />
-            </button>
-          ) : (
-            <div
-              className="flex items-center gap-1.5 select-none"
-              title={`Chi nhánh ${effectiveBranch.name} (Cố định theo Chuyên Viên)`}
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[11.5px] font-black tracking-wider" style={{ color: 'var(--mos-text)' }}>
-                {effectiveBranch.code}
-              </span>
-            </div>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRefreshDb?.();
+        {/* Left: [9-Dot App Launcher] + Tên chi nhánh viết tắt ("ĐT" / "EP") + Refresh */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <MosAppLauncher
+            currentApp="ios"
+            userRole={userRole}
+            teamCodes={teamCodes}
+            displayName={actorName}
+            onOpenProfile={onOpenProfileMenu}
+            shape="circle"
+          />
+          <div
+            className="flex items-center gap-1 border rounded-full pl-2 pr-1.5 py-1 shadow-xs"
+            style={{
+              backgroundColor: 'var(--mos-surface-muted)',
+              borderColor: 'var(--mos-surface-border)',
+              color: 'var(--mos-text)',
             }}
-            disabled={isRefreshing}
-            className="p-0.5 rounded-full active:scale-90 transition-all cursor-pointer hover:opacity-80"
-            style={{ color: 'var(--mos-text-muted)' }}
-            title="Làm mới dữ liệu từ máy chủ"
           >
-            <RefreshCw
-              className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`}
-              style={isRefreshing ? { color: 'var(--mos-accent)' } : undefined}
-            />
-          </button>
+            {canSwitchBranch ? (
+              <button
+                onClick={() => setIsBranchSheetOpen(true)}
+                className="flex items-center gap-1.5 active:scale-95 cursor-pointer transition-all select-none"
+                title={`${effectiveBranch.name} · Bấm để đổi chi nhánh (Admin)`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-[11.5px] font-black tracking-wider" style={{ color: 'var(--mos-text)' }}>
+                  {effectiveBranch.code}
+                </span>
+                <ChevronDown className="w-3 h-3 shrink-0" style={{ color: 'var(--mos-text-muted)' }} />
+              </button>
+            ) : (
+              <div
+                className="flex items-center gap-1.5 select-none"
+                title={`Chi nhánh ${effectiveBranch.name} (Cố định theo Chuyên Viên)`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[11.5px] font-black tracking-wider" style={{ color: 'var(--mos-text)' }}>
+                  {effectiveBranch.code}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRefreshDb?.();
+              }}
+              disabled={isRefreshing}
+              className="p-0.5 rounded-full active:scale-90 transition-all cursor-pointer hover:opacity-80"
+              style={{ color: 'var(--mos-text-muted)' }}
+              title="Làm mới dữ liệu từ máy chủ"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`}
+                style={isRefreshing ? { color: 'var(--mos-accent)' } : undefined}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* Center: Chuyển ngày < Hôm nay > mượt mà */}
+        {/* Right: Chuyển ngày < Hôm nay > mượt mà */}
         <div
           className="flex items-center gap-0.5 px-1 py-0.5 rounded-full border shadow-inner"
           style={{
@@ -266,43 +276,6 @@ export function Screen01IncomingBookings({
             <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
           </button>
         </div>
-
-        {/* Right: Quick Profile Trigger (Tapping opens iOS Action Sheet) */}
-        <button
-          onClick={onOpenProfileMenu}
-          className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full border active:scale-95 transition-all cursor-pointer shadow-xs"
-          style={{
-            backgroundColor: 'var(--mos-surface-muted)',
-            borderColor: 'var(--mos-surface-border)',
-          }}
-          title="Mở hồ sơ & chuyển vai trò"
-        >
-          <span
-            className="text-[10.5px] font-black inline-flex items-center leading-none"
-            style={{ color: 'var(--mos-accent)' }}
-          >
-            {role === 'CVLL' ? <CvFeather2Badge /> : role === 'CVL' ? <CvFeather1Badge /> : role}
-          </span>
-          <div
-            className="w-6 h-6 rounded-full overflow-hidden border shrink-0 flex items-center justify-center text-[10px] font-black"
-            style={{
-              borderColor: 'var(--mos-accent)',
-              backgroundColor: 'var(--mos-surface)',
-              color: 'var(--mos-accent)',
-            }}
-          >
-            {actor?.avatar && !avatarLoadError ? (
-              <img
-                src={actor.avatar}
-                alt={actorName}
-                className="w-full h-full object-cover"
-                onError={() => setAvatarLoadError(true)}
-              />
-            ) : (
-              <span>{(actorName || 'W').trim().charAt(0).toUpperCase()}</span>
-            )}
-          </div>
-        </button>
       </div>
 
       {/* 1.5 Superadmin Scope Switcher Toolbar (Chỉ hiển thị khi Admin kiểm thử các vai trò quầy / quản lý CC, STORE, CVLL - Ẩn tuyệt đối khi ở vai trò CVL để bảo mật 100%) */}

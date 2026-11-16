@@ -159,11 +159,26 @@ export function canDirectlySettleCounterPayment(roleOrTier?: string | null): boo
 }
 
 /**
- * Strict access guard for `/ios-app` (Tư vấn & Checkout KH):
- * Invariant: Only Admin / Super Admin, CV🪶 (CVL), 🪶CV🪶 (CVLL), and CC are allowed.
- * Standard CV ('cv', 'technician', 'lt', 'ktv') and all other roles (Manager, Telesales, CS, HR, QA/QC, etc.) are strictly blocked.
+ * Checks whether the staff member belongs to the active Client Consultant (CC) team.
  */
-export function canAccessIosConsultationApp(role?: string | null): boolean {
+export function hasCcTeamMembership(teamCodes?: readonly string[] | null): boolean {
+  if (!Array.isArray(teamCodes) || teamCodes.length === 0) return false;
+  return teamCodes.some(
+    (code) =>
+      String(code || '')
+        .trim()
+        .toUpperCase() === 'CC'
+  );
+}
+
+/**
+ * Strict access guard for `/ios-app` (Tư vấn & Checkout KH):
+ * Invariant: Only Admin / Super Admin, CV🪶 (CVL), 🪶CV🪶 (CVLL), CC role,
+ * OR active members of the CC team (`crm_team_members` -> `CC`) are allowed.
+ * Standard CV ('cv', 'technician', 'lt', 'ktv') and all other roles without CC team membership are strictly blocked.
+ */
+export function canAccessIosConsultationApp(role?: string | null, teamCodes?: readonly string[] | null): boolean {
+  if (hasCcTeamMembership(teamCodes)) return true;
   const raw = String(role || '').trim();
   if (!raw) return false;
   if (isAdminOrSuperAdminRole(raw)) return true;
@@ -180,11 +195,13 @@ export type LockedIosOperationalRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 
 /**
  * Resolves the effective operational role inside `/ios-app`:
  * - Non-admin accounts are strictly locked to their actual account tier (`CVL`, `CVLL`, or `CC`) and cannot spoof `?role=` query params.
+ * - Staff added to the active `CC` team (e.g., Manager + CC team) operate as `'CC'` inside `/ios-app`.
  * - Only Admin / Super Admin may switch freely via `requestedRoleParam` for inspection/testing.
  */
 export function resolveLockedIosRoleForUser(
   userRole?: string | null,
-  requestedRoleParam?: string | null
+  requestedRoleParam?: string | null,
+  teamCodes?: readonly string[] | null
 ): LockedIosOperationalRole {
   const raw = String(userRole || '').trim();
   const validRequested = String(requestedRoleParam || '')
@@ -207,7 +224,7 @@ export function resolveLockedIosRoleForUser(
   if (featherTier === 'CVL' || lower === 'cvl' || lower === 'cv_plus') {
     return 'CVL';
   }
-  if (isCcRole(raw)) {
+  if (isCcRole(raw) || hasCcTeamMembership(teamCodes)) {
     return 'CC';
   }
   return 'CVL';
@@ -268,6 +285,8 @@ export interface Staff {
   // Department & OmiCall Access Controls
   isGrowthMember?: boolean;
   canAccessOmiCall?: boolean;
+  /** Active CRM team codes (e.g. ['CC'], ['CV']) resolved from crm_team_members */
+  teamCodes?: string[] | null;
 }
 
 export interface SendOnboardingEmailRequest {

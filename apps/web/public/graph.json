@@ -36623,6 +36623,30 @@
       }
     },
     {
+      "id": "uicomp:ProfileOmiCallSection",
+      "type": "UIComponent",
+      "label": "<ProfileOmiCallSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/profile/ProfileOmiCallSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ProfileOmiCallSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:UnifiedProfileSheet",
+      "type": "UIComponent",
+      "label": "<UnifiedProfileSheet />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/profile/UnifiedProfileSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "UnifiedProfileSheet",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:AISatisfactionPanel",
       "type": "UIComponent",
       "label": "<AISatisfactionPanel />",
@@ -39383,8 +39407,8 @@
       "filePath": "apps/api/src/modules/chat/chat-google-workspace.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17842,
-        "lineCount": 443,
+        "sizeBytes": 17898,
+        "lineCount": 445,
         "ext": ".ts"
       }
     },
@@ -39396,7 +39420,7 @@
       "filePath": "apps/api/src/modules/chat/chat-google-workspace.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57950,
+        "sizeBytes": 57948,
         "lineCount": 1623,
         "ext": ".ts"
       }
@@ -48379,8 +48403,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 73599,
-        "lineCount": 1857,
+        "sizeBytes": 75654,
+        "lineCount": 1901,
         "ext": ".tsx"
       }
     },
@@ -50420,8 +50444,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21690,
-        "lineCount": 533,
+        "sizeBytes": 20084,
+        "lineCount": 492,
         "ext": ".tsx"
       }
     },
@@ -51889,8 +51913,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/IosProfileMenuSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25251,
-        "lineCount": 572,
+        "sizeBytes": 2181,
+        "lineCount": 78,
         "ext": ".tsx"
       }
     },
@@ -52058,8 +52082,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/__tests__/IosProfileMenuSheet.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12030,
-        "lineCount": 306,
+        "sizeBytes": 11933,
+        "lineCount": 304,
         "ext": ".tsx"
       }
     },
@@ -52292,7 +52316,7 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19933,
+        "sizeBytes": 19958,
         "lineCount": 607,
         "ext": ".ts"
       }
@@ -54385,8 +54409,8 @@
       "filePath": "packages/shared/src/utils/google-workspace-link.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10484,
-        "lineCount": 313,
+        "sizeBytes": 10458,
+        "lineCount": 307,
         "ext": ".ts"
       }
     },
@@ -76159,6 +76183,34 @@
     {
       "id": "edge:uicomp:useWrapupForm:token:color:primary",
       "source": "uicomp:useWrapupForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ProfileOmiCallSection:ws:apps/web",
+      "source": "uicomp:ProfileOmiCallSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ProfileOmiCallSection:token:color:primary",
+      "source": "uicomp:ProfileOmiCallSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:UnifiedProfileSheet:ws:apps/web",
+      "source": "uicomp:UnifiedProfileSheet",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:UnifiedProfileSheet:token:color:primary",
+      "source": "uicomp:UnifiedProfileSheet",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -114637,8 +114689,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4200,
-    "totalEdges": 8595,
+    "totalNodes": 4202,
+    "totalEdges": 8599,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -114646,14 +114698,14 @@
       "Component": 65,
       "SharedType": 1504,
       "DesignToken": 12,
-      "UIComponent": 376,
+      "UIComponent": 378,
       "File": 1286
     },
     "edgeTypeCounts": {
       "EXPORTS": 1698,
       "HANDLES_ROUTE": 772,
-      "RENDERS": 441,
-      "USES_TOKEN": 378,
+      "RENDERS": 443,
+      "USES_TOKEN": 380,
       "IMPORTS": 716,
       "QUERIES_MODEL": 431,
       "API_CALL": 4159

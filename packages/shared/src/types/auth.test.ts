@@ -97,6 +97,13 @@ describe('Auth Role Invariants & Routing Tests', () => {
     assert.equal(canAccessIosConsultationApp('cs'), false);
     assert.equal(canAccessIosConsultationApp('qa_qc'), false);
 
+    // Allowed via active CC team membership (e.g. Manager added to CC team)
+    assert.equal(canAccessIosConsultationApp('manager', ['CC']), true);
+    assert.equal(canAccessIosConsultationApp('manager', ['cc']), true);
+    assert.equal(canAccessIosConsultationApp('manager', ['GROWTH']), false);
+    assert.equal(resolveLockedIosRoleForUser('manager', 'CVL', ['CC']), 'CC');
+    assert.equal(resolveLockedIosRoleForUser('manager', undefined, ['CC']), 'CC');
+
     // Lock role param to account role for non-admins
     assert.equal(resolveLockedIosRoleForUser('cvl', 'CVLL'), 'CVL');
     assert.equal(resolveLockedIosRoleForUser('cvl', 'CC'), 'CVL');

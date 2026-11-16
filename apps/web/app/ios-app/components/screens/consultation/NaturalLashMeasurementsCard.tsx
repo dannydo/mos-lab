@@ -303,7 +303,7 @@ export function NaturalLashMeasurementsCard({
                   title: 'Hướng Mọc Mi Thật',
                   badge: selectedLashTrail ? `Đang chọn: ${selectedLashTrail}` : 'Chưa chọn hướng mọc',
                   content:
-                    'Hướng mọc quyết định độ cong cần chọn: Mi chúc xuống (↘) cần độ cong CC hoặc D để nâng bờ mi không sụp mắt; mi mọc thẳng (➔) chọn cong C/B; mi hướng lên (↗) chọn cong B nhẹ nhàng; mi đan chéo (⇄) cần định hình trục mi.',
+                    'Hướng mọc quyết định độ cong cần chọn: Mi chúc xuống (↘) cần độ cong CC hoặc D để nâng bờ mi không sụp mắt; mi mọc thẳng (➔) chọn cong C/B; mi hướng lên (↗) chọn cong B nhẹ nhàng; mi đan chéo (⤨) cần định hình trục mi.',
                 })
               }
               className={`w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
@@ -337,7 +337,7 @@ export function NaturalLashMeasurementsCard({
               { id: 'Chúc xuống (Downwards)', icon: '↘', title: 'Chúc xuống' },
               { id: 'Mọc thẳng (Straight)', icon: '➔', title: 'Mọc thẳng' },
               { id: 'Hướng lên (Upwards)', icon: '↗', title: 'Hướng lên' },
-              { id: 'Lộn xộn/Đan chéo (Criss-Cross)', icon: '⇄', title: 'Lộn xộn' },
+              { id: 'Lộn xộn/Đan chéo (Criss-Cross)', icon: '⤨', title: 'Lộn xộn' },
             ].map((dir, idx) => {
               const active = selectedLashTrail === dir.id;
               return (

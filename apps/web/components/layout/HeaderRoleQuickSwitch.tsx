@@ -3,50 +3,23 @@
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { theme } from 'antd';
-import { BarChart3, CalendarCheck, MessageSquare, Sparkles, Trophy, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import {
-  canAccessIosConsultationApp,
-  isAdminOrSuperAdminRole,
-  isCvRole,
-  normalizeCvFeatherRole,
-} from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { HeaderIconButton } from '../ui/HeaderIconButton';
+import {
+  buildEcosystemNavModel,
+  ECOSYSTEM_ICONS,
+  resolveQuickSwitchRoleGroup,
+  type QuickSwitchRoleGroup,
+} from '../../config/ecosystem-nav';
+import { canAccessIosConsultationApp } from '@mos-lab/shared';
 
-export type QuickSwitchRoleGroup = 'CV_FEATHER' | 'CV_STANDARD' | 'CC' | 'ADMIN_MANAGER' | 'OTHER';
+export type { QuickSwitchRoleGroup };
+export { resolveQuickSwitchRoleGroup };
 
-export function resolveQuickSwitchRoleGroup(role?: string | null): QuickSwitchRoleGroup {
-  const raw = String(role || '').trim();
-  const lower = raw.toLowerCase();
-  const normalizedFeather = normalizeCvFeatherRole(raw);
-
-  if (
-    normalizedFeather === 'CVL' ||
-    normalizedFeather === 'CVLL' ||
-    ['cvl', 'cvll', 'cv_plus', 'cv_plus_plus'].includes(lower)
-  ) {
-    return 'CV_FEATHER';
-  }
-
-  if (['cc', 'consultant'].includes(lower)) {
-    return 'CC';
-  }
-
-  if (isCvRole(raw)) {
-    return 'CV_STANDARD';
-  }
-
-  if (isAdminOrSuperAdminRole(raw)) {
-    return 'ADMIN_MANAGER';
-  }
-
-  return 'OTHER';
-}
-
-export function canAccessConsultationApp(role?: string | null): boolean {
-  return canAccessIosConsultationApp(role);
+export function canAccessConsultationApp(role?: string | null, teamCodes?: readonly string[] | null): boolean {
+  return canAccessIosConsultationApp(role, teamCodes);
 }
 
 export interface QuickSwitchItem {
@@ -61,7 +34,9 @@ export interface QuickSwitchItem {
 
 export interface HeaderRoleQuickSwitchProps {
   userRole?: string | null;
+  teamCodes?: readonly string[] | null;
   unreadChatCount?: number;
+  menuVisibility?: Record<string, boolean> | null;
   onOpenChat?: () => void;
   onNavigate?: () => void;
   /**
@@ -75,7 +50,9 @@ export interface HeaderRoleQuickSwitchProps {
 
 export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
   userRole,
+  teamCodes,
   unreadChatCount = 0,
+  menuVisibility,
   onOpenChat,
   onNavigate,
   variant = 'header-icon',
@@ -106,180 +83,22 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
   const responsiveTier = useResponsiveTier();
   const isMobileTier = responsiveTier === 'mobile';
 
-  const roleGroup = resolveQuickSwitchRoleGroup(userRole);
-  const featherTier = normalizeCvFeatherRole(String(userRole || ''));
   const savedAdminRole =
-    typeof window !== 'undefined' && roleGroup === 'ADMIN_MANAGER'
-      ? (window.localStorage.getItem('mos_ios_selected_role') as string | null)
-      : null;
-  const consultRoleParam =
-    roleGroup === 'CC'
-      ? 'CC'
-      : featherTier === 'CVLL'
-        ? 'CVLL'
-        : savedAdminRole === 'CC' || savedAdminRole === 'CVLL' || savedAdminRole === 'CVL'
-          ? savedAdminRole
-          : 'CVL';
-  const showConsultIcon = canAccessConsultationApp(userRole);
+    typeof window !== 'undefined' ? (window.localStorage.getItem('mos_ios_selected_role') as string | null) : null;
 
-  const items: QuickSwitchItem[] = React.useMemo(() => {
-    if (roleGroup === 'CV_FEATHER') {
-      return [
-        {
-          key: 'consult',
-          label: 'Tư vấn & Checkout KH',
-          shortLabel: 'Tư vấn KH',
-          href: `/ios-app?role=${consultRoleParam}`,
-          icon: Sparkles,
-          accent: true,
-        },
-        {
-          key: 'cv-income',
-          label: 'Báo cáo Thu nhập CV',
-          shortLabel: 'Thu nhập',
-          href: '/dashboard/cv',
-          icon: Wallet,
-        },
-        {
-          key: 'career-path',
-          label: 'Lộ trình Thăng tiến CV',
-          shortLabel: 'Lộ trình',
-          href: '/dashboard/career-path',
-          icon: Trophy,
-        },
-        {
-          key: 'chat',
-          label: 'mOS Chat',
-          shortLabel: 'Chat',
-          href: '/chat',
-          icon: MessageSquare,
-          badgeCount: unreadChatCount,
-        },
-      ];
-    }
+  const navModel = React.useMemo(
+    () =>
+      buildEcosystemNavModel({
+        userRole,
+        teamCodes,
+        unreadChatCount,
+        savedAdminRole,
+        menuVisibility,
+      }),
+    [userRole, teamCodes, unreadChatCount, savedAdminRole, menuVisibility]
+  );
 
-    if (roleGroup === 'CC') {
-      return [
-        {
-          key: 'consult',
-          label: 'Tư vấn & Checkout KH',
-          shortLabel: 'Tư vấn KH',
-          href: '/ios-app?role=CC',
-          icon: Sparkles,
-          accent: true,
-        },
-        {
-          key: 'today',
-          label: 'Khách hàng hôm nay',
-          shortLabel: 'Hôm nay',
-          href: '/dashboard/today',
-          icon: CalendarCheck,
-        },
-        {
-          key: 'cc-kpi',
-          label: 'Báo cáo KPI & Thưởng CC',
-          shortLabel: 'KPI CC',
-          href: '/dashboard/cc',
-          icon: BarChart3,
-        },
-        {
-          key: 'career-path',
-          label: 'Lộ trình Thăng tiến',
-          shortLabel: 'Lộ trình',
-          href: '/dashboard/career-path',
-          icon: Trophy,
-        },
-        {
-          key: 'chat',
-          label: 'mOS Chat',
-          shortLabel: 'Chat',
-          href: '/chat',
-          icon: MessageSquare,
-          badgeCount: unreadChatCount,
-        },
-      ];
-    }
-
-    if (roleGroup === 'CV_STANDARD') {
-      return [
-        {
-          key: 'cv-income',
-          label: 'Báo cáo Thu nhập CV',
-          shortLabel: 'Thu nhập',
-          href: '/dashboard/cv',
-          icon: Wallet,
-        },
-        {
-          key: 'career-path',
-          label: 'Lộ trình Thăng tiến CV',
-          shortLabel: 'Lộ trình',
-          href: '/dashboard/career-path',
-          icon: Trophy,
-        },
-        {
-          key: 'chat',
-          label: 'mOS Chat',
-          shortLabel: 'Chat',
-          href: '/chat',
-          icon: MessageSquare,
-          badgeCount: unreadChatCount,
-        },
-      ];
-    }
-
-    if (roleGroup === 'ADMIN_MANAGER') {
-      return [
-        {
-          key: 'consult',
-          label: 'Tư vấn & Checkout KH',
-          shortLabel: 'Tư vấn KH',
-          href: '/ios-app',
-          icon: Sparkles,
-          accent: true,
-        },
-        {
-          key: 'cv-income',
-          label: 'Báo cáo CV',
-          shortLabel: 'Thu nhập CV',
-          href: '/dashboard/cv',
-          icon: Wallet,
-        },
-        {
-          key: 'career-path',
-          label: 'Lộ trình CV',
-          shortLabel: 'Lộ trình',
-          href: '/dashboard/career-path',
-          icon: Trophy,
-        },
-        {
-          key: 'cc-kpi',
-          label: 'Báo cáo KPI CC',
-          shortLabel: 'KPI CC',
-          href: '/dashboard/cc',
-          icon: BarChart3,
-        },
-        {
-          key: 'chat',
-          label: 'mOS Chat',
-          shortLabel: 'Chat',
-          href: '/chat',
-          icon: MessageSquare,
-          badgeCount: unreadChatCount,
-        },
-      ];
-    }
-
-    return [
-      {
-        key: 'chat',
-        label: 'mOS Chat',
-        shortLabel: 'Chat',
-        href: '/chat',
-        icon: MessageSquare,
-        badgeCount: unreadChatCount,
-      },
-    ];
-  }, [roleGroup, consultRoleParam, unreadChatCount]);
+  const { roleGroup, canAccessIos: showConsultIcon, consultRoleParam, quickLinks: items } = navModel;
 
   const isItemActive = (item: QuickSwitchItem) => {
     const baseHref = item.href.split('?')[0];
@@ -308,9 +127,9 @@ export const HeaderRoleQuickSwitch: React.FC<HeaderRoleQuickSwitchProps> = ({
         {showConsultIcon && (
           <HeaderIconButton
             action="customer-consultation"
-            label="Vào Tư vấn & Checkout khách hàng (CV🪶 / CC)"
+            label="Vào Tư vấn & Checkout khách hàng"
             desktopLabel={roleGroup === 'ADMIN_MANAGER' && !isMobileTier ? 'Tư vấn KH' : undefined}
-            icon={Sparkles}
+            icon={ECOSYSTEM_ICONS.ios}
             tone="accent"
             showTooltip={!isMobileTier}
             onClick={() => navigateTo(`/ios-app?role=${consultRoleParam}`)}

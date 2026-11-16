@@ -25,7 +25,7 @@ import { useMosChat } from '../context/MosChatContext';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { countConversationSharedWorkspaceItems } from '../components/MosChatFilesPane';
 import { MosChatAvatar } from '../MosChatAvatar';
-import HeaderRoleQuickSwitch from '../../layout/HeaderRoleQuickSwitch';
+import MosAppLauncher from '../../layout/MosAppLauncher';
 
 export interface MosChatMobileHeaderProps {
   onOpenSettings?: () => void;
@@ -112,8 +112,18 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
     return (
       <header className="sticky top-0 z-40 bg-[var(--mos-surface)]/90 backdrop-blur-xl border-b border-[var(--mos-surface-border)] shadow-xs flex flex-col select-none">
         <div className="px-3 pt-[max(env(safe-area-inset-top),8px)] pb-2 min-h-[44px] flex items-center justify-between gap-2">
-          {/* Left: [⋯] Utility & Navigation Menu */}
-          <div className="w-20 flex items-center justify-start relative shrink-0">
+          {/* Left: [9-Dot App Launcher] + [⋯] Utility & Navigation Menu */}
+          <div className="min-w-[76px] flex items-center justify-start gap-1.5 relative shrink-0">
+            <MosAppLauncher
+              currentApp="chat"
+              userRole={currentUser?.role}
+              teamCodes={currentUser?.teamCodes}
+              displayName={currentUser?.displayName}
+              unreadChatCount={totalUnreadCount}
+              onAfterNavigate={() => onClose?.()}
+              onOpenProfile={onOpenThemeSheet}
+              shape="circle"
+            />
             <button
               type="button"
               data-testid="mos-chat-inbox-more-btn"
@@ -253,7 +263,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                 </button>
               )}
 
-              {/* Giao diện & Cỡ chữ */}
+              {/* Hồ sơ & Giao diện */}
               {onOpenThemeSheet && (
                 <button
                   type="button"
@@ -265,7 +275,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   className="w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
                 >
                   <Palette className="w-4 h-4 text-[var(--mos-accent)] shrink-0" />
-                  <span className="flex-1">Giao diện & Cỡ chữ</span>
+                  <span className="flex-1">Hồ sơ & Giao diện</span>
                 </button>
               )}
 
@@ -302,14 +312,6 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
                   </span>
                 </button>
               )}
-
-              {/* App Navigation Quick Switcher */}
-              <HeaderRoleQuickSwitch
-                variant="menu-list"
-                userRole={currentUser?.role}
-                unreadChatCount={totalUnreadCount}
-                onNavigate={() => setInboxMenuOpen(false)}
-              />
             </div>
           </div>
 

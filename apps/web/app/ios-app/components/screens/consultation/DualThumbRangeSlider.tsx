@@ -20,8 +20,8 @@ export const DEFAULT_NATURAL_LENGTH_PRESETS: RangePreset[] = [
 
 export const DEFAULT_NATURAL_THICKNESS_PRESETS: RangePreset[] = [
   { label: '0.05 – 0.07', range: [0.05, 0.07], subLabel: 'Mảnh' },
-  { label: '0.07 – 0.10', range: [0.07, 0.10], subLabel: 'Vừa' },
-  { label: '0.10 – 0.12', range: [0.10, 0.12], subLabel: 'Khỏe' },
+  { label: '0.07 – 0.10', range: [0.07, 0.1], subLabel: 'Vừa' },
+  { label: '0.10 – 0.12', range: [0.1, 0.12], subLabel: 'Khỏe' },
   { label: '0.12 – 0.15', range: [0.12, 0.15], subLabel: 'Cứng' },
 ];
 
@@ -174,18 +174,13 @@ export function DualThumbRangeSlider({
     return (
       <div className="flex items-center gap-1.5 flex-wrap pt-0.5 select-none">
         {showPresetsLabel && (
-          <span
-            className={`text-[9.5px] font-bold shrink-0 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}
-          >
+          <span className={`text-[9.5px] font-bold shrink-0 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
             Ấn chọn range:
           </span>
         )}
         <div className="flex items-center gap-1 flex-wrap">
           {activePresets.map((preset) => {
-            const isMatch =
-              value !== null &&
-              value[0] === preset.range[0] &&
-              value[1] === preset.range[1];
+            const isMatch = value !== null && value[0] === preset.range[0] && value[1] === preset.range[1];
             return (
               <button
                 key={`${preset.range[0]}-${preset.range[1]}`}
@@ -202,14 +197,8 @@ export function DualThumbRangeSlider({
                 }`}
               >
                 <span>{preset.label}</span>
-                {preset.subLabel && (
-                  <span
-                    className={`text-[8.5px] font-bold ${
-                      isMatch ? 'text-black/75' : isDark ? 'text-neutral-400' : 'text-gray-500'
-                    }`}
-                  >
-                    {preset.subLabel}
-                  </span>
+                {isMatch && preset.subLabel && (
+                  <span className="text-[8.5px] font-bold text-black/75">{preset.subLabel}</span>
                 )}
               </button>
             );

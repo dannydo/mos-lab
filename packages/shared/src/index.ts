@@ -9,6 +9,7 @@ export * from './types/auth.js';
 export {
   isCvRole,
   isCcRole,
+  hasCcTeamMembership,
   isAdminOrSuperAdminRole,
   isSuperAdminRole,
   canDirectlySettleCounterPayment,

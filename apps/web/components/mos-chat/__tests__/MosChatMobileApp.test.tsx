@@ -1782,7 +1782,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     expect(screen.getByText(/Chuông báo Cuộc gọi khi Khóa máy/i)).toBeTruthy();
   });
 
-  it('opens MobileThemeSheet from inbox [⋯] menu, switches themes, and syncs per-user Dynamic Type font scale', async () => {
+  it('opens UnifiedProfileSheet from inbox [⋯] menu, switches themes, and syncs per-user Dynamic Type font scale', async () => {
     window.localStorage.clear();
     window.localStorage.setItem('mos_ios_font_scale:user:99', '1.08');
 
@@ -1805,7 +1805,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     const themeBtn = within(inboxMenu).getByRole('button', { name: /Giao diện & Chủ đề/i });
     fireEvent.click(themeBtn);
 
-    const dialog = await screen.findByRole('dialog', { name: /Chọn giao diện & tông màu/i });
+    const dialog = await screen.findByRole('dialog', { name: /Hồ sơ & Cài đặt cá nhân/i });
     expect(dialog).toBeTruthy();
 
     // Font scale control from /ios-app is embedded and synced to user 99 storage key

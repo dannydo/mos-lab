@@ -86,6 +86,10 @@ describe('Screen03ConsultationMatrix - Zero Defaults & Mandatory 7/7 Natural Las
 
     // 2. None of the 4 categorical groups (Hướng, Dáng mắt, Nang mi, Độ nhạy cảm) have any pre-selected option
     expect(screen.getByTitle('Chúc xuống')).toHaveAttribute('aria-pressed', 'false');
+    const messyBtn = screen.getByTitle('Lộn xộn');
+    expect(messyBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(messyBtn).not.toHaveTextContent('⇄');
+    expect(messyBtn).toHaveTextContent('⤨');
     expect(screen.getByRole('button', { name: /Mí lót \/ Sụp mí/i })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Mới lần đầu' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Bình thường' })).toHaveAttribute('aria-pressed', 'false');

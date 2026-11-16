@@ -140,7 +140,7 @@ export function useIosAppState(
           userIsAdmin && savedRole && allowedRoles.includes(savedRole) && initialRole === 'CVL'
             ? savedRole
             : initialRole;
-        const lockedRole = resolveLockedIosRoleForUser(parsed?.role, effectiveRequestedRole);
+        const lockedRole = resolveLockedIosRoleForUser(parsed?.role, effectiveRequestedRole, parsed?.teamCodes);
         setRoleState(lockedRole);
         setScopeModeState(userIsAdmin ? 'STORE_ALL' : lockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
 
@@ -153,11 +153,27 @@ export function useIosAppState(
         }
       }
 
-      // Làm tươi profile từ /auth/me để tự động vá các phiên cũ thiếu legacyStaffId / avatarUrl
+      // Làm tươi profile từ /auth/me để tự động vá các phiên cũ thiếu legacyStaffId / avatarUrl / teamCodes
       if (window.localStorage.getItem('mos_token') && typeof apiClient?.auth?.me === 'function') {
         void Promise.resolve(apiClient.auth.me())
           .then((freshUser) => {
             if (cancelled || !freshUser || !freshUser.id) return;
+            const freshIsAdmin = isAdminOrSuperAdminRole(freshUser.role);
+            const savedRole = freshIsAdmin
+              ? (window.localStorage.getItem('mos_ios_selected_role') as IosUserRole | null)
+              : null;
+            const allowedRoles: readonly IosUserRole[] = ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'];
+            const effectiveRequested =
+              freshIsAdmin && savedRole && allowedRoles.includes(savedRole) && initialRole === 'CVL'
+                ? savedRole
+                : initialRole;
+            const freshLockedRole = resolveLockedIosRoleForUser(
+              freshUser.role,
+              effectiveRequested,
+              freshUser.teamCodes
+            );
+            setRoleState(freshLockedRole);
+            setScopeModeState(freshIsAdmin ? 'STORE_ALL' : freshLockedRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL');
             setLoggedInUser((prev: any) => {
               const merged = { ...(prev || {}), ...freshUser };
               try {
@@ -196,7 +212,9 @@ export function useIosAppState(
   // - Admin/Super Admin VÀ người dùng trong Sandbox Mode (Phòng tập luyện mô phỏng) được toàn quyền chọn chi nhánh vận hành (DT / EP).
   const isTechnicianRole = role === 'CVL' || role === 'CVLL' || role === 'CV';
   const ccAssignedStoreId =
-    !isAdmin && !isSimulationMode && role === 'CC' ? Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0) : 0;
+    !isAdmin && !isSimulationMode && role === 'CC'
+      ? Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0)
+      : 0;
   const effectiveStoreId =
     isAdmin || isSimulationMode
       ? selectedStoreId
@@ -247,7 +265,7 @@ export function useIosAppState(
     (nextRole: IosUserRole) => {
       const effectiveRole =
         loggedInUser && !isAdminOrSuperAdminRole(loggedInUser?.role)
-          ? resolveLockedIosRoleForUser(loggedInUser?.role, nextRole)
+          ? resolveLockedIosRoleForUser(loggedInUser?.role, nextRole, loggedInUser?.teamCodes)
           : nextRole;
       setRoleState(effectiveRole);
       if (effectiveRole === 'CVL') {
@@ -584,6 +602,7 @@ export function useIosAppState(
     handleUpdateCustomerAvatar,
     handleAutoSaveConsultationDraft,
     simulationActorStaffName,
+    loggedInUser,
     ...simulation,
   };
 }

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mOS Menu Sync Mockup V3 — Segmented Topbar 3-App Switcher</title>
+  <style>
+    :root {
+      --bg-canvas: #06080f; --bg-surface: #0e131f; --bg-surface-2: #161d2e; --bg-muted: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.1); --text: #f8fafc; --text-muted: #94a3b8;
+      --accent: #ffb400; --accent-soft: rgba(255,180,0,0.14); --accent-border: rgba(255,180,0,0.38);
+      --emerald: #10b981; --rose: #f43f5e; --shadow: 0 20px 50px rgba(0,0,0,0.55);
+    }
+    html.light {
+      --bg-canvas: #eef2f7; --bg-surface: #ffffff; --bg-surface-2: #f8fafc; --bg-muted: rgba(15,23,42,0.06);
+      --border: rgba(15,23,42,0.1); --text: #0f172a; --text-muted: #64748b;
+      --accent: #d97706; --accent-soft: rgba(245,158,11,0.12); --accent-border: rgba(217,119,6,0.32);
+      --shadow: 0 20px 45px rgba(15,23,42,0.14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif; background: var(--bg-canvas); color: var(--text); min-height: 100vh; padding: 18px; }
+    .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .toolbar {
+      max-width: 1320px; margin: 0 auto 16px; background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; box-shadow: var(--shadow);
+    }
+    .version-pill { background: var(--accent); color: #000; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 999px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+    .seg { display: inline-flex; background: var(--bg-muted); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; }
+    .seg button { border: none; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 7px; cursor: pointer; }
+    .seg button.active { background: var(--accent); color: #000; font-weight: 700; }
+    .stage { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 1fr 310px; gap: 18px; align-items: start; }
+    @media (max-width: 1040px) { .stage { grid-template-columns: 1fr; } }
+    .device-wrap { display: flex; justify-content: center; padding: 8px 0; }
+    .iphone-frame { width: 390px; height: 790px; background: var(--bg-surface); border: 8px solid #1e293b; border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: var(--shadow); }
+    html.light .iphone-frame { border-color: #cbd5e1; }
+    .desktop-frame { width: 100%; height: 720px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: var(--shadow); }
+    .status-bar { height: 28px; padding: 6px 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .dynamic-island { width: 96px; height: 22px; background: #000; border-radius: 999px; }
+
+    /* V3: TOPBAR WITH EMBEDDED 3-APP SEGMENTED CONTROL */
+    .app-header {
+      height: 52px; padding: 0 10px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-shrink: 0; z-index: 20;
+    }
+    .eco-segment {
+      display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 12px;
+      background: var(--bg-muted); border: 1px solid var(--border);
+    }
+    .eco-seg-btn {
+      border: none; background: transparent; color: var(--text-muted); border-radius: 9px;
+      padding: 6px 8px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 5px; line-height: 1; transition: all 0.15s; white-space: nowrap;
+    }
+    .eco-seg-btn.active { background: var(--accent); color: #000; font-weight: 800; box-shadow: 0 2px 8px rgba(255,180,0,0.28); }
+    .seg-badge { padding: 2px 5px; border-radius: 999px; background: var(--rose); color: #fff; font-size: 9.5px; font-weight: 800; }
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-muted);
+      color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; position: relative; flex-shrink: 0;
+    }
+    .quick-pop {
+      position: absolute; top: 82px; right: 12px; width: 230px; background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 8px; z-index: 50; box-shadow: var(--shadow); display: none;
+    }
+    .desktop-frame .quick-pop { top: 56px; right: 16px; }
+    .quick-pop.open { display: block; }
+    .pop-item {
+      width: 100%; border: none; background: transparent; color: var(--text); padding: 9px 10px; border-radius: 10px;
+      font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left;
+    }
+    .pop-item:hover { background: var(--bg-muted); color: var(--accent); }
+    .body-area { flex: 1; display: flex; min-height: 0; overflow: hidden; background: var(--bg-canvas); }
+    .sidebar-desktop { width: 226px; background: var(--bg-surface); border-right: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+    .sb-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .main-scroll { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .ios-subbar {
+      padding: 6px 12px; background: var(--bg-surface-2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 800; flex-shrink: 0;
+    }
+    .ios-tabbar {
+      height: 60px; background: var(--bg-surface); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-around; padding: 4px 8px 10px; flex-shrink: 0;
+    }
+    .ios-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: var(--text-muted); }
+    .ios-tab.active { color: var(--accent); }
+    .notes-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .notes-panel h2 { font-size: 15px; font-weight: 800; }
+    .notes-panel h3 { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+    .notes-panel ul { padding-left: 16px; font-size: 12.5px; line-height: 1.55; color: var(--text-muted); }
+    .notes-panel li strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="version-pill">V3 · SEGMENTED TOPBAR</span>
+      <div>
+        <div style="font-weight:800;font-size:14px;">Thanh Segmented Switcher 3 Phân Hệ Nằm Ngay Trên Header</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">3 anh em (<code>mOS</code> · <code>Chat</code> · <code>iOS-App</code>) ngang hàng trực tiếp trong 1 thanh Header duy nhất</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="appSeg">
+        <button class="active" onclick="setApp('general')">mOS General</button>
+        <button onclick="setApp('chat')">mOS Chat</button>
+        <button onclick="setApp('ios')">mOS iOS-App</button>
+      </div>
+      <div class="seg" id="deviceSeg">
+        <button class="active" onclick="setDevice('mobile')">iPhone (390px)</button>
+        <button onclick="setDevice('desktop')">Desktop</button>
+      </div>
+      <div class="seg" id="themeSeg">
+        <button class="active" onclick="setTheme('dark')">Tối</button>
+        <button onclick="setTheme('light')">Sáng</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="device-wrap">
+      <div id="deviceFrame" class="iphone-frame">
+        <div id="statusBar" class="status-bar"><span class="tabular-nums">15:30</span><div class="dynamic-island"></div><span>5G · 92%</span></div>
+        <header class="app-header" id="appHeader"></header>
+        <div class="ios-subbar" id="iosSubbar" style="display:none;"></div>
+        <div class="body-area">
+          <aside class="sidebar-desktop" id="desktopSidebar"></aside>
+          <main class="main-scroll" id="mainBody"></main>
+        </div>
+        <div class="ios-tabbar" id="iosTabbar" style="display:none;"></div>
+        <div class="quick-pop" id="quickPop"></div>
+      </div>
+    </div>
+
+    <aside class="notes-panel">
+      <h2>Kiến trúc V3: Segmented Topbar</h2>
+      <div>
+        <h3>Điểm nhấn thiết kế</h3>
+        <ul>
+          <li>Đặt cụm <strong>3 nút Segmented Switcher</strong> ngay chính giữa/trái Header: <code>mOS</code> · <code>Chat (5)</code> · <code>iOS-App</code>.</li>
+          <li><strong>Chuyển giữa 3 app chỉ mất 1 chạm</strong> ngay trên thanh Header 52px mà không cần tốn thêm 1 thanh Sub-header mới cho General & Chat.</li>
+          <li>Menu phụ (<code>Hôm nay</code>, <code>KPI CC</code>, <code>Thu nhập CV</code>, <code>Lộ trình</code>) nằm gọn trong nút <code>⚡ Quick-Jump</code> hoặc Sidebar.</li>
+          <li>Khi vào <code>iOS-App</code>, bộ chọn Chi nhánh (<code>ĐT</code>) và Ngày (<code>Hôm nay</code>) đặt thành thanh ngữ cảnh nhỏ bên dưới.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Đánh giá UX</h3>
+        <ul>
+          <li><strong>Ưu điểm:</strong> 3 app có vị thế ngang hàng tuyệt đối, 1 chạm chuyển đổi, không che nội dung.</li>
+          <li><strong>Nhược điểm:</strong> Trên màn hình iPhone nhỏ (375px), phần header hơi chặt nếu cần hiển thị thêm nút Search + Notification + Avatar cùng lúc.</li>
+        </ul>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--border);">
+        <a href="./menu-sync-v1-app-launcher.html" style="font-size:12px;font-weight:700;color:var(--text-muted);">← V1</a>
+        <a href="./menu-sync-v2-ecosystem-rail.html" style="font-size:12px;font-weight:700;color:var(--text-muted);">V2</a>
+        <a href="./menu-sync-v4-floating-thumb-dock.html" style="font-size:12px;font-weight:700;color:var(--accent);">Xem V4: Floating Thumb Dock →</a>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const state = { app: 'general', device: 'mobile', theme: 'dark', popOpen: false };
+    const ICONS = {
+      general: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+      chat: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      iosApp: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M9 11l2 2 4-4"/></svg>`,
+      menu: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>`,
+      zap: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+      today: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>`,
+      chart: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>`,
+      trophy: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`
+    };
+    function setApp(a) { state.app = a; state.popOpen = false; render(); }
+    function setDevice(d) { state.device = d; state.popOpen = false; render(); }
+    function setTheme(t) { state.theme = t; document.documentElement.className = t; render(); }
+    function togglePop() { state.popOpen = !state.popOpen; render(); }
+    function updateSeg(id, fn) { document.getElementById(id).querySelectorAll('button').forEach((b, i) => b.classList.toggle('active', fn(i))); }
+    function render() {
+      updateSeg('appSeg', i => ['general', 'chat', 'ios'][i] === state.app);
+      updateSeg('deviceSeg', i => ['mobile', 'desktop'][i] === state.device);
+      updateSeg('themeSeg', i => ['dark', 'light'][i] === state.theme);
+      document.getElementById('deviceFrame').className = state.device === 'mobile' ? 'iphone-frame' : 'desktop-frame';
+      document.getElementById('statusBar').style.display = state.device === 'mobile' ? 'flex' : 'none';
+
+      const compact = state.device === 'mobile';
+      document.getElementById('appHeader').innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${state.app === 'general' && compact ? `<button class="icon-btn">${ICONS.menu}</button>` : ''}
+        </div>
+        <div class="eco-segment">
+          <button class="eco-seg-btn ${state.app === 'general' ? 'active' : ''}" onclick="setApp('general')">${ICONS.general}<span>${compact ? 'mOS' : 'mOS General'}</span></button>
+          <button class="eco-seg-btn ${state.app === 'chat' ? 'active' : ''}" onclick="setApp('chat')">${ICONS.chat}<span>Chat</span><span class="seg-badge tabular-nums">5</span></button>
+          <button class="eco-seg-btn ${state.app === 'ios' ? 'active' : ''}" onclick="setApp('ios')">${ICONS.iosApp}<span>iOS-App</span></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="icon-btn" onclick="togglePop()" title="Đi tới nhanh Hôm nay / KPI CC">${ICONS.zap}</button>
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;">V</div>
+        </div>
+      `;
+
+      const iosSub = document.getElementById('iosSubbar');
+      iosSub.style.display = state.app === 'ios' ? 'flex' : 'none';
+      iosSub.innerHTML = `<span style="color:var(--emerald);">● ĐT · Chi nhánh Đề Thám</span><span>‹ Hôm nay · 16/11 ›</span><span style="color:var(--accent)">CC (Vũ Vy)</span>`;
+
+      const sb = document.getElementById('desktopSidebar');
+      sb.style.display = state.device === 'desktop' && state.app === 'general' ? 'flex' : 'none';
+      sb.innerHTML = `
+        <div class="sb-item active" onclick="setApp('general')">${ICONS.general}<span>mOS General</span></div>
+        <div class="sb-item" onclick="setApp('chat')">${ICONS.chat}<span>mOS Chat (5)</span></div>
+        <div class="sb-item" onclick="setApp('ios')">${ICONS.iosApp}<span>iOS-App Tư vấn</span></div>
+        <div style="height:1px;background:var(--border);margin:6px 4px;"></div>
+        <div class="sb-item">${ICONS.today}<span>Hôm nay</span></div>
+        <div class="sb-item">${ICONS.chart}<span>KPI CC</span></div>
+        <div class="sb-item">${ICONS.trophy}<span>Lộ trình</span></div>
+      `;
+
+      document.getElementById('mainBody').innerHTML = `
+        <div class="card">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;">V3 SEGMENTED TOPBAR</div>
+          <div style="font-size:15px;font-weight:800;margin-top:3px;">Đào Trần Vũ Vy · Manager + Nhóm CC</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Bấm thẳng vào 3 nút <strong>mOS · Chat · iOS-App</strong> ở giữa header để chuyển app tức thì, hoặc bấm nút <strong>⚡</strong> bên phải để mở các báo cáo trọng tâm.</div>
+        </div>
+      `;
+
+      const pop = document.getElementById('quickPop');
+      pop.classList.toggle('open', state.popOpen);
+      pop.innerHTML = `
+        <div style="font-size:10px;font-weight:800;color:var(--text-muted);padding:4px 8px;text-transform:uppercase;">Đi tới nhanh</div>
+        <button class="pop-item" onclick="setApp('general')">${ICONS.today}<span>Khách hàng hôm nay</span></button>
+        <button class="pop-item" onclick="setApp('general')">${ICONS.chart}<span>Báo cáo KPI & Thưởng CC</span></button>
+        <button class="pop-item" onclick="setApp('general')">${ICONS.trophy}<span>Lộ trình thăng tiến</span></button>
+      `;
+
+      const tabbar = document.getElementById('iosTabbar');
+      tabbar.style.display = state.app === 'ios' ? 'flex' : 'none';
+      tabbar.innerHTML = `
+        <div class="ios-tab active">${ICONS.today}<span>Khách Hàng</span></div>
+        <div class="ios-tab">${ICONS.iosApp}<span>Ca Làm Mi</span></div>
+        <div class="ios-tab">${ICONS.chart}<span>Hàng Chờ</span></div>
+      `;
+    }
+    render();
+  </script>
+</body>
+</html>

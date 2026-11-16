@@ -74,10 +74,12 @@ const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBible
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
+import MosAppLauncher from '../../components/layout/MosAppLauncher';
 import { HeaderNotificationCenter } from '../../components/notification-center/HeaderNotificationCenter';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 import { tabNotificationManager } from '../../lib/tab-notification';
+import { getBugReportBadgeSummary, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
 
 const { Header, Sider, Content } = Layout;
 
@@ -159,7 +161,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
+  const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
   const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
+  const bugBadgeSummary = React.useSyncExternalStore(subscribeBugReportBadgeSummary, getBugReportBadgeSummary, () => ({
+    actionRequiredCount: 0,
+    unreadCount: 0,
+  }));
+  const bugAttentionCount = !isCvRole(user?.role)
+    ? bugBadgeSummary.actionRequiredCount || bugBadgeSummary.unreadCount
+    : 0;
   const [mosChatUnreadCount, setMosChatUnreadCount] = useState(0);
   const [mosChatTaskCount, setMosChatTaskCount] = useState(0);
   const [canAccessMosChat, setCanAccessMosChat] = useState(true);
@@ -258,7 +268,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }>;
       openChatWithMode(customEvent.detail?.forceMode, customEvent.detail);
     };
+    const handleCloseChat = () => {
+      setIsMosChatOpen(false);
+    };
     window.addEventListener('mos-chat:open', handleOpenChat);
+    window.addEventListener('mos-chat:close', handleCloseChat);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
@@ -275,6 +289,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return () => {
       window.removeEventListener('mos-chat:open', handleOpenChat);
+      window.removeEventListener('mos-chat:close', handleCloseChat);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [chatDisplayMode, openChatWithMode]);
@@ -765,6 +780,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const utilityMenu = {
     items: [
+      ...(isMobileTier
+        ? [
+            {
+              key: 'profile-sheet',
+              icon: <UserRound size={16} aria-hidden />,
+              label: (
+                <span className="flex items-center justify-between gap-3">
+                  <span>Hồ sơ & Giao diện</span>
+                  {bugAttentionCount > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-500 leading-none">
+                      {bugAttentionCount}
+                    </span>
+                  )}
+                </span>
+              ),
+              onClick: () => setIsProfileSheetOpen(true),
+            },
+          ]
+        : []),
       ...(!isCvAccount
         ? [
             {
@@ -864,8 +898,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             themeMode={themeMode}
             token={token}
             userRole={user?.role}
+            teamCodes={user?.teamCodes}
             userId={user?.id}
             userIdentity={{ username: user?.username, email: user?.email }}
+            unreadChatCount={mosChatUnreadCount}
+            onOpenChat={() => openChatWithMode()}
             onNavigate={() => setIsMobileNavigationOpen(false)}
           />
         </div>
@@ -987,6 +1024,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               <div className="dashboard-header-left">
+                <MosAppLauncher
+                  currentApp="general"
+                  userRole={user?.role}
+                  teamCodes={user?.teamCodes}
+                  displayName={user?.displayName}
+                  unreadChatCount={mosChatUnreadCount}
+                  menuVisibility={routeVisibility}
+                  onOpenChat={() => openChatWithMode()}
+                  onOpenProfile={() => setIsProfileSheetOpen(true)}
+                />
                 {isMobileTier && (
                   <HeaderIconButton action="navigation" label="Mở điều hướng" icon={Menu} onClick={toggleSidebar} />
                 )}
@@ -998,7 +1045,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     onClick={() => setIsQuickSearchOpen(true)}
                   />
                 )}
-                <HeaderRoleQuickSwitch userRole={user?.role} unreadChatCount={mosChatUnreadCount} />
+                {!isMobileTier && (
+                  <HeaderRoleQuickSwitch
+                    userRole={user?.role}
+                    teamCodes={user?.teamCodes}
+                    unreadChatCount={mosChatUnreadCount}
+                    menuVisibility={routeVisibility}
+                  />
+                )}
               </div>
               <div className="dashboard-header-right">
                 {isImpersonating && (
@@ -1128,7 +1182,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Dropdown menu={utilityMenu} placement="bottomRight" arrow>
                     <HeaderActionIndicator
                       variant="status"
-                      active={pendingAllocationCount > 0}
+                      active={pendingAllocationCount > 0 || (isMobileTier && bugAttentionCount > 0)}
                       color={token.colorWarning}
                     >
                       <HeaderIconButton
@@ -1136,7 +1190,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         label={
                           pendingAllocationCount > 0
                             ? `Menu tiện ích, ${pendingAllocationCount} đợt data chờ xác nhận`
-                            : 'Menu tiện ích'
+                            : isMobileTier && bugAttentionCount > 0
+                              ? `Menu tiện ích, ${bugAttentionCount} phản hồi báo lỗi cần xem`
+                              : 'Menu tiện ích'
                         }
                         icon={EllipsisVertical}
                         showTooltip={false}
@@ -1245,6 +1301,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   onToggleTheme={toggleTheme}
                   dailyCallsCount={dailyCallsCount}
                   onOpenDailyCalls={() => setIsDailyCallsOpen(true)}
+                  hideTrigger={isMobileTier}
+                  externalOpen={isProfileSheetOpen}
+                  onExternalOpenChange={setIsProfileSheetOpen}
                 />
               </div>
             </Header>
