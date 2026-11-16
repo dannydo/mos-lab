@@ -18,7 +18,7 @@ import {
 } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { removeVietnameseTones } from '@mos-lab/shared';
+import { buildAcademyCourseSelectOptions, matchesAcademyCourseOption } from '@mos-lab/shared';
 import type {
   AcademyLeadDetail,
   AcademyLeadStatus,
@@ -114,28 +114,10 @@ export function AcademyLeadDrawer({
   const [followUpForm] = Form.useForm<FollowUpFormValues>();
 
   const leadCourse = lead?.course;
-  const courseOptions = React.useMemo(() => {
-    const list = courses.map((course) => ({
-      value: course.name,
-      label: [course.name, course.nameEn, course.code].filter(Boolean).join(' · '),
-    }));
-    const hasWorkshop = list.some((item) =>
-      removeVietnameseTones(item.value).toLowerCase().includes('workshop 1days')
-    );
-    if (!hasWorkshop) {
-      list.push({
-        value: 'Khóa WORKSHOP 1DAYS',
-        label: 'Khóa WORKSHOP 1DAYS · Workshop 1 Day · workshop_1days',
-      });
-    }
-    if (leadCourse && !list.some((item) => item.value === leadCourse)) {
-      list.unshift({
-        value: leadCourse,
-        label: leadCourse,
-      });
-    }
-    return list;
-  }, [courses, leadCourse]);
+  const courseOptions = React.useMemo(
+    () => buildAcademyCourseSelectOptions(courses, { extraCourseName: leadCourse }),
+    [courses, leadCourse]
+  );
 
   const loadLead = React.useCallback(async () => {
     if (!leadId) {
@@ -305,9 +287,7 @@ export function AcademyLeadDrawer({
                         showSearch
                         placeholder="Chọn khóa học"
                         options={courseOptions}
-                        filterOption={(input, option) =>
-                          removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
-                        }
+                        filterOption={matchesAcademyCourseOption}
                       />
                     </EntityFormField>
                     <EntityFormField label="Trạng thái pipeline" name="status" rules={[{ required: true }]}>

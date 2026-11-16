@@ -149,4 +149,53 @@ describe('AcademyTalentInvoice - Vietnamese Typography & Windows Diacritics Inva
     expect(followUpSlipMatch![0]).not.toContain('Georgia');
     expect(followUpSlipMatch![0]).toContain("'Times New Roman'");
   });
+
+  it('renders Khóa Bướm with fixed price notice instead of a scholarship discount line', () => {
+    const buomAssessment: AcademyTalentAssessmentView = {
+      ...mockAssessment,
+      result: {
+        ...mockAssessment.result,
+        rankKey: 'level6',
+        rankLabel: 'Thiên Thần Bóng Tối',
+        scholarshipPct: 90,
+      },
+      pricing: {
+        ...mockAssessment.pricing!,
+        lineItems: [
+          {
+            courseId: 20,
+            code: 'buom_wings',
+            name: 'Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings',
+            listPriceVnd: 5000000,
+            promoPriceVnd: 5000000,
+            scholarshipVnd: 0,
+            finalPriceVnd: 5000000,
+            instructor: {
+              id: 1,
+              code: 'auto',
+              staffId: null,
+              displayName: 'Tự động phân bổ giảng viên',
+              description: null,
+              avatarUrl: null,
+              surchargePercent: 0,
+              isActive: true,
+              sortOrder: 0,
+            },
+            instructorSurchargeVnd: 0,
+          },
+        ],
+        listTotalVnd: 5000000,
+        promoTotalVnd: 5000000,
+        scholarshipVnd: 0,
+        courseScholarshipVnd: 0,
+        finalTotalVnd: 5000000,
+        courseFinalTotalVnd: 5000000,
+      },
+    };
+
+    render(<AcademyTalentInvoice assessment={buomAssessment} lead={mockLead} />);
+    expect(screen.getByText('Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings')).toBeInTheDocument();
+    expect(screen.getByText('Giá cố định')).toBeInTheDocument();
+    expect(screen.getByText(/Không áp dụng học bổng/)).toBeInTheDocument();
+  });
 });

@@ -79,6 +79,7 @@ export interface AcademyTalentResult {
 
 export interface AcademyTalentPricingLine {
   courseId: number;
+  code?: string;
   name: string;
   listPriceVnd: number;
   promoPriceVnd: number;

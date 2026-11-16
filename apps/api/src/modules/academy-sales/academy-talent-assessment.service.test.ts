@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ACADEMY_TALENT_TIERS, calculateAcademyTalentAssessmentResult } from '@mos-lab/shared';
-import { buildAcademyTalentQuote, calculateAcademyTalentPaymentStatus } from './academy-talent-assessment.service.js';
+import {
+  assertValidAcademyTalentCourseSelection,
+  buildAcademyTalentQuote,
+  calculateAcademyTalentPaymentStatus,
+} from './academy-talent-assessment.service.js';
 
 test('keeps a printed quote editable until the payment ledger reaches the final tuition', () => {
   assert.equal(calculateAcademyTalentPaymentStatus('DEPOSIT', 0, 1_990_000, 1_000_000), 'UNPAID');
@@ -259,4 +263,120 @@ test('adds the selected instructor percentage after the tuition scholarship, not
   assert.equal(quote.kitFinalPriceVnd, 800_000);
   assert.equal(quote.finalPriceVnd, 13_200_000);
   assert.equal(quote.courses[0]?.instructorSurchargeVnd, 2_000_000);
+});
+
+test('keeps Khóa Bướm (buom_wings) at fixed 5M price with zero scholarship and auto instructor', () => {
+  const scores = {
+    eyeScore: 3,
+    handScore: 3,
+    strands5Min: 35,
+    errorRoot: 1,
+    errorSkin: 0,
+    errorStickies: 1,
+    errorDirection: 0,
+  };
+  const buomCourse = {
+    courseId: 20,
+    code: 'buom_wings',
+    name: 'Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings',
+    nameEn: 'Butterfly - Wings Standard, Design & Workflow',
+    listPriceVnd: 5_000_000,
+    promoPriceVnd: 5_000_000,
+    kitName: null,
+    kitPriceVnd: 0,
+    samplePriceVnd: 0,
+    lessonCount: 0,
+    lashModelCount: 0,
+  };
+
+  assert.doesNotThrow(() => assertValidAcademyTalentCourseSelection(scores, [buomCourse], {}));
+
+  const quote = buildAcademyTalentQuote(scores, '2026-11-16T16:59:59.999Z', [buomCourse], new Date('2026-11-16T10:00:00.000Z'), {
+    instructorSelections: {
+      20: {
+        id: 2,
+        code: 'giang_tran',
+        staffId: null,
+        displayName: 'Giảng viên Giang Trần',
+        description: null,
+        avatarUrl: null,
+        surchargePercent: 20,
+        isActive: true,
+        sortOrder: 10,
+      },
+    },
+  });
+
+  assert.equal(quote.effectiveScholarshipPercent, 90);
+  assert.equal(quote.courses[0]?.scholarshipPercent, 0);
+  assert.equal(quote.courses[0]?.scholarshipVnd, 0);
+  assert.equal(quote.courses[0]?.finalPriceVnd, 5_000_000);
+  assert.equal(quote.courses[0]?.instructor.code, 'auto');
+  assert.equal(quote.courses[0]?.instructorSurchargeVnd, 0);
+  assert.equal(quote.finalPriceVnd, 5_000_000);
+});
+
+test('rejects Khóa Bướm when below Thiên Thần Bóng Tối, combined with another course, or using a non-auto instructor', () => {
+  const buomCourse = {
+    courseId: 20,
+    code: 'buom_wings',
+    name: 'Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings',
+  };
+  const basicCourse = {
+    courseId: 2,
+    code: 'basic',
+    name: 'Signature Dark Lash Foundation',
+  };
+
+  assert.throws(
+    () =>
+      assertValidAcademyTalentCourseSelection(
+        { eyeScore: 3, handScore: 3, strands5Min: 34, errorRoot: 0, errorSkin: 0, errorStickies: 0, errorDirection: 0 },
+        [buomCourse],
+        {}
+      ),
+    /Thiên Thần Bóng Tối/
+  );
+
+  assert.throws(
+    () =>
+      assertValidAcademyTalentCourseSelection(
+        { eyeScore: 3, handScore: 3, strands5Min: 35, errorRoot: 6, errorSkin: 0, errorStickies: 0, errorDirection: 0 },
+        [buomCourse],
+        {}
+      ),
+    /Thiên Thần Bóng Tối/
+  );
+
+  assert.throws(
+    () =>
+      assertValidAcademyTalentCourseSelection(
+        { eyeScore: 3, handScore: 3, strands5Min: 35, errorRoot: 0, errorSkin: 0, errorStickies: 0, errorDirection: 0 },
+        [buomCourse, basicCourse],
+        {}
+      ),
+    /độc lập/
+  );
+
+  assert.throws(
+    () =>
+      assertValidAcademyTalentCourseSelection(
+        { eyeScore: 3, handScore: 3, strands5Min: 35, errorRoot: 0, errorSkin: 0, errorStickies: 0, errorDirection: 0 },
+        [buomCourse],
+        {
+          20: {
+            id: 2,
+            code: 'giang_tran',
+            staffId: null,
+            displayName: 'Giảng viên Giang Trần',
+            description: null,
+            avatarUrl: null,
+            surchargePercent: 20,
+            isActive: true,
+            sortOrder: 10,
+          },
+        }
+      ),
+    /Tự động phân bổ/
+  );
 });

@@ -15,6 +15,7 @@ const COURSE_LABELS: Record<string, string> = {
   fan: 'International Volume & Mega Lash',
   design: 'Dark Lash Design & Styling',
   workshop_1days: 'Khóa WORKSHOP 1DAYS',
+  buom_wings: 'Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings',
 };
 
 type ImportOptions = { dryRun?: boolean };

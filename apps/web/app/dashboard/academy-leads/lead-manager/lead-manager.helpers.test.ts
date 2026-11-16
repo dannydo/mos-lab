@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { AcademyCourse } from "@mos-lab/shared";
+import {
+  ACADEMY_BUOM_COURSE_NAME,
+  matchesAcademyCourseOption,
+  type AcademyCourse,
+} from "@mos-lab/shared";
 import { buildCourseOptions } from "./lead-manager.helpers";
 
 describe("buildCourseOptions", () => {
@@ -30,16 +34,20 @@ describe("buildCourseOptions", () => {
     },
   ];
 
-  it("automatically adds Khóa WORKSHOP 1DAYS if not present in input courses", () => {
+  it("automatically adds Khóa WORKSHOP 1DAYS and Khóa Bướm if not present in input courses", () => {
     const options = buildCourseOptions(sampleCourses);
-    expect(options).toHaveLength(2);
+    expect(options).toHaveLength(3);
     expect(options.some((opt) => opt.value === "Khóa WORKSHOP 1DAYS")).toBe(true);
     const workshopOpt = options.find((opt) => opt.value === "Khóa WORKSHOP 1DAYS");
     expect(workshopOpt?.label).toContain("Khóa WORKSHOP 1DAYS");
+    const buomOpt = options.find((opt) => opt.value === ACADEMY_BUOM_COURSE_NAME);
+    expect(buomOpt?.label).toContain("buom_wings");
+    expect(matchesAcademyCourseOption("dành cho bướm", buomOpt)).toBe(true);
+    expect(matchesAcademyCourseOption("5M", buomOpt)).toBe(true);
   });
 
-  it("does not duplicate Khóa WORKSHOP 1DAYS if it is already in database courses", () => {
-    const coursesWithWorkshop: AcademyCourse[] = [
+  it("does not duplicate Khóa WORKSHOP 1DAYS or Khóa Bướm if already present in database courses", () => {
+    const coursesWithSeeded: AcademyCourse[] = [
       ...sampleCourses,
       {
         id: 20,
@@ -65,10 +73,34 @@ describe("buildCourseOptions", () => {
         isActive: true,
         updatedAt: "2026-09-28T10:00:00.000Z",
       },
+      {
+        id: 21,
+        code: "buom_wings",
+        name: ACADEMY_BUOM_COURSE_NAME,
+        nameEn: "Butterfly - Wings Standard, Design & Workflow",
+        tag: "CHUẨN BƯỚM",
+        description: "Dành cho học viên đã có tay nghề nối mi",
+        market: "DOMESTIC",
+        coverImageUrl: null,
+        listPriceVnd: 5000000,
+        promoPriceVnd: 5000000,
+        teacherBonusVnd: 0,
+        kitName: null,
+        kitUrl: null,
+        kitPriceVnd: 0,
+        samplePriceVnd: 0,
+        lessonCount: 0,
+        lashModelCount: 0,
+        syllabus: [],
+        syllabusHtml: null,
+        sortOrder: 7,
+        isActive: true,
+        updatedAt: "2026-11-16T07:50:00.000Z",
+      },
     ];
-    const options = buildCourseOptions(coursesWithWorkshop);
-    expect(options).toHaveLength(2);
-    const matching = options.filter((opt) => opt.value === "Khóa WORKSHOP 1DAYS");
-    expect(matching).toHaveLength(1);
+    const options = buildCourseOptions(coursesWithSeeded);
+    expect(options).toHaveLength(3);
+    expect(options.filter((opt) => opt.value === "Khóa WORKSHOP 1DAYS")).toHaveLength(1);
+    expect(options.filter((opt) => opt.value === ACADEMY_BUOM_COURSE_NAME)).toHaveLength(1);
   });
 });

@@ -40,7 +40,12 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import { ACADEMY_TALENT_STRANDS_5_MIN_MAX, ACADEMY_TALENT_STRANDS_5_MIN_MIN } from '@mos-lab/shared';
+import {
+  ACADEMY_BUOM_REQUIRED_TIER_KEY,
+  ACADEMY_TALENT_STRANDS_5_MIN_MAX,
+  ACADEMY_TALENT_STRANDS_5_MIN_MIN,
+  isAcademyBuomCourse,
+} from '@mos-lab/shared';
 import type {
   AcademyCourse,
   AcademyTalentAssessmentQuote,
@@ -238,6 +243,7 @@ const ACADEMY_COURSE_TONES: Record<string, string> = {
   advanced: 'advanced',
   fan: 'fan',
   design: 'design',
+  buom_wings: 'buom',
 };
 
 function academyCourseCoverUrl(course: Pick<AcademyCourse, 'code' | 'coverImageUrl'>) {
@@ -717,6 +723,19 @@ export function AcademyTalentWorkshopDrawer({
         }
       : undefined;
   const activeCourses = React.useMemo(() => courses.filter((course) => course.isActive), [courses]);
+  const coursesById = React.useMemo(
+    () => new Map(activeCourses.map((course) => [course.id, course])),
+    [activeCourses]
+  );
+  const isBuomUnlockedForScores = React.useCallback(
+    (strands: number, errors: AcademyTalentDraft['errors']) => {
+      const errorTotal = Object.values(errors).reduce((sum, item) => sum + item, 0);
+      const tier = [...milestones].reverse().find((milestone) => strands >= milestone.strands) || null;
+      return Boolean(tier?.key === ACADEMY_BUOM_REQUIRED_TIER_KEY && strands > 0 && errorTotal <= 5);
+    },
+    [milestones]
+  );
+  const buomUnlocked = isBuomUnlockedForScores(draft.strands5Min, draft.errors);
   const instructorsById = React.useMemo(
     () => new Map(instructors.map((instructor) => [instructor.id, instructor])),
     [instructors]
@@ -952,12 +971,31 @@ export function AcademyTalentWorkshopDrawer({
     return { ...displayView, draft: normalizeDraft(draft), result: previewResult, pricing: previewPricing };
   }, [displayView, draft, previewPricing, previewQuote, previewResult]);
 
-  const updateQuoteDraft = React.useCallback((updater: (current: AcademyTalentDraft) => AcademyTalentDraft) => {
-    setPreviewQuote(null);
-    setPreviewError(false);
-    setQuoteDirty(true);
-    setDraft(updater);
-  }, []);
+  const updateQuoteDraft = React.useCallback(
+    (updater: (current: AcademyTalentDraft) => AcademyTalentDraft) => {
+      setPreviewQuote(null);
+      setPreviewError(false);
+      setQuoteDirty(true);
+      setDraft((current) => {
+        const next = updater(current);
+        if (isBuomUnlockedForScores(next.strands5Min, next.errors)) return next;
+        const hasLockedBuom = next.selectedCourseIds.some((id) => isAcademyBuomCourse(coursesById.get(id)));
+        if (!hasLockedBuom) return next;
+        const retainedIds = next.selectedCourseIds.filter((id) => !isAcademyBuomCourse(coursesById.get(id)));
+        const retainedSet = new Set(retainedIds);
+        return {
+          ...next,
+          selectedCourseIds: retainedIds,
+          selectedSampleCourseIds: next.selectedSampleCourseIds.filter((id) => retainedSet.has(id)),
+          selectedKitCourseIds: next.selectedKitCourseIds.filter((id) => retainedSet.has(id)),
+          selectedInstructorIdsByCourse: retainInstructorSelections(next.selectedInstructorIdsByCourse, retainedSet),
+          primaryCourseId: next.primaryCourseId && retainedSet.has(next.primaryCourseId) ? next.primaryCourseId : null,
+          paymentMode: retainedIds.length ? next.paymentMode : 'THINKING',
+        };
+      });
+    },
+    [coursesById, isBuomUnlockedForScores]
+  );
   const updateAssessmentOnlyDraft = React.useCallback(
     (updater: (current: AcademyTalentDraft) => AcademyTalentDraft) => {
       setDraft(updater);
@@ -1013,6 +1051,11 @@ export function AcademyTalentWorkshopDrawer({
 
   const setCourseSelected = React.useCallback(
     (courseId: number) => {
+      const targetCourse = coursesById.get(courseId);
+      if (isAcademyBuomCourse(targetCourse) && !buomUnlocked) {
+        message.warning('Khóa Bướm chỉ mở khóa khi đạt bậc Thiên Thần Bóng Tối (35+ sợi, ≤ 5 lỗi).');
+        return;
+      }
       updateQuoteDraft((current) => {
         const selected = new Set(current.selectedCourseIds);
         const rule: AcademyTalentCourseSelectionRule = courseSelectionRules[courseId] || { kind: 'COURSE' };
@@ -1065,7 +1108,7 @@ export function AcademyTalentWorkshopDrawer({
         };
       });
     },
-    [courseSelectionRules, updateQuoteDraft]
+    [buomUnlocked, courseSelectionRules, coursesById, updateQuoteDraft]
   );
 
   const setCourseAddOnSelected = React.useCallback(
@@ -1819,6 +1862,10 @@ export function AcademyTalentWorkshopDrawer({
                             {marketCourses.map((course, index) => {
                               const selected = selectedCourseIds.has(course.id);
                               const recommended = recommendedIds.has(course.id);
+                              const isBuom = isAcademyBuomCourse(course);
+                              const courseLocked = isBuom && !buomUnlocked;
+                              const courseUnlockedBadge = isBuom && buomUnlocked;
+                              const cardDisabled = inputDisabled || courseLocked;
                               const courseRule = courseSelectionRules[course.id] || { kind: 'COURSE' as const };
                               const coursePrice = coursePriceHint(course.id);
                               const sampleSelected = draft.selectedSampleCourseIds.includes(course.id);
@@ -1826,41 +1873,48 @@ export function AcademyTalentWorkshopDrawer({
                               const sampleQuote = courseAddOnPriceHint(course.id, 'SAMPLE');
                               const kitQuote = courseAddOnPriceHint(course.id, 'KIT');
                               const selectedInstructorId = draft.selectedInstructorIdsByCourse[String(course.id)];
-                              const instructor =
+                              const rawInstructor =
                                 instructorsById.get(selectedInstructorId) || coursePrice?.instructor || autoInstructor;
-                              const instructorSurchargeVnd = coursePrice?.instructorSurchargeVnd || 0;
+                              const instructor = isBuom ? autoInstructor || rawInstructor : rawInstructor;
+                              const instructorLocked = isBuom || inputDisabled || !selected || !instructor;
+                              const instructorSurchargeVnd = isBuom ? 0 : coursePrice?.instructorSurchargeVnd || 0;
                               const sampleRewardPct = Math.round(pricing?.sampleRewardPct || 0);
                               const kitRewardPct = Math.round(pricing?.kitRewardPct || 0);
-                              const sampleRewardLabel =
-                                sampleSelected && sampleQuote
+                              const sampleRewardLabel = isBuom
+                                ? 'Tự mang mẫu · Miễn phí'
+                                : sampleSelected && sampleQuote
                                   ? sampleQuote.scholarshipVnd > 0
                                     ? `Ưu đãi tố chất ${sampleRewardPct}% · giảm ${formatVND(sampleQuote.scholarshipVnd)}`
                                     : 'Chưa có ưu đãi'
                                   : sampleRewardPct > 0
                                     ? `Ưu đãi tố chất ${sampleRewardPct}% khi thêm`
                                     : 'Chưa có ưu đãi';
-                              const kitRewardLabel =
-                                kitSelected && kitQuote
+                              const kitRewardLabel = isBuom
+                                ? 'Tự mang đồ nghề · NVL Wings cấp'
+                                : kitSelected && kitQuote
                                   ? kitQuote.scholarshipVnd > 0
                                     ? `Ưu đãi tố chất ${kitRewardPct}% · giảm ${formatVND(kitQuote.scholarshipVnd)}`
                                     : 'Chưa có ưu đãi'
                                   : kitRewardPct > 0
                                     ? `Ưu đãi tố chất ${kitRewardPct}% khi thêm`
                                     : 'Chưa có ưu đãi';
-                              const courseScholarshipVnd = coursePrice?.scholarshipVnd || 0;
-                              const courseFeeRewardLabel =
-                                courseScholarshipVnd > 0
+                              const courseScholarshipVnd = isBuom ? 0 : coursePrice?.scholarshipVnd || 0;
+                              const courseFeeRewardLabel = isBuom
+                                ? 'Giá cố định · Không áp dụng học bổng'
+                                : courseScholarshipVnd > 0
                                   ? `Ưu đãi tố chất ${Math.round(result?.scholarshipPct || 0)}% · giảm ${formatVND(courseScholarshipVnd)}`
                                   : Math.round(result?.scholarshipPct || 0) > 0
                                     ? `Ưu đãi tố chất ${Math.round(result?.scholarshipPct || 0)}% khi chọn`
                                     : 'Chưa có ưu đãi tố chất';
-                              const courseRewardLabel = selected
-                                ? courseScholarshipVnd > 0
-                                  ? `Học bổng tố chất: giảm ${formatVND(courseScholarshipVnd)}`
-                                  : 'Chưa có ưu đãi học bổng'
-                                : Math.round(result?.scholarshipPct || 0) > 0
-                                  ? `Học bổng tố chất ${Math.round(result?.scholarshipPct || 0)}% khi chọn`
-                                  : 'Chưa có ưu đãi học bổng';
+                              const courseRewardLabel = isBuom
+                                ? 'Giá cố định · Không áp dụng học bổng'
+                                : selected
+                                  ? courseScholarshipVnd > 0
+                                    ? `Học bổng tố chất: giảm ${formatVND(courseScholarshipVnd)}`
+                                    : 'Chưa có ưu đãi học bổng'
+                                  : Math.round(result?.scholarshipPct || 0) > 0
+                                    ? `Học bổng tố chất ${Math.round(result?.scholarshipPct || 0)}% khi chọn`
+                                    : 'Chưa có ưu đãi học bổng';
                               const coverUrl = academyCourseCoverUrl(course);
                               const courseTone = academyCourseTone(course, index);
                               const totalInvestment = selected
@@ -1874,13 +1928,14 @@ export function AcademyTalentWorkshopDrawer({
                                   key={course.id}
                                   role="option"
                                   aria-selected={selected}
+                                  aria-disabled={courseLocked ? 'true' : undefined}
                                   data-course-tone={courseTone}
                                   data-course-kind={courseRule.kind.toLowerCase()}
-                                  tabIndex={inputDisabled ? -1 : 0}
-                                  className={`${styles.coursePickerCard} ${selected ? styles.coursePickerCardSelected : ''} ${recommended ? styles.coursePickerCardRecommended : ''}`}
-                                  onClick={() => !inputDisabled && setCourseSelected(course.id)}
+                                  tabIndex={cardDisabled ? -1 : 0}
+                                  className={`${styles.coursePickerCard} ${selected ? styles.coursePickerCardSelected : ''} ${recommended ? styles.coursePickerCardRecommended : ''} ${courseUnlockedBadge ? styles.coursePickerCardBuomUnlocked : ''} ${courseLocked ? styles.coursePickerCardLocked : ''}`}
+                                  onClick={() => !cardDisabled && setCourseSelected(course.id)}
                                   onKeyDown={(event) => {
-                                    if (!inputDisabled && (event.key === 'Enter' || event.key === ' ')) {
+                                    if (!cardDisabled && (event.key === 'Enter' || event.key === ' ')) {
                                       event.preventDefault();
                                       setCourseSelected(course.id);
                                     }
@@ -1888,16 +1943,16 @@ export function AcademyTalentWorkshopDrawer({
                                 >
                                   <div className={styles.coursePickerMeta}>
                                     <span className={styles.courseTag}>{course.tag || course.code}</span>
-                                    <span>{course.lessonCount} buổi</span>
+                                    <span>{isBuom ? 'Chuẩn Bướm' : `${course.lessonCount} buổi`}</span>
                                     <button
                                       type="button"
                                       aria-label={`${selected ? 'Bỏ chọn' : 'Chọn'} ${course.name}`}
                                       aria-pressed={selected}
-                                      disabled={inputDisabled}
+                                      disabled={cardDisabled}
                                       className={styles.courseSelectButton}
                                       onClick={(event) => {
                                         event.stopPropagation();
-                                        setCourseSelected(course.id);
+                                        if (!cardDisabled) setCourseSelected(course.id);
                                       }}
                                     >
                                       {selected ? <AppIcon icon={CircleCheck} /> : <span />}
@@ -1915,7 +1970,13 @@ export function AcademyTalentWorkshopDrawer({
                                     }
                                   >
                                     {!coverUrl && <span>{course.tag || 'WINGS'}</span>}
-                                    {recommended && <b className={styles.courseRecommendedMark}>Phù hợp</b>}
+                                    {courseUnlockedBadge ? (
+                                      <b className={styles.courseBuomUnlockedMark}>Đã mở khóa · Chuẩn Bướm</b>
+                                    ) : courseLocked ? (
+                                      <b className={styles.courseBuomLockedMark}>Khóa · Cần Thiên Thần Bóng Tối</b>
+                                    ) : (
+                                      recommended && <b className={styles.courseRecommendedMark}>Phù hợp</b>
+                                    )}
                                   </div>
                                   <div className={styles.coursePickerCopy}>
                                     <h4>{course.name}</h4>
@@ -1928,9 +1989,13 @@ export function AcademyTalentWorkshopDrawer({
                                     </a>
                                   </div>
                                   <div className={styles.courseFeeRow}>
-                                    <span>
-                                      Giá gốc <del>{formatVND(course.listPriceVnd)}</del>
-                                    </span>
+                                    {isBuom ? (
+                                      <span>Chuẩn Bướm · Cố định</span>
+                                    ) : (
+                                      <span>
+                                        Giá gốc <del>{formatVND(course.listPriceVnd)}</del>
+                                      </span>
+                                    )}
                                     <span>
                                       Học phí{' '}
                                       <strong>
@@ -1945,14 +2010,15 @@ export function AcademyTalentWorkshopDrawer({
                                     <button
                                       type="button"
                                       className={styles.courseInstructorTrigger}
-                                      disabled={inputDisabled || !selected || !instructor}
+                                      disabled={instructorLocked}
                                       onClick={(event) => {
                                         event.stopPropagation();
+                                        if (instructorLocked) return;
                                         setInstructorMenuCourseId((current) =>
                                           current === course.id ? null : course.id
                                         );
                                       }}
-                                      aria-expanded={instructorMenuCourseId === course.id}
+                                      aria-expanded={!isBuom && instructorMenuCourseId === course.id}
                                       aria-controls={`academy-talent-instructor-menu-${course.id}`}
                                     >
                                       {instructor?.avatarUrl ? (
@@ -1969,18 +2035,20 @@ export function AcademyTalentWorkshopDrawer({
                                       <span>
                                         <b>{instructor?.displayName || 'Chưa có giảng viên'}</b>
                                         <small>
-                                          {instructor && (instructor.surchargePercent || 0) > 0
-                                            ? `${instructor.description || 'Chỉ định giảng viên chính'} · phụ phí +${formatVND(instructorSurchargeVnd)}`
-                                            : instructor?.description || 'Chọn giảng viên sau khi chọn khóa học'}
+                                          {isBuom
+                                            ? 'Mặc định · Tự động phân bổ giảng viên (khóa)'
+                                            : instructor && (instructor.surchargePercent || 0) > 0
+                                              ? `${instructor.description || 'Chỉ định giảng viên chính'} · phụ phí +${formatVND(instructorSurchargeVnd)}`
+                                              : instructor?.description || 'Chọn giảng viên sau khi chọn khóa học'}
                                         </small>
                                       </span>
                                       <strong>
-                                        {instructor && instructor.surchargePercent > 0
+                                        {!isBuom && instructor && instructor.surchargePercent > 0
                                           ? `+${instructor.surchargePercent}%`
                                           : 'Miễn phí'}
                                       </strong>
                                     </button>
-                                    {instructorMenuCourseId === course.id && selected && !inputDisabled && (
+                                    {!isBuom && instructorMenuCourseId === course.id && selected && !inputDisabled && (
                                       <div
                                         id={`academy-talent-instructor-menu-${course.id}`}
                                         className={styles.courseInstructorMenu}
@@ -2035,7 +2103,7 @@ export function AcademyTalentWorkshopDrawer({
                                     >
                                       <span className={styles.courseAddOnCopy}>
                                         <b>
-                                          <AppIcon icon={Gift} /> Mẫu {course.lashModelCount} mẫu
+                                          <AppIcon icon={Gift} /> {isBuom ? 'Mẫu học viên' : `Mẫu ${course.lashModelCount} mẫu`}
                                         </b>
                                       </span>
                                       <strong>
@@ -2058,7 +2126,7 @@ export function AcademyTalentWorkshopDrawer({
                                     >
                                       <span className={styles.courseAddOnCopy}>
                                         <b>
-                                          <AppIcon icon={Wrench} /> {course.kitName || 'Đồ nghề học viên'}
+                                          <AppIcon icon={Wrench} /> {isBuom ? 'Đồ nghề học viên' : course.kitName || 'Đồ nghề học viên'}
                                         </b>
                                       </span>
                                       <strong>
@@ -2076,9 +2144,13 @@ export function AcademyTalentWorkshopDrawer({
                                     <small>{courseRewardLabel}</small>
                                   </div>
                                   <small className={styles.coursePickerRule}>
-                                    {courseRule.kind === 'COMBO'
-                                      ? 'Combo trọn gói · chọn riêng'
-                                      : 'Khóa học lẻ · có thể chọn nhiều'}
+                                    {courseLocked
+                                      ? 'Cần đạt Thiên Thần Bóng Tối (35+ sợi, ≤ 5 lỗi)'
+                                      : isBuom
+                                        ? 'Khóa độc lập · chuẩn Bướm (chọn riêng)'
+                                        : courseRule.kind === 'COMBO'
+                                          ? 'Combo trọn gói · chọn riêng'
+                                          : 'Khóa học lẻ · có thể chọn nhiều'}
                                   </small>
                                 </article>
                               );

@@ -4,6 +4,7 @@ import React from 'react';
 import { CircleCheck, Clock3, Landmark, QrCode, Trophy } from 'lucide-react';
 import { Image } from 'antd';
 import dayjs from 'dayjs';
+import { isAcademyBuomCourse } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { AppIcon } from '../../../../components/ui';
 import type { AcademyTalentAssessmentView, AcademyTalentLead } from './academy-talent-workshop.types';
@@ -172,24 +173,29 @@ export function AcademyTalentInvoice({ lead, assessment, className = '' }: Acade
           <span>Học bổng</span>
           <span>Cần thanh toán</span>
         </div>
-        {(pricing?.lineItems || []).map((item) => (
-          <div className={styles.invoiceLine} key={item.courseId}>
-            <span>
-              {item.name}
-              <small>
-                {item.instructor?.displayName || 'Phân bổ tự động'}
-                {item.instructorSurchargeVnd > 0 && item.instructor
-                  ? ` · Phí chỉ định +${item.instructor.surchargePercent}%`
-                  : item.instructor
-                    ? ' · Phân bổ tự động'
-                    : ''}
-              </small>
-            </span>
-            <span>{formatVND(item.promoPriceVnd)}</span>
-            <span>-{formatVND(item.scholarshipVnd)}</span>
-            <strong>{formatVND(item.finalPriceVnd)}</strong>
-          </div>
-        ))}
+        {(pricing?.lineItems || []).map((item) => {
+          const isBuom = isAcademyBuomCourse(item);
+          return (
+            <div className={styles.invoiceLine} key={item.courseId}>
+              <span>
+                {item.name}
+                <small>
+                  {item.instructor?.displayName || 'Phân bổ tự động'}
+                  {isBuom
+                    ? ' · Giá cố định · Không áp dụng học bổng'
+                    : item.instructorSurchargeVnd > 0 && item.instructor
+                      ? ` · Phí chỉ định +${item.instructor.surchargePercent}%`
+                      : item.instructor
+                        ? ' · Phân bổ tự động'
+                        : ''}
+                </small>
+              </span>
+              <span>{formatVND(item.promoPriceVnd)}</span>
+              <span>{isBuom ? 'Giá cố định' : `-${formatVND(item.scholarshipVnd)}`}</span>
+              <strong>{formatVND(item.finalPriceVnd)}</strong>
+            </div>
+          );
+        })}
         {(pricing?.lineItems || [])
           .filter((item) => item.instructorSurchargeVnd > 0)
           .map((item) => (

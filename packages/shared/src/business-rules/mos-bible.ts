@@ -1981,6 +1981,50 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'iOS Bookings API Route Guard', reference: 'apps/web/app/api/ios/bookings/route.ts' },
     ],
   },
+  {
+    id: 'ACADEMY-BUOM-001',
+    book: 'CATALOG',
+    title: 'Khóa Bướm (buom_wings) — Điều Kiện Thiên Thần Bóng Tối, Giá Cố Định & Khóa Giảng Viên',
+    summary:
+      'Khóa Bướm dành riêng cho học viên đã có tay nghề nối mi và thi đạt bậc Thiên Thần Bóng Tối (35+ sợi trong 5 phút, ≤ 5 lỗi), áp dụng học phí cố định không cộng gộp học bổng Tố Chất.',
+    commandments: [
+      'Mã khóa học chuẩn: buom_wings — Khóa Bướm - Tiêu chuẩn, Thiết Kế và Quy Trình Wings (nhãn CHUẨN BƯỚM, thị trường DOMESTIC). Dành cho học viên đã có tay nghề nối mi; Wings cung cấp nguyên vật liệu, học viên tự mang theo mẫu và đồ nghề (samplePriceVnd = 0, kitPriceVnd = 0).',
+      'Điều kiện mở khóa tại Assessment Tố Chất: Khóa Bướm bị khóa mặc định và chỉ mở khóa khi học viên thi đạt bậc Thiên Thần Bóng Tối (level6, qualified === true với >= 35 sợi / 5 phút và <= 5 lỗi).',
+      'Chọn độc lập (Exclusive Selection): Không được chọn chung với bất kỳ khóa học nào khác (cùng cơ chế chọn độc lập với Combo); chọn Khóa Bướm sẽ bỏ chọn các khóa khác và ngược lại.',
+      'Giá cố định, không áp dụng học bổng Tố Chất: Học phí cố định bằng promoPriceVnd (mặc định 5.000.000đ), scholarshipPercent = 0 và scholarshipVnd = 0.',
+      'Khóa cứng giảng viên Tự động phân bổ (auto): Không cho phép chỉ định giảng viên khác hoặc cộng phụ thu giảng viên (instructorSurchargeVnd = 0).',
+    ],
+    rationale:
+      'Đảm bảo phân biệt rõ ràng khóa chuẩn hóa tay nghề Wings (Khóa Bướm) với các khóa đào tạo nghề truyền thống, kiểm soát chặt đầu vào tay nghề Thiên Thần Bóng Tối và giữ đúng cấu trúc học phí cố định không giảm qua học bổng Tố Chất.',
+    examples: [
+      'Học viên thi được 35 sợi và 2 lỗi (Thiên Thần Bóng Tối): Thẻ Khóa Bướm mở khóa với huy hiệu "Đã mở khóa · Chuẩn Bướm", báo giá cố định 5.000.000đ, học bổng 0đ, giảng viên khóa Tự động phân bổ giảng viên.',
+      'Học viên thi được 34 sợi hoặc 6 lỗi: Không đủ điều kiện mở Khóa Bướm ở cả giao diện và API (400 Bad Request nếu gửi selectedCourseIds chứa buom_wings).',
+    ],
+    tags: [
+      'khóa bướm',
+      'buom_wings',
+      'thiên thần bóng tối',
+      'tố chất',
+      'academy',
+      '5M',
+      'chuẩn wings',
+    ],
+    routeScopes: [
+      '/dashboard/academy-leads/lead-manager',
+      '/dashboard/academy-leads/courses',
+      '/dashboard/academy-leads/workshops',
+      '/dashboard/academy-leads/campaigns',
+    ],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-16',
+    sources: [
+      { label: 'Khóa Bướm Shared Rules', reference: 'packages/shared/src/types/academy-talent-assessment.ts' },
+      { label: 'Tố Chất Quote & Validation', reference: 'apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts' },
+      { label: 'Tố Chất Workshop Drawer UI', reference: 'apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx' },
+      { label: 'Seed Data Migration', reference: 'apps/api/src/scripts/data-migrations/20261116075000_seed_buom_wings_course.ts' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

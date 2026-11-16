@@ -3,6 +3,8 @@ import {
   ACADEMY_TALENT_STRANDS_5_MIN_MAX,
   ACADEMY_TALENT_PAYMENT_MODES,
   calculateAcademyTalentAssessmentResult,
+  isAcademyBuomCourse,
+  isAcademyBuomUnlocked,
   type AcademyTalentAssessment,
   type AcademyTalentAssessmentActionResponse,
   type AcademyTalentAssessmentQuote,
@@ -411,6 +413,33 @@ function normalizeSnapshotBases(value: unknown): SnapshotBase[] {
     }));
 }
 
+export function assertValidAcademyTalentCourseSelection(
+  scores: AcademyTalentAssessmentScores,
+  courses: Array<Pick<SnapshotBase, 'courseId' | 'code' | 'name'>>,
+  instructorSelections: Record<number, AcademyTalentInstructorSnapshot>,
+  tiers?: readonly AcademyTalentTier[]
+): void {
+  const buomCourse = courses.find((course) => isAcademyBuomCourse(course));
+  if (!buomCourse) return;
+  const result = calculateAcademyTalentAssessmentResult(scores, tiers);
+  if (!isAcademyBuomUnlocked(result)) {
+    throw new AcademySalesError(
+      'Khóa Bướm chỉ mở khóa khi học viên thi đạt bậc Thiên Thần Bóng Tối (35+ sợi / 5 phút, tối đa 5 lỗi).',
+      400
+    );
+  }
+  if (courses.length > 1) {
+    throw new AcademySalesError(
+      'Khóa Bướm là khóa chuẩn hóa độc lập, không thể chọn chung với các khóa học khác.',
+      400
+    );
+  }
+  const chosenInstructor = instructorSelections[buomCourse.courseId];
+  if (chosenInstructor && chosenInstructor.code !== 'auto') {
+    throw new AcademySalesError('Khóa Bướm bắt buộc sử dụng chế độ Tự động phân bổ giảng viên.', 400);
+  }
+}
+
 export function buildAcademyTalentQuote(
   scores: AcademyTalentAssessmentScores,
   expiresAt: Date | string,
@@ -422,15 +451,18 @@ export function buildAcademyTalentQuote(
   const expired = isQuoteExpired(expiresAt, now);
   const effectiveScholarshipPercent = expired ? 0 : result.scholarshipPercent;
   const quotedCourses: AcademyTalentCourseSnapshot[] = courses.map((course) => {
-    const scholarshipVnd = Math.round(course.promoPriceVnd * (effectiveScholarshipPercent / 100));
+    const isBuom = isAcademyBuomCourse(course);
+    const courseScholarshipPercent = isBuom ? 0 : effectiveScholarshipPercent;
+    const scholarshipVnd = isBuom ? 0 : Math.round(course.promoPriceVnd * (courseScholarshipPercent / 100));
     const finalPriceVnd = Math.max(0, course.promoPriceVnd - scholarshipVnd);
-    const instructor = options.instructorSelections?.[course.courseId] || FALLBACK_AUTO_INSTRUCTOR;
+    const requestedInstructor = options.instructorSelections?.[course.courseId] || FALLBACK_AUTO_INSTRUCTOR;
+    const instructor = isBuom && requestedInstructor.code !== 'auto' ? FALLBACK_AUTO_INSTRUCTOR : requestedInstructor;
     // Legacy workshop policy: a requested instructor is a surcharge on the
     // tuition after the student's Tố Chất scholarship, never on materials.
     const instructorSurchargeVnd = Math.round(finalPriceVnd * (instructor.surchargePercent / 100));
     return {
       ...course,
-      scholarshipPercent: effectiveScholarshipPercent,
+      scholarshipPercent: courseScholarshipPercent,
       scholarshipVnd,
       finalPriceVnd,
       instructor,
@@ -1044,6 +1076,7 @@ async function buildLiveAcademyTalentQuote(
     selectedInstructorIdsByCourse
   );
   const paymentMode = normalizePaymentModeForCourses(input.paymentMode, options.fallbackPaymentMode, selectedCourseIds);
+  assertValidAcademyTalentCourseSelection(scores, courseBases, instructorSelections, options.tiers);
   const recommendation = await resolveAcademyTalentRecommendation(fastify, scores, options.tiers);
   const preliminaryQuote = buildAcademyTalentQuote(scores, options.expiresAt, courseBases, now, {
     ...recommendation,
@@ -1385,6 +1418,7 @@ export class AcademyTalentAssessmentService {
     const expiry = offerExpiry(now);
     const promotionPolicy = await AcademyTalentLadderConfigurationService.getCalculationPolicy(fastify);
     const tiers = promotionPolicy.tiers;
+    assertValidAcademyTalentCourseSelection(scores, courseBases, instructorSelections, tiers);
     const recommendation = await resolveAcademyTalentRecommendation(fastify, scores, tiers);
     const preliminaryQuote = buildAcademyTalentQuote(scores, expiry, courseBases, now, {
       ...recommendation,
@@ -1528,6 +1562,7 @@ export class AcademyTalentAssessmentService {
     );
     const promotionPolicy = await AcademyTalentLadderConfigurationService.getCalculationPolicy(fastify);
     const tiers = promotionPolicy.tiers;
+    assertValidAcademyTalentCourseSelection(scores, courseBases, instructorSelections, tiers);
     const recommendation = await resolveAcademyTalentRecommendation(fastify, scores, tiers);
     const preliminaryQuote = buildAcademyTalentQuote(scores, existing.offerExpiresAt, courseBases, now, {
       ...recommendation,

@@ -2511,6 +2511,21 @@
 .coursePickerCardRecommended {
   box-shadow: inset 0 2px 0 color-mix(in srgb, var(--academy-talent-gold) 78%, transparent);
 }
+.coursePickerCardBuomUnlocked:not(.coursePickerCardSelected) {
+  border-color: color-mix(in srgb, #10b981 55%, var(--academy-talent-border));
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, #10b981 78%, transparent),
+    0 0 22px color-mix(in srgb, #10b981 12%, transparent);
+}
+.coursePickerCardLocked {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+.coursePickerCardLocked:hover,
+.coursePickerCardLocked:focus-visible {
+  border-color: color-mix(in srgb, var(--academy-talent-border) 90%, transparent);
+  transform: none;
+}
 
 .coursePickerMeta {
   align-items: center;
@@ -2591,6 +2606,11 @@
     radial-gradient(ellipse at 50% 45%, #ff88bd44, transparent 34%),
     linear-gradient(130deg, #422039, #13172d 56%, #020512);
 }
+.courseVisual[data-tone='buom'] {
+  background:
+    radial-gradient(ellipse at 50% 42%, #34d39955, transparent 36%),
+    linear-gradient(130deg, #0c3b36, #111e33 56%, #030914);
+}
 .courseVisual > span {
   color: #e8f8ff;
   font-size: 11px;
@@ -2610,6 +2630,30 @@
   padding: 4px 7px;
   position: relative;
   text-transform: uppercase;
+  z-index: 1;
+}
+.courseBuomUnlockedMark {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  border-radius: 999px;
+  color: #031512;
+  font-size: 9px;
+  font-weight: 800;
+  margin-left: auto;
+  padding: 4px 8px;
+  position: relative;
+  text-transform: uppercase;
+  z-index: 1;
+}
+.courseBuomLockedMark {
+  background: color-mix(in srgb, #1e293b 86%, transparent);
+  border: 1px solid color-mix(in srgb, #94a3b8 38%, transparent);
+  border-radius: 999px;
+  color: #e2e8f0;
+  font-size: 9px;
+  font-weight: 700;
+  margin-left: auto;
+  padding: 4px 8px;
+  position: relative;
   z-index: 1;
 }
 
@@ -6529,6 +6573,9 @@
   background: var(--academy-talent-surface-raised);
   border-color: color-mix(in srgb, var(--academy-talent-text) 15%, var(--academy-talent-border));
   box-shadow: 0 7px 16px color-mix(in srgb, var(--academy-talent-text) 7%, transparent);
+}
+.themeLight .coursePickerCardLocked {
+  opacity: 0.56;
 }
 
 .themeLight .coursePickerGrid:has(.coursePickerCardSelected) .coursePickerCard:not(.coursePickerCardSelected) {
