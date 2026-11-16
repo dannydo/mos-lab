@@ -11,6 +11,7 @@ import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, defaultIosOverrideRepo } from './ios-overrides.service.js';
 import { fetchLiveOrderSnapshots } from './ios-bookings-sql.service.js';
 import { settleIosOrderWithLegacyPhp } from './ios-legacy-bridge.service.js';
+import { reconcileLiveBookingOverridesWithLegacy } from './ios-legacy-state-reconciler.service.js';
 import {
   buildDemoStaffMonthlyStats,
   fetchLiveStaffMonthlyStats,
@@ -190,9 +191,7 @@ export async function queryIosBookingsList(
   const pool = getLegacyPool();
   const rawSimDraftBookings =
     isSimulationMode && simCtx ? await loadSimulationCustomBookings(simCtx.targetStaffId, targetDate) : [];
-  const simDraftBookings = rawSimDraftBookings.filter(
-    (b) => !b.storeId || Number(b.storeId) === Number(storeId)
-  );
+  const simDraftBookings = rawSimDraftBookings.filter((b) => !b.storeId || Number(b.storeId) === Number(storeId));
   const activeRepo =
     isSimulationMode && simCtx ? getSimulationOverrideRepository(simCtx.targetStaffId) : defaultIosOverrideRepo;
 
@@ -231,9 +230,18 @@ export async function queryIosBookingsList(
   const promoIds = collectPromotionIdsFromSources(orders, overrides);
   const promotionsById = await fetchPromotionsByIds(pool, promoIds);
 
-  // Tự động đối soát & hạch toán bù (Idempotent Backfill) — TUYỆT ĐỐI BỎ QUA trong Simulation Mode
+  // Tự động đồng bộ 2 chiều (chữa kẹt DEFERRED + đồng bộ hoàn tác từ App iOS cũ) & hạch toán bù DONE — TUYỆT ĐỐI BỎ QUA trong Simulation Mode
   let reconciledAny = false;
   if (!isSimulationMode) {
+    reconciledAny = await reconcileLiveBookingOverridesWithLegacy({
+      orders,
+      overrides,
+      repo: defaultIosOverrideRepo,
+      activeStaffId,
+      targetDate,
+      todayVn,
+    });
+
     for (const row of orders) {
       const orderId = Number(row.id);
       const ovr = overrides[String(orderId)];

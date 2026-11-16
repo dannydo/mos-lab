@@ -17,12 +17,12 @@ import { applyCustomerComboExpiryOverridesToBooking } from './ios-combo-expiry.s
 import { IosCustomerEnrichmentContext, LastVisitSpecSummary, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
 import { computeCanonicalCvRotationPoints } from './ios-cv-points.helper.js';
 import { resolveItemizedBookingPromotions } from './ios-promotions.service.js';
+import { resolveEffectiveLiveOrderStateAndStatus } from './ios-legacy-state-reconciler.service.js';
 import {
   computeBookingFinancials,
   formatPhoneNumberDots,
   formatTime12h,
   formatTimeSlot,
-  resolveBookingStatusFromState,
   resolveCustomerAvatar,
   resolveStaffAvatar,
 } from './ios-bookings-formatters.js';
@@ -136,9 +136,20 @@ export function mapLiveOrdersToBookings(params: {
 
   return orders
     .map((r, index): IosBookingItem => {
-      const override = overrides[String(r.id)] || {};
-      const state = r.order_state === 'Completed' ? 'Completed' : override.orderState || r.order_state;
-      const status = resolveBookingStatusFromState(override.status, state, targetDate, todayVn);
+      const rawOverride = overrides[String(r.id)] || {};
+      const { state, status, revertedInLegacy } = resolveEffectiveLiveOrderStateAndStatus({
+        dbOrderState: r.order_state,
+        override: rawOverride,
+        targetDate,
+        todayVn,
+      });
+      const override: BookingOverrideRecord = revertedInLegacy
+        ? {
+            status,
+            orderState: state,
+            ...(rawOverride.customerAvatar ? { customerAvatar: rawOverride.customerAvatar } : {}),
+          }
+        : rawOverride;
 
       const duration = Number(r.booking_duration_minute) || 90;
       const servicePrice = Number(override.servicePrice ?? r.total_price) || 550000;
@@ -402,21 +413,7 @@ export function mapLiveOrdersToBookings(params: {
       if (typeof override.cvRotationPoints === 'number' && override.cvRotationPoints > 0) {
         resolvedCvPoints = Math.round(override.cvRotationPoints);
         resolvedCvBreakdown = override.cvRotationBreakdown;
-      } else if (override.attributes) {
-        const computed = computeCanonicalCvRotationPoints({
-          material: resolvedAttributes?.material,
-          volume: resolvedAttributes?.volume,
-          count: resolvedAttributes?.count,
-          serviceType: resolvedServiceType,
-          serviceName: effectiveServiceName,
-          style: resolvedAttributes?.style,
-          color: resolvedAttributes?.color,
-          hasUnderMink: resolvedAttributes?.hasUnderMink,
-          underMinkServiceType: resolvedAttributes?.underMinkServiceType,
-        });
-        resolvedCvPoints = computed.totalPoints;
-        resolvedCvBreakdown = override.cvRotationBreakdown || computed.breakdownLabel;
-      } else if (typeof r.ledger_cv_points === 'number' && r.ledger_cv_points > 0) {
+      } else if (!override.attributes && typeof r.ledger_cv_points === 'number' && r.ledger_cv_points > 0) {
         resolvedCvPoints = r.ledger_cv_points;
         resolvedCvBreakdown = r.ledger_cv_breakdown || undefined;
       } else {
@@ -432,7 +429,8 @@ export function mapLiveOrdersToBookings(params: {
           underMinkServiceType: resolvedAttributes?.underMinkServiceType,
         });
         resolvedCvPoints = computed.totalPoints;
-        resolvedCvBreakdown = computed.breakdownLabel;
+        resolvedCvBreakdown =
+          (override.attributes ? override.cvRotationBreakdown : undefined) || computed.breakdownLabel;
       }
 
       return {

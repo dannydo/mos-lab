@@ -448,7 +448,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '3. Đặt Lịch Hẹn 2 chế độ cho cả Khách Mới & Khách Quay Lại: Ở chế độ Mô Phỏng tạo đơn nháp sandbox (bookingId >= 900000000); ở chế độ Live tạo khách hàng mới (nếu Lần 1) và ghi nhận đơn thật vào Legacy DB.',
       '4. Lần thử đầu tiên (Phương án #1) phải đi đủ 15 bước quy chuẩn; từ Phương án #2 trở đi mở khóa nút "Tua nhanh kỹ thuật → Upsell & Checkout" sau bước Tư Vấn để tập trung luyện tập kịch bản bán hàng & so sánh doanh số/thưởng giữa các phương án.',
       '5. Hỗ trợ Hoàn Tác 2 cấp (Revert): "Thử lại kịch bản tư vấn" giữ nguyên check-in & hồ sơ mi thật 7/7 để lên lại phương án bán hàng mới; "Reset về Chờ đón" đưa ca về trạng thái INCOMING ban đầu và xóa hồ sơ mi thật sandbox để tập lại từ đầu.',
-      '6. Đồng bộ tức thì từng bước ở Live Mode vs Cô lập tuyệt đối ở Simulation Mode: Ở Live Mode, mọi thao tác chuyển bước (Check-in, Lưu tư vấn / Tư vấn & Check-in nhanh, Phân công kỹ thuật, Bắt đầu/cập nhật tiến trình nối mi, Khảo sát hoàn tất kỹ thuật, Chuyển Checkout / Upsell, và Hoàn tác về Chờ đón) được đồng bộ ngay lập tức sang Legacy PHP (WingsLashes /1/order/*) để iOS App cũ và bảng điều hành cập nhật realtime (nếu Legacy PHP ngoại tuyến sẽ ghi nhận DEFERRED không làm kẹt máy và tự bù khi hoàn tất đơn). Ngược lại, Simulation Mode (IOS_SIM_*) và Demo Mode (?demo=1) tạo 0 request tới Legacy PHP hay Legacy DB ở mọi bước.',
+      '6. Đồng bộ tức thì 2 chiều ở Live Mode vs Cô lập tuyệt đối ở Simulation Mode: Ở Live Mode, mọi thao tác chuyển bước (Check-in, Lưu tư vấn / Tư vấn & Check-in nhanh, Phân công kỹ thuật, Bắt đầu/cập nhật tiến trình nối mi, Khảo sát hoàn tất kỹ thuật, Chuyển Checkout / Upsell, và Hoàn tác về Chờ đón) được đồng bộ ngay lập tức qua cầu nối loopback chuẩn header (`Host: api.wingslashes.com`, `X-Forwarded-Proto: https`) sang Legacy PHP (`/1/order/*`) để iOS App cũ chuyển tab `servicing` realtime. Nếu bước đồng bộ bị `DEFERRED`, hệ thống tự động chữa lành (auto-heal) ngay tại nhịp poll `GET /api/ios/bookings` (cooldown 15 giây) không cần chờ chốt đơn; đồng thời đối soát 2 chiều theo thời gian thực khi App iOS cũ chuyển `Parking`, tiến cấp trạng thái, hủy đơn hoặc hoàn tác về `Confirmed`/`New`. Ngược lại, Simulation Mode (`IOS_SIM_*`) và Demo Mode (`?demo=1`) tạo 0 request tới Legacy PHP hay Legacy DB ở mọi bước.',
     ],
     rationale:
       'Cho phép CVL thực hành mạnh tay trên dữ liệu khách hàng thật (như chọn gói, nâng cấp 1 lông -> 2 lông/Thiết kế, kết hợp dưỡng mi và thanh toán) rồi hoàn tác ngay để thử nhiều chiến lược tư vấn khác nhau mà không sợ sai số liệu quầy thu ngân.',
@@ -470,13 +470,17 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/ios-app'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-11-15',
+    version: '1.2.0',
+    effectiveFrom: '2026-11-16',
     sources: [
       { label: 'Sandbox Mô Phỏng Backend', reference: 'apps/api/src/modules/ios/services/ios-simulation.service.ts' },
       {
         label: 'Đồng Bộ Từng Bước Live Mode Legacy PHP',
         reference: 'apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts',
+      },
+      {
+        label: 'Đối Soát & Tự Chữa Lành 2 Chiều Legacy PHP',
+        reference: 'apps/api/src/modules/ios/services/ios-legacy-state-reconciler.service.ts',
       },
       { label: 'Đặt Lịch Kép /ios-app', reference: 'apps/api/src/modules/ios/services/ios-booking-create.service.ts' },
       {

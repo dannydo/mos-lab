@@ -5,9 +5,16 @@ import { SafeAny } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from './mock-data.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { IosAuthContext } from './services/ios-auth.service.js';
+import { resolveBookingStatusFromState } from './services/ios-bookings-formatters.js';
 import { createEmptyCustomerEnrichmentContext, RawIosOrderSnapshot } from './services/ios-bookings-sql.service.js';
 import { mapLiveOrdersToBookings } from './services/ios-bookings-mapper.service.js';
+import { resolveLegacyPhpApiConfig } from './services/ios-legacy-bridge.service.js';
 import { LegacyOrderCatalogSnapshot } from './services/ios-legacy-payload.mapper.js';
+import {
+  reconcileLiveBookingOverridesWithLegacy,
+  resolveEffectiveLiveOrderStateAndStatus,
+} from './services/ios-legacy-state-reconciler.service.js';
+import { syncIosStepWithLegacyPhp } from './services/ios-legacy-step-sync.service.js';
 import { createInMemoryConfigStore, createOverrideRepository } from './services/ios-overrides.service.js';
 
 const COMPLETE_ATTRS = {
@@ -578,4 +585,214 @@ test('MOS-BUG-231: Photo cleaned auto-saved maps to ServiceCleaned and Photo aft
   assert.equal(afterRes.payload.override.legacySyncedOrderState, 'ServiceEnd');
   assert.equal(harness.phpCalls[1].endpoint, '/order/service/progress/update');
   assert.equal(harness.phpCalls[1].payload.service_state, 'ServiceEnd');
+});
+
+test('Loopback PHP config injects Host: api.wingslashes.com and X-Forwarded-Proto: https to avoid Nginx 404/301', () => {
+  const prevPhpUrl = process.env.LEGACY_PHP_API_URL;
+  const prevPhpHost = process.env.LEGACY_PHP_HOST_HEADER;
+  const prevDbUrl = process.env.LEGACY_DATABASE_URL;
+
+  try {
+    delete process.env.LEGACY_PHP_API_URL;
+    delete process.env.LEGACY_PHP_HOST_HEADER;
+    process.env.LEGACY_DATABASE_URL = 'mysql://root:pass@127.0.0.1:3306/management';
+    assert.deepEqual(resolveLegacyPhpApiConfig(), {
+      baseUrl: 'http://127.0.0.1/1',
+      hostHeader: 'api.wingslashes.com',
+      extraHeaders: { 'X-Forwarded-Proto': 'https' },
+    });
+
+    process.env.LEGACY_DATABASE_URL = 'mysql://root:pass@localhost:3306/management';
+    assert.deepEqual(resolveLegacyPhpApiConfig(), {
+      baseUrl: 'http://127.0.0.1/1',
+      hostHeader: 'api.wingslashes.com',
+      extraHeaders: { 'X-Forwarded-Proto': 'https' },
+    });
+
+    process.env.LEGACY_PHP_API_URL = 'http://127.0.0.1/1/';
+    assert.deepEqual(resolveLegacyPhpApiConfig(), {
+      baseUrl: 'http://127.0.0.1/1',
+      hostHeader: 'api.wingslashes.com',
+      extraHeaders: { 'X-Forwarded-Proto': 'https' },
+    });
+
+    delete process.env.LEGACY_PHP_API_URL;
+    process.env.LEGACY_DATABASE_URL = 'mysql://root:pass@192.168.139.33:3306/management';
+    assert.deepEqual(resolveLegacyPhpApiConfig(), {
+      baseUrl: 'http://192.168.139.33/1',
+      hostHeader: 'api.orb',
+    });
+  } finally {
+    if (prevPhpUrl !== undefined) process.env.LEGACY_PHP_API_URL = prevPhpUrl;
+    else delete process.env.LEGACY_PHP_API_URL;
+    if (prevPhpHost !== undefined) process.env.LEGACY_PHP_HOST_HEADER = prevPhpHost;
+    else delete process.env.LEGACY_PHP_HOST_HEADER;
+    if (prevDbUrl !== undefined) process.env.LEGACY_DATABASE_URL = prevDbUrl;
+    else delete process.env.LEGACY_DATABASE_URL;
+  }
+});
+
+test('syncIosStepWithLegacyPhp does not skip progress sync when Legacy DB lagged behind previousLastLegacyProgressState', async () => {
+  const harness = createBridgeHarness('Confirmed');
+  const res = await syncIosStepWithLegacyPhp(
+    {
+      bookingId: 338978,
+      action: 'UPDATE_PROGRESS',
+      mergedOverride: {
+        status: 'SERVICING',
+        orderState: 'Preparation',
+        assignedStaffId: 43554,
+        checkInStaffId: 43554,
+        attributes: COMPLETE_ATTRS,
+        progress: { startedAt: '2026-11-16T01:07:23.000Z', lastLegacyProgressState: 'Preparation' },
+      },
+      actorStaffId: 43554,
+      checkInStaffId: 43554,
+      assignedStaffId: 43554,
+      checkOutStaffId: 43554,
+      isSimulationMode: false,
+      previousLastLegacyProgressState: 'Preparation',
+    },
+    harness.deps
+  );
+
+  assert.equal(res.status, 'SYNCED');
+  assert.equal(res.legacyOrderState, 'Preparation');
+  assert.deepEqual(
+    harness.phpCalls.map((c) => c.endpoint),
+    ['/order/booking/check-in', '/order/booking/consultation', '/order/service/progress/update']
+  );
+});
+
+test('Two-way reconciler auto-heals stuck DEFERRED servicing orders, maps Parking, and syncs Legacy revert & forward advance', async () => {
+  assert.equal(resolveBookingStatusFromState(undefined, 'Parking', '2026-11-16', '2026-11-16'), 'CHECKED_IN');
+
+  const store = createInMemoryConfigStore();
+  const repo = createOverrideRepository(store);
+  const baseOrder = (id: number, orderState: string, assignedStaffId: number | null = null): RawIosOrderSnapshot => ({
+    id,
+    order_number: String(id),
+    order_state: orderState,
+    booking_date_start: '2026-11-16T04:45:00',
+    booking_duration_minute: 90,
+    total_price: 770000,
+    client_store_id: 6,
+    booking_note: '',
+    user_id: 88991,
+    combo_sale_required: 0,
+    is_new: 0,
+    promotion_id: null,
+    customer_name: 'Khach Hang Test',
+    customer_phone: '0909111222',
+    customer_avatar: null,
+    booker_name: 'CS',
+    booker_avatar: null,
+    service_name: 'HyperLight 4X 770',
+    service_key: 'new-hyperlight-770',
+    is_temporary: 0,
+    service_type: 'Normal',
+    staff_name: assignedStaffId ? 'Nhan Vien' : 'Chưa phân công',
+    staff_avatar: null,
+    assigned_staff_id: assignedStaffId,
+    booked_staff_id: null,
+    check_in_staff_id: null,
+    check_out_staff_id: null,
+    check_in_staff_name: null,
+    check_in_staff_avatar: null,
+    check_out_staff_name: null,
+    check_out_staff_avatar: null,
+    total_visits: 3,
+  });
+
+  // 1. Stuck DEFERRED SERVICING order (like #338978) auto-heals to SYNCED on live poll
+  const deferredOvr = {
+    status: 'SERVICING',
+    orderState: 'Service Start',
+    legacyStepSyncStatus: 'DEFERRED',
+    legacyStepSyncWarning: 'Route POST:/1/order/booking/check-in not found',
+    assignedStaffId: 43554,
+    checkInStaffId: 43554,
+    attributes: COMPLETE_ATTRS,
+    progress: { startedAt: '2026-11-16T01:07:23.000Z', timerRunning: true },
+  };
+  await repo.saveBookingOverride(338978, deferredOvr);
+
+  // 2. Previously SYNCED order reverted back to Confirmed on Legacy iOS App -> mOS reverts to INCOMING
+  const syncedThenRevertedOvr = {
+    status: 'SERVICING',
+    orderState: 'Preparation',
+    legacyStepSyncStatus: 'SYNCED',
+    legacySyncedOrderState: 'Preparation',
+    assignedStaffId: 46272,
+    checkInStaffId: 46272,
+    progress: { startedAt: '2026-11-16T02:00:00.000Z', timerRunning: true },
+  };
+  await repo.saveBookingOverride(338979, syncedThenRevertedOvr);
+
+  const overridesMap: Record<string, SafeAny> = {
+    '338978': deferredOvr,
+    '338979': syncedThenRevertedOvr,
+    '338980': {
+      status: 'CHECKED_IN',
+      orderState: 'Check-in',
+      legacyStepSyncStatus: 'SYNCED',
+      legacySyncedOrderState: 'CheckIn',
+      checkInStaffId: 37790,
+    },
+  };
+
+  const healHarness = createBridgeHarness('New');
+  const didReconcile = await reconcileLiveBookingOverridesWithLegacy({
+    orders: [
+      baseOrder(338978, 'New', null),
+      baseOrder(338979, 'Confirmed', null),
+      baseOrder(338980, 'ServiceStart', 46272),
+    ],
+    overrides: overridesMap,
+    repo,
+    activeStaffId: 43554,
+    targetDate: '2026-11-16',
+    todayVn: '2026-11-16',
+    syncDeps: healHarness.deps,
+  });
+
+  assert.equal(didReconcile, true);
+  assert.equal(overridesMap['338978'].legacyStepSyncStatus, 'SYNCED');
+  assert.equal(overridesMap['338978'].legacySyncedOrderState, 'ServiceStart');
+  assert.equal(overridesMap['338978'].legacyStepSyncWarning, undefined);
+  assert.deepEqual(
+    healHarness.phpCalls.map((c) => c.endpoint),
+    ['/order/booking/check-in', '/order/booking/consultation', '/order/service/progress/update']
+  );
+
+  // Reverted order in Legacy App is cleared back to INCOMING
+  assert.equal(overridesMap['338979'].status, 'INCOMING');
+  assert.equal(overridesMap['338979'].orderState, 'Confirmed');
+  assert.equal(overridesMap['338979'].progress, undefined);
+
+  // Forward advance on Legacy App (CheckIn -> ServiceStart) propagates to mOS mapping immediately
+  const advancedMapped = resolveEffectiveLiveOrderStateAndStatus({
+    dbOrderState: 'ServiceStart',
+    override: overridesMap['338980'],
+    targetDate: '2026-11-16',
+    todayVn: '2026-11-16',
+  });
+  assert.equal(advancedMapped.status, 'SERVICING');
+  assert.equal(advancedMapped.state, 'ServiceStart');
+
+  const mappedList = mapLiveOrdersToBookings({
+    orders: [baseOrder(338979, 'Confirmed', null), baseOrder(338980, 'ServiceStart', 46272)],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: overridesMap,
+    customerAvatarMap: {},
+    storeId: 6,
+    targetDate: '2026-11-16',
+    todayVn: '2026-11-16',
+    activeStaffId: 46272,
+    canViewFullPhone: true,
+  });
+  assert.equal(mappedList[0].status, 'INCOMING');
+  assert.equal(mappedList[0].progress, undefined);
+  assert.equal(mappedList[1].status, 'SERVICING');
+  assert.equal(mappedList[1].orderState, 'ServiceStart');
 });

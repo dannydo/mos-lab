@@ -14,7 +14,14 @@ import {
   resolveCustomerBookingTab,
   resolveServicingSubStatus,
 } from '../mockData';
-import { enqueueOfflineAction, getPendingActions, syncPendingActions } from '../offlineSync';
+import { mergeServerBookingsWithLocalState } from '../iosBookingMerge';
+import {
+  enqueueOfflineAction,
+  getLocalProgressSnapshot,
+  getPendingActions,
+  saveLocalProgressSnapshot,
+  syncPendingActions,
+} from '../offlineSync';
 import { thermalPrinterService } from '../../services/thermalPrinterService';
 import { useIosAppState, resolveActorProfile } from '../useIosAppState';
 
@@ -293,5 +300,60 @@ describe('iOS State, SDK Integration & Live/Demo Mode Contract', () => {
       expect(result.current.actor.staffId).toBe(34295);
     });
     expect(result.current.actor.avatar).toBe('https://lh3.googleusercontent.com/thuc-nghi-fresh');
+  });
+
+  it('mergeServerBookingsWithLocalState propagates CHECKED_IN, INCOMING revert, and CANCELLED transitions immediately', () => {
+    const baseBooking = {
+      ...INITIAL_BOOKINGS[0],
+      id: 338978,
+      status: 'INCOMING' as const,
+      assignedStaffId: 0,
+      assignedStaffName: 'Chờ phân công (Đầu tua)',
+    };
+
+    // 1. Server poll reports CHECKED_IN (e.g. checked in on Legacy App or another iPad)
+    const afterCheckIn = mergeServerBookingsWithLocalState(
+      [baseBooking],
+      [
+        {
+          ...baseBooking,
+          status: 'CHECKED_IN',
+          checkInStaffId: 37790,
+          checkInStaffName: 'Diễm Hương',
+          assignedStaffId: 46272,
+          assignedStaffName: 'Thảo Ly',
+        },
+      ],
+      0,
+      6
+    );
+    expect(afterCheckIn[0]?.status).toBe('CHECKED_IN');
+    expect(resolveCustomerBookingTab(afterCheckIn[0]!)).toBe('SERVICING');
+    expect(afterCheckIn[0]?.assignedStaffId).toBe(46272);
+    expect(afterCheckIn[0]?.assignedStaffName).toBe('Thảo Ly');
+
+    // 2. Server poll reports INCOMING (reverted on Legacy App) -> clears local servicing snapshot
+    saveLocalProgressSnapshot(338978, { status: 'SERVICING', currentStep: 7 });
+    const afterRevert = mergeServerBookingsWithLocalState(
+      [{ ...afterCheckIn[0]!, status: 'SERVICING' }],
+      [{ ...baseBooking, status: 'INCOMING' }],
+      0,
+      6
+    );
+    expect(afterRevert[0]?.status).toBe('INCOMING');
+    expect(resolveCustomerBookingTab(afterRevert[0]!)).toBe('INCOMING');
+    expect(getLocalProgressSnapshot(338978)).toBeNull();
+
+    // 3. Server poll reports CANCELLED -> transitions to CANCELLED and clears snapshot
+    saveLocalProgressSnapshot(338978, { status: 'SERVICING', currentStep: 7 });
+    const afterCancel = mergeServerBookingsWithLocalState(
+      [{ ...afterCheckIn[0]!, status: 'SERVICING' }],
+      [{ ...baseBooking, status: 'CANCELLED' }],
+      0,
+      6
+    );
+    expect(afterCancel[0]?.status).toBe('CANCELLED');
+    expect(resolveCustomerBookingTab(afterCancel[0]!)).toBe('CANCEL');
+    expect(getLocalProgressSnapshot(338978)).toBeNull();
   });
 });

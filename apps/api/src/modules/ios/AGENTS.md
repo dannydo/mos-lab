@@ -26,6 +26,7 @@ apps/api/src/modules/ios/
     ├── ios-bookings-query.service.ts         # Orchestrates GET /ios/bookings (Live Mode vs ?demo=1 mode)
     ├── ios-legacy-bridge.service.ts          # End-of-order Legacy PHP settlement bridge (COMPLETE_ORDER)
     ├── ios-legacy-step-sync.service.ts       # Real-time step-by-step Live Mode sync to Legacy PHP (/1/order/*)
+    ├── ios-legacy-state-reconciler.service.ts # Two-way Legacy <-> mOS state reconciler & DEFERRED auto-healer
     └── ios-actions.service.ts                # Executes POST /ios/bookings state transitions with per-booking locks
 ```
 

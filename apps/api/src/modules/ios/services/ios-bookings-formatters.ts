@@ -91,7 +91,7 @@ export function resolveBookingStatusFromState(
   if (overrideStatus) {
     return overrideStatus;
   }
-  if (state === 'CheckIn' || state === 'Check-in' || state === 'Consultation') {
+  if (state === 'Parking' || state === 'CheckIn' || state === 'Check-in' || state === 'Consultation') {
     return 'CHECKED_IN';
   }
   if (

@@ -526,7 +526,9 @@ describe('BugReportDetailDrawer behavior', () => {
     const props = propsFor();
     props.comment.mockResolvedValueOnce({ report: makeDetail({ title: 'Đã nhận bình luận' }), attachmentWarnings: [] });
     render(<BugReportDetailDrawer {...props} />);
-    const input = await screen.findByPlaceholderText('Bổ sung chi tiết hoặc bằng chứng; có thể dán ảnh trực tiếp…');
+    const input = await screen.findByPlaceholderText(
+      'Bổ sung chi tiết hoặc bằng chứng cho Agent; có thể dán ảnh trực tiếp…'
+    );
     fireEvent.change(input, { target: { value: '  Bằng chứng bổ sung  ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi bình luận' }));
     await waitFor(() =>

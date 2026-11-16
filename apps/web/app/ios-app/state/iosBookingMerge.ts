@@ -81,6 +81,20 @@ export function mergeServerBookingsWithLocalState(
       };
     }
 
+    if (incoming.status === 'CANCELLED') {
+      clearLocalProgressSnapshot(incoming.id);
+      const currentActiveServicingId = getActiveServicingBookingId();
+      if (currentActiveServicingId && Number(currentActiveServicingId) === Number(incoming.id)) {
+        setActiveServicingBookingId(null);
+        setActiveServicingStep(null);
+      }
+      return {
+        ...incoming,
+        status: 'CANCELLED',
+        progress: undefined,
+      };
+    }
+
     const mergedAttributes: BookingItem['attributes'] =
       incoming.attributes || existing?.attributes
         ? ((preferLocalComboAndPricing
@@ -152,6 +166,11 @@ export function mergeServerBookingsWithLocalState(
           ? incoming.serviceName
           : existing.serviceName || incoming.serviceName;
 
+      const resolvedNonServicingStatus =
+        incoming.status === 'CHECKED_IN' || existing.status === 'INCOMING'
+          ? incoming.status
+          : existing.status || incoming.status;
+
       return {
         ...incoming,
         serviceName: resolvedServiceName,
@@ -171,7 +190,7 @@ export function mergeServerBookingsWithLocalState(
         cvRotationBreakdown: preferLocalComboAndPricing
           ? (existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown)
           : (incoming.cvRotationBreakdown ?? existing.cvRotationBreakdown),
-        status: isServicing ? 'SERVICING' : existing.status || incoming.status,
+        status: isServicing ? 'SERVICING' : resolvedNonServicingStatus,
         progress: isServicing
           ? {
               elapsedSeconds: incoming.progress?.elapsedSeconds ?? existing.progress?.elapsedSeconds ?? 0,
@@ -203,11 +222,29 @@ export function mergeServerBookingsWithLocalState(
           ? existing.billing || incoming.billing
           : incoming.billing || existing.billing,
         survey: existing.survey || incoming.survey,
-        checkInStaffId: existing.checkInStaffId || incoming.checkInStaffId,
-        checkInStaffName: existing.checkInStaffName || incoming.checkInStaffName,
-        checkInStaffTier: existing.checkInStaffTier || incoming.checkInStaffTier,
-        assignedStaffId: existing.assignedStaffId || incoming.assignedStaffId,
-        assignedStaffName: existing.assignedStaffName || incoming.assignedStaffName,
+        checkInStaffId:
+          (!preferLocalComboAndPricing && incoming.checkInStaffId) ||
+          existing.checkInStaffId ||
+          incoming.checkInStaffId,
+        checkInStaffName:
+          (!preferLocalComboAndPricing && incoming.checkInStaffName) ||
+          existing.checkInStaffName ||
+          incoming.checkInStaffName,
+        checkInStaffTier:
+          (!preferLocalComboAndPricing && incoming.checkInStaffTier) ||
+          existing.checkInStaffTier ||
+          incoming.checkInStaffTier,
+        assignedStaffId:
+          !preferLocalComboAndPricing && incoming.assignedStaffId && incoming.assignedStaffId > 0
+            ? incoming.assignedStaffId
+            : existing.assignedStaffId || incoming.assignedStaffId,
+        assignedStaffName:
+          !preferLocalComboAndPricing &&
+          incoming.assignedStaffId &&
+          incoming.assignedStaffId > 0 &&
+          incoming.assignedStaffName
+            ? incoming.assignedStaffName
+            : existing.assignedStaffName || incoming.assignedStaffName,
       };
     }
     if (localSnap || isServicing) {

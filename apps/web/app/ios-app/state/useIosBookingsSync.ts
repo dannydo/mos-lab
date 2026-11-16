@@ -187,6 +187,13 @@ export function useIosBookingsSync({
                 Number(b.id) === targetBookingId
                   ? {
                       ...b,
+                      ...(data?.override?.checkInStaffId
+                        ? {
+                            checkInStaffId: Number(data.override.checkInStaffId),
+                            checkInStaffName: data.override.checkInStaffName || b.checkInStaffName,
+                            checkInStaffTier: data.override.checkInStaffTier || b.checkInStaffTier,
+                          }
+                        : {}),
                       ...(data?.override?.assignedStaffId
                         ? {
                             assignedStaffId: Number(data.override.assignedStaffId),

@@ -56,12 +56,30 @@ export interface SettleLegacyOrderResult {
 
 export const DEMO_BOOKING_IDS = new Set<number>(INITIAL_BOOKINGS.map((b) => Number(b.id)));
 
-export function resolveLegacyPhpApiConfig(): { baseUrl: string; hostHeader?: string } {
+export function resolveLegacyPhpApiConfig(): {
+  baseUrl: string;
+  hostHeader?: string;
+  extraHeaders?: Record<string, string>;
+} {
   const explicit = String(process.env.LEGACY_PHP_API_URL || '').trim();
   const explicitHost = String(process.env.LEGACY_PHP_HOST_HEADER || '').trim();
   if (explicit) {
+    const baseUrl = explicit.replace(/\/+$/, '');
+    try {
+      const parsed = new URL(baseUrl);
+      if (parsed.protocol === 'http:' && (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost')) {
+        const effectiveHost = explicitHost || 'api.wingslashes.com';
+        return {
+          baseUrl,
+          hostHeader: effectiveHost,
+          ...(effectiveHost === 'api.wingslashes.com' ? { extraHeaders: { 'X-Forwarded-Proto': 'https' } } : {}),
+        };
+      }
+    } catch {
+      // Fall through if explicit URL is malformed
+    }
     return {
-      baseUrl: explicit.replace(/\/+$/, ''),
+      baseUrl,
       ...(explicitHost ? { hostHeader: explicitHost } : {}),
     };
   }
@@ -71,7 +89,11 @@ export function resolveLegacyPhpApiConfig(): { baseUrl: string; hostHeader?: str
   const dbHost = hostMatch?.[1] || '';
 
   if (dbHost === '127.0.0.1' || dbHost === 'localhost') {
-    return { baseUrl: 'http://127.0.0.1/1' };
+    return {
+      baseUrl: 'http://127.0.0.1/1',
+      hostHeader: 'api.wingslashes.com',
+      extraHeaders: { 'X-Forwarded-Proto': 'https' },
+    };
   }
 
   if (dbHost.startsWith('192.168.')) {
@@ -88,7 +110,7 @@ export async function defaultCallLegacyPhpEndpoint(
   endpointPath: string,
   payload: Record<string, SafeAny>
 ): Promise<LegacyPhpTransportResult> {
-  const { baseUrl, hostHeader } = resolveLegacyPhpApiConfig();
+  const { baseUrl, hostHeader, extraHeaders } = resolveLegacyPhpApiConfig();
   const normalizedPath = endpointPath.startsWith('/') ? endpointPath : `/${endpointPath}`;
   const targetUrl = new URL(`${baseUrl}${normalizedPath}`);
   const bodyStr = JSON.stringify(payload);
@@ -98,6 +120,7 @@ export async function defaultCallLegacyPhpEndpoint(
     'Content-Type': 'application/json',
     Accept: 'application/json',
     'Content-Length': Buffer.byteLength(bodyStr),
+    ...(extraHeaders || {}),
   };
   if (hostHeader) {
     headers.Host = hostHeader;
@@ -126,11 +149,12 @@ export async function defaultCallLegacyPhpEndpoint(
           const status = String(json?.status ?? '0');
           const code = String(json?.code ?? String(res.statusCode || 500));
           const ok = httpOk && (status === '1' || status.toLowerCase() === 'success') && code === '0000';
+          const fallbackMessage = `HTTP ${res.statusCode || 500}${res.headers.location ? ` -> ${res.headers.location}` : ''} on ${normalizedPath}`;
           resolve({
             ok,
             status,
             code,
-            message: String(json?.message || ''),
+            message: String(json?.message || (!ok ? fallbackMessage : '')),
             data: json?.data,
           });
         });

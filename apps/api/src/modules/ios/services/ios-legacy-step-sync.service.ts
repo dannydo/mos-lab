@@ -382,7 +382,11 @@ export async function syncIosStepWithLegacyPhp(
 
     if (action === 'START_SERVICE' || action === 'UPDATE_PROGRESS' || action === 'SAVE_PROGRESS') {
       const mappedState = mapOverrideOrderStateToLegacyServiceState(mergedOverride.orderState);
-      if (!mappedState || mappedState === previousLastLegacyProgressState || assignedStaffId <= 0) {
+      if (
+        !mappedState ||
+        assignedStaffId <= 0 ||
+        (mappedState === previousLastLegacyProgressState && catalog.currentOrderState === mappedState)
+      ) {
         return {
           synced: false,
           status: 'SKIPPED',
