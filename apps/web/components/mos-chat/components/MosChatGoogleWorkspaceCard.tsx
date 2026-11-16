@@ -4,11 +4,14 @@ import React, { useMemo, useState } from 'react';
 import {
   Copy,
   ExternalLink,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
   FileText,
   Loader2,
   Lock,
   MapPin,
+  Palette,
   PanelRightOpen,
   RefreshCw,
   ShieldAlert,
@@ -18,6 +21,7 @@ import { Tooltip, message as antdMessage } from 'antd';
 import {
   columnIndexToLetter,
   extractGoogleWorkspaceLinksFromText,
+  hasSupportedWorkspaceLinkInText,
   type ParsedGoogleWorkspaceLink,
   type ParsedGoogleWorkspaceRange,
 } from '@mos-lab/shared';
@@ -50,6 +54,7 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
   ({ link, conversationId, messageId, isDark, compact = false }) => {
     const [selectedGid, setSelectedGid] = useState<string | null | undefined>(link.gid);
     const [copiedBotEmail, setCopiedBotEmail] = useState(false);
+    const [showInlineEmbed, setShowInlineEmbed] = useState(false);
 
     const { data, loading, error, reload } = useGoogleWorkspacePreview(link.rawUrl, {
       gid: selectedGid,
@@ -60,9 +65,10 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
     });
 
     const isSheet = link.kind === 'spreadsheet';
+    const isCanva = link.kind === 'canva';
     const effectiveRange = data?.parsedRange || link.parsedRange || null;
     const effectiveRangeLabel = data?.requestedRange || link.range || effectiveRange?.label || null;
-    const displayTitle = data?.title || (isSheet ? 'Google Sheets' : 'Google Docs');
+    const displayTitle = data?.title || (isSheet ? 'Google Sheets' : isCanva ? 'Thiết kế Canva' : 'Google Docs');
     const accessStatus = data?.accessStatus;
 
     const previewGrid = useMemo(() => {
@@ -109,18 +115,26 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
       ? isDark
         ? 'rgba(16, 185, 129, 0.32)'
         : 'rgba(16, 185, 129, 0.35)'
-      : isDark
-        ? 'rgba(56, 189, 248, 0.32)'
-        : 'rgba(14, 165, 233, 0.35)';
+      : isCanva
+        ? isDark
+          ? 'rgba(139, 92, 246, 0.38)'
+          : 'rgba(139, 92, 246, 0.38)'
+        : isDark
+          ? 'rgba(56, 189, 248, 0.32)'
+          : 'rgba(14, 165, 233, 0.35)';
 
     const cardBg = isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.94)';
     const headerBg = isSheet
       ? isDark
         ? 'rgba(16, 185, 129, 0.12)'
         : 'rgba(236, 253, 245, 0.95)'
-      : isDark
-        ? 'rgba(56, 189, 248, 0.12)'
-        : 'rgba(240, 249, 255, 0.95)';
+      : isCanva
+        ? isDark
+          ? 'rgba(139, 92, 246, 0.14)'
+          : 'rgba(245, 243, 255, 0.96)'
+        : isDark
+          ? 'rgba(56, 189, 248, 0.12)'
+          : 'rgba(240, 249, 255, 0.95)';
 
     return (
       <div
@@ -148,12 +162,16 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
                   ? isDark
                     ? 'bg-emerald-500/20 text-emerald-400'
                     : 'bg-emerald-100 text-emerald-700'
-                  : isDark
-                    ? 'bg-sky-500/20 text-sky-400'
-                    : 'bg-sky-100 text-sky-700'
+                  : isCanva
+                    ? isDark
+                      ? 'bg-violet-500/20 text-violet-300'
+                      : 'bg-violet-100 text-violet-700'
+                    : isDark
+                      ? 'bg-sky-500/20 text-sky-400'
+                      : 'bg-sky-100 text-sky-700'
               }`}
             >
-              {isSheet ? <FileSpreadsheet size={15} /> : <FileText size={15} />}
+              {isSheet ? <FileSpreadsheet size={15} /> : isCanva ? <Palette size={15} /> : <FileText size={15} />}
             </div>
 
             <div className="min-w-0 flex-1">
@@ -167,7 +185,7 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
                       range: link.range,
                       conversationId,
                       messageId,
-                      initialMode: 'fast',
+                      initialMode: isCanva ? 'embed' : 'fast',
                     })
                   }
                   className={`text-[12.5px] font-bold truncate cursor-pointer hover:underline text-left ${
@@ -179,9 +197,13 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
                 {accessStatus === 'PUBLIC_LINK' && (
                   <span
                     className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                      isDark
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      isCanva
+                        ? isDark
+                          ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
+                          : 'bg-violet-100 text-violet-800 border border-violet-200'
+                        : isDark
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                     }`}
                   >
                     Công khai
@@ -202,7 +224,13 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
               <div
                 className={`text-[11px] flex items-center gap-2 mt-0.5 flex-wrap ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
               >
-                <span>{isSheet ? 'Google Sheets' : 'Google Docs'}</span>
+                <span>
+                  {isCanva
+                    ? `Canva${data?.designType ? ` ${data.designType}` : ''}${data?.authorName ? ` · ${data.authorName}` : ''}`
+                    : isSheet
+                      ? 'Google Sheets'
+                      : 'Google Docs'}
+                </span>
                 {data?.activeTab?.title && (
                   <span className="font-semibold text-emerald-500">· Tab: {data.activeTab.title}</span>
                 )}
@@ -223,7 +251,11 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <Tooltip title="Mở trình đọc Google Workspace bên cạnh khung chat">
+            <Tooltip
+              title={
+                isCanva ? 'Mở trình đọc Canva bên cạnh khung chat' : 'Mở trình đọc Google Workspace bên cạnh khung chat'
+              }
+            >
               <button
                 type="button"
                 onClick={() =>
@@ -233,7 +265,7 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
                     range: link.range,
                     conversationId,
                     messageId,
-                    initialMode: 'fast',
+                    initialMode: isCanva ? 'embed' : 'fast',
                   })
                 }
                 className={`inline-flex items-center justify-center gap-1 leading-none px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all active:scale-95 ${
@@ -241,9 +273,13 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
                     ? isDark
                       ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    : isDark
-                      ? 'bg-sky-500 text-slate-950 hover:bg-sky-400'
-                      : 'bg-sky-600 text-white hover:bg-sky-700'
+                    : isCanva
+                      ? isDark
+                        ? 'bg-violet-500 text-white hover:bg-violet-400'
+                        : 'bg-violet-600 text-white hover:bg-violet-700'
+                      : isDark
+                        ? 'bg-sky-500 text-slate-950 hover:bg-sky-400'
+                        : 'bg-sky-600 text-white hover:bg-sky-700'
                 }`}
               >
                 <PanelRightOpen size={12} />
@@ -251,7 +287,7 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
               </button>
             </Tooltip>
 
-            <Tooltip title="Hỏi @AI phân tích tài liệu này">
+            <Tooltip title={isCanva ? 'Hỏi @AI tóm tắt thiết kế Canva này' : 'Hỏi @AI phân tích tài liệu này'}>
               <button
                 type="button"
                 onClick={() =>
@@ -261,11 +297,13 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
                     range: link.range,
                     conversationId,
                     messageId,
-                    initialMode: 'fast',
+                    initialMode: isCanva ? 'embed' : 'fast',
                     openAiBar: true,
                     initialAiPrompt: isSheet
                       ? `Phân tích ngắn gọn dữ liệu tab ${data?.activeTab?.title || 'hiện tại'}${effectiveRangeLabel ? ` (đặc biệt vùng ${effectiveRangeLabel})` : ''} và nêu các điểm cần lưu ý.`
-                      : 'Tóm tắt các ý chính và đầu việc quan trọng trong tài liệu Google Docs này.',
+                      : isCanva
+                        ? 'Tóm tắt nội dung chính, quy trình và các ghi chú quan trọng trong thiết kế Canva này.'
+                        : 'Tóm tắt các ý chính và đầu việc quan trọng trong tài liệu Google Docs này.',
                   })
                 }
                 className={`inline-flex items-center justify-center gap-1 leading-none px-2 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border transition-colors ${
@@ -279,12 +317,12 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
               </button>
             </Tooltip>
 
-            <Tooltip title="Mở trực tiếp trên Google">
+            <Tooltip title={isCanva ? 'Mở trực tiếp trên Canva' : 'Mở trực tiếp trên Google'}>
               <a
                 href={data?.canonicalUrl || link.canonicalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Mở trực tiếp trên Google"
+                aria-label={isCanva ? 'Mở trực tiếp trên Canva' : 'Mở trực tiếp trên Google'}
                 className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-colors ${
                   isDark
                     ? 'border-slate-700 text-slate-300 hover:bg-white/10'
@@ -303,8 +341,10 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
             <div
               className={`flex items-center gap-2 py-2 px-1 text-[11.5px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
             >
-              <Loader2 size={14} className="animate-spin text-emerald-500" />
-              <span>Đang đọc dữ liệu trực tiếp từ Google Workspace...</span>
+              <Loader2 size={14} className={`animate-spin ${isCanva ? 'text-violet-400' : 'text-emerald-500'}`} />
+              <span>
+                {isCanva ? 'Đang đọc thiết kế từ Canva...' : 'Đang đọc dữ liệu trực tiếp từ Google Workspace...'}
+              </span>
             </div>
           )}
 
@@ -323,7 +363,56 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
           )}
 
           {/* NEEDS_SHARE Zero-Friction Prompt */}
-          {data && accessStatus === 'NEEDS_SHARE' && (
+          {data && accessStatus === 'NEEDS_SHARE' && isCanva && (
+            <div
+              className={`rounded-lg p-2.5 space-y-2 border ${
+                isDark
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-100'
+                  : 'bg-amber-50 border-amber-300 text-amber-950'
+              }`}
+            >
+              <div className="flex items-start gap-2 text-[11.5px] leading-relaxed">
+                <Lock size={14} className="shrink-0 mt-0.5 text-amber-500" />
+                <div>
+                  <div className="font-bold">Thiết kế Canva đang bật chế độ riêng tư</div>
+                  <div className={isDark ? 'text-amber-200/80' : 'text-amber-900/80'}>
+                    Để xem trực tiếp trong mOS Chat, hãy mở thiết kế trên Canva → bấm <b>Chia sẻ (Share)</b> → đổi quyền
+                    liên kết thành <b>Bất kỳ ai có liên kết (Anyone with the link) → Xem</b>, rồi bấm <b>Thử tải lại</b>
+                    .
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <a
+                  href={data.canonicalUrl || link.canonicalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
+                    isDark
+                      ? 'border-amber-400/35 text-amber-200 hover:bg-amber-500/15'
+                      : 'border-amber-400 text-amber-900 hover:bg-amber-100'
+                  }`}
+                >
+                  <ExternalLink size={11} />
+                  <span>Mở trên Canva</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void reload(true)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border cursor-pointer ${
+                    isDark
+                      ? 'border-slate-700 text-slate-200 hover:bg-white/10'
+                      : 'border-slate-300 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+                  <span>Thử tải lại</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {data && accessStatus === 'NEEDS_SHARE' && !isCanva && (
             <div
               className={`rounded-lg p-2.5 space-y-2 border ${
                 isDark
@@ -512,8 +601,91 @@ export const MosChatGoogleWorkspaceCard: React.FC<MosChatGoogleWorkspaceCardProp
             </div>
           )}
 
+          {/* Canva Preview & 1-Tap Lazy Inline Embed */}
+          {data && isCanva && accessStatus === 'PUBLIC_LINK' && (
+            <div className="space-y-2">
+              {data.headings && data.headings.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {data.headings.slice(0, 4).map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() =>
+                        openGoogleWorkspaceReader({
+                          url: link.rawUrl,
+                          conversationId,
+                          messageId,
+                          initialMode: 'fast',
+                        })
+                      }
+                      className={`inline-flex items-center leading-none px-2 py-1 rounded-md text-[10.5px] font-semibold border cursor-pointer truncate max-w-[180px] ${
+                        isDark
+                          ? 'bg-violet-500/15 border-violet-500/30 text-violet-200 hover:bg-violet-500/25'
+                          : 'bg-violet-50 border-violet-200 text-violet-800 hover:bg-violet-100'
+                      }`}
+                    >
+                      {h.text}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {data.excerpt && (
+                <div
+                  className={`text-[11.5px] leading-relaxed line-clamp-3 rounded-lg p-2 border ${
+                    isDark
+                      ? 'bg-slate-900/60 border-slate-800 text-slate-300'
+                      : 'bg-slate-50 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  {data.excerpt}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  data-testid="canva-inline-embed-toggle"
+                  onClick={() => setShowInlineEmbed((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 leading-none px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border transition-colors ${
+                    showInlineEmbed
+                      ? isDark
+                        ? 'bg-violet-500/25 border-violet-400/60 text-violet-100'
+                        : 'bg-violet-100 border-violet-400 text-violet-950'
+                      : isDark
+                        ? 'bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-800'
+                        : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
+                  }`}
+                >
+                  {showInlineEmbed ? <EyeOff size={12} /> : <Eye size={12} />}
+                  <span>{showInlineEmbed ? 'Thu gọn khung xem' : 'Xem thử tại chỗ'}</span>
+                </button>
+              </div>
+
+              {showInlineEmbed && (
+                <div
+                  className="w-full max-h-[420px] rounded-lg overflow-hidden border"
+                  style={{
+                    aspectRatio: `${data.embedWidth || 16} / ${data.embedHeight || 9}`,
+                    borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : 'rgba(139, 92, 246, 0.3)',
+                  }}
+                >
+                  <iframe
+                    data-testid="canva-inline-embed-iframe"
+                    src={data.embedUrl}
+                    title={displayTitle}
+                    className="block w-full h-full border-0 bg-slate-950"
+                    allow="fullscreen; clipboard-read; clipboard-write"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Google Docs Headings & Excerpt Preview */}
-          {data && !isSheet && (accessStatus === 'PUBLIC_LINK' || accessStatus === 'SERVICE_ACCOUNT') && (
+          {data && !isSheet && !isCanva && (accessStatus === 'PUBLIC_LINK' || accessStatus === 'SERVICE_ACCOUNT') && (
             <div className="space-y-1.5">
               {data.headings && data.headings.length > 0 && (
                 <div className="flex items-center gap-1 flex-wrap">
@@ -573,7 +745,7 @@ export interface MosChatGoogleWorkspaceCardListProps {
 export const MosChatGoogleWorkspaceCardList: React.FC<MosChatGoogleWorkspaceCardListProps> = React.memo(
   ({ text, conversationId, messageId, isDark, isMe, compact }) => {
     const links = useMemo(() => {
-      if (!text || !text.includes('docs.google.com/')) return [];
+      if (!hasSupportedWorkspaceLinkInText(text)) return [];
       return extractGoogleWorkspaceLinksFromText(text).slice(0, 3);
     }, [text]);
 

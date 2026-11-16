@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   MapPin,
   MessageSquare,
+  Palette,
   PanelRightOpen,
   Search,
   Sparkles,
@@ -30,11 +31,11 @@ import { isVideoAttachment } from '../utils/chat-video';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { getCachedGoogleWorkspaceMeta, openGoogleWorkspaceReader } from '../utils/google-workspace-bridge';
 
-type FilesFilterCategory = 'all' | 'spreadsheet' | 'document' | 'attachments';
+type FilesFilterCategory = 'all' | 'spreadsheet' | 'document' | 'canva' | 'attachments';
 
 interface CollectedGoogleWorkspaceItem {
   id: string;
-  kind: 'spreadsheet' | 'document';
+  kind: 'spreadsheet' | 'document' | 'canva';
   link: ParsedGoogleWorkspaceLink;
   senderName: string;
   senderId?: number | string;
@@ -222,6 +223,7 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
         if (category === 'attachments') return false;
         if (category === 'spreadsheet' && item.kind !== 'spreadsheet') return false;
         if (category === 'document' && item.kind !== 'document') return false;
+        if (category === 'canva' && item.kind !== 'canva') return false;
         if (!normalizedQuery) return true;
         const cachedTitle = getCachedGoogleWorkspaceMeta(item.link.rawUrl)?.title || '';
         const haystack =
@@ -231,7 +233,7 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
     }, [googleItems, category, normalizedQuery]);
 
     const filteredAttachments = useMemo(() => {
-      if (category === 'spreadsheet' || category === 'document') return [];
+      if (category === 'spreadsheet' || category === 'document' || category === 'canva') return [];
       return attachmentItems.filter((item) => {
         if (!normalizedQuery) return true;
         const haystack = `${item.attachment.name || ''} ${item.senderName}`.toLowerCase();
@@ -241,6 +243,7 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
 
     const sheetCount = googleItems.filter((i) => i.kind === 'spreadsheet').length;
     const docCount = googleItems.filter((i) => i.kind === 'document').length;
+    const canvaCount = googleItems.filter((i) => i.kind === 'canva').length;
     const totalCount = googleItems.length + attachmentItems.length;
 
     const handleJumpToMessage = (messageId: string) => {
@@ -255,6 +258,7 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
       { id: 'all', label: 'Tất cả', count: totalCount },
       { id: 'spreadsheet', label: 'Google Sheets', count: sheetCount },
       { id: 'document', label: 'Google Docs', count: docCount },
+      { id: 'canva', label: 'Thiết kế Canva', count: canvaCount },
       { id: 'attachments', label: 'Tệp & Ảnh', count: attachmentItems.length },
     ];
 
@@ -365,13 +369,15 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
         {filteredGoogleItems.length > 0 && (
           <div className="space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-0.5 tabular-nums">
-              Google Sheets & Docs ({filteredGoogleItems.length})
+              Google Sheets, Docs & Canva ({filteredGoogleItems.length})
             </div>
             <div className="space-y-2">
               {filteredGoogleItems.map((item) => {
                 const cachedMeta = getCachedGoogleWorkspaceMeta(item.link.rawUrl);
                 const isSheet = item.kind === 'spreadsheet';
-                const title = cachedMeta?.title || (isSheet ? 'Google Sheet' : 'Google Docs');
+                const isCanva = item.kind === 'canva';
+                const title =
+                  cachedMeta?.title || (isSheet ? 'Google Sheet' : isCanva ? 'Thiết kế Canva' : 'Google Docs');
                 return (
                   <div
                     key={item.id}
@@ -380,7 +386,7 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
                     style={{
                       background: surfaceBg,
                       border: `1px solid ${borderColor}`,
-                      borderLeft: `4px solid ${isSheet ? '#10b981' : '#38bdf8'}`,
+                      borderLeft: `4px solid ${isSheet ? '#10b981' : isCanva ? '#8b5cf6' : '#38bdf8'}`,
                     }}
                   >
                     <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -390,12 +396,22 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
                             ? isDark
                               ? 'bg-emerald-500/20 text-emerald-400'
                               : 'bg-emerald-100 text-emerald-700'
-                            : isDark
-                              ? 'bg-sky-500/20 text-sky-400'
-                              : 'bg-sky-100 text-sky-700'
+                            : isCanva
+                              ? isDark
+                                ? 'bg-violet-500/20 text-violet-300'
+                                : 'bg-violet-100 text-violet-700'
+                              : isDark
+                                ? 'bg-sky-500/20 text-sky-400'
+                                : 'bg-sky-100 text-sky-700'
                         }`}
                       >
-                        {isSheet ? <FileSpreadsheet size={16} /> : <FileText size={16} />}
+                        {isSheet ? (
+                          <FileSpreadsheet size={16} />
+                        ) : isCanva ? (
+                          <Palette size={16} />
+                        ) : (
+                          <FileText size={16} />
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1 space-y-1">
@@ -447,7 +463,7 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
                             range: item.link.range,
                             conversationId: activeConversation?.id,
                             messageId: item.messageId,
-                            initialMode: 'fast',
+                            initialMode: isCanva ? 'embed' : 'fast',
                           })
                         }
                         className={`inline-flex items-center justify-center gap-1 leading-none px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer ${
@@ -455,9 +471,13 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
                             ? isDark
                               ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
                               : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                            : isDark
-                              ? 'bg-sky-500 text-slate-950 hover:bg-sky-400'
-                              : 'bg-sky-600 text-white hover:bg-sky-700'
+                            : isCanva
+                              ? isDark
+                                ? 'bg-violet-500 text-white hover:bg-violet-400'
+                                : 'bg-violet-600 text-white hover:bg-violet-700'
+                              : isDark
+                                ? 'bg-sky-500 text-slate-950 hover:bg-sky-400'
+                                : 'bg-sky-600 text-white hover:bg-sky-700'
                         }`}
                       >
                         <PanelRightOpen size={12} />
@@ -474,9 +494,11 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
                               range: item.link.range,
                               conversationId: activeConversation?.id,
                               messageId: item.messageId,
-                              initialMode: 'fast',
+                              initialMode: isCanva ? 'embed' : 'fast',
                               openAiBar: true,
-                              initialAiPrompt: 'Tóm tắt nhanh các nội dung chính trong tài liệu này.',
+                              initialAiPrompt: isCanva
+                                ? 'Tóm tắt nội dung chính, quy trình và các ghi chú quan trọng trong thiết kế Canva này.'
+                                : 'Tóm tắt nhanh các nội dung chính trong tài liệu này.',
                             })
                           }
                           aria-label="Hỏi AI về tài liệu"
@@ -502,12 +524,12 @@ export const MosChatFilesPane: React.FC<MosChatFilesPaneProps> = React.memo(
                         </button>
                       </Tooltip>
 
-                      <Tooltip title="Mở trên Google">
+                      <Tooltip title={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}>
                         <a
                           href={item.link.canonicalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          aria-label="Mở trên Google"
+                          aria-label={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}
                           className="inline-flex items-center justify-center w-7 h-7 rounded-lg border hover:bg-black/5 dark:hover:bg-white/10"
                           style={{ borderColor }}
                         >

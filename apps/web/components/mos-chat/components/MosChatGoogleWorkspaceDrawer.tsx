@@ -13,6 +13,7 @@ import {
   MapPin,
   Maximize2,
   Minimize2,
+  Palette,
   RefreshCw,
   Search,
   SendHorizontal,
@@ -385,9 +386,10 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     );
 
     useGoogleWorkspaceOpenListener((nextPayload) => {
+      const inferredDefaultMode = parseGoogleWorkspaceUrl(nextPayload.url)?.kind === 'canva' ? 'embed' : 'fast';
       setPayload(nextPayload);
       setOpen(true);
-      setReaderMode(nextPayload.initialMode || 'fast');
+      setReaderMode(nextPayload.initialMode || inferredDefaultMode);
       setSelectedGid(nextPayload.gid ?? parseGoogleWorkspaceUrl(nextPayload.url)?.gid);
       setSearchQuery('');
       setSelectedCell(null);
@@ -431,6 +433,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
         : !firstTabGid || activeTabComparison === firstTabGid);
 
     const isSheet = (data?.kind || parsedUrl?.kind) === 'spreadsheet';
+    const isCanva = (data?.kind || parsedUrl?.kind) === 'canva';
     const effectiveRange = isOnInitialRangeTab ? data?.parsedRange || parsedUrl?.parsedRange || null : null;
     const effectiveRangeLabel = isOnInitialRangeTab
       ? data?.requestedRange || payload?.range || parsedUrl?.range || effectiveRange?.label || null
@@ -578,7 +581,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     const bgRaised = surfaceRaised || (isDark ? '#1e293b' : '#f8fafc');
     const bgCanvas = canvasBg || (isDark ? '#020617' : '#f1f5f9');
     const bColor = borderColor || (isDark ? 'rgba(148, 163, 184, 0.22)' : 'rgba(203, 213, 225, 0.9)');
-    const docTitle = data?.title || (isSheet ? 'Google Sheets' : 'Google Docs');
+    const docTitle = data?.title || (isSheet ? 'Google Sheets' : isCanva ? 'Thiết kế Canva' : 'Google Docs');
     const canonicalHref = data?.canonicalUrl || parsedUrl?.canonicalUrl || payload.url;
     const embedHref = data?.embedUrl || parsedUrl?.embedUrl || payload.url;
     const expandedPresetWidth = clampGwDrawerWidth(Math.round(viewportWidth * 0.72), viewportWidth);
@@ -604,7 +607,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     return (
       <aside
         data-testid="google-workspace-split-drawer"
-        aria-label="Trình đọc tài liệu Google Workspace"
+        aria-label={isCanva ? 'Trình đọc thiết kế Canva' : 'Trình đọc tài liệu Google Workspace'}
         className={containerClass}
         style={containerStyle}
       >
@@ -722,17 +725,27 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                   ? isDark
                     ? 'bg-emerald-500/20 text-emerald-400'
                     : 'bg-emerald-100 text-emerald-700'
-                  : isDark
-                    ? 'bg-sky-500/20 text-sky-400'
-                    : 'bg-sky-100 text-sky-700'
+                  : isCanva
+                    ? isDark
+                      ? 'bg-violet-500/20 text-violet-300'
+                      : 'bg-violet-100 text-violet-700'
+                    : isDark
+                      ? 'bg-sky-500/20 text-sky-400'
+                      : 'bg-sky-100 text-sky-700'
               }`}
             >
-              {isSheet ? <FileSpreadsheet size={15} /> : <FileText size={15} />}
+              {isSheet ? <FileSpreadsheet size={15} /> : isCanva ? <Palette size={15} /> : <FileText size={15} />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[12.5px] font-extrabold truncate">{docTitle}</div>
               <div className="text-[10.5px] opacity-75 flex items-center gap-1.5 truncate tabular-nums">
-                <span>{isSheet ? 'Google Sheets' : 'Google Docs'}</span>
+                <span>
+                  {isCanva
+                    ? `Canva${data?.designType ? ` ${data.designType}` : ''}${data?.authorName ? ` · ${data.authorName}` : ''}`
+                    : isSheet
+                      ? 'Google Sheets'
+                      : 'Google Docs'}
+                </span>
                 {data?.activeTab?.title && <span>· {data.activeTab.title}</span>}
                 {effectiveRangeLabel && <span className="font-bold text-amber-500">· {effectiveRangeLabel}</span>}
               </div>
@@ -757,21 +770,25 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                 }`}
               >
                 <Zap size={11} />
-                <span>Đọc nhanh mOS</span>
+                <span>{isCanva ? 'Đọc nhanh văn bản' : 'Đọc nhanh mOS'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setReaderMode('embed')}
                 className={`inline-flex items-center justify-center gap-1 leading-none px-2 py-1 rounded-md text-[10.5px] font-bold cursor-pointer transition-colors ${
                   readerMode === 'embed'
-                    ? isDark
-                      ? 'bg-sky-500 text-slate-950'
-                      : 'bg-sky-600 text-white'
+                    ? isCanva
+                      ? isDark
+                        ? 'bg-violet-500 text-white'
+                        : 'bg-violet-600 text-white'
+                      : isDark
+                        ? 'bg-sky-500 text-slate-950'
+                        : 'bg-sky-600 text-white'
                     : 'opacity-75 hover:opacity-100'
                 }`}
               >
                 <Globe size={11} />
-                <span>Google Trực tiếp</span>
+                <span>{isCanva ? 'Canva Trực tiếp' : 'Google Trực tiếp'}</span>
               </button>
             </div>
 
@@ -788,12 +805,12 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               </Tooltip>
             )}
 
-            <Tooltip title="Mở trên Google">
+            <Tooltip title={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}>
               <a
                 href={canonicalHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Mở trên Google"
+                aria-label={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}
                 className="w-7 h-7 rounded-md inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10"
               >
                 <ExternalLink size={14} />
@@ -826,7 +843,13 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={isSheet ? 'Lọc nhanh dòng, mã hàng...' : 'Tìm trong tài liệu...'}
+                  placeholder={
+                    isSheet
+                      ? 'Lọc nhanh dòng, mã hàng...'
+                      : isCanva
+                        ? 'Tìm chữ trong thiết kế Canva...'
+                        : 'Tìm trong tài liệu...'
+                  }
                   aria-label="Tìm kiếm trong tài liệu"
                   className="w-full h-7 pl-7 pr-2 rounded-md text-[11.5px] focus:outline-none"
                   style={{
@@ -1039,38 +1062,93 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
             <div
               className="px-3 py-1.5 flex items-center justify-between gap-2 text-[11px] shrink-0"
               style={{
-                background: isDark ? 'rgba(14, 165, 233, 0.12)' : 'rgba(224, 242, 254, 0.9)',
+                background: isCanva
+                  ? isDark
+                    ? 'rgba(139, 92, 246, 0.14)'
+                    : 'rgba(237, 233, 254, 0.95)'
+                  : isDark
+                    ? 'rgba(14, 165, 233, 0.12)'
+                    : 'rgba(224, 242, 254, 0.9)',
                 borderBottom: `1px solid ${bColor}`,
               }}
             >
               <span className="truncate opacity-85">
-                Đang nhúng Google trực tiếp (nếu trình duyệt chặn cookie, hãy bấm Mở tab Google riêng).
+                {isCanva
+                  ? 'Đang xem Canva trực tiếp (hỗ trợ phóng to, thu nhỏ & lật trang · cần chỉnh sửa hãy bấm Mở trên Canva).'
+                  : 'Đang nhúng Google trực tiếp (nếu trình duyệt chặn cookie, hãy bấm Mở tab Google riêng).'}
               </span>
               <a
                 href={canonicalHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-bold text-sky-500 hover:underline shrink-0"
+                className={`inline-flex items-center gap-1 font-bold hover:underline shrink-0 ${
+                  isCanva ? 'text-violet-400' : 'text-sky-500'
+                }`}
               >
-                <span>Mở trên Google</span>
+                <span>{isCanva ? 'Mở trên Canva' : 'Mở trên Google'}</span>
                 <ExternalLink size={11} />
               </a>
             </div>
-            <iframe
-              data-testid="gw-reader-embed-iframe"
-              src={embedHref}
-              title={docTitle}
-              className="block w-full flex-1 border-0 bg-white"
-              style={{ pointerEvents: isResizing ? 'none' : 'auto' }}
-              allow="clipboard-read; clipboard-write"
-            />
+            {isCanva && data?.accessStatus === 'NEEDS_SHARE' ? (
+              <div
+                className="p-5 m-4 rounded-xl border space-y-3"
+                style={{ background: bgRaised, borderColor: bColor }}
+              >
+                <div className="flex items-start gap-2.5">
+                  <Lock size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[13.5px] font-extrabold">Thiết kế Canva đang bật chế độ riêng tư</div>
+                    <div className="text-[12px] opacity-80 mt-1 leading-relaxed">
+                      Để xem trực tiếp trong mOS Chat, hãy mở thiết kế trên Canva → bấm <b>Chia sẻ (Share)</b> → đổi
+                      quyền liên kết thành <b>Bất kỳ ai có liên kết (Anyone with the link) → Xem</b>, rồi bấm{' '}
+                      <b>Thử tải lại</b>:
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={canonicalHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-bold border"
+                    style={{ borderColor: bColor }}
+                  >
+                    <ExternalLink size={12} />
+                    <span>Mở trên Canva</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void reload(true)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-bold bg-violet-500 text-white cursor-pointer"
+                  >
+                    <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                    <span>Thử tải lại</span>
+                  </button>
+                </div>
+              </div>
+            ) : isCanva && loading && !data && !embedHref.includes('/view?embed') ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 gap-2 text-[12.5px] opacity-75">
+                <Loader2 size={22} className="animate-spin text-violet-400" />
+                <span>Đang mở khung nhúng Canva...</span>
+              </div>
+            ) : (
+              <iframe
+                data-testid="gw-reader-embed-iframe"
+                src={embedHref}
+                title={docTitle}
+                className="block w-full flex-1 border-0 bg-white"
+                style={{ pointerEvents: isResizing ? 'none' : 'auto' }}
+                allow="fullscreen; clipboard-read; clipboard-write"
+                allowFullScreen
+              />
+            )}
           </div>
         ) : (
           <div ref={docBodyRef} className="flex-1 overflow-auto min-h-0 flex flex-col">
             {loading && !data && (
               <div className="flex-1 flex flex-col items-center justify-center p-8 gap-2 text-[12.5px] opacity-75">
-                <Loader2 size={22} className="animate-spin text-emerald-500" />
-                <span>Đang tải toàn bộ dữ liệu tài liệu...</span>
+                <Loader2 size={22} className={`animate-spin ${isCanva ? 'text-violet-400' : 'text-emerald-500'}`} />
+                <span>{isCanva ? 'Đang đọc thiết kế từ Canva...' : 'Đang tải toàn bộ dữ liệu tài liệu...'}</span>
               </div>
             )}
 
@@ -1088,7 +1166,46 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               </div>
             )}
 
-            {data?.accessStatus === 'NEEDS_SHARE' && (
+            {data?.accessStatus === 'NEEDS_SHARE' && isCanva && (
+              <div
+                className="p-5 m-4 rounded-xl border space-y-3"
+                style={{ background: bgRaised, borderColor: bColor }}
+              >
+                <div className="flex items-start gap-2.5">
+                  <Lock size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[13.5px] font-extrabold">Thiết kế Canva đang bật chế độ riêng tư</div>
+                    <div className="text-[12px] opacity-80 mt-1 leading-relaxed">
+                      Để xem trực tiếp trong mOS Chat, hãy mở thiết kế trên Canva → bấm <b>Chia sẻ (Share)</b> → đổi
+                      quyền liên kết thành <b>Bất kỳ ai có liên kết (Anyone with the link) → Xem</b>, rồi bấm{' '}
+                      <b>Thử tải lại</b>:
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={canonicalHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-bold border"
+                    style={{ borderColor: bColor }}
+                  >
+                    <ExternalLink size={12} />
+                    <span>Mở trên Canva</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void reload(true)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-bold bg-violet-500 text-white cursor-pointer"
+                  >
+                    <RefreshCw size={12} />
+                    <span>Thử tải lại</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {data?.accessStatus === 'NEEDS_SHARE' && !isCanva && (
               <div
                 className="p-5 m-4 rounded-xl border space-y-3"
                 style={{ background: bgRaised, borderColor: bColor }}
@@ -1262,9 +1379,30 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                 </div>
               )}
 
-            {/* FAST READER: GOOGLE DOCS CLEAN READER */}
+            {/* FAST READER: GOOGLE DOCS & CANVA CLEAN TEXT READER */}
             {data && !isSheet && (data.accessStatus === 'PUBLIC_LINK' || data.accessStatus === 'SERVICE_ACCOUNT') && (
               <div className="p-4 space-y-4">
+                {isCanva && (data.sections || []).length === 0 && (
+                  <div
+                    className="p-4 rounded-xl border space-y-2.5 text-[12.5px]"
+                    style={{ background: bgRaised, borderColor: bColor }}
+                  >
+                    <div className="font-bold">Thiết kế Canva này chủ yếu là hình ảnh/đồ họa</div>
+                    <p className="opacity-80 leading-relaxed">
+                      Không phát hiện khối văn bản tách rời trên thiết kế này. Hãy xem bản tương tác đầy đủ ở chế độ
+                      Canva Trực tiếp.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setReaderMode('embed')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold bg-violet-500 text-white cursor-pointer"
+                    >
+                      <Globe size={13} />
+                      <span>Mở Canva Trực tiếp</span>
+                    </button>
+                  </div>
+                )}
+
                 {data.headings && data.headings.length > 0 && (
                   <div
                     className="p-2.5 rounded-xl border space-y-1.5"

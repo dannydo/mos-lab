@@ -763,7 +763,11 @@ export class AiAssistantService {
             where: {
               conversationId: targetChatConvId,
               isDeleted: false,
-              text: { contains: 'docs.google.com/' },
+              OR: [
+                { text: { contains: 'docs.google.com/' } },
+                { text: { contains: 'canva.com/design/' } },
+                { text: { contains: 'canva.link/' } },
+              ],
             },
             orderBy: { createdAt: 'desc' },
             select: { text: true, senderId: true, senderRole: true, senderName: true },

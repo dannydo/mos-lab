@@ -5854,7 +5854,7 @@
         "path": "/api/auth/dev-directory",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 54
+        "line": 84
       }
     },
     {
@@ -5868,7 +5868,7 @@
         "path": "/api/auth/login",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 91
+        "line": 121
       }
     },
     {
@@ -5882,7 +5882,7 @@
         "path": "/api/auth/google",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 222
+        "line": 237
       }
     },
     {
@@ -5910,7 +5910,7 @@
         "path": "/api/auth/impersonate",
         "module": "auth",
         "handler": "preHandler",
-        "line": 461
+        "line": 443
       }
     },
     {
@@ -5924,7 +5924,7 @@
         "path": "/api/auth/impersonate/exit",
         "module": "auth",
         "handler": "preHandler",
-        "line": 582
+        "line": 551
       }
     },
     {
@@ -14201,8 +14201,8 @@
       "filePath": "apps/web/app/chat/page.tsx",
       "metadata": {
         "routePath": "/chat",
-        "apiCallsCount": 0,
-        "apiCalls": []
+        "apiCallsCount": 1,
+        "apiCalls": ["auth.me"]
       }
     },
     {
@@ -34739,6 +34739,18 @@
       }
     },
     {
+      "id": "uicomp:MosAppLauncher",
+      "type": "UIComponent",
+      "label": "<MosAppLauncher />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/MosAppLauncher.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosAppLauncher",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:QuickSearchModal",
       "type": "UIComponent",
       "label": "<QuickSearchModal />",
@@ -38344,8 +38356,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51162,
-        "lineCount": 1105,
+        "sizeBytes": 51321,
+        "lineCount": 1109,
         "ext": ".ts"
       }
     },
@@ -38552,8 +38564,8 @@
       "filePath": "apps/api/src/modules/auth/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21933,
-        "lineCount": 628,
+        "sizeBytes": 20023,
+        "lineCount": 597,
         "ext": ".ts"
       }
     },
@@ -39371,8 +39383,8 @@
       "filePath": "apps/api/src/modules/chat/chat-google-workspace.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13220,
-        "lineCount": 328,
+        "sizeBytes": 17842,
+        "lineCount": 443,
         "ext": ".ts"
       }
     },
@@ -39384,8 +39396,8 @@
       "filePath": "apps/api/src/modules/chat/chat-google-workspace.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 43806,
-        "lineCount": 1252,
+        "sizeBytes": 57950,
+        "lineCount": 1623,
         "ext": ".ts"
       }
     },
@@ -39670,7 +39682,7 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 247861,
+        "sizeBytes": 247880,
         "lineCount": 6456,
         "ext": ".ts"
       }
@@ -40879,8 +40891,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-auth.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2459,
-        "lineCount": 79,
+        "sizeBytes": 2810,
+        "lineCount": 92,
         "ext": ".ts"
       }
     },
@@ -40892,7 +40904,7 @@
       "filePath": "apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23504,
+        "sizeBytes": 23544,
         "lineCount": 630,
         "ext": ".ts"
       }
@@ -40918,8 +40930,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-mapper.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 30328,
-        "lineCount": 693,
+        "sizeBytes": 30385,
+        "lineCount": 698,
         "ext": ".ts"
       }
     },
@@ -40931,8 +40943,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14576,
-        "lineCount": 395,
+        "sizeBytes": 14568,
+        "lineCount": 393,
         "ext": ".ts"
       }
     },
@@ -40996,7 +41008,7 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10244,
+        "sizeBytes": 10264,
         "lineCount": 299,
         "ext": ".ts"
       }
@@ -41191,7 +41203,7 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24059,
+        "sizeBytes": 24099,
         "lineCount": 668,
         "ext": ".ts"
       }
@@ -42829,8 +42841,8 @@
       "filePath": "apps/api/src/modules/teams/team.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29792,
-        "lineCount": 821,
+        "sizeBytes": 31394,
+        "lineCount": 870,
         "ext": ".ts"
       }
     },
@@ -44623,8 +44635,8 @@
       "filePath": "apps/web/app/chat/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4153,
-        "lineCount": 120,
+        "sizeBytes": 4730,
+        "lineCount": 136,
         "ext": ".tsx"
       }
     },
@@ -46170,8 +46182,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27435,
-        "lineCount": 601,
+        "sizeBytes": 27447,
+        "lineCount": 603,
         "ext": ".tsx"
       }
     },
@@ -48367,8 +48379,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 72956,
-        "lineCount": 1841,
+        "sizeBytes": 73599,
+        "lineCount": 1857,
         "ext": ".tsx"
       }
     },
@@ -50408,8 +50420,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21239,
-        "lineCount": 519,
+        "sizeBytes": 21690,
+        "lineCount": 533,
         "ext": ".tsx"
       }
     },
@@ -50759,8 +50771,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/DualThumbRangeSliderPresets.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5741,
-        "lineCount": 196,
+        "sizeBytes": 6204,
+        "lineCount": 204,
         "ext": ".tsx"
       }
     },
@@ -50785,8 +50797,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/Screen03ConsultationMatrix.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22550,
-        "lineCount": 539,
+        "sizeBytes": 22766,
+        "lineCount": 543,
         "ext": ".tsx"
       }
     },
@@ -51149,8 +51161,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/DualThumbRangeSlider.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15345,
-        "lineCount": 378,
+        "sizeBytes": 15208,
+        "lineCount": 374,
         "ext": ".tsx"
       }
     },
@@ -51877,8 +51889,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/IosProfileMenuSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23707,
-        "lineCount": 540,
+        "sizeBytes": 25251,
+        "lineCount": 572,
         "ext": ".tsx"
       }
     },
@@ -52111,8 +52123,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28163,
-        "lineCount": 699,
+        "sizeBytes": 27031,
+        "lineCount": 672,
         "ext": ".tsx"
       }
     },
@@ -52280,8 +52292,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19006,
-        "lineCount": 590,
+        "sizeBytes": 19933,
+        "lineCount": 607,
         "ext": ".ts"
       }
     },
@@ -52364,6 +52376,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/state/useIosSessionAuth.ts",
+      "type": "File",
+      "label": "useIosSessionAuth.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/useIosSessionAuth.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3214,
+        "lineCount": 86,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/state/useIosSimulationMode.ts",
       "type": "File",
       "label": "useIosSimulationMode.ts",
@@ -52410,8 +52435,8 @@
       "filePath": "apps/web/app/login/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32425,
-        "lineCount": 846,
+        "sizeBytes": 33038,
+        "lineCount": 865,
         "ext": ".tsx"
       }
     },
@@ -53372,8 +53397,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3556,
-        "lineCount": 93,
+        "sizeBytes": 3579,
+        "lineCount": 94,
         "ext": ".ts"
       }
     },
@@ -53515,8 +53540,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7470,
-        "lineCount": 159,
+        "sizeBytes": 7931,
+        "lineCount": 166,
         "ext": ".ts"
       }
     },
@@ -53528,8 +53553,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9964,
-        "lineCount": 336,
+        "sizeBytes": 10738,
+        "lineCount": 350,
         "ext": ".ts"
       }
     },
@@ -54009,8 +54034,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 34481,
-        "lineCount": 1307,
+        "sizeBytes": 34654,
+        "lineCount": 1312,
         "ext": ".ts"
       }
     },
@@ -54347,8 +54372,8 @@
       "filePath": "packages/shared/src/utils/google-workspace-link.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3573,
-        "lineCount": 90,
+        "sizeBytes": 5812,
+        "lineCount": 133,
         "ext": ".ts"
       }
     },
@@ -54360,8 +54385,8 @@
       "filePath": "packages/shared/src/utils/google-workspace-link.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 8325,
-        "lineCount": 248,
+        "sizeBytes": 10484,
+        "lineCount": 313,
         "ext": ".ts"
       }
     },
@@ -73941,6 +73966,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosAppLauncher:ws:apps/web",
+      "source": "uicomp:MosAppLauncher",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosAppLauncher:token:color:primary",
+      "source": "uicomp:MosAppLauncher",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:QuickSearchModal:ws:apps/web",
       "source": "uicomp:QuickSearchModal",
       "target": "ws:apps/web",
@@ -82201,6 +82240,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/state/useIosSessionAuth.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/useIosSessionAuth.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/state/useIosSimulationMode.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/useIosSimulationMode.ts",
       "target": "ws:packages/shared",
@@ -85489,6 +85535,1392 @@
       "target": "route:GET:/api/academy-sales/workshops/:workshopId/live-state",
       "type": "API_CALL",
       "label": "CALLS academyWorkshopsPublic.getState"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/talent-assessments/:id",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy-sales/talent-payments",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy-sales/talent-payments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy-sales/workshop-menu-templates",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy-sales/workshop-menu-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/academy-sales/workshop-menu-templates/:templateId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/academy-sales/workshop-menu-templates/:templateId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy-sales/workshop-equipment-templates",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy-sales/workshop-equipment-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
+      "source": "page:/chat",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
+      "source": "page:/chat",
+      "target": "route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/chat",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/auth/dev-directory",
+      "source": "page:/chat",
+      "target": "route:GET:/api/auth/dev-directory",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/auth/login",
+      "source": "page:/chat",
+      "target": "route:POST:/api/auth/login",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/auth/google",
+      "source": "page:/chat",
+      "target": "route:POST:/api/auth/google",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/auth/me",
+      "source": "page:/chat",
+      "target": "route:GET:/api/auth/me",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/auth/impersonate",
+      "source": "page:/chat",
+      "target": "route:POST:/api/auth/impersonate",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/auth/impersonate/exit",
+      "source": "page:/chat",
+      "target": "route:POST:/api/auth/impersonate/exit",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-schema-recovery-retry",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-schema-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-build-lock-recovery-retry",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-build-lock-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/comments",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/comments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-approval",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-approval",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-retry",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/ide-implementation-receipt",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/ide-implementation-receipt",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-worker-recovery-retry",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-worker-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-commit-approval",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-commit-approval",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-deploy-approval",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-deploy-approval",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/bug-reports/:id/implementation-request-changes",
+      "source": "page:/chat",
+      "target": "route:POST:/api/bug-reports/:id/implementation-request-changes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PATCH:/api/bug-reports/:id/implementation-acceptance",
+      "source": "page:/chat",
+      "target": "route:PATCH:/api/bug-reports/:id/implementation-acceptance",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/bug-reports/:id/attachments/:attachmentId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/bug-reports/:id/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/agent/bug-reports/:key/attachments/:attachmentId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/agent/bug-reports/:key/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/claim",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/claim",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
+      "source": "page:/chat",
+      "target": "route:GET:/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/start",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/start",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/renew",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/renew",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/complete",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/complete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/commit-complete",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/commit-complete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/deploy-complete",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/deploy-complete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/progress",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/progress",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/continue",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/continue",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/request-classifier/inbox-implementations/:id/fail",
+      "source": "page:/chat",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/fail",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/request-classifier/jobs/:id/attachments/:attachmentId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/request-classifier/jobs/:id/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/calls/:customerId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/calls/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/campaigns/:id/resume",
+      "source": "page:/chat",
+      "target": "route:POST:/api/campaigns/:id/resume",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/campaigns/:id/customers",
+      "source": "page:/chat",
+      "target": "route:GET:/api/campaigns/:id/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/campaigns/:id/customers",
+      "source": "page:/chat",
+      "target": "route:POST:/api/campaigns/:id/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/campaigns/:id/transfer-customers",
+      "source": "page:/chat",
+      "target": "route:POST:/api/campaigns/:id/transfer-customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/campaigns/:id/customers/:customerId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/campaigns/:id/customers/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/campaigns/:id/customers/batch-remove",
+      "source": "page:/chat",
+      "target": "route:POST:/api/campaigns/:id/customers/batch-remove",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
+      "source": "page:/chat",
+      "target": "route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/campaigns/customer/:customerId/active-promotions",
+      "source": "page:/chat",
+      "target": "route:GET:/api/campaigns/customer/:customerId/active-promotions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "source": "page:/chat",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/chat/media/:fileName",
+      "source": "page:/chat",
+      "target": "route:GET:/api/chat/media/:fileName",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/messages",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/messages/:messageId/reaction",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/messages/:messageId/reaction",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/messages/:messageId/pin",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/messages/:messageId/pin",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/chat/messages/:messageId",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/chat/messages/:messageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/chat/messages/:messageId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/chat/messages/:messageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/messages/:messageId/buzz",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/messages/:messageId/buzz",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/conversations/:id/threads/:messageId/read",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/conversations/:id/threads/:messageId/read",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/chat/conversations/:id/members",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/conversations/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/chat/conversations/:id/members/:staffId",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/chat/conversations/:id/nickname",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/chat/conversations/:id/nickname",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/chat",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/chat/messages/search",
+      "source": "page:/chat",
+      "target": "route:GET:/api/chat/messages/search",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/cs/tickets/department-handlers",
+      "source": "page:/chat",
+      "target": "route:GET:/api/cs/tickets/department-handlers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/cs/tickets/department-handlers",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/cs/tickets/department-handlers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/cs/tickets/:id/comments",
+      "source": "page:/chat",
+      "target": "route:POST:/api/cs/tickets/:id/comments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/appointments",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/appointments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/missed/log",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/missed/log",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/missed/summary",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/missed/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/booking/:id/logs",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/booking/:id/logs",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/booking",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/booking",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/booking/:id/promotions",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/booking/:id/promotions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/booking/:id/reschedule-eligibility",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/booking/:id/reschedule-eligibility",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/customers/booking/:id",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/customers/booking/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/customers/booking/:id",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/customers/booking/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/booking-slots",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/booking-slots",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/assign",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/assign",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/revoke/preview",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/revoke/preview",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/revoke",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/revoke",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/unassign",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/unassign",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/retain",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/retain",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/booker-retain-quota",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/booker-retain-quota",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/assignment-history",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/assignment-history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/assignment-history/:batchId/details",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/assignment-history/:batchId/details",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/assignment-history/undo",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/assignment-history/undo",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/assignment-timeline",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/assignment-timeline",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/customers/:id",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/customers/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/bulk-delete",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/bulk-delete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/:id/restore",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/:id/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/history",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/customers/:id",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/customers/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/detailed",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/detailed",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/summary",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/bookings",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/bookings",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/calls",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/elsa/reminders",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/random-ids",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/random-ids",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/services",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/services",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/service-filter-options",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/service-filter-options",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/staff",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/staff",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/promotions",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/promotions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/referrals",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/referrals",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/create-options",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/create-options",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/create",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/create",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/:id/notes",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/:id/notes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/:id/notes/:noteId/unpin",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/:id/notes/:noteId/unpin",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/:id/notes/:noteId/pin",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/:id/notes/:noteId/pin",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/:id/notes",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/:id/notes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/stats",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/stats",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/loca-stats",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/loca-stats",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/nyc-stats",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/nyc-stats",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/cv-schedule-roster",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/cv-schedule-roster",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/cv-realtime-status",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/cv-realtime-status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/loca-staff-activity",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/loca-staff-activity",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/customers/loca-touchpoint",
+      "source": "page:/chat",
+      "target": "route:POST:/api/customers/loca-touchpoint",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/loca-touchpoints",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/loca-touchpoints",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/holiday-work/periods/:holidayId/payroll/adjustments",
+      "source": "page:/chat",
+      "target": "route:POST:/api/holiday-work/periods/:holidayId/payroll/adjustments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/ios/photos/:filename",
+      "source": "page:/chat",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/ios/customers/lookup",
+      "source": "page:/chat",
+      "target": "route:GET:/api/ios/customers/lookup",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/ios/simulation/mentees",
+      "source": "page:/chat",
+      "target": "route:GET:/api/ios/simulation/mentees",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/ios/customers/:customerId/history",
+      "source": "page:/chat",
+      "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/kpi/bk/games",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/kpi/bk/games/:id",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/kpi/bk/games",
+      "source": "page:/chat",
+      "target": "route:POST:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/chat",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/kpi/bk/games/:id/finalize",
+      "source": "page:/chat",
+      "target": "route:POST:/api/kpi/bk/games/:id/finalize",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/kpi/bk/games/:id",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/kpi/cv-tip/customer-history",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/cv-tip/customer-history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/kpi/booker-appointments",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/booker-appointments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/menu-access/sidebar",
+      "source": "page:/chat",
+      "target": "route:GET:/api/menu-access/sidebar",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/menu-access/configuration",
+      "source": "page:/chat",
+      "target": "route:GET:/api/menu-access/configuration",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/menu-access/policies/:menuKey",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/menu-access/inspect",
+      "source": "page:/chat",
+      "target": "route:GET:/api/menu-access/inspect",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/pilot/media/:filename",
+      "source": "page:/chat",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/chat",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/chat",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/chat",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/chat",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/chat",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/chat",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/pilot/metrics",
+      "source": "page:/chat",
+      "target": "route:GET:/api/pilot/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/sms/history/:customerId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/sms/history/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/sms/user-url/:customerId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/sms/user-url/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/staff/merge",
+      "source": "page:/chat",
+      "target": "route:POST:/api/staff/merge",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/chat",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PUT:/api/teams/:id/members",
+      "source": "page:/chat",
+      "target": "route:PUT:/api/teams/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/chat",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/chat",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/chat",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/chat",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/chat",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
     },
     {
       "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns",
@@ -113205,8 +114637,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4198,
-    "totalEdges": 8394,
+    "totalNodes": 4200,
+    "totalEdges": 8595,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -113214,17 +114646,17 @@
       "Component": 65,
       "SharedType": 1504,
       "DesignToken": 12,
-      "UIComponent": 375,
-      "File": 1285
+      "UIComponent": 376,
+      "File": 1286
     },
     "edgeTypeCounts": {
       "EXPORTS": 1698,
       "HANDLES_ROUTE": 772,
-      "RENDERS": 440,
-      "USES_TOKEN": 377,
-      "IMPORTS": 715,
+      "RENDERS": 441,
+      "USES_TOKEN": 378,
+      "IMPORTS": 716,
       "QUERIES_MODEL": 431,
-      "API_CALL": 3961
+      "API_CALL": 4159
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 182,

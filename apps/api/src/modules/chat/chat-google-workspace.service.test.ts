@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {
   ChatGoogleWorkspaceService,
+  parseCanvaEmbedHtmlToStructured,
   parseGoogleDocHtmlToStructured,
   setGoogleWorkspaceTestOverrides,
 } from './chat-google-workspace.service.js';
@@ -323,5 +324,121 @@ describe('ChatGoogleWorkspaceService', () => {
     assert.match(missionMd, /Dữ liệu Google Workspace đính kèm/);
     assert.match(missionMd, /NVL/);
     assert.match(missionMd, /Mi/);
+  });
+
+  it('resolves Canva shortlinks, extracts Whiteboard bootstrap text, and feeds @AI & Mission context', async () => {
+    const sampleBoot = {
+      page: {
+        C: {
+          D: { A: { D: 'TỔNG QUAN' } },
+          F: { displayName: 'Wings Lashes studio' },
+        },
+        nodes: [
+          {
+            'A?': 'K',
+            A: -1076,
+            B: -1118,
+            a: { C: { A: ['TỔNG QUAN\n'], C: [{ G: '32px', I: 'bold' }] } },
+          },
+          {
+            'A?': 'K',
+            A: 866,
+            B: -1122,
+            a: { C: { A: ['VỀ QUY TRÌNH\n'], C: [{ G: '32px', I: 'bold' }] } },
+          },
+          {
+            'A?': 'K',
+            A: 866,
+            B: -253,
+            a: {
+              C: {
+                A: ['Giao diện kiểm kho trên App Hàng New đã được check 694/1308\n'],
+                C: [{ G: '20px', I: 'bold' }],
+              },
+            },
+          },
+        ],
+      },
+    };
+    const escapedBootJson = JSON.stringify(sampleBoot).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const sampleEmbedHtml = `<!DOCTYPE html><html><head><title>TỔNG QUAN</title><meta name="description" content="Check out this Whiteboard designed by Wings Lashes studio."/></head><body><script>window['bootstrap'] = JSON.parse('${escapedBootJson}');</script></body></html>`;
+
+    const parsedDirect = parseCanvaEmbedHtmlToStructured(sampleEmbedHtml);
+    assert.equal(parsedDirect.title, 'TỔNG QUAN');
+    assert.equal(parsedDirect.designType, 'Whiteboard');
+    assert.equal(parsedDirect.authorName, 'Wings Lashes studio');
+    assert.equal(parsedDirect.headings.length, 2);
+    assert.match(parsedDirect.plainText, /694\/1308/);
+
+    setGoogleWorkspaceTestOverrides({
+      credentials: null,
+      clearCache: true,
+      fetchImpl: (async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url === 'https://canva.link/leea2jxg31jg7hy') {
+          return new Response('', {
+            status: 302,
+            headers: {
+              location: 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/edit?utm_content=DAHbDO6HA6o',
+            },
+          });
+        }
+        if (url.startsWith('https://www.canva.com/_oembed?')) {
+          return new Response(
+            JSON.stringify({
+              title: 'TỔNG QUAN',
+              author_name: 'Wings Lashes studio',
+              width: 1920,
+              height: 1080,
+              html: '<iframe src="https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/view?embed&amp;meta"></iframe>',
+            }),
+            { status: 200 }
+          );
+        }
+        if (url === 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/view?embed') {
+          return new Response(sampleEmbedHtml, { status: 200 });
+        }
+        return new Response('', { status: 404 });
+      }) as typeof fetch,
+    });
+
+    const preview = await ChatGoogleWorkspaceService.previewLink({
+      url: 'https://canva.link/leea2jxg31jg7hy',
+      viewer: { id: 1, role: 'super_admin' },
+    });
+    assert.equal(preview.success, true);
+    assert.equal(preview.kind, 'canva');
+    assert.equal(preview.accessStatus, 'PUBLIC_LINK');
+    assert.equal(preview.fileId, 'DAHbDO6HA6o');
+    assert.equal(preview.title, 'TỔNG QUAN');
+    assert.equal(preview.authorName, 'Wings Lashes studio');
+    assert.equal(preview.designType, 'Whiteboard');
+    assert.equal(preview.embedUrl, 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/view?embed&meta');
+    assert.ok(preview.sections?.some((s) => (s.text || '').includes('694/1308')));
+
+    const aiCtx = await ChatGoogleWorkspaceService.buildAiContextForText({
+      text: '@AI Đọc bảng Canva này https://canva.link/leea2jxg31jg7hy',
+      viewer: { id: 1, role: 'super_admin' },
+    });
+    assert.match(aiCtx, /Thiết kế Canva \(Whiteboard\): TỔNG QUAN/);
+    assert.match(aiCtx, /694\/1308/);
+  });
+
+  it('returns NEEDS_SHARE guidance when a Canva link is private', async () => {
+    setGoogleWorkspaceTestOverrides({
+      credentials: null,
+      clearCache: true,
+      fetchImpl: (async () => new Response('Forbidden', { status: 403 })) as typeof fetch,
+    });
+
+    const preview = await ChatGoogleWorkspaceService.previewLink({
+      url: 'https://www.canva.com/design/DAHbPrivate123/secretToken/view',
+      viewer: { id: 1, role: 'admin' },
+    });
+
+    assert.equal(preview.success, false);
+    assert.equal(preview.kind, 'canva');
+    assert.equal(preview.accessStatus, 'NEEDS_SHARE');
+    assert.match(preview.statusMessage || '', /Bất kỳ ai có liên kết/);
   });
 });

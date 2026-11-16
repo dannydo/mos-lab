@@ -6307,7 +6307,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         if (!rawUrl) {
           return reply.status(400).send({
             error: 'Bad Request',
-            message: 'Thiếu đường dẫn Google Sheets hoặc Google Docs cần đọc.',
+            message: 'Thiếu đường dẫn Google Sheets, Google Docs hoặc Canva cần đọc.',
           });
         }
 
@@ -6405,7 +6405,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         fastify.log.warn('GET /chat/google-workspace/preview error:', err);
         return reply.status(400).send({
           error: 'Bad Request',
-          message: err?.message || 'Không thể đọc dữ liệu Google Sheet / Docs.',
+          message: err?.message || 'Không thể đọc dữ liệu Google Sheet, Docs hoặc Canva.',
         });
       }
     }

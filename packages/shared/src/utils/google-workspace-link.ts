@@ -1,4 +1,13 @@
-export type MosChatGoogleWorkspaceKind = 'spreadsheet' | 'document';
+export type MosChatGoogleWorkspaceKind = 'spreadsheet' | 'document' | 'canva';
+
+/**
+ * Fast pre-check before running URL regex extraction across chat messages.
+ */
+export function hasSupportedWorkspaceLinkInText(text?: string | null): boolean {
+  if (!text || typeof text !== 'string') return false;
+  const lower = text.toLowerCase();
+  return lower.includes('docs.google.com/') || lower.includes('canva.com/design/') || lower.includes('canva.link/');
+}
 
 export interface ParsedGoogleWorkspaceRange {
   sheetName?: string | null;
@@ -160,77 +169,127 @@ export function parseGoogleWorkspaceUrl(rawUrl: string): ParsedGoogleWorkspaceLi
   if (!rawUrl || typeof rawUrl !== 'string') return null;
   const cleaned = trimTrailingUrlPunctuation(rawUrl);
 
-  const match = cleaned.match(
+  const googleMatch = cleaned.match(
     /^https?:\/\/docs\.google\.com\/(spreadsheets|document)\/d\/([a-zA-Z0-9_-]{10,})(?:\/[^?#]*)?(?:\?([^#]*))?(?:#(.*))?$/i
   );
-  if (!match) return null;
+  if (googleMatch) {
+    const resourceType = googleMatch[1].toLowerCase();
+    const fileId = googleMatch[2];
+    const queryRaw = googleMatch[3] || '';
+    const hashRaw = googleMatch[4] || '';
 
-  const resourceType = match[1].toLowerCase();
-  const fileId = match[2];
-  const queryRaw = match[3] || '';
-  const hashRaw = match[4] || '';
+    const kind: MosChatGoogleWorkspaceKind = resourceType === 'spreadsheets' ? 'spreadsheet' : 'document';
+    const queryParams = parseQueryStringMap(queryRaw);
+    const hashParams = parseQueryStringMap(hashRaw);
 
-  const kind: MosChatGoogleWorkspaceKind = resourceType === 'spreadsheets' ? 'spreadsheet' : 'document';
-  const queryParams = parseQueryStringMap(queryRaw);
-  const hashParams = parseQueryStringMap(hashRaw);
+    const gid = (hashParams.get('gid') || queryParams.get('gid') || '').trim() || null;
+    const rangeRaw = (hashParams.get('range') || queryParams.get('range') || '').trim() || null;
+    const parsedRange = kind === 'spreadsheet' ? parseGoogleSheetRangeNotation(rangeRaw) : null;
+    const tab = (queryParams.get('tab') || hashParams.get('tab') || '').trim() || null;
+    const heading = (hashParams.get('heading') || queryParams.get('heading') || '').trim() || null;
 
-  const gid = (hashParams.get('gid') || queryParams.get('gid') || '').trim() || null;
-  const rangeRaw = (hashParams.get('range') || queryParams.get('range') || '').trim() || null;
-  const parsedRange = kind === 'spreadsheet' ? parseGoogleSheetRangeNotation(rangeRaw) : null;
-  const tab = (queryParams.get('tab') || hashParams.get('tab') || '').trim() || null;
-  const heading = (hashParams.get('heading') || queryParams.get('heading') || '').trim() || null;
+    let canonicalUrl: string;
+    let embedUrl: string;
 
-  let canonicalUrl: string;
-  let embedUrl: string;
+    if (kind === 'spreadsheet') {
+      const queryPart = gid ? `?gid=${encodeURIComponent(gid)}` : '';
+      const hashParts: string[] = [];
+      if (gid) hashParts.push(`gid=${encodeURIComponent(gid)}`);
+      if (rangeRaw) hashParts.push(`range=${encodeURIComponent(rangeRaw)}`);
+      const hashPart = hashParts.length > 0 ? `#${hashParts.join('&')}` : '';
+      canonicalUrl = `https://docs.google.com/spreadsheets/d/${fileId}/edit${queryPart}${hashPart}`;
 
-  if (kind === 'spreadsheet') {
-    const queryPart = gid ? `?gid=${encodeURIComponent(gid)}` : '';
-    const hashParts: string[] = [];
-    if (gid) hashParts.push(`gid=${encodeURIComponent(gid)}`);
-    if (rangeRaw) hashParts.push(`range=${encodeURIComponent(rangeRaw)}`);
-    const hashPart = hashParts.length > 0 ? `#${hashParts.join('&')}` : '';
-    canonicalUrl = `https://docs.google.com/spreadsheets/d/${fileId}/edit${queryPart}${hashPart}`;
+      const embedQueryParts = ['rm=minimal'];
+      if (gid) embedQueryParts.push(`gid=${encodeURIComponent(gid)}`);
+      embedUrl = `https://docs.google.com/spreadsheets/d/${fileId}/edit?${embedQueryParts.join('&')}${hashPart}`;
+    } else {
+      const queryPart = tab ? `?tab=${encodeURIComponent(tab)}` : '';
+      const hashPart = heading ? `#heading=${encodeURIComponent(heading)}` : '';
+      canonicalUrl = `https://docs.google.com/document/d/${fileId}/edit${queryPart}${hashPart}`;
 
-    const embedQueryParts = ['rm=minimal'];
-    if (gid) embedQueryParts.push(`gid=${encodeURIComponent(gid)}`);
-    embedUrl = `https://docs.google.com/spreadsheets/d/${fileId}/edit?${embedQueryParts.join('&')}${hashPart}`;
-  } else {
-    const queryPart = tab ? `?tab=${encodeURIComponent(tab)}` : '';
-    const hashPart = heading ? `#heading=${encodeURIComponent(heading)}` : '';
-    canonicalUrl = `https://docs.google.com/document/d/${fileId}/edit${queryPart}${hashPart}`;
+      const embedQueryParts = ['rm=minimal'];
+      if (tab) embedQueryParts.push(`tab=${encodeURIComponent(tab)}`);
+      embedUrl = `https://docs.google.com/document/d/${fileId}/edit?${embedQueryParts.join('&')}${hashPart}`;
+    }
 
-    const embedQueryParts = ['rm=minimal'];
-    if (tab) embedQueryParts.push(`tab=${encodeURIComponent(tab)}`);
-    embedUrl = `https://docs.google.com/document/d/${fileId}/edit?${embedQueryParts.join('&')}${hashPart}`;
+    const shortChipLabel =
+      kind === 'spreadsheet' ? (parsedRange ? `Google Sheet · ${parsedRange.label}` : 'Google Sheet') : 'Google Docs';
+
+    const cacheKey = `${kind}:${fileId}:${gid || ''}:${parsedRange?.label || rangeRaw || ''}:${tab || ''}`;
+
+    return {
+      rawUrl: cleaned,
+      canonicalUrl,
+      embedUrl,
+      kind,
+      fileId,
+      gid,
+      range: parsedRange?.label || rangeRaw,
+      parsedRange,
+      tab,
+      heading,
+      shortChipLabel,
+      cacheKey,
+    };
   }
 
-  const shortChipLabel =
-    kind === 'spreadsheet' ? (parsedRange ? `Google Sheet · ${parsedRange.label}` : 'Google Sheet') : 'Google Docs';
+  const canvaDesignMatch = cleaned.match(
+    /^https?:\/\/(?:www\.)?canva\.com\/design\/([a-zA-Z0-9_-]{6,})(?:\/(?!view(?:$|[/?#])|edit(?:$|[/?#])|watch(?:$|[/?#]))([a-zA-Z0-9_-]{6,}))?(?:\/(view|edit|watch))?(?:\/[^?#]*)?(?:\?([^#]*))?(?:#(.*))?$/i
+  );
+  if (canvaDesignMatch) {
+    const designId = canvaDesignMatch[1];
+    const shareToken = canvaDesignMatch[2] || null;
+    const mode = (canvaDesignMatch[3] || 'view').toLowerCase();
+    const basePath = `https://www.canva.com/design/${designId}${shareToken ? `/${shareToken}` : ''}`;
+    const canonicalUrl = `${basePath}/${mode === 'edit' ? 'edit' : 'view'}`;
+    const embedUrl = `${basePath}/view?embed`;
 
-  const cacheKey = `${kind}:${fileId}:${gid || ''}:${parsedRange?.label || rangeRaw || ''}:${tab || ''}`;
+    return {
+      rawUrl: cleaned,
+      canonicalUrl,
+      embedUrl,
+      kind: 'canva',
+      fileId: designId,
+      gid: null,
+      range: null,
+      parsedRange: null,
+      tab: null,
+      heading: null,
+      shortChipLabel: 'Canva',
+      cacheKey: `canva:${designId}:${shareToken || ''}`,
+    };
+  }
 
-  return {
-    rawUrl: cleaned,
-    canonicalUrl,
-    embedUrl,
-    kind,
-    fileId,
-    gid,
-    range: parsedRange?.label || rangeRaw,
-    parsedRange,
-    tab,
-    heading,
-    shortChipLabel,
-    cacheKey,
-  };
+  const canvaShortMatch = cleaned.match(/^https?:\/\/(?:www\.)?canva\.link\/([a-zA-Z0-9_-]{4,64})(?:[/?#].*)?$/i);
+  if (canvaShortMatch) {
+    const slug = canvaShortMatch[1];
+    const canonicalUrl = `https://canva.link/${slug}`;
+    return {
+      rawUrl: cleaned,
+      canonicalUrl,
+      embedUrl: canonicalUrl,
+      kind: 'canva',
+      fileId: `canva-link-${slug}`,
+      gid: null,
+      range: null,
+      parsedRange: null,
+      tab: null,
+      heading: null,
+      shortChipLabel: 'Canva',
+      cacheKey: `canva:short:${slug}`,
+    };
+  }
+
+  return null;
 }
 
 export function extractGoogleWorkspaceLinksFromText(text?: string | null): ParsedGoogleWorkspaceLink[] {
-  if (!text || typeof text !== 'string' || !text.includes('docs.google.com/')) {
+  if (!text || typeof text !== 'string' || !hasSupportedWorkspaceLinkInText(text)) {
     return [];
   }
 
-  const urlRegex = /https?:\/\/docs\.google\.com\/(?:spreadsheets|document)\/d\/[^\s<>)"'\]]+/gi;
+  const urlRegex =
+    /https?:\/\/(?:docs\.google\.com\/(?:spreadsheets|document)\/d\/|(?:www\.)?canva\.com\/design\/|(?:www\.)?canva\.link\/)[^\s<>)"'\]]+/gi;
   const matches = text.match(urlRegex) || [];
   const seen = new Set<string>();
   const results: ParsedGoogleWorkspaceLink[] = [];

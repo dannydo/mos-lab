@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { MosChatConversation, MosChatGoogleWorkspacePreviewResponse } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -26,6 +26,7 @@ vi.mock('../../../lib/api-client', () => ({
 const SHEETS_URL =
   'https://docs.google.com/spreadsheets/d/1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ/edit?gid=516151439#gid=516151439&range=D17';
 const DOCS_URL = 'https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz123456/edit';
+const CANVA_SHORT_URL = 'https://canva.link/leea2jxg31jg7hy';
 
 describe('mOS Chat Google Workspace Reader & Files Integration', () => {
   beforeEach(() => {
@@ -515,5 +516,147 @@ describe('mOS Chat Google Workspace Reader & Files Integration', () => {
     expect(screen.queryByTestId('google-workspace-split-drawer')).toBeNull();
     expect(window.localStorage.getItem(MOS_CHAT_GW_DRAWER_SESSION_KEY)).toBeNull();
     expect(window.localStorage.getItem(MOS_CHAT_GW_DRAWER_WIDTH_KEY)).toBe('1240');
+  });
+
+  it('renders Canva preview card with 1-tap inline embed, Split Drawer embed/fast toggle, private banner, and Files filter', async () => {
+    const canvaPreview: MosChatGoogleWorkspacePreviewResponse = {
+      success: true,
+      kind: 'canva',
+      fileId: 'DAHbDO6HA6o',
+      canonicalUrl: 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/edit',
+      embedUrl: 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/view?embed&meta',
+      title: 'TỔNG QUAN',
+      authorName: 'Wings Lashes studio',
+      designType: 'Whiteboard',
+      embedWidth: 1920,
+      embedHeight: 1080,
+      accessStatus: 'PUBLIC_LINK',
+      serviceAccountEmail: 'wings-sheets-sa@wings-lashes.iam.gserviceaccount.com',
+      headings: [
+        { id: 'canva-h-0', level: 1, text: 'TỔNG QUAN' },
+        { id: 'canva-h-1', level: 1, text: 'VỀ QUY TRÌNH' },
+      ],
+      sections: [
+        { id: 'canva-h-0', type: 'heading', level: 1, text: 'TỔNG QUAN' },
+        { id: 'canva-h-1', type: 'heading', level: 1, text: 'VỀ QUY TRÌNH' },
+        {
+          id: 'canva-p-2',
+          type: 'paragraph',
+          text: 'Giao diện kiểm kho trên App Hàng New đã được check 694/1308',
+        },
+      ],
+      excerpt: 'Giao diện kiểm kho trên App Hàng New đã được check 694/1308',
+      plainText: 'TỔNG QUAN\nVỀ QUY TRÌNH\nGiao diện kiểm kho trên App Hàng New đã được check 694/1308',
+      fetchedAt: new Date().toISOString(),
+    };
+
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockResolvedValue(canvaPreview);
+
+    render(
+      <>
+        <MosChatGoogleWorkspaceCardList
+          text={CANVA_SHORT_URL}
+          conversationId="space-kho"
+          messageId="msg-c1"
+          isDark={true}
+        />
+        <MosChatGoogleWorkspaceDrawer isDark={true} activeConversationId="space-kho" />
+      </>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('TỔNG QUAN').length).toBeGreaterThan(0);
+    });
+    expect(screen.getByText(/Canva Whiteboard · Wings Lashes studio/)).toBeDefined();
+
+    // Inline iframe stays lazy until toggled on
+    expect(screen.queryByTestId('canva-inline-embed-iframe')).toBeNull();
+    fireEvent.click(screen.getByTestId('canva-inline-embed-toggle'));
+    const inlineIframe = screen.getByTestId('canva-inline-embed-iframe') as HTMLIFrameElement;
+    expect(inlineIframe.src).toContain('/view?embed');
+
+    // Opening side drawer defaults Canva links to interactive 'Canva Trực tiếp' mode
+    fireEvent.click(screen.getByRole('button', { name: /Đọc bên cạnh/ }));
+    const drawer = await screen.findByTestId('google-workspace-split-drawer');
+    expect(drawer.getAttribute('aria-label')).toBe('Trình đọc thiết kế Canva');
+    const drawerIframe = (await screen.findByTestId('gw-reader-embed-iframe')) as HTMLIFrameElement;
+    expect(drawerIframe.src).toContain('/view?embed');
+
+    // Toggle to extracted text mode ('Đọc nhanh văn bản')
+    fireEvent.click(within(drawer).getByRole('button', { name: /Đọc nhanh văn bản/ }));
+    expect(await within(drawer).findByText(/check 694\/1308/)).toBeDefined();
+
+    // Check private Canva NEEDS_SHARE guidance & Files pane filter
+    const privateCanvaPreview: MosChatGoogleWorkspacePreviewResponse = {
+      ...canvaPreview,
+      success: false,
+      fileId: 'DAHbPrivate1',
+      accessStatus: 'NEEDS_SHARE',
+      title: 'Thiết kế Canva (Chưa mở quyền xem)',
+    };
+    clearGoogleWorkspaceClientCache();
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockResolvedValueOnce(privateCanvaPreview);
+
+    const mockConversation: MosChatConversation = {
+      id: 'space-kho',
+      type: 'space',
+      name: 'hoà-nhập-kho-đt---ep-với-mos',
+      color: '#1a73e8',
+      unreadCount: 0,
+      updatedAt: '2026-11-16T07:46:30.000Z',
+      messages: [
+        {
+          id: 'msg-c1',
+          conversationId: 'space-kho',
+          senderId: 13,
+          senderName: 'Bảo Hân',
+          senderRole: 'Admin',
+          text: `@Danny Do Đố anh đọc cái này ${CANVA_SHORT_URL}`,
+          timeLabel: '14:46',
+          createdAt: '2026-11-16T07:46:30.000Z',
+        },
+        {
+          id: 'msg-s1',
+          conversationId: 'space-kho',
+          senderId: 13,
+          senderName: 'Bảo Hân',
+          senderRole: 'Admin',
+          text: SHEETS_URL,
+          timeLabel: '13:39',
+          createdAt: '2026-11-15T06:39:00.000Z',
+        },
+      ],
+    };
+
+    expect(countConversationSharedWorkspaceItems(mockConversation)).toBe(2);
+
+    render(
+      <>
+        <MosChatGoogleWorkspaceCardList
+          text="https://www.canva.com/design/DAHbPrivate1/view"
+          conversationId="space-kho"
+          messageId="msg-c2"
+          isDark={true}
+        />
+        <MosChatFilesPane
+          activeConversation={mockConversation}
+          setActiveSubtab={vi.fn()}
+          navigateToMessage={vi.fn()}
+          isDark={true}
+          surfaceBg="#0f172a"
+          surfaceRaised="#1e293b"
+          borderColor="#334155"
+        />
+      </>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Thiết kế Canva đang bật chế độ riêng tư')).toBeDefined();
+    });
+    const filesPane = screen.getByTestId('mos-chat-files-pane');
+    const canvaFilterBtn = within(filesPane).getByRole('button', { name: /Thiết kế Canva/ });
+    expect(canvaFilterBtn).toBeDefined();
+    fireEvent.click(canvaFilterBtn);
+    expect(within(filesPane).getByText(/Google Sheets, Docs & Canva \(1\)/)).toBeDefined();
   });
 });

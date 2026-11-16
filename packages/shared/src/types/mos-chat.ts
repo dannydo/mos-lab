@@ -1296,11 +1296,16 @@ export interface MosChatGoogleWorkspacePreviewResponse {
   /** Google Sheets specific */
   tabs?: MosChatGoogleSheetTabSummary[];
   activeTab?: MosChatGoogleSheetActiveTabData | null;
-  /** Google Docs specific */
+  /** Google Docs & Canva extracted structure */
   headings?: MosChatGoogleDocHeading[];
   sections?: MosChatGoogleDocSection[];
   excerpt?: string | null;
   plainText?: string | null;
+  /** Canva specific metadata */
+  authorName?: string | null;
+  designType?: string | null;
+  embedWidth?: number | null;
+  embedHeight?: number | null;
   cached?: boolean;
   fetchedAt: string;
 }

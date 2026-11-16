@@ -26,6 +26,8 @@ interface CacheEntry {
 interface TitleMetaEntry {
   title: string;
   tabTitle?: string | null;
+  designType?: string | null;
+  authorName?: string | null;
 }
 
 const PREVIEW_CACHE_TTL_MS = 60_000;
@@ -156,15 +158,22 @@ export async function fetchGoogleWorkspacePreviewCached(params: {
     })
     .then((res) => {
       if (res?.fileId) {
-        const defaultTitle = res.kind === 'spreadsheet' ? 'Google Sheets' : 'Google Docs';
+        const defaultTitle =
+          res.kind === 'spreadsheet' ? 'Google Sheets' : res.kind === 'canva' ? 'Thiết kế Canva' : 'Google Docs';
         const effectiveTitle =
           res.title && res.title !== defaultTitle ? res.title : metaByFileKeyCache.get(res.fileId)?.title || res.title;
         if (effectiveTitle) {
           const entry: TitleMetaEntry = {
             title: effectiveTitle,
             tabTitle: res.activeTab?.title || null,
+            designType: res.designType || null,
+            authorName: res.authorName || null,
           };
           metaByFileKeyCache.set(res.fileId, entry);
+          if (parsed?.fileId && parsed.fileId !== res.fileId) {
+            metaByFileKeyCache.set(parsed.fileId, entry);
+            notifyCacheUpdated(parsed.fileId);
+          }
           if (resolvedGid || res.activeTab?.gid) {
             metaByFileKeyCache.set(`${res.fileId}::${resolvedGid || res.activeTab?.gid}`, entry);
           }

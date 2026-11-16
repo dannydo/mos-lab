@@ -16,6 +16,9 @@ import {
 } from '@mos-lab/shared';
 
 export const DEFAULT_GOOGLE_WORKSPACE_SA_EMAIL = 'wings-sheets-sa@wings-lashes.iam.gserviceaccount.com';
+const CANVA_BROWSER_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const CANVA_ALLOWED_HOSTS = new Set(['canva.link', 'www.canva.link', 'canva.com', 'www.canva.com']);
 const CACHE_TTL_MS = 45_000;
 const MAX_CACHE_ENTRIES = 120;
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -494,6 +497,169 @@ function parseTabsFromPublicSheetHtml(html: string): MosChatGoogleSheetTabSummar
   return tabs;
 }
 
+interface CanvaTextNodeCandidate {
+  y: number;
+  x: number;
+  fontSize: number;
+  isBold: boolean;
+  text: string;
+}
+
+/**
+ * Extracts title, design type, author, and spatially ordered text blocks from
+ * Canva's public `/view?embed` HTML (`window['bootstrap']` + meta tags).
+ */
+export function parseCanvaEmbedHtmlToStructured(html: string): {
+  title?: string;
+  authorName?: string;
+  designType?: string;
+  headings: MosChatGoogleDocHeading[];
+  sections: MosChatGoogleDocSection[];
+  excerpt: string;
+  plainText: string;
+} {
+  const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+  const rawHtmlTitle = titleMatch ? decodeBasicHtmlEntities(titleMatch[1]).trim() : '';
+  const cleanHtmlTitle =
+    rawHtmlTitle && !/^(?:unsupported client|canva|sign in|log in)/i.test(rawHtmlTitle) ? rawHtmlTitle : undefined;
+
+  let designType: string | undefined;
+  let authorName: string | undefined;
+  const metaDescMatch =
+    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+  if (metaDescMatch?.[1]) {
+    const desc = decodeBasicHtmlEntities(metaDescMatch[1]).trim();
+    const byMatch = desc.match(/^Check out this\s+(.+?)\s+designed by\s+(.+?)\.?$/i);
+    if (byMatch) {
+      designType = byMatch[1].trim() || undefined;
+      authorName = byMatch[2].trim() || undefined;
+    }
+  }
+
+  const candidates: CanvaTextNodeCandidate[] = [];
+  let bootTitle: string | undefined;
+  let bootAuthor: string | undefined;
+
+  const bootstrapMatch = html.match(/window\[['"]bootstrap['"]\]\s*=\s*JSON\.parse\('((?:\\.|[^'])*)'\)/);
+  if (bootstrapMatch?.[1]) {
+    try {
+      const jsonText = bootstrapMatch[1].replace(/\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|[\s\S])/g, (full, esc: string) => {
+        if (esc === "'") return "'";
+        if (esc === '\\') return '\\';
+        if (esc === 'n') return '\n';
+        if (esc === 'r') return '\r';
+        if (esc === 't') return '\t';
+        if (esc === 'b') return '\b';
+        if (esc === 'f') return '\f';
+        if (esc.startsWith('x')) return String.fromCharCode(parseInt(esc.slice(1), 16));
+        return full;
+      });
+      const boot = JSON.parse(jsonText) as Record<string, unknown>;
+      const pageRoot = (boot?.page as Record<string, unknown> | undefined) || boot;
+
+      const metaTitle = (pageRoot as { C?: { D?: { A?: { D?: unknown } }; F?: { displayName?: unknown } } })?.C?.D?.A
+        ?.D;
+      if (typeof metaTitle === 'string' && metaTitle.trim()) {
+        bootTitle = metaTitle.trim();
+      }
+      const metaAuthor = (pageRoot as { C?: { F?: { displayName?: unknown } } })?.C?.F?.displayName;
+      if (typeof metaAuthor === 'string' && metaAuthor.trim()) {
+        bootAuthor = metaAuthor.trim();
+      }
+
+      const walk = (node: unknown, depth: number) => {
+        if (!node || typeof node !== 'object' || depth > 40) return;
+        if (Array.isArray(node)) {
+          for (const child of node) walk(child, depth + 1);
+          return;
+        }
+        const rec = node as Record<string, unknown>;
+        const textChunks = (rec.a as { C?: { A?: unknown; C?: unknown } } | undefined)?.C?.A;
+        if (rec['A?'] === 'K' && Array.isArray(textChunks)) {
+          const text = textChunks
+            .filter((part): part is string => typeof part === 'string')
+            .join('')
+            .replace(/\r\n/g, '\n')
+            .trim();
+          if (text) {
+            const rawStyles = (rec.a as { C?: { C?: unknown } } | undefined)?.C?.C;
+            const styles = Array.isArray(rawStyles) ? rawStyles : [];
+            const sizeEntry = styles.find((s): s is { G?: string } =>
+              Boolean(s && typeof s === 'object' && typeof (s as { G?: unknown }).G === 'string')
+            );
+            const fontSize = sizeEntry?.G ? Number.parseFloat(sizeEntry.G) || 0 : 0;
+            const isBold = styles.some((s) =>
+              Boolean(s && typeof s === 'object' && (s as { I?: unknown }).I === 'bold')
+            );
+            candidates.push({
+              y: Number(rec.A) || 0,
+              x: Number(rec.B) || 0,
+              fontSize,
+              isBold,
+              text,
+            });
+          }
+        }
+        for (const val of Object.values(rec)) {
+          walk(val, depth + 1);
+        }
+      };
+
+      walk(pageRoot, 0);
+    } catch {
+      // Malformed/encrypted bootstrap payload — oEmbed metadata still supplies preview
+    }
+  }
+
+  candidates.sort((a, b) => (Math.abs(a.y - b.y) > 40 ? a.y - b.y : a.x - b.x));
+
+  const headings: MosChatGoogleDocHeading[] = [];
+  const sections: MosChatGoogleDocSection[] = [];
+  const seenTexts = new Set<string>();
+
+  for (let i = 0; i < candidates.length && sections.length < 160; i++) {
+    const item = candidates[i];
+    const normalized = item.text.replace(/\s+/g, ' ').trim();
+    if (!normalized || seenTexts.has(normalized)) continue;
+    seenTexts.add(normalized);
+
+    const isUpperHeading =
+      item.isBold && normalized.length >= 3 && normalized.length <= 70 && normalized === normalized.toUpperCase();
+    const isHeading = item.fontSize >= 26 || isUpperHeading;
+
+    if (isHeading && headings.length < 24) {
+      const level: 1 | 2 = item.fontSize >= 30 || isUpperHeading ? 1 : 2;
+      const id = `canva-h-${headings.length}`;
+      headings.push({ id, level, text: normalized });
+      sections.push({ id, type: 'heading', level, text: normalized });
+    } else {
+      sections.push({ id: `canva-p-${sections.length}`, type: 'paragraph', text: item.text });
+    }
+  }
+
+  const plainText = sections
+    .map((s) => s.text || '')
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, 12_000);
+  const firstMeaningful =
+    sections.find((s) => s.type === 'paragraph' && s.text)?.text ||
+    sections.find((s) => s.type === 'heading' && s.text)?.text ||
+    plainText;
+  const excerpt = (firstMeaningful || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+
+  return {
+    title: bootTitle || cleanHtmlTitle,
+    authorName: authorName || bootAuthor,
+    designType,
+    headings,
+    sections,
+    excerpt,
+    plainText,
+  };
+}
+
 function isGoogleLoginHtml(html: string): boolean {
   const lower = html.toLowerCase();
   return (
@@ -558,7 +724,7 @@ export class ChatGoogleWorkspaceService {
   }): Promise<MosChatGoogleWorkspacePreviewResponse> {
     const parsedBase = parseGoogleWorkspaceUrl(params.url);
     if (!parsedBase) {
-      throw new Error('Đường dẫn Google Sheets hoặc Google Docs không hợp lệ.');
+      throw new Error('Đường dẫn Google Sheets, Google Docs hoặc Canva không hợp lệ.');
     }
 
     const effectiveUrl =
@@ -593,7 +759,9 @@ export class ChatGoogleWorkspaceService {
     const fetched =
       parsed.kind === 'spreadsheet'
         ? await this.fetchSpreadsheet(parsed, serviceAccountEmail)
-        : await this.fetchDocument(parsed, serviceAccountEmail);
+        : parsed.kind === 'canva'
+          ? await this.fetchCanva(parsed, serviceAccountEmail)
+          : await this.fetchDocument(parsed, serviceAccountEmail);
 
     if (fetched.response.accessStatus === 'PUBLIC_LINK' || fetched.response.accessStatus === 'SERVICE_ACCOUNT') {
       setCacheEntry(cacheKey, {
@@ -604,6 +772,192 @@ export class ChatGoogleWorkspaceService {
     }
 
     return applyRoleSecurityGate(fetched, params.viewer, params.sender);
+  }
+
+  private static isAllowedCanvaUrl(candidateUrl: string): boolean {
+    try {
+      const u = new URL(candidateUrl);
+      return u.protocol === 'https:' && CANVA_ALLOWED_HOSTS.has(u.hostname.toLowerCase());
+    } catch {
+      return false;
+    }
+  }
+
+  private static async resolveCanvaShortlinkSafely(rawUrl: string): Promise<string> {
+    const fetchImpl = getFetch();
+    let current = rawUrl;
+    for (let hop = 0; hop < 4; hop++) {
+      if (!this.isAllowedCanvaUrl(current)) {
+        break;
+      }
+      const parsedHop = parseGoogleWorkspaceUrl(current);
+      if (parsedHop?.kind === 'canva' && !parsedHop.fileId.startsWith('canva-link-')) {
+        return current;
+      }
+      try {
+        const res = await fetchImpl(current, {
+          redirect: 'manual',
+          headers: { 'User-Agent': CANVA_BROWSER_UA },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+        if (res.status >= 300 && res.status < 400) {
+          const loc = res.headers.get('location');
+          if (!loc) break;
+          const nextUrl = new URL(loc, current).toString();
+          if (!this.isAllowedCanvaUrl(nextUrl)) {
+            break;
+          }
+          current = nextUrl;
+          continue;
+        }
+        break;
+      } catch {
+        break;
+      }
+    }
+    return current;
+  }
+
+  private static async fetchCanva(
+    parsed: ParsedGoogleWorkspaceLink,
+    serviceAccountEmail: string
+  ): Promise<{ isPublicLink: boolean; response: MosChatGoogleWorkspacePreviewResponse }> {
+    const nowIso = new Date().toISOString();
+    const fetchImpl = getFetch();
+
+    let effectiveParsed = parsed;
+    if (parsed.fileId.startsWith('canva-link-')) {
+      const resolvedUrl = await this.resolveCanvaShortlinkSafely(parsed.rawUrl);
+      const reparsed = parseGoogleWorkspaceUrl(resolvedUrl);
+      if (reparsed?.kind === 'canva' && !reparsed.fileId.startsWith('canva-link-')) {
+        effectiveParsed = reparsed;
+      } else {
+        return {
+          isPublicLink: false,
+          response: {
+            success: false,
+            kind: 'canva',
+            fileId: parsed.fileId,
+            canonicalUrl: parsed.canonicalUrl,
+            embedUrl: parsed.embedUrl,
+            title: 'Thiết kế Canva (Không thể mở liên kết)',
+            accessStatus: 'NEEDS_SHARE',
+            serviceAccountEmail,
+            statusMessage:
+              'Không thể phân giải liên kết Canva hoặc thiết kế đang đặt chế độ riêng tư. Hãy mở liên kết trên Canva và bật quyền "Bất kỳ ai có liên kết đều có thể xem".',
+            fetchedAt: nowIso,
+          },
+        };
+      }
+    }
+
+    const [oembedSettled, embedSettled] = await Promise.allSettled([
+      fetchImpl(`https://www.canva.com/_oembed?url=${encodeURIComponent(effectiveParsed.canonicalUrl)}`, {
+        headers: { 'User-Agent': CANVA_BROWSER_UA },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      }),
+      fetchImpl(effectiveParsed.embedUrl, {
+        headers: { 'User-Agent': CANVA_BROWSER_UA },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      }),
+    ]);
+
+    let oembed: {
+      title?: string;
+      author_name?: string;
+      width?: number;
+      height?: number;
+      html?: string;
+    } | null = null;
+    if (oembedSettled.status === 'fulfilled' && oembedSettled.value.ok) {
+      try {
+        const candidate = (await oembedSettled.value.json()) as {
+          title?: unknown;
+          author_name?: unknown;
+          width?: unknown;
+          height?: unknown;
+          html?: unknown;
+        };
+        if (candidate && typeof candidate === 'object') {
+          oembed = {
+            title: typeof candidate.title === 'string' ? candidate.title : undefined,
+            author_name: typeof candidate.author_name === 'string' ? candidate.author_name : undefined,
+            width: typeof candidate.width === 'number' ? candidate.width : undefined,
+            height: typeof candidate.height === 'number' ? candidate.height : undefined,
+            html: typeof candidate.html === 'string' ? candidate.html : undefined,
+          };
+        }
+      } catch {
+        oembed = null;
+      }
+    }
+
+    let embedHtml = '';
+    if (embedSettled.status === 'fulfilled' && embedSettled.value.ok) {
+      try {
+        embedHtml = await embedSettled.value.text();
+      } catch {
+        embedHtml = '';
+      }
+    }
+
+    const parsedEmbed = embedHtml
+      ? parseCanvaEmbedHtmlToStructured(embedHtml)
+      : { headings: [], sections: [], excerpt: '', plainText: '' };
+
+    let safeIframeSrc: string | null = null;
+    if (oembed?.html) {
+      const srcMatch = oembed.html.match(/src=["']([^"']+)["']/i);
+      if (srcMatch?.[1]) {
+        const decodedSrc = decodeBasicHtmlEntities(srcMatch[1]);
+        if (/^https:\/\/(?:www\.)?canva\.com\/design\//i.test(decodedSrc)) {
+          safeIframeSrc = decodedSrc;
+        }
+      }
+    }
+
+    const isReadablePublic = Boolean(oembed || (embedHtml && parsedEmbed.title));
+    if (!isReadablePublic) {
+      return {
+        isPublicLink: false,
+        response: {
+          success: false,
+          kind: 'canva',
+          fileId: effectiveParsed.fileId,
+          canonicalUrl: effectiveParsed.canonicalUrl,
+          embedUrl: effectiveParsed.embedUrl,
+          title: 'Thiết kế Canva (Chưa mở quyền xem)',
+          accessStatus: 'NEEDS_SHARE',
+          serviceAccountEmail,
+          statusMessage:
+            'Thiết kế Canva đang để chế độ riêng tư. Hãy mở thiết kế trên Canva → bấm Chia sẻ (Share) → đổi quyền truy cập thành "Bất kỳ ai có liên kết đều có thể xem", sau đó bấm Thử tải lại.',
+          fetchedAt: nowIso,
+        },
+      };
+    }
+
+    return {
+      isPublicLink: true,
+      response: {
+        success: true,
+        kind: 'canva',
+        fileId: effectiveParsed.fileId,
+        canonicalUrl: effectiveParsed.canonicalUrl,
+        embedUrl: safeIframeSrc || effectiveParsed.embedUrl,
+        title: oembed?.title || parsedEmbed.title || 'Thiết kế Canva',
+        authorName: oembed?.author_name || parsedEmbed.authorName || null,
+        designType: parsedEmbed.designType || null,
+        embedWidth: oembed?.width || 1920,
+        embedHeight: oembed?.height || 1080,
+        accessStatus: 'PUBLIC_LINK',
+        serviceAccountEmail,
+        headings: parsedEmbed.headings,
+        sections: parsedEmbed.sections,
+        excerpt: parsedEmbed.excerpt || null,
+        plainText: parsedEmbed.plainText || null,
+        fetchedAt: nowIso,
+      },
+    };
   }
 
   private static async checkPublicLinkAndDrivePermissions(
@@ -1133,6 +1487,19 @@ export class ChatGoogleWorkspaceService {
           }
 
           chunks.push(block.trim());
+        } else if (preview.kind === 'canva') {
+          const headings = (preview.headings || []).map((h) => `${'#'.repeat(h.level)} ${h.text}`).slice(0, 12);
+          let block = `### 🎨 Thiết kế Canva${preview.designType ? ` (${preview.designType})` : ''}: ${preview.title}\n- URL: ${preview.canonicalUrl}\n`;
+          if (preview.authorName) {
+            block += `- Tác giả: ${preview.authorName}\n`;
+          }
+          if (headings.length > 0) {
+            block += `- Đầu mục chính: ${headings.join(' | ')}\n`;
+          }
+          if (preview.plainText) {
+            block += `**Nội dung trích xuất từ thiết kế:**\n${preview.plainText.slice(0, 2200)}\n`;
+          }
+          chunks.push(block.trim());
         } else {
           const headings = (preview.headings || []).map((h) => `${'#'.repeat(h.level)} ${h.text}`).slice(0, 12);
           let block = `### 📄 Google Docs: ${preview.title}\n- URL: ${preview.canonicalUrl}\n`;
@@ -1235,6 +1602,10 @@ export class ChatGoogleWorkspaceService {
             }
           }
           parts.push(section);
+        } else if (preview.kind === 'canva') {
+          parts.push(
+            `**🎨 ${preview.title}** ([Mở Canva](${preview.canonicalUrl}))\n- **Trích đoạn thiết kế:** ${preview.excerpt || preview.plainText?.slice(0, 300) || '(Xem trực tiếp trong khung nhúng)'}`
+          );
         } else {
           parts.push(
             `**📄 ${preview.title}** ([Mở Docs](${preview.canonicalUrl}))\n- **Trích đoạn:** ${preview.excerpt || preview.plainText?.slice(0, 300) || '(Trống)'}`

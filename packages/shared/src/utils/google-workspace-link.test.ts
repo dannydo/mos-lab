@@ -4,6 +4,7 @@ import {
   columnIndexToLetter,
   columnLetterToIndex,
   extractGoogleWorkspaceLinksFromText,
+  hasSupportedWorkspaceLinkInText,
   parseGoogleSheetRangeNotation,
   parseGoogleWorkspaceUrl,
 } from './google-workspace-link.js';
@@ -82,8 +83,50 @@ describe('google-workspace-link utils', () => {
     assert.equal(links[1].fileId, '1AbCDefGhIJkLmNoPqRsTuVwXyZ0123456');
   });
 
-  it('rejects non-Google-Workspace URLs safely', () => {
+  it('parses Canva shortlink and full Canva design URLs', () => {
+    const shortParsed = parseGoogleWorkspaceUrl('https://canva.link/leea2jxg31jg7hy');
+    assert.ok(shortParsed);
+    assert.equal(shortParsed.kind, 'canva');
+    assert.equal(shortParsed.fileId, 'canva-link-leea2jxg31jg7hy');
+    assert.equal(shortParsed.canonicalUrl, 'https://canva.link/leea2jxg31jg7hy');
+    assert.equal(shortParsed.shortChipLabel, 'Canva');
+
+    const fullParsed = parseGoogleWorkspaceUrl(
+      'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/edit?utm_content=DAHbDO6HA6o'
+    );
+    assert.ok(fullParsed);
+    assert.equal(fullParsed.kind, 'canva');
+    assert.equal(fullParsed.fileId, 'DAHbDO6HA6o');
+    assert.equal(fullParsed.canonicalUrl, 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/edit');
+    assert.equal(fullParsed.embedUrl, 'https://www.canva.com/design/DAHbDO6HA6o/BJIbSltALDzXJWELsU_BsQ/view?embed');
+
+    const noTokenParsed = parseGoogleWorkspaceUrl('https://www.canva.com/design/DAHbDO6HA6o/edit');
+    assert.ok(noTokenParsed);
+    assert.equal(noTokenParsed.fileId, 'DAHbDO6HA6o');
+    assert.equal(noTokenParsed.canonicalUrl, 'https://www.canva.com/design/DAHbDO6HA6o/edit');
+    assert.equal(noTokenParsed.embedUrl, 'https://www.canva.com/design/DAHbDO6HA6o/view?embed');
+  });
+
+  it('extracts mixed Google Sheet and Canva links in order', () => {
+    const text = [
+      'Sheet: https://docs.google.com/spreadsheets/d/1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ/edit?gid=516151439#range=D17',
+      'Canva: https://canva.link/leea2jxg31jg7hy',
+      '@Danny Do xem hai link tren nhe!',
+    ].join('\n');
+
+    assert.equal(hasSupportedWorkspaceLinkInText(text), true);
+    assert.equal(hasSupportedWorkspaceLinkInText('plain text without workspace links'), false);
+
+    const links = extractGoogleWorkspaceLinksFromText(text);
+    assert.equal(links.length, 2);
+    assert.equal(links[0].kind, 'spreadsheet');
+    assert.equal(links[1].kind, 'canva');
+    assert.equal(links[1].canonicalUrl, 'https://canva.link/leea2jxg31jg7hy');
+  });
+
+  it('rejects non-Google-Workspace and non-Canva URLs safely', () => {
     assert.equal(parseGoogleWorkspaceUrl('https://evil.example.com/spreadsheets/d/1234567890123'), null);
+    assert.equal(parseGoogleWorkspaceUrl('https://evil.example.com/design/DAHbDO6HA6o/view'), null);
     assert.equal(parseGoogleWorkspaceUrl('not-a-url'), null);
   });
 });

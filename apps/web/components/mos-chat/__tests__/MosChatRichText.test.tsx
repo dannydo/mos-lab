@@ -486,4 +486,33 @@ describe('MosChatRichText', () => {
       window.removeEventListener('mos-chat:open-google-workspace', onOpen);
     }
   });
+
+  it('renders Canva Smart Chip for canva.link URL and opens split drawer in embed mode on click', () => {
+    const canvaUrl = 'https://canva.link/leea2jxg31jg7hy';
+    const dispatched: Array<Record<string, unknown>> = [];
+    const onOpen = (event: Event) => {
+      dispatched.push((event as CustomEvent).detail as Record<string, unknown>);
+    };
+    window.addEventListener('mos-chat:open-google-workspace', onOpen);
+
+    try {
+      const { container } = render(<MosChatRichText content={`${canvaUrl}\n@Danny Do Đố anh đọc`} isDark={true} />);
+
+      const chip = container.querySelector('[data-google-workspace-chip="true"]') as HTMLElement | null;
+      expect(chip).not.toBeNull();
+      expect(chip?.getAttribute('data-google-workspace-kind')).toBe('canva');
+      expect(chip?.textContent).toContain('Thiết kế Canva');
+
+      const chipButton = chip?.querySelector('button') as HTMLButtonElement | null;
+      expect(chipButton).not.toBeNull();
+      fireEvent.click(chipButton!);
+      expect(dispatched.length).toBe(1);
+      expect(dispatched[0]).toMatchObject({
+        url: canvaUrl,
+        initialMode: 'embed',
+      });
+    } finally {
+      window.removeEventListener('mos-chat:open-google-workspace', onOpen);
+    }
+  });
 });
