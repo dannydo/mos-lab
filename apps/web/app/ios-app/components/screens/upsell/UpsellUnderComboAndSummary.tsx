@@ -45,6 +45,8 @@ export interface UpsellUnderComboAndSummaryProps {
   serumBonus: number;
   subtotal: number;
   showStaffRewards: boolean;
+  isSettled?: boolean;
+  customerDiamondBalance?: number;
   onOpenLockedWelcomeModal: () => void;
   onConfirmCheckout: () => void;
 }
@@ -80,9 +82,14 @@ export function UpsellUnderComboAndSummary({
   serumBonus,
   subtotal,
   showStaffRewards,
+  isSettled = false,
+  customerDiamondBalance,
   onOpenLockedWelcomeModal,
   onConfirmCheckout,
 }: UpsellUnderComboAndSummaryProps) {
+  const diamondBalance = customerDiamondBalance ?? booking?.diamondBalance ?? 0;
+  const diamondDiscountAmount = Math.min(diamondBalance * 1000, subtotal);
+  const payableAfterDiamond = Math.max(0, subtotal - diamondDiscountAmount);
   return (
     <>
       {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI */}
@@ -280,11 +287,35 @@ export function UpsellUnderComboAndSummary({
           </div>
         )}
 
+        {/* Row 2D: Ví Kim Cương khách có để tính toán */}
+        {diamondBalance > 0 && (
+          <div
+            className={`p-2.5 rounded-xl border flex items-center justify-between text-[12px] font-medium ${
+              isDark
+                ? "bg-cyan-950/25 border-cyan-800/50 text-cyan-300"
+                : "bg-cyan-50/70 border-cyan-200 text-cyan-900"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <span>💎 Ví Kim Cương:</span>
+              <span className="font-extrabold tabular-nums">
+                {diamondBalance.toLocaleString("vi-VN")} 💎
+              </span>
+              <span className="text-[10.5px] opacity-75">
+                (= {(diamondBalance * 1000).toLocaleString("vi-VN")}đ)
+              </span>
+            </div>
+            <span className="text-[11px] font-bold tabular-nums text-cyan-600 dark:text-cyan-400">
+              Ước tính sau trừ: {payableAfterDiamond.toLocaleString("vi-VN")}đ
+            </span>
+          </div>
+        )}
+
         {/* Row 3: Tổng tạm tính */}
         <div className={`pt-2 border-t border-[var(--mos-surface-border)] flex items-center justify-between`}>
           <span className={`text-[14px] font-extrabold text-[var(--mos-text)]`}>Tổng thanh toán:</span>
           <span className="text-[18px] font-black text-[#FF9500] tabular-nums">
-            {subtotal.toLocaleString('vi-VN')}đ
+            {subtotal.toLocaleString("vi-VN")}đ
           </span>
         </div>
 
@@ -360,12 +391,24 @@ export function UpsellUnderComboAndSummary({
 
       {/* Action Button */}
       <div className="pt-1">
-        <button
-          onClick={onConfirmCheckout}
-          className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide"
-        >
-          CHỐT ĐƠN & THANH TOÁN
-        </button>
+        {isSettled ? (
+          <div
+            className={`w-full py-3.5 px-4 rounded-2xl border text-center font-bold text-[14px] shadow-xs ${
+              isDark
+                ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400"
+                : "bg-emerald-50 border-emerald-300 text-emerald-800"
+            }`}
+          >
+            ✓ ĐÃ CHỐT THANH TOÁN (COMPLETED)
+          </div>
+        ) : (
+          <button
+            onClick={onConfirmCheckout}
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-black text-[15px] shadow-md active:scale-98 transition-transform text-center tracking-wide cursor-pointer"
+          >
+            CHỐT ĐƠN & THANH TOÁN
+          </button>
+        )}
       </div>
     </>
   );

@@ -293,4 +293,54 @@ describe('iPhone Per-Bottle QR Scan & Checkout Serial Chips Flow', () => {
     fireEvent.click(screen.getByTestId('checkout-serial-chip-8101'));
     expect(onUpdateCartProducts).toHaveBeenLastCalledWith([]);
   });
+
+  it('Screen11ProductUpsell displays customer Diamond balance calculation in summary card', () => {
+    const booking = makeBaseBooking({
+      diamondBalance: 150,
+      servicePrice: 340000,
+    });
+    render(
+      <Screen11ProductUpsell
+        booking={booking}
+        actor={{ staffId: 46272, name: 'Thảo Ly', tier: 'CVL', badgeLabel: 'CVL' }}
+        onBack={vi.fn()}
+        onGoToBilling={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Ví Kim Cương:/i)).toBeInTheDocument();
+    expect(screen.getByText(/150 💎/i)).toBeInTheDocument();
+    expect(screen.getByText(/= 150\.000đ/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ước tính sau trừ:/i)).toBeInTheDocument();
+  });
+
+  it('Screen11ProductUpsell strictly locks editing and displays completed badge when booking is settled', () => {
+    const booking = makeBaseBooking({
+      status: 'DONE',
+      orderState: 'Completed',
+      billing: {
+        settlementStatus: 'SETTLED_COMPLETED',
+        completedAt: '2026-11-15T12:00:00.000Z',
+      } as any,
+    });
+    render(
+      <Screen11ProductUpsell
+        booking={booking}
+        actor={{ staffId: 46272, name: 'Thảo Ly', tier: 'CVL', badgeLabel: 'CVL' }}
+        onBack={vi.fn()}
+        onGoToBilling={vi.fn()}
+      />
+    );
+
+    // Nav bar displays ✓ Đã chốt instead of Checkout
+    expect(screen.getByText('✓ Đã chốt')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Checkout' })).toBeNull();
+
+    // Prominent settlement lock banner
+    expect(screen.getByText(/ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN \(COMPLETED\)/i)).toBeInTheDocument();
+
+    // Action button replaced with locked badge
+    expect(screen.getByText(/✓ ĐÃ CHỐT THANH TOÁN \(COMPLETED\)/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /CHỐT ĐƠN & THANH TOÁN/i })).toBeNull();
+  });
 });

@@ -3,14 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import {
-  canAccessIosConsultationApp,
-  hasCompleteNaturalLashSet,
-  isAdminOrSuperAdminRole,
-  isCvRole,
-  isDoneBookingPendingCheckout,
-  resolveLockedIosRoleForUser,
-} from '@mos-lab/shared';
+import { canAccessIosConsultationApp, hasCompleteNaturalLashSet, isAdminOrSuperAdminRole, isCvRole, isDoneBookingPendingCheckout, resolveLockedIosRoleForUser, } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';

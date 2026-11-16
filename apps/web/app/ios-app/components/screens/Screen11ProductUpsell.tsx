@@ -7,35 +7,14 @@ import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import {
-  WingsComboCategoryId,
-  MatchedComboPackageOption,
-  getWingsComboCategory,
-  checkWelcomeComboEligibility,
-  matchComboCategoryAndVolumeFromBooking,
-  getComboPackagesForCategoryAndVolume,
-  calculateComboPurchaseAccounting,
-  getLashFamilyInfo,
-  resolveValidVolumeForCategory,
-  getUnderLashComboPackages,
-  resolveMatchedUpperComboFromSaved,
-  resolveMatchedUnderComboFromSaved,
-  resolveServicePriceSplit,
-} from '@mos-lab/shared';
+import { WingsComboCategoryId, MatchedComboPackageOption, getWingsComboCategory, checkWelcomeComboEligibility, matchComboCategoryAndVolumeFromBooking, getComboPackagesForCategoryAndVolume, calculateComboPurchaseAccounting, getLashFamilyInfo, resolveValidVolumeForCategory, getUnderLashComboPackages, resolveMatchedUpperComboFromSaved, resolveMatchedUnderComboFromSaved, resolveServicePriceSplit } from '@mos-lab/shared';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
 import { UpsellHeaderAndSerumSection } from './upsell/UpsellHeaderAndSerumSection';
 import { UpsellMainComboSelector } from './upsell/UpsellMainComboSelector';
 import { UpsellUnderComboAndSummary } from './upsell/UpsellUnderComboAndSummary';
 import { UpsellOverlays } from './upsell/UpsellOverlays';
 import { computeUpsellRedemptionAccounting, computeUpsellTotals } from './upsell/upsellAccountingHelpers';
-import {
-  addScannedProductToCartProducts,
-  applyYeppeumTierToCartProducts,
-  buildUpsellCheckoutPayload,
-  isYeppeumProductItem,
-  removeScannedUnitFromCartProducts,
-  resolveInitialSerumSelection,
-} from './upsell/upsellCheckoutHelpers';
+import { addScannedProductToCartProducts, applyYeppeumTierToCartProducts, buildUpsellCheckoutPayload, isYeppeumProductItem, removeScannedUnitFromCartProducts, resolveInitialSerumSelection } from './upsell/upsellCheckoutHelpers';
 import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
 
 interface Screen11ProductUpsellProps {
@@ -64,11 +43,14 @@ export function Screen11ProductUpsell({
 }: Screen11ProductUpsellProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const isSettled =
+    booking?.billing?.settlementStatus === 'SETTLED_COMPLETED' ||
+    booking?.orderState === 'Completed' ||
+    Boolean(booking?.status === 'DONE' && booking?.billing?.completedAt);
   const initialSerum = resolveInitialSerumSelection(booking?.cartProducts);
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(initialSerum.tierId);
   const [localCartProducts, setLocalCartProducts] = useState<NonNullable<BookingItem['cartProducts']>>(
-    () => booking?.cartProducts || []
-  );
+() => booking?.cartProducts || []);
   useEffect(() => {
     const synced = resolveInitialSerumSelection(booking?.cartProducts);
     setSelectedSerumTierId(synced.tierId);
@@ -143,11 +125,7 @@ export function Screen11ProductUpsell({
     manualSpecEdit && manualSpecEdit.bookingId === booking?.id ? manualSpecEdit.volume : preferredUpperSpec.volume;
 
   const setActiveCategoryAndVolume = React.useCallback(
-    (categoryId: WingsComboCategoryId, volume: number | 'under') => {
-      setManualSpecEdit({ bookingId: booking?.id, categoryId, volume });
-    },
-    [booking?.id]
-  );
+(categoryId: WingsComboCategoryId, volume: number | 'under') => setManualSpecEdit({ bookingId: booking?.id, categoryId, volume }), [booking?.id]);
 
   const familyInfo = useMemo(() => getLashFamilyInfo(activeCategoryId), [activeCategoryId]);
   const isUpTierPackage = activeCategoryId !== autoMatched.categoryId;
@@ -509,17 +487,36 @@ export function Screen11ProductUpsell({
               onToggle={() => setShowStaffRewards((prev) => !prev)}
               isDark={isDark}
             />
-            <button
-              onClick={handleConfirmCheckout}
-              className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
-            >
-              Checkout
-            </button>
+            {isSettled ? (
+              <span className="text-emerald-500 font-bold text-xs py-1 px-2.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                ✓ Đã chốt
+              </span>
+            ) : (
+              <button
+                onClick={handleConfirmCheckout}
+                className="text-[#FFB400] font-semibold text-base py-1 px-1 active:opacity-60 cursor-pointer"
+              >
+                Checkout
+              </button>
+            )}
           </div>
         }
       />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
+        {isSettled && (
+          <div className="rounded-2xl border p-3 text-xs flex items-center gap-2.5 shadow-2xs bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-600/50 dark:text-emerald-200">
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[14px]">🔒</span>
+            <div className="leading-relaxed">
+              <strong className="block text-[12px] font-bold">
+                ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)
+              </strong>
+              <span className="text-[11px] opacity-90">
+                Mọi thông tin dịch vụ, combo và sản phẩm đã khóa sổ, không thể chỉnh sửa.
+              </span>
+            </div>
+          </div>
+        )}
         <UpsellHeaderAndSerumSection
           isDark={isDark}
           booking={booking}
@@ -611,6 +608,8 @@ export function Screen11ProductUpsell({
           serumBonus={serumBonus}
           subtotal={subtotal}
           showStaffRewards={showStaffRewards}
+          isSettled={isSettled}
+          customerDiamondBalance={booking?.diamondBalance ?? 0}
           onOpenLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(true)}
           onConfirmCheckout={handleConfirmCheckout}
         />
