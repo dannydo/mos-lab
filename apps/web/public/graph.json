@@ -27443,6 +27443,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:IosCustomerHistoryLashSpec",
+      "type": "SharedType",
+      "label": "IosCustomerHistoryLashSpec",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCustomerHistoryLashSpec",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:IosCustomerHistoryServiceDetail",
       "type": "SharedType",
       "label": "IosCustomerHistoryServiceDetail",
@@ -40726,6 +40738,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/__tests__/ios-customer-lash-portfolio.test.ts",
+      "type": "File",
+      "label": "ios-customer-lash-portfolio.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/__tests__/ios-customer-lash-portfolio.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13251,
+        "lineCount": 348,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/__tests__/ios-cv-points.test.ts",
       "type": "File",
       "label": "ios-cv-points.test.ts",
@@ -40748,6 +40773,19 @@
       "metadata": {
         "sizeBytes": 10620,
         "lineCount": 287,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
+      "type": "File",
+      "label": "ios-under-lash-rounds.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11463,
+        "lineCount": 350,
         "ext": ".ts"
       }
     },
@@ -40902,8 +40940,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27583,
-        "lineCount": 685,
+        "sizeBytes": 28790,
+        "lineCount": 693,
         "ext": ".ts"
       }
     },
@@ -40915,8 +40953,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-auth.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2810,
-        "lineCount": 92,
+        "sizeBytes": 2774,
+        "lineCount": 88,
         "ext": ".ts"
       }
     },
@@ -40954,8 +40992,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-mapper.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 30385,
-        "lineCount": 698,
+        "sizeBytes": 30499,
+        "lineCount": 699,
         "ext": ".ts"
       }
     },
@@ -40980,8 +41018,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-sql.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16707,
-        "lineCount": 395,
+        "sizeBytes": 17314,
+        "lineCount": 406,
         "ext": ".ts"
       }
     },
@@ -41006,8 +41044,21 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21257,
-        "lineCount": 552,
+        "sizeBytes": 23790,
+        "lineCount": 607,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-customer-history-lashes.helper.ts",
+      "type": "File",
+      "label": "ios-customer-history-lashes.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-customer-history-lashes.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14067,
+        "lineCount": 342,
         "ext": ".ts"
       }
     },
@@ -41019,8 +41070,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15151,
-        "lineCount": 432,
+        "sizeBytes": 15704,
+        "lineCount": 440,
         "ext": ".ts"
       }
     },
@@ -41032,8 +41083,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10264,
-        "lineCount": 299,
+        "sizeBytes": 10665,
+        "lineCount": 311,
         "ext": ".ts"
       }
     },
@@ -41123,8 +41174,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-state-reconciler.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9515,
-        "lineCount": 283,
+        "sizeBytes": 10379,
+        "lineCount": 309,
         "ext": ".ts"
       }
     },
@@ -41136,8 +41187,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20248,
-        "lineCount": 567,
+        "sizeBytes": 18893,
+        "lineCount": 525,
         "ext": ".ts"
       }
     },
@@ -41162,8 +41213,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-photos.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2599,
-        "lineCount": 80,
+        "sizeBytes": 3946,
+        "lineCount": 122,
         "ext": ".ts"
       }
     },
@@ -41177,6 +41228,32 @@
       "metadata": {
         "sizeBytes": 14098,
         "lineCount": 360,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-progress-hydration.helper.ts",
+      "type": "File",
+      "label": "ios-progress-hydration.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-progress-hydration.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10197,
+        "lineCount": 261,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-progress-sync.helper.ts",
+      "type": "File",
+      "label": "ios-progress-sync.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-progress-sync.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 18023,
+        "lineCount": 473,
         "ext": ".ts"
       }
     },
@@ -41201,8 +41278,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27807,
-        "lineCount": 667,
+        "sizeBytes": 28895,
+        "lineCount": 685,
         "ext": ".ts"
       }
     },
@@ -48403,8 +48480,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75654,
-        "lineCount": 1901,
+        "sizeBytes": 75649,
+        "lineCount": 1900,
         "ext": ".tsx"
       }
     },
@@ -50444,8 +50521,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20084,
-        "lineCount": 492,
+        "sizeBytes": 20308,
+        "lineCount": 496,
         "ext": ".tsx"
       }
     },
@@ -50470,8 +50547,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02LashHistorySheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24062,
-        "lineCount": 471,
+        "sizeBytes": 25172,
+        "lineCount": 489,
         "ext": ".tsx"
       }
     },
@@ -50522,8 +50599,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25682,
-        "lineCount": 552,
+        "sizeBytes": 27410,
+        "lineCount": 587,
         "ext": ".tsx"
       }
     },
@@ -50535,8 +50612,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22882,
-        "lineCount": 511,
+        "sizeBytes": 24326,
+        "lineCount": 548,
         "ext": ".tsx"
       }
     },
@@ -50548,8 +50625,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07bLashProgressCleaned.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25084,
-        "lineCount": 560,
+        "sizeBytes": 26239,
+        "lineCount": 578,
         "ext": ".tsx"
       }
     },
@@ -50561,8 +50638,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen08LashProgressTimer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20347,
-        "lineCount": 472,
+        "sizeBytes": 22395,
+        "lineCount": 514,
         "ext": ".tsx"
       }
     },
@@ -50574,8 +50651,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29062,
-        "lineCount": 630,
+        "sizeBytes": 30020,
+        "lineCount": 670,
         "ext": ".tsx"
       }
     },
@@ -50639,8 +50716,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29474,
-        "lineCount": 621,
+        "sizeBytes": 29756,
+        "lineCount": 630,
         "ext": ".tsx"
       }
     },
@@ -50795,8 +50872,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/DualThumbRangeSliderPresets.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6204,
-        "lineCount": 204,
+        "sizeBytes": 6096,
+        "lineCount": 190,
         "ext": ".tsx"
       }
     },
@@ -50811,6 +50888,19 @@
         "sizeBytes": 6322,
         "lineCount": 168,
         "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx",
+      "type": "File",
+      "label": "LashPortfolioAcrossTabsAndUpsell.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10625,
+        "lineCount": 299,
+        "ext": ".tsx"
       }
     },
     {
@@ -50862,6 +50952,19 @@
       "metadata": {
         "sizeBytes": 9332,
         "lineCount": 227,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx",
+      "type": "File",
+      "label": "UnderLashTwoRoundServicing.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8177,
+        "lineCount": 200,
         "ext": ".tsx"
       }
     },
@@ -50990,8 +51093,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29192,
-        "lineCount": 653,
+        "sizeBytes": 29423,
+        "lineCount": 660,
         "ext": ".tsx"
       }
     },
@@ -51185,8 +51288,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/DualThumbRangeSlider.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15208,
-        "lineCount": 374,
+        "sizeBytes": 15101,
+        "lineCount": 367,
         "ext": ".tsx"
       }
     },
@@ -51445,8 +51548,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24759,
-        "lineCount": 586,
+        "sizeBytes": 26299,
+        "lineCount": 621,
         "ext": ".tsx"
       }
     },
@@ -51458,8 +51561,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingsModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25807,
-        "lineCount": 530,
+        "sizeBytes": 9429,
+        "lineCount": 220,
         "ext": ".tsx"
       }
     },
@@ -51474,6 +51577,19 @@
         "sizeBytes": 16922,
         "lineCount": 480,
         "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/servicing/AfterRoundComparisonStrip.tsx",
+      "type": "File",
+      "label": "AfterRoundComparisonStrip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/servicing/AfterRoundComparisonStrip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5587,
+        "lineCount": 123,
+        "ext": ".tsx"
       }
     },
     {
@@ -51529,6 +51645,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/servicing/ServicingRoundHeaderPill.tsx",
+      "type": "File",
+      "label": "ServicingRoundHeaderPill.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/servicing/ServicingRoundHeaderPill.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3841,
+        "lineCount": 104,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/upsell/UpsellBeforeAfterShowcaseCard.tsx",
+      "type": "File",
+      "label": "UpsellBeforeAfterShowcaseCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellBeforeAfterShowcaseCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8709,
+        "lineCount": 205,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/upsell/UpsellComboWalletAccountingCard.tsx",
       "type": "File",
       "label": "UpsellComboWalletAccountingCard.tsx",
@@ -51549,8 +51691,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellHeaderAndSerumSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14098,
-        "lineCount": 313,
+        "sizeBytes": 14293,
+        "lineCount": 316,
         "ext": ".tsx"
       }
     },
@@ -51783,8 +51925,21 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23884,
-        "lineCount": 574,
+        "sizeBytes": 26539,
+        "lineCount": 632,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx",
+      "type": "File",
+      "label": "CustomerPortfolioTriggerButton.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3727,
+        "lineCount": 94,
         "ext": ".tsx"
       }
     },
@@ -52140,6 +52295,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx",
+      "type": "File",
+      "label": "CustomerLashPortfolioTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 20937,
+        "lineCount": 521,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx",
+      "type": "File",
+      "label": "LashPhotoCompareLightbox.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8256,
+        "lineCount": 199,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -52147,8 +52328,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27031,
-        "lineCount": 672,
+        "sizeBytes": 27135,
+        "lineCount": 681,
         "ext": ".tsx"
       }
     },
@@ -52277,8 +52458,8 @@
       "filePath": "apps/web/app/ios-app/state/offlineSync.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16844,
-        "lineCount": 499,
+        "sizeBytes": 17426,
+        "lineCount": 505,
         "ext": ".ts"
       }
     },
@@ -52316,8 +52497,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19958,
-        "lineCount": 607,
+        "sizeBytes": 20032,
+        "lineCount": 611,
         "ext": ".ts"
       }
     },
@@ -52394,8 +52575,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosServicingProgress.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13414,
-        "lineCount": 368,
+        "sizeBytes": 20154,
+        "lineCount": 534,
         "ext": ".ts"
       }
     },
@@ -53330,8 +53511,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 189718,
-        "lineCount": 2355,
+        "sizeBytes": 194152,
+        "lineCount": 2414,
         "ext": ".ts"
       }
     },
@@ -53421,8 +53602,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3579,
-        "lineCount": 94,
+        "sizeBytes": 3628,
+        "lineCount": 95,
         "ext": ".ts"
       }
     },
@@ -53577,8 +53758,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10738,
-        "lineCount": 350,
+        "sizeBytes": 10770,
+        "lineCount": 355,
         "ext": ".ts"
       }
     },
@@ -53993,8 +54174,8 @@
       "filePath": "packages/shared/src/types/ios-app.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 49034,
-        "lineCount": 1573,
+        "sizeBytes": 50765,
+        "lineCount": 1623,
         "ext": ".ts"
       }
     },
@@ -54424,6 +54605,19 @@
       "metadata": {
         "sizeBytes": 20677,
         "lineCount": 611,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/utils/ios-servicing-rounds.ts",
+      "type": "File",
+      "label": "ios-servicing-rounds.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/ios-servicing-rounds.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3573,
+        "lineCount": 120,
         "ext": ".ts"
       }
     },
@@ -68852,6 +69046,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:IosCustomerHistoryLashSpec:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCustomerHistoryLashSpec",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:IosCustomerHistoryServiceDetail:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosCustomerHistoryServiceDetail",
       "target": "ws:packages/shared",
@@ -78596,6 +78797,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/ios-combo-expiry.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/ios-combo-expiry.test.ts",
       "target": "ws:packages/shared",
@@ -78687,6 +78895,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-bookings-sql.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-bookings-sql.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-combo-expiry.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
       "target": "ws:packages/shared",
@@ -78696,6 +78911,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-customer-history-lashes.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-customer-history-lashes.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -78773,6 +78995,20 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-product-scan.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-product-scan.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-progress-hydration.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-progress-hydration.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-progress-sync.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-progress-sync.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -81893,6 +82129,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen07bLashProgressCleaned.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen07bLashProgressCleaned.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen08LashProgressTimer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen08LashProgressTimer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "target": "ws:packages/shared",
@@ -81928,8 +82192,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/SelfChallengeDurationCard.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/__tests__/SelfChallengeDurationCard.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -82040,6 +82318,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/servicing/AfterRoundComparisonStrip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/servicing/AfterRoundComparisonStrip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/servicing/CvReceiveMaterialsCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/servicing/CvReceiveMaterialsCard.tsx",
       "target": "ws:packages/shared",
@@ -82049,6 +82334,20 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/servicing/SelfChallengeDurationCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/servicing/SelfChallengeDurationCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/servicing/ServicingRoundHeaderPill.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/servicing/ServicingRoundHeaderPill.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/upsell/UpsellBeforeAfterShowcaseCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/upsell/UpsellBeforeAfterShowcaseCard.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -82166,6 +82465,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/IosProfileMenuSheet.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/IosProfileMenuSheet.tsx",
       "target": "ws:packages/shared",
@@ -82203,6 +82509,20 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/combo-card/ComboCardDecorativeFrame.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/combo-card/ComboCardDecorativeFrame.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114689,31 +115009,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4202,
-    "totalEdges": 8599,
+    "totalNodes": 4217,
+    "totalEdges": 8617,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
       "FastifyRoute": 772,
       "Component": 65,
-      "SharedType": 1504,
+      "SharedType": 1505,
       "DesignToken": 12,
       "UIComponent": 378,
-      "File": 1286
+      "File": 1300
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1698,
+      "EXPORTS": 1699,
       "HANDLES_ROUTE": 772,
       "RENDERS": 443,
       "USES_TOKEN": 380,
-      "IMPORTS": 716,
+      "IMPORTS": 733,
       "QUERIES_MODEL": 431,
       "API_CALL": 4159
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 182,
     "nextPageCount": 65,
-    "sharedTypeCount": 1504
+    "sharedTypeCount": 1505
   },
   "routes": [
     {

@@ -315,6 +315,9 @@ export function saveLocalProgressSnapshot(bookingId: number, progress: any) {
             beforePhotoUrl: merged.beforePhotoUrl ? '[persisted_in_idb]' : undefined,
             cleanedPhotoUrl: merged.cleanedPhotoUrl ? '[persisted_in_idb]' : undefined,
             afterPhotoUrl: merged.afterPhotoUrl ? '[persisted_in_idb]' : undefined,
+            underBeforePhotoUrl: merged.underBeforePhotoUrl ? '[persisted_in_idb]' : undefined,
+            underCleanedPhotoUrl: merged.underCleanedPhotoUrl ? '[persisted_in_idb]' : undefined,
+            underAfterPhotoUrl: merged.underAfterPhotoUrl ? '[persisted_in_idb]' : undefined,
           };
           window.localStorage.setItem(`${prefix}${bookingId}`, JSON.stringify(lightweight));
         } catch {
@@ -393,6 +396,9 @@ export function getLocalProgressSnapshot(bookingId: number) {
       if (parsed.beforePhotoUrl === '[persisted_in_idb]') delete parsed.beforePhotoUrl;
       if (parsed.cleanedPhotoUrl === '[persisted_in_idb]') delete parsed.cleanedPhotoUrl;
       if (parsed.afterPhotoUrl === '[persisted_in_idb]') delete parsed.afterPhotoUrl;
+      if (parsed.underBeforePhotoUrl === '[persisted_in_idb]') delete parsed.underBeforePhotoUrl;
+      if (parsed.underCleanedPhotoUrl === '[persisted_in_idb]') delete parsed.underCleanedPhotoUrl;
+      if (parsed.underAfterPhotoUrl === '[persisted_in_idb]') delete parsed.underAfterPhotoUrl;
       cacheMap.set(bookingId, parsed);
       return parsed;
     }

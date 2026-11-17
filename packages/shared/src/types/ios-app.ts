@@ -1,6 +1,7 @@
 import { calculateComboBonus, type CvToCvPlusRequirements } from './career-progression.js';
 import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem } from '../catalog/combo-expiry.js';
 import type { IosCvSelfSpeedHistoryProfile, IosSelfChallengeTierKey } from '../utils/ios-self-challenge.js';
+import type { IosServicingRound } from '../utils/ios-servicing-rounds.js';
 import type { IosPromotionOption } from './ios-promotions.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
@@ -104,6 +105,8 @@ export interface LashHistoryItem {
   bookingNote?: string;
   totalPrice?: number;
   photos?: LashHistoryPhoto[];
+  underPhotos?: LashHistoryPhoto[];
+  underServiceName?: string;
   staffMembers?: {
     bookedBy?: LashHistoryStaffMember;
     checkInBy?: LashHistoryStaffMember;
@@ -244,13 +247,30 @@ export interface IosBookingAttributes extends NaturalLashConsultationAttributes 
 }
 
 export interface IosBookingProgress {
+  activeServiceRound?: IosServicingRound;
+  upperCompleted?: boolean;
   beforePhotoUrl?: string;
   cleanedPhotoUrl?: string;
   afterPhotoUrl?: string;
+  beforePhotoSavedAt?: string;
+  cleanedPhotoSavedAt?: string;
+  afterPhotoSavedAt?: string;
+  underBeforePhotoUrl?: string;
+  underCleanedPhotoUrl?: string;
+  underAfterPhotoUrl?: string;
+  underBeforePhotoSavedAt?: string;
+  underCleanedPhotoSavedAt?: string;
+  underAfterPhotoSavedAt?: string;
   elapsedSeconds: number;
   timerRunning: boolean;
   startedAt?: string;
   completedAt?: string;
+  upperStartedAt?: string;
+  upperCompletedAt?: string;
+  upperElapsedSeconds?: number;
+  underStartedAt?: string;
+  underCompletedAt?: string;
+  underElapsedSeconds?: number;
   currentStep?: number;
   savedAt?: string;
   updatedAt?: string;
@@ -260,12 +280,23 @@ export interface IosBookingProgress {
   retainLashCountRight?: number;
   retainLashes?: { left: number; right: number };
   retainAttributeValues?: Record<string, { attribute_option_value: string; attribute_key: string }>;
+  underRetainLashCountLeft?: number;
+  underRetainLashCountRight?: number;
+  underRetainLashes?: { left: number; right: number };
+  underRetainAttributeValues?: Record<string, { attribute_option_value: string; attribute_key: string }>;
   targetDurationMinutes?: number;
+  upperTargetDurationMinutes?: number;
+  underTargetDurationMinutes?: number;
   selfChallengeTier?: IosSelfChallengeTierKey;
   selfChallengeLabel?: string;
   selfChallengeBaselineMinutes?: number;
   selfChallengeSampleCount?: number;
   selfChallengeSlowerReason?: string;
+  lastLegacyProgressState?: string;
+  lastLegacyUpperState?: string;
+  lastLegacyUnderState?: string;
+  lastLegacyUpperPhotoSigs?: Record<string, string>;
+  lastLegacyUnderPhotoSigs?: Record<string, string>;
 }
 
 export interface IosScannedProductUnit {
@@ -517,6 +548,7 @@ export type IosBookingActionType =
   | 'ASSIGN_STAFF'
   | 'SAVE_PROGRESS'
   | 'START_SERVICE'
+  | 'NEXT_SERVICE_ROUND'
   | 'SAVE_SURVEY'
   | 'SAVE_UPSELL'
   | 'SAVE_PROMOTION'
@@ -1483,7 +1515,21 @@ export function formatIosPaymentMethodLabel(params: {
   return 'Chuyển khoản QR (Bank)';
 }
 
-export type IosCustomerHistoryTab = 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS';
+export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS';
+
+export interface IosCustomerHistoryLashSpec {
+  serviceName?: string;
+  isUnder?: boolean;
+  style?: string | null;
+  curl?: string | null;
+  length?: string | null;
+  thickness?: string | null;
+  strandCount?: string | null;
+  fan?: string | null;
+  color?: string | null;
+  retainLeft?: number | null;
+  retainRight?: number | null;
+}
 
 export interface IosCustomerHistoryServiceDetail {
   name: string;
@@ -1526,6 +1572,10 @@ export interface IosCustomerHistoryVisitItem {
   debtAmount: number;
   tipAmount: number;
   paymentMethodLabel: string;
+  photos?: LashHistoryPhoto[];
+  underPhotos?: LashHistoryPhoto[];
+  underServiceName?: string | null;
+  lashSpecs?: IosCustomerHistoryLashSpec[];
 }
 
 export interface IosCustomerDiamondTxnItem {

@@ -9,6 +9,7 @@ import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
 import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
 import { formatComboName } from '../LashMaterialConstraintMatrix';
 import { UpsellSerumCard } from './UpsellSerumCard';
+import { UpsellBeforeAfterShowcaseCard } from './UpsellBeforeAfterShowcaseCard';
 
 type RedemptionAccountingResult = ReturnType<typeof calculateComboRedemptionAccounting>;
 type SerumTierItem = (typeof SERUM_TIERS_CVL)[number];
@@ -151,6 +152,8 @@ export function UpsellHeaderAndSerumSection({
           </span>
         </div>
       </div>
+
+      <UpsellBeforeAfterShowcaseCard booking={booking} isDark={isDark} customerFacingMode={!showStaffRewards} />
 
       {/* Section 1A-Expired: GÓI CŨ ĐÃ HẾT HẠN — KHÓA TRỪ 0Đ & GỢI Ý MUA MỚI ĐỂ CỨU BUỔI */}
       {isOldComboExpired && (

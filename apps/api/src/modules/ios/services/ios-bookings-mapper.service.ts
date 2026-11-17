@@ -14,6 +14,7 @@ import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-me
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { BookingOverrideRecord, CustomerComboExpiryOverrideEntry } from './ios-overrides.service.js';
 import { applyCustomerComboExpiryOverridesToBooking } from './ios-combo-expiry.service.js';
+import { mergeHydratedBookingProgress } from './ios-progress-sync.helper.js';
 import { IosCustomerEnrichmentContext, LastVisitSpecSummary, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
 import { computeCanonicalCvRotationPoints } from './ios-cv-points.helper.js';
 import { resolveItemizedBookingPromotions } from './ios-promotions.service.js';
@@ -505,7 +506,7 @@ export function mapLiveOrdersToBookings(params: {
         selectedUnderCombo,
         comboRedemption,
         attributes: resolvedAttributes,
-        progress: override.progress || undefined,
+        progress: mergeHydratedBookingProgress(r.legacy_progress, override.progress),
         survey: override.survey || undefined,
         upgradePrice,
         cvRotationPoints: resolvedCvPoints,

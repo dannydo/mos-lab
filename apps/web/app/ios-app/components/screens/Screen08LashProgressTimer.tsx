@@ -1,10 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import {
+  bookingRequiresUnderLashRound,
+  resolveActiveServicingRound,
+  splitUpperAndUnderTargetDuration,
+} from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { CvFeather2Badge } from '../ui-kit/CvFeatherLabels';
+import { ServicingRoundHeaderPill } from './servicing/ServicingRoundHeaderPill';
+import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
 import { BookingItem } from '../../state/mockData';
 import { saveLocalProgressSnapshot, getLocalProgressSnapshot } from '../../state/offlineSync';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
@@ -40,30 +47,55 @@ export function Screen08LashProgressTimer({
   isAdmin = false,
   onRevertToIncoming,
 }: Screen08LashProgressTimerProps) {
-  // 1. Tính toán thời gian định mức (Target Duration) chuẩn xác theo dịch vụ
+  // 1. Tính toán thời gian định mức (Target Duration) tách biệt Vòng 1 Mi Trên & Vòng 2 Mi Dưới
   const displayServiceName = resolveDisplayServiceName(booking);
+  const hasUnderMink = bookingRequiresUnderLashRound(booking);
+  const activeRound = resolveActiveServicingRound(booking);
+  const isUnderRound = hasUnderMink && activeRound === 'UNDER';
+
   const targetMinutes = useMemo(() => {
     const progressTarget = booking.progress?.targetDurationMinutes;
+    if (isUnderRound) {
+      if (booking.progress?.underTargetDurationMinutes && booking.progress.underTargetDurationMinutes > 0) {
+        return booking.progress.underTargetDurationMinutes;
+      }
+      if (progressTarget && progressTarget > 0) {
+        return splitUpperAndUnderTargetDuration(progressTarget, true, booking.attributes?.underMinkServiceType)
+          .underMinutes;
+      }
+      return booking.attributes?.underMinkServiceType === 'Retain' ? 20 : 25;
+    }
+    if (hasUnderMink) {
+      if (booking.progress?.upperTargetDurationMinutes && booking.progress.upperTargetDurationMinutes > 0) {
+        return booking.progress.upperTargetDurationMinutes;
+      }
+      const total = progressTarget || booking.serviceDuration || 85;
+      return splitUpperAndUnderTargetDuration(total, true, booking.attributes?.underMinkServiceType).upperMinutes;
+    }
     if (progressTarget && progressTarget > 0) return progressTarget;
     if (booking.serviceDuration && booking.serviceDuration > 0) return booking.serviceDuration;
     let base = 65;
     const sName = (displayServiceName || '').toLowerCase();
     if (sName.includes('dặm') || sName.includes('refill')) base = 50;
-    if (booking.attributes?.hasUnderMink || sName.includes('mi dưới')) base += 25;
+    if (sName.includes('mi dưới')) base += 25;
     return base;
-  }, [booking, displayServiceName]);
+  }, [booking, displayServiceName, hasUnderMink, isUnderRound]);
 
   const targetSeconds = targetMinutes * 60;
 
-  // 2. Khôi phục tiến độ từ Local Storage nếu có (Chống rớt mạng / vô tình thoát trang)
+  // 2. Khôi phục tiến độ từ Local Storage hoặc bắt đầu từ 00:00 khi sang Vòng 2
   const bookingId = booking.id;
-  const progressElapsed = booking.progress?.elapsedSeconds;
-  const startedAt = booking.progress?.startedAt;
+  const progressElapsed = isUnderRound ? booking.progress?.underElapsedSeconds : booking.progress?.elapsedSeconds;
+  const roundStartedAt = isUnderRound
+    ? booking.progress?.underStartedAt ||
+      (booking.progress?.activeServiceRound === 'UNDER' ? booking.progress?.startedAt : undefined)
+    : booking.progress?.upperStartedAt || booking.progress?.startedAt;
 
   const [seconds, setSeconds] = useState<number>(() => {
-    if (startedAt) {
-      return Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
+    if (roundStartedAt) {
+      return Math.max(0, Math.floor((Date.now() - new Date(roundStartedAt).getTime()) / 1000));
     }
+    if (isUnderRound) return progressElapsed || 0;
     const cached = getLocalProgressSnapshot(bookingId);
     if (cached?.startedAt) {
       return Math.max(0, Math.floor((Date.now() - new Date(cached.startedAt).getTime()) / 1000));
@@ -73,6 +105,15 @@ export function Screen08LashProgressTimer({
     }
     return progressElapsed || 0;
   });
+
+  // Reset đồng hồ về 00:00 khi bước vào Vòng 2 (Mi Dưới)
+  useEffect(() => {
+    if (roundStartedAt) {
+      setSeconds(Math.max(0, Math.floor((Date.now() - new Date(roundStartedAt).getTime()) / 1000)));
+    } else if (isUnderRound) {
+      setSeconds(0);
+    }
+  }, [bookingId, isUnderRound, roundStartedAt]);
   const [isRunning, setIsRunning] = useState<boolean>(true);
   const [timerMode, setTimerMode] = useState<'COUNTDOWN' | 'ELAPSED'>('COUNTDOWN');
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -97,27 +138,27 @@ export function Screen08LashProgressTimer({
     saveLocalProgressSnapshot(booking.id, {
       currentStep: 9,
       bookingId: booking.id,
-      startedAt: booking.progress?.startedAt || new Date().toISOString(),
+      startedAt: roundStartedAt || new Date().toISOString(),
     });
-  }, [booking.id, booking.progress?.startedAt]);
+  }, [booking.id, roundStartedAt]);
 
-  // Timer loop & tự động lưu local snapshot (chạy ngầm tự động liên tục từ lúc bấm nhận ca / prepare)
+  // Timer loop & tự động lưu local snapshot
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
       interval = setInterval(() => {
         setSeconds((prev) => {
           let next = prev + 1;
-          if (booking.progress?.startedAt) {
-            const realElapsed = Math.floor((Date.now() - new Date(booking.progress.startedAt).getTime()) / 1000);
+          if (roundStartedAt) {
+            const realElapsed = Math.floor((Date.now() - new Date(roundStartedAt).getTime()) / 1000);
             if (realElapsed > next) next = realElapsed;
           }
           if (next % 5 === 0) {
             saveLocalProgressSnapshot(booking.id, {
-              elapsedSeconds: next,
+              ...(isUnderRound ? { underElapsedSeconds: next } : { elapsedSeconds: next }),
               targetSeconds,
               isRunning: true,
-              startedAt: booking.progress?.startedAt,
+              startedAt: roundStartedAt,
               bookingId: booking.id,
               serviceName: booking.serviceName,
               currentStep: 9,
@@ -128,7 +169,7 @@ export function Screen08LashProgressTimer({
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, booking.id, booking.progress?.startedAt, targetSeconds, booking.serviceName]);
+  }, [isRunning, booking.id, roundStartedAt, isUnderRound, targetSeconds, booking.serviceName]);
 
   const formatTime = (totalSec: number) => {
     const absSec = Math.abs(totalSec);
@@ -232,6 +273,8 @@ export function Screen08LashProgressTimer({
 
       {/* 3. Main Body */}
       <div className="flex-1 flex flex-col justify-around px-4 py-4 overflow-y-auto space-y-3">
+        <ServicingRoundHeaderPill booking={booking} />
+        <CustomerPortfolioTriggerButton booking={booking} compact />
         {/* Toggle Mode: Countdown vs Elapsed */}
         <div className="flex justify-center">
           <div

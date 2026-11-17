@@ -105,7 +105,9 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
               {item.date} · {item.serviceName}
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+              >
                 <span>★</span> {item.rating || '5.0'}
               </span>
               <span className="text-[var(--mos-text-muted)]">·</span>
@@ -126,60 +128,81 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
 
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 select-none">
-          {/* Section 1: 3 Bắt Buộc Tấm Hình */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[var(--mos-text-muted)] flex items-center gap-1">
-                <span>📸</span> 3 TẤM HÌNH BẮT BUỘC
-              </span>
-              <span
-                className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
-                  isDark
-                    ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40'
-                    : 'text-emerald-700 bg-emerald-50 border-emerald-200/70'
-                }`}
-              >
-                ✓ Đủ 3 góc chụp
-              </span>
-            </div>
-
-            <div className="flex flex-col space-y-3">
-              {photos.map((p, idx) => {
-                const thumbUrl = p.url.includes('/original/') ? p.url.replace('/original/', '/thumbnail/') : p.url;
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => setZoomPhoto(p)}
-                    className="group relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900 border border-[var(--mos-surface-border)] shadow-xs cursor-pointer hover:border-blue-400 hover:shadow-md transition-all flex items-center justify-center"
+          {/* Section 1: 3 Bắt Buộc Tấm Hình (Mi Trên & Mi Dưới nếu có) */}
+          <div className="space-y-4">
+            {[
+              {
+                key: 'upper',
+                title:
+                  item.underPhotos && item.underPhotos.length > 0
+                    ? '📸 VÒNG 1 · MI TRÊN (3 TẤM HÌNH)'
+                    : '📸 3 TẤM HÌNH BẮT BUỘC',
+                badge: `${photos.length === 3 ? '✓ Đủ 3 góc chụp' : `✓ ${photos.length} ảnh`}`,
+                list: photos,
+              },
+              ...(item.underPhotos && item.underPhotos.length > 0
+                ? [
+                    {
+                      key: 'under',
+                      title: `📸 VÒNG 2 · ${(item.underServiceName || 'MI DƯỚI').toUpperCase()} (${item.underPhotos.length} TẤM HÌNH)`,
+                      badge: `${item.underPhotos.length === 3 ? '✓ Đủ 3 góc Mi Dưới' : `✓ ${item.underPhotos.length} ảnh`}`,
+                      list: item.underPhotos,
+                    },
+                  ]
+                : []),
+            ].map((section) => (
+              <div key={section.key}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[var(--mos-text-muted)] flex items-center gap-1">
+                    {section.title}
+                  </span>
+                  <span
+                    className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
+                      isDark
+                        ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40'
+                        : 'text-emerald-700 bg-emerald-50 border-emerald-200/70'
+                    }`}
                   >
-                    <img
-                      src={thumbUrl}
-                      alt={p.label}
-                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                      loading="eager"
-                      decoding="async"
-                    />
-                    {/* Top gradient & Label badge */}
-                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-white text-[11.5px] font-black border border-white/20 shadow-md">
-                        {p.label}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[10.5px] font-bold border border-white/20 shadow-md group-hover:bg-blue-600 transition-colors">
-                        <ZoomIn className="w-3.5 h-3.5" /> Phóng to
-                      </span>
-                    </div>
+                    {section.badge}
+                  </span>
+                </div>
 
-                    {/* Bottom overlay with Sublabel */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 pt-6 flex items-end justify-between pointer-events-none">
-                      <span className="text-[11px] font-medium text-white/95 drop-shadow-xs line-clamp-1">
-                        {p.sublabel}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-[10px] text-[var(--mos-text-muted)] mt-1.5 italic text-center">
+                <div className="flex flex-col space-y-3">
+                  {section.list.map((p, idx) => {
+                    const thumbUrl = p.url.includes('/original/') ? p.url.replace('/original/', '/thumbnail/') : p.url;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setZoomPhoto(p)}
+                        className="group relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900 border border-[var(--mos-surface-border)] shadow-xs cursor-pointer hover:border-blue-400 hover:shadow-md transition-all flex items-center justify-center"
+                      >
+                        <img
+                          src={thumbUrl}
+                          alt={p.label}
+                          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                          loading="eager"
+                          decoding="async"
+                        />
+                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                          <span className="px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-white text-[11.5px] font-black border border-white/20 shadow-md">
+                            {p.label}
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[10.5px] font-bold border border-white/20 shadow-md group-hover:bg-blue-600 transition-colors">
+                            <ZoomIn className="w-3.5 h-3.5" /> Phóng to
+                          </span>
+                        </div>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 pt-6 flex items-end justify-between pointer-events-none">
+                          <span className="text-[11px] font-medium text-white/95 drop-shadow-xs line-clamp-1">
+                            {p.sublabel}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <p className="text-[10px] text-[var(--mos-text-muted)] italic text-center">
               Nhấp vào ảnh bất kỳ để phóng to xem chi tiết bờ mi & chân nối
             </p>
           </div>
@@ -337,7 +360,9 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
               {/* Độ cong */}
               <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
                 <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Độ cong</span>
-                <span className={`text-[13px] font-black block truncate mt-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                <span
+                  className={`text-[13px] font-black block truncate mt-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                >
                   {(attrs.curl || 'C').replace(/^Cong\s+/i, '')}
                 </span>
               </div>
@@ -351,7 +376,9 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
               {/* Độ dày */}
               <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
                 <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Độ dày</span>
-                <span className={`text-[12.5px] font-black block truncate mt-0.5 tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                <span
+                  className={`text-[12.5px] font-black block truncate mt-0.5 tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}
+                >
                   {(attrs.thickness || '0.10').replace(/\s*mm/gi, '')}
                 </span>
               </div>
@@ -365,7 +392,9 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
               {/* Dáng mắt */}
               <div className="bg-[var(--mos-surface-raised)] rounded-xl p-2 border border-[var(--mos-surface-border)]">
                 <span className="text-[9px] font-bold text-[var(--mos-text-muted)] uppercase block">Dáng mắt</span>
-                <span className={`text-[12px] font-black block truncate mt-0.5 ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>
+                <span
+                  className={`text-[12px] font-black block truncate mt-0.5 ${isDark ? 'text-purple-400' : 'text-purple-700'}`}
+                >
                   {attrs.eyeShape || 'Mí lót'}
                 </span>
               </div>
@@ -387,7 +416,9 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
                 >
                   <span>📝</span> Ghi chú kỹ thuật từ chuyên viên
                 </span>
-                <p className={`text-[12px] font-medium mt-1 leading-snug ${isDark ? 'text-amber-100' : 'text-amber-950'}`}>
+                <p
+                  className={`text-[12px] font-medium mt-1 leading-snug ${isDark ? 'text-amber-100' : 'text-amber-950'}`}
+                >
                   {attrs.notes}
                 </p>
               </div>

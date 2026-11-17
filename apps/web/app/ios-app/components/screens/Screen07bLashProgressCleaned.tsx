@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { bookingRequiresUnderLashRound, resolveActiveServicingRound } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { IosCloudSyncBadge } from '../ui-kit/IosCloudSyncBadge';
+import { ServicingRoundHeaderPill } from './servicing/ServicingRoundHeaderPill';
+import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
 import { BookingItem } from '../../state/mockData';
 import {
   saveLocalProgressSnapshot,
@@ -38,8 +41,20 @@ export function Screen07bLashProgressCleaned({
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'uploading' | 'synced' | 'offline'>('idle');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Nhận diện ca Dặm mi (Refill / Retain)
+  const bookingId = booking?.id;
+  const hasUnderMink = bookingRequiresUnderLashRound(booking);
+  const activeRound = resolveActiveServicingRound(booking);
+  const isUnderRound = hasUnderMink && activeRound === 'UNDER';
+  const photoField = isUnderRound ? 'underCleanedPhotoUrl' : 'cleanedPhotoUrl';
+  const savedAtField = isUnderRound ? 'underCleanedPhotoSavedAt' : 'cleanedPhotoSavedAt';
+  const retainLeftField = isUnderRound ? 'underRetainLashCountLeft' : 'retainLashCountLeft';
+  const retainRightField = isUnderRound ? 'underRetainLashCountRight' : 'retainLashCountRight';
+
+  // Nhận diện ca Dặm mi (Refill / Retain) ĐỘC LẬP cho từng vòng (Mi Trên vs Mi Dưới)
   const detectedRefill = useMemo(() => {
+    if (isUnderRound) {
+      return booking?.attributes?.underMinkServiceType === 'Retain';
+    }
     const sName = (booking?.serviceName || '').toLowerCase();
     const sType = String(booking?.serviceType || '').toLowerCase();
     const bAny = booking as any;
@@ -68,47 +83,64 @@ export function Screen07bLashProgressCleaned({
       return false;
     }
     return isRetainService;
-  }, [booking]);
+  }, [booking, isUnderRound]);
 
   // Hỗ trợ nút bật/tắt chế độ Dặm để test trên bất kỳ ca nào
   const [manualRefillMode, setManualRefillMode] = useState<boolean | null>(null);
   const isRefill = manualRefillMode !== null ? manualRefillMode : detectedRefill;
 
-  // Khôi phục ảnh đã chụp/lưu trước đó nếu có
-  const bookingId = booking?.id;
-  const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
-    if (!bookingId) return null;
+  const getSavedCleanedValue = (): string => {
+    if (!bookingId) return '';
     const cached = getLocalProgressSnapshot(bookingId);
-    const saved = booking?.progress?.cleanedPhotoUrl || cached?.cleanedPhotoUrl || null;
+    return (
+      (booking?.progress?.[photoField] as string | undefined) || (cached?.[photoField] as string | undefined) || ''
+    );
+  };
+
+  const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
+    const saved = getSavedCleanedValue();
     return saved && !saved.startsWith('DECLINED:') ? saved : null;
   });
   const [isPhotoDeclined, setIsPhotoDeclined] = useState<boolean>(() => {
-    if (!bookingId) return false;
-    const cached = getLocalProgressSnapshot(bookingId);
-    const saved = booking?.progress?.cleanedPhotoUrl || cached?.cleanedPhotoUrl || '';
-    return Boolean(saved.startsWith('DECLINED:'));
+    return Boolean(getSavedCleanedValue().startsWith('DECLINED:'));
   });
   const [declineReason, setDeclineReason] = useState<string>(() => {
-    if (!bookingId) return 'Khách nhạy cảm riêng tư';
-    const cached = getLocalProgressSnapshot(bookingId);
-    const saved = booking?.progress?.cleanedPhotoUrl || cached?.cleanedPhotoUrl || '';
+    const saved = getSavedCleanedValue();
     return saved.startsWith('DECLINED:') ? saved.replace('DECLINED:', '') : 'Khách nhạy cảm riêng tư';
   });
 
-  // Số lượng mi còn lại mắt trái (#17: extension-lash-count-left) và mắt phải (#18: extension-lash-count-right)
+  // Số lượng mi còn lại mắt trái (#17) và mắt phải (#18) theo vòng hiện tại
   const [leftLashCount, setLeftLashCount] = useState<string>(() => {
     if (!bookingId) return '';
     const cached = getLocalProgressSnapshot(bookingId);
-    const val = booking?.progress?.retainLashCountLeft ?? cached?.retainLashCountLeft;
+    const val = booking?.progress?.[retainLeftField] ?? cached?.[retainLeftField];
     return val !== undefined && val !== null ? String(val) : '';
   });
 
   const [rightLashCount, setRightLashCount] = useState<string>(() => {
     if (!bookingId) return '';
     const cached = getLocalProgressSnapshot(bookingId);
-    const val = booking?.progress?.retainLashCountRight ?? cached?.retainLashCountRight;
+    const val = booking?.progress?.[retainRightField] ?? cached?.[retainRightField];
     return val !== undefined && val !== null ? String(val) : '';
   });
+
+  // Reset local state khi chuyển vòng (Vòng 1 Mi Trên -> Vòng 2 Mi Dưới)
+  useEffect(() => {
+    if (!bookingId) return;
+    const cached = getLocalProgressSnapshot(bookingId);
+    const saved = getSavedCleanedValue();
+    const declined = saved.startsWith('DECLINED:');
+    const lv = booking?.progress?.[retainLeftField] ?? cached?.[retainLeftField];
+    const rv = booking?.progress?.[retainRightField] ?? cached?.[retainRightField];
+    setManualRefillMode(null);
+    setValidationError(null);
+    setCloudSyncStatus('idle');
+    setPhotoPreview(saved && !declined ? saved : null);
+    setIsPhotoDeclined(declined);
+    setDeclineReason(declined ? saved.replace('DECLINED:', '') : 'Khách nhạy cảm riêng tư');
+    setLeftLashCount(lv !== undefined && lv !== null ? String(lv) : '');
+    setRightLashCount(rv !== undefined && rv !== null ? String(rv) : '');
+  }, [bookingId, isUnderRound, photoField, retainLeftField, retainRightField]);
 
   // Tự động khôi phục ảnh và số lượng mi từ IndexedDB và đồng bộ currentStep = 8
   useEffect(() => {
@@ -116,32 +148,32 @@ export function Screen07bLashProgressCleaned({
     saveLocalProgressSnapshot(bookingId, { currentStep: 8 });
     if (!photoPreview) {
       void getLocalProgressSnapshotAsync(bookingId).then((cached) => {
-        if (cached?.cleanedPhotoUrl) {
-          setPhotoPreview(cached.cleanedPhotoUrl);
+        const val = cached?.[photoField] as string | undefined;
+        if (val && !val.startsWith('DECLINED:')) setPhotoPreview(val);
+        if (cached?.[retainLeftField] !== undefined && !leftLashCount) {
+          setLeftLashCount(String(cached[retainLeftField]));
         }
-        if (cached?.retainLashCountLeft !== undefined && !leftLashCount) {
-          setLeftLashCount(String(cached.retainLashCountLeft));
-        }
-        if (cached?.retainLashCountRight !== undefined && !rightLashCount) {
-          setRightLashCount(String(cached.retainLashCountRight));
+        if (cached?.[retainRightField] !== undefined && !rightLashCount) {
+          setRightLashCount(String(cached[retainRightField]));
         }
       });
     }
-  }, [bookingId, photoPreview]);
+  }, [bookingId, photoPreview, photoField, retainLeftField, retainRightField]);
 
   // Đồng bộ đa thiết bị tức thì khi server cập nhật ảnh Vệ sinh mới (chỉ khi không đang tự chọn ảnh)
   useEffect(() => {
     if (isSelectingRef.current) return;
-    if (booking?.progress?.cleanedPhotoUrl && booking.progress.cleanedPhotoUrl !== photoPreview) {
-      setPhotoPreview(booking.progress.cleanedPhotoUrl);
+    const remotePhoto = booking?.progress?.[photoField] as string | undefined;
+    if (remotePhoto && !remotePhoto.startsWith('DECLINED:') && remotePhoto !== photoPreview) {
+      setPhotoPreview(remotePhoto);
     }
-    if (booking?.progress?.retainLashCountLeft !== undefined && !leftLashCount) {
-      setLeftLashCount(String(booking.progress.retainLashCountLeft));
+    if (booking?.progress?.[retainLeftField] !== undefined && !leftLashCount) {
+      setLeftLashCount(String(booking.progress[retainLeftField]));
     }
-    if (booking?.progress?.retainLashCountRight !== undefined && !rightLashCount) {
-      setRightLashCount(String(booking.progress.retainLashCountRight));
+    if (booking?.progress?.[retainRightField] !== undefined && !rightLashCount) {
+      setRightLashCount(String(booking.progress[retainRightField]));
     }
-  }, [booking?.progress]);
+  }, [booking?.progress, photoField, retainLeftField, retainRightField]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -149,12 +181,10 @@ export function Screen07bLashProgressCleaned({
       isSelectingRef.current = true;
       let instantUrl: string | null = null;
       try {
-        // 1. Phản hồi thị giác tức thời (0ms): Hiện ảnh ngay lập tức và kích hoạt spinner upload
         instantUrl = URL.createObjectURL(file);
         setPhotoPreview(instantUrl);
         setCloudSyncStatus('uploading');
 
-        // 2. Nén ảnh canvas chuẩn iOS native toJpegData (tối đa 1024px, giảm từ 5MB -> ~60KB)
         const compressed = await compressLashImage(file, 1024, 0.72);
         if (instantUrl) {
           try {
@@ -172,31 +202,20 @@ export function Screen07bLashProgressCleaned({
 
         if (bookingId) {
           saveLocalProgressSnapshot(bookingId, {
-            cleanedPhotoUrl: compressed,
-            cleanedPhotoSavedAt: new Date().toISOString(),
+            [photoField]: compressed,
+            [savedAtField]: new Date().toISOString(),
             bookingId,
             currentStep: 8,
             ...(retainData
               ? {
-                  retainLashCountLeft: retainData.left,
-                  retainLashCountRight: retainData.right,
-                  retainLashes: retainData,
-                  retainAttributeValues: {
-                    '17': {
-                      attribute_option_value: String(retainData.left),
-                      attribute_key: 'extension-lash-count-left',
-                    },
-                    '18': {
-                      attribute_option_value: String(retainData.right),
-                      attribute_key: 'extension-lash-count-right',
-                    },
-                  },
+                  [retainLeftField]: retainData.left,
+                  [retainRightField]: retainData.right,
+                  ...(isUnderRound ? { underRetainLashes: retainData } : { retainLashes: retainData }),
                 }
               : {}),
           });
         }
 
-        // 3. Tự động đẩy lên Cloud kèm thời gian tối thiểu 850ms để mắt người nhận diện rõ animation xoay
         if (onAutoSavePhoto) {
           const uploadPromise = onAutoSavePhoto(compressed, retainData);
           const minAnimPromise = new Promise((resolve) => setTimeout(resolve, 850));
@@ -241,34 +260,23 @@ export function Screen07bLashProgressCleaned({
       const retainData = { left: leftNum, right: rightNum };
       if (bookingId) {
         saveLocalProgressSnapshot(bookingId, {
-          cleanedPhotoUrl: finalPhoto,
-          cleanedPhotoSavedAt: new Date().toISOString(),
+          [photoField]: finalPhoto,
+          [savedAtField]: new Date().toISOString(),
           bookingId,
           currentStep: 9,
-          retainLashCountLeft: leftNum,
-          retainLashCountRight: rightNum,
-          retainLashes: retainData,
-          retainAttributeValues: {
-            '17': {
-              attribute_option_value: String(leftNum),
-              attribute_key: 'extension-lash-count-left',
-            },
-            '18': {
-              attribute_option_value: String(rightNum),
-              attribute_key: 'extension-lash-count-right',
-            },
-          },
+          [retainLeftField]: leftNum,
+          [retainRightField]: rightNum,
+          ...(isUnderRound ? { underRetainLashes: retainData } : { retainLashes: retainData }),
         });
       }
       onSavePhoto(finalPhoto, retainData);
       return;
     }
 
-    // Ca nối mới tiêu chuẩn
     if (bookingId) {
       saveLocalProgressSnapshot(bookingId, {
-        cleanedPhotoUrl: finalPhoto,
-        cleanedPhotoSavedAt: new Date().toISOString(),
+        [photoField]: finalPhoto,
+        [savedAtField]: new Date().toISOString(),
         bookingId,
         currentStep: 9,
       });
@@ -354,6 +362,7 @@ export function Screen07bLashProgressCleaned({
       <LashServicingStepper activeStep={2} />
 
       <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
+        <ServicingRoundHeaderPill booking={booking} />
         <CleanedCustomerAndSpecHeader
           booking={booking}
           customerName={customerName}
@@ -362,11 +371,16 @@ export function Screen07bLashProgressCleaned({
           isRefill={isRefill}
           isDark={isDark}
         />
+        {booking && <CustomerPortfolioTriggerButton booking={booking} isSimulationMode={isSimulationMode} compact />}
 
         {/* Section title */}
         <div className="flex items-center justify-between px-1 pt-0.5">
           <div className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider`}>
-            CHỤP ẢNH VỆ SINH NHẮM (BẮT BUỘC)
+            {isUnderRound
+              ? 'VÒNG 2 · CHỤP ẢNH VỆ SINH MI DƯỚI (BẮT BUỘC)'
+              : hasUnderMink
+                ? 'VÒNG 1 · CHỤP ẢNH VỆ SINH MI TRÊN (BẮT BUỘC)'
+                : 'CHỤP ẢNH VỆ SINH NHẮM (BẮT BUỘC)'}
           </div>
           {!detectedRefill && (
             <button
@@ -445,8 +459,8 @@ export function Screen07bLashProgressCleaned({
                     : undefined;
                 if (bookingId) {
                   saveLocalProgressSnapshot(bookingId, {
-                    cleanedPhotoUrl: sampleUrl,
-                    cleanedPhotoSavedAt: new Date().toISOString(),
+                    [photoField]: sampleUrl,
+                    [savedAtField]: new Date().toISOString(),
                     bookingId,
                     currentStep: 8,
                   });

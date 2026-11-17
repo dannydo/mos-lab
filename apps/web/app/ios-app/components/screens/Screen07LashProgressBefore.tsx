@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { bookingRequiresUnderLashRound, resolveActiveServicingRound } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { IosCloudSyncBadge } from '../ui-kit/IosCloudSyncBadge';
+import { ServicingRoundHeaderPill } from './servicing/ServicingRoundHeaderPill';
+import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
 import { BookingItem } from '../../state/mockData';
 import {
   saveLocalProgressSnapshot,
@@ -46,26 +49,45 @@ export function Screen07LashProgressBefore({
   const [autoSavedToast, setAutoSavedToast] = useState<string | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'uploading' | 'synced' | 'offline'>('idle');
 
-  // Khôi phục ảnh đã chụp/lưu trước đó nếu có
+  // Khôi phục ảnh đã chụp/lưu theo vòng (Mi Trên hoặc Mi Dưới)
   const bookingId = booking?.id;
-  const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
-    if (!bookingId) return null;
+  const hasUnderMink = bookingRequiresUnderLashRound(booking);
+  const activeRound = resolveActiveServicingRound(booking);
+  const isUnderRound = hasUnderMink && activeRound === 'UNDER';
+  const photoField = isUnderRound ? 'underBeforePhotoUrl' : 'beforePhotoUrl';
+  const savedAtField = isUnderRound ? 'underBeforePhotoSavedAt' : 'beforePhotoSavedAt';
+
+  const getSavedBeforeValue = (): string => {
+    if (!bookingId) return '';
     const cached = getLocalProgressSnapshot(bookingId);
-    const saved = booking?.progress?.beforePhotoUrl || cached?.beforePhotoUrl || null;
+    return (
+      (booking?.progress?.[photoField] as string | undefined) || (cached?.[photoField] as string | undefined) || ''
+    );
+  };
+
+  const [photoPreview, setPhotoPreview] = useState<string | null>(() => {
+    const saved = getSavedBeforeValue();
     return saved && !saved.startsWith('DECLINED:') ? saved : null;
   });
   const [isPhotoDeclined, setIsPhotoDeclined] = useState<boolean>(() => {
-    if (!bookingId) return false;
-    const cached = getLocalProgressSnapshot(bookingId);
-    const saved = booking?.progress?.beforePhotoUrl || cached?.beforePhotoUrl || '';
-    return Boolean(saved.startsWith('DECLINED:'));
+    return Boolean(getSavedBeforeValue().startsWith('DECLINED:'));
   });
   const [declineReason, setDeclineReason] = useState<string>(() => {
-    if (!bookingId) return 'Khách nhạy cảm riêng tư';
-    const cached = getLocalProgressSnapshot(bookingId);
-    const saved = booking?.progress?.beforePhotoUrl || cached?.beforePhotoUrl || '';
+    const saved = getSavedBeforeValue();
     return saved.startsWith('DECLINED:') ? saved.replace('DECLINED:', '') : 'Khách nhạy cảm riêng tư';
   });
+
+  // Reset state khi chuyển vòng (Vòng 1 Mi Trên -> Vòng 2 Mi Dưới) hoặc đổi booking
+  useEffect(() => {
+    if (!bookingId) return;
+    const saved = getSavedBeforeValue();
+    const declined = saved.startsWith('DECLINED:');
+    setPhotoPreview(saved && !declined ? saved : null);
+    setIsPhotoDeclined(declined);
+    setDeclineReason(declined ? saved.replace('DECLINED:', '') : 'Khách nhạy cảm riêng tư');
+    setCloudSyncStatus('idle');
+    setAutoSavedToast(null);
+  }, [bookingId, photoField]);
 
   // Tự động khôi phục ảnh từ IndexedDB và đồng bộ currentStep = 7
   useEffect(() => {
@@ -73,20 +95,22 @@ export function Screen07LashProgressBefore({
     saveLocalProgressSnapshot(bookingId, { currentStep: 7 });
     if (!photoPreview) {
       void getLocalProgressSnapshotAsync(bookingId).then((cached) => {
-        if (cached?.beforePhotoUrl) {
-          setPhotoPreview(cached.beforePhotoUrl);
+        const val = cached?.[photoField] as string | undefined;
+        if (val && !val.startsWith('DECLINED:')) {
+          setPhotoPreview(val);
         }
       });
     }
-  }, [bookingId, photoPreview]);
+  }, [bookingId, photoPreview, photoField]);
 
   // Đồng bộ đa thiết bị tức thì khi server cập nhật ảnh Before mới (chỉ khi không đang tự chọn ảnh)
   useEffect(() => {
     if (isSelectingRef.current) return;
-    if (booking?.progress?.beforePhotoUrl && booking.progress.beforePhotoUrl !== photoPreview) {
-      setPhotoPreview(booking.progress.beforePhotoUrl);
+    const remotePhoto = booking?.progress?.[photoField] as string | undefined;
+    if (remotePhoto && !remotePhoto.startsWith('DECLINED:') && remotePhoto !== photoPreview) {
+      setPhotoPreview(remotePhoto);
     }
-  }, [booking?.progress?.beforePhotoUrl]);
+  }, [booking?.progress, photoField]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -94,12 +118,10 @@ export function Screen07LashProgressBefore({
       isSelectingRef.current = true;
       let instantUrl: string | null = null;
       try {
-        // 1. Phản hồi thị giác tức thời (0ms): Hiện ảnh ngay lập tức và kích hoạt spinner upload
         instantUrl = URL.createObjectURL(file);
         setPhotoPreview(instantUrl);
         setCloudSyncStatus('uploading');
 
-        // 2. Nén ảnh canvas chuẩn iOS native toJpegData (tối đa 1024px, giảm từ 5MB -> ~60KB)
         const compressed = await compressLashImage(file, 1024, 0.72);
         if (instantUrl) {
           try {
@@ -109,14 +131,13 @@ export function Screen07LashProgressBefore({
         setPhotoPreview(compressed);
         if (bookingId) {
           saveLocalProgressSnapshot(bookingId, {
-            beforePhotoUrl: compressed,
-            beforePhotoSavedAt: new Date().toISOString(),
+            [photoField]: compressed,
+            [savedAtField]: new Date().toISOString(),
             bookingId,
             currentStep: 7,
           });
         }
 
-        // 3. Tự động upload lên server kết hợp thời gian tối thiểu (850ms) để mắt người nhận diện rõ animation xoay
         if (onAutoSavePhoto) {
           const uploadPromise = onAutoSavePhoto(compressed);
           const minAnimPromise = new Promise((resolve) => setTimeout(resolve, 850));
@@ -145,8 +166,8 @@ export function Screen07LashProgressBefore({
     const finalPhoto = photoPreview || `DECLINED:${declineReason}`;
     if (bookingId) {
       saveLocalProgressSnapshot(bookingId, {
-        beforePhotoUrl: finalPhoto,
-        beforePhotoSavedAt: new Date().toISOString(),
+        [photoField]: finalPhoto,
+        [savedAtField]: new Date().toISOString(),
         bookingId,
         currentStep: 8,
       });
@@ -212,7 +233,7 @@ export function Screen07LashProgressBefore({
   return (
     <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
       {/* 1. Header Navigation: Bỏ hoàn toàn thông tin Giường và Online theo yêu cầu */}
-      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle="Ca Làm" />
+      <IosNavigationBar title="Tiến Trình Nối Mi" onBack={onBack} backTitle={isUnderRound ? 'After Trên' : 'Ca Làm'} />
 
       {/* Hidden file input — camera only (capture="environment"), không cho tải từ thư viện */}
       <input
@@ -228,6 +249,8 @@ export function Screen07LashProgressBefore({
       <LashServicingStepper activeStep={1} />
 
       <div className="flex-1 px-4 py-3.5 space-y-3.5 overflow-y-auto pb-6">
+        <ServicingRoundHeaderPill booking={booking} />
+        {booking && <CustomerPortfolioTriggerButton booking={booking} isSimulationMode={isSimulationMode} compact />}
         {/* 3. Header Card: Refactored chuẩn iOS kèm Avatar & 3 dòng thông tin */}
         <div
           className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3.5 shadow-sm border flex items-center gap-3`}
@@ -367,7 +390,11 @@ export function Screen07LashProgressBefore({
 
         {/* Section title */}
         <div className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider px-1 pt-0.5`}>
-          CHỤP ẢNH BEFORE MẮT MỘC (BẮT BUỘC)
+          {isUnderRound
+            ? 'VÒNG 2 · CHỤP ẢNH BEFORE MI DƯỚI (BẮT BUỘC)'
+            : hasUnderMink
+              ? 'VÒNG 1 · CHỤP ẢNH BEFORE MI TRÊN (BẮT BUỘC)'
+              : 'CHỤP ẢNH BEFORE MẮT MỘC (BẮT BUỘC)'}
         </div>
 
         {/* 4. Camera Viewfinder Card with Real Capture & Photo Upload */}
@@ -386,8 +413,14 @@ export function Screen07LashProgressBefore({
                 <div className="w-16 h-16 rounded-full bg-[#FFB400]/20 flex items-center justify-center mb-3 shadow-xs">
                   <Eye className="w-9 h-9 text-[#FFB400]" />
                 </div>
-                <div className="text-white font-black text-[15px]">Ảnh Before Mắt Mộc {customerName}</div>
-                <div className="text-neutral-400 text-[12px] mt-1">Chụp góc thẳng hoặc 45° từ trên mí xuống</div>
+                <div className="text-white font-black text-[15px]">
+                  {isUnderRound ? `Ảnh Before Mi Dưới ${customerName}` : `Ảnh Before Mắt Mộc ${customerName}`}
+                </div>
+                <div className="text-neutral-400 text-[12px] mt-1">
+                  {isUnderRound
+                    ? 'Nhìn lên nhẹ hoặc lộ rõ bờ mi dưới trước khi nối'
+                    : 'Chụp góc thẳng hoặc 45° từ trên mí xuống'}
+                </div>
               </div>
             )}
 
@@ -420,8 +453,8 @@ export function Screen07LashProgressBefore({
                 setCloudSyncStatus('uploading');
                 if (bookingId) {
                   saveLocalProgressSnapshot(bookingId, {
-                    beforePhotoUrl: sampleUrl,
-                    beforePhotoSavedAt: new Date().toISOString(),
+                    [photoField]: sampleUrl,
+                    [savedAtField]: new Date().toISOString(),
                     bookingId,
                     currentStep: 7,
                   });

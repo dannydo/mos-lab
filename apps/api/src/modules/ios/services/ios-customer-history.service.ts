@@ -13,6 +13,7 @@ import {
   formatDaysAgoLabel,
   mapOrderStateDisplay,
 } from './ios-customer-history.mapper.js';
+import { fetchOrderLashPhotosAndSpecsBatch, OverrideBatchReader } from './ios-customer-history-lashes.helper.js';
 
 export { formatDaysAgoLabel, mapOrderStateDisplay };
 
@@ -24,6 +25,7 @@ export interface CustomerHistoryQueryOptions {
 
 export interface CustomerHistoryServiceDeps {
   getPool?: () => mysql.Pool;
+  overrideRepo?: OverrideBatchReader;
 }
 
 export interface CustomerHistoryServiceResult {
@@ -182,8 +184,11 @@ export async function getIosCustomerHistory(
     orderIds.length > 0
       ? pool.query<mysql.RowDataPacket[]>(
           `SELECT
+             os.id AS os_id,
              os.order_id,
              os.service_id,
+             os.service_group,
+             os.attribute_group_key,
              os.service_type,
              os.user_service_type,
              os.user_service_balance_transaction_id,
@@ -274,6 +279,13 @@ export async function getIosCustomerHistory(
     }
   }
 
+  const lashHydrationByOrder = await fetchOrderLashPhotosAndSpecsBatch(
+    pool,
+    orderIds,
+    serviceResult[0],
+    deps?.overrideRepo
+  );
+
   return {
     statusCode: 200,
     payload: buildCustomerHistoryPayload({
@@ -288,6 +300,7 @@ export async function getIosCustomerHistory(
       comboRows: comboResult[0],
       productRows: productResult[0],
       diamondTxnRows: diamondTxnResult[0],
+      lashHydrationByOrder,
       now,
     }),
   };

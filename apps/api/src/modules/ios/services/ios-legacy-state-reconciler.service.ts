@@ -20,6 +20,12 @@ const PROGRESS_ORDER_STATES = new Set([
   'Photo before auto-saved',
   'Photo cleaned auto-saved',
   'Photo after auto-saved',
+  'Photo upper_before auto-saved',
+  'Photo under_before auto-saved',
+  'Photo upper_cleaned auto-saved',
+  'Photo under_cleaned auto-saved',
+  'Photo upper_after auto-saved',
+  'Photo under_after auto-saved',
 ]);
 const DEFERRED_RETRY_COOLDOWN_MS = 15_000;
 
@@ -41,6 +47,8 @@ export function getLegacyOrderStageRank(state?: string | null): number {
       return 3;
     case 'Preparation':
     case 'Photo before auto-saved':
+    case 'Photo upper_before auto-saved':
+    case 'Photo under_before auto-saved':
       return 4;
     case 'ServiceStart':
     case 'Service Start':
@@ -49,10 +57,14 @@ export function getLegacyOrderStageRank(state?: string | null): number {
     case 'ServiceCleaned':
     case 'Service Cleaned':
     case 'Photo cleaned auto-saved':
+    case 'Photo upper_cleaned auto-saved':
+    case 'Photo under_cleaned auto-saved':
       return 6;
     case 'ServiceEnd':
     case 'Service End':
     case 'Photo after auto-saved':
+    case 'Photo upper_after auto-saved':
+    case 'Photo under_after auto-saved':
       return 7;
     case 'ServiceCompleted':
     case 'Service Completed':
@@ -127,10 +139,24 @@ export function inferDeferredStepReplayAction(override: BookingOverrideRecord): 
   const progress = override.progress as Record<string, SafeAny> | undefined;
   if (
     progress &&
+    progress.activeServiceRound === 'UNDER' &&
+    progress.upperCompleted === true &&
+    !progress.underBeforePhotoUrl &&
+    !progress.underStartedAt &&
+    orderState === 'Preparation'
+  ) {
+    return 'NEXT_SERVICE_ROUND';
+  }
+  if (
+    progress &&
     (progress.startedAt ||
       progress.beforePhotoUrl ||
       progress.cleanedPhotoUrl ||
       progress.afterPhotoUrl ||
+      progress.underStartedAt ||
+      progress.underBeforePhotoUrl ||
+      progress.underCleanedPhotoUrl ||
+      progress.underAfterPhotoUrl ||
       PROGRESS_ORDER_STATES.has(orderState))
   ) {
     return 'UPDATE_PROGRESS';

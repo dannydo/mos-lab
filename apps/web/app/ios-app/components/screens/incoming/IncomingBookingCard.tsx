@@ -19,7 +19,7 @@ import {
   formatShortMoney,
   formatTime24h,
 } from './incomingBookingHelpers';
-import { RotateCcw, Info, Package, Heart, Lock } from 'lucide-react';
+import { RotateCcw, Info, Package, Heart, Lock, Camera } from 'lucide-react';
 import { useTheme } from '../../../../../context/ThemeContext';
 
 interface IncomingBookingCardProps {
@@ -335,10 +335,27 @@ export function IncomingBookingCard({
             />
           )}
 
-          <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
-            Lần {visits}
-            {daysText}
-          </span>
+          <button
+            type="button"
+            data-testid={`card-open-portfolio-visit-${b.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenCustomerDetail(b);
+            }}
+            className="text-[11px] font-semibold tabular-nums inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:opacity-80 active:scale-95 transition-all cursor-pointer border"
+            style={{
+              backgroundColor: 'var(--mos-surface-muted)',
+              borderColor: 'var(--mos-surface-border)',
+              color: 'var(--mos-text-muted)',
+            }}
+            title="Bấm để xem Hồ Sơ Ảnh & Lịch Sử Bộ Mi"
+          >
+            <Camera className="w-2.5 h-2.5 shrink-0" style={{ color: 'var(--mos-accent)' }} />
+            <span>
+              Lần {visits}
+              {daysText}
+            </span>
+          </button>
 
           {isOtherCustomerLocked && (
             <span
@@ -355,24 +372,44 @@ export function IncomingBookingCard({
           )}
         </div>
 
-        {/* LINE 4: notes + Ký hiệu xem chi tiết duy nhất */}
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenCustomerDetail(b);
-          }}
-          className="text-[10.5px] leading-tight mt-1 line-clamp-1 italic font-normal cursor-pointer flex items-center justify-between group pt-0.5"
-          style={{ color: 'var(--mos-text-muted)' }}
-          title="Bấm để xem chi tiết ghi chú & thông tin khách hàng"
-        >
-          <span className="truncate">{b.customerNote ? `“${b.customerNote}”` : 'Hồ sơ & thông số khách'}</span>
-          <span
-            className="ml-1.5 shrink-0 not-italic flex items-center transition-colors"
-            style={{ color: 'var(--mos-accent)' }}
-          >
-            <Info className="w-3.5 h-3.5 stroke-[2.2]" />
-          </span>
-        </div>
+        {/* LINE 4: notes + Ký hiệu xem Hồ Sơ Ảnh & Bộ Mi */}
+        {(() => {
+          const prog = b.progress;
+          const todayPhotoCount = [
+            prog?.beforePhotoUrl,
+            prog?.cleanedPhotoUrl,
+            prog?.afterPhotoUrl,
+            prog?.underBeforePhotoUrl,
+            prog?.underCleanedPhotoUrl,
+            prog?.underAfterPhotoUrl,
+          ].filter((u) => typeof u === 'string' && u.trim().length > 0 && !u.trim().startsWith('DECLINED:')).length;
+
+          return (
+            <div
+              data-testid={`card-open-portfolio-${b.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCustomerDetail(b);
+              }}
+              className="text-[10.5px] leading-tight mt-1 line-clamp-1 italic font-normal cursor-pointer flex items-center justify-between group pt-0.5 gap-1.5"
+              style={{ color: 'var(--mos-text-muted)' }}
+              title="Bấm để xem ảnh Before/Cleaning/After & thông số bộ mi"
+            >
+              <span className="truncate">
+                {b.customerNote ? `“${b.customerNote}”` : 'Ảnh B/C/A & bộ mi các lần trước'}
+              </span>
+              <span
+                className="shrink-0 not-italic flex items-center gap-1 transition-colors"
+                style={{ color: 'var(--mos-accent)' }}
+              >
+                <span className="text-[9.5px] font-extrabold tabular-nums">
+                  {todayPhotoCount > 0 ? `${todayPhotoCount} ảnh` : 'Bộ mi'}
+                </span>
+                <Info className="w-3.5 h-3.5 stroke-[2.2]" />
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 3.3 Right Column */}

@@ -1,10 +1,12 @@
 import mysql from 'mysql2/promise';
+import { IosBookingProgress } from '@mos-lab/shared';
 import {
   createEmptyCustomerEnrichmentContext,
   fetchCustomerEnrichmentContext,
   IosCustomerEnrichmentContext,
   LastVisitSpecSummary,
 } from './ios-customer-enrichment.service.js';
+import { fetchLegacyProgressHydrationByOrderIds } from './ios-progress-sync.helper.js';
 import {
   ActualOrderLashSpecs,
   OrderLedgerCvSummary,
@@ -53,6 +55,7 @@ export interface RawIosOrderSnapshot {
   ledger_cv_points?: number | null;
   ledger_cv_breakdown?: string | null;
   actual_order_specs?: ActualOrderLashSpecs | null;
+  legacy_progress?: Partial<IosBookingProgress>;
 }
 
 /**
@@ -228,13 +231,15 @@ export async function fetchLiveOrderSnapshots(
         )
       : emptyQueryResult;
 
-  const [[osRows], [contactRows], [visitRows], [productPromoRows], customerContext] = await Promise.all([
-    primaryServicePromise,
-    fallbackContactPromise,
-    visitCountsPromise,
-    productPromoPromise,
-    fetchCustomerEnrichmentContext(pool, customerIds),
-  ]);
+  const [[osRows], [contactRows], [visitRows], [productPromoRows], customerContext, legacyProgressByOrderId] =
+    await Promise.all([
+      primaryServicePromise,
+      fallbackContactPromise,
+      visitCountsPromise,
+      productPromoPromise,
+      fetchCustomerEnrichmentContext(pool, customerIds),
+      fetchLegacyProgressHydrationByOrderIds(pool, orderIds),
+    ]);
 
   const productPromoMapByOrderId = new Map<number, Record<number, number>>();
   for (const pr of productPromoRows) {
@@ -334,7 +339,12 @@ export async function fetchLiveOrderSnapshots(
     const resolvedBookerName = os?.os_created_staff_id ? os.os_booker_name : r.order_booker_name;
     const resolvedBookerAvatar = os?.os_created_staff_id ? os.os_booker_avatar : r.order_booker_avatar;
     const visitSummary = userId ? visitSummaryByUserId.get(userId) : undefined;
-    const resolvedOrderState = r.order_state ? String(r.order_state) : null;
+    const rawOrderState = r.order_state ? String(r.order_state) : null;
+    const legacyProg = legacyProgressByOrderId.get(orderId);
+    const resolvedOrderState =
+      legacyProg?.upperCompleted && legacyProg?.activeServiceRound === 'UNDER' && rawOrderState === 'Consultation'
+        ? 'Preparation'
+        : rawOrderState;
     const resolvedIsNew = r.is_new !== null ? Number(r.is_new) : null;
     const ledgerSummary = ledgerSummaryByOrderId.get(orderId);
 
@@ -387,6 +397,7 @@ export async function fetchLiveOrderSnapshots(
       ledger_cv_points: ledgerSummary?.ledgerPoints ?? null,
       ledger_cv_breakdown: ledgerSummary?.breakdownLabel ?? null,
       actual_order_specs: ledgerSummary?.actualSpecs ?? null,
+      ...(legacyProg ? { legacy_progress: legacyProg } : {}),
     };
   });
 

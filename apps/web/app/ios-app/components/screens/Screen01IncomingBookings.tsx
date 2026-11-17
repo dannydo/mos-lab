@@ -469,6 +469,10 @@ export function Screen01IncomingBookings({
         selectedCustomerDetail={selectedCustomerDetail}
         setSelectedCustomerDetail={setSelectedCustomerDetail}
         activeServicingBooking={activeServicingBooking}
+        isSimulationMode={isSimulationMode}
+        isCvll={isCvll}
+        canMultiCheckIn={canMultiCheckIn}
+        isAdmin={isAdmin}
         onSelectBooking={onSelectBooking}
         onResumeServicing={onResumeServicing}
         onRevertToIncoming={onRevertToIncoming}

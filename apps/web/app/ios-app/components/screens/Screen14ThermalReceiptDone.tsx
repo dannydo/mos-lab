@@ -9,6 +9,7 @@ import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
+import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
 import { ThermalReceiptComboItemsSection } from './checkout/ReceiptComboExpiryLine';
 import { formatCartProductDisplayName } from './upsell/upsellCheckoutHelpers';
 import {
@@ -162,6 +163,10 @@ export function Screen14ThermalReceiptDone({
           isDark={isDark}
           className="absolute right-0 -mr-1"
         />
+      </div>
+
+      <div className="mb-2.5">
+        <CustomerPortfolioTriggerButton booking={booking} compact customerFacingMode={!showStaffRewards} />
       </div>
 
       {/* Thermal Receipt Card */}

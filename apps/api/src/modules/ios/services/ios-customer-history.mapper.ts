@@ -9,13 +9,11 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { maskPhoneNumber } from '@mos-lab/shared';
+import type { OrderHistoryLashHydration } from './ios-customer-history-lashes.helper.js';
 
 const VN_TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
 
-export function buildEmptyCustomerHistoryResponse(
-  customerId: number,
-  error?: string
-): IosCustomerHistoryResponse {
+export function buildEmptyCustomerHistoryResponse(customerId: number, error?: string): IosCustomerHistoryResponse {
   return {
     success: !error,
     customerId,
@@ -99,7 +97,9 @@ export function mapOrderStateDisplay(orderState: string): {
   statusLabel: string;
   statusTone: IosCustomerHistoryVisitItem['statusTone'];
 } {
-  const s = String(orderState || '').trim().toLowerCase();
+  const s = String(orderState || '')
+    .trim()
+    .toLowerCase();
   if (s === 'completed') return { statusLabel: 'Hoàn thành', statusTone: 'completed' };
   if (s === 'checkin' || s === 'checkout' || s === 'processing') {
     return { statusLabel: s === 'checkout' ? 'Chờ quầy' : 'Đang phục vụ', statusTone: 'servicing' };
@@ -161,6 +161,7 @@ export function buildCustomerHistoryPayload(params: {
   comboRows: mysql.RowDataPacket[];
   productRows: mysql.RowDataPacket[];
   diamondTxnRows: mysql.RowDataPacket[];
+  lashHydrationByOrder?: Map<number, OrderHistoryLashHydration>;
   now: Date;
 }): IosCustomerHistoryResponse {
   const {
@@ -175,12 +176,22 @@ export function buildCustomerHistoryPayload(params: {
     comboRows,
     productRows,
     diamondTxnRows,
+    lashHydrationByOrder,
     now,
   } = params;
 
   const paymentByOrder = new Map<
     number,
-    { cash: number; card: number; bank: number; diamondUsed: number; discount: number; prepaid: number; debt: number; tip: number }
+    {
+      cash: number;
+      card: number;
+      bank: number;
+      diamondUsed: number;
+      discount: number;
+      prepaid: number;
+      debt: number;
+      tip: number;
+    }
   >();
   for (const p of paymentRows) {
     const oid = Number(p.order_id);
@@ -331,10 +342,9 @@ export function buildCustomerHistoryPayload(params: {
     const diamondUsed = Math.max(pay.diamondUsed, diam.used);
     const hasComboService = svcs.some((s) => s.isComboUsed);
     const isFixOrder = svcs.some((s) => s.isFix) || /\bfix\b/i.test(String(o.booking_note || ''));
+    const hydration = lashHydrationByOrder?.get(oid);
     const serviceName =
-      svcs.length > 0
-        ? svcs.map((s) => s.name).join(' + ')
-        : String(o.booking_note || '').trim() || `Lịch hẹn #${oid}`;
+      svcs.length > 0 ? svcs.map((s) => s.name).join(' + ') : String(o.booking_note || '').trim() || `Lịch hẹn #${oid}`;
 
     return {
       orderId: oid,
@@ -372,6 +382,10 @@ export function buildCustomerHistoryPayload(params: {
         prepaidAmount: pay.prepaid,
         hasComboService,
       }),
+      ...(hydration?.photos ? { photos: hydration.photos } : {}),
+      ...(hydration?.underPhotos ? { underPhotos: hydration.underPhotos } : {}),
+      ...(hydration?.underServiceName ? { underServiceName: hydration.underServiceName } : {}),
+      ...(hydration?.lashSpecs ? { lashSpecs: hydration.lashSpecs } : {}),
     };
   });
 

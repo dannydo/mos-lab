@@ -22,8 +22,9 @@ export async function persistProgressPhotoToCloud(bookingId: number, type: strin
     }
 
     const ext = matches[1].replace('jpeg', 'jpg');
+    const safeType = String(type || 'photo').replace(/[^a-zA-Z0-9_-]/g, '_');
     const buffer = Buffer.from(matches[2], 'base64');
-    const filename = `${bookingId}_${type}_${Date.now()}.${ext}`;
+    const filename = `${bookingId}_${safeType}_${Date.now()}.${ext}`;
 
     const isProduction = process.env.NODE_ENV === 'production';
     const targetDir = isProduction ? getLashUploadsDir() : getLocalFallbackDir();
@@ -76,4 +77,40 @@ export async function serveProgressPhoto(request: FastifyRequest, reply: Fastify
     .header('Content-Type', contentType)
     .header('Cache-Control', 'public, max-age=31536000, immutable')
     .send(fileBuffer);
+}
+
+export async function extractRawBase64ForLegacyPhp(photoValue?: string | null): Promise<string | null> {
+  if (!photoValue || typeof photoValue !== 'string') {
+    return null;
+  }
+  const trimmed = photoValue.trim();
+  if (!trimmed || trimmed.startsWith('DECLINED:') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return null;
+  }
+
+  const dataUriMatch = trimmed.match(/^data:image\/[^;]+;base64,(.+)$/s);
+  if (dataUriMatch?.[1]) {
+    const raw = dataUriMatch[1].replace(/\s+/g, '');
+    return raw.length > 0 ? raw : null;
+  }
+
+  if (trimmed.startsWith('/api/ios/photos/')) {
+    const filename = trimmed.slice('/api/ios/photos/'.length).split('?')[0]?.trim() || '';
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return null;
+    }
+    const candidatePaths = [path.join(getLashUploadsDir(), filename), path.join(getLocalFallbackDir(), filename)];
+    for (const candidatePath of candidatePaths) {
+      try {
+        const buffer = await fs.readFile(candidatePath);
+        if (buffer.length > 0) {
+          return buffer.toString('base64');
+        }
+      } catch {
+        // Fallback to local uploads directory
+      }
+    }
+  }
+
+  return null;
 }

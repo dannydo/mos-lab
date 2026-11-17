@@ -32,6 +32,9 @@ export interface SimSamplePhotoPack {
   beforePhotoUrl: string;
   cleanedPhotoUrl: string;
   afterPhotoUrl: string;
+  underBeforePhotoUrl: string;
+  underCleanedPhotoUrl: string;
+  underAfterPhotoUrl: string;
 }
 
 function makeTrainingSvgDataUri(title: string, subtitle: string, accentHex: string): string {
@@ -43,6 +46,9 @@ export const SIM_TRAINING_SAMPLE_PHOTOS: SimSamplePhotoPack = {
   beforePhotoUrl: makeTrainingSvgDataUri('BEFORE · KIỂM TRA MI TRƯỚC NỐI', 'Mẫu ảnh tập luyện bước 7', '#f472b6'),
   cleanedPhotoUrl: makeTrainingSvgDataUri('CLEANED · VỆ SINH SẠCH NANG MI', 'Mẫu ảnh tập luyện bước 8', '#38bdf8'),
   afterPhotoUrl: makeTrainingSvgDataUri('AFTER · HOÀN THIỆN DÁNG MI WINGS', 'Mẫu ảnh tập luyện bước 10', '#fbbf24'),
+  underBeforePhotoUrl: makeTrainingSvgDataUri('BEFORE MI DƯỚI · KIỂM TRA', 'Mẫu ảnh Vòng 2 bước 7', '#34d399'),
+  underCleanedPhotoUrl: makeTrainingSvgDataUri('CLEANED MI DƯỚI · VỆ SINH', 'Mẫu ảnh Vòng 2 bước 8', '#38bdf8'),
+  underAfterPhotoUrl: makeTrainingSvgDataUri('AFTER MI DƯỚI · HOÀN THIỆN', 'Mẫu ảnh Vòng 2 bước 10', '#fbbf24'),
 };
 
 interface ResolvedBookingMeta {
@@ -136,11 +142,13 @@ async function resolveBookingBaseMeta(
         return {
           customerId: Number(row.user_id || override.customerId || bodyMeta.customerId || 0),
           customerName: String(row.full_name || bodyMeta.customerName || `Khách #${bookingId}`),
-          orderNumber: String(
-            bodyMeta.orderNumber || (row.order_number ? `BK-${row.order_number}` : `BK-${row.id}`)
-          ),
+          orderNumber: String(bodyMeta.orderNumber || (row.order_number ? `BK-${row.order_number}` : `BK-${row.id}`)),
           serviceName: String(
-            override.upgradedServiceName || override.serviceName || bodyMeta.serviceName || row.service_name || 'Dịch vụ mi'
+            override.upgradedServiceName ||
+              override.serviceName ||
+              bodyMeta.serviceName ||
+              row.service_name ||
+              'Dịch vụ mi'
           ),
           servicePrice: fallbackServicePrice,
           upgradePrice: Number(override.upgradePrice ?? bodyMeta.upgradePrice ?? 0),
@@ -450,6 +458,18 @@ export async function executeIosSimulationBookingAction(
           beforePhotoUrl: current.progress?.beforePhotoUrl || SIM_TRAINING_SAMPLE_PHOTOS.beforePhotoUrl,
           cleanedPhotoUrl: current.progress?.cleanedPhotoUrl || SIM_TRAINING_SAMPLE_PHOTOS.cleanedPhotoUrl,
           afterPhotoUrl: current.progress?.afterPhotoUrl || SIM_TRAINING_SAMPLE_PHOTOS.afterPhotoUrl,
+          ...(mergedAttrs.hasUnderMink
+            ? {
+                upperCompleted: true,
+                activeServiceRound: 'UNDER' as const,
+                underBeforePhotoUrl:
+                  current.progress?.underBeforePhotoUrl || SIM_TRAINING_SAMPLE_PHOTOS.underBeforePhotoUrl,
+                underCleanedPhotoUrl:
+                  current.progress?.underCleanedPhotoUrl || SIM_TRAINING_SAMPLE_PHOTOS.underCleanedPhotoUrl,
+                underAfterPhotoUrl:
+                  current.progress?.underAfterPhotoUrl || SIM_TRAINING_SAMPLE_PHOTOS.underAfterPhotoUrl,
+              }
+            : {}),
           elapsedSeconds: Number(current.progress?.elapsedSeconds || targetMinutes * 60),
           retainLashCountLeft: Number(current.progress?.retainLashCountLeft ?? 65),
           retainLashCountRight: Number(current.progress?.retainLashCountRight ?? 65),

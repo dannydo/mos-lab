@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  AlertCircle,
-  Calendar,
-  CreditCard,
-  Gem,
-  History,
-  MapPin,
-  RefreshCw,
-  User,
-  Wrench,
-  X,
-} from 'lucide-react';
+import { AlertCircle, Calendar, CreditCard, Gem, History, MapPin, RefreshCw, User, Wrench, X } from 'lucide-react';
 import type {
   IosBookingItem,
   IosCustomerDiamondTxnItem,
@@ -22,19 +11,22 @@ import type {
 } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
+import { CustomerLashPortfolioTab } from './customer-history/CustomerLashPortfolioTab';
+import { LashPhotoCompareLightbox, LashPhotoComparePayload } from './customer-history/LashPhotoCompareLightbox';
 
 interface CustomerHistoryAndSpendingSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  booking: Pick<
-    IosBookingItem,
-    'id' | 'customerId' | 'customerName' | 'customerPhone' | 'customerVisits' | 'branchName' | 'isSimulationBooking'
-  >;
+  booking: Partial<IosBookingItem> & Pick<IosBookingItem, 'id' | 'customerName'>;
   initialTab?: IosCustomerHistoryTab;
   isSimulationMode?: boolean;
+  customerFacingMode?: boolean;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
 }
 
 const TAB_CONFIG: Array<{ key: IosCustomerHistoryTab; label: string }> = [
+  { key: 'LASH_PHOTOS', label: '📸 BỘ MI' },
   { key: 'ALL', label: 'TẤT CẢ' },
   { key: 'PAYMENTS', label: 'THANH TOÁN' },
   { key: 'FIX', label: 'FIX' },
@@ -69,8 +61,11 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   isOpen,
   onClose,
   booking,
-  initialTab = 'ALL',
+  initialTab = 'LASH_PHOTOS',
   isSimulationMode = false,
+  customerFacingMode = false,
+  primaryActionLabel,
+  onPrimaryAction,
 }) => {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -79,6 +74,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const [data, setData] = useState<IosCustomerHistoryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [lightboxPayload, setLightboxPayload] = useState<LashPhotoComparePayload | null>(null);
 
   const loadHistory = useCallback(
     async (signal?: AbortSignal) => {
@@ -122,11 +118,11 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
 
   useEffect(() => {
     if (!isOpen) return;
-    setActiveTab(initialTab);
+    setActiveTab(customerFacingMode ? 'LASH_PHOTOS' : initialTab);
     const controller = new AbortController();
     void loadHistory(controller.signal);
     return () => controller.abort();
-  }, [isOpen, initialTab, loadHistory]);
+  }, [isOpen, initialTab, customerFacingMode, loadHistory]);
 
   if (!isOpen) return null;
 
@@ -135,8 +131,10 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const payments = data?.payments || [];
   const fixVisits = data?.fixVisits || [];
   const diamondTxns = data?.diamondTransactions || [];
+  const effectiveTab: IosCustomerHistoryTab = customerFacingMode ? 'LASH_PHOTOS' : activeTab;
 
   const getTabCount = (key: IosCustomerHistoryTab) => {
+    if (key === 'LASH_PHOTOS') return visits.length || (booking.lashHistory?.length ?? 0);
     if (key === 'ALL') return visits.length;
     if (key === 'PAYMENTS') return payments.length;
     if (key === 'FIX') return fixVisits.length;
@@ -253,7 +251,8 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums">
             {item.totalPrice > 0 && (
               <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
-                Giá trị đơn: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{formatVnd(item.totalPrice)}</strong>
+                Giá trị đơn:{' '}
+                <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{formatVnd(item.totalPrice)}</strong>
               </span>
             )}
             {item.discountAmount > 0 && (
@@ -261,7 +260,9 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
             )}
             {item.diamondUsed > 0 && <span className="text-sky-400">Dùng {item.diamondUsed} KC</span>}
             {item.tipAmount > 0 && <span className="text-emerald-400">Tip: +{formatVnd(item.tipAmount)}</span>}
-            {item.debtAmount > 0 && <span className="font-bold text-rose-500">Công nợ: {formatVnd(item.debtAmount)}</span>}
+            {item.debtAmount > 0 && (
+              <span className="font-bold text-rose-500">Công nợ: {formatVnd(item.debtAmount)}</span>
+            )}
           </div>
         )}
 
@@ -342,7 +343,9 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
           {tx.note && (
             <p className={`mt-1 text-xs leading-snug ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{tx.note}</p>
           )}
-          <div className={`mt-1.5 flex items-center gap-2 text-[11px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <div
+            className={`mt-1.5 flex items-center gap-2 text-[11px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+          >
             <span>{tx.daysAgoLabel || tx.dateDisplay}</span>
             <span>·</span>
             <span>
@@ -359,7 +362,9 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
 
         <div className="shrink-0 text-right tabular-nums">
           <div className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Số dư sau GD</div>
-          <div className={`text-xs font-bold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>{tx.balanceAfter} KC</div>
+          <div className={`text-xs font-bold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
+            {tx.balanceAfter} KC
+          </div>
         </div>
       </div>
     );
@@ -394,10 +399,18 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
               <h2 className="truncate text-[15px] font-extrabold leading-tight">
                 {data?.customerName || booking.customerName || 'Khách hàng'}
               </h2>
-              <div className={`mt-0.5 flex items-center gap-2 text-[11px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <span>{(data?.customerPhone ?? booking.customerPhone) || 'Chưa có SĐT'}</span>
-                <span>·</span>
-                <span>ID #{booking.customerId}</span>
+              <div
+                className={`mt-0.5 flex items-center gap-2 text-[11px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+              >
+                {customerFacingMode ? (
+                  <span>Hồ Sơ Bộ Mi &amp; Hình Ảnh</span>
+                ) : (
+                  <>
+                    <span>{(data?.customerPhone ?? booking.customerPhone) || 'Chưa có SĐT'}</span>
+                    <span>·</span>
+                    <span>ID #{booking.customerId || 0}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -430,88 +443,97 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
           </div>
         </div>
 
-        {/* KPI Spending & Visit Summary */}
-        <div className={`grid grid-cols-2 gap-2 border-b px-4 py-3 ${isDark ? 'border-slate-800/80 bg-slate-900/40' : 'border-slate-200 bg-white/80'}`}>
-          <div className={`rounded-2xl border p-2.5 ${isDark ? 'border-emerald-500/25 bg-emerald-950/30' : 'border-emerald-200 bg-emerald-50/70'}`}>
-            <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
-              <CreditCard className="h-3 w-3" />
-              Tổng chi tiêu
-            </div>
-            <div className={`mt-1 text-[16px] font-black tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-              {summary ? formatVnd(summary.totalSpent) : '--'}
-            </div>
-            <div className={`mt-0.5 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              TB {summary ? formatVnd(summary.avgSpendPerVisit) : '--'} / lần hoàn thành
-            </div>
-          </div>
-
-          <div className={`rounded-2xl border p-2.5 ${isDark ? 'border-slate-800 bg-slate-900/70' : 'border-slate-200 bg-slate-50'}`}>
-            <div className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <Calendar className="h-3 w-3" />
-              Lịch sử ghé thăm
-            </div>
-            <div className={`mt-1 text-[16px] font-black tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              {summary ? `${summary.completedVisits} hoàn thành` : '--'}
-            </div>
-            <div className={`mt-0.5 flex items-center gap-2 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <span>Tổng {summary?.totalBookings ?? 0} lịch</span>
-              <span>·</span>
-              <span className="text-amber-500 font-semibold">💎 {summary?.diamondBalance ?? 0} KC</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Segmented Tabs matching Wings Native History (TẤT CẢ | THANH TOÁN | FIX | THƯỞNG) */}
-        <div className={`border-b px-3 py-2 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+        {/* KPI Spending & Visit Summary (ẩn hoàn toàn khi ở chế độ đưa khách xem) */}
+        {!customerFacingMode && (
           <div
-            role="tablist"
-            aria-label="Phân loại lịch sử khách hàng"
-            className={`grid grid-cols-4 gap-1 rounded-xl p-1 ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}
+            className={`grid grid-cols-2 gap-2 border-b px-4 py-3 ${isDark ? 'border-slate-800/80 bg-slate-900/40' : 'border-slate-200 bg-white/80'}`}
           >
-            {TAB_CONFIG.map((tab) => {
-              const isActive = activeTab === tab.key;
-              const count = getTabCount(tab.key);
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex flex-col items-center justify-center rounded-lg px-1.5 py-1.5 text-[10px] font-bold transition-colors duration-75 tabular-nums ${
-                    isActive
-                      ? isDark
-                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                        : 'bg-white text-emerald-700 shadow-xs'
-                      : isDark
-                        ? 'text-slate-400 hover:text-slate-200'
-                        : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <span className="truncate">{tab.label}</span>
-                  <span className={`mt-0.5 text-[9px] font-semibold ${isActive ? 'opacity-90' : 'opacity-65'}`}>
-                    ({count})
-                  </span>
-                </button>
-              );
-            })}
+            <div
+              className={`rounded-2xl border p-2.5 ${isDark ? 'border-emerald-500/25 bg-emerald-950/30' : 'border-emerald-200 bg-emerald-50/70'}`}
+            >
+              <div
+                className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}
+              >
+                <CreditCard className="h-3 w-3" />
+                Tổng chi tiêu
+              </div>
+              <div
+                className={`mt-1 text-[16px] font-black tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}
+              >
+                {summary ? formatVnd(summary.totalSpent) : '--'}
+              </div>
+              <div className={`mt-0.5 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                TB {summary ? formatVnd(summary.avgSpendPerVisit) : '--'} / lần hoàn thành
+              </div>
+            </div>
+
+            <div
+              className={`rounded-2xl border p-2.5 ${isDark ? 'border-slate-800 bg-slate-900/70' : 'border-slate-200 bg-slate-50'}`}
+            >
+              <div
+                className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+              >
+                <Calendar className="h-3 w-3" />
+                Lịch sử ghé thăm
+              </div>
+              <div className={`mt-1 text-[16px] font-black tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {summary ? `${summary.completedVisits} hoàn thành` : '--'}
+              </div>
+              <div
+                className={`mt-0.5 flex items-center gap-2 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+              >
+                <span>Tổng {summary?.totalBookings ?? 0} lịch</span>
+                <span>·</span>
+                <span className="text-amber-500 font-semibold">💎 {summary?.diamondBalance ?? 0} KC</span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Segmented Tabs (BỘ MI | TẤT CẢ | THANH TOÁN | FIX | THƯỞNG) - Ẩn tab tài chính khi đưa khách xem */}
+        {!customerFacingMode && (
+          <div
+            className={`border-b px-3 py-2 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}
+          >
+            <div
+              role="tablist"
+              aria-label="Phân loại lịch sử khách hàng"
+              className={`grid grid-cols-5 gap-1 rounded-xl p-1 ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}
+            >
+              {TAB_CONFIG.map((tab) => {
+                const isActive = effectiveTab === tab.key;
+                const count = getTabCount(tab.key);
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex flex-col items-center justify-center rounded-lg px-1 py-1.5 text-[9.5px] font-bold transition-colors duration-75 tabular-nums cursor-pointer ${
+                      isActive
+                        ? isDark
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'bg-white text-emerald-700 shadow-xs'
+                        : isDark
+                          ? 'text-slate-400 hover:text-slate-200'
+                          : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span className="truncate">{tab.label}</span>
+                    <span className={`mt-0.5 text-[9px] font-semibold ${isActive ? 'opacity-90' : 'opacity-65'}`}>
+                      ({count})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
-          {isLoading && !data ? (
-            <div className="space-y-2.5 py-4" data-testid="history-loading">
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className={`h-24 animate-pulse rounded-2xl border ${
-                    isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white'
-                  }`}
-                />
-              ))}
-            </div>
-          ) : errorMsg ? (
+          {errorMsg && effectiveTab !== 'LASH_PHOTOS' ? (
             <div
               className={`flex flex-col items-center justify-center rounded-2xl border p-6 text-center ${
                 isDark ? 'border-rose-500/30 bg-rose-950/20 text-rose-200' : 'border-rose-200 bg-rose-50 text-rose-700'
@@ -527,9 +549,29 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                 Thử lại
               </button>
             </div>
+          ) : effectiveTab === 'LASH_PHOTOS' ? (
+            <CustomerLashPortfolioTab
+              booking={booking}
+              visits={visits}
+              isLoading={isLoading}
+              isDark={isDark}
+              customerFacingMode={customerFacingMode}
+              onOpenLightbox={setLightboxPayload}
+            />
+          ) : isLoading && !data ? (
+            <div className="space-y-2.5 py-4" data-testid="history-loading">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className={`h-24 animate-pulse rounded-2xl border ${
+                    isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white'
+                  }`}
+                />
+              ))}
+            </div>
           ) : (
             <>
-              {activeTab === 'ALL' &&
+              {effectiveTab === 'ALL' &&
                 (visits.length === 0 ? (
                   <p className={`py-8 text-center text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     Chưa ghi nhận lịch sử ghé thăm nào.
@@ -538,7 +580,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                   visits.map((v, i) => renderVisitCard(v, i, 'ALL'))
                 ))}
 
-              {activeTab === 'PAYMENTS' &&
+              {effectiveTab === 'PAYMENTS' &&
                 (payments.length === 0 ? (
                   <p className={`py-8 text-center text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     Chưa có giao dịch thanh toán nào.
@@ -547,7 +589,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                   payments.map((v, i) => renderVisitCard(v, i, 'PAYMENTS'))
                 ))}
 
-              {activeTab === 'FIX' &&
+              {effectiveTab === 'FIX' &&
                 (fixVisits.length === 0 ? (
                   <p className={`py-8 text-center text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     Khách hàng chưa có lượt FIX / bảo hành nào.
@@ -556,7 +598,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                   fixVisits.map((v, i) => renderVisitCard(v, i, 'FIX'))
                 ))}
 
-              {activeTab === 'REWARDS' &&
+              {effectiveTab === 'REWARDS' &&
                 (diamondTxns.length === 0 ? (
                   <p className={`py-8 text-center text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     Chưa có lịch sử tích / sử dụng Kim Cương.
@@ -567,7 +609,34 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
             </>
           )}
         </div>
+
+        {primaryActionLabel && onPrimaryAction && (
+          <div
+            className={`flex items-center gap-2 border-t px-4 py-3 shrink-0 ${
+              isDark ? 'border-slate-800 bg-slate-900/90' : 'border-slate-200 bg-white'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className={`rounded-xl border px-4 py-2.5 text-xs font-bold cursor-pointer ${
+                isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-slate-200 bg-slate-100 text-slate-700'
+              }`}
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              onClick={onPrimaryAction}
+              className="flex-1 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-black text-black shadow-md active:scale-[0.98] cursor-pointer"
+            >
+              {primaryActionLabel}
+            </button>
+          </div>
+        )}
       </div>
+
+      <LashPhotoCompareLightbox payload={lightboxPayload} onClose={() => setLightboxPayload(null)} />
     </div>
   );
 };

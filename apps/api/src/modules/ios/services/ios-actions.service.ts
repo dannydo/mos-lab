@@ -12,12 +12,9 @@ import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
 import { settleIosOrderWithLegacyPhp, SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
-import {
-  persistRetainLashCountsToLegacy,
-  STEP_SYNC_ELIGIBLE_ACTIONS,
-  syncIosStepWithLegacyPhp,
-} from './ios-legacy-step-sync.service.js';
+import { STEP_SYNC_ELIGIBLE_ACTIONS, syncIosStepWithLegacyPhp } from './ios-legacy-step-sync.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
+import { persistIncomingRoundPhotosToCloud, persistRetainCountsByServiceIndex } from './ios-progress-sync.helper.js';
 import {
   applyTargetedPromotionToOverride,
   fetchPromotionsByIds,
@@ -135,6 +132,7 @@ export async function executeIosBookingAction(
       'START_TIMER',
       'FINISH_TIMER',
       'SAVE_PHOTO',
+      'NEXT_SERVICE_ROUND',
       'SAVE_SURVEY',
       'UPDATE_CART_PRODUCTS',
       'SAVE_PROMOTION',
@@ -351,54 +349,22 @@ export async function executeIosBookingAction(
         incomingProgress.selfChallengeSlowerReason = reasonCheck.normalized;
       }
 
-      if (
-        !isSimulationMode &&
-        incomingProgress.beforePhotoUrl &&
-        typeof incomingProgress.beforePhotoUrl === 'string' &&
-        incomingProgress.beforePhotoUrl.startsWith('data:image/')
-      ) {
-        incomingProgress.beforePhotoUrl = await persistProgressPhotoToCloud(
-          bookingId,
-          'before',
-          incomingProgress.beforePhotoUrl
-        );
-      }
-      if (
-        !isSimulationMode &&
-        incomingProgress.cleanedPhotoUrl &&
-        typeof incomingProgress.cleanedPhotoUrl === 'string' &&
-        incomingProgress.cleanedPhotoUrl.startsWith('data:image/')
-      ) {
-        incomingProgress.cleanedPhotoUrl = await persistProgressPhotoToCloud(
-          bookingId,
-          'cleaned',
-          incomingProgress.cleanedPhotoUrl
-        );
-      }
-      if (
-        !isSimulationMode &&
-        incomingProgress.afterPhotoUrl &&
-        typeof incomingProgress.afterPhotoUrl === 'string' &&
-        incomingProgress.afterPhotoUrl.startsWith('data:image/')
-      ) {
-        incomingProgress.afterPhotoUrl = await persistProgressPhotoToCloud(
-          bookingId,
-          'after',
-          incomingProgress.afterPhotoUrl
-        );
-      }
+      await persistIncomingRoundPhotosToCloud(bookingId, incomingProgress, isSimulationMode);
 
       if (
         !isSimulationMode &&
         (repo === defaultIosOverrideRepo || Boolean(bridgeDepsOverride) || Boolean(options?.enableLegacyStepSync))
       ) {
-        await persistRetainLashCountsToLegacy(bookingId, incomingProgress, bridgeDepsOverride?.getPool);
+        await persistRetainCountsByServiceIndex(
+          bookingId,
+          incomingProgress,
+          bridgeDepsOverride?.getPool,
+          current.attributes?.underMinkServiceType
+        );
       }
 
       const resolvedAssignedStaffId = Number(
-        body.assignedStaffId ||
-        current.assignedStaffId ||
-        (actorStaffId > 0 ? actorStaffId : 0)
+        body.assignedStaffId || current.assignedStaffId || (actorStaffId > 0 ? actorStaffId : 0)
       );
       const resolvedAssignedStaffName =
         current.assignedStaffName && current.assignedStaffName !== 'Chờ phân công (Đầu tua)'
@@ -417,6 +383,27 @@ export async function executeIosBookingAction(
           ...incomingProgress,
           cloudSynced: true,
           cloudSyncedAt: new Date().toISOString(),
+        },
+      };
+    } else if (action === 'NEXT_SERVICE_ROUND') {
+      const incomingProgress = { ...(body.progress || {}) };
+      await persistIncomingRoundPhotosToCloud(bookingId, incomingProgress, isSimulationMode);
+      const nowIso = new Date().toISOString();
+      const preserveDoneState = current.status === 'DONE' && !body.forceReopenServicing;
+      nextOverride = {
+        ...current,
+        status: preserveDoneState ? 'DONE' : 'SERVICING',
+        orderState: preserveDoneState ? current.orderState || 'Completed' : body.orderState || 'Preparation',
+        progress: {
+          ...(current.progress || {}),
+          ...incomingProgress,
+          upperCompleted: true,
+          activeServiceRound: 'UNDER',
+          timerRunning: false,
+          elapsedSeconds: 0,
+          currentStep: 7,
+          cloudSynced: true,
+          cloudSyncedAt: nowIso,
         },
       };
     } else if (action === 'UPDATE_CUSTOMER_AVATAR') {
@@ -628,20 +615,41 @@ export async function executeIosBookingAction(
             isSimulationMode,
             isDemoRequest: Boolean(body?.demoMode),
             previousLastLegacyProgressState: current.progress?.lastLegacyProgressState,
+            previousLastLegacyUpperState: current.progress?.lastLegacyUpperState,
+            previousLastLegacyUnderState: current.progress?.lastLegacyUnderState,
+            previousLastLegacyUpperPhotoSigs: current.progress?.lastLegacyUpperPhotoSigs,
+            previousLastLegacyUnderPhotoSigs: current.progress?.lastLegacyUnderPhotoSigs,
           },
           bridgeDepsOverride
         );
 
+        const hasRoundSyncPatch = Boolean(
+          stepSync.lastLegacyProgressState ||
+          stepSync.lastLegacyUpperState ||
+          stepSync.lastLegacyUnderState ||
+          stepSync.lastLegacyUpperPhotoSigs ||
+          stepSync.lastLegacyUnderPhotoSigs
+        );
         const enrichedOverride: BookingOverrideRecord = {
           ...nextOverride,
           legacyStepSyncStatus: stepSync.status,
           ...(stepSync.legacyOrderState ? { legacySyncedOrderState: stepSync.legacyOrderState } : {}),
           ...(stepSync.synced ? { legacyStepSyncedAt: new Date().toISOString() } : {}),
-          ...(stepSync.lastLegacyProgressState && nextOverride.progress
+          ...(hasRoundSyncPatch && nextOverride.progress
             ? {
                 progress: {
                   ...nextOverride.progress,
-                  lastLegacyProgressState: stepSync.lastLegacyProgressState,
+                  ...(stepSync.lastLegacyProgressState
+                    ? { lastLegacyProgressState: stepSync.lastLegacyProgressState }
+                    : {}),
+                  ...(stepSync.lastLegacyUpperState ? { lastLegacyUpperState: stepSync.lastLegacyUpperState } : {}),
+                  ...(stepSync.lastLegacyUnderState ? { lastLegacyUnderState: stepSync.lastLegacyUnderState } : {}),
+                  ...(stepSync.lastLegacyUpperPhotoSigs
+                    ? { lastLegacyUpperPhotoSigs: stepSync.lastLegacyUpperPhotoSigs }
+                    : {}),
+                  ...(stepSync.lastLegacyUnderPhotoSigs
+                    ? { lastLegacyUnderPhotoSigs: stepSync.lastLegacyUnderPhotoSigs }
+                    : {}),
                 },
               }
             : {}),

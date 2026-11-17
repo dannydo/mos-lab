@@ -9,6 +9,11 @@ import {
 } from './ios-legacy-bridge.service.js';
 import { buildLegacyOrderPayloads, resolveLegacyOrderCatalogSnapshot } from './ios-legacy-payload.mapper.js';
 import { BookingOverrideRecord } from './ios-overrides.service.js';
+import {
+  persistRetainCountsByServiceIndex,
+  resolveIncompleteOrderServiceIdsForDone,
+  syncServicingRoundsToLegacyPhp,
+} from './ios-progress-sync.helper.js';
 
 export const STEP_SYNC_ELIGIBLE_ACTIONS = new Set([
   'CHECK_IN',
@@ -17,6 +22,7 @@ export const STEP_SYNC_ELIGIBLE_ACTIONS = new Set([
   'START_SERVICE',
   'UPDATE_PROGRESS',
   'SAVE_PROGRESS',
+  'NEXT_SERVICE_ROUND',
   'COMPLETE_SURVEY',
   'SAVE_SURVEY',
   'SAVE_UPSELL_AND_CHECKOUT',
@@ -39,6 +45,10 @@ export interface SyncIosStepParams {
   isSimulationMode: boolean;
   isDemoRequest?: boolean;
   previousLastLegacyProgressState?: string;
+  previousLastLegacyUpperState?: string;
+  previousLastLegacyUnderState?: string;
+  previousLastLegacyUpperPhotoSigs?: Record<string, string>;
+  previousLastLegacyUnderPhotoSigs?: Record<string, string>;
 }
 
 export interface SyncIosStepResult {
@@ -46,6 +56,10 @@ export interface SyncIosStepResult {
   status: 'SYNCED' | 'SKIPPED' | 'DEFERRED';
   legacyOrderState?: string;
   lastLegacyProgressState?: string;
+  lastLegacyUpperState?: string;
+  lastLegacyUnderState?: string;
+  lastLegacyUpperPhotoSigs?: Record<string, string>;
+  lastLegacyUnderPhotoSigs?: Record<string, string>;
   warning?: string;
 }
 
@@ -57,6 +71,8 @@ function mapOverrideOrderStateToLegacyServiceState(rawOrderState: string | undef
   switch (normalized) {
     case 'Preparation':
     case 'Photo before auto-saved':
+    case 'Photo upper_before auto-saved':
+    case 'Photo under_before auto-saved':
       return 'Preparation';
     case 'Service Start':
     case 'ServiceStart':
@@ -64,10 +80,14 @@ function mapOverrideOrderStateToLegacyServiceState(rawOrderState: string | undef
     case 'Service Cleaned':
     case 'ServiceCleaned':
     case 'Photo cleaned auto-saved':
+    case 'Photo upper_cleaned auto-saved':
+    case 'Photo under_cleaned auto-saved':
       return 'ServiceCleaned';
     case 'Service End':
     case 'ServiceEnd':
     case 'Photo after auto-saved':
+    case 'Photo upper_after auto-saved':
+    case 'Photo under_after auto-saved':
       return 'ServiceEnd';
     case 'Service Completed':
     case 'ServiceCompleted':
@@ -116,46 +136,10 @@ function buildStepConsultationPayload(
 export async function persistRetainLashCountsToLegacy(
   bookingId: number,
   incomingProgress: Record<string, SafeAny>,
-  getPoolOverride?: () => mysql.Pool
+  getPoolOverride?: () => mysql.Pool,
+  underMinkServiceType?: string
 ): Promise<void> {
-  if (bookingId <= 0 || bookingId >= 900_000_000 || DEMO_BOOKING_IDS.has(bookingId)) {
-    return;
-  }
-  if (incomingProgress.retainLashCountLeft === undefined && !incomingProgress.retainLashes) {
-    return;
-  }
-
-  let progressPool: mysql.Pool;
-  try {
-    progressPool = (getPoolOverride || getLegacyPool)();
-  } catch {
-    return;
-  }
-
-  try {
-    const leftVal = incomingProgress.retainLashCountLeft ?? incomingProgress.retainLashes?.left;
-    const rightVal = incomingProgress.retainLashCountRight ?? incomingProgress.retainLashes?.right;
-    if (leftVal === undefined || rightVal === undefined) {
-      return;
-    }
-
-    const [osRows] = await progressPool.query<mysql.RowDataPacket[]>(
-      'SELECT id FROM order_service WHERE order_id = ? ORDER BY id ASC LIMIT 1',
-      [Number(bookingId)]
-    );
-    if (osRows.length > 0) {
-      const osId = osRows[0].id;
-      const groupKey = String(Math.floor(Date.now() / 1000));
-      await progressPool.query(
-        `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_value, group_key, date_created)
-         VALUES (11, 1, 'service-retain-attribute', ?, 17, ?, ?, NOW()),
-                (11, 1, 'service-retain-attribute', ?, 18, ?, ?, NOW())`,
-        [osId, String(leftVal), groupKey, osId, String(rightVal), groupKey]
-      );
-    }
-  } catch (dbErr) {
-    console.warn('[ios-actions] Failed to persist retain lash counts to legacy DB:', dbErr);
-  }
+  return persistRetainCountsByServiceIndex(bookingId, incomingProgress, getPoolOverride, underMinkServiceType);
 }
 
 export async function syncIosStepWithLegacyPhp(
@@ -173,6 +157,10 @@ export async function syncIosStepWithLegacyPhp(
     isSimulationMode,
     isDemoRequest = false,
     previousLastLegacyProgressState,
+    previousLastLegacyUpperState,
+    previousLastLegacyUnderState,
+    previousLastLegacyUpperPhotoSigs,
+    previousLastLegacyUnderPhotoSigs,
   } = params;
 
   if (
@@ -284,8 +272,8 @@ export async function syncIosStepWithLegacyPhp(
     let effectiveOrderState = catalog.currentOrderState;
     let activeOrderServiceIds = [...catalog.existingOrderServiceIds];
 
-    const refreshOrderServiceIds = async () => {
-      if (deps?.resolveCatalog) return;
+    const refreshOrderServiceIds = async (): Promise<number[]> => {
+      if (deps?.resolveCatalog) return activeOrderServiceIds;
       const [refreshedOs] = await pool.query<mysql.RowDataPacket[]>(
         'SELECT id FROM order_service WHERE order_id = ? ORDER BY id ASC',
         [bookingId]
@@ -301,6 +289,7 @@ export async function syncIosStepWithLegacyPhp(
           built.preConsultationUpperAttrPayload.selected_service = withIds;
         }
       }
+      return activeOrderServiceIds;
     };
 
     const ensureCheckedIn = async (): Promise<{ ok: boolean; warning?: string }> => {
@@ -380,67 +369,34 @@ export async function syncIosStepWithLegacyPhp(
       };
     }
 
-    if (action === 'START_SERVICE' || action === 'UPDATE_PROGRESS' || action === 'SAVE_PROGRESS') {
-      const mappedState = mapOverrideOrderStateToLegacyServiceState(mergedOverride.orderState);
-      if (
-        !mappedState ||
-        assignedStaffId <= 0 ||
-        (mappedState === previousLastLegacyProgressState && catalog.currentOrderState === mappedState)
-      ) {
-        return {
-          synced: false,
-          status: 'SKIPPED',
-          lastLegacyProgressState: previousLastLegacyProgressState,
-        };
-      }
-      if (PRE_CHECKIN_STATES.has(effectiveOrderState) || effectiveOrderState === 'CheckIn') {
-        const consultRes = await ensureConsulted();
-        if (!consultRes.ok) {
-          return { synced: false, status: 'DEFERRED', warning: consultRes.warning };
-        }
-      }
-      if (activeOrderServiceIds.length === 0) {
-        await refreshOrderServiceIds();
-      }
-      if (activeOrderServiceIds.length === 0) {
-        return {
-          synced: false,
-          status: 'DEFERRED',
-          warning: 'No legacy order_service found for progress sync.',
-        };
-      }
-      for (const osId of activeOrderServiceIds) {
-        const res =
-          mappedState === 'ServiceCompleted'
-            ? await callPhp(
-                '/order/service/done',
-                withAuth(assignedStaffId, {
-                  order_service_id: String(osId),
-                  assigned_staff_id: String(assignedStaffId),
-                })
-              )
-            : await callPhp(
-                '/order/service/progress/update',
-                withAuth(assignedStaffId, {
-                  order_service_id: String(osId),
-                  assigned_staff_id: String(assignedStaffId),
-                  service_state: mappedState,
-                })
-              );
-        if (!res.ok) {
-          return {
-            synced: false,
-            status: 'DEFERRED',
-            warning: res.message || `Legacy progress update (${mappedState}) returned code ${res.code}`,
-          };
-        }
-      }
-      return {
-        synced: true,
-        status: 'SYNCED',
-        legacyOrderState: mappedState,
-        lastLegacyProgressState: mappedState,
-      };
+    if (
+      action === 'START_SERVICE' ||
+      action === 'UPDATE_PROGRESS' ||
+      action === 'SAVE_PROGRESS' ||
+      action === 'NEXT_SERVICE_ROUND'
+    ) {
+      return await syncServicingRoundsToLegacyPhp({
+        bookingId,
+        action,
+        mappedState: mapOverrideOrderStateToLegacyServiceState(mergedOverride.orderState),
+        mergedOverride,
+        assignedStaffId,
+        activeOrderServiceIds,
+        catalogCurrentOrderState: catalog.currentOrderState,
+        effectiveOrderState,
+        previousLastLegacyProgressState,
+        previousLastLegacyUpperState,
+        previousLastLegacyUnderState,
+        previousLastLegacyUpperPhotoSigs,
+        previousLastLegacyUnderPhotoSigs,
+        hasCustomResolveCatalog: Boolean(deps?.resolveCatalog),
+        pool,
+        preCheckInStates: PRE_CHECKIN_STATES,
+        ensureConsulted,
+        refreshOrderServiceIds,
+        withAuth,
+        callPhp,
+      });
     }
 
     if (action === 'COMPLETE_SURVEY' || action === 'SAVE_SURVEY') {
@@ -454,7 +410,8 @@ export async function syncIosStepWithLegacyPhp(
         }
       }
       if (!DONE_OR_LATER_STATES.has(effectiveOrderState)) {
-        for (const osId of activeOrderServiceIds) {
+        const pendingOsIds = resolveIncompleteOrderServiceIdsForDone(activeOrderServiceIds, mergedOverride);
+        for (const osId of pendingOsIds) {
           const doneRes = await callPhp(
             '/order/service/done',
             withAuth(assignedStaffId, { order_service_id: String(osId), assigned_staff_id: String(assignedStaffId) })
@@ -494,7 +451,8 @@ export async function syncIosStepWithLegacyPhp(
         }
       }
       if (assignedStaffId > 0 && !DONE_OR_LATER_STATES.has(effectiveOrderState)) {
-        for (const osId of activeOrderServiceIds) {
+        const pendingOsIds = resolveIncompleteOrderServiceIdsForDone(activeOrderServiceIds, mergedOverride);
+        for (const osId of pendingOsIds) {
           await callPhp(
             '/order/service/done',
             withAuth(assignedStaffId, { order_service_id: String(osId), assigned_staff_id: String(assignedStaffId) })

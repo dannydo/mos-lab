@@ -5,6 +5,7 @@ import type { IosPromotionOption, IosPromotionTargetScope } from '@mos-lab/share
 import { Sparkles } from 'lucide-react';
 import { BookingItem } from '../../../state/mockData';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
+import { CustomerPortfolioTriggerButton } from '../../ui-kit/CustomerPortfolioTriggerButton';
 import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
 import { ReceiptItemPromotionBadge } from './ReceiptItemPromotionBadge';
 import { ReceiptTotalsSummary } from './ReceiptTotalsSummary';
@@ -194,6 +195,8 @@ export function CheckoutReceiptSection({
         </div>
       </div>
 
+      <CustomerPortfolioTriggerButton booking={booking} compact customerFacingMode={!showStaffRewards} />
+
       {/* Section 1: Chi Tiết Hóa Đơn Chuẩn Apple Receipt */}
       <div>
         <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider px-1 mb-1.5">
@@ -317,7 +320,9 @@ export function CheckoutReceiptSection({
                         })
                     : undefined
                 }
-                onClear={!isSettled && onClearItemPromotion ? () => onClearItemPromotion({ scope: 'service' }) : undefined}
+                onClear={
+                  !isSettled && onClearItemPromotion ? () => onClearItemPromotion({ scope: 'service' }) : undefined
+                }
               />
             </div>
 

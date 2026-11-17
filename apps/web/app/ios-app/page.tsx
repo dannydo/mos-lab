@@ -362,7 +362,7 @@ function IosAppInner() {
         return (
           <Screen07LashProgressBefore
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(6)}
+            onBack={state.handleBackFromBeforePhoto}
             onSavePhoto={state.handleSaveBeforePhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('before', url)}
             isSimulationMode={state.isSimulationMode}

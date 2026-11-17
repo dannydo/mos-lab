@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  bookingRequiresUnderLashRound,
   computeCvSelfChallengePlan,
   hasCompleteNaturalLashSet,
   IosSelfChallengeOption,
@@ -9,6 +10,7 @@ import {
   IosSelfChallengeSelection,
   IosSelfChallengeTierKey,
   isSelfChallengeSlowerThanAverage,
+  splitUpperAndUnderTargetDuration,
   validateSelfChallengeSlowerReason,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -18,6 +20,7 @@ import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialCon
 import { resolveBookingCvRotationPoints } from './incoming/incomingBookingHelpers';
 import { CvReceiveMaterialsCard } from './servicing/CvReceiveMaterialsCard';
 import { SelfChallengeDurationCard } from './servicing/SelfChallengeDurationCard';
+import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
 import { Sparkles, Eye, Play, RotateCw, Clock, ChevronLeft, AlertTriangle, Lock } from 'lucide-react';
 
 interface Screen06CvDashboardReceiveProps {
@@ -458,6 +461,8 @@ export function Screen06CvDashboardReceive({
             </div>
           )}
 
+          <CustomerPortfolioTriggerButton booking={booking} compact />
+
           {/* 3. NGUYÊN VẬT LIỆU */}
           <CvReceiveMaterialsCard
             booking={booking}
@@ -489,6 +494,38 @@ export function Screen06CvDashboardReceive({
               }
             }}
           />
+
+          {bookingRequiresUnderLashRound(booking) &&
+            (() => {
+              const split = splitUpperAndUnderTargetDuration(
+                selectedDurationMin || suggestedDurationMin || booking?.serviceDuration || 85,
+                true,
+                booking?.attributes?.underMinkServiceType
+              );
+              return (
+                <div
+                  data-testid="screen06-under-split-pill"
+                  className={`rounded-2xl border px-3 py-2.5 flex items-center justify-between gap-2 text-[11px] font-bold ${
+                    isDark
+                      ? 'bg-emerald-950/35 border-emerald-500/35 text-emerald-200'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  }`}
+                >
+                  <span className="truncate">
+                    Tự tách 2 vòng (Cam kết 1 lần): Mi Trên{' '}
+                    <strong className="tabular-nums">{split.upperMinutes}p</strong> + Mi Dưới{' '}
+                    <strong className="tabular-nums">{split.underMinutes}p</strong>
+                  </span>
+                  <span
+                    className={`shrink-0 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase ${
+                      isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-800'
+                    }`}
+                  >
+                    {booking?.attributes?.underMinkServiceType === 'Retain' ? 'Dưới Retain' : 'Dưới Normal'}
+                  </span>
+                </div>
+              );
+            })()}
 
           {/* 4. Big CTA Button: Start Quest */}
           {mustCheckNaturalLashFirst ? (

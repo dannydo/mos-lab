@@ -8,6 +8,7 @@ import {
   LashHistoryItem,
   matchComboCategoryAndVolumeFromBooking,
 } from '@mos-lab/shared';
+import { attachLashHistoryProgressPhotos } from './ios-progress-sync.helper.js';
 
 export interface LastVisitSpecSummary {
   serviceKey?: string;
@@ -275,7 +276,9 @@ export async function fetchCustomerEnrichmentContext(
     const historyPromise = pool.query<mysql.RowDataPacket[]>(
       `SELECT
          h.user_id,
+         h.order_id,
          h.os_id,
+         h.service_group,
          h.visit_date,
          h.service_key,
          h.service_name,
@@ -284,7 +287,9 @@ export async function fetchCustomerEnrichmentContext(
        FROM (
          SELECT
            o.user_id,
+           o.id AS order_id,
            os.id AS os_id,
+           os.service_group,
            o.booking_date_start AS sort_dt,
            DATE_FORMAT(o.booking_date_start, '%d/%m/%Y') AS visit_date,
            s.service_key,
@@ -301,7 +306,9 @@ export async function fetchCustomerEnrichmentContext(
          UNION ALL
          SELECT
            ro.user_id,
+           ro.order_id AS order_id,
            ros.order_service_id AS os_id,
+           s.service_group,
            ro.booking_date_start AS sort_dt,
            DATE_FORMAT(ro.booking_date_start, '%d/%m/%Y') AS visit_date,
            s.service_key,
@@ -405,8 +412,22 @@ export async function fetchCustomerEnrichmentContext(
 
     const latestUpperOsIds: number[] = [];
     const osToUserMap = new Map<number, { userId: number; serviceKey: string }>();
+    const historyMetaByOrder = new Map<
+      string,
+      { userId: number; itemIndex: number; orderId?: number; upperOsId?: number; underOsId?: number }
+    >();
+    const historyMetaList: Array<{
+      userId: number;
+      itemIndex: number;
+      orderId?: number;
+      upperOsId?: number;
+      underOsId?: number;
+    }> = [];
+
     for (const hr of historyRows) {
       const uid = Number(hr.user_id);
+      const oid = Number(hr.order_id || 0);
+      const osId = Number(hr.os_id || 0);
       const list = ctx.lashHistoryMap.get(uid) || [];
       const svcName = String(hr.service_name || 'Nối mi')
         .replace(
@@ -416,23 +437,64 @@ export async function fetchCustomerEnrichmentContext(
         .replace(/\s{2,}/g, ' ')
         .trim();
       const svcKey = String(hr.service_key || '');
-      if (list.length < 3) {
-        list.push({
-          date: String(hr.visit_date || ''),
-          serviceName: svcName,
-          staffName: String(hr.staff_name || 'Chuyên Viên'),
-        });
-        ctx.lashHistoryMap.set(uid, list);
-      }
-
+      const svcGroup = String(hr.service_group || '').trim();
       const isUnder =
+        svcGroup === 'LashesUnder' ||
         svcKey.toLowerCase().includes('under') ||
         svcKey.toLowerCase().includes('flawless.mink-390') ||
         svcName.toLowerCase().includes('under') ||
         svcName.toLowerCase().includes('mi dưới');
+      const orderMapKey = oid > 0 ? `${uid}:${oid}` : '';
+      const existingMeta = orderMapKey ? historyMetaByOrder.get(orderMapKey) : undefined;
+
+      if (existingMeta) {
+        const existingItem = list[existingMeta.itemIndex];
+        if (existingItem) {
+          if (isUnder) {
+            existingItem.underServiceName = svcName;
+            if (!existingItem.serviceName.includes(svcName)) {
+              existingItem.serviceName = `${existingItem.serviceName} + ${svcName}`;
+            }
+            if (osId > 0) existingMeta.underOsId = osId;
+          } else {
+            if (!existingItem.underServiceName && existingItem.serviceName !== svcName) {
+              existingItem.underServiceName = existingItem.serviceName;
+            }
+            existingItem.serviceName =
+              existingItem.underServiceName && !svcName.includes(existingItem.underServiceName)
+                ? `${svcName} + ${existingItem.underServiceName}`
+                : svcName;
+            if (osId > 0) {
+              if (!existingMeta.underOsId && existingMeta.upperOsId) {
+                existingMeta.underOsId = existingMeta.upperOsId;
+              }
+              existingMeta.upperOsId = osId;
+            }
+          }
+        }
+      } else if (list.length < 3) {
+        const itemIndex = list.length;
+        list.push({
+          ...(oid > 0 ? { orderId: oid } : {}),
+          date: String(hr.visit_date || ''),
+          serviceName: svcName,
+          staffName: String(hr.staff_name || 'Chuyên Viên'),
+          ...(isUnder ? { underServiceName: svcName } : {}),
+        });
+        ctx.lashHistoryMap.set(uid, list);
+        const meta = {
+          userId: uid,
+          itemIndex,
+          ...(oid > 0 ? { orderId: oid } : {}),
+          ...(osId > 0 ? (isUnder ? { underOsId: osId } : { upperOsId: osId }) : {}),
+        };
+        historyMetaList.push(meta);
+        if (orderMapKey) historyMetaByOrder.set(orderMapKey, meta);
+      }
+
       const isAnyHistory = svcKey.toLowerCase().includes('any') || svcName.toLowerCase().includes('any');
       if (!isUnder && !isAnyHistory && !ctx.lastVisitSpecsMap.has(uid) && hr.os_id) {
-        const osId = Number(hr.os_id);
+        const specOsId = Number(hr.os_id);
         const combinedLower = `${svcKey} ${svcName}`.toLowerCase();
         let mat = 'Flawless Mink';
         if (combinedLower.includes('hyperlight') || combinedLower.includes('hyper light')) mat = 'HyperLight';
@@ -478,10 +540,12 @@ export async function fetchCustomerEnrichmentContext(
           volume: defaultVol,
           count: defaultCount,
         });
-        latestUpperOsIds.push(osId);
-        osToUserMap.set(osId, { userId: uid, serviceKey: svcKey });
+        latestUpperOsIds.push(specOsId);
+        osToUserMap.set(specOsId, { userId: uid, serviceKey: svcKey });
       }
     }
+
+    await attachLashHistoryProgressPhotos(pool, ctx.lashHistoryMap, historyMetaList);
 
     if (latestUpperOsIds.length > 0) {
       const osPlaceholders = latestUpperOsIds.map(() => '?').join(',');

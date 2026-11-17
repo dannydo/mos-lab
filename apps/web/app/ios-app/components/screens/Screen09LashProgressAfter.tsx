@@ -1,10 +1,18 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  bookingRequiresUnderLashRound,
+  resolveActiveServicingRound,
+  splitUpperAndUnderTargetDuration,
+} from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { LashServicingStepper } from '../ui-kit/LashServicingStepper';
 import { IosCloudSyncBadge } from '../ui-kit/IosCloudSyncBadge';
+import { ServicingRoundHeaderPill } from './servicing/ServicingRoundHeaderPill';
+import { AfterRoundComparisonStrip } from './servicing/AfterRoundComparisonStrip';
+import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
 import { BookingItem } from '../../state/mockData';
 import {
   saveLocalProgressSnapshot,
@@ -38,12 +46,20 @@ export function Screen09LashProgressAfter({
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; title: string } | null>(null);
 
   const bookingId = booking.id;
-  const progressSeconds = booking.progress?.elapsedSeconds;
+  const hasUnderMink = bookingRequiresUnderLashRound(booking);
+  const activeRound = resolveActiveServicingRound(booking);
+  const isUnderRound = hasUnderMink && activeRound === 'UNDER';
+  const beforeField = isUnderRound ? 'underBeforePhotoUrl' : 'beforePhotoUrl';
+  const cleanedField = isUnderRound ? 'underCleanedPhotoUrl' : 'cleanedPhotoUrl';
+  const afterField = isUnderRound ? 'underAfterPhotoUrl' : 'afterPhotoUrl';
+  const afterSavedAtField = isUnderRound ? 'underAfterPhotoSavedAt' : 'afterPhotoSavedAt';
+  const progressSeconds = isUnderRound
+    ? (booking.progress?.underElapsedSeconds ?? booking.progress?.elapsedSeconds)
+    : (booking.progress?.upperElapsedSeconds ?? booking.progress?.elapsedSeconds);
 
-  // Lấy snapshot đã lưu (ảnh Before, thời gian timer)
   const cachedSnapshot = useMemo(() => {
     return getLocalProgressSnapshot(bookingId);
-  }, [bookingId]);
+  }, [bookingId, isUnderRound]);
 
   const [asyncSnapshot, setAsyncSnapshot] = useState<any>(null);
 
@@ -51,38 +67,64 @@ export function Screen09LashProgressAfter({
     void getLocalProgressSnapshotAsync(bookingId).then((data) => {
       if (data) setAsyncSnapshot(data);
     });
-  }, [bookingId]);
+  }, [bookingId, isUnderRound]);
 
   const beforePhotoUrl =
-    booking.progress?.beforePhotoUrl || cachedSnapshot?.beforePhotoUrl || asyncSnapshot?.beforePhotoUrl || null;
+    (booking.progress?.[beforeField] as string | undefined) ||
+    (cachedSnapshot?.[beforeField] as string | undefined) ||
+    (asyncSnapshot?.[beforeField] as string | undefined) ||
+    null;
   const cleanedPhotoUrl =
-    booking.progress?.cleanedPhotoUrl || cachedSnapshot?.cleanedPhotoUrl || asyncSnapshot?.cleanedPhotoUrl || null;
+    (booking.progress?.[cleanedField] as string | undefined) ||
+    (cachedSnapshot?.[cleanedField] as string | undefined) ||
+    (asyncSnapshot?.[cleanedField] as string | undefined) ||
+    null;
+
+  const getSavedAfterValue = (): string => {
+    return (
+      (booking.progress?.[afterField] as string | undefined) ||
+      (cachedSnapshot?.[afterField] as string | undefined) ||
+      ''
+    );
+  };
 
   const [afterPhotoPreview, setAfterPhotoPreview] = useState<string | null>(() => {
-    const saved = booking.progress?.afterPhotoUrl || cachedSnapshot?.afterPhotoUrl || null;
+    const saved = getSavedAfterValue();
     return saved && !saved.startsWith('DECLINED:') ? saved : null;
   });
   const [isPhotoDeclined, setIsPhotoDeclined] = useState<boolean>(() => {
-    const saved = booking.progress?.afterPhotoUrl || cachedSnapshot?.afterPhotoUrl || '';
-    return Boolean(saved.startsWith('DECLINED:'));
+    return Boolean(getSavedAfterValue().startsWith('DECLINED:'));
   });
   const [declineReason, setDeclineReason] = useState<string>(() => {
-    const saved = booking.progress?.afterPhotoUrl || cachedSnapshot?.afterPhotoUrl || '';
+    const saved = getSavedAfterValue();
     return saved.startsWith('DECLINED:') ? saved.replace('DECLINED:', '') : 'Khách nhạy cảm riêng tư';
   });
 
+  // Reset state khi chuyển vòng (Vòng 1 -> Vòng 2) hoặc đổi booking
   useEffect(() => {
-    if (!afterPhotoPreview && asyncSnapshot?.afterPhotoUrl) {
-      setAfterPhotoPreview(asyncSnapshot.afterPhotoUrl);
+    const saved = getSavedAfterValue();
+    const declined = saved.startsWith('DECLINED:');
+    setAfterPhotoPreview(saved && !declined ? saved : null);
+    setIsPhotoDeclined(declined);
+    setDeclineReason(declined ? saved.replace('DECLINED:', '') : 'Khách nhạy cảm riêng tư');
+    setCloudSyncStatus('idle');
+    setAutoSavedToast(null);
+  }, [bookingId, isUnderRound, afterField]);
+
+  useEffect(() => {
+    const asyncVal = asyncSnapshot?.[afterField] as string | undefined;
+    if (!afterPhotoPreview && asyncVal && !asyncVal.startsWith('DECLINED:')) {
+      setAfterPhotoPreview(asyncVal);
     }
-  }, [afterPhotoPreview, asyncSnapshot]);
+  }, [afterPhotoPreview, asyncSnapshot, afterField]);
 
   useEffect(() => {
     if (isSelectingRef.current) return;
-    if (booking.progress?.afterPhotoUrl && booking.progress.afterPhotoUrl !== afterPhotoPreview) {
-      setAfterPhotoPreview(booking.progress.afterPhotoUrl);
+    const remoteVal = booking.progress?.[afterField] as string | undefined;
+    if (remoteVal && !remoteVal.startsWith('DECLINED:') && remoteVal !== afterPhotoPreview) {
+      setAfterPhotoPreview(remoteVal);
     }
-  }, [booking.progress?.afterPhotoUrl]);
+  }, [booking.progress, afterField]);
 
   const isDisplayablePhoto = (url: string | null | undefined): boolean => {
     if (!url) return false;
@@ -99,29 +141,49 @@ export function Screen09LashProgressAfter({
     );
   };
 
-  // Tính toán thời gian thực hiện thực tế từ timer
+  // Tính toán thời gian thực hiện thực tế theo vòng
   const actualMinutes = useMemo(() => {
-    if (cachedSnapshot && typeof cachedSnapshot.elapsedSeconds === 'number' && cachedSnapshot.elapsedSeconds > 0) {
-      return Math.max(1, Math.round(cachedSnapshot.elapsedSeconds / 60));
+    const snapSec = isUnderRound ? cachedSnapshot?.underElapsedSeconds : cachedSnapshot?.elapsedSeconds;
+    if (typeof snapSec === 'number' && snapSec > 0) {
+      return Math.max(1, Math.round(snapSec / 60));
     }
-    if (progressSeconds) {
+    if (progressSeconds && progressSeconds > 0) {
       return Math.max(1, Math.round(progressSeconds / 60));
     }
-    return 68; // Realistic default
-  }, [cachedSnapshot, progressSeconds]);
+    return isUnderRound ? 20 : 45;
+  }, [cachedSnapshot, progressSeconds, isUnderRound]);
 
-  // Chuẩn hóa tên dịch vụ hiển thị
   const displayServiceName = resolveDisplayServiceName(booking);
 
-  // Thời gian cam kết / định mức
+  // Thời gian cam kết / định mức theo vòng
   const targetMinutes = useMemo(() => {
+    if (isUnderRound) {
+      if (booking.progress?.underTargetDurationMinutes && booking.progress.underTargetDurationMinutes > 0) {
+        return booking.progress.underTargetDurationMinutes;
+      }
+      if (booking.progress?.targetDurationMinutes && booking.progress.targetDurationMinutes > 0) {
+        return splitUpperAndUnderTargetDuration(
+          booking.progress.targetDurationMinutes,
+          true,
+          booking.attributes?.underMinkServiceType
+        ).underMinutes;
+      }
+      return booking.attributes?.underMinkServiceType === 'Retain' ? 20 : 25;
+    }
+    if (hasUnderMink) {
+      if (booking.progress?.upperTargetDurationMinutes && booking.progress.upperTargetDurationMinutes > 0) {
+        return booking.progress.upperTargetDurationMinutes;
+      }
+      const total = booking.progress?.targetDurationMinutes || booking.serviceDuration || 85;
+      return splitUpperAndUnderTargetDuration(total, true, booking.attributes?.underMinkServiceType).upperMinutes;
+    }
     if (booking.serviceDuration && booking.serviceDuration > 0) return booking.serviceDuration;
     let base = 65;
     const sName = (displayServiceName || '').toLowerCase();
     if (sName.includes('dặm') || sName.includes('refill')) base = 50;
-    if (booking.attributes?.hasUnderMink || sName.includes('mi dưới')) base += 25;
+    if (sName.includes('mi dưới')) base += 25;
     return base;
-  }, [booking, displayServiceName]);
+  }, [booking, displayServiceName, hasUnderMink, isUnderRound]);
 
   const diffMinutes = actualMinutes - targetMinutes;
 
@@ -202,11 +264,11 @@ export function Screen09LashProgressAfter({
 
         // 2. Lưu local tức thời vào RAM & IndexedDB
         saveLocalProgressSnapshot(bookingId, {
-          afterPhotoUrl: compressed,
+          [afterField]: compressed,
           actualMinutes,
           targetMinutes,
           currentStep: 10,
-          afterPhotoSavedAt: new Date().toISOString(),
+          [afterSavedAtField]: new Date().toISOString(),
         });
 
         // 3. Tự động đẩy lên Cloud kèm thời gian tối thiểu 850ms để mắt người nhận diện rõ animation xoay
@@ -237,11 +299,11 @@ export function Screen09LashProgressAfter({
     if (!afterPhotoPreview && !isPhotoDeclined) return;
     const photoUrl = afterPhotoPreview || `DECLINED:${declineReason}`;
     saveLocalProgressSnapshot(bookingId, {
-      afterPhotoUrl: photoUrl,
+      [afterField]: photoUrl,
       actualMinutes,
       targetMinutes,
-      currentStep: 12, // Bỏ bước khảo sát trực tiếp trước mặt CVL/CC để khách không ngại, đi thẳng sang Upsell/Checkout!
-      afterPhotoSavedAt: new Date().toISOString(),
+      currentStep: hasUnderMink && !isUnderRound ? 7 : 12,
+      [afterSavedAtField]: new Date().toISOString(),
     });
     onSavePhoto(photoUrl);
   };
@@ -306,6 +368,8 @@ export function Screen09LashProgressAfter({
       <LashServicingStepper activeStep={4} elapsedMinutes={actualMinutes} />
 
       <div className="flex-1 px-4 py-3 space-y-3 overflow-y-auto pb-6">
+        <ServicingRoundHeaderPill booking={booking} />
+        <CustomerPortfolioTriggerButton booking={booking} isSimulationMode={isSimulationMode} compact />
         {/* KHỐI 1: CHỤP ẢNH AFTER (ƯU TIÊN LÊN TRÊN CÙNG TO RÕ THEO YÊU CẦU) */}
         <div className={`bg-[var(--mos-surface)] rounded-2xl p-3.5 shadow-sm border-2 border-[#22C55E] space-y-2.5`}>
           <div className="flex items-center justify-between">
@@ -314,7 +378,11 @@ export function Screen09LashProgressAfter({
                 3
               </span>
               <span className={`text-[13.5px] font-black ${isDark ? 'text-emerald-400' : 'text-emerald-800'}`}>
-                3. ẢNH AFTER · HOÀN THIỆN
+                {isUnderRound
+                  ? '3. ẢNH AFTER MI DƯỚI · HOÀN THIỆN'
+                  : hasUnderMink
+                    ? '3. ẢNH AFTER MI TRÊN · HOÀN THIỆN'
+                    : '3. ẢNH AFTER · HOÀN THIỆN'}
               </span>
             </div>
             {afterPhotoPreview ? (
@@ -382,11 +450,11 @@ export function Screen09LashProgressAfter({
                 setIsPhotoDeclined(false);
                 setCloudSyncStatus('uploading');
                 saveLocalProgressSnapshot(bookingId, {
-                  afterPhotoUrl: sampleUrl,
+                  [afterField]: sampleUrl,
                   actualMinutes,
                   targetMinutes,
                   currentStep: 10,
-                  afterPhotoSavedAt: new Date().toISOString(),
+                  [afterSavedAtField]: new Date().toISOString(),
                 });
                 if (onAutoSavePhoto) {
                   void Promise.resolve(onAutoSavePhoto(sampleUrl)).finally(() => setCloudSyncStatus('synced'));
@@ -442,72 +510,32 @@ export function Screen09LashProgressAfter({
           )}
         </div>
 
-        {/* KHỐI 2: ĐỐI CHIẾU NHANH VỚI 2 ẢNH TRƯỚC (THU GỌN THÀNH 2 THUMBNAIL PHÍA DƯỚI) */}
-        <div
-          className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border space-y-2`}
-        >
-          <div className="flex items-center justify-between px-0.5">
-            <span className={`text-[11px] font-bold text-[var(--mos-text-muted)] uppercase tracking-wider`}>
-              ĐỐI CHIẾU NHANH VỚI ẢNH TRƯỚC ĐÓ
-            </span>
-            <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-gray-400'} font-medium`}>
-              Chạm để phóng to
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {/* Thumbnail 1: Before Mắt Mộc */}
-            <div
-              onClick={() =>
-                isDisplayablePhoto(beforePhotoUrl) &&
-                setZoomPhoto({ url: beforePhotoUrl!, title: 'Ảnh 1: Mắt Mộc Ban Đầu (Before)' })
-              }
-              className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#1C1C1E] border border-neutral-700 shadow-inner group cursor-pointer"
-            >
-              {isDisplayablePhoto(beforePhotoUrl) ? (
-                <>
-                  <img src={beforePhotoUrl!} alt="Before" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
-                  <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-xs">
-                    <Maximize2 className="w-3 h-3" />
-                  </div>
-                </>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 text-[10px] p-2 text-center">
-                  Chưa có ảnh Before
-                </div>
-              )}
-              <span className="absolute bottom-1.5 left-1.5 bg-black/85 text-amber-400 text-[9.5px] font-black px-1.5 py-0.5 rounded shadow-xs border border-amber-500/30">
-                1. Mắt Mộc
-              </span>
-            </div>
-
-            {/* Thumbnail 2: Vệ Sinh Nhắm */}
-            <div
-              onClick={() =>
-                isDisplayablePhoto(cleanedPhotoUrl) &&
-                setZoomPhoto({ url: cleanedPhotoUrl!, title: 'Ảnh 2: Vệ Sinh Nhắm Mắt' })
-              }
-              className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#1C1C1E] border border-neutral-700 shadow-inner group cursor-pointer"
-            >
-              {isDisplayablePhoto(cleanedPhotoUrl) ? (
-                <>
-                  <img src={cleanedPhotoUrl!} alt="Cleaned" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
-                  <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-xs">
-                    <Maximize2 className="w-3 h-3" />
-                  </div>
-                </>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 text-[10px] p-2 text-center">
-                  Chưa có ảnh Vệ Sinh
-                </div>
-              )}
-              <span className="absolute bottom-1.5 left-1.5 bg-blue-600 text-white text-[9.5px] font-black px-1.5 py-0.5 rounded shadow-xs">
-                2. Vệ Sinh
-              </span>
-            </div>
-          </div>
+        {/* KHỐI 2: ĐỐI CHIẾU NHANH VỚI 2 ẢNH TRƯỚC */}
+        <div className={`bg-[var(--mos-surface)] border-[var(--mos-surface-border)] rounded-2xl p-3 shadow-sm border`}>
+          <AfterRoundComparisonStrip
+            activeRound={activeRound}
+            hasUnderMink={hasUnderMink}
+            isDark={isDark}
+            beforePhotoUrl={beforePhotoUrl}
+            cleanedPhotoUrl={cleanedPhotoUrl}
+            upperBeforeUrl={
+              (booking.progress?.beforePhotoUrl as string | undefined) ||
+              (cachedSnapshot?.beforePhotoUrl as string | undefined) ||
+              null
+            }
+            upperCleanedUrl={
+              (booking.progress?.cleanedPhotoUrl as string | undefined) ||
+              (cachedSnapshot?.cleanedPhotoUrl as string | undefined) ||
+              null
+            }
+            upperAfterUrl={
+              (booking.progress?.afterPhotoUrl as string | undefined) ||
+              (cachedSnapshot?.afterPhotoUrl as string | undefined) ||
+              null
+            }
+            isDisplayablePhoto={isDisplayablePhoto}
+            onZoomPhoto={setZoomPhoto}
+          />
         </div>
 
         {/* KHỐI 3: BÁO CÁO THỜI GIAN CA LÀM & KHEN KHÍCH LỆ TINH THẦN (KHÔNG THƯỞNG ĐIỂM) */}
@@ -618,7 +646,13 @@ export function Screen09LashProgressAfter({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 text-black" />
-                <span>LƯU ẢNH AFTER & TIẾP TỤC →</span>
+                <span>
+                  {hasUnderMink && !isUnderRound
+                    ? 'LƯU AFTER MI TRÊN & SANG VÒNG 2 (MI DƯỚI) →'
+                    : hasUnderMink && isUnderRound
+                      ? 'LƯU AFTER MI DƯỚI & TIẾP TỤC →'
+                      : 'LƯU ẢNH AFTER & TIẾP TỤC →'}
+                </span>
               </>
             )}
           </button>

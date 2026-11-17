@@ -490,6 +490,65 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'OPS-005',
+    book: 'SERVICE',
+    title: 'Phục vụ tuần tự 2 vòng Mi Trên -> Mi Dưới (2-Round Under Lash Workflow)',
+    summary:
+      'Khách có dịch vụ Mi Dưới đi qua 2 vòng độc lập: Vòng 1 (Mi Trên: Before -> Vệ sinh & Retain -> Timer -> After -> Next) chuyển sang Vòng 2 (Mi Dưới: Before -> Vệ sinh & Retain riêng -> Timer reset từ 00:00 -> After -> Done), đồng bộ 2 chiều với Legacy PHP & WingsBeauty.',
+    commandments: [
+      'Đơn có Mi Dưới (hasUnderMink = true) bắt buộc chạy tuần tự 2 vòng: 3 ảnh Mi Trên (Before, Cleaned, After) trước khi bấm Next sang 3 ảnh Mi Dưới (Before, Cleaned, After) và bấm Done.',
+      'Chuyên Viên cam kết tổng thời gian phục vụ 1 lần tại Step 6; hệ thống tự tách mục tiêu Mi Trên / Mi Dưới và reset đồng hồ Vòng 2 về 00:00 để khớp FalDurationResolver.',
+      'Bộ đếm sợi Retain (#17/#18) ở Step 8 kích hoạt độc lập cho từng vòng dựa trên loại dịch vụ của chính vòng đó (Mi Dưới Retain chỉ bật khi underMinkServiceType = Retain).',
+      'Khi gửi ảnh sang Legacy PHP /1/order/service/progress/update bắt buộc cắt bỏ tiền tố data:image/...;base64, và giữ tương thích ngược hoàn toàn với các đơn 3 ảnh lịch sử.',
+    ],
+    rationale:
+      'Đảm bảo Chuyên Viên Tự Chủ (CVL) không bỏ sót 3 ảnh trước/vệ sinh/sau của Mi Dưới, đếm số sợi Retain độc lập cho từng vòng theo dịch vụ, đồng thời giữ tương thích ngược hoàn toàn với dữ liệu 3 ảnh trước đây và tiến trình Legacy order_service_progress.',
+    tags: ['ios-app', 'under-lash', 'mi-duoi', 'retain', 'servicing', 'legacy-sync'],
+    routeScopes: ['/ios-app'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-17',
+    sources: [
+      {
+        label: 'Helper 2 vòng Mi Trên & Mi Dưới',
+        reference: 'packages/shared/src/utils/ios-servicing-rounds.ts',
+      },
+      {
+        label: 'Đồng bộ Legacy PHP 2 vòng',
+        reference: 'apps/api/src/modules/ios/services/ios-progress-sync.helper.ts',
+      },
+    ],
+  },
+  {
+    id: 'OPS-006',
+    book: 'SERVICE',
+    title: 'Hồ sơ 3 ảnh Before · Cleaning · After & Tư vấn xuyên suốt Chờ đón · Đang làm · Đã xong',
+    summary:
+      'Mỗi khách hàng đều có điểm chạm 1 lần chạm tại cả 3 danh sách Chờ đón, Đang làm, Đã xong và xuyên suốt màn hình phục vụ, Tư vấn sau nối (Screen11), Thanh toán (Screen12) và Hoá đơn (Screen14) để xem ngay ảnh Before/After hôm nay kèm đủ 3 ảnh & thông số bộ mi các lần ghé trước.',
+    commandments: [
+      'Điểm chạm chi tiết trên thẻ khách hàng (dòng Lần X và dòng ghi chú Info) ở cả 3 tab Chờ đón, Đang làm, Đã xong mở trực tiếp Bottom Sheet Hồ Sơ Bộ Mi & Ảnh, vẫn giữ nguyên chạm thân thẻ để vào Check-in / Tiếp tục ca / Hoá đơn.',
+      'Màn hình Tư vấn sau nối (Screen11) hiển thị sẵn khối Đối Chiếu Before & After Hôm Nay ngay phía trên và mở Bottom Sheet ở tab mặc định BỘ MI.',
+      'Khi ở chế độ đưa màn hình cho khách xem (customerFacingMode = true / ẩn thông tin nội bộ), tự động ẩn tổng tiền chi tiêu, Kim Cương, ghi chú nội bộ và các tab tài chính/FIX.',
+    ],
+    rationale:
+      'Giúp CC và Chuyên Viên dễ dàng thuyết phục khách hàng bằng hình ảnh thành phẩm thật ngay sau khi nối xong, đồng thời kiểm tra nhanh thông số & 3 ảnh các lần ghé trước ở mọi trạng thái lịch hẹn mà không lộ thông tin nội bộ.',
+    tags: ['ios-app', 'lash-portfolio', 'before-after', 'customer-history', 'upsell', 'privacy'],
+    routeScopes: ['/ios-app'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-17',
+    sources: [
+      {
+        label: 'Backend Hydrate 3 Ảnh & Thông Số Lịch Sử',
+        reference: 'apps/api/src/modules/ios/services/ios-customer-history-lashes.helper.ts',
+      },
+      {
+        label: 'Sheet Hồ Sơ Bộ Mi & Lịch Sử Chi Tiêu',
+        reference: 'apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx',
+      },
+    ],
+  },
+  {
     id: 'CC-001',
     book: 'PEOPLE',
     title: 'Không mượn danh người khác làm CC hay CV',
