@@ -319,6 +319,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
   });
   const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
   const [visibleHeight, setVisibleHeight] = useState<number>(0);
+  const [visualViewportOffsetTop, setVisualViewportOffsetTop] = useState<number>(0);
   const lastSelectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -332,10 +333,14 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       setIsMobile(mobile);
       if (window.visualViewport) {
         const vv = window.visualViewport;
-        const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        const offsetTop = Math.max(0, vv.offsetTop);
+        const offset = Math.max(0, window.innerHeight - vv.height - offsetTop);
+        setVisualViewportOffsetTop(offsetTop);
         setKeyboardOffset(offset);
         setVisibleHeight(vv.height);
       } else {
+        setVisualViewportOffsetTop(0);
+        setKeyboardOffset(0);
         setVisibleHeight(window.innerHeight);
       }
     };
@@ -350,7 +355,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       window.visualViewport?.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('scroll', handleResize);
     };
-  }, []);
+  }, [open]);
 
   // Sync initialValue when modal opens
   useEffect(() => {
@@ -730,9 +735,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
   const surfaceBg = isDark ? '#18181b' : '#ffffff';
   const toolbarBg = isDark ? 'rgba(39, 39, 42, 0.7)' : 'rgba(244, 244, 245, 0.8)';
   const borderCol = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+  const mobileSafeTopMinPx = 56;
+  const mobileMaxModalHeight =
+    isMobile && visibleHeight > 0 ? Math.max(220, visibleHeight - mobileSafeTopMinPx) : undefined;
+  const isKeyboardOpen = keyboardOffset > 40;
 
   const getBtnClass = (isActive?: boolean) =>
-    `w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+    `w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer shrink-0 ${
       isActive
         ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40 shadow-xs font-bold'
         : 'hover:bg-black/5 dark:hover:bg-white/10'
@@ -745,73 +754,111 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         onCancel={onClose}
         footer={null}
         zIndex={zIndex}
+        className={isMobile ? 'adaptive-overlay mos-rich-editor-mobile-modal' : undefined}
+        wrapClassName={isMobile ? 'mos-rich-editor-mobile-wrap' : undefined}
         width={
           isMobile
-            ? '100vw'
+            ? '100%'
             : isFullscreen
               ? '98vw'
               : isCompactMode
                 ? 'min(580px, calc(100vw - 16px))'
                 : 'min(1000px, calc(100vw - 16px))'
         }
-        style={{
-          top: isMobile
-            ? keyboardOffset > 0
-              ? 'max(env(safe-area-inset-top, 16px), 12px)'
-              : 'max(env(safe-area-inset-top, 44px), 48px)'
-            : isFullscreen
-              ? 10
-              : isCompactMode
-                ? 16
-                : 28,
-          maxWidth: isMobile ? 'calc(100vw - 12px)' : 'calc(100vw - 16px)',
-          margin: '0 auto',
-          paddingBottom: isMobile
-            ? keyboardOffset > 0
-              ? `${keyboardOffset + 6}px`
-              : 'max(env(safe-area-inset-bottom, 16px), 16px)'
-            : keyboardOffset > 0
-              ? `${keyboardOffset}px`
-              : undefined,
-        }}
+        style={
+          isMobile
+            ? {
+                top: 0,
+                maxWidth: '100vw',
+                margin: 0,
+                paddingBottom: 0,
+                maxHeight: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }
+            : {
+                top: isFullscreen ? 10 : isCompactMode ? 16 : 28,
+                maxWidth: 'calc(100vw - 16px)',
+                margin: '0 auto',
+                paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : undefined,
+              }
+        }
         styles={{
+          wrapper: isMobile
+            ? {
+                position: 'fixed',
+                top: `${visualViewportOffsetTop}px`,
+                left: 0,
+                right: 0,
+                bottom: 'auto',
+                height: visibleHeight > 0 ? `${visibleHeight}px` : '100dvh',
+                paddingBottom: 0,
+                paddingLeft: 0,
+                paddingRight: 0,
+              }
+            : undefined,
           content: {
             padding: 0,
-            borderRadius: isMobile ? 18 : isFullscreen ? 12 : 20,
+            borderRadius: isMobile ? '20px 20px 0 0' : isFullscreen ? 12 : 20,
             overflow: 'hidden',
             background: surfaceBg,
             border: `1px solid ${borderCol}`,
+            borderBottom: isMobile ? 'none' : `1px solid ${borderCol}`,
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            maxHeight:
-              isMobile && visibleHeight > 0
-                ? `${Math.max(260, visibleHeight - (keyboardOffset > 0 ? 32 : 68))}px`
-                : undefined,
+            display: isMobile ? 'flex' : undefined,
+            flexDirection: isMobile ? 'column' : undefined,
+            maxHeight: isMobile
+              ? mobileMaxModalHeight !== undefined
+                ? `${mobileMaxModalHeight}px`
+                : 'calc(100dvh - 56px)'
+              : undefined,
           },
+          body: isMobile
+            ? {
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                overflow: 'hidden',
+                padding: 0,
+              }
+            : undefined,
         }}
         closable={true}
         destroyOnHidden
       >
         <div
           className={`flex flex-col select-text transition-all ${
-            isMobile ? 'h-full' : isCompactMode ? 'min-h-[280px] max-h-[72vh]' : 'h-[82vh] max-h-[900px]'
+            isMobile
+              ? 'flex-1 min-h-0'
+              : isCompactMode
+                ? 'min-h-[280px] max-h-[72vh]'
+                : 'h-[82vh] max-h-[900px]'
           }`}
           style={{
-            maxHeight:
-              isMobile && visibleHeight > 0
-                ? `${Math.max(260, visibleHeight - (keyboardOffset > 0 ? 32 : 68))}px`
-                : undefined,
+            height:
+              isMobile && !isCompactMode && mobileMaxModalHeight !== undefined
+                ? `${isFullscreen ? mobileMaxModalHeight : Math.min(mobileMaxModalHeight, Math.round((visibleHeight || 800) * 0.82))}px`
+                : isMobile && isFullscreen && mobileMaxModalHeight !== undefined
+                  ? `${mobileMaxModalHeight}px`
+                  : undefined,
+            maxHeight: isMobile
+              ? mobileMaxModalHeight !== undefined
+                ? `${mobileMaxModalHeight}px`
+                : 'calc(100dvh - 56px)'
+              : undefined,
           }}
         >
           {/* Header */}
           <div
-            className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b shrink-0 select-none gap-2"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-2 sm:py-3 border-b shrink-0 select-none gap-2"
             style={{ borderColor: borderCol, background: toolbarBg }}
           >
             {/* Title & Badge */}
-            <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0 pr-8 sm:pr-0">
+            <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0 pr-11 sm:pr-0 min-h-[30px]">
               <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/25 shrink-0 shadow-sm">
-                  {isCompactMode ? <Zap size={15} /> : <FilePenLine size={16} />}
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/25 shrink-0 shadow-sm">
+                  {isCompactMode ? <Zap size={14} /> : <FilePenLine size={15} />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2">
@@ -1356,7 +1403,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
           {/* Main Content Area */}
           {isCompactMode ? (
             /* COMPACT QUICK-TYPE MODE (Bản gọn gõ nhanh kiểu Google Chat) */
-            <div className="flex-1 flex flex-col min-h-[160px] overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-[120px] sm:min-h-[160px] overflow-hidden">
               <textarea
                 ref={textareaRef}
                 value={content}
@@ -1430,7 +1477,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 }}
                 data-testid="rich-editor-compact-textarea"
                 placeholder="Gõ nhanh nội dung... (Bấm • để tạo danh sách, nhấn Enter tự động xuống dòng • tiếp theo, ⌘+Enter để gửi ngay)"
-                className="flex-1 w-full p-4 bg-transparent border-0 outline-none resize-none text-[14px] leading-relaxed select-text min-h-[140px]"
+                className="flex-1 w-full p-3 sm:p-4 bg-transparent border-0 outline-none resize-none text-[15px] sm:text-[14px] leading-relaxed select-text min-h-[120px] sm:min-h-[140px] overscroll-contain"
                 style={{ color: token.colorText }}
               />
 
@@ -1539,7 +1586,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                       }
                     }}
                     placeholder="Nhập nội dung tin nhắn, thông báo, quy trình hoặc tài liệu cần soạn thảo..."
-                    className="flex-1 w-full p-4 bg-transparent border-0 outline-none resize-none font-mono text-[13.5px] leading-relaxed select-text"
+                    className="flex-1 w-full p-3 sm:p-4 bg-transparent border-0 outline-none resize-none font-mono text-[14px] sm:text-[13.5px] leading-relaxed select-text overscroll-contain"
                     style={{ color: token.colorText }}
                   />
                 </div>
@@ -1558,7 +1605,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                     </div>
                     <span className="text-[10px] text-emerald-400 font-bold lowercase">Trực quan thời gian thực</span>
                   </div>
-                  <div className="flex-1 p-5 overflow-y-auto select-text">
+                  <div className="flex-1 p-4 sm:p-5 overflow-y-auto overscroll-contain select-text">
                     {content.trim() ? (
                       <div className="prose max-w-none">
                         <MosChatRichText content={content} isMe={false} isDark={isDark} />
@@ -1580,7 +1627,13 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
 
           {/* Footer Controls */}
           <div
-            className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 border-t shrink-0 flex-wrap sm:flex-nowrap gap-2"
+            className={`flex items-center justify-between px-3 sm:px-4 pt-2 sm:py-2.5 border-t shrink-0 flex-wrap sm:flex-nowrap gap-2 ${
+              isMobile
+                ? isKeyboardOpen
+                  ? 'pb-2'
+                  : 'pb-[max(env(safe-area-inset-bottom,12px),12px)]'
+                : 'pb-2'
+            }`}
             style={{ borderColor: borderCol, background: toolbarBg }}
           >
             <div
@@ -1599,7 +1652,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 px-2.5 sm:px-3 rounded-xl border flex items-center justify-center text-[11.5px] sm:text-[12px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                className="h-10 sm:h-8 px-3 rounded-xl border flex items-center justify-center text-[12px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
                 style={{ borderColor: borderCol, color: token.colorText }}
               >
                 Hủy
@@ -1611,7 +1664,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   onApply(content);
                   onClose();
                 }}
-                className="flex-1 sm:flex-initial h-8 px-2 sm:px-3.5 rounded-xl border flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-semibold hover:bg-amber-500/10 transition-colors cursor-pointer text-amber-500 border-amber-500/40"
+                className="flex-1 sm:flex-initial h-10 sm:h-8 px-2.5 sm:px-3.5 rounded-xl border flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] font-semibold hover:bg-amber-500/10 transition-colors cursor-pointer text-amber-500 border-amber-500/40"
               >
                 <Check size={14} />
                 <span>Áp dụng vào chat</span>
@@ -1625,7 +1678,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   onClose();
                 }}
                 disabled={!content.trim()}
-                className={`flex-1 sm:flex-initial h-8 px-3 sm:px-3.5 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-bold shadow-md transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-initial h-10 sm:h-8 px-3 sm:px-3.5 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] font-bold shadow-md transition-all cursor-pointer ${
                   content.trim()
                     ? 'bg-[#d4a84b] hover:bg-[#c3973a] text-slate-950 active:scale-95'
                     : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'
@@ -1648,6 +1701,8 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         title="Chèn liên kết URL"
         okText="Chèn liên kết"
         cancelText="Hủy"
+        centered={isMobile}
+        className={isMobile ? 'adaptive-overlay' : undefined}
         width={isMobile ? 'min(420px, calc(100vw - 24px))' : 420}
         destroyOnHidden
       >
