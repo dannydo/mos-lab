@@ -8262,7 +8262,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1372
+        "line": 1446
       }
     },
     {
@@ -8276,7 +8276,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1463
+        "line": 1537
       }
     },
     {
@@ -8290,7 +8290,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1520
+        "line": 1594
       }
     },
     {
@@ -8304,7 +8304,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1603
+        "line": 1677
       }
     },
     {
@@ -8318,7 +8318,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1629
+        "line": 1703
       }
     },
     {
@@ -8332,7 +8332,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1724
+        "line": 1798
       }
     },
     {
@@ -8346,7 +8346,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1734
+        "line": 1808
       }
     },
     {
@@ -8360,7 +8360,7 @@
         "path": "/api/chat/upload-video",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1744
+        "line": 1818
       }
     },
     {
@@ -8374,7 +8374,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1813
+        "line": 1887
       }
     },
     {
@@ -8388,7 +8388,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1972
+        "line": 2046
       }
     },
     {
@@ -8402,7 +8402,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1977
+        "line": 2051
       }
     },
     {
@@ -8416,7 +8416,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1982
+        "line": 2056
       }
     },
     {
@@ -8430,7 +8430,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2149
+        "line": 2226
       }
     },
     {
@@ -8444,7 +8444,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2304
+        "line": 2388
       }
     },
     {
@@ -8458,7 +8458,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2359
+        "line": 2443
       }
     },
     {
@@ -8472,7 +8472,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2519
+        "line": 2603
       }
     },
     {
@@ -8486,7 +8486,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2609
+        "line": 2712
       }
     },
     {
@@ -8500,7 +8500,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2657
+        "line": 2760
       }
     },
     {
@@ -8514,7 +8514,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2763
+        "line": 2866
       }
     },
     {
@@ -8528,7 +8528,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2862
+        "line": 2965
       }
     },
     {
@@ -8542,7 +8542,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2969
+        "line": 3072
       }
     },
     {
@@ -8556,7 +8556,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3104
+        "line": 3223
       }
     },
     {
@@ -8570,7 +8570,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3412
+        "line": 3531
       }
     },
     {
@@ -8584,7 +8584,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3762
+        "line": 3881
       }
     },
     {
@@ -8598,7 +8598,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3813
+        "line": 3932
       }
     },
     {
@@ -8612,7 +8612,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4008
+        "line": 4129
       }
     },
     {
@@ -8626,7 +8626,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4092
+        "line": 4213
       }
     },
     {
@@ -8640,7 +8640,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4152
+        "line": 4273
       }
     },
     {
@@ -8654,7 +8654,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4196
+        "line": 4317
       }
     },
     {
@@ -8668,7 +8668,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4255
+        "line": 4376
       }
     },
     {
@@ -8682,7 +8682,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4361
+        "line": 4482
       }
     },
     {
@@ -8696,7 +8696,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4436
+        "line": 4557
       }
     },
     {
@@ -8710,7 +8710,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4542
+        "line": 4663
       }
     },
     {
@@ -8724,7 +8724,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4658
+        "line": 4779
       }
     },
     {
@@ -8738,7 +8738,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4760
+        "line": 4881
       }
     },
     {
@@ -8752,7 +8752,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4831
+        "line": 4952
       }
     },
     {
@@ -8766,7 +8766,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4854
+        "line": 4975
       }
     },
     {
@@ -8780,7 +8780,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5035
+        "line": 5156
       }
     },
     {
@@ -8794,7 +8794,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5212
+        "line": 5333
       }
     },
     {
@@ -8808,7 +8808,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5307
+        "line": 5435
       }
     },
     {
@@ -8822,7 +8822,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5320
+        "line": 5448
       }
     },
     {
@@ -8836,7 +8836,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5383
+        "line": 5511
       }
     },
     {
@@ -8850,7 +8850,7 @@
         "path": "/api/chat/messages/search",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5448
+        "line": 5576
       }
     },
     {
@@ -8864,7 +8864,7 @@
         "path": "/api/chat/calls/active",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5839
+        "line": 5967
       }
     },
     {
@@ -8878,7 +8878,7 @@
         "path": "/api/chat/push/config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 6196
+        "line": 6324
       }
     },
     {
@@ -34955,6 +34955,30 @@
       }
     },
     {
+      "id": "uicomp:MosBibleSurface",
+      "type": "UIComponent",
+      "label": "<MosBibleSurface />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/MosBibleSurface.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosBibleSurface",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosBibleSurfacePortal",
+      "type": "UIComponent",
+      "label": "<MosBibleSurfacePortal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/MosBibleSurfacePortal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosBibleSurfacePortal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:mos-bible.test",
       "type": "UIComponent",
       "label": "<mos-bible.test />",
@@ -39718,8 +39742,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 247880,
-        "lineCount": 6456,
+        "sizeBytes": 252561,
+        "lineCount": 6584,
         "ext": ".ts"
       }
     },
@@ -40160,8 +40184,8 @@
       "filePath": "apps/api/src/modules/customers/routes/helpers.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4607,
-        "lineCount": 109,
+        "sizeBytes": 5710,
+        "lineCount": 139,
         "ext": ".ts"
       }
     },
@@ -40173,8 +40197,8 @@
       "filePath": "apps/api/src/modules/customers/routes/helpers.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11053,
-        "lineCount": 319,
+        "sizeBytes": 13987,
+        "lineCount": 405,
         "ext": ".ts"
       }
     },
@@ -40745,8 +40769,8 @@
       "filePath": "apps/api/src/modules/ios/__tests__/ios-customer-lash-portfolio.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13251,
-        "lineCount": 348,
+        "sizeBytes": 13599,
+        "lineCount": 406,
         "ext": ".ts"
       }
     },
@@ -40940,7 +40964,7 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28790,
+        "sizeBytes": 28806,
         "lineCount": 693,
         "ext": ".ts"
       }
@@ -41044,8 +41068,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23790,
-        "lineCount": 607,
+        "sizeBytes": 23843,
+        "lineCount": 616,
         "ext": ".ts"
       }
     },
@@ -41057,8 +41081,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history-lashes.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14067,
-        "lineCount": 342,
+        "sizeBytes": 14111,
+        "lineCount": 348,
         "ext": ".ts"
       }
     },
@@ -41070,8 +41094,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15704,
-        "lineCount": 440,
+        "sizeBytes": 15745,
+        "lineCount": 446,
         "ext": ".ts"
       }
     },
@@ -41083,8 +41107,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10665,
-        "lineCount": 311,
+        "sizeBytes": 10660,
+        "lineCount": 308,
         "ext": ".ts"
       }
     },
@@ -41109,8 +41133,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-cv-self-speed.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8105,
-        "lineCount": 222,
+        "sizeBytes": 9420,
+        "lineCount": 262,
         "ext": ".ts"
       }
     },
@@ -41213,8 +41237,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-photos.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3946,
-        "lineCount": 122,
+        "sizeBytes": 3926,
+        "lineCount": 117,
         "ext": ".ts"
       }
     },
@@ -41239,8 +41263,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-progress-hydration.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10197,
-        "lineCount": 261,
+        "sizeBytes": 10209,
+        "lineCount": 262,
         "ext": ".ts"
       }
     },
@@ -41252,8 +41276,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-progress-sync.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18023,
-        "lineCount": 473,
+        "sizeBytes": 18079,
+        "lineCount": 471,
         "ext": ".ts"
       }
     },
@@ -41278,8 +41302,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28895,
-        "lineCount": 685,
+        "sizeBytes": 28927,
+        "lineCount": 687,
         "ext": ".ts"
       }
     },
@@ -41954,8 +41978,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-tv-celebration.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 61513,
-        "lineCount": 1281,
+        "sizeBytes": 62815,
+        "lineCount": 1313,
         "ext": ".ts"
       }
     },
@@ -42006,8 +42030,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14804,
-        "lineCount": 350,
+        "sizeBytes": 15411,
+        "lineCount": 362,
         "ext": ".ts"
       }
     },
@@ -42019,8 +42043,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48661,
-        "lineCount": 1194,
+        "sizeBytes": 48936,
+        "lineCount": 1199,
         "ext": ".ts"
       }
     },
@@ -48480,8 +48504,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75649,
-        "lineCount": 1900,
+        "sizeBytes": 74373,
+        "lineCount": 1871,
         "ext": ".tsx"
       }
     },
@@ -50547,8 +50571,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02LashHistorySheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25172,
-        "lineCount": 489,
+        "sizeBytes": 25401,
+        "lineCount": 502,
         "ext": ".tsx"
       }
     },
@@ -50599,8 +50623,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27410,
-        "lineCount": 587,
+        "sizeBytes": 27503,
+        "lineCount": 589,
         "ext": ".tsx"
       }
     },
@@ -50612,8 +50636,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24326,
-        "lineCount": 548,
+        "sizeBytes": 24272,
+        "lineCount": 544,
         "ext": ".tsx"
       }
     },
@@ -50625,8 +50649,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen07bLashProgressCleaned.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26239,
-        "lineCount": 578,
+        "sizeBytes": 26185,
+        "lineCount": 574,
         "ext": ".tsx"
       }
     },
@@ -50638,8 +50662,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen08LashProgressTimer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22395,
-        "lineCount": 514,
+        "sizeBytes": 22401,
+        "lineCount": 515,
         "ext": ".tsx"
       }
     },
@@ -50651,8 +50675,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30020,
-        "lineCount": 670,
+        "sizeBytes": 29967,
+        "lineCount": 664,
         "ext": ".tsx"
       }
     },
@@ -50716,8 +50740,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29756,
-        "lineCount": 630,
+        "sizeBytes": 29718,
+        "lineCount": 626,
         "ext": ".tsx"
       }
     },
@@ -50898,8 +50922,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10625,
-        "lineCount": 299,
+        "sizeBytes": 10634,
+        "lineCount": 292,
         "ext": ".tsx"
       }
     },
@@ -50963,8 +50987,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8177,
-        "lineCount": 200,
+        "sizeBytes": 8184,
+        "lineCount": 199,
         "ext": ".tsx"
       }
     },
@@ -51093,8 +51117,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29423,
-        "lineCount": 660,
+        "sizeBytes": 29429,
+        "lineCount": 658,
         "ext": ".tsx"
       }
     },
@@ -51548,8 +51572,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26299,
-        "lineCount": 621,
+        "sizeBytes": 26331,
+        "lineCount": 623,
         "ext": ".tsx"
       }
     },
@@ -51561,8 +51585,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingsModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9429,
-        "lineCount": 220,
+        "sizeBytes": 9507,
+        "lineCount": 221,
         "ext": ".tsx"
       }
     },
@@ -51587,8 +51611,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/servicing/AfterRoundComparisonStrip.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5587,
-        "lineCount": 123,
+        "sizeBytes": 5851,
+        "lineCount": 141,
         "ext": ".tsx"
       }
     },
@@ -51652,8 +51676,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/servicing/ServicingRoundHeaderPill.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3841,
-        "lineCount": 104,
+        "sizeBytes": 3837,
+        "lineCount": 103,
         "ext": ".tsx"
       }
     },
@@ -51665,8 +51689,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellBeforeAfterShowcaseCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8709,
-        "lineCount": 205,
+        "sizeBytes": 8924,
+        "lineCount": 221,
         "ext": ".tsx"
       }
     },
@@ -51925,8 +51949,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26539,
-        "lineCount": 632,
+        "sizeBytes": 26866,
+        "lineCount": 643,
         "ext": ".tsx"
       }
     },
@@ -51938,8 +51962,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3727,
-        "lineCount": 94,
+        "sizeBytes": 3738,
+        "lineCount": 98,
         "ext": ".tsx"
       }
     },
@@ -52302,8 +52326,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20937,
-        "lineCount": 521,
+        "sizeBytes": 21141,
+        "lineCount": 535,
         "ext": ".tsx"
       }
     },
@@ -52315,8 +52339,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8256,
-        "lineCount": 199,
+        "sizeBytes": 8259,
+        "lineCount": 198,
         "ext": ".tsx"
       }
     },
@@ -52575,8 +52599,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosServicingProgress.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20154,
-        "lineCount": 534,
+        "sizeBytes": 20186,
+        "lineCount": 538,
         "ext": ".ts"
       }
     },
@@ -52627,8 +52651,8 @@
       "filePath": "apps/web/app/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4946,
-        "lineCount": 69,
+        "sizeBytes": 5071,
+        "lineCount": 71,
         "ext": ".tsx"
       }
     },
@@ -53251,8 +53275,8 @@
       "filePath": "apps/web/lib/bug-diagnostics.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7801,
-        "lineCount": 210,
+        "sizeBytes": 7922,
+        "lineCount": 214,
         "ext": ".ts"
       }
     },
@@ -53413,6 +53437,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/mos-bible-launcher.ts",
+      "type": "File",
+      "label": "mos-bible-launcher.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/mos-bible-launcher.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 362,
+        "lineCount": 15,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/safe-storage.ts",
       "type": "File",
       "label": "safe-storage.ts",
@@ -53511,8 +53548,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 194152,
-        "lineCount": 2414,
+        "sizeBytes": 195121,
+        "lineCount": 2417,
         "ext": ".ts"
       }
     },
@@ -54213,8 +54250,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 28404,
-        "lineCount": 923,
+        "sizeBytes": 29188,
+        "lineCount": 943,
         "ext": ".ts"
       }
     },
@@ -54616,8 +54653,8 @@
       "filePath": "packages/shared/src/utils/ios-servicing-rounds.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3573,
-        "lineCount": 120,
+        "sizeBytes": 3561,
+        "lineCount": 118,
         "ext": ".ts"
       }
     },
@@ -74424,6 +74461,34 @@
     {
       "id": "edge:uicomp:MosBibleQuizModal:token:color:primary",
       "source": "uicomp:MosBibleQuizModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosBibleSurface:ws:apps/web",
+      "source": "uicomp:MosBibleSurface",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosBibleSurface:token:color:primary",
+      "source": "uicomp:MosBibleSurface",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosBibleSurfacePortal:ws:apps/web",
+      "source": "uicomp:MosBibleSurfacePortal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosBibleSurfacePortal:token:color:primary",
+      "source": "uicomp:MosBibleSurfacePortal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -115009,8 +115074,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4217,
-    "totalEdges": 8617,
+    "totalNodes": 4220,
+    "totalEdges": 8621,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 182,
@@ -115018,14 +115083,14 @@
       "Component": 65,
       "SharedType": 1505,
       "DesignToken": 12,
-      "UIComponent": 378,
-      "File": 1300
+      "UIComponent": 380,
+      "File": 1301
     },
     "edgeTypeCounts": {
       "EXPORTS": 1699,
       "HANDLES_ROUTE": 772,
-      "RENDERS": 443,
-      "USES_TOKEN": 380,
+      "RENDERS": 445,
+      "USES_TOKEN": 382,
       "IMPORTS": 733,
       "QUERIES_MODEL": 431,
       "API_CALL": 4159

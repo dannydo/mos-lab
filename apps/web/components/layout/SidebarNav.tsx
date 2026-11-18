@@ -33,7 +33,8 @@ import {
   SidebarItemConfig,
   SidebarGroupConfig,
 } from '../../config/sidebar.config';
-import { buildEcosystemNavModel } from '../../config/ecosystem-nav';
+import { buildEcosystemNavModel, isLabPathname, isMissionPathname, isReportPathname } from '../../config/ecosystem-nav';
+import { openMosBible } from '../../lib/mos-bible-launcher';
 import { AppIcon } from '../ui/AppIcon';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { usePinnedLinks } from '../../hooks/usePinnedLinks';
@@ -174,19 +175,26 @@ function SidebarNavComponent({
   const [academySidebarCampaigns, setAcademySidebarCampaigns] = useState<SafeAny[]>([]);
   const [academyAccess, setAcademyAccess] = useState(false);
   const [menuVisibility, setMenuVisibility] = useState<Record<string, boolean>>({});
+  const [bugInboxApprovalCount, setBugInboxApprovalCount] = useState(0);
   const ecosystemModel = useMemo(
     () =>
       buildEcosystemNavModel({
         userRole,
         teamCodes,
         unreadChatCount,
+        missionBadgeCount: bugInboxApprovalCount,
         menuVisibility,
       }),
-    [userRole, teamCodes, unreadChatCount, menuVisibility]
+    [userRole, teamCodes, unreadChatCount, bugInboxApprovalCount, menuVisibility]
   );
 
-  const handleEcosystemNavigate = (appKey: string, href: string) => {
-    if (appKey === 'chat' && onOpenChat) {
+  const handleEcosystemNavigate = (key: string, href: string, action?: 'open-bible') => {
+    if (action === 'open-bible') {
+      openMosBible();
+      onNavigate?.();
+      return;
+    }
+    if (key === 'chat' && onOpenChat) {
       onOpenChat();
       onNavigate?.();
       return;
@@ -195,7 +203,6 @@ function SidebarNavComponent({
     onNavigate?.();
   };
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({});
-  const [bugInboxApprovalCount, setBugInboxApprovalCount] = useState(0);
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<string[]>([]);
   const [openRailMenuKey, setOpenRailMenuKey] = useState<string | null>(null);
   const [showCustomCampaigns, setShowCustomCampaigns] = useState<boolean>(() => {
@@ -395,17 +402,6 @@ function SidebarNavComponent({
     if (pathname.includes('/dashboard/staff')) {
       if (!keys.includes('staff')) {
         keys.push('staff');
-        didOpenActiveParent = true;
-      }
-    }
-    if (
-      pathname.includes('/dashboard/labs') ||
-      pathname.includes('/dashboard/career-path') ||
-      pathname.includes('/dashboard/pilot-dark-lashes') ||
-      pathname.includes('/dashboard/payroll-pilot')
-    ) {
-      if (!keys.includes('labs-parent')) {
-        keys.push('labs-parent');
         didOpenActiveParent = true;
       }
     }
@@ -802,7 +798,11 @@ function SidebarNavComponent({
         <ul className="sidebar-compact-list" role="menu" data-testid="sidebar-ecosystem-switcher">
           {ecosystemModel.coreApps.map((app) => {
             const Icon = app.icon;
-            const isActive = app.key === 'general';
+            const isActive =
+              app.key === 'general' &&
+              !isReportPathname(pathname) &&
+              !isMissionPathname(pathname) &&
+              !isLabPathname(pathname);
             return (
               <li className="sidebar-compact-item" key={`eco-rail-${app.key}`}>
                 <Tooltip placement="right" title={app.label} mouseEnterDelay={0.2}>
@@ -817,6 +817,37 @@ function SidebarNavComponent({
                     <span className="sidebar-rail-action__icon relative" aria-hidden>
                       <AppIcon icon={Icon} size="sm" />
                       {app.badgeCount && app.badgeCount > 0 ? (
+                        <span
+                          className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 pointer-events-none"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </span>
+                  </button>
+                </Tooltip>
+              </li>
+            );
+          })}
+          {ecosystemModel.suiteApps.map((suite) => {
+            const Icon = suite.icon;
+            const isActive =
+              (suite.key === 'reports' && isReportPathname(pathname)) ||
+              (suite.key === 'mission' && isMissionPathname(pathname)) ||
+              (suite.key === 'lab' && isLabPathname(pathname));
+            return (
+              <li className="sidebar-compact-item" key={`eco-rail-suite-${suite.key}`}>
+                <Tooltip placement="right" title={suite.label} mouseEnterDelay={0.2}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-sidebar-eco-suite={suite.key}
+                    aria-label={suite.label}
+                    className={`sidebar-rail-action ${isActive ? 'sidebar-rail-action--active' : ''}`}
+                    onClick={() => handleEcosystemNavigate(suite.key, suite.href, suite.action)}
+                  >
+                    <span className="sidebar-rail-action__icon relative" aria-hidden>
+                      <AppIcon icon={Icon} size="sm" />
+                      {suite.badgeCount && suite.badgeCount > 0 ? (
                         <span
                           className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 pointer-events-none"
                           aria-hidden
@@ -989,7 +1020,11 @@ function SidebarNavComponent({
           <div className="flex flex-col gap-1">
             {ecosystemModel.coreApps.map((app) => {
               const Icon = app.icon;
-              const isActive = app.key === 'general';
+              const isActive =
+                app.key === 'general' &&
+                !isReportPathname(pathname) &&
+                !isMissionPathname(pathname) &&
+                !isLabPathname(pathname);
               return (
                 <button
                   key={app.key}
@@ -1024,6 +1059,52 @@ function SidebarNavComponent({
               );
             })}
           </div>
+          {ecosystemModel.suiteApps.length > 0 && (
+            <div
+              className={`grid gap-1 mt-1.5 ${ecosystemModel.suiteApps.length <= 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
+            >
+              {ecosystemModel.suiteApps.map((suite) => {
+                const Icon = suite.icon;
+                const isActive =
+                  (suite.key === 'reports' && isReportPathname(pathname)) ||
+                  (suite.key === 'mission' && isMissionPathname(pathname)) ||
+                  (suite.key === 'lab' && isLabPathname(pathname));
+                return (
+                  <button
+                    key={suite.key}
+                    type="button"
+                    data-sidebar-eco-suite={suite.key}
+                    title={suite.label}
+                    onClick={() => handleEcosystemNavigate(suite.key, suite.href, suite.action)}
+                    className="px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-left text-[11px] font-semibold transition-all cursor-pointer active:scale-[0.99] min-w-0"
+                    style={{
+                      background: isActive
+                        ? token.colorPrimaryBg
+                        : themeMode === 'dark'
+                          ? 'rgba(255,255,255,0.03)'
+                          : 'rgba(15,23,42,0.03)',
+                      color: isActive ? token.colorPrimary : token.colorText,
+                      border: `1px solid ${
+                        isActive
+                          ? token.colorPrimaryBorder
+                          : themeMode === 'dark'
+                            ? 'rgba(255,255,255,0.06)'
+                            : 'rgba(15,23,42,0.06)'
+                      }`,
+                    }}
+                  >
+                    <AppIcon icon={Icon} size="sm" />
+                    <span className="flex-1 truncate">{suite.shortLabel || suite.label}</span>
+                    {suite.badgeCount && suite.badgeCount > 0 ? (
+                      <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold tabular-nums shrink-0">
+                        {suite.badgeCount > 99 ? '99+' : suite.badgeCount}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <Menu
           theme={themeMode === 'dark' ? 'dark' : 'light'}

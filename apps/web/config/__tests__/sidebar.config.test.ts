@@ -138,4 +138,49 @@ describe('Sidebar Configuration CV Invariants', () => {
     expect(fundsParent?.children?.[1].label).toBe('Quỹ Marketing');
     expect(fundsParent?.children?.[2].key).toBe('finance-funds-manage');
   });
+
+  it('has zero duplicate sidebar item keys for super_admin and admin', () => {
+    for (const role of ['super_admin', 'admin']) {
+      const groups = getSidebarGroups(role);
+      const keys: string[] = [];
+      const collect = (items: (typeof groups)[number]['items']) => {
+        for (const item of items) {
+          keys.push(item.key);
+          if (item.children) collect(item.children);
+        }
+      };
+      groups.forEach((g) => collect(g.items));
+      expect(new Set(keys).size, `duplicate keys for ${role}`).toBe(keys.length);
+    }
+  });
+
+  it('keeps mOS Mission (bug-reports) and labs-hub hidden for manager by default and shows them when granted', () => {
+    const collectKeys = (groups: ReturnType<typeof getSidebarGroups>) => {
+      const keys = new Set<string>();
+      const walk = (items: (typeof groups)[number]['items']) => {
+        for (const item of items) {
+          keys.add(item.key);
+          if (item.children) walk(item.children);
+        }
+      };
+      groups.forEach((g) => walk(g.items));
+      return keys;
+    };
+
+    const defaultManagerKeys = collectKeys(getSidebarGroups('manager'));
+    expect(defaultManagerKeys.has('bug-reports')).toBe(false);
+    expect(defaultManagerKeys.has('labs-hub')).toBe(false);
+    expect(defaultManagerKeys.has('pilot-dark-lashes')).toBe(false);
+    expect(defaultManagerKeys.has('cc-payroll-pilot')).toBe(false);
+
+    const grantedManagerKeys = collectKeys(
+      getSidebarGroups('manager', [], true, {}, [], false, {
+        'bug-reports': true,
+        'labs-hub': true,
+      })
+    );
+    expect(grantedManagerKeys.has('bug-reports')).toBe(true);
+    expect(grantedManagerKeys.has('labs-hub')).toBe(true);
+    expect(grantedManagerKeys.has('pilot-dark-lashes')).toBe(false);
+  });
 });

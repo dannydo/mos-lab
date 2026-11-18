@@ -16,10 +16,12 @@ NC='\033[0m' # No Color
 
 # Default settings
 SSH_TARGET="live-wings"
+REMOTE_WIN_SSH="${REMOTE_WIN_SSH:-dannywindows}"
 LOCAL_ENV_FILE="apps/api/.env"
 SYNC_MODE="fast"     # fast | standard | full
 SYNC_TARGET="all"    # all | legacy | crm
 AUTO_PRISMA=true
+ORIG_ARGS=("$@")
 
 show_help() {
   echo -e "${BOLD}Usage:${NC} bash scripts/refresh_db.sh [OPTIONS]"
@@ -112,9 +114,63 @@ local_crm_db="$db_name"
 local_crm_host="$db_host"
 local_crm_port="$db_port"
 
+# Delegate to shared Windows WSL DB when Mac points at remote DB host (keeps OrbStack OFF and streams in 1 hop)
+if [ "$(uname -s)" = "Darwin" ] && { \
+  { [ "$SYNC_TARGET" != "crm" ] && [ "$local_legacy_host" != "127.0.0.1" ] && [ "$local_legacy_host" != "localhost" ] && [ "$local_legacy_host" != "::1" ]; } || \
+  { [ "$SYNC_TARGET" != "legacy" ] && [ "$local_crm_host" != "127.0.0.1" ] && [ "$local_crm_host" != "localhost" ] && [ "$local_crm_host" != "::1" ]; }; \
+}; then
+  echo -e "Target host: ${YELLOW}${BOLD}${local_legacy_host}${NC} (auto-delegating refresh to Windows WSL via ${REMOTE_WIN_SSH})"
+  echo -n "Checking SSH connection to Windows host '${REMOTE_WIN_SSH}'... "
+  if ! ssh -n -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE_WIN_SSH" "echo ok" >/dev/null 2>&1; then
+    echo -e "${RED}FAILED!${NC}"
+    echo -e "${RED}Cannot reach '${REMOTE_WIN_SSH}'. Check Tailscale or ~/.ssh/config.${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}OK${NC}"
+
+  REMOTE_ARGS=""
+  if [ "${#ORIG_ARGS[@]}" -gt 0 ]; then
+    REMOTE_ARGS=$(printf '%q ' "${ORIG_ARGS[@]}")
+  fi
+
+  ssh -o BatchMode=yes -o ConnectTimeout=10 "$REMOTE_WIN_SSH" "wsl -u danny -e tee /tmp/mos-refresh-db.sh" < "$0" >/dev/null
+  ssh -o BatchMode=yes "$REMOTE_WIN_SSH" "wsl -u danny -e bash -s" <<REMOTE_RUN_EOF
+set -eo pipefail
+cd "\$HOME/projects/mos-lab"
+bash /tmp/mos-refresh-db.sh ${REMOTE_ARGS}
+rm -f /tmp/mos-refresh-db.sh
+REMOTE_RUN_EOF
+
+  if [ "$AUTO_PRISMA" = true ]; then
+    echo -e "\n${BLUE}[Mac] Regenerating Prisma Clients (@mos-lab/api)...${NC}"
+    pnpm --filter @mos-lab/api prisma:generate >/dev/null 2>&1 || pnpm --filter @mos-lab/api prisma:generate
+    echo -e "${GREEN}✓ Mac & Windows Prisma clients are up to date.${NC}"
+  fi
+  exit 0
+fi
+
+run_mysql_cli() {
+  local host="$1"
+  local port="$2"
+  local user="$3"
+  local pass="$4"
+  shift 4
+
+  if command -v mysql >/dev/null 2>&1; then
+    MYSQL_PWD="$pass" mysql -h"$host" -P"$port" -u"$user" "$@"
+  elif command -v mariadb >/dev/null 2>&1; then
+    MYSQL_PWD="$pass" mariadb -h"$host" -P"$port" -u"$user" "$@"
+  elif [ "$(uname -s)" = "Darwin" ] && command -v orb >/dev/null 2>&1; then
+    orb mysql -h"$host" -P"$port" -u"$user" -p"$pass" "$@"
+  else
+    echo -e "${RED}Error: Neither mysql, mariadb, nor orb CLI is available.${NC}" >&2
+    return 1
+  fi
+}
+
 # Check SSH Connectivity
 echo -n "Checking SSH connection to '$SSH_TARGET'... "
-if ! ssh -o ConnectTimeout=5 "$SSH_TARGET" "echo ok" >/dev/null 2>&1; then
+if ! ssh -n -o BatchMode=yes -o ConnectTimeout=5 "$SSH_TARGET" "echo ok" >/dev/null 2>&1; then
   echo -e "${RED}FAILED!${NC}"
   echo -e "${RED}Cannot connect to SSH host '$SSH_TARGET'. Please check VPN or ~/.ssh/config.${NC}"
   exit 1
@@ -122,17 +178,17 @@ fi
 echo -e "${GREEN}OK${NC}"
 
 # Check Local MySQL Connectivity
-echo -n "Checking local MySQL connection (OrbStack)... "
+echo -n "Checking MySQL connection (${local_legacy_host}:${local_legacy_port})... "
 run_local_legacy_sql() {
-  orb mysql -h"$local_legacy_host" -P"$local_legacy_port" -u"$local_legacy_user" -p"$local_legacy_pass" -N -e "$1" "$local_legacy_db" 2>/dev/null
+  run_mysql_cli "$local_legacy_host" "$local_legacy_port" "$local_legacy_user" "$local_legacy_pass" -N -e "$1" "$local_legacy_db" 2>/dev/null
 }
 run_local_crm_sql() {
-  orb mysql -h"$local_crm_host" -P"$local_crm_port" -u"$local_crm_user" -p"$local_crm_pass" -N -e "$1" "$local_crm_db" 2>/dev/null
+  run_mysql_cli "$local_crm_host" "$local_crm_port" "$local_crm_user" "$local_crm_pass" -N -e "$1" "$local_crm_db" 2>/dev/null
 }
 
-if ! orb mysql -h"$local_legacy_host" -P"$local_legacy_port" -u"$local_legacy_user" -p"$local_legacy_pass" -e "SELECT 1;" >/dev/null 2>&1; then
+if ! run_mysql_cli "$local_legacy_host" "$local_legacy_port" "$local_legacy_user" "$local_legacy_pass" -e "SELECT 1;" >/dev/null 2>&1; then
   echo -e "${RED}FAILED!${NC}"
-  echo -e "${RED}Cannot connect to local MySQL on port $local_legacy_port. Make sure OrbStack / MySQL is running.${NC}"
+  echo -e "${RED}Cannot connect to MySQL at ${local_legacy_host}:${local_legacy_port}.${NC}"
   exit 1
 fi
 echo -e "${GREEN}OK${NC}"
@@ -172,12 +228,12 @@ echo -e "  - CRM DB    ('$local_crm_db'): ${crm_tables_before} tables, ${crm_siz
 echo -e "\n${BLUE}[2/4] Resetting target local databases...${NC}"
 if [ "$SYNC_TARGET" = "all" ] || [ "$SYNC_TARGET" = "legacy" ]; then
   echo -e "  - Recreating local database: ${local_legacy_db}"
-  orb mysql -h"$local_legacy_host" -P"$local_legacy_port" -u"$local_legacy_user" -p"$local_legacy_pass" -e "DROP DATABASE IF EXISTS ${local_legacy_db}; CREATE DATABASE ${local_legacy_db};"
+  run_mysql_cli "$local_legacy_host" "$local_legacy_port" "$local_legacy_user" "$local_legacy_pass" -e "DROP DATABASE IF EXISTS ${local_legacy_db}; CREATE DATABASE ${local_legacy_db};"
 fi
 
 if [ "$SYNC_TARGET" = "all" ] || [ "$SYNC_TARGET" = "crm" ]; then
   echo -e "  - Recreating local database: ${local_crm_db}"
-  orb mysql -h"$local_crm_host" -P"$local_crm_port" -u"$local_crm_user" -p"$local_crm_pass" -e "DROP DATABASE IF EXISTS ${local_crm_db}; CREATE DATABASE ${local_crm_db};"
+  run_mysql_cli "$local_crm_host" "$local_crm_port" "$local_crm_user" "$local_crm_pass" -e "DROP DATABASE IF EXISTS ${local_crm_db}; CREATE DATABASE ${local_crm_db};"
 fi
 
 # 3. Synchronize Databases
@@ -269,7 +325,7 @@ import_local_sql() {
     echo "SET FOREIGN_KEY_CHECKS=0; SET UNIQUE_CHECKS=0; SET AUTOCOMMIT=0;"
     gunzip -c
     echo "COMMIT; SET FOREIGN_KEY_CHECKS=1; SET UNIQUE_CHECKS=1;"
-  ) | orb mysql -h"$db_host" -P"$db_port" -u"$db_user" -p"$db_pass" "$db_name"
+  ) | run_mysql_cli "$db_host" "$db_port" "$db_user" "$db_pass" "$db_name"
 }
 
 # Run sync tasks

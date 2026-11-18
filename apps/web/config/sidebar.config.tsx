@@ -33,7 +33,6 @@ import {
   Wallet,
   WalletCards,
   CalendarClock,
-  MessageSquareWarning,
   Sparkles,
   FlaskConical,
   Trophy,
@@ -88,43 +87,6 @@ export function getSidebarGroups(
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
 
-  // Labs in-development products
-  const labsChildren: SidebarItemConfig[] = [
-    {
-      key: 'labs-hub',
-      label: 'Vườn ươm Labs (Tổng quan)',
-      icon: <AppIcon icon={FlaskConical} size="sm" />,
-      path: '/dashboard/labs',
-    },
-    {
-      key: 'pilot-dark-lashes',
-      label: 'Pilot Uốn Mi Đề Thám',
-      icon: <AppIcon icon={Sparkles} size="sm" />,
-      path: '/dashboard/pilot-dark-lashes',
-    },
-    {
-      key: 'telesale-target',
-      label: 'Mục Tiêu Telesales T10',
-      icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
-      path: '/dashboard/telesale-target',
-    },
-    {
-      key: 'telesale-competency',
-      label: 'Khung Năng Lực Telesales',
-      icon: <AppIcon icon={Trophy} size="sm" className="text-amber-500" />,
-      path: '/dashboard/telesale-competency',
-    },
-  ];
-
-  if (isSuperAdmin) {
-    labsChildren.push({
-      key: 'cc-payroll-pilot',
-      label: 'Pilot Payroll CC',
-      icon: <SafetyCertificateOutlined />,
-      path: '/dashboard/payroll-pilot',
-    });
-  }
-
   // Group 1: TRANG CHỦ
   const homeGroup: SidebarGroupConfig = {
     groupKey: 'grp-home',
@@ -153,12 +115,6 @@ export function getSidebarGroups(
         label: 'Chi nhánh',
         icon: <ShopOutlined />,
         path: '/dashboard/branches',
-      },
-      {
-        key: 'labs-parent',
-        label: 'Sản phẩm phát triển (Labs)',
-        icon: <AppIcon icon={FlaskConical} size="sm" className="text-emerald-500" />,
-        children: labsChildren,
       },
     ],
   };
@@ -438,20 +394,12 @@ export function getSidebarGroups(
       }
     );
   }
-  scheduleItems.push(
-    {
-      key: 'career-path',
-      label: 'Career Path (Lộ trình CV)',
-      icon: <AppIcon icon={Trophy} size="sm" />,
-      path: '/dashboard/career-path',
-    },
-    {
-      key: 'holiday-work',
-      label: 'Lịch nghỉ lễ',
-      icon: <AppIcon icon={CalendarClock} size="sm" />,
-      path: '/dashboard/holiday-work',
-    }
-  );
+  scheduleItems.push({
+    key: 'holiday-work',
+    label: 'Lịch nghỉ lễ',
+    icon: <AppIcon icon={CalendarClock} size="sm" />,
+    path: '/dashboard/holiday-work',
+  });
   if (isSuperAdmin) {
     scheduleItems.push({
       key: 'menu-access',
@@ -497,12 +445,6 @@ export function getSidebarGroups(
         path: '/dashboard/bk',
       },
       {
-        key: 'telesale-target',
-        label: 'Mục Tiêu Telesales T10',
-        icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
-        path: '/dashboard/telesale-target',
-      },
-      {
         key: 'financial-goals',
         label: 'Mục Tiêu Tài Chính',
         icon: <AppIcon icon={DollarSign} size="sm" className="text-amber-500" />,
@@ -517,17 +459,51 @@ export function getSidebarGroups(
     ],
   };
 
-  // Group 8: QUẢN TRỊ HỆ THỐNG (Only for Admin)
+  // Dedicated R&D / In-development Lab group (governed by Zero-Trust grants; career-path open by default for CV/CC)
+  const labsGroup: SidebarGroupConfig = {
+    groupKey: 'grp-labs',
+    groupTitle: 'mOS LAB · ĐANG PHÁT TRIỂN',
+    items: [
+      {
+        key: 'labs-hub',
+        label: 'Vườn ươm mOS Lab',
+        icon: <AppIcon icon={FlaskConical} size="sm" className="text-cyan-500" />,
+        path: '/dashboard/labs',
+      },
+      {
+        key: 'career-path',
+        label: 'Career Path (Lộ trình CV)',
+        icon: <AppIcon icon={Trophy} size="sm" />,
+        path: '/dashboard/career-path',
+      },
+      {
+        key: 'pilot-dark-lashes',
+        label: 'Pilot Uốn Mi Đề Thám',
+        icon: <AppIcon icon={Sparkles} size="sm" />,
+        path: '/dashboard/pilot-dark-lashes',
+      },
+      {
+        key: 'cc-payroll-pilot',
+        label: 'Pilot Payroll CC',
+        icon: <SafetyCertificateOutlined />,
+        path: '/dashboard/payroll-pilot',
+      },
+    ],
+  };
+
+  // Group 8: QUẢN TRỊ HỆ THỐNG & MISSION
   const systemGroupItems: SidebarItemConfig[] = [];
+  if (!isCv) {
+    systemGroupItems.push({
+      key: 'bug-reports',
+      label: 'mOS Mission',
+      icon: <AppIcon icon={Rocket} size="sm" />,
+      badgeCount: bugInboxApprovalCount,
+      path: '/dashboard/bug-reports',
+    });
+  }
   if (isAdmin) {
     systemGroupItems.push(
-      {
-        key: 'bug-reports',
-        label: 'mOS Mission',
-        icon: <AppIcon icon={MessageSquareWarning} size="sm" />,
-        badgeCount: bugInboxApprovalCount,
-        path: '/dashboard/bug-reports',
-      },
       {
         key: 'catalog',
         label: 'Quản lý Catalog',
@@ -601,13 +577,16 @@ export function getSidebarGroups(
   if (academyItems.length > 0) {
     groups.push(academyGroup);
   }
-  groups.push(operationsGroup, qualityGroup, scheduleGroup, reportsGroup);
+  groups.push(operationsGroup, qualityGroup, scheduleGroup, reportsGroup, labsGroup);
   if (financeItems.length > 0) {
     groups.push(financeGroup);
   }
   if (systemGroupItems.length > 0) {
     groups.push(systemGroup);
   }
+
+  // Zero-Trust R&D & Mission keys remain strictly hidden from non-admins unless explicitly granted via menuVisibility
+  const ZERO_TRUST_EXPLICIT_GRANT_KEYS = new Set(['labs-hub', 'pilot-dark-lashes', 'cc-payroll-pilot', 'bug-reports']);
 
   const filterItems = (items: SidebarItemConfig[]): SidebarItemConfig[] =>
     items.flatMap((item) => {
@@ -631,6 +610,9 @@ export function getSidebarGroups(
         item.key.startsWith('academy-campaign-') ||
         item.key.startsWith('finance-fund-');
       if (!isAdmin && !isDynamicKey && item.key !== 'menu-access' && !isManagedMenuAccessKey(item.key)) {
+        return [];
+      }
+      if (!isAdmin && ZERO_TRUST_EXPLICIT_GRANT_KEYS.has(item.key) && menuVisibility[item.key] !== true) {
         return [];
       }
       // Strict CV Allowlist Invariant: CV accounts only see 'cv' and 'career-path'

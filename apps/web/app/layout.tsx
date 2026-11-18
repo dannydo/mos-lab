@@ -34,6 +34,7 @@ import { Suspense } from 'react';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BugReportSurfacePortal } from '../components/bug-reports/BugReportSurfacePortal';
+import { MosBibleSurfacePortal } from '../components/mos-bible/MosBibleSurfacePortal';
 import { FrontendTelemetryProvider } from '../components/telemetry/FrontendTelemetryProvider';
 
 export default function RootLayout({
@@ -60,6 +61,7 @@ export default function RootLayout({
             </Suspense>
             <ErrorBoundary>{children}</ErrorBoundary>
             <BugReportSurfacePortal />
+            <MosBibleSurfacePortal />
           </ThemeProvider>
         </AntdRegistry>
       </body>

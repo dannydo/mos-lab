@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   CV_DEFAULT_ALLOWED_MENU_KEYS,
+  DEFAULT_OPEN_MENU_KEYS,
   getMenuAccessCategoryPolicyKey,
   getRoleGroupForRole,
   isAdminOrSuperAdminRole,
@@ -30,6 +31,7 @@ const SCOPE_TYPES = new Set<MenuAccessScopeType>(['ROLE', 'DEPARTMENT', 'TEAM', 
 const SECURITY_BLOCK_PREFIX = 'security:block:';
 const ROLE_GROUP_ID_SET = new Set<number>(MENU_ACCESS_ROLE_GROUPS.map((g) => g.id));
 const CV_DEFAULT_SET = new Set<string>(CV_DEFAULT_ALLOWED_MENU_KEYS);
+const DEFAULT_OPEN_SET = new Set<string>(DEFAULT_OPEN_MENU_KEYS);
 
 export type MenuAccessActor = {
   id: number;
@@ -86,7 +88,10 @@ export function resolveMenuVisibility(
 ): Record<string, boolean> {
   const isCv = isCvRole(scopes.role);
   const visibility = Object.fromEntries(
-    MENU_ACCESS_DEFINITIONS.map((menu) => [menu.key, isCv ? CV_DEFAULT_SET.has(menu.key) : true])
+    MENU_ACCESS_DEFINITIONS.map((menu) => [
+      menu.key,
+      isCv ? CV_DEFAULT_SET.has(menu.key) || DEFAULT_OPEN_SET.has(menu.key) : true,
+    ])
   ) as Record<string, boolean>;
   if (isAdmin) {
     return Object.fromEntries(MENU_ACCESS_DEFINITIONS.map((menu) => [menu.key, true])) as Record<string, boolean>;
@@ -205,9 +210,9 @@ export class MenuAccessService {
     const snapshots = policies.map(policySnapshot);
     const configuredKeys = new Set(allPolicies.map((p) => p.menuKey));
     // Default Invariant: Any menu in MENU_ACCESS_DEFINITIONS without an explicit DB policy
-    // defaults to restricted with empty rules (hidden from non-admins).
+    // defaults to restricted with empty rules (hidden from non-admins), except DEFAULT_OPEN_MENU_KEYS.
     for (const def of MENU_ACCESS_DEFINITIONS) {
-      if (!configuredKeys.has(def.key)) {
+      if (!configuredKeys.has(def.key) && !DEFAULT_OPEN_SET.has(def.key)) {
         snapshots.push({
           menuKey: def.key,
           isRestricted: true,
@@ -441,9 +446,9 @@ export class MenuAccessService {
     const snapshots = policies.map(policySnapshot);
     const configuredKeys = new Set(allPolicies.map((p) => p.menuKey));
     // Default Invariant: Any menu in MENU_ACCESS_DEFINITIONS without an explicit DB policy
-    // defaults to restricted with empty rules (hidden from non-admins).
+    // defaults to restricted with empty rules (hidden from non-admins), except DEFAULT_OPEN_MENU_KEYS.
     for (const def of MENU_ACCESS_DEFINITIONS) {
-      if (!configuredKeys.has(def.key)) {
+      if (!configuredKeys.has(def.key) && !DEFAULT_OPEN_SET.has(def.key)) {
         snapshots.push({
           menuKey: def.key,
           isRestricted: true,

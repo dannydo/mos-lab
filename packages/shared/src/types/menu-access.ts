@@ -81,6 +81,9 @@ export function getRoleGroupForRole(role?: string | null): MenuAccessRoleGroupOp
 
 export const CV_DEFAULT_ALLOWED_MENU_KEYS = ['cv', 'career-path'] as const;
 
+/** Menu keys open by default to all authenticated staff unless explicitly restricted by Super Admin. */
+export const DEFAULT_OPEN_MENU_KEYS = ['mos-bible'] as const;
+
 /**
  * Strict allowlist of frontend paths accessible to CV accounts by default.
  * Only Báo Cáo CV (/dashboard/cv), Career Path (/dashboard/career-path), and mOS Chat (/dashboard/chat, /chat) are allowed.
@@ -89,7 +92,8 @@ export const CV_DEFAULT_ALLOWED_MENU_KEYS = ['cv', 'career-path'] as const;
 export function isCvAllowedPath(
   pathname?: string | null,
   menuVisibility?: Record<string, boolean>,
-  userRole?: string | null
+  userRole?: string | null,
+  teamCodes?: readonly string[] | null
 ): boolean {
   if (!pathname) return false;
   const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
@@ -106,11 +110,12 @@ export function isCvAllowedPath(
     return true;
   }
   if (cleanPath === '/ios-app' || cleanPath.startsWith('/ios-app/')) {
-    return userRole ? canAccessIosConsultationApp(userRole) : false;
+    return userRole || teamCodes?.length ? canAccessIosConsultationApp(userRole, teamCodes) : false;
   }
   if (menuVisibility) {
     for (const def of MENU_ACCESS_DEFINITIONS) {
       const defBasePath = def.path.split('?')[0].replace(/\/+$/, '');
+      if (!defBasePath.startsWith('/')) continue;
       if (defBasePath && defBasePath !== '/dashboard' && cleanPath.startsWith(defBasePath)) {
         if (menuVisibility[def.key] === true) return true;
       }
@@ -131,17 +136,18 @@ export function isCvAllowedPath(
 export function isNonAdminAllowedDashboardPath(
   pathname?: string | null,
   menuVisibility?: Record<string, boolean>,
-  userRole?: string | null
+  userRole?: string | null,
+  teamCodes?: readonly string[] | null
 ): boolean {
   if (!pathname) return false;
   if (isAdminOrSuperAdminRole(userRole)) return true;
 
   const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
   if (cleanPath === '/ios-app' || cleanPath.startsWith('/ios-app/')) {
-    return canAccessIosConsultationApp(userRole);
+    return canAccessIosConsultationApp(userRole, teamCodes);
   }
   if (isCvRole(userRole)) {
-    return isCvAllowedPath(cleanPath, menuVisibility, userRole);
+    return isCvAllowedPath(cleanPath, menuVisibility, userRole, teamCodes);
   }
   if (
     cleanPath === '/dashboard/chat' ||
@@ -185,6 +191,7 @@ export function isNonAdminAllowedDashboardPath(
     // Match the most specific menu definition(s) for this path
     const matchingDefs = MENU_ACCESS_DEFINITIONS.filter((def) => {
       const defBasePath = def.path.split('?')[0].replace(/\/+$/, '');
+      if (!defBasePath.startsWith('/')) return false;
       return (
         defBasePath &&
         defBasePath !== '/dashboard' &&
@@ -473,6 +480,12 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     label: 'Sản phẩm phát triển (Labs)',
     menuGroupKeys: ['labs'],
     description: 'Vườn ươm sản phẩm, Career Path (CV -> BOSS) và các tính năng R&D đang thử nghiệm.',
+  },
+  {
+    key: 'bible',
+    label: 'Kinh Thánh mOS',
+    menuGroupKeys: ['bible'],
+    description: 'Hiến chương, quy tắc nghiệp vụ và Đấu trường Speed Quiz toàn hệ thống.',
   },
   {
     key: 'finance',
@@ -764,10 +777,17 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
   },
   {
     key: 'bug-reports',
-    label: 'Nhiệm Vụ mOS',
+    label: 'mOS Mission (Nhiệm vụ & Báo lỗi)',
     groupKey: 'reports',
     groupLabel: 'Báo cáo & KPI',
     path: '/dashboard/bug-reports',
+  },
+  {
+    key: 'mos-bible',
+    label: 'mOS Bible (Kinh Thánh mOS)',
+    groupKey: 'bible',
+    groupLabel: 'Kinh Thánh mOS',
+    path: '#mos-bible',
   },
   {
     key: 'finance-funds-manage',

@@ -61,7 +61,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.getByText('Lộ trình')).toBeDefined();
   });
 
-  it('opens V1 9-dot MosAppLauncher with all 3 apps and CC quick links for Manager in CC team', () => {
+  it('opens unified 9-dot MosAppLauncher with Core Apps and CC suites for Manager in CC team', () => {
     render(
       <MosAppLauncher
         currentApp="general"
@@ -82,8 +82,11 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.getByText('mOS General')).toBeDefined();
     expect(screen.getByText('mOS Chat')).toBeDefined();
     expect(screen.getByText('iOS-App')).toBeDefined();
-    expect(screen.getByText('Hôm nay')).toBeDefined();
-    expect(screen.getByText('KPI CC')).toBeDefined();
+    // Suite row for un-granted Manager+CC shows mOS Reports (CC KPI) & mOS Bible, hides Zero-Trust Mission & Lab
+    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
 
     fireEvent.click(panel.querySelector('[data-launcher-app="ios"]')!);
     expect(mockPush).toHaveBeenCalledWith('/ios-app?role=CC');
@@ -109,18 +112,75 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.queryByTestId('mos-app-launcher-panel')).toBeNull();
   });
 
-  it('routes Manager+CC to first allowed general page (/dashboard/cc), filters restricted links, and closes embedded chat', () => {
+  it('shows all 3 Core Apps + 4 Suites for Super Admin and opens mOS Bible in-place via event', () => {
+    const bibleSpy = vi.fn();
+    window.addEventListener('open-mos-bible', bibleSpy);
+
+    render(<MosAppLauncher currentApp="general" userRole="super_admin" displayName="Danny Do" missionBadgeCount={4} />);
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const panel = screen.getByTestId('mos-app-launcher-panel');
+
+    expect(panel.querySelector('[data-launcher-app="general"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-app="chat"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-app="ios"]')).not.toBeNull();
+
+    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="mission"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
+    expect(screen.getByText('4')).toBeDefined();
+
+    fireEvent.click(panel.querySelector('[data-launcher-suite="bible"]')!);
+    expect(bibleSpy).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const reopened = screen.getByTestId('mos-app-launcher-panel');
+    fireEvent.click(reopened.querySelector('[data-launcher-suite="lab"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/labs');
+
+    window.removeEventListener('open-mos-bible', bibleSpy);
+  });
+
+  it('hides mOS General, mOS Mission, and mOS Lab for CVL while keeping Chat, iOS-App, Reports (/dashboard/cv), and Bible', () => {
+    render(
+      <MosAppLauncher
+        currentApp="ios"
+        userRole="cv_plus"
+        displayName="Thảo Ly"
+        menuVisibility={{ cv: true, 'career-path': true, 'mos-bible': true }}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const panel = screen.getByTestId('mos-app-launcher-panel');
+
+    expect(panel.querySelector('[data-launcher-app="general"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-app="chat"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-app="ios"]')).not.toBeNull();
+
+    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+
+    fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/cv');
+  });
+
+  it('routes Manager+CC via menuVisibility, hides ungranted suites, and reveals Mission/Lab when explicitly granted', () => {
     const onAfterNavigate = vi.fn();
     const closeListener = vi.fn();
     window.addEventListener('mos-chat:close', closeListener);
 
-    render(
+    const { rerender } = render(
       <MosAppLauncher
         currentApp="chat"
         userRole="manager"
         teamCodes={['CC']}
         displayName="Đào Trần Vũ Vy"
-        menuVisibility={{ dashboard: false, today: false, cc: true, 'career-path': true }}
+        menuVisibility={{ dashboard: false, today: false, cc: true, 'career-path': true, 'mos-bible': true }}
         onAfterNavigate={onAfterNavigate}
       />
     );
@@ -128,16 +188,47 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
     const panel = screen.getByTestId('mos-app-launcher-panel');
 
-    // Restricted "Hôm nay" must not appear; allowed "KPI CC" and "Lộ trình" appear
-    expect(screen.queryByText('Hôm nay')).toBeNull();
-    expect(screen.getByText('KPI CC')).toBeDefined();
-    expect(screen.getByText('Lộ trình')).toBeDefined();
+    expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+
+    // Clicking mOS Reports goes straight to /dashboard/cc
+    fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/cc');
 
     // Clicking mOS General closes embedded chat and routes to /dashboard/cc
-    fireEvent.click(panel.querySelector('[data-launcher-app="general"]')!);
-    expect(onAfterNavigate).toHaveBeenCalledTimes(1);
-    expect(closeListener).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const panelGeneral = screen.getByTestId('mos-app-launcher-panel');
+    fireEvent.click(panelGeneral.querySelector('[data-launcher-app="general"]')!);
+    expect(onAfterNavigate).toHaveBeenCalledTimes(2);
+    expect(closeListener).toHaveBeenCalledTimes(2);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/cc');
+
+    // Explicitly unlocking bug-reports & labs-hub reveals Mission and Lab
+    rerender(
+      <MosAppLauncher
+        currentApp="chat"
+        userRole="manager"
+        teamCodes={['CC']}
+        displayName="Đào Trần Vũ Vy"
+        menuVisibility={{
+          dashboard: false,
+          today: false,
+          cc: true,
+          'career-path': true,
+          'bug-reports': true,
+          'labs-hub': true,
+          'mos-bible': true,
+        }}
+        onAfterNavigate={onAfterNavigate}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const grantedPanel = screen.getByTestId('mos-app-launcher-panel');
+    expect(grantedPanel.querySelector('[data-launcher-suite="mission"]')).not.toBeNull();
+    expect(grantedPanel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
 
     window.removeEventListener('mos-chat:close', closeListener);
   });

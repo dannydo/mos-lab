@@ -5,10 +5,24 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronRight, LayoutGrid, X } from 'lucide-react';
-import { isAdminOrSuperAdminRole, normalizeCvFeatherRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole, normalizeCvFeatherRole } from '@mos-lab/shared';
 import { apiClient, resolveMediaUrl } from '../../lib/api-client';
+import {
+  getBugReportBadgeServerSnapshot,
+  getBugReportBadgeSummary,
+  subscribeBugReportBadgeSummary,
+} from '../../lib/bug-diagnostics';
+import { openMosBible } from '../../lib/mos-bible-launcher';
 import { useTheme } from '../../context/ThemeContext';
-import { buildEcosystemNavModel, EcosystemAppKey } from '../../config/ecosystem-nav';
+import {
+  buildEcosystemNavModel,
+  EcosystemAppKey,
+  EcosystemSuiteKey,
+  EcosystemTone,
+  isLabPathname,
+  isMissionPathname,
+  isReportPathname,
+} from '../../config/ecosystem-nav';
 import { CvFeather1Badge, CvFeather2Badge } from '../../app/ios-app/components/ui-kit/CvFeatherLabels';
 
 const UnifiedProfileSheet = dynamic(() => import('../profile/UnifiedProfileSheet'), { ssr: false });
@@ -19,6 +33,7 @@ export interface MosAppLauncherProps {
   teamCodes?: readonly string[] | null;
   displayName?: string | null;
   unreadChatCount?: number;
+  missionBadgeCount?: number;
   menuVisibility?: Record<string, boolean> | null;
   onOpenChat?: () => void;
   onAfterNavigate?: () => void;
@@ -52,6 +67,7 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
   teamCodes,
   displayName,
   unreadChatCount = 0,
+  missionBadgeCount,
   menuVisibility: menuVisibilityProp,
   onOpenChat,
   onAfterNavigate,
@@ -99,6 +115,14 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     : undefined;
   const displayInitial = (effectiveDisplayName || 'W').trim().charAt(0).toUpperCase();
 
+  const bugBadge = React.useSyncExternalStore(
+    subscribeBugReportBadgeSummary,
+    getBugReportBadgeSummary,
+    getBugReportBadgeServerSnapshot
+  );
+  const effectiveMissionBadge =
+    missionBadgeCount ?? (!isCvRole(effectiveRole) ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0);
+
   useEffect(() => {
     if (menuVisibilityProp || isAdminOrSuperAdminRole(effectiveRole) || typeof window === 'undefined') return;
     if (!window.localStorage.getItem('mos_token')) return;
@@ -126,10 +150,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         userRole: effectiveRole,
         teamCodes: effectiveTeamCodes,
         unreadChatCount,
+        missionBadgeCount: effectiveMissionBadge,
         savedAdminRole,
         menuVisibility: effectiveMenuVisibility,
       }),
-    [effectiveRole, effectiveTeamCodes, unreadChatCount, savedAdminRole, effectiveMenuVisibility]
+    [effectiveRole, effectiveTeamCodes, unreadChatCount, effectiveMissionBadge, savedAdminRole, effectiveMenuVisibility]
   );
 
   useEffect(() => {
@@ -147,12 +172,12 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         });
       } else {
         const rawLeft = rect ? rect.left : 16;
-        const left = Math.max(12, Math.min(Math.round(rawLeft), window.innerWidth - 360));
+        const left = Math.max(12, Math.min(Math.round(rawLeft), window.innerWidth - 380));
         setPanelPos({
           position: 'fixed',
           top,
           left,
-          width: 348,
+          width: 368,
         });
       }
     };
@@ -198,29 +223,50 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
   };
 
   const featherTier = normalizeCvFeatherRole(String(effectiveRole || ''));
-  const isRouteActive = (href: string) => {
-    const baseHref = href.split('?')[0];
-    if (baseHref === '/ios-app') return currentApp === 'ios' || pathname.startsWith('/ios-app');
-    if (baseHref === '/chat') return currentApp === 'chat' || pathname.startsWith('/chat');
-    if (pathname.startsWith('/dashboard') && currentApp === 'general' && href === navModel.coreApps[0]?.href) {
-      return true;
+
+  const isCoreAppActive = (key: EcosystemAppKey) => {
+    if (key === 'general') {
+      return (
+        currentApp === 'general' &&
+        !isReportPathname(pathname) &&
+        !isMissionPathname(pathname) &&
+        !isLabPathname(pathname)
+      );
     }
-    return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
+    if (key === 'chat') return currentApp === 'chat' || pathname.startsWith('/chat');
+    return currentApp === 'ios' || pathname.startsWith('/ios-app');
   };
 
-  const quickDestinations = navModel.quickLinks.filter((link) => link.key !== 'consult' && link.key !== 'chat');
+  const isSuiteActive = (key: EcosystemSuiteKey) => {
+    if (key === 'reports') return isReportPathname(pathname);
+    if (key === 'mission') return isMissionPathname(pathname);
+    if (key === 'lab') return isLabPathname(pathname);
+    return false;
+  };
 
-  const toneClass = (tone: 'sky' | 'emerald' | 'amber') => {
+  const toneClass = (tone: EcosystemTone) => {
     if (tone === 'sky') {
       return isDark ? 'bg-sky-500/15 text-sky-400' : 'bg-sky-50 text-sky-600';
     }
     if (tone === 'emerald') {
       return isDark ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-600';
     }
+    if (tone === 'violet') {
+      return isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-600';
+    }
+    if (tone === 'rose') {
+      return isDark ? 'bg-rose-500/15 text-rose-400' : 'bg-rose-50 text-rose-600';
+    }
+    if (tone === 'cyan') {
+      return isDark ? 'bg-cyan-500/15 text-cyan-400' : 'bg-cyan-50 text-cyan-600';
+    }
     return isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-600';
   };
 
   const shapeClass = shape === 'circle' ? 'w-8 h-8 rounded-full' : 'w-8 h-8 rounded-xl';
+  const coreColsClass =
+    navModel.coreApps.length >= 3 ? 'grid-cols-3' : navModel.coreApps.length === 2 ? 'grid-cols-2' : 'grid-cols-1';
+  const suiteColsClass = navModel.suiteApps.length <= 1 ? 'grid-cols-1' : 'grid-cols-2';
 
   return (
     <div ref={rootRef} className={`relative inline-flex items-center shrink-0 ${className}`}>
@@ -228,9 +274,9 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         ref={buttonRef}
         type="button"
         data-testid="mos-app-launcher-btn"
-        aria-label="Mở bộ chuyển nhanh 3 phân hệ mOS"
+        aria-label="Mở bộ chuyển nhanh Hệ sinh thái mOS"
         aria-expanded={open}
-        title="Chuyển nhanh mOS General · mOS Chat · iOS-App"
+        title="Chuyển nhanh Hệ sinh thái mOS"
         onClick={() => setOpen((prev) => !prev)}
         className={`${shapeClass} relative border flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
           open
@@ -341,11 +387,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                   </div>
                 </div>
 
-                {/* 3 Core Apps Grid */}
-                <div className={`grid gap-2 mb-3 ${navModel.coreApps.length >= 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {/* Row 1: Core Apps */}
+                <div className={`grid gap-2 ${navModel.suiteApps.length > 0 ? 'mb-3' : ''} ${coreColsClass}`}>
                   {navModel.coreApps.map((app) => {
                     const Icon = app.icon;
-                    const active = currentApp === app.key;
+                    const active = isCoreAppActive(app.key);
                     return (
                       <button
                         key={app.key}
@@ -363,7 +409,7 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                               ? 'rgba(255,255,255,0.03)'
                               : '#f8fafc',
                         }}
-                        className="relative flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-2xl border transition-all active:scale-95 cursor-pointer text-center hover:border-amber-400/60"
+                        className="relative flex flex-col items-center justify-center gap-1.5 px-2 py-2.5 rounded-2xl border transition-all active:scale-95 cursor-pointer text-center hover:border-amber-400/60"
                       >
                         {app.badgeCount && app.badgeCount > 0 ? (
                           <span className="absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none flex items-center justify-center tabular-nums">
@@ -373,29 +419,40 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneClass(app.tone)}`}>
                           <Icon className="w-4.5 h-4.5 stroke-[2.2]" />
                         </div>
-                        <div className="text-[11.5px] font-extrabold leading-tight">{app.label}</div>
-                        <div className="text-[9.5px] opacity-65 leading-none truncate max-w-full">{app.subtitle}</div>
+                        <div className="text-[11.5px] font-extrabold leading-tight truncate max-w-full">
+                          {app.label}
+                        </div>
+                        <div className="text-[10px] opacity-65 leading-none truncate max-w-full">{app.subtitle}</div>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Quick Destinations */}
-                {quickDestinations.length > 0 && (
+                {/* Row 2: Ecosystem Suites (mOS Reports · mOS Mission · mOS Bible · mOS Lab) */}
+                {navModel.suiteApps.length > 0 && (
                   <div>
                     <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-55 mb-1.5 px-0.5">
-                      Truy cập nhanh theo vai trò
+                      Phân hệ hệ sinh thái
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {quickDestinations.map((item) => {
-                        const Icon = item.icon;
-                        const active = isRouteActive(item.href);
+                    <div className={`grid gap-2 ${suiteColsClass}`}>
+                      {navModel.suiteApps.map((suite) => {
+                        const Icon = suite.icon;
+                        const active = isSuiteActive(suite.key);
                         return (
                           <button
-                            key={item.key}
+                            key={suite.key}
                             type="button"
-                            data-launcher-link={item.key}
-                            onClick={() => navigateTo(item.href, item.key)}
+                            data-launcher-suite={suite.key}
+                            aria-current={active ? 'page' : undefined}
+                            onClick={() => {
+                              if (suite.action === 'open-bible') {
+                                setOpen(false);
+                                onAfterNavigate?.();
+                                openMosBible();
+                                return;
+                              }
+                              navigateTo(suite.href, suite.key);
+                            }}
                             style={{
                               borderColor: active
                                 ? '#ffb400'
@@ -410,10 +467,24 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                                   ? 'rgba(255,255,255,0.04)'
                                   : '#f1f5f9',
                             }}
-                            className="flex items-center gap-2 px-2.5 py-2 rounded-xl border text-[11.5px] font-bold transition-all active:scale-95 cursor-pointer text-left hover:border-amber-400/50"
+                            className="p-2.5 rounded-2xl border flex items-center gap-2.5 text-left transition-all active:scale-95 cursor-pointer hover:border-amber-400/50"
                           >
-                            <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-amber-500' : 'opacity-75'}`} />
-                            <span className="truncate">{item.shortLabel}</span>
+                            <div
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${toneClass(suite.tone)}`}
+                            >
+                              <Icon className="w-4 h-4 stroke-[2.2]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11.5px] font-extrabold leading-tight truncate">{suite.label}</div>
+                              <div className="text-[9.5px] opacity-65 leading-tight truncate mt-0.5">
+                                {suite.subtitle}
+                              </div>
+                            </div>
+                            {suite.badgeCount && suite.badgeCount > 0 ? (
+                              <span className="min-w-[17px] h-[17px] px-1.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none inline-flex items-center justify-center tabular-nums shrink-0">
+                                {suite.badgeCount > 99 ? '99+' : suite.badgeCount}
+                              </span>
+                            ) : null}
                           </button>
                         );
                       })}

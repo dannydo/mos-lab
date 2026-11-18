@@ -1,15 +1,30 @@
 import type { LucideIcon } from 'lucide-react';
-import { BarChart3, CalendarCheck, LayoutDashboard, MessageSquare, Smartphone, Trophy, Wallet } from 'lucide-react';
+import {
+  BarChart3,
+  BookOpenCheck,
+  CalendarCheck,
+  FlaskConical,
+  LayoutDashboard,
+  MessageSquare,
+  Rocket,
+  Smartphone,
+  Trophy,
+  Wallet,
+} from 'lucide-react';
 import {
   canAccessIosConsultationApp,
   hasCcTeamMembership,
   isAdminOrSuperAdminRole,
+  isCcRole,
   isCvRole,
+  isTelesalesRole,
   MENU_ACCESS_DEFINITIONS,
   normalizeCvFeatherRole,
 } from '@mos-lab/shared';
 
 export type EcosystemAppKey = 'general' | 'chat' | 'ios';
+export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab';
+export type EcosystemTone = 'sky' | 'emerald' | 'amber' | 'violet' | 'rose' | 'cyan';
 
 export type QuickSwitchRoleGroup = 'CV_FEATHER' | 'CC' | 'CV_STANDARD' | 'ADMIN_MANAGER' | 'OTHER';
 
@@ -19,7 +34,19 @@ export interface EcosystemAppItem {
   subtitle: string;
   href: string;
   icon: LucideIcon;
-  tone: 'sky' | 'emerald' | 'amber';
+  tone: EcosystemTone;
+  badgeCount?: number;
+}
+
+export interface EcosystemSuiteItem {
+  key: EcosystemSuiteKey;
+  label: string;
+  shortLabel?: string;
+  subtitle: string;
+  href: string;
+  action?: 'open-bible';
+  icon: LucideIcon;
+  tone: EcosystemTone;
   badgeCount?: number;
 }
 
@@ -32,6 +59,44 @@ export interface EcosystemQuickLink {
   icon: LucideIcon;
   accent?: boolean;
   badgeCount?: number;
+}
+
+export const REPORT_MENU_KEYS = ['kpi', 'cb', 'cc', 'cv', 'bk', 'cs', 'financial-goals'] as const;
+export const LAB_EXPLICIT_MENU_KEYS = ['labs-hub', 'pilot-dark-lashes', 'cc-payroll-pilot'] as const;
+
+const OPERATIONAL_GENERAL_MENU_KEYS = MENU_ACCESS_DEFINITIONS.filter(
+  (def) => !['reports', 'labs', 'bible'].includes(def.groupKey) && def.key !== 'bug-reports' && def.path.startsWith('/')
+).map((def) => def.key);
+
+const LAB_ROUTE_BY_KEY: Record<string, string> = {
+  'labs-hub': '/dashboard/labs',
+  'pilot-dark-lashes': '/dashboard/pilot-dark-lashes',
+  'cc-payroll-pilot': '/dashboard/payroll-pilot',
+};
+
+export function isReportPathname(pathname: string): boolean {
+  const clean = pathname.split('?')[0];
+  return [
+    '/dashboard/kpi',
+    '/dashboard/cb',
+    '/dashboard/cc',
+    '/dashboard/cv',
+    '/dashboard/bk',
+    '/dashboard/cs',
+    '/dashboard/financial-goals',
+  ].some((prefix) => clean === prefix || clean.startsWith(`${prefix}/`));
+}
+
+export function isMissionPathname(pathname: string): boolean {
+  const clean = pathname.split('?')[0];
+  return clean === '/dashboard/bug-reports' || clean.startsWith('/dashboard/bug-reports/');
+}
+
+export function isLabPathname(pathname: string): boolean {
+  const clean = pathname.split('?')[0];
+  return ['/dashboard/labs', '/dashboard/pilot-dark-lashes', '/dashboard/payroll-pilot', '/dashboard/career-path'].some(
+    (prefix) => clean === prefix || clean.startsWith(`${prefix}/`)
+  );
 }
 
 /**
@@ -95,6 +160,10 @@ export const ECOSYSTEM_ICONS = {
   general: LayoutDashboard,
   chat: MessageSquare,
   ios: Smartphone,
+  reports: BarChart3,
+  mission: Rocket,
+  bible: BookOpenCheck,
+  lab: FlaskConical,
   today: CalendarCheck,
   ccKpi: BarChart3,
   cvIncome: Wallet,
@@ -106,21 +175,110 @@ export function resolveGeneralLandingHref(
   menuVisibility?: Record<string, boolean> | null
 ): string {
   if (isAdminOrSuperAdminRole(userRole)) return '/dashboard';
-  if (isCvRole(userRole)) return '/dashboard/cv';
   if (menuVisibility && Object.keys(menuVisibility).length > 0) {
     if (menuVisibility.dashboard === true) return '/dashboard';
-    const firstAllowed = MENU_ACCESS_DEFINITIONS.find((def) => menuVisibility[def.key] === true);
+    const firstOperationalKey = OPERATIONAL_GENERAL_MENU_KEYS.find((key) => menuVisibility[key] === true);
+    if (firstOperationalKey) {
+      const def = MENU_ACCESS_DEFINITIONS.find((item) => item.key === firstOperationalKey);
+      if (def?.path && def.path.startsWith('/')) {
+        return def.path.split('?')[0] || '/dashboard';
+      }
+    }
+    const firstAllowed = MENU_ACCESS_DEFINITIONS.find(
+      (def) => menuVisibility[def.key] === true && def.path.startsWith('/')
+    );
     if (firstAllowed?.path) {
       return firstAllowed.path.split('?')[0] || '/dashboard';
     }
   }
+  if (isCvRole(userRole)) return '/dashboard/cv';
   return '/dashboard';
+}
+
+function resolveReportsSuite(params: {
+  userRole?: string | null;
+  teamCodes?: readonly string[] | null;
+  isAdmin: boolean;
+  isCv: boolean;
+  hasVisibilityMap: boolean;
+  menuVisibility?: Record<string, boolean> | null;
+}): EcosystemSuiteItem | null {
+  const { userRole, teamCodes, isAdmin, isCv, hasVisibilityMap, menuVisibility } = params;
+  const rawRole = String(userRole || '').trim();
+  const lowerRole = rawRole.toLowerCase();
+  const upperTeams = new Set(
+    (teamCodes || []).map((c) =>
+      String(c || '')
+        .trim()
+        .toUpperCase()
+    )
+  );
+
+  const isCc = isCcRole(rawRole) || hasCcTeamMembership(teamCodes);
+  const isBk = isTelesalesRole(rawRole) || upperTeams.has('BK') || upperTeams.has('BK_TELESALES');
+  const isCs =
+    ['cs', 'coca', 'control'].includes(lowerRole) ||
+    upperTeams.has('CS') ||
+    upperTeams.has('BK_CS') ||
+    upperTeams.has('BK_CONTROL');
+
+  const metaByKey: Record<string, { href: string; subtitle: string }> = {
+    cv: { href: '/dashboard/cv', subtitle: 'Thu nhập & Ca làm' },
+    cc: { href: '/dashboard/cc', subtitle: 'KPI & Thưởng CC' },
+    bk: { href: '/dashboard/bk', subtitle: 'KPI & Hoa hồng BK' },
+    cs: { href: '/dashboard/cs', subtitle: 'Báo cáo CSKH' },
+    kpi: { href: '/dashboard/kpi', subtitle: 'KPI & Hiệu suất' },
+    cb: { href: '/dashboard/cb', subtitle: 'Dashboard $CB' },
+    'financial-goals': { href: '/dashboard/financial-goals', subtitle: 'Mục tiêu Tài chính' },
+  };
+
+  let priorityOrder: string[];
+  if (isAdmin) {
+    priorityOrder = ['kpi', 'cc', 'cv', 'bk', 'cs', 'cb', 'financial-goals'];
+  } else if (isCv) {
+    priorityOrder = ['cv', 'cc', 'bk', 'cs', 'kpi', 'cb', 'financial-goals'];
+  } else if (isCc) {
+    priorityOrder = ['cc', 'kpi', 'bk', 'cs', 'cv', 'cb', 'financial-goals'];
+  } else if (isBk) {
+    priorityOrder = ['bk', 'kpi', 'cc', 'cs', 'cv', 'cb', 'financial-goals'];
+  } else if (isCs) {
+    priorityOrder = ['cs', 'kpi', 'bk', 'cc', 'cv', 'cb', 'financial-goals'];
+  } else {
+    priorityOrder = ['kpi', 'cc', 'bk', 'cs', 'cv', 'cb', 'financial-goals'];
+  }
+
+  let chosenKey: string | undefined;
+  if (isAdmin) {
+    chosenKey = 'kpi';
+  } else if (hasVisibilityMap) {
+    chosenKey = priorityOrder.find((key) => {
+      if (isCv && key === 'cv') {
+        return menuVisibility?.cv !== false;
+      }
+      return menuVisibility?.[key] === true;
+    });
+  } else {
+    chosenKey = priorityOrder[0];
+  }
+
+  if (!chosenKey) return null;
+  const meta = metaByKey[chosenKey] || metaByKey.kpi;
+  return {
+    key: 'reports',
+    label: 'mOS Reports',
+    shortLabel: 'Reports',
+    subtitle: meta.subtitle,
+    href: meta.href,
+    icon: ECOSYSTEM_ICONS.reports,
+    tone: 'violet',
+  };
 }
 
 export function buildEcosystemNavModel(params: {
   userRole?: string | null;
   teamCodes?: readonly string[] | null;
   unreadChatCount?: number;
+  missionBadgeCount?: number;
   savedAdminRole?: string | null;
   menuVisibility?: Record<string, boolean> | null;
 }): {
@@ -129,47 +287,112 @@ export function buildEcosystemNavModel(params: {
   isCcTeamMember: boolean;
   consultRoleParam: 'CVL' | 'CVLL' | 'CC';
   coreApps: EcosystemAppItem[];
+  suiteApps: EcosystemSuiteItem[];
   quickLinks: EcosystemQuickLink[];
 } {
-  const { userRole, teamCodes, unreadChatCount = 0, savedAdminRole, menuVisibility } = params;
+  const { userRole, teamCodes, unreadChatCount = 0, missionBadgeCount = 0, savedAdminRole, menuVisibility } = params;
   const roleGroup = resolveQuickSwitchRoleGroup(userRole, teamCodes);
   const canAccessIos = canAccessIosConsultationApp(userRole, teamCodes);
   const isCcTeamMember = hasCcTeamMembership(teamCodes);
   const consultRoleParam = resolveConsultRoleParam(userRole, teamCodes, savedAdminRole);
   const isCv = isCvRole(userRole);
   const isAdmin = isAdminOrSuperAdminRole(userRole);
+  const hasVisibilityMap = Boolean(menuVisibility && Object.keys(menuVisibility).length > 0);
 
   const generalHref = resolveGeneralLandingHref(userRole, menuVisibility);
   const iosHref = roleGroup === 'ADMIN_MANAGER' ? '/ios-app' : `/ios-app?role=${consultRoleParam}`;
 
-  const coreApps: EcosystemAppItem[] = [
-    {
+  const canSeeGeneral =
+    !isCv || (hasVisibilityMap && OPERATIONAL_GENERAL_MENU_KEYS.some((k) => menuVisibility?.[k] === true));
+
+  const coreApps: EcosystemAppItem[] = [];
+  if (canSeeGeneral) {
+    coreApps.push({
       key: 'general',
       label: 'mOS General',
-      subtitle: isCv ? 'Thu nhập & Lộ trình' : 'Quản trị & Báo cáo',
+      subtitle: 'Vận hành & CRM',
       href: generalHref,
       icon: ECOSYSTEM_ICONS.general,
       tone: 'sky',
-    },
-    {
-      key: 'chat',
-      label: 'mOS Chat',
-      subtitle: 'Nội bộ & MAI AI',
-      href: '/chat',
-      icon: ECOSYSTEM_ICONS.chat,
-      tone: 'emerald',
-      badgeCount: unreadChatCount > 0 ? unreadChatCount : undefined,
-    },
-  ];
+    });
+  }
+
+  coreApps.push({
+    key: 'chat',
+    label: 'mOS Chat',
+    subtitle: 'Nội bộ & MAI AI',
+    href: '/chat',
+    icon: ECOSYSTEM_ICONS.chat,
+    tone: 'emerald',
+    badgeCount: unreadChatCount > 0 ? unreadChatCount : undefined,
+  });
 
   if (canAccessIos) {
     coreApps.push({
       key: 'ios',
       label: 'iOS-App',
-      subtitle: 'Tư vấn & Checkout',
+      subtitle: 'Tư vấn tại sảnh',
       href: iosHref,
       icon: ECOSYSTEM_ICONS.ios,
       tone: 'amber',
+    });
+  }
+
+  const suiteApps: EcosystemSuiteItem[] = [];
+
+  const reportsItem = resolveReportsSuite({
+    userRole,
+    teamCodes,
+    isAdmin,
+    isCv,
+    hasVisibilityMap,
+    menuVisibility,
+  });
+  if (reportsItem) {
+    suiteApps.push(reportsItem);
+  }
+
+  // Zero-Trust: mOS Mission is blocked for CV and requires Admin or explicit 'bug-reports' grant
+  const canSeeMission = !isCv && (isAdmin || menuVisibility?.['bug-reports'] === true);
+  if (canSeeMission) {
+    suiteApps.push({
+      key: 'mission',
+      label: 'mOS Mission',
+      shortLabel: 'Mission',
+      subtitle: 'Nhiệm vụ & Lỗi',
+      href: '/dashboard/bug-reports',
+      icon: ECOSYSTEM_ICONS.mission,
+      tone: 'rose',
+      badgeCount: missionBadgeCount > 0 ? missionBadgeCount : undefined,
+    });
+  }
+
+  // mOS Bible is open by default to all staff unless explicitly disabled in Menu Access
+  const canSeeBible = isAdmin || !hasVisibilityMap || menuVisibility?.['mos-bible'] !== false;
+  if (canSeeBible) {
+    suiteApps.push({
+      key: 'bible',
+      label: 'mOS Bible',
+      shortLabel: 'Bible',
+      subtitle: 'Kinh Thánh · Quiz',
+      href: '#mos-bible',
+      action: 'open-bible',
+      icon: ECOSYSTEM_ICONS.bible,
+      tone: 'amber',
+    });
+  }
+
+  // Zero-Trust: mOS Lab requires Admin or explicit grant to labs-hub / pilot modules (career-path alone does not unlock Lab)
+  const grantedLabKey = isAdmin ? 'labs-hub' : LAB_EXPLICIT_MENU_KEYS.find((key) => menuVisibility?.[key] === true);
+  if (grantedLabKey) {
+    suiteApps.push({
+      key: 'lab',
+      label: 'mOS Lab',
+      shortLabel: 'Lab',
+      subtitle: 'Sản phẩm R&D',
+      href: LAB_ROUTE_BY_KEY[grantedLabKey] || '/dashboard/labs',
+      icon: ECOSYSTEM_ICONS.lab,
+      tone: 'cyan',
     });
   }
 
@@ -359,8 +582,8 @@ export function buildEcosystemNavModel(params: {
     ];
   }
 
-  if (!isAdmin && menuVisibility && Object.keys(menuVisibility).length > 0) {
-    quickLinks = quickLinks.filter((item) => !item.menuKey || menuVisibility[item.menuKey] === true);
+  if (!isAdmin && hasVisibilityMap) {
+    quickLinks = quickLinks.filter((item) => !item.menuKey || menuVisibility?.[item.menuKey] === true);
   }
 
   return {
@@ -369,6 +592,7 @@ export function buildEcosystemNavModel(params: {
     isCcTeamMember,
     consultRoleParam,
     coreApps,
+    suiteApps,
     quickLinks,
   };
 }
