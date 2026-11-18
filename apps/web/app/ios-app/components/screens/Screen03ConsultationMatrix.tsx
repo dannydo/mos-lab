@@ -393,6 +393,7 @@ export function Screen03ConsultationMatrix({
       <CustomerHistoryAndSpendingSheet
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
+        initialTab="ALL"
         booking={
           booking || {
             id: 0,

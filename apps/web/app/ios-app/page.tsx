@@ -295,6 +295,7 @@ function IosAppInner() {
             booking={currentBooking}
             actor={state.actor}
             isAdmin={state.isAdmin}
+            isSimulationMode={state.isSimulationMode}
             onRefreshDb={() => state.refreshDb()}
             isCheckInLocked={Boolean(
               !state.isAdmin &&

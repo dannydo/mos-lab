@@ -299,9 +299,36 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
             </span>
           </div>
 
-          {item.staffNames.length > 0 && (
-            <div className="flex items-center gap-1 text-[11px] font-medium">
-              <User className="h-3 w-3 opacity-70" />
+          {(item.staffAvatars?.length || item.staffNames.length > 0) && (
+            <div className="flex items-center gap-1.5 text-[11px] font-medium min-w-0">
+              {item.staffAvatars && item.staffAvatars.length > 0 ? (
+                <div className="flex -space-x-1.5 shrink-0">
+                  {item.staffAvatars.slice(0, 3).map((st) => (
+                    <div
+                      key={st.id}
+                      title={st.name}
+                      className={`h-4 w-4 rounded-full overflow-hidden border flex items-center justify-center text-[8px] font-bold ${
+                        isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-white bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {st.avatar ? (
+                        <img
+                          src={st.avatar}
+                          alt={st.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <span>{st.name.trim().slice(0, 1).toUpperCase()}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <User className="h-3 w-3 opacity-70 shrink-0" />
+              )}
               <span className="truncate max-w-[160px]">{item.staffNames.join(', ')}</span>
             </div>
           )}
@@ -372,7 +399,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 backdrop-blur-sm p-0 sm:p-4"
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/65 backdrop-blur-sm p-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Lịch sử ghé thăm và chi tiêu khách hàng"
@@ -480,11 +507,17 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                 {summary ? `${summary.completedVisits} hoàn thành` : '--'}
               </div>
               <div
-                className={`mt-0.5 flex items-center gap-2 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+                className={`mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
               >
                 <span>Tổng {summary?.totalBookings ?? 0} lịch</span>
                 <span>·</span>
                 <span className="text-amber-500 font-semibold">💎 {summary?.diamondBalance ?? 0} KC</span>
+                {(summary?.totalDebt ?? 0) > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-rose-500 font-bold">Nợ {formatVnd(summary!.totalDebt)}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -568,6 +601,15 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                   }`}
                 />
               ))}
+            </div>
+          ) : !booking?.customerId || booking.customerId <= 0 ? (
+            <div
+              data-testid="history-missing-customer-id"
+              className={`rounded-2xl border p-5 text-center text-xs ${
+                isDark ? 'border-slate-800 bg-slate-900/60 text-slate-300' : 'border-slate-200 bg-white text-slate-600'
+              }`}
+            >
+              Chưa có mã hồ sơ khách hàng trên hệ thống (khách mới hoặc lịch nháp chưa liên kết ID).
             </div>
           ) : (
             <>

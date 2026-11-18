@@ -29,6 +29,7 @@ interface Screen02CheckInProfileProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
   isAdmin?: boolean;
+  isSimulationMode?: boolean;
   onRefreshDb?: () => void;
   isCheckInLocked?: boolean;
   activeServicingCustomerName?: string;
@@ -82,6 +83,7 @@ export function Screen02CheckInProfile({
   booking,
   actor,
   isAdmin = false,
+  isSimulationMode = false,
   onRefreshDb,
   isCheckInLocked = false,
   activeServicingCustomerName,
@@ -606,7 +608,9 @@ export function Screen02CheckInProfile({
       <CustomerHistoryAndSpendingSheet
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
+        initialTab="ALL"
         booking={booking}
+        isSimulationMode={isSimulationMode}
       />
     </div>
   );
