@@ -22,6 +22,8 @@ import type {
   BkGameUpdateInput,
   BkGameDetailResponse,
   BkGameDoneBonusRecord,
+  BkGameTeamBookingDoneBonusRecord,
+  BkGameTeamBookingDoneBonusSummary,
   BkGameFinalizeInput,
   BkGameListResponse,
   CcConfigResponse,
@@ -462,6 +464,16 @@ export const kpiApi = {
     },
     getGameDoneBonuses: async (id: number): Promise<{ data: BkGameDoneBonusRecord[]; total: number }> => {
       const response = await api.get(`/kpi/bk/games/${id}/done-bonuses`);
+      return response.data;
+    },
+    getGameTeamBookingDoneBonuses: async (
+      id: number
+    ): Promise<{
+      summary: BkGameTeamBookingDoneBonusSummary | null;
+      data: BkGameTeamBookingDoneBonusRecord[];
+      total: number;
+    }> => {
+      const response = await api.get(`/kpi/bk/games/${id}/team-booking-done-bonuses`);
       return response.data;
     },
     createGame: async (data: BkGameCreateInput): Promise<{ success: boolean; game: BkGame }> => {

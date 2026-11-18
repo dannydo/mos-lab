@@ -78,4 +78,35 @@ describe('BkGameEditModal', () => {
       expect(handleClose).toHaveBeenCalled();
     });
   });
+
+  it('allows applying and saving teamBookingDoneBonusConfig when editing a game', async () => {
+    const handleSuccess = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <BkGameEditModal open={true} game={mockGame} onClose={handleClose} onSuccess={handleSuccess} />
+    );
+
+    const presetBtn = screen.getByTestId('apply-wings-booking-race-preset-btn');
+    fireEvent.click(presetBtn);
+
+    const saveBtn = screen.getByRole('button', { name: /Lưu Thay Đổi/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(apiMocks.updateGame).toHaveBeenCalledTimes(1);
+      const [gameId, payload] = apiMocks.updateGame.mock.calls[0];
+      expect(gameId).toBe(3);
+      expect(payload.teamBookingDoneBonusConfig).toEqual(
+        expect.objectContaining({
+          enabled: true,
+          tiers: expect.arrayContaining([
+            expect.objectContaining({ minBookings: 30, bonusPerDone: 5000 }),
+            expect.objectContaining({ minBookings: 40, bonusPerDone: 7000 }),
+            expect.objectContaining({ minBookings: 50, bonusPerDone: 10000 }),
+          ]),
+        })
+      );
+    });
+  });
 });

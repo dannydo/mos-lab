@@ -257,4 +257,131 @@ describe('BkGameTab', () => {
     expect(screen.getAllByText('+75.000 đ').length).toBeGreaterThan(0);
     expect(screen.getByText('Thứ Ba, 01/09')).toBeInTheDocument();
   });
+
+  it('renders Team-Booking Done Bonus panel and leaderboard columns when enabled on active game', async () => {
+    const mockRaceGame = {
+      id: 78,
+      title: 'WINGS BOOKING RACE',
+      gameType: 'INDIVIDUAL',
+      metricType: 'DONE',
+      status: 'ACTIVE',
+      startDate: '2026-11-19T00:00:00Z',
+      endDate: '2026-11-30T23:59:59Z',
+      targetScore: 50,
+      rewardPool: 500000,
+      entryFee: 0,
+      teamBookingDoneBonusConfig: {
+        enabled: true,
+        tiers: [
+          { id: 't1', minBookings: 30, bonusPerDone: 5000 },
+          { id: 't2', minBookings: 40, bonusPerDone: 7000 },
+          { id: 't3', minBookings: 50, bonusPerDone: 10000 },
+        ],
+      },
+    };
+
+    apiMocks.getGames.mockResolvedValue({ games: [mockRaceGame] });
+    apiMocks.getBookingLeaderboard.mockResolvedValue({
+      leaderboard: [
+        {
+          rank: 1,
+          bookerId: 50670,
+          displayName: 'Ngọc Điệp',
+          avatar: null,
+          store: 'ALL',
+          totalCreatedBookings: 20,
+          doneBookings: 6,
+          missedBookings: 0,
+          conversionRate: 30,
+          callCount: 15,
+          pickupCount: 10,
+          pickupRate: 66.7,
+        },
+      ],
+      summary: {
+        totalBookings: 20,
+        doneBookings: 6,
+        missedBookings: 0,
+        conversionRate: 30,
+        totalCalls: 15,
+        totalPickups: 10,
+      },
+    });
+    apiMocks.getGameDetail.mockResolvedValue({
+      game: mockRaceGame,
+      scoringRule: {
+        metricType: 'DONE',
+        label: 'Done',
+        formula: '1 Đơn hoàn thành = 1 Điểm',
+        unit: 'Đơn Done',
+        description: 'Done',
+        dataSource: 'order',
+      },
+      leaderboard: [
+        {
+          id: 1,
+          gameId: 78,
+          staffId: 50670,
+          staffName: 'Ngọc Điệp',
+          score: 6,
+          rank: 1,
+          status: 'ACTIVE',
+          teamBookingDoneCount: 4,
+          totalTeamBookingDoneBonus: 28000,
+        },
+      ],
+      teamBookingDoneBonusSummary: {
+        config: mockRaceGame.teamBookingDoneBonusConfig,
+        effectiveTimeWindow: null,
+        todayDate: '2026-11-20',
+        todayTeamBookings: 44,
+        todayTierLabel: '40–49 Booking',
+        todayBonusPerDone: 7000,
+        todaySingleDone: 4,
+        todayTotalBonus: 28000,
+        nextTierMinBookings: 50,
+        nextTierBonusPerDone: 10000,
+        bookingsToNextTier: 6,
+        totalSingleDone: 4,
+        totalComboDoneExcluded: 1,
+        totalBonus: 28000,
+        staffTotals: [{ staffId: 50670, staffName: 'Ngọc Điệp', singleDoneCount: 4, totalBonus: 28000 }],
+        dailyResults: [
+          {
+            date: '2026-11-20',
+            dateLabel: 'Thứ Sáu, 20/11',
+            teamBookings: 44,
+            tierLabel: '40–49 Booking',
+            matchedMinBookings: 40,
+            bonusPerDone: 7000,
+            totalSingleDone: 4,
+            totalComboDoneExcluded: 1,
+            totalDayBonus: 28000,
+            isToday: true,
+            isFuture: false,
+            staffBreakdown: [
+              {
+                staffId: 50670,
+                staffName: 'Ngọc Điệp',
+                singleDoneCount: 4,
+                comboDoneExcludedCount: 1,
+                bonusPerDone: 7000,
+                totalBonus: 28000,
+              },
+            ],
+          },
+        ],
+        records: [],
+      },
+      stats: { totalScore: 6, totalParticipants: 1, totalTeams: 0, leaderScore: 6, timeRemainingSeconds: 3600, isExpired: false },
+    });
+
+    render(<BkGameTab dateRange={[dayjs('2026-11-19'), dayjs('2026-11-30')]} comparisonMode="month" />);
+
+    expect(await screen.findByText('Thưởng Done Khách Lẻ Theo Mốc Booking Team')).toBeInTheDocument();
+    expect(screen.getByText('44 Booking')).toBeInTheDocument();
+    expect(screen.getByText(/Mốc đạt: 40–49 Booking/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Chi Tiết Thưởng Mốc BK/i })).toBeInTheDocument();
+    expect(screen.getAllByText('+28.000 đ').length).toBeGreaterThan(0);
+  });
 });

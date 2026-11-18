@@ -14,6 +14,8 @@ import BkGameCreateModal from './BkGameCreateModal';
 import BkGameEditModal from './BkGameEditModal';
 import BkGameFinalizeModal from './BkGameFinalizeModal';
 import BkDoneBonusDetailsDrawer from './BkDoneBonusDetailsDrawer';
+import BkTeamBookingDoneBonusPanel from './BkTeamBookingDoneBonusPanel';
+import BkTeamBookingDoneBonusDetailsDrawer from './BkTeamBookingDoneBonusDetailsDrawer';
 
 type GameMetric = 'calls' | 'pickups' | 'bookings' | 'done';
 
@@ -62,6 +64,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
   const [doneBonusDrawerOpen, setDoneBonusDrawerOpen] = useState(false);
   const [selectedBonusStaffId, setSelectedBonusStaffId] = useState<number | null>(null);
+  const [teamBookingDoneDrawerOpen, setTeamBookingDoneDrawerOpen] = useState(false);
+  const [selectedTeamBkBonusStaffId, setSelectedTeamBkBonusStaffId] = useState<number | null>(null);
+  const [selectedTeamBkBonusDate, setSelectedTeamBkBonusDate] = useState<string | null>(null);
 
   // Countdown timer in seconds
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
@@ -243,6 +248,41 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
     return map;
   }, [gameDetail]);
 
+  const teamBookingDoneBonusSummary = gameDetail?.teamBookingDoneBonusSummary || null;
+  const hasTeamBookingDoneBonus = Boolean(
+    teamBookingDoneBonusSummary && teamBookingDoneBonusSummary.config?.enabled
+  );
+
+  const staffTeamBookingDoneBonusMap = useMemo(() => {
+    const map = new Map<number, { singleDoneCount: number; totalBonus: number }>();
+    if (teamBookingDoneBonusSummary?.staffTotals) {
+      teamBookingDoneBonusSummary.staffTotals.forEach((s) => {
+        map.set(s.staffId, { singleDoneCount: s.singleDoneCount, totalBonus: s.totalBonus });
+      });
+    }
+    if (gameDetail?.leaderboard) {
+      gameDetail.leaderboard.forEach((p) => {
+        if (p.staffId && !map.has(p.staffId)) {
+          map.set(p.staffId, {
+            singleDoneCount: p.teamBookingDoneCount || 0,
+            totalBonus: p.totalTeamBookingDoneBonus || 0,
+          });
+        }
+      });
+    }
+    return map;
+  }, [teamBookingDoneBonusSummary, gameDetail]);
+
+  const openTeamBookingDoneDrawer = useCallback((staffId: number | null = null, rewardDate: string | null = null) => {
+    setSelectedTeamBkBonusStaffId(staffId);
+    setSelectedTeamBkBonusDate(rewardDate);
+    setTeamBookingDoneDrawerOpen(true);
+  }, []);
+
+  const heroBonusExtraCount = (hasDoneBonusConfig ? 1 : 0) + (hasTeamBookingDoneBonus ? 1 : 0);
+  const heroGridColsClass =
+    heroBonusExtraCount >= 2 ? 'lg:grid-cols-6' : heroBonusExtraCount === 1 ? 'lg:grid-cols-5' : 'md:grid-cols-4';
+
   return (
     <div className="space-y-4">
       {/* Informational Alert if no active campaign is running */}
@@ -325,6 +365,16 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               className="font-medium !text-emerald-700 dark:!text-emerald-300 !border-emerald-300 dark:!border-emerald-700 hover:!bg-emerald-50 dark:hover:!bg-emerald-950/30"
             >
               Chi Tiết Bonus/Done
+            </Button>
+          )}
+
+          {activeGame && hasTeamBookingDoneBonus && (
+            <Button
+              icon={<AppIcon icon={Trophy} size="sm" className="text-amber-500" />}
+              onClick={() => openTeamBookingDoneDrawer(null, null)}
+              className="font-medium !text-amber-700 dark:!text-amber-300 !border-amber-300 dark:!border-amber-700 hover:!bg-amber-50 dark:hover:!bg-amber-950/30"
+            >
+              Chi Tiết Thưởng Mốc BK
             </Button>
           )}
 
@@ -452,11 +502,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
             {/* Summary Stat Cards */}
             {activeGame.gameType === 'TEAM_KPI' && gameDetail?.teamKpiSummary ? (
-              <div
-                className={`grid grid-cols-2 ${
-                  hasDoneBonusConfig ? 'lg:grid-cols-5' : 'md:grid-cols-4'
-                } gap-3 mt-6 pt-6 border-t border-white/10`}
-              >
+              <div className={`grid grid-cols-2 ${heroGridColsClass} gap-3 mt-6 pt-6 border-t border-white/10`}>
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
                     <span>Mục Tiêu Hôm Nay</span>
@@ -510,6 +556,30 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                   </div>
                 )}
 
+                {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
+                  <div className="bg-amber-950/40 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/30">
+                    <div className="text-xs text-amber-300 uppercase font-medium flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <AppIcon icon={Trophy} size="sm" className="text-amber-400" />
+                        <span>Thưởng Mốc BK</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openTeamBookingDoneDrawer(null, null)}
+                        className="text-[10px] text-amber-300 hover:text-amber-100 underline decoration-dotted cursor-pointer"
+                      >
+                        Đối soát
+                      </button>
+                    </div>
+                    <div className="text-xl font-bold mt-1 text-amber-300 tabular-nums">
+                      +{teamBookingDoneBonusSummary.totalBonus.toLocaleString('vi-VN')} đ
+                    </div>
+                    <div className="text-xs text-slate-300 mt-0.5 tabular-nums">
+                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK · {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium">Tỷ Lệ Đạt KPI</div>
                   <div className="text-xl font-bold mt-1 text-white tabular-nums">
@@ -532,11 +602,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 </div>
               </div>
             ) : (
-              <div
-                className={`grid grid-cols-2 ${
-                  hasDoneBonusConfig ? 'lg:grid-cols-5' : 'md:grid-cols-4'
-                } gap-3 mt-6 pt-6 border-t border-white/10`}
-              >
+              <div className={`grid grid-cols-2 ${heroGridColsClass} gap-3 mt-6 pt-6 border-t border-white/10`}>
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
                     <span>Mục Tiêu KPI</span>
@@ -587,6 +653,30 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     </div>
                     <div className="text-xs text-slate-300 mt-0.5">
                       {totalDoneBonusBookings} đơn Done đạt thưởng
+                    </div>
+                  </div>
+                )}
+
+                {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
+                  <div className="bg-amber-950/40 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/30">
+                    <div className="text-xs text-amber-300 uppercase font-medium flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <AppIcon icon={Trophy} size="sm" className="text-amber-400" />
+                        <span>Thưởng Mốc BK</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openTeamBookingDoneDrawer(null, null)}
+                        className="text-[10px] text-amber-300 hover:text-amber-100 underline decoration-dotted cursor-pointer"
+                      >
+                        Đối soát
+                      </button>
+                    </div>
+                    <div className="text-xl font-bold mt-1 text-amber-300 tabular-nums">
+                      +{teamBookingDoneBonusSummary.totalBonus.toLocaleString('vi-VN')} đ
+                    </div>
+                    <div className="text-xs text-slate-300 mt-0.5 tabular-nums">
+                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK · {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
                     </div>
                   </div>
                 )}
@@ -1115,6 +1205,13 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
             </div>
           </div>
           )}
+
+          {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
+            <BkTeamBookingDoneBonusPanel
+              summary={teamBookingDoneBonusSummary}
+              onOpenDetailsDrawer={openTeamBookingDoneDrawer}
+            />
+          )}
         </div>
       )}
 
@@ -1220,6 +1317,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               done: 'secondary',
               doneBonusCount: 'secondary',
               totalDoneBonus: 'primary',
+              teamBookingDoneCount: 'secondary',
+              totalTeamBookingDoneBonus: 'primary',
             }}
             columns={[
               {
@@ -1313,6 +1412,47 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     },
                   ]
                 : []),
+              ...(hasTeamBookingDoneBonus
+                ? [
+                    {
+                      title: 'Done Lẻ (Mốc BK)',
+                      key: 'teamBookingDoneCount',
+                      align: 'right' as const,
+                      render: (_: unknown, record: BkBookingLeaderboardEntry) => {
+                        const stat = staffTeamBookingDoneBonusMap.get(record.bookerId) || {
+                          singleDoneCount: 0,
+                          totalBonus: 0,
+                        };
+                        return (
+                          <span className="tabular-nums font-semibold text-amber-600 dark:text-amber-400">
+                            {stat.singleDoneCount}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      title: 'Thưởng Mốc BK',
+                      key: 'totalTeamBookingDoneBonus',
+                      align: 'right' as const,
+                      render: (_: unknown, record: BkBookingLeaderboardEntry) => {
+                        const stat = staffTeamBookingDoneBonusMap.get(record.bookerId) || {
+                          singleDoneCount: 0,
+                          totalBonus: 0,
+                        };
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => openTeamBookingDoneDrawer(record.bookerId, null)}
+                            className="inline-flex items-center gap-1 font-bold text-xs text-amber-600 dark:text-amber-400 hover:underline cursor-pointer tabular-nums"
+                            title="Bấm để xem chi tiết đơn Done khách lẻ được thưởng theo mốc Booking Team"
+                          >
+                            <span>+{stat.totalBonus.toLocaleString('vi-VN')} đ</span>
+                          </button>
+                        );
+                      },
+                    },
+                  ]
+                : []),
             ]}
           />
         )}
@@ -1361,6 +1501,17 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
         onClose={() => setDoneBonusDrawerOpen(false)}
         gameDetail={gameDetail}
         initialStaffId={selectedBonusStaffId}
+      />
+
+      {/* DRAWER: TEAM-BOOKING DONE BONUS DETAILS AUDIT (MOS-BUG-247) */}
+      <BkTeamBookingDoneBonusDetailsDrawer
+        open={teamBookingDoneDrawerOpen}
+        onClose={() => setTeamBookingDoneDrawerOpen(false)}
+        gameTitle={activeGame?.title}
+        gameId={activeGame?.id}
+        summary={teamBookingDoneBonusSummary}
+        initialStaffId={selectedTeamBkBonusStaffId}
+        initialRewardDate={selectedTeamBkBonusDate}
       />
     </div>
   );

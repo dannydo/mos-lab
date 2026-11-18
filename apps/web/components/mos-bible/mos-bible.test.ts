@@ -67,6 +67,7 @@ describe('Kinh Thánh mOS contextual registry', () => {
   it('suggests operational commandments on corresponding routes', () => {
     const bkIds = getMosBibleCommandmentsForPath('/dashboard/bk').map((item) => item.id);
     expect(bkIds).toContain('BK-004');
+    expect(bkIds).toContain('BK-007');
 
     const cvIds = getMosBibleCommandmentsForPath('/dashboard/cv').map((item) => item.id);
     expect(cvIds).toContain('CV-002');

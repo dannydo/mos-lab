@@ -338,6 +338,41 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'BK-007',
+    book: 'REWARDS',
+    title: 'Thưởng Done khách lẻ theo mốc Booking Team trong Game BK',
+    summary:
+      'Trong Game BK có bật cơ chế này, tổng Booking hợp lệ của toàn Team trong ngày quyết định mức thưởng trên mỗi đơn Done khách lẻ thực tế hoàn thành cùng ngày cho Booker tạo lịch.',
+    commandments: [
+      'Các mốc Booking Team/ngày và mức thưởng/Done được cấu hình trực tiếp trên giao diện Tạo/Sửa Game BK, không hard-code.',
+      'Booking Team tính theo thời điểm tạo đơn (order.date_created) trong thời gian và khung giờ Game đã cấu hình, kế thừa quy tắc Booking hợp lệ hiện có (loại trừ Cancelled, tuân thủ kênh tiếp nhận của Game).',
+      'Mỗi ngày chốt một mốc thưởng duy nhất theo tổng Booking Team đạt được trong ngày đó.',
+      'Chỉ thưởng cho đơn Done khách lẻ thực tế hoàn thành (order_state = Completed, phân định Khách lẻ theo Điều răn BK-005 và ComboRecognitionService) trong cùng ngày Team đạt mốc; tuyệt đối không tính Done khách Combo.',
+      'Ghi nhận Done và tiền thưởng cho nhân viên tạo Booking (order.created_staff_id); mỗi Done hợp lệ chỉ được thưởng tối đa một lần trong Game.',
+      'Công thức: Thưởng cá nhân/ngày = Done khách lẻ hợp lệ trong ngày × Mức thưởng theo mốc Booking Team ngày đó.',
+      'Khoản thưởng này độc lập hoàn toàn với lương thưởng Telesales và quỹ thưởng/phạt Team KPI, và không làm thay đổi các Game đang vận hành không bật cấu hình.',
+    ],
+    rationale:
+      'Gắn chặt nỗ lực tạo lịch tập thể của cả Team theo ngày với chất lượng chuyển đổi khách lẻ đến làm dịch vụ thực tế, tạo động lực kép cho WINGS BOOKING RACE.',
+    examples: [
+      'Cấu hình mốc: Dưới 30 Booking = 0đ/Done; 30–39 = 5.000đ/Done; 40–49 = 7.000đ/Done; Từ 50 = 10.000đ/Done. Ngày 20/11 cả Team tạo được 42 Booking hợp lệ -> chốt mức 7.000đ/Done. Booker A có 4 Done khách lẻ và 2 Done khách Combo hoàn thành ngày 20/11 -> được tính 4 × 7.000đ = 28.000đ.',
+    ],
+    tags: ['Game BK', 'WINGS BOOKING RACE', 'Booking Team', 'Done khách lẻ', 'Mốc thưởng', 'Khách lẻ'],
+    routeScopes: ['/dashboard/bk', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-18',
+    sources: [
+      { label: 'Ticket yêu cầu', reference: 'MOS-BUG-247' },
+      { label: 'Shared Game BK Types', reference: 'packages/shared/src/types/bk-game.ts' },
+      {
+        label: 'Team-Booking Done Bonus Engine',
+        reference: 'apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts',
+      },
+      { label: 'Nhận diện Khách lẻ vs Combo Live', reference: 'packages/shared/src/business-rules/mos-bible.ts · BK-005' },
+    ],
+  },
+  {
     id: 'OPS-001',
     book: 'SERVICE',
     title: 'Vòng đời đơn có chủ nhân rõ ràng',
