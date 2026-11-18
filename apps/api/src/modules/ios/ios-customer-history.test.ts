@@ -13,11 +13,14 @@ function createMockPool(responses: {
   contact?: Record<string, unknown>[];
   balance?: Record<string, unknown>[];
   orders?: Record<string, unknown>[];
+  reportOrders?: Record<string, unknown>[];
   payments?: Record<string, unknown>[];
   services?: Record<string, unknown>[];
+  reportServices?: Record<string, unknown>[];
   combos?: Record<string, unknown>[];
   products?: Record<string, unknown>[];
   diamondTxns?: Record<string, unknown>[];
+  throwOnComboQuery?: boolean;
 }): mysql.Pool {
   return {
     async query(sql: string) {
@@ -26,9 +29,14 @@ function createMockPool(responses: {
       if (sql.includes('FROM user_balance_transaction ubt')) return [responses.diamondTxns || [], []];
       if (sql.includes('FROM user_balance ')) return [responses.balance || [], []];
       if (sql.includes('FROM `order` o')) return [responses.orders || [], []];
+      if (sql.includes('FROM report_order ro')) return [responses.reportOrders || [], []];
       if (sql.includes('FROM order_payment')) return [responses.payments || [], []];
       if (sql.includes('FROM order_service os')) return [responses.services || [], []];
-      if (sql.includes('FROM order_service_combo osc')) return [responses.combos || [], []];
+      if (sql.includes('FROM report_order_service ros')) return [responses.reportServices || [], []];
+      if (sql.includes('FROM order_service_combo osc')) {
+        if (responses.throwOnComboQuery) throw new Error('Simulated secondary table error');
+        return [responses.combos || [], []];
+      }
       if (sql.includes('FROM order_product op')) return [responses.products || [], []];
       return [[], []];
     },
@@ -299,4 +307,82 @@ test('CVL privacy guard masks phone, allows Đầu tua or own served customer, a
   assert.equal(allowedRes.statusCode, 200);
   assert.notEqual(allowedRes.payload.customerPhone, '0933936746');
   assert.ok(allowedRes.payload.customerPhone.includes('*'));
+});
+
+test('Merges archived report_order & report_order_service lifetime history and tolerates secondary query failure', async () => {
+  const adminActor: IosAuthContext = {
+    id: 1,
+    legacyStaffId: 13783,
+    role: 'super_admin',
+    careerTier: 'ADMIN',
+  };
+
+  const pool = createMockPool({
+    ...SAMPLE_MOCK_DB,
+    throwOnComboQuery: true,
+    reportOrders: [
+      {
+        order_id: 6100,
+        order_state: 'Completed',
+        booking_date_start: '2025-05-16T06:30:00.000Z',
+        date_created: '2025-05-16T06:30:00.000Z',
+        total_price: 660000,
+        booking_note: null,
+        client_store_id: 6,
+        is_debt: 0,
+        order_assigned_staff_id: 0,
+        branch_name: 'De Tham',
+        paid_cash_amount: 612800,
+        paid_credit_card_amount: 0,
+        paid_bank_transfer_amount: 0,
+        paid_credit_amount: 100,
+        discount_amount: 100000,
+        prepaid_amount: 0,
+        debt_amount: 0,
+        tip_amount: 0,
+      },
+    ],
+    reportServices: [
+      {
+        os_id: 77100,
+        order_id: 6100,
+        service_id: 55,
+        service_group: 'Lashes',
+        attribute_group_key: null,
+        service_type: 'Normal',
+        user_service_type: 'Normal',
+        user_service_balance_transaction_id: null,
+        total_price: 660000,
+        assigned_staff_id: 14002,
+        check_in_staff_id: 14003,
+        check_out_staff_id: null,
+        service_name: 'Ultralight 660 - Normal',
+        assigned_staff_name: 'Diễm Hương',
+        assigned_staff_avatar: null,
+        check_in_staff_name: 'Mi Na',
+        check_in_staff_avatar: null,
+        check_out_staff_name: null,
+        check_out_staff_avatar: null,
+      },
+    ],
+  });
+
+  const result = await getIosCustomerHistory(
+    adminActor,
+    33732,
+    { bookingId: 9001, now: new Date('2026-11-16T07:00:00.000Z') },
+    { getPool: () => pool }
+  );
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(result.payload.success, true);
+  assert.equal(result.payload.visits.length, 5);
+  assert.equal(result.payload.summary.completedVisits, 3);
+  assert.equal(result.payload.summary.totalSpent, 712800 + 612800);
+  const archivedVisit = result.payload.visits.find((v) => v.orderId === 6100);
+  assert.ok(archivedVisit);
+  assert.equal(archivedVisit.serviceName, 'Ultralight 660 - Normal');
+  assert.equal(archivedVisit.paidAmount, 612800);
+  assert.equal(archivedVisit.paymentMethodLabel, 'Tiền mặt');
+  assert.deepEqual(archivedVisit.staffNames, ['Diễm Hương', 'Mi Na']);
 });
