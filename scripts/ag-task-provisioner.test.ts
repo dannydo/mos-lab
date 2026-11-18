@@ -507,6 +507,7 @@ test('runPlanWatcher sends codebase paths, reporter directives, and multimodal s
     },
   };
 
+  const geminiModelsRequested: string[] = [];
   const fetcher: typeof fetch = async (input, init) => {
     const url = String(input);
     if (url.endsWith('/request-classifier/inbox-plans/claim')) {
@@ -525,6 +526,10 @@ test('runPlanWatcher sends codebase paths, reporter directives, and multimodal s
       });
     }
     if (url.includes('generativelanguage.googleapis.com')) {
+      geminiModelsRequested.push(url);
+      if (url.includes('gemini-3.8-flash')) {
+        return new Response(JSON.stringify({ error: { code: 503, message: 'High demand' } }), { status: 503 });
+      }
       const body = JSON.parse(String(init?.body || '{}')) as {
         contents?: Array<{ parts?: typeof geminiParts }>;
       };
@@ -572,10 +577,71 @@ test('runPlanWatcher sends codebase paths, reporter directives, and multimodal s
   });
 
   assert.equal(result, 'PLANNED');
+  assert.ok(geminiModelsRequested.some((u) => u.includes('gemini-3.8-flash')));
+  assert.ok(geminiModelsRequested.some((u) => u.includes('gemini-3.1-flash-lite')));
   assert.equal(geminiParts.length, 2);
   assert.match(geminiParts[0]?.text || '', /apps\/web\/app\/dashboard\/bug-reports\/page\.tsx/);
   assert.match(geminiParts[0]?.text || '', /Kiểm tra ảnh đính kèm/);
   assert.equal(geminiParts[1]?.inlineData?.mimeType, 'image/png');
   assert.equal(completedPayload?.result?.action, 'POST_PLAN');
   assert.equal(completedPayload?.result?.plan?.scope, 'apps/web/app/dashboard/bug-reports/page.tsx');
+});
+
+test('runPlanWatcher forwards discovered codeFiles and context to agPlanner fallback when Gemini is unavailable', async () => {
+  let receivedCodeFiles: string[] = [];
+  let completedPayload: any = null;
+
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/request-classifier/inbox-plans/claim')) {
+      return jsonResponse({
+        id: 'plan-job-ag-1',
+        ticketKey: 'MOS-BUG-241',
+        ticketId: 241,
+        reportId: 241,
+        leaseToken: 'lease-ag-1',
+        eventKind: 'NEW_REPORT',
+        context: {
+          requestType: 'BUG',
+          title: 'Lỗi tải trang bug-reports',
+          description: 'Trang bug-reports hiển thị sai badge',
+          sourcePath: '/dashboard/bug-reports',
+          clarificationSummary: null,
+          businessContext: null,
+          reporterMessages: ['Ưu tiên sửa trong hôm nay'],
+          reopen: null,
+        },
+      });
+    }
+    if (url.includes('/complete')) {
+      completedPayload = JSON.parse(String(init?.body || '{}'));
+      return jsonResponse({ success: true });
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const result = await runPlanWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    geminiApiKey: '',
+    provisionerId: 'danny-win-ag',
+    repository: process.cwd(),
+    fetch: fetcher,
+    agPlanner: async (_job, ctx) => {
+      receivedCodeFiles = ctx?.codeFiles || [];
+      return {
+        evidence: 'Xác minh BugReportDetailDrawer.tsx',
+        expectedOutcome: 'Hiển thị badge chuẩn',
+        scope: 'apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx',
+        steps: ['Kiểm tra BugReportDetailDrawer.tsx'],
+        verification: 'pnpm verify:quick',
+        risksAndRollback: 'Low',
+        approvalRequest: 'Duyệt sửa',
+      };
+    },
+  });
+
+  assert.equal(result, 'PLANNED');
+  assert.ok(receivedCodeFiles.some((f) => f.includes('bug-reports')));
+  assert.match(completedPayload?.result?.plan?.evidence || '', /<!-- agent-model: AG -->/);
 });

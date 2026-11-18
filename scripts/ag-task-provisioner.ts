@@ -15,10 +15,11 @@ import {
   readSync,
   readdirSync,
   renameSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import type {
@@ -474,7 +475,7 @@ export async function detectAntigravityLsEnv(): Promise<Record<string, string>> 
     let csrfToken = matchCsrf ? matchCsrf[1] : '';
 
     const lsofCmd = existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : 'lsof';
-    const lsof = execSync(`${lsofCmd} -nP -p ${pid} | grep LISTEN`, {
+    const lsof = execSync(`${lsofCmd} -nP -p ${pid} 2>/dev/null | grep LISTEN || true`, {
       encoding: 'utf8',
       env: { ...process.env, PATH: `${process.env.PATH || ''}:/usr/sbin:/sbin:/usr/bin:/bin` },
     });
@@ -1194,8 +1195,7 @@ export async function callGeminiClarifier(
   job: InboxFollowUpWorkerJob,
   fetcher: typeof fetch = fetch
 ): Promise<{ decision: 'READY_FOR_TRIAGE' | 'ASK_REPORTER'; note: string; question?: string } | null> {
-  const model = 'gemini-3.1-pro-preview';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const models = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
 
   const prompt = `Bạn là trợ lý kỹ thuật AI cấp cao của hệ thống mOS (Wings Lashes CRM), tích hợp trực tiếp trong IDE Antigravity.
 Nhiệm vụ: Phân tích báo cáo lỗi và làm rõ yêu cầu (Clarification Review) để người báo (nhân viên vận hành) và quản lý (Danny) hiểu rõ bản chất vấn đề.
@@ -1225,25 +1225,37 @@ Trả về JSON thuần túy (không dùng markdown code blocks):
   "question": "Câu hỏi gửi người báo nếu decision là ASK_REPORTER (ngược lại để null)"
 }`;
 
-  const res = await fetcher(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-    }),
-  });
+  let lastError: unknown = null;
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    try {
+      const res = await fetcher(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
 
-  if (!res.ok) {
-    throw new Error(`Gemini API HTTP ${res.status}: ${await res.text()}`);
+      if (!res.ok) {
+        lastError = new Error(`Gemini API ${model} HTTP ${res.status}: ${await res.text()}`);
+        continue;
+      }
+
+      const data = (await res.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      };
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) return null;
+      return JSON.parse(text);
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  const data = (await res.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) return null;
-  return JSON.parse(text);
+  throw lastError || new Error('All Gemini models failed for clarification');
 }
 
 export async function callAgClarifier(
@@ -1577,13 +1589,13 @@ export async function gatherTicketCodeAndMediaContext(params: {
   return { codeFiles, mediaParts, imageDescriptions, extraComments };
 }
 
-export async function callGeminiPlanner(
-  apiKey: string,
+const GEMINI_ACTIVE_FLASH_MODELS = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'] as const;
+
+export function buildTicketPlanningPrompt(
   job: InboxPlanWorkerJob,
-  fetcher: typeof fetch = fetch,
-  contextData?: TicketPlanCodeAndMediaContext
-): Promise<{ plan: InboxPlanDraft; modelUsed: string } | null> {
-  const models = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+  contextData?: TicketPlanCodeAndMediaContext,
+  options?: { engineLabel?: string; savedImagePaths?: string[]; speedConstraints?: string }
+): string {
   const allDirectives = Array.from(
     new Set([...(job.context.reporterMessages || []), ...(contextData?.extraComments || [])])
   );
@@ -1591,11 +1603,13 @@ export async function callGeminiPlanner(
   const codeFilesSection = contextData?.codeFiles?.length
     ? `\n- Các file mã nguồn thực tế liên quan trong repo:\n${contextData.codeFiles.map((f) => `  * ${f}`).join('\n')}`
     : '';
-  const imagesSection = contextData?.imageDescriptions?.length
-    ? `\n- Ảnh chụp màn hình đính kèm (${contextData.imageDescriptions.join(', ')}): ĐÃ ĐÍNH KÈM TRỰC TIẾP BÊN DƯỚI — BẮT BUỘC quan sát kỹ ảnh để mô tả chính xác phần UI/lỗi người báo chỉ vào.`
-    : '';
+  const imagesSection = options?.savedImagePaths?.length
+    ? `\n- Ảnh chụp màn hình đính kèm đã tải sẵn (dùng \`read_file\` nếu cần xem chi tiết UI):\n${options.savedImagePaths.map((p, idx) => `  * ${contextData?.imageDescriptions?.[idx] || `screenshot-${idx + 1}`}: ${p}`).join('\n')}`
+    : contextData?.imageDescriptions?.length
+      ? `\n- Ảnh chụp màn hình đính kèm (${contextData.imageDescriptions.join(', ')}): ĐÃ ĐÍNH KÈM TRỰC TIẾP BÊN DƯỚI — BẮT BUỘC quan sát kỹ ảnh để mô tả chính xác phần UI/lỗi người báo chỉ vào.`
+      : '';
 
-  const prompt = `Bạn là kỹ sư phần mềm AI cấp cao của mOS (Wings Lashes CRM), tích hợp trong IDE Antigravity.
+  return `Bạn là kỹ sư phần mềm ${options?.engineLabel || 'AI'} cấp cao của hệ thống mOS (Wings Lashes CRM), tích hợp trong IDE Antigravity.
 Nhiệm vụ: Đọc kỹ tiêu đề, mô tả, chỉ đạo của Danny/nhân viên, danh sách file mã nguồn thực tế và ảnh chụp màn hình đính kèm (nếu có) để lập kế hoạch triển khai (Implementation Plan) CỤ THỂ, CHÍNH XÁC cho ticket sau:
 - Mã ticket: ${job.ticketKey} (ID: ${job.ticketId})
 - Loại yêu cầu: ${job.context.requestType}
@@ -1608,12 +1622,13 @@ ${job.context.reopen ? `- Lý do reopen: "${job.context.reopen.reason}"` : ''}
 ${hasReporterFeedback ? `- BẮT BUỘC TUÂN THỦ CHỈ ĐẠO / PHẢN HỒI TỪ DANNY & NHÂN VIÊN:\n${allDirectives.map((m) => `  * "${m}"`).join('\n')}` : ''}
 
 QUY TẮC BẮT BUỘC:
-1. TUYỆT ĐỐI KHÔNG dùng văn mẫu chung chung ("Phân tích logic API và giao diện tương ứng", "Định vị chính xác điểm lỗi", "Xử lý triệt để yêu cầu"). Phải nêu đích danh tên component/endpoint/logic nghi ngờ từ màn hình ${job.context.sourcePath || 'liên quan'} và nội dung quan sát được từ ảnh chụp (nếu có ảnh).
-2. Chỉ liệt kê các đường dẫn file có thật trong danh sách trên hoặc thư mục đã xác nhận ở màn hình tương ứng; không bịa tên file không chắc chắn.
+1. TUYỆT ĐỐI KHÔNG dùng văn mẫu chung chung ("Phân tích logic API và giao diện tương ứng", "Định vị chính xác điểm lỗi", "Xử lý triệt để yêu cầu", "Triển khai chỉnh sửa tối thiểu"). Phải nêu đích danh tên component/endpoint/logic nghi ngờ từ màn hình ${job.context.sourcePath || 'liên quan'} và nội dung quan sát được từ ảnh chụp (nếu có ảnh).
+2. Chỉ liệt kê các đường dẫn file có thật trong danh sách trên hoặc đã xác minh trong repo (apps/web dùng Next.js 16 + Ant Design 5, apps/api dùng Fastify 5 + Prisma); không bịa tên file không chắc chắn.
 3. TUYỆT ĐỐI KHÔNG dùng từ "thợ" hay "CV+"/"CV++" trong bất kỳ câu chữ nào (dùng Chuyên Viên, CV🪶 hoặc CVL).
 ${hasReporterFeedback ? '4. QUY TẮC TỐI CAO: Danny / người báo đã có comment chỉ đạo hoặc lý do reopen trực tiếp. Kế hoạch PHẢI bám sát 100% phản hồi đó.' : ''}
+${options?.speedConstraints ? `\n${options.speedConstraints}` : ''}
 
-Trả về JSON thuần túy theo đúng schema sau:
+Chỉ trả về JSON thuần túy theo đúng schema sau:
 {
   "evidence": "Mô tả cụ thể bằng chứng từ ảnh chụp / mô tả / component hoặc API tại ${job.context.sourcePath || 'module liên quan'}",
   "expectedOutcome": "Hành vi chính xác của hệ thống sau khi sửa xong",
@@ -1623,11 +1638,19 @@ Trả về JSON thuần túy theo đúng schema sau:
   "risksAndRollback": "Rủi ro tiềm ẩn cụ thể và cách rollback an toàn",
   "approvalRequest": "Tóm tắt rõ giải pháp cụ thể để Danny bấm Duyệt triển khai"
 }`;
+}
 
+export async function callGeminiPlanner(
+  apiKey: string,
+  job: InboxPlanWorkerJob,
+  fetcher: typeof fetch = fetch,
+  contextData?: TicketPlanCodeAndMediaContext
+): Promise<{ plan: InboxPlanDraft; modelUsed: string } | null> {
+  const prompt = buildTicketPlanningPrompt(job, contextData, { engineLabel: 'AI' });
   const parts: Array<{ text: string } | GeminiInlineImagePart> = [{ text: prompt }, ...(contextData?.mediaParts || [])];
 
   let lastError: unknown = null;
-  for (const model of models) {
+  for (const model of GEMINI_ACTIVE_FLASH_MODELS) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     try {
       const res = await fetcher(url, {
@@ -1637,7 +1660,7 @@ Trả về JSON thuần túy theo đúng schema sau:
           contents: [{ role: 'user', parts }],
           generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
         }),
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(20_000),
       });
 
       if (!res.ok) {
@@ -1658,42 +1681,41 @@ Trả về JSON thuần túy theo đúng schema sau:
   throw lastError || new Error('All Gemini models failed for planning');
 }
 
-export async function callAgPlanner(job: InboxPlanWorkerJob): Promise<InboxPlanDraft | null> {
-  const hasReporterFeedback = Boolean(job.context.reporterMessages?.length);
-  const prompt = `Bạn là kỹ sư phần mềm AI Agent (AG) cấp cao của hệ thống mOS (Wings Lashes CRM), tích hợp trong IDE Antigravity.
-Nhiệm vụ: Lập kế hoạch triển khai (Implementation Plan) CỤ THỂ, CHÍNH XÁC cho ticket sau.
-TUYỆT ĐỐI KHÔNG DÙNG CÁC CÂU CHUNG CHUNG như "Xử lý triệt để yêu cầu", "Rà soát mã nguồn", "Triển khai chỉnh sửa tối thiểu". Kế hoạch phải nêu rõ tính năng, lỗi kỹ thuật cần khắc phục và module bị ảnh hưởng.
-
-Thông tin ticket:
-- Mã ticket: ${job.ticketKey} (ID: ${job.ticketId})
-- Loại yêu cầu: ${job.context.requestType}
-- Tiêu đề: "${job.context.title}"
-- Mô tả: "${job.context.description}"
-- Màn hình thao tác: ${job.context.sourcePath || 'Chưa xác định'}
-${job.context.clarificationSummary ? `- Tóm tắt làm rõ: "${job.context.clarificationSummary}"` : ''}
-${job.context.businessContext ? `- Bối cảnh nghiệp vụ: "${job.context.businessContext}"` : ''}
-${job.context.reopen ? `- Lý do reopen: "${job.context.reopen.reason}"` : ''}
-${job.context.reporterMessages?.length ? `- BẮT BUỘC TUÂN THỦ CHỈ ĐẠO TỪ DANNY & NHÂN VIÊN:\n${job.context.reporterMessages.map((m) => `  * "${m}"`).join('\n')}` : ''}
-
-${hasReporterFeedback ? 'QUY TẮC TỐI CAO: Danny đã có comment chỉ đạo trực tiếp trên ticket. Kế hoạch của bạn BẮT BUỘC phải dựa 100% trên chỉ đạo của Danny, đưa ra giải pháp kỹ thuật cụ thể rõ ràng theo đúng yêu cầu đó!' : ''}
-
-Hãy lập kế hoạch triển khai cụ thể, phân tích nguyên nhân kỹ thuật có thể xảy ra dựa trên kiến trúc mos-lab (apps/web dùng Next.js 16 + Ant Design 5, apps/api dùng Fastify 5 + Prisma).
-Chỉ trả về JSON thuần túy theo schema:
-{
-  "evidence": "Bằng chứng hoặc giả thuyết nguyên nhân lỗi kỹ thuật cụ thể",
-  "expectedOutcome": "Kết quả cụ thể mong muốn đạt được (hành vi chính xác của hệ thống, không dùng câu chung chung)",
-  "scope": "Phạm vi tệp tin / module cần can thiệp",
-  "steps": ["Bước 1 cụ thể...", "Bước 2 cụ thể...", "Bước 3 cụ thể..."],
-  "verification": "Cách kiểm thử và xác minh (unit tests, API test, verify:quick)",
-  "risksAndRollback": "Rủi ro tiềm ẩn và phương án rollback",
-  "approvalRequest": "Quyết định cụ thể cần Danny phê duyệt"
-}`;
+export async function callAgPlanner(
+  job: InboxPlanWorkerJob,
+  contextData?: TicketPlanCodeAndMediaContext
+): Promise<InboxPlanDraft | null> {
+  const tempMediaDir =
+    contextData?.mediaParts?.length && !process.env.VITEST
+      ? resolve(tmpdir(), 'mos-plan-media', `${job.ticketKey}-${randomUUID().slice(0, 8)}`)
+      : null;
+  const savedImagePaths: string[] = [];
 
   try {
+    if (tempMediaDir && contextData?.mediaParts?.length) {
+      mkdirSync(tempMediaDir, { recursive: true });
+      contextData.mediaParts.forEach((part, idx) => {
+        const mime = part.inlineData?.mimeType || 'image/png';
+        const ext = mime.includes('jpeg') || mime.includes('jpg') ? 'jpg' : mime.includes('webp') ? 'webp' : 'png';
+        const imgPath = resolve(tempMediaDir, `screenshot-${idx + 1}.${ext}`);
+        writeFileSync(imgPath, Buffer.from(part.inlineData.data, 'base64'));
+        savedImagePaths.push(imgPath);
+      });
+    }
+
+    const prompt = buildTicketPlanningPrompt(job, contextData, {
+      engineLabel: 'AI Agent (AG)',
+      savedImagePaths,
+      speedConstraints:
+        'GIỚI HẠN THỜI GIAN BẮT BUỘC: Chỉ đọc tối đa 2-3 file/ảnh liên quan trực tiếp bằng `read_file`; TUYỆT ĐỐI KHÔNG chạy lệnh tìm kiếm quét toàn repo (`grep`/`rg` không loại trừ `node_modules`). Hoàn tất và trả JSON thuần túy trong vòng dưới 60 giây.',
+    });
+
     const sessionKey = `plan:${job.ticketKey}`;
     const sessions = readTicketSessions();
     const existingConvId = sessions[sessionKey]?.conversationId;
-    const res = await AgChatBridgeService.executeLocalAgPrompt(existingConvId, prompt, `Plan [${job.ticketKey}]`);
+    const res = await AgChatBridgeService.executeLocalAgPrompt(existingConvId, prompt, `Plan [${job.ticketKey}]`, {
+      timeoutMs: 120_000,
+    });
     if (res.conversationId && res.conversationId !== existingConvId) {
       sessions[sessionKey] = {
         conversationId: res.conversationId,
@@ -1719,6 +1741,14 @@ Chỉ trả về JSON thuần túy theo schema:
     process.stderr.write(
       `[AutoPlan] AG planner execution failed: ${err instanceof Error ? err.message : String(err)}\n`
     );
+  } finally {
+    if (tempMediaDir) {
+      try {
+        rmSync(tempMediaDir, { recursive: true, force: true });
+      } catch {
+        // Non-blocking cleanup
+      }
+    }
   }
   return null;
 }
@@ -1731,7 +1761,7 @@ export async function runPlanWatcher(deps: {
   fetch?: typeof fetch;
   geminiApiKey?: string;
   bugAgentToken?: string;
-  agPlanner?: (job: InboxPlanWorkerJob) => Promise<InboxPlanDraft | null>;
+  agPlanner?: (job: InboxPlanWorkerJob, contextData?: TicketPlanCodeAndMediaContext) => Promise<InboxPlanDraft | null>;
   notifyVoice?: (message: string) => Promise<void>;
 }): Promise<'IDLE' | 'PLANNED'> {
   const fetcher = deps.fetch || fetch;
@@ -1794,7 +1824,7 @@ export async function runPlanWatcher(deps: {
   // 2. Secondary: Local Antigravity Language Server planner
   if (!plan && agPlannerFn) {
     try {
-      const agPlan = await agPlannerFn(job);
+      const agPlan = await agPlannerFn(job, contextData);
       if (agPlan) {
         plan = agPlan;
         planEngine = 'AG';
