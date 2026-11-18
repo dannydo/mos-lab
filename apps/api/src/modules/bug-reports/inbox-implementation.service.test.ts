@@ -20,6 +20,7 @@ import {
   stripModelTierMarker,
 } from './inbox-implementation.service.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
+import { InboxWorkerStatusService } from './inbox-worker-status.service.js';
 
 type Source = Parameters<typeof isInboxImplementationEligible>[0];
 
@@ -559,7 +560,7 @@ test('Danny retry creates a bounded linked chain and leaves terminal evidence un
   assert.equal(await InboxImplementationService.retryFailed(fastify as never, 16, 1), true);
   assert.equal(createdRows[0]?.retryOfJobId, 'terminal-job');
   assert.equal(createdRows[0]?.retrySequence, 2);
-  assert.equal(createdRows[0]?.executionOwner, 'AUTO');
+  assert.equal(createdRows[0]?.executionOwner, 'AG_WIN');
   assert.equal(createdRows[0]?.executionPhase, 'IDE_PROVISIONING_PENDING');
   assert.match(String(createdRows[0]?.ideProvisioningRequestId || ''), /^[a-f0-9-]{36}$/i);
   assert.equal(createdRows[0]?.ideReceiptNonce, undefined);
@@ -2060,10 +2061,11 @@ test('IDE provisioning cannot bind a task after its local creation lease expires
   );
 });
 
-test('Antigravity (AG) task bridge claims provisioning for eligible execution owner and adopts it to AG', async () => {
+test('Antigravity (AG) task bridge claims provisioning for Win AG default and adopts it to AG_WIN', async () => {
+  InboxWorkerStatusService.resetForTesting();
   const job = {
     id: 'ag-job-1',
-    executionOwner: 'AG',
+    executionOwner: 'AG_WIN',
     ideProvisioningRequestId: 'ag-req-1',
     reportId: 28,
     branchName: 'task/mos-feat-28-antigravity',
@@ -2072,6 +2074,7 @@ test('Antigravity (AG) task bridge claims provisioning for eligible execution ow
     report: { id: 28, requestType: 'FEATURE', title: 'Provision Antigravity task' },
   };
   let claimedOwner: unknown;
+  let updatedOwner: unknown;
   const fastify = {
     prisma: {
       crm: {
@@ -2080,13 +2083,17 @@ test('Antigravity (AG) task bridge claims provisioning for eligible execution ow
             claimedOwner = args.where.executionOwner;
             return job;
           },
-          updateMany: async () => ({ count: 1 }),
+          updateMany: async (args: { data?: { executionOwner?: unknown } }) => {
+            updatedOwner = args.data?.executionOwner;
+            return { count: 1 };
+          },
         },
       },
     },
   };
-  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'antigravity-worker');
-  assert.deepEqual(claimedOwner, { in: ['AG', 'IDE', 'AUTO'] });
+  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-win-ag');
+  assert.deepEqual(claimedOwner, { in: ['AG_WIN', 'AUTO', 'AG'] });
+  assert.equal(updatedOwner, 'AG_WIN');
   assert.deepEqual(claimed, {
     jobId: job.id,
     requestId: job.ideProvisioningRequestId,
@@ -2099,12 +2106,13 @@ test('Antigravity (AG) task bridge claims provisioning for eligible execution ow
   });
 });
 
-test('Antigravity task bridge provisioning blocks when 3 coding sessions are already active', async () => {
+test('Antigravity task bridge provisioning blocks when 2 coding sessions are already active on that node', async () => {
+  InboxWorkerStatusService.resetForTesting();
   const fastify = {
     prisma: {
       crm: {
         crmInboxImplementationJob: {
-          count: async () => 3,
+          count: async () => 2,
           findFirst: async () => {
             throw new Error('should not query candidate when slots are full');
           },
@@ -2112,11 +2120,46 @@ test('Antigravity task bridge provisioning blocks when 3 coding sessions are alr
       },
     },
   };
-  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'antigravity-worker');
+  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-win-ag');
   assert.equal(claimed, null);
 });
 
+test('Mac AG holds off AUTO tasks while Win AG is online with free slots, and overflows when Win AG is full', async () => {
+  InboxWorkerStatusService.resetForTesting();
+  const now = new Date();
+  let winCount = 1;
+  let queriedOwners: unknown;
+  const fastify = {
+    prisma: {
+      crm: {
+        crmConfig: { findMany: async () => [], upsert: async () => ({}) },
+        crmInboxImplementationJob: {
+          count: async (args: { where: { executionOwner?: unknown } }) =>
+            args.where.executionOwner === 'AG_WIN' ? winCount : 0,
+          findFirst: async (args: { where: { executionOwner?: unknown } }) => {
+            queriedOwners = args.where.executionOwner;
+            return null;
+          },
+        },
+      },
+    },
+  };
+  InboxWorkerStatusService.recordHeartbeat('AG', 'danny-win-ag', fastify as never, now);
+
+  await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-antigravity-desktop');
+  assert.deepEqual(queriedOwners, { in: ['AG_MAC'] });
+
+  winCount = 2;
+  await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-antigravity-desktop');
+  assert.deepEqual(queriedOwners, { in: ['AG_MAC', 'AUTO'] });
+
+  InboxWorkerStatusService.resetForTesting();
+  await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-antigravity-desktop');
+  assert.deepEqual(queriedOwners, { in: ['AG_MAC', 'AUTO', 'AG'] });
+});
+
 test('Antigravity task bridge provisioning includes recent subthread comments when present', async () => {
+  InboxWorkerStatusService.resetForTesting();
   const commentCreatedAt = new Date('2026-10-25T11:00:00.000Z');
   const job = {
     id: 'ag-job-2',

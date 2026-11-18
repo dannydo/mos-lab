@@ -41,7 +41,9 @@ import {
   type TriageBugReportRequest,
   type InboxExecutionDashboardQuery,
   type MyBugReportsResponse,
+  classifyAgNodeFromProvisionerId,
   formatBugReportKey,
+  getExecutionOwnerDisplayName,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { BugReportError, BugReportService, parseBugReportKey } from './bug-report.service.js';
@@ -282,7 +284,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         request.headers['x-ag-provisioner-id'] || request.headers['x-ide-provisioner-id'] || ''
       );
       InboxWorkerStatusService.recordHeartbeat('AG', provisionerId, fastify);
-      const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      const callerNode = classifyAgNodeFromProvisionerId(provisionerId);
+      const jobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
         where: {
           status: 'AWAITING_DEPLOY_REVIEW',
           executionPhase: 'DEPLOY_APPROVED',
@@ -292,7 +295,16 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           report: { select: { id: true, requestType: true, title: true } },
         },
         orderBy: { updatedAt: 'asc' },
+        take: 5,
       });
+      let job: (typeof jobs)[number] | null = null;
+      for (const candidate of jobs) {
+        const ownerNode: 'AG_WIN' | 'AG_MAC' = candidate.executionOwner === 'AG_WIN' ? 'AG_WIN' : 'AG_MAC';
+        if (ownerNode === callerNode || !(await InboxWorkerStatusService.isNodeOnline(fastify, ownerNode))) {
+          job = candidate;
+          break;
+        }
+      }
       if (!job || !job.commitSha) {
         return reply.send({ success: true, data: null });
       }
@@ -872,9 +884,15 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt implementation.', 422);
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        const rawOwner = body.executionOwner ? String(body.executionOwner).toUpperCase() : 'AUTO';
+        const rawOwner = body.executionOwner ? String(body.executionOwner).toUpperCase() : 'AG_WIN';
         const executionOwner: InboxImplementationExecutionOwner =
-          rawOwner === 'AG' ? 'AG' : rawOwner === 'IDE' ? 'IDE' : 'AUTO';
+          rawOwner === 'AG_WIN' ||
+          rawOwner === 'AG_MAC' ||
+          rawOwner === 'AG' ||
+          rawOwner === 'IDE' ||
+          rawOwner === 'AUTO'
+            ? rawOwner
+            : 'AG_WIN';
         const outcome = await InboxImplementationService.approve(
           fastify,
           id,
@@ -893,10 +911,10 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           // has already started, leaving the UI spinner stuck.
           data: { reportId: id, ...outcome },
           message: outcome.implementationQueued
-            ? executionOwner === 'AG'
-              ? 'Đã tạo Antigravity handoff. Hãy thực hiện code/test trong Antigravity.'
+            ? executionOwner === 'AG_WIN' || executionOwner === 'AG_MAC' || executionOwner === 'AG'
+              ? `Đã tạo handoff cho ${getExecutionOwnerDisplayName(executionOwner)}. Hãy thực hiện code/test trong Antigravity.`
               : executionOwner === 'AUTO'
-                ? 'Đã xếp hàng code/test tự động. Worker đang chạy (Antigravity hoặc Codex) sẽ tự nhận task.'
+                ? 'Đã xếp hàng code/test tự động (Win AG ưu tiên, tràn sang Mac AG nếu đầy slot/offline).'
                 : 'Đã tạo IDE handoff. Hãy thực hiện code/test trong Codex IDE hiển thị.'
             : outcome.planRequested
               ? 'Đã lưu duyệt triển khai; worker đang tạo plan native khớp source hiện hành.'
@@ -1365,7 +1383,19 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const workerId = String((request.body as { workerId?: string })?.workerId || '');
+        const provisionerHeader = String(
+          request.headers['x-ag-provisioner-id'] || request.headers['x-ide-provisioner-id'] || ''
+        );
+        if (provisionerHeader) {
+          InboxWorkerStatusService.recordHeartbeat('AG', provisionerHeader, fastify);
+        }
         await RequestClassificationService.heartbeat(fastify, workerId);
+        if (
+          classifyAgNodeFromProvisionerId(provisionerHeader) !== 'AG_WIN' &&
+          (await InboxWorkerStatusService.isNodeOnline(fastify, 'AG_WIN'))
+        ) {
+          return reply.send({ data: null });
+        }
         return reply.send({ data: await InboxFollowUpService.claim(fastify, workerId) });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox follow-up claim failed');
@@ -1445,7 +1475,19 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const workerId = String((request.body as { workerId?: string })?.workerId || '');
+        const provisionerHeader = String(
+          request.headers['x-ag-provisioner-id'] || request.headers['x-ide-provisioner-id'] || ''
+        );
+        if (provisionerHeader) {
+          InboxWorkerStatusService.recordHeartbeat('AG', provisionerHeader, fastify);
+        }
         await RequestClassificationService.heartbeat(fastify, workerId);
+        if (
+          classifyAgNodeFromProvisionerId(provisionerHeader) !== 'AG_WIN' &&
+          (await InboxWorkerStatusService.isNodeOnline(fastify, 'AG_WIN'))
+        ) {
+          return reply.send({ data: null });
+        }
         return reply.send({ data: await InboxPlanService.claim(fastify, workerId) });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox plan claim failed');

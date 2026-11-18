@@ -451,6 +451,13 @@ async function main() {
             const commitSha = execFileSync('git', ['-C', worktreePath, 'rev-parse', 'HEAD'], {
               encoding: 'utf8',
             }).trim();
+            try {
+              execFileSync('git', ['-C', worktreePath, 'push', '-u', 'origin', 'HEAD'], { stdio: 'inherit' });
+            } catch (pushErr) {
+              process.stderr.write(
+                `Warning: Failed to push ticket branch to origin (${pushErr instanceof Error ? pushErr.message : String(pushErr)}). Local commit preserved.\n`
+              );
+            }
 
             const commitReceipt = {
               handoff: {

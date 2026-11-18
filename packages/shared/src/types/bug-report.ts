@@ -331,7 +331,7 @@ export interface RequestClassifierWorkerHealth {
 }
 
 export interface InboxWorkerStatusSummary {
-  id: 'AG' | 'IDE';
+  id: 'AG_WIN' | 'AG_MAC' | 'AG' | 'IDE';
   name: string;
   isOnline: boolean;
   lastSeenAt: string | null;
@@ -348,6 +348,8 @@ export interface InboxWorkerStatusSummary {
 }
 
 export interface InboxDualWorkersHealth {
+  agWin?: InboxWorkerStatusSummary;
+  agMac?: InboxWorkerStatusSummary;
   ag: InboxWorkerStatusSummary;
   codex: InboxWorkerStatusSummary;
 }
@@ -560,10 +562,30 @@ export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
 ] as const;
 export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STATUSES)[number];
 
-/** Code, tests, commits and releases belong to a visible IDE task. The Mac
- * classifier worker is limited to clarification and planning work. */
-export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['IDE', 'AG', 'AUTO'] as const;
+/** Code, tests, commits and releases belong to a visible IDE/AG task.
+ * Win AG (`AG_WIN`) is the default worker, with `AUTO` overflow and `AG_MAC` secondary. */
+export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['AG_WIN', 'AG_MAC', 'IDE', 'AG', 'AUTO'] as const;
 export type InboxImplementationExecutionOwner = (typeof INBOX_IMPLEMENTATION_EXECUTION_OWNERS)[number];
+
+export function isAgExecutionOwner(owner?: string | null): boolean {
+  return owner === 'AG_WIN' || owner === 'AG_MAC' || owner === 'AG';
+}
+
+export function isSupportedImplementationOwner(owner?: string | null): boolean {
+  return ['AG_WIN', 'AG_MAC', 'AG', 'IDE', 'AUTO'].includes(String(owner || ''));
+}
+
+export function classifyAgNodeFromProvisionerId(provisionerId?: string | null): 'AG_WIN' | 'AG_MAC' {
+  return /\bwin\b|win-ag|windows/i.test(String(provisionerId || '')) ? 'AG_WIN' : 'AG_MAC';
+}
+
+export function getExecutionOwnerDisplayName(owner?: string | null): string {
+  if (owner === 'AG_WIN') return 'Win AG';
+  if (owner === 'AG_MAC') return 'Mac AG';
+  if (owner === 'AG') return 'Antigravity';
+  if (owner === 'IDE') return 'Codex IDE';
+  return 'Win AG (Auto-overflow)';
+}
 
 /** Antigravity model tier selected by Danny when approving code/test execution. */
 export const INBOX_IMPLEMENTATION_MODEL_TIERS = ['flash_lite', 'flash', 'pro'] as const;

@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import type {
   InboxIdeTaskProvisioningRequest,
@@ -125,12 +125,13 @@ export function writeTicketSessions(sessions: Record<string, TicketSessionRecord
 export function findExistingSessionForTicket(
   ticketKey: string,
   reportId: number,
-  sessionsPath = ticketSessionsPath()
+  sessionsPath = ticketSessionsPath(),
+  brainRoot = resolve(homedir(), '.gemini/antigravity/brain')
 ): TicketSessionRecord | null {
   const sessions = readTicketSessions(sessionsPath);
   const candidate = sessions[ticketKey] || sessions[String(reportId)];
   if (candidate && candidate.conversationId) {
-    const brainDir = resolve(homedir(), '.gemini/antigravity/brain', candidate.conversationId);
+    const brainDir = resolve(brainRoot, candidate.conversationId);
     if (existsSync(brainDir)) {
       return candidate;
     }
@@ -138,7 +139,6 @@ export function findExistingSessionForTicket(
 
   // Auto-discovery from brain logs: find conversation whose transcript contains ticketKey or reportId
   try {
-    const brainRoot = resolve(homedir(), '.gemini/antigravity/brain');
     if (existsSync(brainRoot)) {
       const entries = readdirSync(brainRoot, { withFileTypes: true });
       for (const entry of entries) {
@@ -984,6 +984,7 @@ export async function runAutoDeployWatcher(deps: {
   apiUrl: string;
   token: string;
   repository: string;
+  provisionerId?: string;
   notifyVoice?: (message: string) => Promise<void>;
 }): Promise<'IDLE' | 'DEPLOYED'> {
   if (isAutoDeployRunning) {
@@ -1001,12 +1002,13 @@ async function runAutoDeployWatcherInternal(deps: {
   apiUrl: string;
   token: string;
   repository: string;
+  provisionerId?: string;
   notifyVoice?: (message: string) => Promise<void>;
 }): Promise<'IDLE' | 'DEPLOYED'> {
   let res: Response;
   try {
     res = await fetch(`${deps.apiUrl}/ag-task-bridge/deploy/next`, {
-      headers: { Authorization: `Bearer ${deps.token}`, Accept: 'application/json' },
+      headers: bridgeHeaders(deps.token, deps.provisionerId),
     });
   } catch {
     return 'IDLE';
@@ -1021,6 +1023,21 @@ async function runAutoDeployWatcherInternal(deps: {
   process.stdout.write(
     `[${new Date().toISOString()}] [AutoDeploy] Danny deploy approval detected for ${deployJob.ticketKey} (${deployJob.commitSha.slice(0, 8)}). Starting pipeline...\n`
   );
+
+  // Ensure commitSha is available locally (supports cross-machine failover Win AG <-> Mac AG)
+  const hasCommitLocally = await execFile('git', ['-C', mainRepo, 'cat-file', '-e', `${deployJob.commitSha}^{commit}`])
+    .then(() => true)
+    .catch(() => false);
+  if (!hasCommitLocally) {
+    process.stdout.write(`[AutoDeploy] Fetching remote commit ${deployJob.commitSha.slice(0, 8)} from origin...\n`);
+    if (deployJob.branchName) {
+      await execFile('git', ['-C', mainRepo, 'fetch', 'origin', deployJob.branchName]).catch(() =>
+        execFile('git', ['-C', mainRepo, 'fetch', 'origin'])
+      );
+    } else {
+      await execFile('git', ['-C', mainRepo, 'fetch', 'origin']);
+    }
+  }
 
   // 1. Merge into main if not already an ancestor
   const isAncestor = await execFile('git', ['-C', mainRepo, 'merge-base', '--is-ancestor', deployJob.commitSha, 'main'])
@@ -1122,11 +1139,32 @@ async function runAutoDeployWatcherInternal(deps: {
 
 export function readGeminiApiKey(): string {
   if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY.trim();
-  const envFiles = [resolve(homedir(), 'projects/mos-lab/apps/api/.env'), resolve(process.cwd(), 'apps/api/.env')];
+  const envFiles = [
+    resolve(homedir(), '.gemini/antigravity/secrets/mos-ag-task-provisioner.env'),
+    resolve(homedir(), 'projects/mos-lab/apps/api/.env'),
+    resolve(process.cwd(), 'apps/api/.env'),
+  ];
   for (const file of envFiles) {
     if (existsSync(file)) {
       const content = readFileSync(file, 'utf8');
       const match = content.match(/^GEMINI_API_KEY=(.+)$/m);
+      if (match && match[1]?.trim()) return match[1].trim();
+    }
+  }
+  return '';
+}
+
+export function readBugAgentToken(): string {
+  if (process.env.MOS_BUG_AGENT_TOKEN) return process.env.MOS_BUG_AGENT_TOKEN.trim();
+  const envFiles = [
+    resolve(homedir(), '.gemini/antigravity/secrets/mos-ag-task-provisioner.env'),
+    resolve(homedir(), 'projects/mos-lab/apps/api/.env'),
+    resolve(process.cwd(), 'apps/api/.env'),
+  ];
+  for (const file of envFiles) {
+    if (existsSync(file)) {
+      const content = readFileSync(file, 'utf8');
+      const match = content.match(/^MOS_BUG_AGENT_TOKEN=(.+)$/m);
       if (match && match[1]?.trim()) return match[1].trim();
     }
   }
@@ -1373,39 +1411,220 @@ export async function runClarificationWatcher(deps: ClarificationWatcherDeps): P
   return 'CLARIFIED';
 }
 
+type GeminiInlineImagePart = {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+};
+
+export type TicketPlanCodeAndMediaContext = {
+  codeFiles: string[];
+  mediaParts: GeminiInlineImagePart[];
+  imageDescriptions: string[];
+  extraComments: string[];
+};
+
+function collectFilesBounded(rootDir: string, repoRoot: string, maxFiles: number, out: string[] = []): string[] {
+  if (out.length >= maxFiles || !existsSync(rootDir)) return out;
+  try {
+    const entries = readdirSync(rootDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (out.length >= maxFiles) break;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const fullPath = resolve(rootDir, entry.name);
+      if (entry.isDirectory()) {
+        collectFilesBounded(fullPath, repoRoot, maxFiles, out);
+      } else if (
+        /\.(ts|tsx|css)$/.test(entry.name) &&
+        !entry.name.endsWith('.test.ts') &&
+        !entry.name.endsWith('.test.tsx')
+      ) {
+        out.push(relative(repoRoot, fullPath));
+      }
+    }
+  } catch {
+    // Non-blocking
+  }
+  return out;
+}
+
+export async function gatherTicketCodeAndMediaContext(params: {
+  apiUrl: string;
+  bugAgentToken: string;
+  ticketKey: string;
+  sourcePath: string | null | undefined;
+  repository: string;
+  fetcher?: typeof fetch;
+}): Promise<TicketPlanCodeAndMediaContext> {
+  const codeFiles: string[] = [];
+  const mediaParts: GeminiInlineImagePart[] = [];
+  const imageDescriptions: string[] = [];
+  const extraComments: string[] = [];
+  const repoRoot = resolve(params.repository);
+
+  // 1. Discover real source files around sourcePath
+  if (existsSync(repoRoot)) {
+    const cleanRoute = String(params.sourcePath || '')
+      .split('?')[0]
+      .replace(/^\/+/, '');
+    const webAppRoot = resolve(repoRoot, 'apps/web/app');
+    const routeDir = cleanRoute ? resolve(webAppRoot, cleanRoute) : webAppRoot;
+    if (routeDir.startsWith(webAppRoot) && existsSync(routeDir)) {
+      collectFilesBounded(routeDir, repoRoot, 25, codeFiles);
+    }
+
+    const apiModulesRoot = resolve(repoRoot, 'apps/api/src/modules');
+    if (existsSync(apiModulesRoot)) {
+      const slugParts = cleanRoute
+        .replace(/^dashboard\/?/, '')
+        .split(/[-/]/)
+        .map((p) => p.toLowerCase())
+        .filter((p) => p.length >= 2);
+      try {
+        const modDirs = readdirSync(apiModulesRoot, { withFileTypes: true }).filter((d) => d.isDirectory());
+        for (const mod of modDirs) {
+          if (codeFiles.length >= 40) break;
+          const modName = mod.name.toLowerCase();
+          if (slugParts.some((part) => modName.includes(part) || part.includes(modName))) {
+            collectFilesBounded(resolve(apiModulesRoot, mod.name), repoRoot, 40, codeFiles);
+          }
+        }
+      } catch {
+        // Non-blocking
+      }
+    }
+  }
+
+  // 2. Fetch ticket attachments & comments using bug-agent endpoint when token is available
+  const fetcher = params.fetcher || fetch;
+  if (params.bugAgentToken && params.bugAgentToken.length >= 32) {
+    try {
+      const bundleRes = await fetcher(`${params.apiUrl}/agent/bug-reports/${encodeURIComponent(params.ticketKey)}`, {
+        headers: { Authorization: `Bearer ${params.bugAgentToken}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (bundleRes.ok) {
+        const bundlePayload = (await bundleRes.json()) as {
+          data?: {
+            attachments?: Array<{ id: number; fileName?: string; mimeType?: string; sizeBytes?: number }>;
+            report?: {
+              comments?: Array<{
+                authorType?: string;
+                authorName?: string;
+                body?: string;
+                attachments?: Array<{ id: number; fileName?: string; mimeType?: string; sizeBytes?: number }>;
+              }>;
+            };
+          };
+        };
+
+        const seenIds = new Set<number>();
+        const allAttachments: Array<{ id: number; fileName?: string; mimeType?: string; sizeBytes?: number }> = [];
+        for (const comment of [...(bundlePayload?.data?.report?.comments || [])].reverse()) {
+          if (comment.authorType === 'STAFF' && comment.body) {
+            extraComments.push(`[${comment.authorName || 'Nhân viên'}]: ${comment.body.slice(0, 600)}`);
+          }
+          for (const att of comment.attachments || []) {
+            if (!seenIds.has(att.id)) {
+              seenIds.add(att.id);
+              allAttachments.push(att);
+            }
+          }
+        }
+        for (const att of bundlePayload?.data?.attachments || []) {
+          if (!seenIds.has(att.id)) {
+            seenIds.add(att.id);
+            allAttachments.push(att);
+          }
+        }
+
+        const imageAttachments = allAttachments
+          .filter((a) => String(a.mimeType || '').startsWith('image/') && Number(a.sizeBytes || 0) <= 4 * 1024 * 1024)
+          .slice(0, 3);
+
+        for (const att of imageAttachments) {
+          try {
+            const attRes = await fetcher(
+              `${params.apiUrl}/agent/bug-reports/${encodeURIComponent(params.ticketKey)}/attachments/${att.id}`,
+              {
+                headers: { Authorization: `Bearer ${params.bugAgentToken}` },
+                signal: AbortSignal.timeout(10_000),
+              }
+            );
+            if (attRes.ok) {
+              const buffer = Buffer.from(await attRes.arrayBuffer());
+              if (buffer.length > 0 && buffer.length <= 4 * 1024 * 1024) {
+                mediaParts.push({
+                  inlineData: {
+                    mimeType: att.mimeType || 'image/png',
+                    data: buffer.toString('base64'),
+                  },
+                });
+                imageDescriptions.push(`#${att.id} (${att.fileName || 'screenshot'}, ${att.mimeType || 'image'})`);
+              }
+            }
+          } catch {
+            // Skip unreachable attachment
+          }
+        }
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+  }
+
+  return { codeFiles, mediaParts, imageDescriptions, extraComments };
+}
+
 export async function callGeminiPlanner(
   apiKey: string,
   job: InboxPlanWorkerJob,
-  fetcher: typeof fetch = fetch
+  fetcher: typeof fetch = fetch,
+  contextData?: TicketPlanCodeAndMediaContext
 ): Promise<{ plan: InboxPlanDraft; modelUsed: string } | null> {
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-  const hasReporterFeedback = Boolean(job.context.reporterMessages?.length);
+  const models = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+  const allDirectives = Array.from(
+    new Set([...(job.context.reporterMessages || []), ...(contextData?.extraComments || [])])
+  );
+  const hasReporterFeedback = allDirectives.length > 0;
+  const codeFilesSection = contextData?.codeFiles?.length
+    ? `\n- Các file mã nguồn thực tế liên quan trong repo:\n${contextData.codeFiles.map((f) => `  * ${f}`).join('\n')}`
+    : '';
+  const imagesSection = contextData?.imageDescriptions?.length
+    ? `\n- Ảnh chụp màn hình đính kèm (${contextData.imageDescriptions.join(', ')}): ĐÃ ĐÍNH KÈM TRỰC TIẾP BÊN DƯỚI — BẮT BUỘC quan sát kỹ ảnh để mô tả chính xác phần UI/lỗi người báo chỉ vào.`
+    : '';
 
   const prompt = `Bạn là kỹ sư phần mềm AI cấp cao của mOS (Wings Lashes CRM), tích hợp trong IDE Antigravity.
-Nhiệm vụ: Lập kế hoạch triển khai (Implementation Plan) cho ticket sau:
+Nhiệm vụ: Đọc kỹ tiêu đề, mô tả, chỉ đạo của Danny/nhân viên, danh sách file mã nguồn thực tế và ảnh chụp màn hình đính kèm (nếu có) để lập kế hoạch triển khai (Implementation Plan) CỤ THỂ, CHÍNH XÁC cho ticket sau:
 - Mã ticket: ${job.ticketKey} (ID: ${job.ticketId})
 - Loại yêu cầu: ${job.context.requestType}
 - Tiêu đề: "${job.context.title}"
 - Mô tả: "${job.context.description}"
-- Màn hình thao tác: ${job.context.sourcePath || 'Chưa xác định'}
+- Màn hình thao tác: ${job.context.sourcePath || 'Chưa xác định'}${codeFilesSection}${imagesSection}
 ${job.context.clarificationSummary ? `- Tóm tắt làm rõ: "${job.context.clarificationSummary}"` : ''}
 ${job.context.businessContext ? `- Bối cảnh nghiệp vụ: "${job.context.businessContext}"` : ''}
 ${job.context.reopen ? `- Lý do reopen: "${job.context.reopen.reason}"` : ''}
-${job.context.reporterMessages?.length ? `- BẮT BUỘC TUÂN THỦ CHỈ ĐẠO TỪ DANNY & NHÂN VIÊN:\n${job.context.reporterMessages.map((m) => `  * "${m}"`).join('\n')}` : ''}
+${hasReporterFeedback ? `- BẮT BUỘC TUÂN THỦ CHỈ ĐẠO / PHẢN HỒI TỪ DANNY & NHÂN VIÊN:\n${allDirectives.map((m) => `  * "${m}"`).join('\n')}` : ''}
 
-${hasReporterFeedback ? 'QUY TẮC TỐI CAO: Danny đã có comment chỉ đạo trực tiếp trên ticket. Kế hoạch của bạn BẮT BUỘC phải dựa 100% trên chỉ đạo của Danny, đưa ra giải pháp kỹ thuật cụ thể rõ ràng theo đúng yêu cầu đó, tuyệt đối không đưa ra các bước rập khuôn chung chung!' : ''}
+QUY TẮC BẮT BUỘC:
+1. TUYỆT ĐỐI KHÔNG dùng văn mẫu chung chung ("Phân tích logic API và giao diện tương ứng", "Định vị chính xác điểm lỗi", "Xử lý triệt để yêu cầu"). Phải nêu đích danh tên component/endpoint/logic nghi ngờ từ màn hình ${job.context.sourcePath || 'liên quan'} và nội dung quan sát được từ ảnh chụp (nếu có ảnh).
+2. Chỉ liệt kê các đường dẫn file có thật trong danh sách trên hoặc thư mục đã xác nhận ở màn hình tương ứng; không bịa tên file không chắc chắn.
+3. TUYỆT ĐỐI KHÔNG dùng từ "thợ" hay "CV+"/"CV++" trong bất kỳ câu chữ nào (dùng Chuyên Viên, CV🪶 hoặc CVL).
+${hasReporterFeedback ? '4. QUY TẮC TỐI CAO: Danny / người báo đã có comment chỉ đạo hoặc lý do reopen trực tiếp. Kế hoạch PHẢI bám sát 100% phản hồi đó.' : ''}
 
-Hãy lập kế hoạch triển khai rõ ràng, an toàn, súc tích tuân thủ các Điều răn mOS.
-Trả về JSON thuần túy theo schema:
+Trả về JSON thuần túy theo đúng schema sau:
 {
-  "evidence": "Bằng chứng hoặc giả thuyết có giới hạn",
-  "expectedOutcome": "Kết quả mong đợi sau khi sửa",
-  "scope": "Phạm vi tệp tin / module cần can thiệp",
-  "steps": ["Bước 1...", "Bước 2...", "Bước 3..."],
-  "verification": "Cách kiểm thử và xác minh (unit tests, UI contract, Playwright nếu có web)",
-  "risksAndRollback": "Rủi ro tiềm ẩn và phương án rollback nếu có sự cố",
-  "approvalRequest": "Quyết định cụ thể cần Danny phê duyệt"
+  "evidence": "Mô tả cụ thể bằng chứng từ ảnh chụp / mô tả / component hoặc API tại ${job.context.sourcePath || 'module liên quan'}",
+  "expectedOutcome": "Hành vi chính xác của hệ thống sau khi sửa xong",
+  "scope": "Danh sách đường dẫn file hoặc module cụ thể cần sửa",
+  "steps": ["Bước 1 cụ thể...", "Bước 2 cụ thể...", "Bước 3 cụ thể..."],
+  "verification": "Lệnh kiểm thử cụ thể (unit tests, pnpm verify:quick, pnpm check:ui-contract, Playwright visual QA)",
+  "risksAndRollback": "Rủi ro tiềm ẩn cụ thể và cách rollback an toàn",
+  "approvalRequest": "Tóm tắt rõ giải pháp cụ thể để Danny bấm Duyệt triển khai"
 }`;
+
+  const parts: Array<{ text: string } | GeminiInlineImagePart> = [{ text: prompt }, ...(contextData?.mediaParts || [])];
 
   let lastError: unknown = null;
   for (const model of models) {
@@ -1415,9 +1634,10 @@ Trả về JSON thuần túy theo schema:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          contents: [{ role: 'user', parts }],
           generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
         }),
+        signal: AbortSignal.timeout(45_000),
       });
 
       if (!res.ok) {
@@ -1510,6 +1730,8 @@ export async function runPlanWatcher(deps: {
   repository: string;
   fetch?: typeof fetch;
   geminiApiKey?: string;
+  bugAgentToken?: string;
+  agPlanner?: (job: InboxPlanWorkerJob) => Promise<InboxPlanDraft | null>;
   notifyVoice?: (message: string) => Promise<void>;
 }): Promise<'IDLE' | 'PLANNED'> {
   const fetcher = deps.fetch || fetch;
@@ -1535,46 +1757,32 @@ export async function runPlanWatcher(deps: {
 
   process.stdout.write(`[${new Date().toISOString()}] [AutoPlan] Claimed plan job for ${job.ticketKey} (${job.id})\n`);
 
-  const geminiApiKey = deps.geminiApiKey || readGeminiApiKey();
+  const geminiApiKey = deps.geminiApiKey !== undefined ? deps.geminiApiKey : deps.fetch ? '' : readGeminiApiKey();
+  const bugAgentToken = deps.bugAgentToken !== undefined ? deps.bugAgentToken : deps.fetch ? '' : readBugAgentToken();
+  const agPlannerFn = deps.agPlanner !== undefined ? deps.agPlanner : deps.fetch ? undefined : callAgPlanner;
   const action: 'POST_PLAN' | 'NO_OP' | 'INSUFFICIENT_INFORMATION' = 'POST_PLAN';
 
-  const hasReporterFeedback = Boolean(job.context.reporterMessages?.length);
-  const latestFeedback = hasReporterFeedback
-    ? job.context.reporterMessages[job.context.reporterMessages.length - 1]
-    : '';
+  const contextData = await gatherTicketCodeAndMediaContext({
+    apiUrl: deps.apiUrl,
+    bugAgentToken,
+    ticketKey: job.ticketKey,
+    sourcePath: job.context.sourcePath,
+    repository: deps.repository,
+    fetcher,
+  });
 
   let planEngine: 'AG' | 'G2.5' | 'G2.0' = 'AG';
   let plan: InboxPlanDraft | null = null;
   let note = '';
 
-  // 1. Ưu tiên số 1: Nếu có chỉ đạo của anh Danny, lập kế hoạch trực tiếp từ chỉ đạo đó (AG)
-  if (hasReporterFeedback) {
-    planEngine = 'AG';
-    plan = {
-      evidence: `Chỉ đạo trực tiếp từ anh Danny / nhân viên: "${latestFeedback}"`,
-      expectedOutcome: `Triển khai chính xác và đầy đủ theo yêu cầu chỉ đạo: "${latestFeedback}"`,
-      scope: job.context.sourcePath || 'apps/api, apps/web',
-      steps: [
-        `Phân tích logic kỹ thuật và mô hình dữ liệu theo chỉ đạo: "${latestFeedback.slice(0, 160)}...".`,
-        `Hiện thực hóa giải pháp tại module liên quan (${job.context.sourcePath || 'Workshop / mOS'}).`,
-        `Viết unit tests và kiểm thử luồng đăng ký / giao diện đảm bảo tính đúng đắn.`,
-        `Nộp receipt kiểm chứng và trình Danny phê duyệt triển khai.`,
-      ],
-      verification: 'pnpm verify:quick && pnpm test',
-      risksAndRollback: 'Rủi ro thấp, cô lập an toàn trong nhánh ticket.',
-      approvalRequest: `Duyệt triển khai phương án theo chỉ đạo của anh Danny: "${latestFeedback.slice(0, 120)}..."`,
-    };
-    note = `AI Agent (AG): Kế hoạch triển khai theo chỉ đạo của anh Danny: "${latestFeedback.slice(0, 90)}..."`;
-  }
-
-  // 3. Dự phòng: Thử Gemini API nếu có key
-  if (!plan && geminiApiKey) {
+  // 1. Primary: Multimodal Gemini Planner (with real codebase files + screenshot attachments + Danny/reporter directives)
+  if (geminiApiKey) {
     try {
-      const geminiResult = await callGeminiPlanner(geminiApiKey, job, fetcher);
+      const geminiResult = await callGeminiPlanner(geminiApiKey, job, fetcher, contextData);
       if (geminiResult) {
         plan = geminiResult.plan;
         planEngine = geminiResult.modelUsed.includes('2.0') ? 'G2.0' : 'G2.5';
-        note = `AI Agent (${planEngine}): Đã tự động lập kế hoạch chi tiết cho ${job.ticketKey}.`;
+        note = `AI Agent (${planEngine}): Đã phân tích mã nguồn & ảnh chụp để lập kế hoạch cho ${job.ticketKey}.`;
       }
     } catch (geminiErr) {
       process.stderr.write(
@@ -1583,27 +1791,48 @@ export async function runPlanWatcher(deps: {
     }
   }
 
-  // 4. Fallback nguyên tắc cụ thể: TUYỆT ĐỐI KHÔNG dùng câu chữ rập khuôn generic
+  // 2. Secondary: Local Antigravity Language Server planner
+  if (!plan && agPlannerFn) {
+    try {
+      const agPlan = await agPlannerFn(job);
+      if (agPlan) {
+        plan = agPlan;
+        planEngine = 'AG';
+        note = `AI Agent (AG): Đã lập kế hoạch kỹ thuật chi tiết cho ${job.ticketKey}.`;
+      }
+    } catch (agErr) {
+      process.stderr.write(
+        `[${new Date().toISOString()}] [AutoPlan] AG planner fallback failed: ${agErr instanceof Error ? agErr.message : String(agErr)}\n`
+      );
+    }
+  }
+
+  // 3. Last-resort offline fallback (grounded with discovered files & directives if available)
   if (!plan) {
     planEngine = 'AG';
     const targetModule = job.context.sourcePath || 'Hệ thống mOS';
     const actionDesc = job.context.description || job.context.title;
+    const latestDirective = job.context.reporterMessages?.[job.context.reporterMessages.length - 1];
+    const discoveredScope = contextData.codeFiles.slice(0, 6).join(', ');
     plan = {
       evidence:
-        job.context.clarificationSummary || `Báo cáo sự cố: "${actionDesc}". Màn hình ghi nhận: ${targetModule}.`,
-      expectedOutcome: `Khắc phục lỗi khi thực hiện "${actionDesc.slice(0, 100)}", đảm bảo tính năng tại ${targetModule} hoạt động chính xác và không phát sinh lỗi.`,
-      scope: targetModule.startsWith('/') ? `apps/web${targetModule}, apps/api` : targetModule || 'apps/api, apps/web',
+        job.context.clarificationSummary ||
+        (latestDirective
+          ? `Chỉ đạo / phản hồi: "${latestDirective}". Màn hình ghi nhận: ${targetModule}.`
+          : `Báo cáo sự cố: "${actionDesc}". Màn hình ghi nhận: ${targetModule}.`),
+      expectedOutcome: `Khắc phục vấn đề "${actionDesc.slice(0, 120)}" tại ${targetModule} theo đúng phản hồi thực tế và không phát sinh regression.`,
+      scope: discoveredScope || (targetModule.startsWith('/') ? `apps/web/app${targetModule}, apps/api` : targetModule),
       steps: [
-        `Phân tích logic API và giao diện tương ứng với thao tác: "${actionDesc.slice(0, 100)}".`,
-        `Định vị chính xác điểm lỗi kỹ thuật tại module ${targetModule} và sửa đổi mã nguồn.`,
-        `Viết unit tests và kiểm thử luồng nghiệp vụ liên quan đảm bảo không phát sinh regression.`,
-        `Nộp receipt kiểm chứng và trình Danny phê duyệt triển khai.`,
+        `Kiểm tra luồng xử lý tại ${discoveredScope || targetModule} đối chiếu với báo cáo "${actionDesc.slice(0, 100)}".`,
+        `Sửa điểm lỗi kỹ thuật tại frontend/backend liên quan và cập nhật xử lý biên tương ứng.`,
+        `Viết unit tests và kiểm thử Playwright visual QA (nếu thay đổi apps/web) đảm bảo hoạt động ổn định.`,
+        `Nộp receipt kiểm chứng và trình Danny duyệt commit / deploy.`,
       ],
-      verification: 'pnpm verify:quick && pnpm test',
-      risksAndRollback: 'Rủi ro thấp, cô lập an toàn trong nhánh ticket.',
-      approvalRequest: `Duyệt triển khai phương án khắc phục lỗi cho thao tác "${actionDesc.slice(0, 80)}...".`,
+      verification: 'pnpm verify:quick && pnpm check:ui-contract',
+      risksAndRollback: 'Rủi ro thấp, cô lập an toàn trong worktree riêng của nhánh ticket.',
+      approvalRequest: `Duyệt triển khai xử lý ${job.ticketKey}: "${actionDesc.slice(0, 80)}".`,
     };
-    note = `AI Agent (AG): Kế hoạch khắc phục sự cố "${actionDesc.slice(0, 70)}...".`;
+    note = `AI Agent (AG): Kế hoạch dự phòng cho ${job.ticketKey} (thiếu Gemini/AG runtime).`;
   }
 
   // Gắn thẻ ẩn để UI nhận biết chính xác động cơ AI đã xử lý
@@ -1637,7 +1866,11 @@ export async function runPlanWatcher(deps: {
 
 let isChatWatcherRunning = false;
 
-export async function runAgChatWatcher(deps: { apiUrl: string; token: string }): Promise<'IDLE' | 'ANSWERED'> {
+export async function runAgChatWatcher(deps: {
+  apiUrl: string;
+  token: string;
+  provisionerId?: string;
+}): Promise<'IDLE' | 'ANSWERED'> {
   if (isChatWatcherRunning) return 'IDLE';
   isChatWatcherRunning = true;
 
@@ -1645,10 +1878,7 @@ export async function runAgChatWatcher(deps: { apiUrl: string; token: string }):
     let res: Response;
     try {
       res = await fetch(`${deps.apiUrl}/ag-task-bridge/chat/next`, {
-        headers: {
-          Authorization: `Bearer ${deps.token}`,
-          Accept: 'application/json',
-        },
+        headers: bridgeHeaders(deps.token, deps.provisionerId),
       });
     } catch {
       return 'IDLE';
@@ -1720,6 +1950,7 @@ export async function main() {
         apiUrl: config.apiUrl,
         token,
         repository: config.repository,
+        provisionerId: config.provisionerId,
         notifyVoice,
       });
       if (deployResult === 'DEPLOYED') {
@@ -1775,7 +2006,7 @@ export async function main() {
   (async () => {
     while (true) {
       try {
-        await runAgChatWatcher({ apiUrl: config.apiUrl, token });
+        await runAgChatWatcher({ apiUrl: config.apiUrl, token, provisionerId: config.provisionerId });
       } catch {
         await new Promise((resolve) => setTimeout(resolve, 2_000));
       }

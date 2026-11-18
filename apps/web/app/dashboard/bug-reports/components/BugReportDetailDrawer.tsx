@@ -21,7 +21,6 @@ import {
   type BugPriority,
   type BugReportDetail,
   type BugReportPlanReviewCandidate,
-  type InboxImplementationExecutionOwner,
   type InboxImplementationModelTier,
   isDeferredBugReport,
   BUG_REPORT_Z_INDEX,
@@ -39,7 +38,11 @@ import {
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
-import { BugReportImplementationStatusCards, MODEL_TIER_LABELS } from './BugReportImplementationStatusCards';
+import {
+  BugReportImplementationStatusCards,
+  EXECUTION_OWNER_LABELS,
+  MODEL_TIER_LABELS,
+} from './BugReportImplementationStatusCards';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
 import { BugReportDeferModal } from './BugReportDeferModal';
 import { BugReportReasonModal } from './BugReportReasonModal';
@@ -97,7 +100,10 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
   const [reviewedPlan, setReviewedPlan] = useState<BugReportPlanReviewCandidate | null>(null);
   const [planReason, setPlanReason] = useState('');
   const [retryConfirmationOpen, setRetryConfirmationOpen] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<InboxImplementationExecutionOwner>('AUTO');
+  const [executionOwnerOverride, setExecutionOwnerOverride] = useState<{
+    reportId: number;
+    owner: 'AG_WIN' | 'AUTO' | 'AG_MAC';
+  } | null>(null);
   const [modelTierOverride, setModelTierOverride] = useState<{
     reportId: number;
     tier: InboxImplementationModelTier;
@@ -147,6 +153,8 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
 
   const context = detail?.context;
   const isDeferred = detail ? isDeferredBugReport(detail) : false;
+  const activeExecutionOwner: 'AG_WIN' | 'AUTO' | 'AG_MAC' =
+    detail && executionOwnerOverride?.reportId === detail.id ? executionOwnerOverride.owner : 'AG_WIN';
   const activeModelTier: InboxImplementationModelTier =
     detail && modelTierOverride?.reportId === detail.id ? modelTierOverride.tier : recommendDefaultModelTier(detail);
 
@@ -225,8 +233,33 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     description={
                       <div className="max-w-md space-y-2.5">
                         <div>
-                          AI chỉ làm trong worktree riêng; tự động gán cho Antigravity hoặc Codex IDE đang chạy. Sau đó
-                          ticket sẽ chờ Danny duyệt commit.
+                          AI chỉ làm trong worktree riêng; mặc định đẩy về Win AG (có thể chọn Auto-overflow hoặc Mac
+                          AG). Sau đó ticket sẽ chờ Danny duyệt commit.
+                        </div>
+                        <div className="space-y-1.5 pt-1">
+                          <Text strong className="block text-xs">
+                            Chọn máy thực thi:
+                          </Text>
+                          <Radio.Group
+                            value={activeExecutionOwner}
+                            onChange={(e) =>
+                              setExecutionOwnerOverride({
+                                reportId: detail.id,
+                                owner: e.target.value as 'AG_WIN' | 'AUTO' | 'AG_MAC',
+                              })
+                            }
+                            className="flex flex-col gap-1.5"
+                          >
+                            <Radio value="AG_WIN" className="whitespace-nowrap">
+                              {EXECUTION_OWNER_LABELS.AG_WIN}
+                            </Radio>
+                            <Radio value="AUTO" className="whitespace-nowrap">
+                              {EXECUTION_OWNER_LABELS.AUTO}
+                            </Radio>
+                            <Radio value="AG_MAC" className="whitespace-nowrap">
+                              {EXECUTION_OWNER_LABELS.AG_MAC}
+                            </Radio>
+                          </Radio.Group>
                         </div>
                         <div className="space-y-1.5 pt-1">
                           <Text strong className="block text-xs">
@@ -258,7 +291,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     okText="Duyệt code/test"
                     cancelText="Chưa duyệt"
                     okButtonProps={{ loading: saving, disabled: saving || approvalReceived }}
-                    onConfirm={() => void approveCodeExecution('AUTO', activeModelTier)}
+                    onConfirm={() => void approveCodeExecution(activeExecutionOwner, activeModelTier)}
                   >
                     <Button
                       type="primary"

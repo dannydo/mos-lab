@@ -53,6 +53,10 @@ import {
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
   getBugReportAgentDisplayName,
+  getExecutionOwnerDisplayName,
+  isAgExecutionOwner,
+  isSupportedImplementationOwner,
+  type InboxImplementationExecutionOwner,
 } from '@mos-lab/shared';
 import { BugReportStorage } from './bug-report.storage.js';
 import {
@@ -673,17 +677,16 @@ function implementationStateDto(
   }
   return {
     status,
-    executionOwner:
-      value.executionOwner === 'IDE' || value.executionOwner === 'AG' || value.executionOwner === 'AUTO'
-        ? value.executionOwner
-        : undefined,
+    executionOwner: isSupportedImplementationOwner(value.executionOwner)
+      ? (value.executionOwner as InboxImplementationExecutionOwner)
+      : undefined,
     ...(modelTier ? { modelTier } : {}),
     reviewCandidate:
       status === 'AWAITING_COMMIT_REVIEW' && value.id && value.sourceVersion && value.planVersion
         ? { jobId: value.id, sourceVersion: value.sourceVersion, planVersion: value.planVersion }
         : null,
     ideHandoff:
-      (value.executionOwner === 'IDE' || value.executionOwner === 'AG' || value.executionOwner === 'AUTO') && value.id
+      isSupportedImplementationOwner(value.executionOwner) && value.id
         ? {
             reference: value.id,
             // Retry records created during the first IDE rollout used QUEUED;
@@ -820,9 +823,10 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
     };
   }
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
-    const agOwned = implementation.executionOwner === 'AG';
+    const agOwned = isAgExecutionOwner(implementation.executionOwner);
     const ideOwned = implementation.executionOwner === 'IDE';
     const autoOwned = implementation.executionOwner === 'AUTO';
+    const ownerLabel = getExecutionOwnerDisplayName(implementation.executionOwner);
     return {
       stage:
         implementation.executionPhase === 'DEPLOY_APPROVED'
@@ -831,11 +835,11 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
             ? 'QUEUED_FOR_COMMIT'
             : 'QUEUED_FOR_FIX',
       note: agOwned
-        ? `Handoff Antigravity ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
+        ? `Handoff ${ownerLabel} ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
         : ideOwned
           ? `Handoff Codex IDE ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
           : autoOwned
-            ? `Handoff tự động (Antigravity hoặc Codex) ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
+            ? `Handoff ${ownerLabel} ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
             : implementation.executionPhase === 'DEPLOY_APPROVED'
               ? 'Danny đã duyệt deploy; worker Mac đang chờ nhận đúng commit đã duyệt.'
               : implementation.executionPhase === 'COMMIT_APPROVED'
@@ -1140,9 +1144,10 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
   if (implementation?.status === 'AWAITING_COMMIT_REVIEW') {
     if (implementation.executionPhase === 'COMMIT_APPROVED' || implementation.executionPhase === 'IDE_COMMIT_HANDOFF') {
-      const agOwned = implementation.executionOwner === 'AG';
-      const autoOwned = implementation.executionOwner === 'AUTO';
-      const engineLabel = agOwned ? 'Antigravity' : autoOwned ? 'Worker (AG/Codex)' : 'Codex IDE';
+      const engineLabel =
+        implementation.executionOwner === 'IDE'
+          ? 'Codex IDE'
+          : getExecutionOwnerDisplayName(implementation.executionOwner);
       return nextAction(
         'AGENT',
         'CONTINUE_IMPLEMENTATION',
@@ -1161,9 +1166,10 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
   if (implementation?.status === 'AWAITING_DEPLOY_REVIEW') {
     if (implementation.executionPhase === 'DEPLOY_APPROVED') {
-      const agOwned = implementation.executionOwner === 'AG';
-      const autoOwned = implementation.executionOwner === 'AUTO';
-      const engineLabel = agOwned ? 'Antigravity' : autoOwned ? 'Worker (AG/Codex)' : 'Codex IDE';
+      const engineLabel =
+        implementation.executionOwner === 'IDE'
+          ? 'Codex IDE'
+          : getExecutionOwnerDisplayName(implementation.executionOwner);
       return nextAction(
         'AGENT',
         'CONTINUE_IMPLEMENTATION',
@@ -1181,10 +1187,11 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     );
   }
   if (implementation && ['PENDING', 'LEASED', 'RUNNING'].includes(implementation.status)) {
-    const agOwned = implementation.executionOwner === 'AG';
-    const autoOwned = implementation.executionOwner === 'AUTO';
-    const ideOwned = implementation.executionOwner === 'IDE' || agOwned || autoOwned;
-    const engineLabel = agOwned ? 'Antigravity' : autoOwned ? 'Worker (AG/Codex)' : 'Codex IDE';
+    const ideOwned = isSupportedImplementationOwner(implementation.executionOwner);
+    const engineLabel =
+      implementation.executionOwner === 'IDE'
+        ? 'Codex IDE'
+        : getExecutionOwnerDisplayName(implementation.executionOwner);
     const handoffReference = implementation.id
       ? `Handoff ${engineLabel} ${implementation.id}`
       : `Handoff ${engineLabel}`;
@@ -2458,9 +2465,7 @@ export class BugReportService {
     const reason = clipped(input?.reason, 2000) || null;
     const now = new Date();
     const cancelNote = reason ? `[Đã huỷ]: ${reason}` : '[Đã huỷ]';
-    const effectiveTriageNote = existing.triageNote
-      ? `${existing.triageNote}\n${cancelNote}`
-      : cancelNote;
+    const effectiveTriageNote = existing.triageNote ? `${existing.triageNote}\n${cancelNote}` : cancelNote;
 
     const completed = await fastify.prisma.crm.$transaction(async (tx) => {
       const row = await tx.crmBugReport.update({

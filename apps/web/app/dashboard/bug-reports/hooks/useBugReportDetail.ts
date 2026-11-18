@@ -301,9 +301,13 @@ export function useBugReportDetail({
                 agentProgress: {
                   stage: 'QUEUED_FOR_FIX',
                   note:
-                    executionOwner === 'AG'
-                      ? 'Đã duyệt cho Antigravity (AG); đang xếp hàng handoff.'
-                      : 'Đã duyệt code/test; đang xếp hàng cho worker/IDE.',
+                    executionOwner === 'AG_WIN'
+                      ? 'Đã duyệt cho Win AG; đang xếp hàng handoff.'
+                      : executionOwner === 'AG_MAC'
+                        ? 'Đã duyệt cho Mac AG; đang xếp hàng handoff.'
+                        : executionOwner === 'AG'
+                          ? 'Đã duyệt cho Antigravity (AG); đang xếp hàng handoff.'
+                          : 'Đã duyệt code/test; đang xếp hàng cho Win AG (tự tràn sang Mac AG nếu đầy slot).',
                   updatedAt: new Date().toISOString(),
                 },
               }
@@ -316,9 +320,13 @@ export function useBugReportDetail({
           .catch(() => undefined);
         messageApi.success(
           outcome.implementationQueued
-            ? executionOwner === 'AG'
-              ? 'Đã tạo job code/test cho Antigravity (AG).'
-              : 'Đã tạo job code/test trong worktree riêng.'
+            ? executionOwner === 'AG_WIN'
+              ? 'Đã tạo job code/test cho Win AG.'
+              : executionOwner === 'AG_MAC'
+                ? 'Đã tạo job code/test cho Mac AG.'
+                : executionOwner === 'AG'
+                  ? 'Đã tạo job code/test cho Antigravity (AG).'
+                  : 'Đã tạo job code/test trong worktree riêng.'
             : outcome.planRequested
               ? 'Đã lưu duyệt; worker đang làm mới plan native trước khi chạy code.'
               : 'Đã lưu duyệt implementation.'

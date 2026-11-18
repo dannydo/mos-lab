@@ -130,21 +130,17 @@ describe('UI primitives', () => {
     const scheduleGroup = getSidebarGroups('admin').find((group) => group.groupKey === 'grp-schedule');
     const superAdminScheduleGroup = getSidebarGroups('super_admin').find((group) => group.groupKey === 'grp-schedule');
 
-    expect(scheduleGroup?.items.map((item) => item.key)).toEqual([
-      'staff-directory',
-      'teams',
-      'career-path',
-      'holiday-work',
-    ]);
+    expect(scheduleGroup?.items.map((item) => item.key)).toEqual(['staff-directory', 'teams', 'holiday-work']);
     expect(scheduleGroup?.items.find((item) => item.key === 'teams')?.path).toBe('/dashboard/staff/teams');
     expect(scheduleGroup?.items.find((item) => item.key === 'menu-access')).toBeUndefined();
     expect(superAdminScheduleGroup?.items.map((item) => item.key)).toEqual([
       'staff-directory',
       'teams',
-      'career-path',
       'holiday-work',
       'menu-access',
     ]);
+    const labsGroup = getSidebarGroups('admin').find((group) => group.groupKey === 'grp-labs');
+    expect(labsGroup?.items.some((item) => item.key === 'career-path')).toBe(true);
     expect(superAdminScheduleGroup?.items.find((item) => item.key === 'menu-access')?.path).toBe(
       '/dashboard/staff/menu-access'
     );

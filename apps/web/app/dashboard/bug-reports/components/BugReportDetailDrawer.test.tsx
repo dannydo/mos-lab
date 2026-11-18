@@ -325,11 +325,11 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(props.approveImplementation).not.toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
     await waitFor(() =>
-      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AUTO', 'pro')
+      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AG_WIN', 'pro')
     );
   });
 
-  it('pre-selects flash for P2 tickets and allows overriding model tier in the confirmation popup', async () => {
+  it('pre-selects flash for P2 tickets and allows overriding model tier and machine in the confirmation popup', async () => {
     const props = propsFor(
       makeDetail({
         status: 'APPROVED',
@@ -346,6 +346,8 @@ describe('BugReportDetailDrawer behavior', () => {
     fireEvent.click(trigger);
     await screen.findByText('Duyệt AI chạy code/test?');
 
+    const macRadio = screen.getByRole('radio', { name: /Máy Mac chính/i });
+    fireEvent.click(macRadio);
     const flashLiteRadio = screen.getByRole('radio', { name: /Flash Lite/i });
     fireEvent.click(flashLiteRadio);
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
@@ -353,7 +355,7 @@ describe('BugReportDetailDrawer behavior', () => {
       expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(
         props.reportId,
         undefined,
-        'AUTO',
+        'AG_MAC',
         'flash_lite'
       )
     );
