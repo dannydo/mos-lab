@@ -123,7 +123,7 @@ export function SimulationAttemptEditModal({
     setErrorMsg(null);
     try {
       await onSave(attempt.attemptId, {
-        bookingId,
+        bookingId: Number(bookingId || attempt.bookingId || 0),
         notes: notes.trim(),
         selectedStyle,
         selectedComboName: comboName ? comboName : null,

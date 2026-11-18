@@ -142,13 +142,47 @@ export async function updateSimulationAttempt(
   const key = getSimAttemptsKey(staffId, bookingId);
   const existing = await loadSimulationAttempts(staffId, bookingId, store);
   const index = existing.findIndex((a) => a.attemptId === attemptId);
-  if (index === -1) {
+  if (index === -1 && !attemptId.startsWith('draft_') && attemptId !== 'draft') {
     const error = new Error(`Kịch bản mô phỏng #${attemptId} không tồn tại.`);
     (error as SafeAny).statusCode = 404;
     throw error;
   }
 
-  const current = existing[index];
+  const current: IosSimulationAttemptSummary =
+    index >= 0
+      ? existing[index]
+      : {
+          attemptId: `sim_att_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          attemptNumber: existing.length + 1,
+          bookingId,
+          staffId,
+          staffName: `Nhân sự #${staffId}`,
+          customerId: 0,
+          customerName: `Khách #${bookingId}`,
+          orderNumber: `#${bookingId}`,
+          statusAtSnapshot: 'SERVICING',
+          elapsedSeconds: 0,
+          serviceName: 'Dịch vụ mi',
+          servicePrice: 550000,
+          selectedStyle: 'Natural',
+          selectedComboName: null,
+          selectedComboPrice: 0,
+          selectedUnderComboName: null,
+          selectedUnderComboPrice: 0,
+          upsellProducts: [],
+          upsellTotal: 0,
+          promotionName: null,
+          promotionDiscountAmount: 0,
+          tipAmount: 0,
+          tipActorShare: 0,
+          grandTotal: 550000,
+          comboBonusAmount: 0,
+          serumBonusAmount: 0,
+          totalEstimatedReward: 55000,
+          cvRotationPoints: 1,
+          createdAt: new Date().toISOString(),
+          sourceAction: 'SIM_REVERT_CONSULTATION',
+        };
   const notes = typeof updates.notes === 'string' ? updates.notes.trim() : current.notes;
   const selectedStyle = updates.selectedStyle !== undefined ? updates.selectedStyle : current.selectedStyle;
   const selectedComboName =
@@ -214,8 +248,10 @@ export async function updateSimulationAttempt(
     totalEstimatedReward,
   };
 
-  const next = [...existing];
-  next[index] = updated;
+  const next =
+    index >= 0
+      ? [...existing.slice(0, index), updated, ...existing.slice(index + 1)]
+      : [...existing, updated];
   await store.upsert(key, JSON.stringify(next));
   return updated;
 }
