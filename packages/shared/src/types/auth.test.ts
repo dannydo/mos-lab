@@ -6,6 +6,8 @@ import {
   isTelesalesRole,
   canAccessIosConsultationApp,
   canDirectlySettleCounterPayment,
+  canSwitchIosBranch,
+  resolveAssignedSalonStoreId,
   resolveLockedIosRoleForUser,
 } from './auth.js';
 import { resolveMenuKeysForApiPath, isCvAllowedPath, isNonAdminAllowedDashboardPath } from './menu-access.js';
@@ -161,5 +163,22 @@ describe('Auth Role Invariants & Routing Tests', () => {
       isNonAdminAllowedDashboardPath('/dashboard/nyc/campaigns/hoi-sinh-mi', { cv: true, 'career-path': true }, 'cv'),
       false
     );
+  });
+
+  it('locks non-admin iOS branch switching & normalizes Head Office storeId=4 to Đề Thám (6) (MOS-BUG-237)', () => {
+    assert.equal(resolveAssignedSalonStoreId(6), 6);
+    assert.equal(resolveAssignedSalonStoreId(16), 16);
+    assert.equal(resolveAssignedSalonStoreId(4), 6);
+    assert.equal(resolveAssignedSalonStoreId(0), 6);
+    assert.equal(resolveAssignedSalonStoreId(null), 6);
+
+    assert.equal(canSwitchIosBranch({ isAdmin: false, iosRole: 'CVL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: false, iosRole: 'CVLL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: false, iosRole: 'CC' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CVL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CVLL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CV' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CC' }), true);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'STORE' }), true);
   });
 });

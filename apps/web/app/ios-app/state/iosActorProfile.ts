@@ -1,4 +1,5 @@
 import { isCcRole } from '@mos-lab/shared';
+import { resolveAssignedSalonStoreId } from '@mos-lab/shared';
 import type {
   IosUserRole,
   BookingScopeMode,
@@ -72,7 +73,7 @@ export function resolveActorProfile(role: IosUserRole, loggedInUser?: any): Acti
   const authAvatar = hasAuthUser
     ? resolveStaffAvatarUrl(userAvatar, authStaffId || undefined, authName)
     : undefined;
-  const storeId = userAssignedStoreId || 6;
+  const storeId = resolveAssignedSalonStoreId(userAssignedStoreId);
   const branchCode = storeId === 16 ? 'EP' : 'DT';
   const branchName = storeId === 16 ? 'Chi nhánh Estella Place' : 'Chi nhánh Đề Thám';
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { canSwitchIosBranch } from '@mos-lab/shared';
 import { BookingItem, resolveCustomerBookingTab, sortDoneBookingsWithCheckoutFirst } from '../../state/mockData';
 import {
   ActiveActorProfile,
@@ -85,8 +86,8 @@ export function Screen01IncomingBookings({
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
 
-  // Invariant (UI-010): Chỉ Admin thực sự (khi không ở vai trò CV) HOẶC khi đang ở Sandbox Mode mới được đổi chi nhánh
-  const canSwitchBranch = Boolean((isAdmin && role !== 'CVL' && role !== 'CVLL' && role !== 'CV') || isSimulationMode);
+  // Invariant (UI-010): Chỉ Admin thực sự (và không ở vai trò CV/CVL/CVLL) mới được đổi chi nhánh
+  const canSwitchBranch = canSwitchIosBranch({ isAdmin, iosRole: role });
 
   const effectiveBranch = useMemo(() => {
     if (currentBranch) return currentBranch;
