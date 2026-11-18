@@ -12,7 +12,8 @@ interface CvSelfSpeedCacheEntry {
 }
 
 const cvSelfSpeedCache = new Map<number, CvSelfSpeedCacheEntry>();
-const CV_SELF_SPEED_CACHE_TTL_MS = 30_000;
+const cvSelfSpeedInFlight = new Map<number, Promise<IosCvSelfSpeedHistoryProfile>>();
+const CV_SELF_SPEED_CACHE_TTL_MS = 300_000;
 
 export function invalidateCvSelfSpeedCache(staffIds?: number[]): void {
   if (!staffIds || staffIds.length === 0) {
@@ -119,8 +120,40 @@ export async function fetchLiveCvSelfSpeedProfiles(
     return result;
   }
 
+  const stillToQueryIds: number[] = [];
+  const awaitedInFlight: Promise<void>[] = [];
+  for (const id of missingIds) {
+    const existingFlight = cvSelfSpeedInFlight.get(id);
+    if (existingFlight) {
+      awaitedInFlight.push(
+        existingFlight.then((profile) => {
+          result.set(id, profile);
+        })
+      );
+    } else {
+      stillToQueryIds.push(id);
+    }
+  }
+
+  if (stillToQueryIds.length === 0) {
+    await Promise.all(awaitedInFlight);
+    return result;
+  }
+
+  const resolvers = new Map<number, { resolve: (profile: IosCvSelfSpeedHistoryProfile) => void }>();
+  for (const id of stillToQueryIds) {
+    let resolveFn!: (profile: IosCvSelfSpeedHistoryProfile) => void;
+    const p = new Promise<IosCvSelfSpeedHistoryProfile>((resolve) => {
+      resolveFn = resolve;
+    }).finally(() => {
+      cvSelfSpeedInFlight.delete(id);
+    });
+    cvSelfSpeedInFlight.set(id, p);
+    resolvers.set(id, { resolve: resolveFn });
+  }
+
   try {
-    const placeholders = missingIds.map(() => '?').join(',');
+    const placeholders = stillToQueryIds.map(() => '?').join(',');
     const [rows] = await pool.query<mysql.RowDataPacket[]>(
       `SELECT
          ros.assigned_staff_id,
@@ -149,11 +182,11 @@ export async function fetchLiveCvSelfSpeedProfiles(
          ) BETWEEN 16 AND 199
          AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
        ORDER BY o.booking_date_start DESC, ros.id DESC`,
-      missingIds
+      stillToQueryIds
     );
 
     const groupedByStaff = new Map<number, IosCvHistoricalCaseSample[]>();
-    for (const id of missingIds) {
+    for (const id of stillToQueryIds) {
       groupedByStaff.set(id, []);
     }
 
@@ -181,16 +214,23 @@ export async function fetchLiveCvSelfSpeedProfiles(
     }
 
     const expiresAt = Date.now() + CV_SELF_SPEED_CACHE_TTL_MS;
-    for (const sid of missingIds) {
+    for (const sid of stillToQueryIds) {
       const profile = buildCompactSpeedProfileFromSamples(sid, groupedByStaff.get(sid) || []);
       cvSelfSpeedCache.set(sid, { profile, expiresAt });
       result.set(sid, profile);
+      resolvers.get(sid)?.resolve(profile);
     }
   } catch (err) {
     logWarn?.({ err }, 'Could not query CV self speed history profiles');
-    for (const sid of missingIds) {
-      result.set(sid, { staffId: sid, samples: [], overallSpeedRatio: 1.0 });
+    for (const sid of stillToQueryIds) {
+      const fallbackProfile: IosCvSelfSpeedHistoryProfile = { staffId: sid, samples: [], overallSpeedRatio: 1.0 };
+      result.set(sid, fallbackProfile);
+      resolvers.get(sid)?.resolve(fallbackProfile);
     }
+  }
+
+  if (awaitedInFlight.length > 0) {
+    await Promise.all(awaitedInFlight);
   }
 
   return result;

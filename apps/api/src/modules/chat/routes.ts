@@ -297,8 +297,8 @@ function buildDefaultTasks(): MosChatTaskItem[] {
 
 const MAX_MESSAGES_PER_CONVERSATION = 150;
 const MAX_TASKS_RETENTION = 200;
-const STAFF_DIRECTORY_CACHE_TTL_MS = 30_000;
-const STATE_DB_SYNC_TTL_MS = 30_000;
+const STAFF_DIRECTORY_CACHE_TTL_MS = 60_000;
+const STATE_DB_SYNC_TTL_MS = 300_000;
 
 function buildDefaultAccessConfig(): MosChatAccessConfig {
   return {
@@ -499,6 +499,19 @@ let memoryStaffCache: {
 } | null = null;
 
 let writeChain: Promise<void> = Promise.resolve();
+let jsonBackupChain: Promise<void> = Promise.resolve();
+const loadChatStateInFlightByFastify = new WeakMap<
+  FastifyInstance,
+  Promise<{
+    conversations: MosChatConversation[];
+    tasks: MosChatTaskItem[];
+    accessConfig: MosChatAccessConfig;
+    userPrefsByUserKey: Record<string, MosChatUserSidebarPrefs>;
+    version: number;
+    lastSyncedFromDbAt: number;
+  }>
+>();
+const loadStaffInFlightByFastify = new WeakMap<FastifyInstance, Promise<MosChatStaffMember[]>>();
 
 function trimConversationsRetention(conversations: MosChatConversation[]): MosChatConversation[] {
   return conversations.map((c) => {
@@ -901,121 +914,136 @@ export async function loadChatState(fastify: FastifyInstance): Promise<{
     return memoryChatCache;
   }
 
-  const [convRecord, taskRecord, accessRecord, prefsRecord] = await Promise.all([
-    fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_CONVERSATIONS_CONFIG_KEY } }),
-    fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_TASKS_CONFIG_KEY } }),
-    fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_ACCESS_CONFIG_KEY } }),
-    fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_USER_PREFS_CONFIG_KEY } }),
-  ]);
-
-  let conversations: MosChatConversation[] | null = null;
-  let tasks: MosChatTaskItem[] | null = null;
-  let accessConfig: MosChatAccessConfig | null = null;
-  const userPrefsByUserKey: Record<string, MosChatUserSidebarPrefs> = {};
-
-  if (convRecord?.value) {
-    try {
-      const parsed = JSON.parse(convRecord.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        conversations = trimConversationsRetention(parsed);
-      }
-    } catch (_) {}
+  const inFlight = loadChatStateInFlightByFastify.get(fastify);
+  if (inFlight) {
+    return inFlight;
   }
 
-  if (taskRecord?.value) {
-    try {
-      const parsed = JSON.parse(taskRecord.value);
-      if (Array.isArray(parsed)) {
-        tasks = parsed;
-      }
-    } catch (_) {}
-  }
+  const loadPromise = (async () => {
+    const syncStartedAt = Date.now();
+    const [convRecord, taskRecord, accessRecord, prefsRecord] = await Promise.all([
+      fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_CONVERSATIONS_CONFIG_KEY } }),
+      fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_TASKS_CONFIG_KEY } }),
+      fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_ACCESS_CONFIG_KEY } }),
+      fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_USER_PREFS_CONFIG_KEY } }),
+    ]);
 
-  if (accessRecord?.value) {
-    try {
-      const parsed = JSON.parse(accessRecord.value);
-      accessConfig = normalizeAccessConfig(parsed);
-    } catch (_) {}
-  }
+    let conversations: MosChatConversation[] | null = null;
+    let tasks: MosChatTaskItem[] | null = null;
+    let accessConfig: MosChatAccessConfig | null = null;
+    const userPrefsByUserKey: Record<string, MosChatUserSidebarPrefs> = {};
 
-  if (prefsRecord?.value) {
-    try {
-      const parsed = JSON.parse(prefsRecord.value);
-      if (parsed && typeof parsed === 'object') {
-        for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-          userPrefsByUserKey[k] = normalizeUserSidebarPrefs(v);
+    if (convRecord?.value) {
+      try {
+        const parsed = JSON.parse(convRecord.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          conversations = trimConversationsRetention(parsed);
         }
-      }
-    } catch (_) {}
-  }
-
-  if (!conversations) {
-    conversations = buildDefaultConversations();
-    await fastify.prisma.crm.crmConfig.upsert({
-      where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
-      update: { value: JSON.stringify(conversations) },
-      create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: JSON.stringify(conversations) },
-    });
-  }
-
-  if (!tasks) {
-    tasks = buildDefaultTasks();
-    await fastify.prisma.crm.crmConfig.upsert({
-      where: { key: CHAT_TASKS_CONFIG_KEY },
-      update: { value: JSON.stringify(tasks) },
-      create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(tasks) },
-    });
-  } else {
-    const dedup = deduplicateTasks(tasks, conversations);
-    tasks = dedup.tasks;
-    if (dedup.changed) {
-      await fastify.prisma.crm.crmConfig.upsert({
-        where: { key: CHAT_TASKS_CONFIG_KEY },
-        update: { value: JSON.stringify(tasks) },
-        create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(tasks) },
-      });
+      } catch (_) {}
     }
-    if (dedup.convChanged) {
+
+    if (taskRecord?.value) {
+      try {
+        const parsed = JSON.parse(taskRecord.value);
+        if (Array.isArray(parsed)) {
+          tasks = parsed;
+        }
+      } catch (_) {}
+    }
+
+    if (accessRecord?.value) {
+      try {
+        const parsed = JSON.parse(accessRecord.value);
+        accessConfig = normalizeAccessConfig(parsed);
+      } catch (_) {}
+    }
+
+    if (prefsRecord?.value) {
+      try {
+        const parsed = JSON.parse(prefsRecord.value);
+        if (parsed && typeof parsed === 'object') {
+          for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+            userPrefsByUserKey[k] = normalizeUserSidebarPrefs(v);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!conversations) {
+      conversations = buildDefaultConversations();
       await fastify.prisma.crm.crmConfig.upsert({
         where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
         update: { value: JSON.stringify(conversations) },
         create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: JSON.stringify(conversations) },
       });
     }
-  }
 
-  if (!accessConfig) {
-    accessConfig = buildDefaultAccessConfig();
-  }
+    if (!tasks) {
+      tasks = buildDefaultTasks();
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: CHAT_TASKS_CONFIG_KEY },
+        update: { value: JSON.stringify(tasks) },
+        create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(tasks) },
+      });
+    } else {
+      const dedup = deduplicateTasks(tasks, conversations);
+      tasks = dedup.tasks;
+      if (dedup.changed) {
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: CHAT_TASKS_CONFIG_KEY },
+          update: { value: JSON.stringify(tasks) },
+          create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(tasks) },
+        });
+      }
+      if (dedup.convChanged) {
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
+          update: { value: JSON.stringify(conversations) },
+          create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: JSON.stringify(conversations) },
+        });
+      }
+    }
 
-  const relationalSynced = await loadOrMigrateRelationalChatData(fastify, {
-    conversations,
-    tasks,
-    accessConfig,
-    userPrefsByUserKey,
+    if (!accessConfig) {
+      accessConfig = buildDefaultAccessConfig();
+    }
+
+    const relationalSynced = await loadOrMigrateRelationalChatData(fastify, {
+      conversations,
+      tasks,
+      accessConfig,
+      userPrefsByUserKey,
+    });
+    conversations = relationalSynced.conversations;
+    tasks = relationalSynced.tasks;
+    Object.assign(userPrefsByUserKey, relationalSynced.userPrefsByUserKey);
+
+    const latestVersion = Math.max(
+      convRecord?.updatedAt ? new Date(convRecord.updatedAt).getTime() : 0,
+      taskRecord?.updatedAt ? new Date(taskRecord.updatedAt).getTime() : 0,
+      accessRecord?.updatedAt ? new Date(accessRecord.updatedAt).getTime() : 0,
+      prefsRecord?.updatedAt ? new Date(prefsRecord.updatedAt).getTime() : 0,
+      memoryChatCache?.version || 1
+    );
+
+    memoryChatCache = {
+      conversations,
+      tasks,
+      accessConfig,
+      userPrefsByUserKey,
+      version: latestVersion,
+      lastSyncedFromDbAt: syncStartedAt,
+    };
+
+    return memoryChatCache;
+  })().finally(() => {
+    if (loadChatStateInFlightByFastify.get(fastify) === loadPromise) {
+      loadChatStateInFlightByFastify.delete(fastify);
+    }
   });
-  conversations = relationalSynced.conversations;
-  tasks = relationalSynced.tasks;
-  Object.assign(userPrefsByUserKey, relationalSynced.userPrefsByUserKey);
 
-  const latestVersion = Math.max(
-    convRecord?.updatedAt ? new Date(convRecord.updatedAt).getTime() : 0,
-    taskRecord?.updatedAt ? new Date(taskRecord.updatedAt).getTime() : 0,
-    accessRecord?.updatedAt ? new Date(accessRecord.updatedAt).getTime() : 0,
-    prefsRecord?.updatedAt ? new Date(prefsRecord.updatedAt).getTime() : 0,
-    memoryChatCache?.version || 1
-  );
-
-  memoryChatCache = {
-    conversations,
-    tasks,
-    accessConfig,
-    userPrefsByUserKey,
-    version: latestVersion,
-    lastSyncedFromDbAt: now,
-  };
-
-  return memoryChatCache;
+  loadChatStateInFlightByFastify.set(fastify, loadPromise);
+  return loadPromise;
 }
 
 let userPrefsPersistTimeout: NodeJS.Timeout | null = null;
@@ -1097,6 +1125,57 @@ async function saveAccessConfig(fastify: FastifyInstance, accessConfig: MosChatA
   return normalized;
 }
 
+let conversationsJsonPersistTimeout: NodeJS.Timeout | null = null;
+let latestConversationsSnapshot: MosChatConversation[] | null = null;
+let tasksJsonPersistTimeout: NodeJS.Timeout | null = null;
+let latestTasksSnapshot: MosChatTaskItem[] | null = null;
+
+function scheduleConversationsJsonPersist(fastify: FastifyInstance, snapshot: MosChatConversation[]) {
+  latestConversationsSnapshot = snapshot;
+  if (conversationsJsonPersistTimeout) return;
+  conversationsJsonPersistTimeout = setTimeout(() => {
+    conversationsJsonPersistTimeout = null;
+    const toSave = latestConversationsSnapshot;
+    if (!toSave) return;
+    jsonBackupChain = jsonBackupChain
+      .then(async () => {
+        const serialized = JSON.stringify(toSave);
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
+          update: { value: serialized },
+          create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: serialized },
+        });
+      })
+      .catch((err) => {
+        fastify.log.error(err, 'debounced saveConversations crmConfig backup error:');
+      });
+  }, 3000);
+  conversationsJsonPersistTimeout.unref?.();
+}
+
+function scheduleTasksJsonPersist(fastify: FastifyInstance, snapshot: MosChatTaskItem[]) {
+  latestTasksSnapshot = snapshot;
+  if (tasksJsonPersistTimeout) return;
+  tasksJsonPersistTimeout = setTimeout(() => {
+    tasksJsonPersistTimeout = null;
+    const toSave = latestTasksSnapshot;
+    if (!toSave) return;
+    jsonBackupChain = jsonBackupChain
+      .then(async () => {
+        const serialized = JSON.stringify(toSave);
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: CHAT_TASKS_CONFIG_KEY },
+          update: { value: serialized },
+          create: { key: CHAT_TASKS_CONFIG_KEY, value: serialized },
+        });
+      })
+      .catch((err) => {
+        fastify.log.error(err, 'debounced saveTasks crmConfig backup error:');
+      });
+  }, 3000);
+  tasksJsonPersistTimeout.unref?.();
+}
+
 async function saveConversations(
   fastify: FastifyInstance,
   conversations: MosChatConversation[],
@@ -1119,58 +1198,49 @@ async function saveConversations(
     memoryChatCache.lastSyncedFromDbAt = nextVersion;
   }
   invalidateNotificationsCache();
+  // Keep relational DB O(1) upserts on the critical request path and debounce the 2.5MB crmConfig snapshot backup asynchronously.
+  scheduleConversationsJsonPersist(fastify, trimmed);
   writeChain = writeChain
     .then(async () => {
-      const relationalPromise = (async () => {
-        if (hint?.deletedMessageIds && hint.deletedMessageIds.length > 0) {
-          await deleteChatMessagesFromRelationalDb(fastify, hint.deletedMessageIds);
+      if (hint?.deletedMessageIds && hint.deletedMessageIds.length > 0) {
+        await deleteChatMessagesFromRelationalDb(fastify, hint.deletedMessageIds);
+      }
+      if (hint?.touchedReply) {
+        const relationalOps: Promise<void>[] = [
+          upsertSingleThreadReplyToRelationalDb(
+            fastify,
+            hint.touchedReply.conversationId,
+            hint.touchedReply.parentMessageId,
+            hint.touchedReply.reply
+          ),
+        ];
+        if (hint.touchedConversation) {
+          relationalOps.push(upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation));
         }
-        if (hint?.touchedReply) {
-          const relationalOps: Promise<void>[] = [
-            upsertSingleThreadReplyToRelationalDb(
+        if (hint.touchedMessage) {
+          relationalOps.push(
+            upsertSingleMessageToRelationalDb(
               fastify,
-              hint.touchedReply.conversationId,
-              hint.touchedReply.parentMessageId,
-              hint.touchedReply.reply
-            ),
-          ];
-          if (hint.touchedConversation) {
-            relationalOps.push(upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation));
-          }
-          if (hint.touchedMessage) {
-            relationalOps.push(
-              upsertSingleMessageToRelationalDb(
-                fastify,
-                hint.touchedConversation ? hint.touchedConversation.id : hint.touchedReply.conversationId,
-                hint.touchedMessage
-              )
-            );
-          }
-          await Promise.all(relationalOps);
-          return;
+              hint.touchedConversation ? hint.touchedConversation.id : hint.touchedReply.conversationId,
+              hint.touchedMessage
+            )
+          );
         }
-        if (hint?.touchedMessage && hint.touchedConversation) {
-          await Promise.all([
-            upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation),
-            upsertSingleMessageToRelationalDb(fastify, hint.touchedConversation.id, hint.touchedMessage),
-          ]);
-          return;
-        }
-        if (hint?.touchedConversation && !hint.touchedMessage) {
-          await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
-          return;
-        }
-        await syncConversationsToRelationalDb(fastify, trimmed);
-      })();
-
-      await Promise.all([
-        fastify.prisma.crm.crmConfig.upsert({
-          where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
-          update: { value: JSON.stringify(trimmed) },
-          create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: JSON.stringify(trimmed) },
-        }),
-        relationalPromise,
-      ]);
+        await Promise.all(relationalOps);
+        return;
+      }
+      if (hint?.touchedMessage && hint.touchedConversation) {
+        await Promise.all([
+          upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation),
+          upsertSingleMessageToRelationalDb(fastify, hint.touchedConversation.id, hint.touchedMessage),
+        ]);
+        return;
+      }
+      if (hint?.touchedConversation && !hint.touchedMessage) {
+        await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
+        return;
+      }
+      await syncConversationsToRelationalDb(fastify, trimmed);
     })
     .catch((err) => {
       fastify.log.error(err, 'saveConversations error:');
@@ -1194,28 +1264,18 @@ async function saveTasks(
     memoryChatCache.lastSyncedFromDbAt = nextVersion;
   }
   invalidateNotificationsCache();
+  scheduleTasksJsonPersist(fastify, trimmed);
   writeChain = writeChain
     .then(async () => {
-      const relationalPromise = (async () => {
-        if (hint?.deletedTaskId) {
-          await deleteSingleTaskFromRelationalDb(fastify, hint.deletedTaskId);
-          return;
-        }
-        if (hint?.touchedTask) {
-          await upsertSingleTaskToRelationalDb(fastify, hint.touchedTask);
-          return;
-        }
-        await syncTasksToRelationalDb(fastify, trimmed);
-      })();
-
-      await Promise.all([
-        fastify.prisma.crm.crmConfig.upsert({
-          where: { key: CHAT_TASKS_CONFIG_KEY },
-          update: { value: JSON.stringify(trimmed) },
-          create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(trimmed) },
-        }),
-        relationalPromise,
-      ]);
+      if (hint?.deletedTaskId) {
+        await deleteSingleTaskFromRelationalDb(fastify, hint.deletedTaskId);
+        return;
+      }
+      if (hint?.touchedTask) {
+        await upsertSingleTaskToRelationalDb(fastify, hint.touchedTask);
+        return;
+      }
+      await syncTasksToRelationalDb(fastify, trimmed);
     })
     .catch((err) => {
       fastify.log.error(err, 'saveTasks error:');
@@ -1228,143 +1288,157 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
   if (memoryStaffCache && nowMs - memoryStaffCache.fetchedAt < STAFF_DIRECTORY_CACHE_TTL_MS) {
     return memoryStaffCache.staffDirectory;
   }
-  const [rawStaff, activeTeamMembers] = await Promise.all([
-    fastify.prisma.crm.crmStaff.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        role: true,
-        avatarUrl: true,
-        lastActiveAt: true,
-        legacyStaffId: true,
-      },
-      orderBy: { displayName: 'asc' },
-      take: 250,
-    }),
-    fastify.prisma.crm.crmTeamMember
-      .findMany({
-        where: { isActive: true },
-        select: {
-          crmStaffId: true,
-          legacyStaffId: true,
-          team: {
-            select: {
-              code: true,
-              department: { select: { code: true } },
-            },
-          },
-        },
-      })
-      .catch(() => []),
-  ]);
-
-  // Fallback to legacy user_profile avatar for staff who haven't uploaded a custom CRM avatar yet
-  const legacyAvatarMap = new Map<number, string>();
-  const candidateLegacyIds = rawStaff
-    .filter((s) => !s.avatarUrl && s.legacyStaffId && Number(s.legacyStaffId) > 0)
-    .map((s) => Number(s.legacyStaffId));
-
-  if (candidateLegacyIds.length > 0 && fastify.prisma?.legacy?.$queryRawUnsafe) {
-    try {
-      const legacyProfiles = await fastify.prisma.legacy.$queryRawUnsafe<
-        Array<{ user_id: number | string; avatarUrl: string | null }>
-      >(
-        `SELECT user_id, COALESCE(NULLIF(avatar, ''), NULLIF(avatar_internal, '')) as avatarUrl
-         FROM \`user_profile\`
-         WHERE user_id IN (${candidateLegacyIds.join(',')})`
-      );
-      for (const p of legacyProfiles || []) {
-        const uid = Number(p.user_id);
-        const rawUrl = String(p.avatarUrl || '').trim();
-        if (uid > 0 && rawUrl) {
-          const normalizedUrl =
-            rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('/api/')
-              ? rawUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
-              : `https://cdn.wingslashes.com/${rawUrl.replace(/^\/+/, '')}`;
-          legacyAvatarMap.set(uid, normalizedUrl);
-        }
-      }
-    } catch {
-      // ignore legacy avatar lookup failure in test/offline mode
-    }
+  const inFlight = loadStaffInFlightByFastify.get(fastify);
+  if (inFlight) {
+    return inFlight;
   }
 
-  const staffDirectory: MosChatStaffMember[] = rawStaff.map((s) => {
-    const deptSet = new Set<string>();
-    const teamSet = new Set<string>();
-    const normalizedRole = String(s.role || '')
-      .toLowerCase()
-      .trim();
+  const staffPromise = (async () => {
+    const [rawStaff, activeTeamMembers] = await Promise.all([
+      fastify.prisma.crm.crmStaff.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          role: true,
+          avatarUrl: true,
+          lastActiveAt: true,
+          legacyStaffId: true,
+        },
+        orderBy: { displayName: 'asc' },
+        take: 250,
+      }),
+      fastify.prisma.crm.crmTeamMember
+        .findMany({
+          where: { isActive: true },
+          select: {
+            crmStaffId: true,
+            legacyStaffId: true,
+            team: {
+              select: {
+                code: true,
+                department: { select: { code: true } },
+              },
+            },
+          },
+        })
+        .catch(() => []),
+    ]);
 
-    if (['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(normalizedRole)) {
-      deptSet.add('BACK_OFFICE');
-      teamSet.add('ADMIN_MANAGER');
-    } else if (['cc', 'coca', 'consultant'].includes(normalizedRole)) {
-      deptSet.add('SHOP');
-      teamSet.add('CC');
-    } else if (['cv', 'lt', 'technician', 'ktv'].includes(normalizedRole)) {
-      deptSet.add('SHOP');
-      teamSet.add('CV');
-    } else if (['telesales', 'booker', 'oc', 'ls'].includes(normalizedRole)) {
-      deptSet.add('GROWTH');
-      teamSet.add('BK_TELESALES');
-    } else if (['teacher', 'ht'].includes(normalizedRole)) {
-      deptSet.add('ACADEMY');
-      teamSet.add('ACADEMY');
-    } else if (['qa_qc'].includes(normalizedRole)) {
-      deptSet.add('SHOP');
-      teamSet.add('QA_QC');
-    } else {
-      deptSet.add('BACK_OFFICE');
-      teamSet.add('BACK_OFFICE_STAFF');
-    }
+    // Fallback to legacy user_profile avatar for staff who haven't uploaded a custom CRM avatar yet
+    const legacyAvatarMap = new Map<number, string>();
+    const candidateLegacyIds = rawStaff
+      .filter((s) => !s.avatarUrl && s.legacyStaffId && Number(s.legacyStaffId) > 0)
+      .map((s) => Number(s.legacyStaffId));
 
-    for (const tm of activeTeamMembers) {
-      const matched =
-        tm.crmStaffId === s.id ||
-        (s.legacyStaffId && tm.legacyStaffId && Number(tm.legacyStaffId) === Number(s.legacyStaffId));
-      if (!matched) continue;
-      const tCode = String(tm.team?.code || '')
-        .toUpperCase()
-        .trim();
-      const dCode = String(tm.team?.department?.code || '')
-        .toUpperCase()
-        .trim();
-      if (dCode) deptSet.add(dCode);
-      if (tCode) {
-        teamSet.add(tCode);
-        if (tCode.startsWith('QA_QC')) teamSet.add('QA_QC');
-        if (tCode === 'BK' || tCode === 'BK_TELESALES') teamSet.add('BK_TELESALES');
-        if (tCode === 'BK_CS' || tCode === 'BK_CONTROL') teamSet.add('BK_CS_CONTROL');
-        if (tCode === 'ACADEMY' || tCode === 'MARKETING_SALES') teamSet.add('ACADEMY');
-        if (tCode === 'CORE' || tCode === 'CORE_TEAM') {
-          teamSet.add('CORE_TEAM');
-          teamSet.add('CORE');
+    if (candidateLegacyIds.length > 0 && fastify.prisma?.legacy?.$queryRawUnsafe) {
+      try {
+        const legacyProfiles = await fastify.prisma.legacy.$queryRawUnsafe<
+          Array<{ user_id: number | string; avatarUrl: string | null }>
+        >(
+          `SELECT user_id, COALESCE(NULLIF(avatar, ''), NULLIF(avatar_internal, '')) as avatarUrl
+           FROM \`user_profile\`
+           WHERE user_id IN (${candidateLegacyIds.join(',')})`
+        );
+        for (const p of legacyProfiles || []) {
+          const uid = Number(p.user_id);
+          const rawUrl = String(p.avatarUrl || '').trim();
+          if (uid > 0 && rawUrl) {
+            const normalizedUrl =
+              rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('/api/')
+                ? rawUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
+                : `https://cdn.wingslashes.com/${rawUrl.replace(/^\/+/, '')}`;
+            legacyAvatarMap.set(uid, normalizedUrl);
+          }
         }
+      } catch {
+        // ignore legacy avatar lookup failure in test/offline mode
       }
     }
 
-    const fallbackLegacyAvatar = s.legacyStaffId ? legacyAvatarMap.get(Number(s.legacyStaffId)) || null : null;
+    const staffDirectory: MosChatStaffMember[] = rawStaff.map((s) => {
+      const deptSet = new Set<string>();
+      const teamSet = new Set<string>();
+      const normalizedRole = String(s.role || '')
+        .toLowerCase()
+        .trim();
 
-    return {
-      id: s.id,
-      username: s.username,
-      displayName: s.displayName || s.username,
-      role: s.role,
-      avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
-      isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
-      departmentCodes: Array.from(deptSet),
-      teamCodes: Array.from(teamSet),
-      legacyStaffId: s.legacyStaffId ? Number(s.legacyStaffId) : null,
+      if (['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(normalizedRole)) {
+        deptSet.add('BACK_OFFICE');
+        teamSet.add('ADMIN_MANAGER');
+      } else if (['cc', 'coca', 'consultant'].includes(normalizedRole)) {
+        deptSet.add('SHOP');
+        teamSet.add('CC');
+      } else if (['cv', 'lt', 'technician', 'ktv'].includes(normalizedRole)) {
+        deptSet.add('SHOP');
+        teamSet.add('CV');
+      } else if (['telesales', 'booker', 'oc', 'ls'].includes(normalizedRole)) {
+        deptSet.add('GROWTH');
+        teamSet.add('BK_TELESALES');
+      } else if (['teacher', 'ht'].includes(normalizedRole)) {
+        deptSet.add('ACADEMY');
+        teamSet.add('ACADEMY');
+      } else if (['qa_qc'].includes(normalizedRole)) {
+        deptSet.add('SHOP');
+        teamSet.add('QA_QC');
+      } else {
+        deptSet.add('BACK_OFFICE');
+        teamSet.add('BACK_OFFICE_STAFF');
+      }
+
+      for (const tm of activeTeamMembers) {
+        const matched =
+          tm.crmStaffId === s.id ||
+          (s.legacyStaffId && tm.legacyStaffId && Number(tm.legacyStaffId) === Number(s.legacyStaffId));
+        if (!matched) continue;
+        const tCode = String(tm.team?.code || '')
+          .toUpperCase()
+          .trim();
+        const dCode = String(tm.team?.department?.code || '')
+          .toUpperCase()
+          .trim();
+        if (dCode) deptSet.add(dCode);
+        if (tCode) {
+          teamSet.add(tCode);
+          if (tCode.startsWith('QA_QC')) teamSet.add('QA_QC');
+          if (tCode === 'BK' || tCode === 'BK_TELESALES') teamSet.add('BK_TELESALES');
+          if (tCode === 'BK_CS' || tCode === 'BK_CONTROL') teamSet.add('BK_CS_CONTROL');
+          if (tCode === 'ACADEMY' || tCode === 'MARKETING_SALES') teamSet.add('ACADEMY');
+          if (tCode === 'CORE' || tCode === 'CORE_TEAM') {
+            teamSet.add('CORE_TEAM');
+            teamSet.add('CORE');
+          }
+        }
+      }
+
+      const fallbackLegacyAvatar = s.legacyStaffId ? legacyAvatarMap.get(Number(s.legacyStaffId)) || null : null;
+
+      return {
+        id: s.id,
+        username: s.username,
+        displayName: s.displayName || s.username,
+        role: s.role,
+        avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
+        isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
+        departmentCodes: Array.from(deptSet),
+        teamCodes: Array.from(teamSet),
+        legacyStaffId: s.legacyStaffId ? Number(s.legacyStaffId) : null,
+      };
+    });
+    memoryStaffCache = {
+      staffDirectory,
+      fetchedAt: Date.now(),
     };
+    return staffDirectory;
+  })().finally(() => {
+    if (loadStaffInFlightByFastify.get(fastify) === staffPromise) {
+      loadStaffInFlightByFastify.delete(fastify);
+    }
   });
-  memoryStaffCache = {
-    staffDirectory,
-    fetchedAt: nowMs,
-  };
-  return staffDirectory;
+
+  loadStaffInFlightByFastify.set(fastify, staffPromise);
+  return staffPromise;
 }
 
 export async function mosChatRoutes(fastify: FastifyInstance) {
@@ -2040,7 +2114,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           if (body.aiAction && !existingMsg.aiAction) {
             existingMsg.aiAction = body.aiAction;
           }
-          await saveConversations(fastify, conversations);
+          await saveConversations(fastify, conversations, {
+            touchedConversation: conv,
+            touchedMessage: existingMsg,
+          });
           return {
             success: true,
             message: existingMsg,
@@ -2208,7 +2285,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           if (body.aiActions && !existingReply.aiActions) {
             existingReply.aiActions = body.aiActions;
           }
-          await saveConversations(fastify, conversations);
+          await saveConversations(fastify, conversations, {
+            touchedConversation: conv,
+            touchedReply: {
+              conversationId: conv.id,
+              parentMessageId: msg.id,
+              reply: existingReply,
+            },
+          });
           return {
             success: true,
             reply: existingReply,
@@ -2541,10 +2625,12 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       // Find target message: root message or thread reply
       let targetMsg: MosChatMessage | MosChatThreadReply | undefined;
+      let targetParentMsg: MosChatMessage | undefined;
       const rootMsg = conv.messages.find((m) => m.id === messageId);
       if (rootMsg) {
         if (replyId) {
           targetMsg = (rootMsg.thread || []).find((r) => r.id === replyId);
+          targetParentMsg = rootMsg;
         } else {
           targetMsg = rootMsg;
         }
@@ -2554,6 +2640,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           const replyItem = (m.thread || []).find((r) => r.id === messageId);
           if (replyItem) {
             targetMsg = replyItem;
+            targetParentMsg = m;
             break;
           }
         }
@@ -2600,7 +2687,23 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       }
 
       conv.updatedAt = new Date().toISOString();
-      await saveConversations(fastify, conversations);
+      await saveConversations(
+        fastify,
+        conversations,
+        targetParentMsg
+          ? {
+              touchedConversation: conv,
+              touchedReply: {
+                conversationId: conv.id,
+                parentMessageId: targetParentMsg.id,
+                reply: targetMsg as MosChatThreadReply,
+              },
+            }
+          : {
+              touchedConversation: conv,
+              touchedMessage: targetMsg as MosChatMessage,
+            }
+      );
       return { success: true, reactions: targetMsg.reactions, reactionUsers: targetMsg.reactionUsers };
     }
   );
@@ -3063,7 +3166,23 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       targetItem.buzzCount = targetItem.buzzHistory.length;
 
       conv.updatedAt = now.toISOString();
-      await saveConversations(fastify, conversations);
+      await saveConversations(
+        fastify,
+        conversations,
+        replyId
+          ? {
+              touchedConversation: conv,
+              touchedReply: {
+                conversationId: conv.id,
+                parentMessageId: msg.id,
+                reply: targetItem as MosChatThreadReply,
+              },
+            }
+          : {
+              touchedConversation: conv,
+              touchedMessage: msg,
+            }
+      );
 
       const buzzTargets = new Set<string>();
       if (conv.participantStaffId != null) buzzTargets.add(String(conv.participantStaffId));
@@ -3918,7 +4037,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         if (existingDm) {
           existingDm.memberIds = pairIds;
           existingDm.memberCount = 2;
-          await saveConversations(fastify, conversations);
+          await saveConversations(fastify, conversations, {
+            touchedConversation: existingDm,
+          });
           return {
             success: true,
             conversation: formatConversationForUser(existingDm, user, staffDirectory),
@@ -5284,7 +5405,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           };
           rootMsg.thread = [...(rootMsg.thread || []), systemReply];
           conv.updatedAt = now.toISOString();
-          await saveConversations(fastify, conversations);
+          await saveConversations(fastify, conversations, {
+            touchedConversation: conv,
+            touchedReply: {
+              conversationId: conv.id,
+              parentMessageId: rootMsg.id,
+              reply: systemReply,
+            },
+          });
         }
 
         return {

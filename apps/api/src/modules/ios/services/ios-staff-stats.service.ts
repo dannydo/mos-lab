@@ -24,7 +24,7 @@ interface StaffStatsCacheEntry {
 }
 
 const staffStatsCache = new Map<string, StaffStatsCacheEntry>();
-const STAFF_STATS_CACHE_TTL_MS = 15_000;
+const STAFF_STATS_CACHE_TTL_MS = 30_000;
 
 let cachedCvPlusRules: { data: CvToCvPlusRequirements; expiresAt: number } | null = null;
 const RULES_CACHE_TTL_MS = 60_000;

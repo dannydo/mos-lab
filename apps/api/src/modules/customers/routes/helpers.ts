@@ -83,10 +83,46 @@ export interface OrderCountsFilterResolution {
   isEmpty: boolean;
 }
 
+interface OrderCountsCacheEntry {
+  ids: number[];
+  zeroMatches: boolean;
+  expiresAt: number;
+}
+
+const ORDER_COUNTS_FILTER_CACHE_TTL_MS = 20_000;
+const ORDER_COUNTS_CACHE_MAX_ENTRIES = 32;
+const orderCountsCacheByFastify = new WeakMap<FastifyInstance, Map<string, OrderCountsCacheEntry>>();
+const orderCountsInFlightByFastify = new WeakMap<
+  FastifyInstance,
+  Map<string, Promise<{ ids: number[]; zeroMatches: boolean }>>
+>();
+
+const getOrderCountsCache = (fastify: FastifyInstance): Map<string, OrderCountsCacheEntry> => {
+  let cache = orderCountsCacheByFastify.get(fastify);
+  if (!cache) {
+    cache = new Map();
+    orderCountsCacheByFastify.set(fastify, cache);
+  }
+  return cache;
+};
+
+const getOrderCountsInFlight = (
+  fastify: FastifyInstance
+): Map<string, Promise<{ ids: number[]; zeroMatches: boolean }>> => {
+  let inflight = orderCountsInFlightByFastify.get(fastify);
+  if (!inflight) {
+    inflight = new Map();
+    orderCountsInFlightByFastify.set(fastify, inflight);
+  }
+  return inflight;
+};
+
 /**
- * Evaluates totalSpent / totalVisits predicates via a standalone GROUP BY on
+ * Evaluates totalSpent / totalVisits predicates via a standalone query on
  * `order` rather than joining a derived table across MariaDB 10.3 multi-table
  * customer queries (which prevents key pushdown and causes full scans).
+ * Unscoped queries share a short 20s TTL cache + single-flight deduplication
+ * across concurrent `/customers` and `/customers/stats` calls.
  */
 export const resolveOrderCountsFilter = async (
   fastify: FastifyInstance,
@@ -141,26 +177,85 @@ export const resolveOrderCountsFilter = async (
     (visitsMin === undefined || !Number.isFinite(visitsMin) || 0 >= visitsMin) &&
     (visitsMax === undefined || !Number.isFinite(visitsMax) || 0 <= visitsMax);
 
+  const isPureAtLeastOneVisit =
+    visitsMin === 1 &&
+    (spentMin === undefined || !Number.isFinite(spentMin)) &&
+    (spentMax === undefined || !Number.isFinite(spentMax)) &&
+    (visitsMax === undefined || !Number.isFinite(visitsMax));
+
   const scopePredicate =
     allowedUserIds !== null && allowedUserIds.length > 0 && allowedUserIds.length <= 5000
       ? ` AND user_id IN (${allowedUserIds.join(',')})`
       : '';
 
-  if (!zeroMatches) {
-    const matchedRows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number | bigint }[]>(
+  const runDbLookup = async (): Promise<{ ids: number[]; zeroMatches: boolean }> => {
+    if (!zeroMatches) {
+      const matchedRows = isPureAtLeastOneVisit
+        ? await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number | bigint }[]>(
+            `SELECT DISTINCT user_id
+             FROM \`order\`
+             WHERE order_state = 'Completed'${scopePredicate}`
+          )
+        : await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number | bigint }[]>(
+            `SELECT user_id
+             FROM \`order\`
+             WHERE order_state = 'Completed'${scopePredicate}
+             GROUP BY user_id
+             HAVING ${havingClauses.join(' AND ')}`,
+            ...havingParams
+          );
+      return { ids: matchedRows.map((r) => Number(r.user_id)), zeroMatches: false };
+    }
+
+    const rejectedRows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number | bigint }[]>(
       `SELECT user_id
        FROM \`order\`
        WHERE order_state = 'Completed'${scopePredicate}
        GROUP BY user_id
-       HAVING ${havingClauses.join(' AND ')}`,
+       HAVING NOT (${havingClauses.join(' AND ')})`,
       ...havingParams
     );
-    const matchedIds = matchedRows.map((r) => Number(r.user_id));
-    if (matchedIds.length === 0) {
+    return { ids: rejectedRows.map((r) => Number(r.user_id)), zeroMatches: true };
+  };
+
+  let ids: number[];
+  const cacheKey = `${spentMin ?? ''}|${spentMax ?? ''}|${visitsMin ?? ''}|${visitsMax ?? ''}|${zeroMatches ? 1 : 0}`;
+  const cache = getOrderCountsCache(fastify);
+  const inflight = getOrderCountsInFlight(fastify);
+  const now = Date.now();
+  const cached = cache.get(cacheKey);
+  const unscopedInFlight = inflight.get(cacheKey);
+
+  if (cached && cached.expiresAt > now) {
+    ids = cached.ids;
+  } else if (unscopedInFlight) {
+    ids = (await unscopedInFlight).ids;
+  } else if (!scopePredicate) {
+    const pending = runDbLookup().finally(() => {
+      inflight.delete(cacheKey);
+    });
+    inflight.set(cacheKey, pending);
+    const fetched = await pending;
+    if (cache.size >= ORDER_COUNTS_CACHE_MAX_ENTRIES) {
+      const oldestKey = cache.keys().next().value;
+      if (oldestKey !== undefined) cache.delete(oldestKey);
+    }
+    cache.set(cacheKey, {
+      ids: fetched.ids,
+      zeroMatches: fetched.zeroMatches,
+      expiresAt: Date.now() + ORDER_COUNTS_FILTER_CACHE_TTL_MS,
+    });
+    ids = fetched.ids;
+  } else {
+    ids = (await runDbLookup()).ids;
+  }
+
+  if (!zeroMatches) {
+    if (ids.length === 0) {
       return { allowedUserIds: [], excludedUserIds, isEmpty: true };
     }
     if (allowedUserIds !== null) {
-      const matchedSet = new Set(matchedIds);
+      const matchedSet = new Set(ids);
       const nextAllowed = allowedUserIds.filter((id) => matchedSet.has(id));
       return {
         allowedUserIds: nextAllowed,
@@ -169,26 +264,17 @@ export const resolveOrderCountsFilter = async (
       };
     }
     return {
-      allowedUserIds: matchedIds,
+      allowedUserIds: ids.slice(),
       excludedUserIds,
       isEmpty: false,
     };
   }
 
-  const rejectedRows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number | bigint }[]>(
-    `SELECT user_id
-     FROM \`order\`
-     WHERE order_state = 'Completed'${scopePredicate}
-     GROUP BY user_id
-     HAVING NOT (${havingClauses.join(' AND ')})`,
-    ...havingParams
-  );
-  const rejectedIds = rejectedRows.map((r) => Number(r.user_id));
-  if (rejectedIds.length === 0) {
+  if (ids.length === 0) {
     return { allowedUserIds, excludedUserIds, isEmpty: false };
   }
 
-  const rejectedSet = new Set(rejectedIds);
+  const rejectedSet = new Set(ids);
   if (allowedUserIds !== null) {
     const nextAllowed = allowedUserIds.filter((id) => !rejectedSet.has(id));
     return {
@@ -200,8 +286,8 @@ export const resolveOrderCountsFilter = async (
 
   const nextExcluded =
     excludedUserIds !== null && excludedUserIds.length > 0
-      ? Array.from(new Set([...excludedUserIds, ...rejectedIds]))
-      : rejectedIds;
+      ? Array.from(new Set([...excludedUserIds, ...ids]))
+      : ids.slice();
   return {
     allowedUserIds,
     excludedUserIds: nextExcluded,

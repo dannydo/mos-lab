@@ -75,6 +75,36 @@ test('resolveOrderCountsFilter removes rejected IDs from allowedUserIds when zer
   assert.deepEqual(res, { allowedUserIds: [1, 3], excludedUserIds: null, isEmpty: false });
 });
 
+test('resolveOrderCountsFilter uses DISTINCT fast-path for pure totalVisitsMin=1 and caches unscoped results', async () => {
+  let queryCount = 0;
+  let capturedSql = '';
+  const fastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          queryCount += 1;
+          capturedSql = sql;
+          await new Promise((resolve) => setTimeout(resolve, 15));
+          return [{ user_id: 101 }, { user_id: 102 }];
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  const [r1, r2] = await Promise.all([
+    resolveOrderCountsFilter(fastify, { totalVisitsMin: '1' }, null, null),
+    resolveOrderCountsFilter(fastify, { totalVisitsMin: '1' }, null, null),
+  ]);
+  const r3 = await resolveOrderCountsFilter(fastify, { totalVisitsMin: '1' }, [102, 999], null);
+
+  assert.equal(queryCount, 1);
+  assert.match(capturedSql, /SELECT DISTINCT user_id/);
+  assert.doesNotMatch(capturedSql, /GROUP BY user_id/);
+  assert.deepEqual(r1.allowedUserIds, [101, 102]);
+  assert.deepEqual(r2.allowedUserIds, [101, 102]);
+  assert.deepEqual(r3.allowedUserIds, [102]);
+});
+
 test('subtractExcludedUserIds filters excluded IDs out of allowedUserIds cleanly', () => {
   assert.equal(subtractExcludedUserIds(null, [1, 2]), null);
   assert.deepEqual(subtractExcludedUserIds([1, 2, 3, 4], null), [1, 2, 3, 4]);

@@ -853,6 +853,22 @@ QUY TẮC BẮT BUỘC:
     return { quote: fallbackResult.quote, source: 'fallback', persona };
   }
 
+  private static audioMemoryCache = new Map<string, { buffer: Buffer; expiresAt: number }>();
+  private static audioInFlightPromises = new Map<string, Promise<Buffer>>();
+  private static readonly AUDIO_MEMORY_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+  private static readonly AUDIO_MEMORY_CACHE_MAX_ENTRIES = 120;
+
+  private static cacheAudioBuffer(hash: string, buffer: Buffer) {
+    if (this.audioMemoryCache.size >= this.AUDIO_MEMORY_CACHE_MAX_ENTRIES) {
+      const oldestKey = this.audioMemoryCache.keys().next().value;
+      if (oldestKey !== undefined) this.audioMemoryCache.delete(oldestKey);
+    }
+    this.audioMemoryCache.set(hash, {
+      buffer,
+      expiresAt: Date.now() + this.AUDIO_MEMORY_CACHE_TTL_MS,
+    });
+  }
+
   static async synthesizeCelebrationAudio(
     text: string,
     voice = 'vi-VN-HoaiMyNeural',
@@ -862,46 +878,56 @@ QUY TẮC BẮT BUỘC:
     const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
     if (!cleanText) throw new Error('Text is empty');
 
+    const hash = createHash('md5').update(`${cleanText}_${voice}_${rate}_${pitch}`).digest('hex');
+    const memCached = this.audioMemoryCache.get(hash);
+    if (memCached && memCached.expiresAt > Date.now()) {
+      return memCached.buffer;
+    }
+
     const cacheDir = '/tmp/telesale_audio_cache';
     if (!existsSync(cacheDir)) {
       mkdirSync(cacheDir, { recursive: true });
     }
 
-    const hash = createHash('md5').update(`${cleanText}_${voice}_${rate}_${pitch}`).digest('hex');
     const cacheFile = `${cacheDir}/${hash}.mp3`;
-
     if (existsSync(cacheFile)) {
       const buf = readFileSync(cacheFile);
       if (buf.length > 500) {
+        this.cacheAudioBuffer(hash, buf);
         return buf;
       }
     }
 
-    const pythonCandidates = [
-      '/Users/dannydo/.gemini/antigravity/venv-f5tts/bin/python',
-      '/usr/bin/python3',
-      '/usr/local/bin/python3',
-      'python3',
-    ];
-
-    let pythonBin = 'python3';
-    for (const c of pythonCandidates) {
-      if (existsSync(c)) {
-        pythonBin = c;
-        break;
-      }
+    const existingPromise = this.audioInFlightPromises.get(hash);
+    if (existingPromise) {
+      return existingPromise;
     }
 
-    const uniqueId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const tempTextFile = `${cacheDir}/tmp_in_${uniqueId}.txt`;
-    const tempFile = `${cacheDir}/tmp_${uniqueId}.mp3`;
-    const execFileAsync = promisify(execFile);
+    const synthPromise = (async (): Promise<Buffer> => {
+      const pythonCandidates = [
+        '/Users/dannydo/.gemini/antigravity/venv-f5tts/bin/python',
+        '/usr/bin/python3',
+        '/usr/local/bin/python3',
+        'python3',
+      ];
 
-    try {
-      // Write text to file to avoid command-line argument limits and encoding issues
-      writeFileSync(tempTextFile, cleanText, 'utf8');
+      let pythonBin = 'python3';
+      for (const c of pythonCandidates) {
+        if (existsSync(c)) {
+          pythonBin = c;
+          break;
+        }
+      }
 
-      const pyScript = `import sys, asyncio, edge_tts
+      const uniqueId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const tempTextFile = `${cacheDir}/tmp_in_${uniqueId}.txt`;
+      const tempFile = `${cacheDir}/tmp_${uniqueId}.mp3`;
+      const execFileAsync = promisify(execFile);
+
+      try {
+        writeFileSync(tempTextFile, cleanText, 'utf8');
+
+        const pyScript = `import sys, asyncio, edge_tts
 
 text_file = sys.argv[1]
 with open(text_file, 'r', encoding='utf-8') as f:
@@ -916,60 +942,66 @@ async def synthesize():
     for attempt in range(2):
         try:
             comm = edge_tts.Communicate(text, voice, rate=rate) if rate else edge_tts.Communicate(text, voice)
-            await asyncio.wait_for(comm.save(out_path), timeout=25.0)
+            await asyncio.wait_for(comm.save(out_path), timeout=10.0)
             return
         except Exception as e:
             last_err = e
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(0.25)
     if last_err:
         raise last_err
 
 asyncio.run(synthesize())`;
 
-      try {
-        await execFileAsync(pythonBin, ['-c', pyScript, tempTextFile, voice, rate, tempFile], { timeout: 28_000 });
-      } catch {
-        // Fallback to default rate Communicate without custom prosody if needed
-        const fallbackPy = `import sys, asyncio, edge_tts
+        try {
+          await execFileAsync(pythonBin, ['-c', pyScript, tempTextFile, voice, rate, tempFile], { timeout: 14_000 });
+        } catch {
+          const fallbackPy = `import sys, asyncio, edge_tts
 with open(sys.argv[1], 'r', encoding='utf-8') as f:
     text = f.read().strip()
-asyncio.run(edge_tts.Communicate(text, sys.argv[2]).save(sys.argv[3]))`;
-        await execFileAsync(pythonBin, ['-c', fallbackPy, tempTextFile, voice, tempFile], { timeout: 28_000 });
-      }
+asyncio.run(asyncio.wait_for(edge_tts.Communicate(text, sys.argv[2]).save(sys.argv[3]), timeout=10.0))`;
+          await execFileAsync(pythonBin, ['-c', fallbackPy, tempTextFile, voice, tempFile], { timeout: 12_000 });
+        }
 
-      if (existsSync(tempFile)) {
-        const audioBuf = readFileSync(tempFile);
-        if (audioBuf.length > 500) {
+        if (existsSync(tempFile)) {
+          const audioBuf = readFileSync(tempFile);
+          if (audioBuf.length > 500) {
+            this.cacheAudioBuffer(hash, audioBuf);
+            try {
+              writeFileSync(cacheFile, audioBuf);
+              unlinkSync(tempFile);
+            } catch {
+              // cache write failure is non-fatal
+            }
+            return audioBuf;
+          }
+        }
+      } catch (err: unknown) {
+        if (existsSync(tempFile)) {
           try {
-            writeFileSync(cacheFile, audioBuf);
             unlinkSync(tempFile);
           } catch {
-            // cache write failure is non-fatal
+            // ignore cleanup failure
           }
-          return audioBuf;
+        }
+        const errMsg = err instanceof Error ? err.message : String(err);
+        throw new Error(`Edge TTS synthesis failed: ${errMsg}`, { cause: err });
+      } finally {
+        if (existsSync(tempTextFile)) {
+          try {
+            unlinkSync(tempTextFile);
+          } catch {
+            // ignore cleanup failure
+          }
         }
       }
-    } catch (err: unknown) {
-      if (existsSync(tempFile)) {
-        try {
-          unlinkSync(tempFile);
-        } catch {
-          // ignore cleanup failure
-        }
-      }
-      const errMsg = err instanceof Error ? err.message : String(err);
-      throw new Error(`Edge TTS synthesis failed: ${errMsg}`, { cause: err });
-    } finally {
-      if (existsSync(tempTextFile)) {
-        try {
-          unlinkSync(tempTextFile);
-        } catch {
-          // ignore cleanup failure
-        }
-      }
-    }
 
-    throw new Error('No audio produced by Edge TTS');
+      throw new Error('No audio produced by Edge TTS');
+    })().finally(() => {
+      this.audioInFlightPromises.delete(hash);
+    });
+
+    this.audioInFlightPromises.set(hash, synthPromise);
+    return synthPromise;
   }
 
   private static tvJournalExecutionStore = new Map<string, Partial<TelesaleTvEventLog>>();
