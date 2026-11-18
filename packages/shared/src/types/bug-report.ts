@@ -588,7 +588,12 @@ export function getExecutionOwnerDisplayName(owner?: string | null): string {
 }
 
 /** Antigravity model tier selected by Danny when approving code/test execution. */
-export const INBOX_IMPLEMENTATION_MODEL_TIERS = ['flash_lite', 'flash', 'pro'] as const;
+export const INBOX_IMPLEMENTATION_MODEL_TIERS = [
+  'hydrogen',
+  'orchestrator_carbon',
+  'orchestrator_argon',
+  'flash',
+] as const;
 export type InboxImplementationModelTier = (typeof INBOX_IMPLEMENTATION_MODEL_TIERS)[number];
 
 /** Safe, durable IDE task locator rendered by Inbox; never includes the receipt nonce. */

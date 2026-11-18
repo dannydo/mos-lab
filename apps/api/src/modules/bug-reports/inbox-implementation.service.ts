@@ -373,21 +373,33 @@ export function normalizeInboxModelTier(value: unknown): InboxImplementationMode
   const normalized = String(value || '')
     .trim()
     .toLowerCase();
-  if (normalized === 'flash_lite' || normalized === 'flash' || normalized === 'pro') {
+  if (
+    normalized === 'hydrogen' ||
+    normalized === 'orchestrator_carbon' ||
+    normalized === 'orchestrator_argon' ||
+    normalized === 'flash'
+  ) {
     return normalized;
   }
+  // Backward-compatible mapping for historical approvals/labels
+  if (normalized === 'pro') return 'orchestrator_argon';
+  if (normalized === 'flash_lite') return 'flash';
   return undefined;
 }
 
+const MODEL_TIER_LABEL_PATTERN = /\[model:(hydrogen|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/i;
+const MODEL_TIER_LABEL_STRIP_PATTERN =
+  /\s*\[model:(?:hydrogen|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/gi;
+
 export function extractModelTierFromLabel(label: string | null | undefined): InboxImplementationModelTier | undefined {
   if (!label) return undefined;
-  const match = label.match(/\[model:(flash_lite|flash|pro)\]/i);
+  const match = label.match(MODEL_TIER_LABEL_PATTERN);
   return match ? normalizeInboxModelTier(match[1]) : undefined;
 }
 
 export function stripModelTierMarker(label: string | null | undefined): string | null {
   if (!label) return null;
-  const stripped = label.replace(/\s*\[model:(?:flash_lite|flash|pro)\]/gi, '').trim();
+  const stripped = label.replace(MODEL_TIER_LABEL_STRIP_PATTERN, '').trim();
   return stripped || null;
 }
 
