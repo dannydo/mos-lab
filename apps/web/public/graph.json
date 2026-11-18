@@ -2437,7 +2437,7 @@
         "dbSource": "crm",
         "modelName": "CrmBkGame",
         "tableName": "crm_bk_games",
-        "fieldCount": 24,
+        "fieldCount": 26,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -2492,6 +2492,24 @@
         "modelName": "CrmBkGameDoneBonus",
         "tableName": "crm_bk_game_done_bonuses",
         "fieldCount": 16,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["gameId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmBkGameTeamBookingDoneBonus",
+      "type": "PrismaModel",
+      "label": "crm.CrmBkGameTeamBookingDoneBonus",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmBkGameTeamBookingDoneBonus",
+        "tableName": "crm_bk_game_team_booking_done_bonuses",
+        "fieldCount": 15,
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["gameId"],
@@ -5672,7 +5690,7 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 262
+        "line": 264
       }
     },
     {
@@ -5686,7 +5704,7 @@
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 357
+        "line": 372
       }
     },
     {
@@ -5700,7 +5718,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 496
+        "line": 511
       }
     },
     {
@@ -5938,7 +5956,7 @@
         "path": "/api/ide-task-bridge/provisioning/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 239
+        "line": 241
       }
     },
     {
@@ -5952,7 +5970,7 @@
         "path": "/api/ag-task-bridge/provisioning/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 264
+        "line": 266
       }
     },
     {
@@ -5966,7 +5984,7 @@
         "path": "/api/ag-task-bridge/deploy/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 279
+        "line": 281
       }
     },
     {
@@ -5980,7 +5998,7 @@
         "path": "/api/ag-task-bridge/reports/:reportId/release-preview",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 314
+        "line": 326
       }
     },
     {
@@ -5994,7 +6012,7 @@
         "path": "/api/ide-task-bridge/provisioning/:jobId/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 327
+        "line": 339
       }
     },
     {
@@ -6008,7 +6026,7 @@
         "path": "/api/ide-task-bridge/provisioning/:jobId/defer",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 345
+        "line": 357
       }
     },
     {
@@ -6022,7 +6040,7 @@
         "path": "/api/ide-task-bridge/:id/bind",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 363
+        "line": 375
       }
     },
     {
@@ -6036,7 +6054,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/handoff",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 376
+        "line": 388
       }
     },
     {
@@ -6050,7 +6068,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/release-preview",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 391
+        "line": 403
       }
     },
     {
@@ -6064,7 +6082,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 415
+        "line": 427
       }
     },
     {
@@ -6078,7 +6096,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 431
+        "line": 443
       }
     },
     {
@@ -6092,7 +6110,7 @@
         "path": "/api/request-classifier/stream",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 448
+        "line": 460
       }
     },
     {
@@ -6106,7 +6124,7 @@
         "path": "/api/bug-reports/:id/implementation-schema-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 462
+        "line": 474
       }
     },
     {
@@ -6120,7 +6138,7 @@
         "path": "/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 491
+        "line": 503
       }
     },
     {
@@ -6134,7 +6152,7 @@
         "path": "/api/bug-reports/:id/implementation-build-lock-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 523
+        "line": 535
       }
     },
     {
@@ -6148,7 +6166,7 @@
         "path": "/api/request-classifications",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 552
+        "line": 564
       }
     },
     {
@@ -6162,7 +6180,7 @@
         "path": "/api/request-classifications/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 570
+        "line": 582
       }
     },
     {
@@ -6176,7 +6194,7 @@
         "path": "/api/request-conversations",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 579
+        "line": 591
       }
     },
     {
@@ -6190,7 +6208,7 @@
         "path": "/api/request-conversations/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 592
+        "line": 604
       }
     },
     {
@@ -6204,7 +6222,7 @@
         "path": "/api/request-conversations/:id/replies",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 605
+        "line": 617
       }
     },
     {
@@ -6218,7 +6236,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 620
+        "line": 632
       }
     },
     {
@@ -6232,7 +6250,7 @@
         "path": "/api/bug-reports/mine",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 643
+        "line": 655
       }
     },
     {
@@ -6246,7 +6264,7 @@
         "path": "/api/bug-reports/notifications/read",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 669
+        "line": 681
       }
     },
     {
@@ -6260,7 +6278,7 @@
         "path": "/api/bug-reports/:id/review",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 683
+        "line": 695
       }
     },
     {
@@ -6274,7 +6292,7 @@
         "path": "/api/bug-reports/:id/cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 708
+        "line": 720
       }
     },
     {
@@ -6288,7 +6306,7 @@
         "path": "/api/bug-reports/:id/cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 724
+        "line": 736
       }
     },
     {
@@ -6302,7 +6320,7 @@
         "path": "/api/bug-reports/:id/comments",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 740
+        "line": 752
       }
     },
     {
@@ -6316,7 +6334,7 @@
         "path": "/api/bug-reports/:id/retry-clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 771
+        "line": 783
       }
     },
     {
@@ -6330,7 +6348,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 787
+        "line": 799
       }
     },
     {
@@ -6344,7 +6362,7 @@
         "path": "/api/bug-reports/worker-health",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 795
+        "line": 807
       }
     },
     {
@@ -6358,7 +6376,7 @@
         "path": "/api/bug-reports/timing/dashboard",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 818
+        "line": 830
       }
     },
     {
@@ -6372,7 +6390,7 @@
         "path": "/api/bug-reports/:id/timing",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 832
+        "line": 844
       }
     },
     {
@@ -6386,7 +6404,7 @@
         "path": "/api/bug-reports/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 846
+        "line": 858
       }
     },
     {
@@ -6400,7 +6418,7 @@
         "path": "/api/bug-reports/:id/triage",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 855
+        "line": 867
       }
     },
     {
@@ -6414,7 +6432,7 @@
         "path": "/api/bug-reports/:id/implementation-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 865
+        "line": 877
       }
     },
     {
@@ -6428,7 +6446,7 @@
         "path": "/api/bug-reports/:id/implementation-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 911
+        "line": 929
       }
     },
     {
@@ -6442,7 +6460,7 @@
         "path": "/api/bug-reports/:id/ide-implementation-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 935
+        "line": 953
       }
     },
     {
@@ -6456,7 +6474,7 @@
         "path": "/api/bug-reports/:id/ide-handoff-cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 961
+        "line": 979
       }
     },
     {
@@ -6470,7 +6488,7 @@
         "path": "/api/bug-reports/:id/ide-commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 975
+        "line": 993
       }
     },
     {
@@ -6484,7 +6502,7 @@
         "path": "/api/bug-reports/:id/implementation-worker-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1001
+        "line": 1019
       }
     },
     {
@@ -6498,7 +6516,7 @@
         "path": "/api/bug-reports/:id/implementation-commit-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1030
+        "line": 1048
       }
     },
     {
@@ -6512,7 +6530,7 @@
         "path": "/api/bug-reports/:id/implementation-deploy-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1055
+        "line": 1073
       }
     },
     {
@@ -6526,7 +6544,7 @@
         "path": "/api/bug-reports/:id/implementation-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1080
+        "line": 1098
       }
     },
     {
@@ -6540,7 +6558,7 @@
         "path": "/api/bug-reports/:id/plan-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1104
+        "line": 1122
       }
     },
     {
@@ -6554,7 +6572,7 @@
         "path": "/api/ide-release-checkpoints/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1128
+        "line": 1146
       }
     },
     {
@@ -6568,7 +6586,7 @@
         "path": "/api/bug-reports/:id/implementation-acceptance",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1142
+        "line": 1160
       }
     },
     {
@@ -6582,7 +6600,7 @@
         "path": "/api/bug-reports/:id/confirm-close",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1160
+        "line": 1178
       }
     },
     {
@@ -6596,7 +6614,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1179
+        "line": 1197
       }
     },
     {
@@ -6610,7 +6628,7 @@
         "path": "/api/agent/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1197
+        "line": 1215
       }
     },
     {
@@ -6624,7 +6642,7 @@
         "path": "/api/agent/bug-reports/:key",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1205
+        "line": 1223
       }
     },
     {
@@ -6638,7 +6656,7 @@
         "path": "/api/agent/bug-reports/:key/clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1214
+        "line": 1232
       }
     },
     {
@@ -6652,7 +6670,7 @@
         "path": "/api/agent/bug-reports/:key/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1233
+        "line": 1251
       }
     },
     {
@@ -6666,7 +6684,7 @@
         "path": "/api/agent/bug-reports/:key/fixed",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1247
+        "line": 1265
       }
     },
     {
@@ -6680,7 +6698,7 @@
         "path": "/api/agent/bug-reports/:key/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1257
+        "line": 1275
       }
     },
     {
@@ -6694,7 +6712,7 @@
         "path": "/api/request-classifier/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1275
+        "line": 1293
       }
     },
     {
@@ -6708,7 +6726,7 @@
         "path": "/api/request-classifier/health/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1287
+        "line": 1305
       }
     },
     {
@@ -6722,7 +6740,7 @@
         "path": "/api/request-classifier/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1300
+        "line": 1318
       }
     },
     {
@@ -6736,7 +6754,7 @@
         "path": "/api/request-classifier/conversations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1310
+        "line": 1328
       }
     },
     {
@@ -6750,7 +6768,7 @@
         "path": "/api/request-classifier/conversations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1323
+        "line": 1341
       }
     },
     {
@@ -6764,7 +6782,7 @@
         "path": "/api/request-classifier/conversations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1343
+        "line": 1361
       }
     },
     {
@@ -6778,7 +6796,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1362
+        "line": 1380
       }
     },
     {
@@ -6792,7 +6810,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1375
+        "line": 1405
       }
     },
     {
@@ -6806,7 +6824,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1404
+        "line": 1434
       }
     },
     {
@@ -6820,7 +6838,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1424
+        "line": 1454
       }
     },
     {
@@ -6834,7 +6852,7 @@
         "path": "/api/request-classifier/inbox-plans/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1442
+        "line": 1472
       }
     },
     {
@@ -6848,7 +6866,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1455
+        "line": 1497
       }
     },
     {
@@ -6862,7 +6880,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1479
+        "line": 1521
       }
     },
     {
@@ -6876,7 +6894,7 @@
         "path": "/api/request-classifier/inbox-implementations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1497
+        "line": 1539
       }
     },
     {
@@ -6890,7 +6908,7 @@
         "path": "/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1515
+        "line": 1557
       }
     },
     {
@@ -6904,7 +6922,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1526
+        "line": 1568
       }
     },
     {
@@ -6918,7 +6936,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/start",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1542
+        "line": 1584
       }
     },
     {
@@ -6932,7 +6950,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/renew",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1562
+        "line": 1604
       }
     },
     {
@@ -6946,7 +6964,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1585
+        "line": 1627
       }
     },
     {
@@ -6960,7 +6978,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/commit-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1616
+        "line": 1658
       }
     },
     {
@@ -6974,7 +6992,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/deploy-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1634
+        "line": 1676
       }
     },
     {
@@ -6988,7 +7006,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1651
+        "line": 1693
       }
     },
     {
@@ -7002,7 +7020,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/continue",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1682
+        "line": 1724
       }
     },
     {
@@ -7016,7 +7034,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1711
+        "line": 1753
       }
     },
     {
@@ -7030,7 +7048,7 @@
         "path": "/api/request-classifier/jobs/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1731
+        "line": 1773
       }
     },
     {
@@ -7044,7 +7062,7 @@
         "path": "/api/request-classifier/jobs/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1754
+        "line": 1796
       }
     },
     {
@@ -7058,7 +7076,7 @@
         "path": "/api/request-classifier/jobs/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1774
+        "line": 1816
       }
     },
     {
@@ -11024,6 +11042,20 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/bk/games/:id/team-booking-done-bonuses",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1469
+      }
+    },
+    {
       "id": "route:POST:/api/kpi/bk/games",
       "type": "FastifyRoute",
       "label": "POST /api/kpi/bk/games",
@@ -11034,7 +11066,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1469
+        "line": 1501
       }
     },
     {
@@ -11048,7 +11080,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1487
+        "line": 1519
       }
     },
     {
@@ -11062,7 +11094,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1508
+        "line": 1540
       }
     },
     {
@@ -11076,7 +11108,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1529
+        "line": 1561
       }
     },
     {
@@ -18739,6 +18771,90 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BkGameTeamKpiSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneTier",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusConfig",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneBonusConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneBonusConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusStaffDay",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneBonusStaffDay",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneBonusStaffDay",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusDailyResult",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneBonusDailyResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneBonusDailyResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusStaffTotal",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneBonusStaffTotal",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneBonusStaffTotal",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusRecord",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneBonusRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneBonusRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusSummary",
+      "type": "SharedType",
+      "label": "BkGameTeamBookingDoneBonusSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameTeamBookingDoneBonusSummary",
         "package": "@mos-lab/shared"
       }
     },
@@ -37883,8 +37999,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14739162,
-        "lineCount": 324612,
+        "sizeBytes": 14826611,
+        "lineCount": 326540,
         "ext": ".ts"
       }
     },
@@ -38455,8 +38571,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35440,
-        "lineCount": 683,
+        "sizeBytes": 36136,
+        "lineCount": 698,
         "ext": ".ts"
       }
     },
@@ -38715,8 +38831,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 132531,
-        "lineCount": 3171,
+        "sizeBytes": 132417,
+        "lineCount": 3169,
         "ext": ".ts"
       }
     },
@@ -38832,8 +38948,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-ide-release.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23579,
-        "lineCount": 526,
+        "sizeBytes": 23618,
+        "lineCount": 530,
         "ext": ".ts"
       }
     },
@@ -38871,8 +38987,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 82977,
-        "lineCount": 2314,
+        "sizeBytes": 84814,
+        "lineCount": 2357,
         "ext": ".ts"
       }
     },
@@ -38884,8 +39000,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 162743,
-        "lineCount": 4094,
+        "sizeBytes": 163830,
+        "lineCount": 4109,
         "ext": ".ts"
       }
     },
@@ -38962,8 +39078,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-worker-status.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4497,
-        "lineCount": 112,
+        "sizeBytes": 6745,
+        "lineCount": 177,
         "ext": ".ts"
       }
     },
@@ -38975,8 +39091,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-worker-status.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6540,
-        "lineCount": 177,
+        "sizeBytes": 11327,
+        "lineCount": 292,
         "ext": ".ts"
       }
     },
@@ -39079,8 +39195,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 73051,
-        "lineCount": 1789,
+        "sizeBytes": 74836,
+        "lineCount": 1831,
         "ext": ".ts"
       }
     },
@@ -41354,8 +41470,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62737,
-        "lineCount": 1545,
+        "sizeBytes": 63926,
+        "lineCount": 1577,
         "ext": ".ts"
       }
     },
@@ -41633,6 +41749,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.test.ts",
+      "type": "File",
+      "label": "bk-game-team-booking-done-bonus.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16931,
+        "lineCount": 431,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts",
+      "type": "File",
+      "label": "bk-game-team-booking-done-bonus.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 29532,
+        "lineCount": 801,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "type": "File",
       "label": "bk-game.service.test.ts",
@@ -41653,8 +41795,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 42638,
-        "lineCount": 1199,
+        "sizeBytes": 46089,
+        "lineCount": 1282,
         "ext": ".ts"
       }
     },
@@ -46047,8 +46189,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8729,
-        "lineCount": 237,
+        "sizeBytes": 10194,
+        "lineCount": 277,
         "ext": ".tsx"
       }
     },
@@ -46060,8 +46202,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45098,
-        "lineCount": 1077,
+        "sizeBytes": 46302,
+        "lineCount": 1101,
         "ext": ".tsx"
       }
     },
@@ -46073,8 +46215,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2389,
-        "lineCount": 82,
+        "sizeBytes": 3526,
+        "lineCount": 113,
         "ext": ".tsx"
       }
     },
@@ -46086,8 +46228,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameEditModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14105,
-        "lineCount": 326,
+        "sizeBytes": 15521,
+        "lineCount": 352,
         "ext": ".tsx"
       }
     },
@@ -46112,8 +46254,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8580,
-        "lineCount": 261,
+        "sizeBytes": 12672,
+        "lineCount": 388,
         "ext": ".tsx"
       }
     },
@@ -46125,8 +46267,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 69874,
-        "lineCount": 1368,
+        "sizeBytes": 77834,
+        "lineCount": 1519,
         "ext": ".tsx"
       }
     },
@@ -46153,6 +46295,45 @@
       "metadata": {
         "sizeBytes": 28288,
         "lineCount": 711,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusConfigTable.tsx",
+      "type": "File",
+      "label": "BkTeamBookingDoneBonusConfigTable.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusConfigTable.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12616,
+        "lineCount": 319,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusDetailsDrawer.tsx",
+      "type": "File",
+      "label": "BkTeamBookingDoneBonusDetailsDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusDetailsDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11498,
+        "lineCount": 317,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusPanel.tsx",
+      "type": "File",
+      "label": "BkTeamBookingDoneBonusPanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19680,
+        "lineCount": 407,
         "ext": ".tsx"
       }
     },
@@ -46192,6 +46373,19 @@
       "metadata": {
         "sizeBytes": 5200,
         "lineCount": 171,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx",
+      "type": "File",
+      "label": "BkTeamBookingDoneBonus.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7717,
+        "lineCount": 217,
         "ext": ".tsx"
       }
     },
@@ -46307,8 +46501,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27447,
-        "lineCount": 603,
+        "sizeBytes": 27572,
+        "lineCount": 605,
         "ext": ".tsx"
       }
     },
@@ -46320,8 +46514,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37391,
-        "lineCount": 825,
+        "sizeBytes": 38942,
+        "lineCount": 858,
         "ext": ".tsx"
       }
     },
@@ -46398,8 +46592,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportImplementationStatusCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6662,
-        "lineCount": 154,
+        "sizeBytes": 6343,
+        "lineCount": 149,
         "ext": ".tsx"
       }
     },
@@ -46463,8 +46657,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4095,
-        "lineCount": 141,
+        "sizeBytes": 5243,
+        "lineCount": 182,
         "ext": ".tsx"
       }
     },
@@ -46476,8 +46670,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10656,
-        "lineCount": 275,
+        "sizeBytes": 11087,
+        "lineCount": 285,
         "ext": ".tsx"
       }
     },
@@ -46567,8 +46761,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24833,
-        "lineCount": 651,
+        "sizeBytes": 25354,
+        "lineCount": 659,
         "ext": ".ts"
       }
     },
@@ -53080,8 +53274,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22182,
-        "lineCount": 568,
+        "sizeBytes": 22592,
+        "lineCount": 580,
         "ext": ".ts"
       }
     },
@@ -53548,8 +53742,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 195121,
-        "lineCount": 2417,
+        "sizeBytes": 198584,
+        "lineCount": 2460,
         "ext": ".ts"
       }
     },
@@ -53808,8 +54002,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10222,
-        "lineCount": 341,
+        "sizeBytes": 13309,
+        "lineCount": 459,
         "ext": ".ts"
       }
     },
@@ -53847,8 +54041,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 46755,
-        "lineCount": 1462,
+        "sizeBytes": 47678,
+        "lineCount": 1484,
         "ext": ".ts"
       }
     },
@@ -55680,6 +55874,13 @@
     {
       "id": "edge:prisma:crm:CrmBkGameDoneBonus:ws:apps/api",
       "source": "prisma:crm:CrmBkGameDoneBonus",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmBkGameTeamBookingDoneBonus:ws:apps/api",
+      "source": "prisma:crm:CrmBkGameTeamBookingDoneBonus",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -59857,6 +60058,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses:ws:apps/api",
+      "source": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:POST:/api/kpi/bk/games:ws:apps/api",
       "source": "route:POST:/api/kpi/bk/games",
       "target": "ws:apps/api",
@@ -64003,6 +64211,55 @@
     {
       "id": "edge:type:@mos-lab/shared:BkGameTeamKpiSummary:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkGameTeamKpiSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneTier",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneBonusConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneBonusStaffDay:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusStaffDay",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneBonusDailyResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusDailyResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneBonusStaffTotal:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusStaffTotal",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneBonusRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameTeamBookingDoneBonusSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameTeamBookingDoneBonusSummary",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -79254,6 +79511,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-game.service.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "target": "ws:packages/shared",
@@ -80493,6 +80764,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusConfigTable.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusConfigTable.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusDetailsDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusDetailsDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusPanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusPanel.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "target": "ws:packages/shared",
@@ -80509,6 +80801,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bk/components/__tests__/BkDoneBonus.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/__tests__/BkDoneBonus.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87101,6 +87400,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/chat:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/chat",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/chat:route:POST:/api/kpi/bk/games",
       "source": "page:/chat",
       "target": "route:POST:/api/kpi/bk/games",
@@ -92099,6 +92405,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/kpi/bk/games",
@@ -93285,6 +93598,13 @@
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -94867,6 +95187,13 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -99074,6 +99401,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -104482,6 +104816,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/kpi/bk/games",
@@ -109312,6 +109653,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/kpi/bk/games",
@@ -113428,6 +113776,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/kpi/bk/games",
@@ -115074,31 +115429,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4220,
-    "totalEdges": 8621,
+    "totalNodes": 4235,
+    "totalEdges": 8644,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 182,
-      "FastifyRoute": 772,
+      "PrismaModel": 183,
+      "FastifyRoute": 773,
       "Component": 65,
-      "SharedType": 1505,
+      "SharedType": 1512,
       "DesignToken": 12,
       "UIComponent": 380,
-      "File": 1301
+      "File": 1307
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1699,
-      "HANDLES_ROUTE": 772,
+      "EXPORTS": 1707,
+      "HANDLES_ROUTE": 773,
       "RENDERS": 445,
       "USES_TOKEN": 382,
-      "IMPORTS": 733,
+      "IMPORTS": 739,
       "QUERIES_MODEL": 431,
-      "API_CALL": 4159
+      "API_CALL": 4167
     },
-    "fastifyRouteCount": 777,
-    "prismaModelCount": 182,
+    "fastifyRouteCount": 778,
+    "prismaModelCount": 183,
     "nextPageCount": 65,
-    "sharedTypeCount": 1505
+    "sharedTypeCount": 1512
   },
   "routes": [
     {
@@ -118959,6 +119314,13 @@
       "moduleName": "kpi"
     },
     {
+      "method": "GET",
+      "path": "/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
       "method": "POST",
       "path": "/api/kpi/bk/games",
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
@@ -121743,7 +122105,7 @@
       "dbSource": "crm",
       "modelName": "CrmBkGame",
       "tableName": "crm_bk_games",
-      "fieldCount": 24,
+      "fieldCount": 26,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -121771,6 +122133,15 @@
       "modelName": "CrmBkGameDoneBonus",
       "tableName": "crm_bk_game_done_bonuses",
       "fieldCount": 16,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["gameId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmBkGameTeamBookingDoneBonus",
+      "tableName": "crm_bk_game_team_booking_done_bonuses",
+      "fieldCount": 15,
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["gameId"]

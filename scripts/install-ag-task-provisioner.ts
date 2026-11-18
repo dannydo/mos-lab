@@ -5,6 +5,7 @@ import { basename, resolve } from 'node:path';
 import { runtimeConfigPath } from './ag-task-provisioner.js';
 
 export const AG_PROVISIONER_LABEL = 'com.antigravity.inbox-provisioner';
+export const AG_SYSTEMD_SERVICE = 'mos-ag-task-provisioner.service';
 
 function cleanPath(value: string): string {
   const resolved = resolve(value);
@@ -22,13 +23,14 @@ function isGitRepository(path: string): boolean {
   }
 }
 
-export function defaultConfigText(repository: string): string {
+export function defaultConfigText(repository: string, platform: NodeJS.Platform = process.platform): string {
   const root = resolve(homedir(), '.antigravity/worktrees/ag-provisioned');
+  const provisionerId = platform === 'linux' ? 'danny-win-ag' : 'danny-antigravity-desktop';
   return [
     `MOS_AG_PROVISIONER_REPOSITORY=${repository}`,
     `MOS_AG_PROVISIONER_WORKTREE_ROOT=${root}`,
     'MOS_AG_PROVISIONER_API_URL=https://api.lab.masteros.app/api',
-    'MOS_AG_PROVISIONER_ID=danny-antigravity-desktop',
+    `MOS_AG_PROVISIONER_ID=${provisionerId}`,
     '',
   ].join('\n');
 }
@@ -50,7 +52,51 @@ export function renderLaunchAgentPlist(repository: string, pnpm: string): string
 </dict></plist>\n`;
 }
 
-export function installAgManagedRuntime(repositoryInput = process.cwd()): { plistPath: string; configPath: string } {
+export function renderSystemdUnit(repository: string, pnpm: string): string {
+  const logDir = resolve(homedir(), '.gemini/antigravity/logs');
+  const pathEnv = [
+    process.env.PATH || '',
+    '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    resolve(homedir(), '.local/bin'),
+  ]
+    .filter(Boolean)
+    .join(':');
+  return `[Unit]
+Description=mOS Antigravity Inbox Provisioner & AutoPlan Daemon (Win AG)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=${repository}
+ExecStart=${pnpm} ag-task-provisioner:daemon
+Restart=always
+RestartSec=5
+Environment=PATH=${pathEnv}
+StandardOutput=append:${resolve(logDir, 'inbox-provisioner.log')}
+StandardError=append:${resolve(logDir, 'inbox-provisioner.error.log')}
+
+[Install]
+WantedBy=default.target
+`;
+}
+
+function resolvePnpmBinary(): string {
+  if (process.env.PNPM_PATH && existsSync(process.env.PNPM_PATH)) return process.env.PNPM_PATH;
+  try {
+    const resolved = execFileSync('which', ['pnpm'], { encoding: 'utf8' }).trim();
+    if (resolved) return resolved;
+  } catch {
+    // fallback
+  }
+  return process.platform === 'darwin' ? '/opt/homebrew/bin/pnpm' : '/usr/bin/pnpm';
+}
+
+export function installAgManagedRuntime(repositoryInput = process.cwd()): {
+  plistPath: string;
+  configPath: string;
+  serviceType: 'launchd' | 'systemd';
+} {
   const repository = cleanPath(repositoryInput);
   if (!isGitRepository(repository)) throw new Error('Provisioner install must run from a Git worktree.');
   const configPath = runtimeConfigPath();
@@ -67,7 +113,25 @@ export function installAgManagedRuntime(repositoryInput = process.cwd()): { plis
   }
   chmodSync(configPath, 0o600);
 
-  const pnpm = process.env.PNPM_PATH || '/opt/homebrew/bin/pnpm';
+  const pnpm = resolvePnpmBinary();
+  if (process.platform === 'linux') {
+    const systemdDir = resolve(homedir(), '.config/systemd/user');
+    const unitPath = resolve(systemdDir, AG_SYSTEMD_SERVICE);
+    mkdirSync(systemdDir, { recursive: true, mode: 0o755 });
+    writeFileSync(unitPath, renderSystemdUnit(repository, pnpm), { mode: 0o644 });
+    chmodSync(unitPath, 0o644);
+
+    execFileSync('systemctl', ['--user', 'daemon-reload'], { stdio: 'inherit' });
+    execFileSync('systemctl', ['--user', 'enable', '--now', AG_SYSTEMD_SERVICE], { stdio: 'inherit' });
+    execFileSync('systemctl', ['--user', 'restart', AG_SYSTEMD_SERVICE], { stdio: 'inherit' });
+    try {
+      execFileSync('loginctl', ['enable-linger', process.env.USER || 'danny'], { stdio: 'ignore' });
+    } catch {
+      // Best-effort linger in WSL2
+    }
+    return { plistPath: unitPath, configPath, serviceType: 'systemd' };
+  }
+
   const launchAgents = resolve(homedir(), 'Library/LaunchAgents');
   const plistPath = resolve(launchAgents, `${AG_PROVISIONER_LABEL}.plist`);
   mkdirSync(launchAgents, { recursive: true, mode: 0o700 });
@@ -82,13 +146,13 @@ export function installAgManagedRuntime(repositoryInput = process.cwd()): { plis
   }
   execFileSync('launchctl', ['bootstrap', domain, plistPath]);
 
-  return { plistPath, configPath };
+  return { plistPath, configPath, serviceType: 'launchd' };
 }
 
 function main() {
   const result = installAgManagedRuntime();
   process.stdout.write(
-    `Antigravity inbox provisioner installed as ${AG_PROVISIONER_LABEL}.\nPlist: ${result.plistPath}\nConfig: ${result.configPath}\n`
+    `Antigravity inbox provisioner installed (${result.serviceType}).\nUnit/Plist: ${result.plistPath}\nConfig: ${result.configPath}\n`
   );
 }
 

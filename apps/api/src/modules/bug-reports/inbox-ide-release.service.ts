@@ -9,7 +9,7 @@ import type {
   InboxReleaseManifest,
   RecordInboxIdeReleaseRequest,
 } from '@mos-lab/shared';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole, isSupportedImplementationOwner } from '@mos-lab/shared';
 import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationError,
@@ -139,7 +139,7 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
   if (
     !job ||
     job.reportId !== reportId ||
-    (report!.status === 'APPROVED' && !['IDE', 'AG', 'AUTO'].includes(job.executionOwner)) ||
+    (report!.status === 'APPROVED' && !isSupportedImplementationOwner(job.executionOwner)) ||
     job.sourceVersion !== gate.sourceVersion ||
     job.planVersion !== gate.plan!.planVersion ||
     job.status !== 'AWAITING_DEPLOY_REVIEW' ||

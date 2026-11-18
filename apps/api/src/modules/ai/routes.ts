@@ -3,6 +3,7 @@ import axios from 'axios';
 import { requireAuth } from '../../middlewares/auth.js';
 import { AiAssistantService } from './ai.service.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
+import { InboxWorkerStatusService } from '../bug-reports/inbox-worker-status.service.js';
 import {
   appendBotMessageToChatConversation,
   appendBotThreadReplyToChatConversation,
@@ -16,6 +17,7 @@ import {
   AvatarScoreResponse,
   AvatarNudgeRequest,
   AvatarNudgeResponse,
+  classifyAgNodeFromProvisionerId,
   isAdminOrSuperAdminRole,
 } from '@mos-lab/shared';
 
@@ -263,6 +265,19 @@ export async function aiRoutes(fastify: FastifyInstance) {
     const bridgeToken = (process.env.MOS_AG_TASK_BRIDGE_TOKEN || process.env.MOS_IDE_TASK_BRIDGE_TOKEN || '').trim();
     const auth = String(request.headers.authorization || '');
     if (bridgeToken.length >= 32 && auth.startsWith('Bearer ') && auth.slice(7).trim() === bridgeToken) {
+      const provisionerHeader = String(
+        request.headers['x-ag-provisioner-id'] || request.headers['x-ide-provisioner-id'] || ''
+      );
+      if (provisionerHeader) {
+        InboxWorkerStatusService.recordHeartbeat('AG', provisionerHeader, fastify);
+      }
+      if (
+        classifyAgNodeFromProvisionerId(provisionerHeader) !== 'AG_WIN' &&
+        (await InboxWorkerStatusService.isNodeOnline(fastify, 'AG_WIN'))
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 5_000));
+        return reply.send({ success: true, data: null });
+      }
       const job = await AgChatBridgeService.getNextRemoteChatJob(20_000);
       return reply.send({ success: true, data: job });
     }

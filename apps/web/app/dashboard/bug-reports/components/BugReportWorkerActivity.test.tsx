@@ -27,16 +27,18 @@ describe('InboxWorkerLiveBar', () => {
     },
   ] as unknown as BugReportSummary[];
 
-  it('renders both Antigravity (AG) and Codex IDE workers in minimalist pill format', () => {
+  it('renders both Win AG and Mac AG workers with 2-slot pills', () => {
     const healthWithDualWorkers = {
       state: 'ONLINE',
       lastHeartbeatAt: '2026-09-21T03:00:00.000Z',
       workers: {
-        ag: {
-          id: 'AG',
-          name: 'Antigravity (AG)',
+        agWin: {
+          id: 'AG_WIN',
+          name: 'Win AG',
           isOnline: true,
           lastSeenAt: '2026-09-21T03:00:00.000Z',
+          activeCodingCount: 1,
+          maxCodingSlots: 2,
           activeTask: {
             ticketId: 5,
             ticketKey: 'MOS-BUG-5',
@@ -44,6 +46,24 @@ describe('InboxWorkerLiveBar', () => {
             startedAt: '2026-09-21T02:50:00.000Z',
             lastProgressAt: '2026-09-21T02:59:00.000Z',
           },
+        },
+        agMac: {
+          id: 'AG_MAC',
+          name: 'Mac AG',
+          isOnline: false,
+          lastSeenAt: null,
+          activeCodingCount: 0,
+          maxCodingSlots: 2,
+          activeTask: null,
+        },
+        ag: {
+          id: 'AG',
+          name: 'Antigravity (AG)',
+          isOnline: true,
+          lastSeenAt: '2026-09-21T03:00:00.000Z',
+          activeCodingCount: 1,
+          maxCodingSlots: 4,
+          activeTask: null,
         },
         codex: {
           id: 'IDE',
@@ -67,9 +87,12 @@ describe('InboxWorkerLiveBar', () => {
       />
     );
 
-    // Minimalist short worker names
-    expect(screen.getByText('AG')).toBeDefined();
-    expect(screen.getByText('Codex')).toBeDefined();
+    // Dual-AG short worker names & slots
+    expect(screen.getByText('Win AG')).toBeDefined();
+    expect(screen.getByText('Mac AG')).toBeDefined();
+    expect(screen.queryByText('Codex')).toBeNull();
+    expect(screen.getByText('1/2 slot')).toBeDefined();
+    expect(screen.getByText('0/2 slot')).toBeDefined();
 
     // Online and Offline status badges
     expect(screen.getByText('Online')).toBeDefined();
@@ -82,11 +105,29 @@ describe('InboxWorkerLiveBar', () => {
     expect(mockOnOpen).toHaveBeenCalledWith(5);
   });
 
-  it('renders idle ready states when workers have no active ticket', () => {
+  it('renders idle ready states when both Win AG and Mac AG are online', () => {
     const healthIdleOnline = {
       state: 'ONLINE',
       lastHeartbeatAt: '2026-09-21T03:00:00.000Z',
       workers: {
+        agWin: {
+          id: 'AG_WIN',
+          name: 'Win AG',
+          isOnline: true,
+          lastSeenAt: '2026-09-21T03:00:00.000Z',
+          activeCodingCount: 0,
+          maxCodingSlots: 2,
+          activeTask: null,
+        },
+        agMac: {
+          id: 'AG_MAC',
+          name: 'Mac AG',
+          isOnline: true,
+          lastSeenAt: '2026-09-21T03:00:00.000Z',
+          activeCodingCount: 0,
+          maxCodingSlots: 2,
+          activeTask: null,
+        },
         ag: {
           id: 'AG',
           name: 'Antigravity (AG)',
@@ -97,8 +138,8 @@ describe('InboxWorkerLiveBar', () => {
         codex: {
           id: 'IDE',
           name: 'Codex IDE',
-          isOnline: true,
-          lastSeenAt: '2026-09-21T03:00:00.000Z',
+          isOnline: false,
+          lastSeenAt: null,
           activeTask: null,
         },
       },
