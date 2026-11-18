@@ -8519,6 +8519,32 @@ button:not(:disabled):not(.ant-btn-loading):active,
 }
 
 /* ==========================================================================
+   MOS-FEAT-225: Mobile CKEditor Bottom Sheet & Visual Viewport Containment
+   ========================================================================== */
+.mos-rich-editor-mobile-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding-top: 56px;
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 8px), 56px);
+}
+
+.mos-rich-editor-mobile-modal .ant-modal-close {
+  top: 7px;
+  inset-inline-end: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
    No Spin Buttons (Hide number input up/down arrows across browsers)
    ========================================================================== */
 input.no-spin-buttons::-webkit-outer-spin-button,
