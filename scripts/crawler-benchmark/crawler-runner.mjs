@@ -106,6 +106,7 @@ export async function runCrawler() {
 
   const browser = await chromium.launch({
     headless: !isHeaded,
+    args: isHeaded ? [] : ['--disable-gpu', '--disable-dev-shm-usage', '--no-sandbox'],
   });
 
   const context = await browser.newContext({
@@ -178,128 +179,152 @@ export async function runCrawler() {
     const popupResults = [];
 
     try {
-      await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.locator('body').waitFor({ state: 'visible', timeout: 15000 });
+      await Promise.race([
+        (async () => {
+          await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await page.locator('body').waitFor({ state: 'visible', timeout: 15000 });
 
-      // Wait for app shell to hydrate and spinners to subside
-      await page
-        .waitForFunction(
-          () => {
-            const bodyText = document.body?.innerText || '';
-            const isSessionLoading = bodyText.includes('Tải thông tin phiên đăng nhập');
-            const hasApp = Boolean(document.querySelector('.ant-layout-content, main, #__next'));
-            return hasApp && !isSessionLoading;
-          },
-          { timeout: 15000 }
-        )
-        .catch(() => {});
+          // Wait for app shell to hydrate and spinners to subside
+          await page
+            .waitForFunction(
+              () => {
+                const bodyText = document.body?.innerText || '';
+                const isSessionLoading = bodyText.includes('Tải thông tin phiên đăng nhập');
+                const hasApp = Boolean(document.querySelector('.ant-layout-content, main, #__next'));
+                return hasApp && !isSessionLoading;
+              },
+              { timeout: 15000 }
+            )
+            .catch(() => {});
 
-      await page.waitForTimeout(1000);
+          await page.waitForTimeout(1000);
 
-      // Collect Core Web Vitals / Navigation Timings
-      browserTimings = await page.evaluate(() => {
-        const nav = performance.getEntriesByType('navigation')[0];
-        const fcp = performance.getEntriesByType('paint').find((p) => p.name === 'first-contentful-paint')?.startTime;
-        return {
-          ttfbMs: nav ? Math.round(nav.responseStart - nav.requestStart) : null,
-          domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
-          totalLoadMs: nav ? Math.round(nav.duration) : null,
-          fcpMs: fcp ? Math.round(fcp) : null,
-          domNodeCount: document.querySelectorAll('*').length,
-        };
-      });
+          // Collect Core Web Vitals / Navigation Timings (retry once if hydration triggered a navigation)
+          const collectTimings = () =>
+            page.evaluate(() => {
+              const nav = performance.getEntriesByType('navigation')[0];
+              const fcp = performance
+                .getEntriesByType('paint')
+                .find((p) => p.name === 'first-contentful-paint')?.startTime;
+              return {
+                ttfbMs: nav ? Math.round(nav.responseStart - nav.requestStart) : null,
+                domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
+                totalLoadMs: nav ? Math.round(nav.duration) : null,
+                fcpMs: fcp ? Math.round(fcp) : null,
+                domNodeCount: document.querySelectorAll('*').length,
+              };
+            });
 
-      // 1. Tương tác Tab: Click các tab trên trang (nếu có)
-      const tabElements = await page.$$('.ant-tabs-tab');
-      if (tabElements.length > 1) {
-        console.log(`[Crawler] Found ${tabElements.length} tabs on ${targetRoute.key}. Clicking tabs safely...`);
-        for (let t = 0; t < Math.min(tabElements.length, 5); t++) {
           try {
-            const tabText = (await tabElements[t].innerText()).trim();
-            const tabStart = Date.now();
-            await tabElements[t].click({ timeout: 3000 });
-            await page.waitForTimeout(600);
-            const tabDuration = Date.now() - tabStart;
-            tabResults.push({ tabTitle: tabText, switchDurationMs: tabDuration, status: 'OK' });
-          } catch (tabErr) {
-            tabResults.push({ tabIndex: t, error: tabErr.message, status: 'FAILED' });
-          }
-        }
-      }
-
-      // 2. Tương tác Modal / Drawer: Tìm các nút mở popup an toàn
-      const buttons = await page.$$('button:visible');
-      let popupInspectedCount = 0;
-
-      for (const btn of buttons) {
-        if (popupInspectedCount >= 3) break; // Giới hạn tối đa 3 popups mỗi trang để tối ưu thời gian
-        try {
-          const btnText = (await btn.innerText()).trim();
-          // Bỏ qua các nút cấm hoặc nút submit
-          const isProhibited = manifest.interactionRules.prohibitedButtonTexts.some((p) => btnText.includes(p));
-          if (isProhibited || !btnText) continue;
-
-          // Kiểm tra xem nút có dấu hiệu mở popup / bộ lọc / chi tiết không
-          const isTriggerCandidate =
-            btnText.includes('Lọc') ||
-            btnText.includes('Bộ lọc') ||
-            btnText.includes('Chi tiết') ||
-            btnText.includes('Thêm') ||
-            btnText.includes('Tạo') ||
-            btnText.includes('Xem') ||
-            btnText.includes('Cấu hình') ||
-            btnText.includes('Export') ||
-            btnText.includes('Xuất');
-
-          if (isTriggerCandidate) {
-            console.log(`[Crawler] Testing potential popup button: "${btnText}" on ${targetRoute.key}`);
-            const popupOpenStart = Date.now();
-            await btn.click({ timeout: 3000 });
-            await page.waitForTimeout(800);
-
-            // Kiểm tra xem Modal hoặc Drawer có xuất hiện không
-            const hasModal = await page.locator('.ant-modal-content:visible').count();
-            const hasDrawer = await page.locator('.ant-drawer-content:visible').count();
-
-            if (hasModal > 0 || hasDrawer > 0) {
-              const openDurationMs = Date.now() - popupOpenStart;
-              const popupType = hasModal > 0 ? 'MODAL' : 'DRAWER';
-              const screenshotFilename = `popup_${targetRoute.key}_${popupInspectedCount + 1}.png`;
-              const screenshotPath = path.join(screenshotsDir, screenshotFilename);
-
-              await page.screenshot({ path: screenshotPath });
-              console.log(`[Crawler] Captured screenshot for ${popupType} on "${btnText}": ${screenshotFilename}`);
-
-              // Đóng popup an toàn (Tuyệt đối KHÔNG submit)
-              let closedSafely = false;
-              for (const closeSelector of manifest.interactionRules.safeCloseSelectors) {
-                const closeBtn = page.locator(`${closeSelector}:visible`).first();
-                if ((await closeBtn.count()) > 0) {
-                  await closeBtn.click({ timeout: 2000 }).catch(() => {});
-                  closedSafely = true;
-                  break;
-                }
-              }
-
-              if (!closedSafely) {
-                await page.keyboard.press('Escape');
-              }
-              await page.waitForTimeout(400);
-
-              popupResults.push({
-                triggerButton: btnText,
-                type: popupType,
-                openDurationMs,
-                screenshot: screenshotFilename,
-                status: 'OK',
-              });
-              popupInspectedCount++;
+            browserTimings = await collectTimings();
+          } catch (evalErr) {
+            if (String(evalErr?.message || '').includes('Execution context was destroyed')) {
+              await page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {});
+              await page.waitForTimeout(800);
+              browserTimings = await collectTimings();
+            } else {
+              throw evalErr;
             }
           }
-        } catch {
-          // Bỏ qua lỗi click nút không mở popup
-        }
-      }
+
+          // 1. Tương tác Tab: Click các tab trên trang (nếu có)
+          const tabElements = await page.$$('.ant-tabs-tab');
+          if (tabElements.length > 1) {
+            console.log(`[Crawler] Found ${tabElements.length} tabs on ${targetRoute.key}. Clicking tabs safely...`);
+            for (let t = 0; t < Math.min(tabElements.length, 5); t++) {
+              try {
+                const tabText = (await tabElements[t].innerText()).trim();
+                const tabStart = Date.now();
+                await tabElements[t].click({ timeout: 3000 });
+                await page.waitForTimeout(600);
+                const tabDuration = Date.now() - tabStart;
+                tabResults.push({ tabTitle: tabText, switchDurationMs: tabDuration, status: 'OK' });
+              } catch (tabErr) {
+                tabResults.push({ tabIndex: t, error: tabErr.message, status: 'FAILED' });
+              }
+            }
+          }
+
+          // 2. Tương tác Modal / Drawer: Tìm các nút mở popup an toàn
+          const buttons = await page.$$('button:visible');
+          let popupInspectedCount = 0;
+          let buttonAttempts = 0;
+          const seenButtonTexts = new Set();
+
+          for (const btn of buttons) {
+            if (popupInspectedCount >= 3 || buttonAttempts >= 6) break; // Giới hạn để tối ưu thời gian
+            try {
+              const btnText = (await btn.innerText()).trim();
+              // Bỏ qua các nút cấm hoặc nút submit hoặc trùng nhãn đã thử
+              const isProhibited = manifest.interactionRules.prohibitedButtonTexts.some((p) => btnText.includes(p));
+              if (isProhibited || !btnText || seenButtonTexts.has(btnText)) continue;
+
+              // Kiểm tra xem nút có dấu hiệu mở popup / bộ lọc / chi tiết không
+              const isTriggerCandidate =
+                btnText.includes('Lọc') ||
+                btnText.includes('Bộ lọc') ||
+                btnText.includes('Chi tiết') ||
+                btnText.includes('Thêm') ||
+                btnText.includes('Tạo') ||
+                btnText.includes('Xem') ||
+                btnText.includes('Cấu hình') ||
+                btnText.includes('Export') ||
+                btnText.includes('Xuất');
+
+              if (isTriggerCandidate) {
+                seenButtonTexts.add(btnText);
+                buttonAttempts++;
+                console.log(`[Crawler] Testing potential popup button: "${btnText}" on ${targetRoute.key}`);
+                const popupOpenStart = Date.now();
+                await btn.click({ timeout: 3000 });
+                await page.waitForTimeout(800);
+
+                // Kiểm tra xem Modal hoặc Drawer có xuất hiện không
+                const hasModal = await page.locator('.ant-modal-content:visible').count();
+                const hasDrawer = await page.locator('.ant-drawer-content:visible').count();
+
+                if (hasModal > 0 || hasDrawer > 0) {
+                  const openDurationMs = Date.now() - popupOpenStart;
+                  const popupType = hasModal > 0 ? 'MODAL' : 'DRAWER';
+                  const screenshotFilename = `popup_${targetRoute.key}_${popupInspectedCount + 1}.png`;
+                  const screenshotPath = path.join(screenshotsDir, screenshotFilename);
+
+                  await page.screenshot({ path: screenshotPath });
+                  console.log(`[Crawler] Captured screenshot for ${popupType} on "${btnText}": ${screenshotFilename}`);
+
+                  // Đóng popup an toàn (Tuyệt đối KHÔNG submit)
+                  let closedSafely = false;
+                  for (const closeSelector of manifest.interactionRules.safeCloseSelectors) {
+                    const closeBtn = page.locator(`${closeSelector}:visible`).first();
+                    if ((await closeBtn.count()) > 0) {
+                      await closeBtn.click({ timeout: 2000 }).catch(() => {});
+                      closedSafely = true;
+                      break;
+                    }
+                  }
+
+                  if (!closedSafely) {
+                    await page.keyboard.press('Escape');
+                  }
+                  await page.waitForTimeout(400);
+
+                  popupResults.push({
+                    triggerButton: btnText,
+                    type: popupType,
+                    openDurationMs,
+                    screenshot: screenshotFilename,
+                    status: 'OK',
+                  });
+                  popupInspectedCount++;
+                }
+              }
+            } catch {
+              // Bỏ qua lỗi click nút không mở popup
+            }
+          }
+        })(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Route crawl timed out after 55000ms')), 55000)),
+      ]);
     } catch (err) {
       loadStatus = 'ERROR';
       pageErrors.push(err.message);
@@ -323,10 +348,13 @@ export async function runCrawler() {
       errors: pageErrors,
     });
 
-    await page.close();
+    await Promise.race([
+      page.close({ runBeforeUnload: false }).catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
   }
 
-  await browser.close();
+  await Promise.race([browser.close().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 5000))]);
 
   // Thu thập Backend Slow Queries từ plugin Fastify / Prisma
   const backendSlowQueries = await fetchBackendSlowQueries();

@@ -130,6 +130,13 @@ const isCvRestrictedPath = (path: string): boolean => {
   return !isCvAllowedPath(path);
 };
 
+// Cached server snapshot for useSyncExternalStore to prevent React hydration warning loops
+const EMPTY_BUG_BADGE_SUMMARY = {
+  actionRequiredCount: 0,
+  unreadCount: 0,
+};
+const getEmptyBugBadgeSummary = () => EMPTY_BUG_BADGE_SUMMARY;
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -163,10 +170,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
   const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
   const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
-  const bugBadgeSummary = React.useSyncExternalStore(subscribeBugReportBadgeSummary, getBugReportBadgeSummary, () => ({
-    actionRequiredCount: 0,
-    unreadCount: 0,
-  }));
+  const bugBadgeSummary = React.useSyncExternalStore(
+    subscribeBugReportBadgeSummary,
+    getBugReportBadgeSummary,
+    getEmptyBugBadgeSummary
+  );
   const bugAttentionCount = !isCvRole(user?.role)
     ? bugBadgeSummary.actionRequiredCount || bugBadgeSummary.unreadCount
     : 0;
@@ -393,11 +401,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!hasAuthenticatedUser || isCvAccount) return;
-    fetchWorkingCvCount();
+    const initialTimer = setTimeout(() => {
+      if (isDocumentVisible()) fetchWorkingCvCount();
+    }, 350);
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchWorkingCvCount();
     }, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [fetchWorkingCvCount, hasAuthenticatedUser, isCvAccount]);
 
   const fetchReleaseMarker = useCallback(async () => {
@@ -410,11 +423,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
-    fetchReleaseMarker();
+    const initialTimer = setTimeout(() => {
+      if (isDocumentVisible()) fetchReleaseMarker();
+    }, 1200);
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchReleaseMarker();
     }, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [fetchReleaseMarker, hasAuthenticatedUser]);
 
   const fetchPendingAllocationsCount = useCallback(async () => {
@@ -427,11 +445,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!hasAuthenticatedUser || isCvAccount) return;
-    fetchPendingAllocationsCount();
+    const initialTimer = setTimeout(() => {
+      if (isDocumentVisible()) fetchPendingAllocationsCount();
+    }, 550);
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchPendingAllocationsCount();
     }, 35000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [fetchPendingAllocationsCount, hasAuthenticatedUser, isCvAccount]);
 
   useEffect(() => {
@@ -454,11 +477,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!hasAuthenticatedUser || isCvAccount) return;
-    fetchDailyCallsCount();
+    const initialTimer = setTimeout(() => {
+      if (isDocumentVisible()) fetchDailyCallsCount();
+    }, 750);
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchDailyCallsCount();
     }, 40000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [fetchDailyCallsCount, hasAuthenticatedUser, isCvAccount]);
 
   const fetchOnlineStaff = useCallback(async () => {
@@ -526,11 +554,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!hasAuthenticatedUser || isCvAccount) return;
-    fetchOnlineStaff();
+    const initialTimer = setTimeout(() => {
+      if (isDocumentVisible()) fetchOnlineStaff();
+    }, 950);
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchOnlineStaff();
     }, 45000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [fetchOnlineStaff, hasAuthenticatedUser, isCvAccount]);
 
   useEffect(() => {
@@ -683,17 +716,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!user?.id || isAdminOrSuperAdminRole(user.role)) return;
-    const syncVisibility = () => {
+    const syncVisibility = (force = false) => {
       apiClient.menuAccess
-        .getSidebarVisibility()
+        .getSidebarVisibility(force ? { force: true } : undefined)
         .then((res) => {
           setRouteVisibility(res?.data?.visibility || {});
         })
         .catch(() => {});
     };
-    syncVisibility();
-    window.addEventListener('menu-access-updated', syncVisibility);
-    return () => window.removeEventListener('menu-access-updated', syncVisibility);
+    const handleMenuAccessUpdated = () => syncVisibility(true);
+    syncVisibility(false);
+    window.addEventListener('menu-access-updated', handleMenuAccessUpdated);
+    return () => window.removeEventListener('menu-access-updated', handleMenuAccessUpdated);
   }, [user?.id, user?.role]);
 
   // Zero-Trust Admin-Only Default Route Guard (Layer 2):

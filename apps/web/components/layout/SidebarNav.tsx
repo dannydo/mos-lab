@@ -259,9 +259,9 @@ function SidebarNavComponent({
       });
   }, [isCvAccount]);
 
-  const fetchMenuVisibility = useCallback(() => {
+  const fetchMenuVisibility = useCallback((force = false) => {
     apiClient.menuAccess
-      .getSidebarVisibility()
+      .getSidebarVisibility(force ? { force: true } : undefined)
       .then((response) => {
         setMenuVisibility(response.data.visibility || {});
         setCategoryVisibility(response.data.categoryVisibility || {});
@@ -325,7 +325,7 @@ function SidebarNavComponent({
   }, [fetchAcademyAccess, userRole]);
 
   useEffect(() => {
-    const handleMenuAccessUpdated = () => fetchMenuVisibility();
+    const handleMenuAccessUpdated = () => fetchMenuVisibility(true);
     window.addEventListener('menu-access-updated', handleMenuAccessUpdated);
     return () => window.removeEventListener('menu-access-updated', handleMenuAccessUpdated);
   }, [fetchMenuVisibility]);

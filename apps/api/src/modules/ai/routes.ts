@@ -492,20 +492,40 @@ Bắt buộc trả về đúng định dạng JSON:
     }
   });
 
+  const AVATAR_NUDGE_CACHE_MAX = 500;
+  const AVATAR_NUDGE_SUCCESS_TTL_MS = 6 * 60 * 60 * 1000;
+  const AVATAR_NUDGE_FALLBACK_TTL_MS = 5 * 60 * 1000;
+  const avatarNudgeCache = new Map<string, { value: AvatarNudgeResponse; expiresAt: number }>();
+  const avatarNudgeInFlight = new Map<string, Promise<AvatarNudgeResponse>>();
+
   // POST /api/ai/avatar-nudge-message - Generate personalized "Thiên Sứ Bóng Tối" banter for avatar snooze
   fastify.post('/ai/avatar-nudge-message', { preHandler: [requireAuth] }, async (request, _reply) => {
     const body = request.body as AvatarNudgeRequest;
     const staffName = body?.staffName || 'Bạn';
     const role = body?.role || 'Nhân sự';
     const snoozeCount = Number(body?.snoozeCount || 0);
+    const userId = (request as SafeAny).user?.id ?? 'anon';
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const cacheKey = `${userId}:${staffName}:${role}:${snoozeCount}:${dayKey}`;
+
+    const now = Date.now();
+    const cached = avatarNudgeCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.value;
+    }
+    const existingFlight = avatarNudgeInFlight.get(cacheKey);
+    if (existingFlight) {
+      return existingFlight;
+    }
 
     const POSSIBLE_ACTIONS = ['nhắn nhủ', 'năn nỉ', 'dụ dỗ', 'cà khịa', 'hờn dỗi', 'thầm thì', 'đe dọa (nhẹ)'];
 
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (geminiApiKey) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-        const prompt = `Bạn là "Thiên Sứ Bóng Tối" 😈 — một trợ lý AI dí dỏm, lém lỉnh, cực kỳ duyên dáng và đáng yêu của hệ thống mOS Lab (Wings Lashes).
+    const resolveNudge = async (): Promise<AvatarNudgeResponse> => {
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+      if (geminiApiKey) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+          const prompt = `Bạn là "Thiên Sứ Bóng Tối" 😈 — một trợ lý AI dí dỏm, lém lỉnh, cực kỳ duyên dáng và đáng yêu của hệ thống mOS Lab (Wings Lashes).
 Nhiệm vụ của bạn là xuất hiện để khích lệ, dụ dỗ, năn nỉ hoặc cà khịa nhân viên "${staffName}" (vai trò: ${role}) đổi ảnh đại diện cá nhân trên hệ thống.
 Bạn ấy hiện chưa có avatar và đã bấm hoãn 'Để mai mình đổi' ${snoozeCount} lần.
 
@@ -550,133 +570,150 @@ Trả về đúng định dạng JSON chuẩn:
   "isBanter": boolean
 }`;
 
-        const res = await axios.post(
-          geminiUrl,
-          {
-            contents: [
-              {
-                parts: [{ text: prompt }],
+          const res = await axios.post(
+            geminiUrl,
+            {
+              contents: [
+                {
+                  parts: [{ text: prompt }],
+                },
+              ],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.85,
               },
-            ],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.85,
             },
-          },
-          { timeout: 8_000 }
-        );
+            { timeout: 2_500 }
+          );
 
-        const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          const parsed = JSON.parse(text) as AvatarNudgeResponse;
-          if (parsed.banter && !parsed.quote) parsed.quote = parsed.banter;
-          if (parsed.quote && !parsed.banter) parsed.banter = parsed.quote;
-          if (parsed.callToAction && !parsed.ctaText) parsed.ctaText = parsed.callToAction;
-          if (parsed.ctaText && !parsed.callToAction) parsed.callToAction = parsed.ctaText;
-          if (!parsed.angelAction)
-            parsed.angelAction = POSSIBLE_ACTIONS[Math.floor(Math.random() * POSSIBLE_ACTIONS.length)];
-          return parsed;
+          const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const parsed = JSON.parse(text) as AvatarNudgeResponse;
+            if (parsed.banter && !parsed.quote) parsed.quote = parsed.banter;
+            if (parsed.quote && !parsed.banter) parsed.banter = parsed.quote;
+            if (parsed.callToAction && !parsed.ctaText) parsed.ctaText = parsed.callToAction;
+            if (parsed.ctaText && !parsed.callToAction) parsed.callToAction = parsed.ctaText;
+            if (!parsed.angelAction)
+              parsed.angelAction = POSSIBLE_ACTIONS[Math.floor(Math.random() * POSSIBLE_ACTIONS.length)];
+            if (avatarNudgeCache.size >= AVATAR_NUDGE_CACHE_MAX) {
+              const oldest = avatarNudgeCache.keys().next().value;
+              if (oldest !== undefined) avatarNudgeCache.delete(oldest);
+            }
+            avatarNudgeCache.set(cacheKey, { value: parsed, expiresAt: Date.now() + AVATAR_NUDGE_SUCCESS_TTL_MS });
+            return parsed;
+          }
+        } catch (err: SafeAny) {
+          fastify.log.warn(`Gemini Thiên Sứ Bóng Tối avatar nudge failed, using built-in banter: ${err.message}`);
         }
-      } catch (err: SafeAny) {
-        fastify.log.warn(`Gemini Thiên Sứ Bóng Tối avatar nudge failed, using built-in banter: ${err.message}`);
       }
-    }
 
-    const FALLBACK_ACTIONS: AvatarNudgeResponse[] = [
-      {
-        angelAction: 'dụ dỗ',
-        angelIcon: '🍎',
-        badge: 'Đang dụ dỗ 🍎',
-        greeting: `Alo ${staffName} ơi, ghé tai em nói nhỏ nè! ✨`,
-        banter: `Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?`,
-        quote: `Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?`,
-        callToAction: '📸 Đổi Liền Khoe Nhan Sắc',
-        ctaText: '📸 Đổi Liền Khoe Nhan Sắc',
-        snoozeText: 'Để mai khoe, nay giấu mặt 🙈',
-        isBanter: false,
-      },
-      {
-        angelAction: 'năn nỉ',
-        angelIcon: '🥺',
-        badge: 'Đang năn nỉ 🥺',
-        greeting: `${staffName} ơi, cứu em với... 🥺`,
-        banter: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
-        quote: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
-        callToAction: '📸 Cứu Thiên Sứ, Chụp Liền!',
-        ctaText: '📸 Cứu Thiên Sứ, Chụp Liền!',
-        snoozeText: 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺',
-        isBanter: true,
-      },
-      {
-        angelAction: 'cà khịa',
-        angelIcon: '😏',
-        badge: 'Cà khịa nhẹ 😏',
-        greeting: `Ủa alo ${staffName} ơi, bắt quả tang nha! 👀`,
-        banter:
-          snoozeCount > 0
-            ? `Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!`
-            : `Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
-        quote:
-          snoozeCount > 0
-            ? `Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!`
-            : `Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
-        callToAction: '📸 Thôi Được Rồi, Chụp Luôn!',
-        ctaText: '📸 Thôi Được Rồi, Chụp Luôn!',
-        snoozeText: 'Mai đổi thiệt mà, đừng khịa nữa 🙈',
-        isBanter: true,
-      },
-      {
-        angelAction: 'hờn dỗi',
-        angelIcon: '😤',
-        badge: 'Đang hờn dỗi 😤',
-        greeting: `Hôm nay em dỗi ${staffName} rồi đó nha! 😤`,
-        banter: `Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!`,
-        quote: `Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!`,
-        callToAction: '📸 Chụp Liền Kẻo Em Dỗi',
-        ctaText: '📸 Chụp Liền Kẻo Em Dỗi',
-        snoozeText: 'Dỗ dành Thiên Sứ, mai tính nha 🥺',
-        isBanter: true,
-      },
-      {
-        angelAction: 'thầm thì',
-        angelIcon: '🤫',
-        badge: 'Thì thầm bí mật 🤫',
-        greeting: `Suỵt... lại gần đây em bật mí bí mật nè ${staffName}! 🤫`,
-        banter: `Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!`,
-        quote: `Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!`,
-        callToAction: '✨ Đổi Avatar Hút May Mắn',
-        ctaText: '✨ Đổi Avatar Hút May Mắn',
-        snoozeText: 'Để mai nhận lộc vậy 🙈',
-        isBanter: false,
-      },
-      {
-        angelAction: 'đe dọa (nhẹ)',
-        angelIcon: '⚡',
-        badge: 'Tối hậu thư ⚡',
-        greeting: `Báo động cấp 1 gửi tới ${staffName}! ⚡`,
-        banter: `Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
-        quote: `Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
-        callToAction: '📸 Tự Chụp Liền Tránh Bị Dìm!',
-        ctaText: '📸 Tự Chụp Liền Tránh Bị Dìm!',
-        snoozeText: 'Vẫn can đảm hoãn tiếp 🏃💨',
-        isBanter: true,
-      },
-      {
-        angelAction: 'nhắn nhủ',
-        angelIcon: '✨',
-        badge: 'Nhắn nhủ đầu ngày ✨',
-        greeting: `Chào ${staffName}, chúc bạn ngày mới tràn đầy năng lượng! ✨`,
-        banter: `Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!`,
-        quote: `Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!`,
-        callToAction: '📸 Chụp Selfie Rạng Rỡ Ngay',
-        ctaText: '📸 Chụp Selfie Rạng Rỡ Ngay',
-        snoozeText: 'Để mai mình đổi nha 🙈',
-        isBanter: false,
-      },
-    ];
+      const FALLBACK_ACTIONS: AvatarNudgeResponse[] = [
+        {
+          angelAction: 'dụ dỗ',
+          angelIcon: '🍎',
+          badge: 'Đang dụ dỗ 🍎',
+          greeting: `Alo ${staffName} ơi, ghé tai em nói nhỏ nè! ✨`,
+          banter: `Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?`,
+          quote: `Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?`,
+          callToAction: '📸 Đổi Liền Khoe Nhan Sắc',
+          ctaText: '📸 Đổi Liền Khoe Nhan Sắc',
+          snoozeText: 'Để mai khoe, nay giấu mặt 🙈',
+          isBanter: false,
+        },
+        {
+          angelAction: 'năn nỉ',
+          angelIcon: '🥺',
+          badge: 'Đang năn nỉ 🥺',
+          greeting: `${staffName} ơi, cứu em với... 🥺`,
+          banter: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
+          quote: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
+          callToAction: '📸 Cứu Thiên Sứ, Chụp Liền!',
+          ctaText: '📸 Cứu Thiên Sứ, Chụp Liền!',
+          snoozeText: 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺',
+          isBanter: true,
+        },
+        {
+          angelAction: 'cà khịa',
+          angelIcon: '😏',
+          badge: 'Cà khịa nhẹ 😏',
+          greeting: `Ủa alo ${staffName} ơi, bắt quả tang nha! 👀`,
+          banter:
+            snoozeCount > 0
+              ? `Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!`
+              : `Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
+          quote:
+            snoozeCount > 0
+              ? `Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!`
+              : `Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
+          callToAction: '📸 Thôi Được Rồi, Chụp Luôn!',
+          ctaText: '📸 Thôi Được Rồi, Chụp Luôn!',
+          snoozeText: 'Mai đổi thiệt mà, đừng khịa nữa 🙈',
+          isBanter: true,
+        },
+        {
+          angelAction: 'hờn dỗi',
+          angelIcon: '😤',
+          badge: 'Đang hờn dỗi 😤',
+          greeting: `Hôm nay em dỗi ${staffName} rồi đó nha! 😤`,
+          banter: `Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!`,
+          quote: `Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!`,
+          callToAction: '📸 Chụp Liền Kẻo Em Dỗi',
+          ctaText: '📸 Chụp Liền Kẻo Em Dỗi',
+          snoozeText: 'Dỗ dành Thiên Sứ, mai tính nha 🥺',
+          isBanter: true,
+        },
+        {
+          angelAction: 'thầm thì',
+          angelIcon: '🤫',
+          badge: 'Thì thầm bí mật 🤫',
+          greeting: `Suỵt... lại gần đây em bật mí bí mật nè ${staffName}! 🤫`,
+          banter: `Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!`,
+          quote: `Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!`,
+          callToAction: '✨ Đổi Avatar Hút May Mắn',
+          ctaText: '✨ Đổi Avatar Hút May Mắn',
+          snoozeText: 'Để mai nhận lộc vậy 🙈',
+          isBanter: false,
+        },
+        {
+          angelAction: 'đe dọa (nhẹ)',
+          angelIcon: '⚡',
+          badge: 'Tối hậu thư ⚡',
+          greeting: `Báo động cấp 1 gửi tới ${staffName}! ⚡`,
+          banter: `Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
+          quote: `Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
+          callToAction: '📸 Tự Chụp Liền Tránh Bị Dìm!',
+          ctaText: '📸 Tự Chụp Liền Tránh Bị Dìm!',
+          snoozeText: 'Vẫn can đảm hoãn tiếp 🏃💨',
+          isBanter: true,
+        },
+        {
+          angelAction: 'nhắn nhủ',
+          angelIcon: '✨',
+          badge: 'Nhắn nhủ đầu ngày ✨',
+          greeting: `Chào ${staffName}, chúc bạn ngày mới tràn đầy năng lượng! ✨`,
+          banter: `Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!`,
+          quote: `Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!`,
+          callToAction: '📸 Chụp Selfie Rạng Rỡ Ngay',
+          ctaText: '📸 Chụp Selfie Rạng Rỡ Ngay',
+          snoozeText: 'Để mai mình đổi nha 🙈',
+          isBanter: false,
+        },
+      ];
 
-    // Pick a random fallback matching the vibe
-    const picked = FALLBACK_ACTIONS[Math.floor(Math.random() * FALLBACK_ACTIONS.length)];
-    return picked;
+      // Pick a random fallback matching the vibe
+      const picked = FALLBACK_ACTIONS[Math.floor(Math.random() * FALLBACK_ACTIONS.length)];
+      if (avatarNudgeCache.size >= AVATAR_NUDGE_CACHE_MAX) {
+        const oldest = avatarNudgeCache.keys().next().value;
+        if (oldest !== undefined) avatarNudgeCache.delete(oldest);
+      }
+      avatarNudgeCache.set(cacheKey, { value: picked, expiresAt: Date.now() + AVATAR_NUDGE_FALLBACK_TTL_MS });
+      return picked;
+    };
+
+    const flight = resolveNudge().finally(() => {
+      avatarNudgeInFlight.delete(cacheKey);
+    });
+    avatarNudgeInFlight.set(cacheKey, flight);
+    return flight;
   });
 }
