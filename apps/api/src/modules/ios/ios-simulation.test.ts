@@ -490,6 +490,23 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
     (err: any) => err.statusCode === 404
   );
 
+  // 3b. Verify saving a draft attempt creates and appends it gracefully
+  const draftCreated = await updateSimulationAttempt(
+    staffId,
+    bookingId,
+    `draft_${bookingId}`,
+    {
+      bookingId,
+      notes: 'Kịch bản mới từ form trống',
+      selectedComboName: 'Gói 3 Lần (Tiết kiệm)',
+      selectedComboPrice: 1170000,
+    },
+    store
+  );
+  assert.ok(draftCreated.attemptId.startsWith('sim_att_'));
+  assert.equal(draftCreated.selectedComboName, 'Gói 3 Lần (Tiết kiệm)');
+  assert.equal(draftCreated.notes, 'Kịch bản mới từ form trống');
+
   // 4. Test SIM_APPLY_ATTEMPT: Load the updated scenario back into the active booking
   const applyRes = await executeIosSimulationBookingAction(
     null,

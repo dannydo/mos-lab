@@ -445,18 +445,25 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     async (attemptId: string, updates: IosUpdateSimulationAttemptRequest) => {
       setIsSimActionBusy(true);
       setSimActionError(null);
+      const targetBookingId = Number(updates.bookingId || historyBookingId || 0);
       try {
         const res = await apiClient.ios.updateSimulationAttempt(attemptId, {
           ...updates,
+          bookingId: targetBookingId,
           ...(selectedMenteeStaffId ? { menteeStaffId: selectedMenteeStaffId } : {}),
         });
         if (res?.success && res.attempt) {
           const updated = res.attempt;
           setAttemptsByBookingId((prev) => {
-            const existing = prev[updates.bookingId] || [];
+            const existing = prev[targetBookingId] || [];
+            const idx = existing.findIndex((a) => a.attemptId === attemptId || a.attemptId === updated.attemptId);
+            const nextList =
+              idx >= 0
+                ? existing.map((a, i) => (i === idx ? updated : a))
+                : [...existing, updated];
             return {
               ...prev,
-              [updates.bookingId]: existing.map((a) => (a.attemptId === attemptId ? updated : a)),
+              [targetBookingId]: nextList.sort((a, b) => Number(a.attemptNumber || 0) - Number(b.attemptNumber || 0)),
             };
           });
         } else {
@@ -469,7 +476,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
         setIsSimActionBusy(false);
       }
     },
-    [selectedMenteeStaffId]
+    [historyBookingId, selectedMenteeStaffId]
   );
 
   const handleApplyAttemptToWorkspace = useCallback(

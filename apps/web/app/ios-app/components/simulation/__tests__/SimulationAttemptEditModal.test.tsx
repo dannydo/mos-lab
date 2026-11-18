@@ -152,4 +152,22 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
     fireEvent.click(editBtn);
     expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
   });
+
+  it('renders Tạo & Chỉnh sửa kịch bản mới button when attempts is empty and opens edit modal', () => {
+    render(
+      <IosSimulationHistorySheet
+        isOpen={true}
+        onClose={vi.fn()}
+        attempts={[]}
+        booking={{ id: 771121, customerName: 'Ngọc Phạm' } as any}
+      />
+    );
+
+    expect(screen.getByText(/Chưa có phương án được lưu/i)).toBeDefined();
+    const createBtn = screen.getByRole('button', { name: /Tạo & Chỉnh sửa kịch bản mới/i });
+    expect(createBtn).toBeDefined();
+
+    fireEvent.click(createBtn);
+    expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
+  });
 });
