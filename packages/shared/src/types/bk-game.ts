@@ -25,6 +25,8 @@ export interface BkGameParticipant {
   targetProgressPercent?: number;
   doneBookingsCount?: number;
   totalDoneBonus?: number;
+  teamBookingDoneCount?: number;
+  totalTeamBookingDoneBonus?: number;
 }
 
 export interface BkGameTeam {
@@ -127,6 +129,90 @@ export interface BkGameTeamKpiSummary {
   dailyResults: BkGameTeamKpiDailyResult[];
 }
 
+export interface BkGameTeamBookingDoneTier {
+  id: string;
+  minBookings: number;
+  bonusPerDone: number;
+  label?: string;
+}
+
+export interface BkGameTeamBookingDoneBonusConfig {
+  enabled: boolean;
+  tiers: BkGameTeamBookingDoneTier[];
+  timeWindowStart?: string | null;
+  timeWindowEnd?: string | null;
+}
+
+export interface BkGameTeamBookingDoneBonusStaffDay {
+  staffId: number;
+  staffName: string;
+  avatar?: string | null;
+  singleDoneCount: number;
+  comboDoneExcludedCount: number;
+  bonusPerDone: number;
+  totalBonus: number;
+}
+
+export interface BkGameTeamBookingDoneBonusDailyResult {
+  date: string;
+  dateLabel: string;
+  teamBookings: number;
+  tierLabel: string;
+  matchedMinBookings: number | null;
+  bonusPerDone: number;
+  totalSingleDone: number;
+  totalComboDoneExcluded: number;
+  totalDayBonus: number;
+  isToday: boolean;
+  isFuture: boolean;
+  staffBreakdown: BkGameTeamBookingDoneBonusStaffDay[];
+}
+
+export interface BkGameTeamBookingDoneBonusStaffTotal {
+  staffId: number;
+  staffName: string;
+  avatar?: string | null;
+  singleDoneCount: number;
+  totalBonus: number;
+}
+
+export interface BkGameTeamBookingDoneBonusRecord {
+  id: number;
+  gameId: number;
+  orderId: number;
+  orderKey?: string | null;
+  staffId: number;
+  staffName?: string;
+  customerName?: string | null;
+  rewardDate: string;
+  teamBookings: number;
+  tierLabel: string;
+  bonusPerDone: number;
+  bonusAmount: number;
+  orderCompletedAt?: string | null;
+  createdAt: string;
+}
+
+export interface BkGameTeamBookingDoneBonusSummary {
+  config: BkGameTeamBookingDoneBonusConfig;
+  effectiveTimeWindow: string | null;
+  todayDate: string;
+  todayTeamBookings: number;
+  todayTierLabel: string;
+  todayBonusPerDone: number;
+  todaySingleDone: number;
+  todayTotalBonus: number;
+  nextTierMinBookings: number | null;
+  nextTierBonusPerDone: number | null;
+  bookingsToNextTier: number | null;
+  totalSingleDone: number;
+  totalComboDoneExcluded: number;
+  totalBonus: number;
+  staffTotals: BkGameTeamBookingDoneBonusStaffTotal[];
+  dailyResults: BkGameTeamBookingDoneBonusDailyResult[];
+  records: BkGameTeamBookingDoneBonusRecord[];
+}
+
 export interface BkGame {
   id: number;
   title: string;
@@ -146,6 +232,7 @@ export interface BkGame {
   allowedBookingChannels?: string[] | null;
   doneBonusConfig?: BkGameDoneBonusRule[] | null;
   teamKpiConfig?: BkGameTeamKpiConfig | null;
+  teamBookingDoneBonusConfig?: BkGameTeamBookingDoneBonusConfig | null;
   createdByStaffId: number;
   createdAt: string;
   updatedAt: string;
@@ -161,6 +248,7 @@ export interface BkGameCreateInput {
   allowedBookingChannels?: string[];
   doneBonusConfig?: BkGameDoneBonusRule[] | null;
   teamKpiConfig?: BkGameTeamKpiConfig | null;
+  teamBookingDoneBonusConfig?: BkGameTeamBookingDoneBonusConfig | null;
   targetScore?: number;
   startDate: string;
   endDate: string;
@@ -180,6 +268,7 @@ export interface BkGameUpdateInput {
   allowedBookingChannels?: string[] | null;
   doneBonusConfig?: BkGameDoneBonusRule[] | null;
   teamKpiConfig?: BkGameTeamKpiConfig | null;
+  teamBookingDoneBonusConfig?: BkGameTeamBookingDoneBonusConfig | null;
   rewardPool?: number;
   rewardDescription?: string;
   penaltyDescription?: string;
@@ -204,6 +293,7 @@ export interface BkGameDetailResponse {
   doneBonuses?: BkGameDoneBonusRecord[];
   doneBonusesSummary?: BkGameDoneBonusesSummary;
   teamKpiSummary?: BkGameTeamKpiSummary | null;
+  teamBookingDoneBonusSummary?: BkGameTeamBookingDoneBonusSummary | null;
   stats: {
     totalParticipants: number;
     totalTeams: number;
@@ -335,6 +425,34 @@ export const DEFAULT_BK_LASH_LIFT_BONUS_RULES: BkGameDoneBonusRule[] = [
     maxPaid: 0,
     promoPercent: 100,
     bonusAmount: 1000,
+  },
+];
+
+/**
+ * Editable UI preset for WINGS BOOKING RACE:
+ * - < 30 Booking/day: 0đ/Done
+ * - 30–39 Booking/day: 5.000đ/Done
+ * - 40–49 Booking/day: 7.000đ/Done
+ * - >= 50 Booking/day: 10.000đ/Done
+ */
+export const DEFAULT_BK_TEAM_BOOKING_DONE_TIERS: BkGameTeamBookingDoneTier[] = [
+  {
+    id: 'tier-30',
+    minBookings: 30,
+    bonusPerDone: 5000,
+    label: '30–39 Booking',
+  },
+  {
+    id: 'tier-40',
+    minBookings: 40,
+    bonusPerDone: 7000,
+    label: '40–49 Booking',
+  },
+  {
+    id: 'tier-50',
+    minBookings: 50,
+    bonusPerDone: 10000,
+    label: 'Từ 50 Booking',
   },
 ];
 

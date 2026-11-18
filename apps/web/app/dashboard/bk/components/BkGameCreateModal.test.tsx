@@ -233,4 +233,44 @@ describe('BkGameCreateModal', () => {
       expect(callArg.teamKpiConfig.timeWindowEnd).toBe('17:00');
     });
   });
+
+  it('configures and submits teamBookingDoneBonusConfig using WINGS BOOKING RACE preset', async () => {
+    apiMocks.createGame.mockResolvedValue({
+      game: {
+        id: 101,
+        title: 'WINGS BOOKING RACE',
+        gameType: 'INDIVIDUAL',
+      },
+    });
+
+    render(<BkGameCreateModal open={true} onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hiển thị 4 \/ 4 nhân sự/)).toBeInTheDocument();
+    });
+
+    const presetBtn = screen.getByTestId('apply-wings-booking-race-preset-btn');
+    fireEvent.click(presetBtn);
+
+    const titleInput = screen.getByPlaceholderText(/Ví dụ: Chiến Dịch Săn Booking/i);
+    fireEvent.change(titleInput, { target: { value: 'WINGS BOOKING RACE' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Khởi Tạo Game/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiMocks.createGame).toHaveBeenCalledTimes(1);
+      const callArg = apiMocks.createGame.mock.calls[0][0];
+      expect(callArg.teamBookingDoneBonusConfig).toEqual(
+        expect.objectContaining({
+          enabled: true,
+          tiers: expect.arrayContaining([
+            expect.objectContaining({ minBookings: 30, bonusPerDone: 5000 }),
+            expect.objectContaining({ minBookings: 40, bonusPerDone: 7000 }),
+            expect.objectContaining({ minBookings: 50, bonusPerDone: 10000 }),
+          ]),
+        })
+      );
+    });
+  });
 });

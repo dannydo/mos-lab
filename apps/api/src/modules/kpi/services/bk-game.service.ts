@@ -17,10 +17,18 @@ import {
   BkGameTeamKpiSummary,
   BkGameTeamKpiDailyResult,
   BkGameTeamKpiDailyContributor,
+  BkGameTeamBookingDoneBonusSummary,
   BK_GAME_SCORING_RULES,
   SafeAny,
 } from '@mos-lab/shared';
 import { getActiveBkTelesalesIds, getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
+import {
+  BkGameTeamBookingDoneBonusService,
+  normalizeTimeHHmm,
+  parseTeamBookingDoneBonusConfig,
+} from './bk-game-team-booking-done-bonus.service.js';
+
+export { parseTeamBookingDoneBonusConfig } from './bk-game-team-booking-done-bonus.service.js';
 
 interface LegacyStaffRow {
   staffId: number;
@@ -150,6 +158,20 @@ export function buildBookingChannelFilter(
   return `AND UPPER(${columnRef}) IN (${escaped})`;
 }
 
+function serializeTeamBookingDoneBonusConfig(raw: BkGameCreateInput['teamBookingDoneBonusConfig']): string | null {
+  if (!raw || raw.enabled === false) return null;
+  if (raw.timeWindowStart || raw.timeWindowEnd) {
+    const start = normalizeTimeHHmm(raw.timeWindowStart);
+    const end = normalizeTimeHHmm(raw.timeWindowEnd);
+    if (!start || !end || start > end) {
+      throw new Error('Khung giờ tính Booking Team không hợp lệ (giờ bắt đầu phải trước giờ kết thúc)');
+    }
+  }
+  const normalized = parseTeamBookingDoneBonusConfig(raw);
+  if (!normalized || !normalized.enabled || normalized.tiers.length === 0) return null;
+  return JSON.stringify(normalized);
+}
+
 export class BkGameService {
   /**
    * Retrieves all Telesales games, optionally filtered by status.
@@ -192,6 +214,7 @@ export class BkGameService {
       announcedResults: g.announcedResults,
       doneBonusConfig: parseDoneBonusConfig(g.doneBonusConfig),
       teamKpiConfig: parseTeamKpiConfig(g.teamKpiConfig),
+      teamBookingDoneBonusConfig: parseTeamBookingDoneBonusConfig(g.teamBookingDoneBonusConfig),
       createdByStaffId: g.createdByStaffId,
       createdAt: g.createdAt.toISOString(),
       updatedAt: g.updatedAt.toISOString(),
@@ -802,6 +825,31 @@ export class BkGameService {
       rank: index + 1,
     }));
 
+    // Compute and sync Team-Booking Done Bonus for Retail customers (MOS-BUG-247)
+    let teamBookingDoneBonusSummary: BkGameTeamBookingDoneBonusSummary | null = null;
+    try {
+      teamBookingDoneBonusSummary = await BkGameTeamBookingDoneBonusService.syncAndComputeSummary(
+        fastify,
+        game,
+        participants
+      );
+      if (teamBookingDoneBonusSummary) {
+        const staffTeamBkBonusMap = new Map(
+          teamBookingDoneBonusSummary.staffTotals.map((s) => [s.staffId, s])
+        );
+        participants = participants.map((p) => {
+          const stat = staffTeamBkBonusMap.get(p.staffId);
+          return {
+            ...p,
+            teamBookingDoneCount: stat ? stat.singleDoneCount : 0,
+            totalTeamBookingDoneBonus: stat ? stat.totalBonus : 0,
+          };
+        });
+      }
+    } catch (tbErr) {
+      fastify.log.warn(tbErr, `Could not compute team booking done bonus for game ${gameId}`);
+    }
+
     // If TEAM game, compute team scores
     let teams: BkGameTeam[] | undefined;
     if (game.teams && game.teams.length > 0) {
@@ -845,6 +893,7 @@ export class BkGameService {
       announcedResults: game.announcedResults,
       doneBonusConfig: parseDoneBonusConfig(game.doneBonusConfig),
       teamKpiConfig: parseTeamKpiConfig(game.teamKpiConfig),
+      teamBookingDoneBonusConfig: parseTeamBookingDoneBonusConfig(game.teamBookingDoneBonusConfig),
       createdByStaffId: game.createdByStaffId,
       createdAt: game.createdAt ? game.createdAt.toISOString() : new Date().toISOString(),
       updatedAt: game.updatedAt ? game.updatedAt.toISOString() : new Date().toISOString(),
@@ -871,6 +920,7 @@ export class BkGameService {
       doneBonuses: doneBonusesMapped,
       doneBonusesSummary,
       teamKpiSummary,
+      teamBookingDoneBonusSummary,
       stats: {
         totalParticipants: participants.length,
         totalTeams: teams ? teams.length : 0,
@@ -955,6 +1005,7 @@ export class BkGameService {
     const entryFee = input.entryFee || 0;
     const baseRewardPool = input.rewardPool || 0;
     const totalRewardPool = baseRewardPool + entryFee * participantStaffIds.length;
+    const serializedTeamBookingDoneBonusConfig = serializeTeamBookingDoneBonusConfig(input.teamBookingDoneBonusConfig);
 
     const createdGame = await fastify.prisma.crm.$transaction(async (tx) => {
       const g = await tx.crmBkGame.create({
@@ -975,6 +1026,7 @@ export class BkGameService {
             input.teamKpiConfig
               ? JSON.stringify(input.teamKpiConfig)
               : null,
+          teamBookingDoneBonusConfig: serializedTeamBookingDoneBonusConfig,
           targetScore: input.targetScore,
           startDate,
           endDate,
@@ -1076,11 +1128,42 @@ export class BkGameService {
           ? JSON.stringify(input.teamKpiConfig)
           : null;
     }
+    if (input.teamBookingDoneBonusConfig !== undefined) {
+      data.teamBookingDoneBonusConfig = serializeTeamBookingDoneBonusConfig(input.teamBookingDoneBonusConfig);
+    }
 
     await fastify.prisma.crm.crmBkGame.update({
       where: { id: gameId },
       data,
     });
+
+    if (input.teamBookingDoneBonusConfig !== undefined && existing.status === 'COMPLETED') {
+      const updatedRow = await fastify.prisma.crm.crmBkGame.findUnique({
+        where: { id: gameId },
+        include: { participants: true },
+      });
+      if (updatedRow) {
+        await BkGameTeamBookingDoneBonusService.syncAndComputeSummary(
+          fastify,
+          updatedRow,
+          updatedRow.participants.map((p) => ({
+            id: p.id,
+            gameId: p.gameId,
+            staffId: p.staffId,
+            staffName: p.staffName,
+            avatar: p.avatar,
+            teamId: p.teamId,
+            betAmount: p.betAmount,
+            score: p.score,
+            rank: p.rank,
+            rewardAmount: p.rewardAmount,
+            penaltyNote: p.penaltyNote,
+            status: p.status as SafeAny,
+          })),
+          { forceSync: true }
+        ).catch(() => {});
+      }
+    }
 
     const detail = await this.getGameDetail(fastify, gameId);
     return detail!.game;

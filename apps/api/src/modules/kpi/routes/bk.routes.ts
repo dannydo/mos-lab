@@ -1465,6 +1465,38 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /kpi/bk/games/:id/team-booking-done-bonuses
+  fastify.get(
+    '/kpi/bk/games/:id/team-booking-done-bonuses',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const gameId = parseInt(id, 10);
+        if (isNaN(gameId)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID Game không hợp lệ.' });
+        }
+
+        const detail = await BkGameService.getGameDetail(fastify, gameId);
+        if (!detail) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy Game BK.' });
+        }
+
+        const summary = detail.teamBookingDoneBonusSummary || null;
+        return reply.send({
+          summary,
+          data: summary?.records || [],
+          total: summary?.records?.length || 0,
+        });
+      } catch (err: SafeAny) {
+        fastify.log.error(err as SafeAny, 'Error fetching BK game team booking done bonuses');
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Lỗi tải danh sách thưởng Done theo mốc Booking Team.' });
+      }
+    }
+  );
+
   // POST /kpi/bk/games
   fastify.post('/kpi/bk/games', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
