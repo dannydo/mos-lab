@@ -121,53 +121,98 @@ try {
             </div>
 
             <!-- Mobile Phone Mockup -->
-            <div class="w-[340px] mx-auto bg-slate-950 rounded-[28px] border-4 border-slate-800 overflow-hidden shadow-xl p-3 flex flex-col justify-between min-h-[460px]">
-              <!-- Modal Container -->
-              <div class="bg-slate-900 rounded-2xl border border-slate-700/80 overflow-hidden shadow-2xl flex flex-col flex-1">
-                <!-- Header -->
-                <div class="px-3 py-2.5 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5">
-                    <div class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px]">✍️</div>
-                    <span class="text-xs font-bold text-white">Soạn thảo CKEditor</span>
+            <div class="w-[360px] mx-auto bg-slate-950 rounded-[36px] border-4 border-slate-800 overflow-hidden shadow-2xl p-3 flex flex-col justify-between min-h-[580px] relative">
+              <!-- iPhone Dynamic Island / Status Bar -->
+              <div class="flex items-center justify-between px-4 pt-1 pb-2 text-[11px] font-bold text-slate-300">
+                <span>19:27</span>
+                <div class="w-24 h-4 bg-slate-900 rounded-full border border-slate-800 flex items-center justify-center">
+                  <div class="w-2.5 h-2.5 rounded-full bg-slate-950 border border-slate-800"></div>
+                </div>
+                <div class="flex items-center gap-1.5 text-[10px]">
+                  <span>5G</span>
+                  <span>80% 🔋</span>
+                </div>
+              </div>
+
+              <!-- Top Safe Area Clearance Highlight -->
+              <div class="mb-1 text-center">
+                <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  ✓ Safe Area Clearance: top: max(env(safe-area-inset-top), 48px)
+                </span>
+              </div>
+
+              <!-- Modal Container with rounded corners -->
+              <div class="bg-zinc-900 rounded-2xl border border-zinc-700/80 overflow-hidden shadow-2xl flex flex-col flex-1 relative">
+                <!-- Modal Close Button [✕] positioned cleanly inside modal header -->
+                <button class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center text-xs z-10">✕</button>
+
+                <!-- Clean Row 1: Title & Badge -->
+                <div class="px-3 py-2 bg-zinc-850 border-b border-zinc-800 flex items-center justify-between pr-8">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] shrink-0 font-bold">⚡</div>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="text-xs font-bold text-white truncate">Soạn thảo phong phú</span>
+                      <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+                        CKEditor Mode
+                      </span>
+                    </div>
                   </div>
-                  <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                    CKEditor Mode
-                  </span>
                 </div>
 
-                <!-- Formatting Toolbar -->
-                <div class="px-2 py-1.5 bg-slate-900/90 border-b border-slate-800 flex items-center gap-1 text-xs overflow-x-auto text-slate-300">
-                  <button class="w-6 h-6 rounded hover:bg-slate-800 font-black">B</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800 italic">I</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800 underline">U</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800 line-through">S</button>
-                  <div class="w-px h-4 bg-slate-700 mx-0.5"></div>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800">H1</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800">H2</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800">•</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800">1.</button>
-                  <button class="w-6 h-6 rounded hover:bg-slate-800">☑</button>
+                <!-- Clean Row 2: Stats & Mode Switcher -->
+                <div class="px-3 py-1.5 bg-black/20 border-b border-zinc-800 flex items-center justify-between text-[10px]">
+                  <span class="text-zinc-400 tabular-nums font-mono">12 từ · 78 ký tự</span>
+                  <div class="flex items-center gap-1 p-0.5 bg-zinc-950 rounded-lg border border-zinc-800">
+                    <button class="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[9.5px]">Bản gọn</button>
+                    <button class="px-1.5 py-0.5 rounded text-zinc-400 text-[9.5px]">Soạn thảo</button>
+                    <button class="px-1.5 py-0.5 rounded text-zinc-400 text-[9.5px]">Xem trước</button>
+                  </div>
                 </div>
 
-                <!-- Content Area -->
-                <div class="p-3 flex-1 flex flex-col gap-2 bg-slate-950/60">
-                  <div class="text-xs text-slate-200 font-mono leading-relaxed bg-transparent">
+                <!-- Single Sleek Horizontal Scroll Toolbar -->
+                <div class="px-2.5 py-1.5 bg-zinc-900 border-b border-zinc-800 flex items-center gap-1.5 text-xs overflow-x-auto text-zinc-300">
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 font-black text-amber-400">B</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 italic">I</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 underline">U</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 line-through">S</button>
+                  <div class="w-px h-3.5 bg-zinc-700 shrink-0"></div>
+                  <button class="px-1 h-6 rounded hover:bg-zinc-800 font-bold text-amber-500">H1</button>
+                  <button class="px-1 h-6 rounded hover:bg-zinc-800 font-semibold">H2</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 font-bold text-amber-400">•</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 font-bold">1.</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800">☑</button>
+                  <div class="w-px h-3.5 bg-zinc-700 shrink-0"></div>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800">🔗</button>
+                  <button class="w-6 h-6 rounded hover:bg-zinc-800 font-mono text-[10px]">&lt;/&gt;</button>
+                  <button class="px-1.5 h-6 rounded bg-purple-500/10 text-purple-400 text-[10px] font-bold">@MAI</button>
+                </div>
+
+                <!-- Textarea Area -->
+                <div class="p-3 flex-1 flex flex-col gap-2 bg-zinc-950/60 min-h-[140px]">
+                  <div class="text-xs text-zinc-200 font-mono leading-relaxed bg-transparent">
                     <p class="font-bold text-amber-400"># THÔNG BÁO VẬN HÀNH</p>
-                    <p class="text-slate-300 mt-1">• Kiểm tra hoàn tất thiết bị Estella</p>
-                    <p class="text-slate-300">• Phân công chuyên viên trực sảnh đúng giờ</p>
+                    <p class="text-zinc-300 mt-1">• Kiểm tra hoàn tất thiết bị Estella</p>
+                    <p class="text-zinc-300">• Phân công chuyên viên trực sảnh đúng giờ</p>
                     <p class="text-emerald-400 mt-1">&gt; Đã đồng bộ qua CKEditor Mobile</p>
                   </div>
                 </div>
 
-                <!-- Footer Buttons -->
-                <div class="p-2.5 bg-slate-850 border-t border-slate-800 flex items-center justify-between gap-1.5">
-                  <button class="px-2.5 py-1 text-[11px] font-semibold text-slate-400 bg-slate-800 rounded-lg">Hủy</button>
-                  <div class="flex items-center gap-1.5">
-                    <button class="px-2.5 py-1 text-[11px] font-bold text-amber-400 border border-amber-500/40 bg-amber-500/10 rounded-lg">Áp dụng</button>
-                    <button class="px-2.5 py-1 text-[11px] font-bold text-slate-950 bg-amber-400 rounded-lg">Gửi ngay ✈️</button>
-                  </div>
+                <!-- Full-Width Responsive Footer (No button overflow or awkward wrapping) -->
+                <div class="p-2 bg-zinc-850 border-t border-zinc-800 flex items-center justify-between gap-1.5">
+                  <button class="h-8 px-2.5 text-xs font-semibold text-zinc-400 bg-zinc-800/80 rounded-xl border border-zinc-700 shrink-0">Hủy</button>
+                  <button class="flex-1 h-8 px-2 text-xs font-bold text-amber-400 border border-amber-500/40 bg-amber-500/10 rounded-xl flex items-center justify-center gap-1">
+                    <span>✓</span>
+                    <span>Áp dụng vào chat</span>
+                  </button>
+                  <button class="flex-1 h-8 px-2 text-xs font-bold text-slate-950 bg-[#d4a84b] hover:bg-[#c3973a] rounded-xl flex items-center justify-center gap-1 shadow-md">
+                    <span>✈</span>
+                    <span>Gửi tin nhắn ngay</span>
+                  </button>
                 </div>
               </div>
+
+              <!-- Bottom Safe Area Indicator -->
+              <div class="w-32 h-1 bg-slate-700 rounded-full mx-auto mt-2"></div>
             </div>
           </div>
         </div>

@@ -296,4 +296,44 @@ describe('MosChatRichEditorModal', () => {
 
     expect(textarea.value).toBe('Dòng một\n# Dòng hai');
   });
+
+  it('renders mobile-optimized layout with safe-area clearance and horizontal scroll toolbar (MOS-BUG-222)', () => {
+    // Set mobile window width (iPhone 14 / 15 / 16 standard viewport)
+    const originalInnerWidth = window.innerWidth;
+    window.innerWidth = 390;
+
+    render(
+      <MosChatRichEditorModal
+        open={true}
+        onClose={vi.fn()}
+        initialValue="Tin nhắn mobile"
+        initialMode="compact"
+        onApply={vi.fn()}
+        onSend={vi.fn()}
+      />
+    );
+
+    // Verify modal is in document with mobile header structure
+    expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeInTheDocument();
+    expect(screen.getByText('CKEditor Mode')).toBeInTheDocument();
+
+    // Verify all 3 footer action buttons are present and visible on mobile
+    const cancelBtn = screen.getByRole('button', { name: /Hủy/i });
+    const applyBtn = screen.getByRole('button', { name: /Áp dụng vào chat/i });
+    const sendBtn = screen.getByRole('button', { name: /Gửi tin nhắn ngay/i });
+
+    expect(cancelBtn).toBeInTheDocument();
+    expect(applyBtn).toBeInTheDocument();
+    expect(sendBtn).toBeInTheDocument();
+
+    // Verify formatting toolbar container has no-scrollbar and overflow-x-auto classes
+    const boldBtn = screen.getByRole('button', { name: /In đậm/i });
+    const toolbar = boldBtn.closest('.overflow-x-auto');
+    expect(toolbar).toBeTruthy();
+    expect(toolbar?.className).toContain('no-scrollbar');
+    expect(toolbar?.className).toContain('touch-pan-x');
+
+    // Restore innerWidth
+    window.innerWidth = originalInnerWidth;
+  });
 });

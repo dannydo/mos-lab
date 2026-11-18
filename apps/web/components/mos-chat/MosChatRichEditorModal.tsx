@@ -541,7 +541,9 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       const nextCursor = selected ? start + wrapped.length : start + openTag.length;
       setContent(nextVal);
       setCursorPos(nextCursor);
-      lastSelectionRef.current = selected ? { start, end: start + wrapped.length } : { start: nextCursor, end: nextCursor };
+      lastSelectionRef.current = selected
+        ? { start, end: start + wrapped.length }
+        : { start: nextCursor, end: nextCursor };
       setTimeout(() => {
         textarea.focus();
         if (selected) {
@@ -753,22 +755,36 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 : 'min(1000px, calc(100vw - 16px))'
         }
         style={{
-          top: isMobile ? (keyboardOffset > 0 ? 4 : 8) : isFullscreen ? 10 : isCompactMode ? 16 : 28,
-          maxWidth: isMobile ? 'calc(100vw - 8px)' : 'calc(100vw - 16px)',
+          top: isMobile
+            ? keyboardOffset > 0
+              ? 'max(env(safe-area-inset-top, 16px), 12px)'
+              : 'max(env(safe-area-inset-top, 44px), 48px)'
+            : isFullscreen
+              ? 10
+              : isCompactMode
+                ? 16
+                : 28,
+          maxWidth: isMobile ? 'calc(100vw - 12px)' : 'calc(100vw - 16px)',
           margin: '0 auto',
-          paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : undefined,
+          paddingBottom: isMobile
+            ? keyboardOffset > 0
+              ? `${keyboardOffset + 6}px`
+              : 'max(env(safe-area-inset-bottom, 16px), 16px)'
+            : keyboardOffset > 0
+              ? `${keyboardOffset}px`
+              : undefined,
         }}
         styles={{
           content: {
             padding: 0,
-            borderRadius: isMobile ? 16 : isFullscreen ? 12 : 20,
+            borderRadius: isMobile ? 18 : isFullscreen ? 12 : 20,
             overflow: 'hidden',
             background: surfaceBg,
             border: `1px solid ${borderCol}`,
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
             maxHeight:
               isMobile && visibleHeight > 0
-                ? `${Math.min(visibleHeight - (keyboardOffset > 0 ? 8 : 16), 720)}px`
+                ? `${Math.max(260, visibleHeight - (keyboardOffset > 0 ? 32 : 68))}px`
                 : undefined,
           },
         }}
@@ -777,184 +793,200 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
       >
         <div
           className={`flex flex-col select-text transition-all ${
-            isMobile
-              ? 'h-full max-h-[82vh]'
-              : isCompactMode
-                ? 'min-h-[280px] max-h-[72vh]'
-                : 'h-[82vh] max-h-[900px]'
+            isMobile ? 'h-full' : isCompactMode ? 'min-h-[280px] max-h-[72vh]' : 'h-[82vh] max-h-[900px]'
           }`}
           style={{
             maxHeight:
               isMobile && visibleHeight > 0
-                ? `${Math.max(260, Math.min(visibleHeight - (keyboardOffset > 0 ? 24 : 36), 700))}px`
+                ? `${Math.max(260, visibleHeight - (keyboardOffset > 0 ? 32 : 68))}px`
                 : undefined,
           }}
         >
           {/* Header */}
           <div
-            className="flex items-center justify-between px-4 py-3 border-b shrink-0 flex-wrap gap-2"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b shrink-0 select-none gap-2"
             style={{ borderColor: borderCol, background: toolbarBg }}
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/25 shrink-0 shadow-sm">
-                {isCompactMode ? <Zap size={16} /> : <FilePenLine size={17} />}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[13.5px] font-bold m-0 leading-tight" style={{ color: token.colorText }}>
-                    {title}
-                  </h3>
-                  <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                    CKEditor Mode
-                  </span>
+            {/* Title & Badge */}
+            <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0 pr-8 sm:pr-0">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/25 shrink-0 shadow-sm">
+                  {isCompactMode ? <Zap size={15} /> : <FilePenLine size={16} />}
                 </div>
-                <div
-                  className="flex items-center gap-1.5 mt-0.5 text-[11px] tabular-nums"
-                  style={{ color: token.colorTextSecondary }}
-                >
-                  <span>{stats.words} từ</span>
-                  <span>·</span>
-                  <span>{stats.chars} ký tự</span>
-                  <span>·</span>
-                  <span>{stats.lines} dòng</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <h3
+                      className="text-[13px] sm:text-[13.5px] font-bold m-0 leading-tight truncate"
+                      style={{ color: token.colorText }}
+                    >
+                      {title}
+                    </h3>
+                    <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0">
+                      CKEditor Mode
+                    </span>
+                  </div>
+                  {/* Desktop Stats */}
+                  <div
+                    className="hidden sm:flex items-center gap-1.5 mt-0.5 text-[11px] tabular-nums"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <span>{stats.words} từ</span>
+                    <span>·</span>
+                    <span>{stats.chars} ký tự</span>
+                    <span>·</span>
+                    <span>{stats.lines} dòng</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Top Right Controls */}
-            <div className="flex items-center gap-1.5 mr-7">
-              {/* Template Selector */}
-              {!isCompactMode && (
-                <Popover
-                  open={templatePopoverOpen}
-                  onOpenChange={setTemplatePopoverOpen}
-                  trigger="click"
-                  placement={isMobile ? 'bottom' : 'bottomRight'}
-                  zIndex={zIndex + 20}
-                  content={
-                    <div className="w-[min(288px,calc(100vw-32px))] max-h-[45vh] overflow-y-auto p-1 space-y-1">
-                      <div className="text-[11px] font-bold uppercase tracking-wider px-2 py-1 text-amber-500 flex items-center gap-1.5">
-                        <Sparkles size={13} />
-                        <span>Mẫu soạn thảo sẵn</span>
-                      </div>
-                      {TEMPLATES.map((tmpl) => (
-                        <button
-                          key={tmpl.id}
-                          type="button"
-                          onClick={() => handleSelectTemplate(tmpl.content)}
-                          className="w-full text-left p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex flex-col gap-0.5 cursor-pointer"
-                        >
-                          <span className="text-[12.5px] font-semibold" style={{ color: token.colorText }}>
-                            {tmpl.title}
-                          </span>
-                          <span className="text-[11px] opacity-75" style={{ color: token.colorTextSecondary }}>
-                            {tmpl.desc}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  }
-                >
-                  <button
-                    type="button"
-                    className="h-7 px-2.5 rounded-lg border flex items-center gap-1.5 text-[11.5px] font-medium hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                    style={{ borderColor: borderCol, color: token.colorText }}
-                  >
-                    <Sparkles size={13} className="text-amber-500" />
-                    <span className="sm:hidden">Mẫu</span>
-                    <span className="hidden sm:inline">Mẫu nhanh</span>
-                  </button>
-                </Popover>
-              )}
-
-              {/* View Mode Segmented Controls */}
+            {/* Controls: Stats (on mobile), Templates & Mode switcher */}
+            <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:mr-7 overflow-x-auto no-scrollbar">
+              {/* Mobile Stats */}
               <div
-                className="flex items-center p-0.5 rounded-lg border shrink-0"
-                style={{ borderColor: borderCol, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)' }}
+                className="sm:hidden flex items-center gap-1 text-[10.5px] tabular-nums shrink-0"
+                style={{ color: token.colorTextSecondary }}
               >
-                <EditorTooltip disabled={isMobile} title="Bản gọn (Type nhanh): Khung nhỏ gọn kiểu Google Chat, tự xuống dòng dấu đầu dòng • khi nhấn Enter">
-                  <button
-                    type="button"
-                    data-testid="rich-editor-mode-compact"
-                    onClick={() => setViewMode('compact')}
-                    className={`h-6.5 px-2 rounded-md flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer ${
-                      viewMode === 'compact'
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Zap size={12} />
-                    <span>Bản gọn</span>
-                  </button>
-                </EditorTooltip>
-
-                <EditorTooltip disabled={isMobile} title="Chỉ soạn thảo (Soạn mã Markdown / Text)">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('edit')}
-                    className={`h-6.5 px-2 rounded-md flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer ${
-                      viewMode === 'edit'
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <FileText size={12} />
-                    <span className="hidden md:inline">Soạn thảo</span>
-                  </button>
-                </EditorTooltip>
-
-                <EditorTooltip disabled={isMobile} title="Xem song song: Soạn thảo bên trái, Xem trước bên phải">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('split')}
-                    className={`h-6.5 px-2 rounded-md flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer ${
-                      viewMode === 'split'
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Columns2 size={12} />
-                    <span className="hidden md:inline">Song song</span>
-                  </button>
-                </EditorTooltip>
-
-                <EditorTooltip disabled={isMobile} title="Xem trước trực quan (WYSIWYG Preview)">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('preview')}
-                    className={`h-6.5 px-2 rounded-md flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer ${
-                      viewMode === 'preview'
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Eye size={12} />
-                    <span className="hidden md:inline">Xem trước</span>
-                  </button>
-                </EditorTooltip>
+                <span>{stats.words} từ</span>
+                <span>·</span>
+                <span>{stats.chars} ký tự</span>
               </div>
 
-              {/* Fullscreen Toggle */}
-              {!isCompactMode && (
-                <EditorTooltip disabled={isMobile} title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}>
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreen((prev) => !prev)}
-                    className="w-7 h-7 rounded-lg border flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                    style={{ borderColor: borderCol, color: token.colorTextSecondary }}
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto sm:ml-0">
+                {/* Template Selector */}
+                {!isCompactMode && (
+                  <Popover
+                    open={templatePopoverOpen}
+                    onOpenChange={setTemplatePopoverOpen}
+                    trigger="click"
+                    placement={isMobile ? 'bottom' : 'bottomRight'}
+                    zIndex={zIndex + 20}
+                    content={
+                      <div className="w-[min(288px,calc(100vw-32px))] max-h-[45vh] overflow-y-auto p-1 space-y-1">
+                        <div className="text-[11px] font-bold uppercase tracking-wider px-2 py-1 text-amber-500 flex items-center gap-1.5">
+                          <Sparkles size={13} />
+                          <span>Mẫu soạn thảo sẵn</span>
+                        </div>
+                        {TEMPLATES.map((tmpl) => (
+                          <button
+                            key={tmpl.id}
+                            type="button"
+                            onClick={() => handleSelectTemplate(tmpl.content)}
+                            className="w-full text-left p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex flex-col gap-0.5 cursor-pointer"
+                          >
+                            <span className="text-[12.5px] font-semibold" style={{ color: token.colorText }}>
+                              {tmpl.title}
+                            </span>
+                            <span className="text-[11px] opacity-75" style={{ color: token.colorTextSecondary }}>
+                              {tmpl.desc}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    }
                   >
-                    {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-                  </button>
-                </EditorTooltip>
-              )}
+                    <button
+                      type="button"
+                      className="h-6.5 sm:h-7 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1.5 text-[11px] sm:text-[11.5px] font-medium hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                      style={{ borderColor: borderCol, color: token.colorText }}
+                    >
+                      <Sparkles size={12} className="text-amber-500" />
+                      <span className="sm:hidden">Mẫu</span>
+                      <span className="hidden sm:inline">Mẫu nhanh</span>
+                    </button>
+                  </Popover>
+                )}
+
+                {/* View Mode Segmented Controls */}
+                <div
+                  className="flex items-center p-0.5 rounded-lg border shrink-0"
+                  style={{ borderColor: borderCol, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)' }}
+                >
+                  <EditorTooltip
+                    disabled={isMobile}
+                    title="Bản gọn (Type nhanh): Khung nhỏ gọn kiểu Google Chat, tự xuống dòng dấu đầu dòng • khi nhấn Enter"
+                  >
+                    <button
+                      type="button"
+                      data-testid="rich-editor-mode-compact"
+                      onClick={() => setViewMode('compact')}
+                      className={`h-6 sm:h-6.5 px-1.5 sm:px-2 rounded-md flex items-center gap-1 text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer ${
+                        viewMode === 'compact'
+                          ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Zap size={11} />
+                      <span>Bản gọn</span>
+                    </button>
+                  </EditorTooltip>
+
+                  <EditorTooltip disabled={isMobile} title="Chỉ soạn thảo (Soạn mã Markdown / Text)">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('edit')}
+                      className={`h-6 sm:h-6.5 px-1.5 sm:px-2 rounded-md flex items-center gap-1 text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer ${
+                        viewMode === 'edit'
+                          ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <FileText size={11} />
+                      <span className="hidden md:inline">Soạn thảo</span>
+                    </button>
+                  </EditorTooltip>
+
+                  <EditorTooltip disabled={isMobile} title="Xem song song: Soạn thảo bên trái, Xem trước bên phải">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('split')}
+                      className={`h-6 sm:h-6.5 px-1.5 sm:px-2 rounded-md flex items-center gap-1 text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer ${
+                        viewMode === 'split'
+                          ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Columns2 size={11} />
+                      <span className="hidden md:inline">Song song</span>
+                    </button>
+                  </EditorTooltip>
+
+                  <EditorTooltip disabled={isMobile} title="Xem trước trực quan (WYSIWYG Preview)">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('preview')}
+                      className={`h-6 sm:h-6.5 px-1.5 sm:px-2 rounded-md flex items-center gap-1 text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer ${
+                        viewMode === 'preview'
+                          ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Eye size={11} />
+                      <span className="hidden md:inline">Xem trước</span>
+                    </button>
+                  </EditorTooltip>
+                </div>
+
+                {/* Fullscreen Toggle */}
+                {!isCompactMode && (
+                  <EditorTooltip disabled={isMobile} title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}>
+                    <button
+                      type="button"
+                      onClick={() => setIsFullscreen((prev) => !prev)}
+                      className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                      style={{ borderColor: borderCol, color: token.colorTextSecondary }}
+                    >
+                      {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                    </button>
+                  </EditorTooltip>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Formatting Toolbar (Sleek Google-Chat style in Compact Mode, Full Studio in other modes) */}
           <div
-            className={`flex items-center gap-1 px-3.5 py-2 border-b shrink-0 select-none ${
-              isMobile ? 'flex-wrap gap-y-1.5' : 'overflow-x-auto no-scrollbar'
-            }`}
+            className="overflow-x-auto no-scrollbar flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 border-b shrink-0 select-none touch-pan-x"
             style={{
               borderColor: borderCol,
               background: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(250, 250, 250, 0.95)',
@@ -1064,7 +1096,10 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
 
             {/* Lists: Bullet (•), Numbered (1.), Checklist ([ ]) */}
             <div className="flex items-center gap-0.5">
-              <EditorTooltip disabled={isMobile} title="Danh sách dấu đầu dòng (• Mục) — Nhấn Enter để tự động thêm dấu • dòng tiếp theo">
+              <EditorTooltip
+                disabled={isMobile}
+                title="Danh sách dấu đầu dòng (• Mục) — Nhấn Enter để tự động thêm dấu • dòng tiếp theo"
+              >
                 <button
                   type="button"
                   aria-label="Danh sách dấu đầu dòng"
@@ -1078,7 +1113,10 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                 </button>
               </EditorTooltip>
 
-              <EditorTooltip disabled={isMobile} title="Danh sách đánh số (1. Mục) — Nhấn Enter để tự động tăng số thứ tự">
+              <EditorTooltip
+                disabled={isMobile}
+                title="Danh sách đánh số (1. Mục) — Nhấn Enter để tự động tăng số thứ tự"
+              >
                 <button
                   type="button"
                   aria-label="Danh sách số thứ tự"
@@ -1422,7 +1460,9 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
             </div>
           ) : (
             /* STUDIO SPLIT / EDIT / PREVIEW MODES */
-            <div className={`flex-1 flex overflow-hidden min-h-0 ${viewMode === 'split' ? 'flex-col md:flex-row' : ''}`}>
+            <div
+              className={`flex-1 flex overflow-hidden min-h-0 ${viewMode === 'split' ? 'flex-col md:flex-row' : ''}`}
+            >
               {/* Editor Pane (Left / Full) */}
               {viewMode !== 'preview' && (
                 <div
@@ -1540,26 +1580,26 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
 
           {/* Footer Controls */}
           <div
-            className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 border-t shrink-0 flex-wrap gap-2"
+            className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 border-t shrink-0 flex-wrap sm:flex-nowrap gap-2"
             style={{ borderColor: borderCol, background: toolbarBg }}
           >
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-[11.5px]" style={{ color: token.colorTextSecondary }}>
+            <div
+              className="hidden sm:flex items-center gap-1.5 text-[11px] sm:text-[11.5px]"
+              style={{ color: token.colorTextSecondary }}
+            >
               <HelpCircle size={14} className="text-amber-500 shrink-0" />
-              <span className="hidden sm:inline">
+              <span>
                 {isCompactMode
                   ? 'Bản gọn gõ nhanh: Nhấn • để liệt kê ý, Enter tự tiếp nối dòng mới.'
                   : 'Hỗ trợ bảng biểu, sơ đồ Mermaid, công thức KaTeX, danh sách việc cần làm và các phím tắt soạn thảo.'}
               </span>
-              <span className="sm:hidden text-[10.5px] opacity-75 font-medium">
-                CKEditor Mobile
-              </span>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto sm:ml-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 px-2.5 sm:px-3 rounded-xl border flex items-center justify-center text-[11.5px] sm:text-[12px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                className="h-8 px-2.5 sm:px-3 rounded-xl border flex items-center justify-center text-[11.5px] sm:text-[12px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
                 style={{ borderColor: borderCol, color: token.colorText }}
               >
                 Hủy
@@ -1571,7 +1611,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   onApply(content);
                   onClose();
                 }}
-                className="h-8 px-2.5 sm:px-3.5 rounded-xl border flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-semibold hover:bg-amber-500/10 transition-colors cursor-pointer text-amber-500 border-amber-500/40"
+                className="flex-1 sm:flex-initial h-8 px-2 sm:px-3.5 rounded-xl border flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-semibold hover:bg-amber-500/10 transition-colors cursor-pointer text-amber-500 border-amber-500/40"
               >
                 <Check size={14} />
                 <span>Áp dụng vào chat</span>
@@ -1585,7 +1625,7 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
                   onClose();
                 }}
                 disabled={!content.trim()}
-                className={`h-8 px-3 sm:px-3.5 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-bold shadow-md transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-initial h-8 px-3 sm:px-3.5 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 text-[11.5px] sm:text-[12px] font-bold shadow-md transition-all cursor-pointer ${
                   content.trim()
                     ? 'bg-[#d4a84b] hover:bg-[#c3973a] text-slate-950 active:scale-95'
                     : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'
