@@ -2347,10 +2347,20 @@ test('resolveInboxReleaseUrl returns null for pure backend changes with no web U
 });
 
 test('extractModelTierFromLabel and stripModelTierMarker round-trip model tier markers cleanly', () => {
-  const raw = 'Chờ Antigravity tạo task/worktree [model:flash]';
-  assert.equal(extractModelTierFromLabel(raw), 'flash');
+  const raw = 'Chờ Antigravity tạo task/worktree [model:hydrogen]';
+  assert.equal(extractModelTierFromLabel(raw), 'hydrogen');
   assert.equal(stripModelTierMarker(raw), 'Chờ Antigravity tạo task/worktree');
-  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:flash_lite]'), 'flash_lite');
-  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:pro]'), 'pro');
+  assert.equal(
+    extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:orchestrator_carbon]'),
+    'orchestrator_carbon'
+  );
+  assert.equal(
+    extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:orchestrator_argon]'),
+    'orchestrator_argon'
+  );
+  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:flash]'), 'flash');
+  // Legacy markers remain safely readable
+  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:flash_lite]'), 'flash');
+  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:pro]'), 'orchestrator_argon');
   assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree'), undefined);
 });

@@ -38519,8 +38519,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16898,
-        "lineCount": 485,
+        "sizeBytes": 17061,
+        "lineCount": 490,
         "ext": ".ts"
       }
     },
@@ -38831,8 +38831,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 132417,
-        "lineCount": 3169,
+        "sizeBytes": 132483,
+        "lineCount": 3176,
         "ext": ".ts"
       }
     },
@@ -38948,8 +38948,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-ide-release.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23618,
-        "lineCount": 530,
+        "sizeBytes": 23611,
+        "lineCount": 526,
         "ext": ".ts"
       }
     },
@@ -38987,8 +38987,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84814,
-        "lineCount": 2357,
+        "sizeBytes": 85272,
+        "lineCount": 2367,
         "ext": ".ts"
       }
     },
@@ -39000,8 +39000,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 163830,
-        "lineCount": 4109,
+        "sizeBytes": 164305,
+        "lineCount": 4121,
         "ext": ".ts"
       }
     },
@@ -46501,8 +46501,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27572,
-        "lineCount": 605,
+        "sizeBytes": 27813,
+        "lineCount": 612,
         "ext": ".tsx"
       }
     },
@@ -46514,8 +46514,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38942,
-        "lineCount": 858,
+        "sizeBytes": 38842,
+        "lineCount": 849,
         "ext": ".tsx"
       }
     },
@@ -46592,8 +46592,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportImplementationStatusCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6343,
-        "lineCount": 149,
+        "sizeBytes": 6842,
+        "lineCount": 160,
         "ext": ".tsx"
       }
     },
@@ -53742,8 +53742,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 198584,
-        "lineCount": 2460,
+        "sizeBytes": 198668,
+        "lineCount": 2473,
         "ext": ".ts"
       }
     },
@@ -54041,8 +54041,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 47678,
-        "lineCount": 1484,
+        "sizeBytes": 47725,
+        "lineCount": 1489,
         "ext": ".ts"
       }
     },

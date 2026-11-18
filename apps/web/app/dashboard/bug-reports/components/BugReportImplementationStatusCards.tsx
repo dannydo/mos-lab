@@ -19,10 +19,21 @@ export const EXECUTION_OWNER_LABELS: Record<'AG_WIN' | 'AUTO' | 'AG_MAC', string
 };
 
 export const MODEL_TIER_LABELS: Record<InboxImplementationModelTier, string> = {
-  flash: '⚡ Flash — Gemini 3.8 Flash (Tiết kiệm token)',
-  pro: '🧠 Argon High — Gemini 4 Pro (Task phức tạp)',
-  flash_lite: '💨 Flash Lite — Gemini 3.1 Flash Lite (Siêu nhẹ)',
+  hydrogen: '🚀 Hydrogen — Gemini 4 Hydrogen (Mặc định)',
+  orchestrator_carbon: '🎼 Orchestrator (Carbon) — Đa tác nhân Carbon (Task lớn/phức tạp)',
+  orchestrator_argon: '🧠 Orchestrator (Argon) — Đa tác nhân Argon (Suy luận sâu)',
+  flash: '⚡ Flash 3.8 — Gemini 3.8 Flash (Nhanh · Tiết kiệm token)',
 };
+
+export function getModelTierLabel(tier: string | undefined): string | null {
+  if (!tier) return null;
+  if (tier in MODEL_TIER_LABELS) {
+    return MODEL_TIER_LABELS[tier as InboxImplementationModelTier];
+  }
+  if (tier === 'pro') return MODEL_TIER_LABELS.orchestrator_argon;
+  if (tier === 'flash_lite') return MODEL_TIER_LABELS.flash;
+  return tier;
+}
 
 type BugReportImplementationStatusCardsProps = {
   implementation: BugReportDetail['implementation'];
@@ -72,7 +83,7 @@ export function BugReportImplementationStatusCards({ implementation }: BugReport
                 {implementation.modelTier ? (
                   <div>
                     <Text strong>Model thực thi: </Text>
-                    <Text code>{MODEL_TIER_LABELS[implementation.modelTier]}</Text>
+                    <Text code>{getModelTierLabel(implementation.modelTier)}</Text>
                   </div>
                 ) : null}
                 {implementation.ideHandoff.taskId ? (
