@@ -228,7 +228,9 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined}
+          onSelectBranch={
+            canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined
+          }
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           onRoleChange={(r) => {
@@ -460,6 +462,10 @@ function IosAppInner() {
             booking={currentBooking}
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
+            isAdmin={state.isAdmin}
+            isSimulationMode={state.isSimulationMode}
+            isReadOnlyMentorView={state.isReadOnlyMentorView}
+            onRefreshDb={() => state.refreshDb()}
             onFinishOrder={state.handleFinishOrder}
             simulationReplaySlot={
               state.isSimulationMode ? (
@@ -578,7 +584,9 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined}
+          onSelectBranch={
+            canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined
+          }
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           isSimulationMode={state.isSimulationMode}
