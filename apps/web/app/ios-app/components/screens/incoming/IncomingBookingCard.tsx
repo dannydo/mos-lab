@@ -19,7 +19,7 @@ import {
   formatShortMoney,
   formatTime24h,
 } from './incomingBookingHelpers';
-import { RotateCcw, Info, Package, Heart, Lock, Camera } from 'lucide-react';
+import { RotateCcw, Info, Package, Heart, Lock, Camera, PenLine } from 'lucide-react';
 import { useTheme } from '../../../../../context/ThemeContext';
 
 interface IncomingBookingCardProps {
@@ -37,6 +37,7 @@ interface IncomingBookingCardProps {
   onResumeServicing?: (bookingId: number) => void;
   onOpenLockedModal: (attemptedCustomerName: string) => void;
   onOpenCustomerDetail: (b: BookingItem) => void;
+  onOpenCustomerNotes?: (b: BookingItem) => void;
   onOpenRevertModal: (bookingId: number, customerName: string) => void;
   onOpenWalletModal?: (b: BookingItem) => void;
 }
@@ -56,6 +57,7 @@ export function IncomingBookingCard({
   onResumeServicing,
   onOpenLockedModal,
   onOpenCustomerDetail,
+  onOpenCustomerNotes,
   onOpenRevertModal,
   onOpenWalletModal,
 }: IncomingBookingCardProps) {
@@ -398,15 +400,35 @@ export function IncomingBookingCard({
               <span className="truncate">
                 {b.customerNote ? `“${b.customerNote}”` : 'Ảnh B/C/A & bộ mi các lần trước'}
               </span>
-              <span
-                className="shrink-0 not-italic flex items-center gap-1 transition-colors"
-                style={{ color: 'var(--mos-accent)' }}
-              >
-                <span className="text-[9.5px] font-extrabold tabular-nums">
-                  {todayPhotoCount > 0 ? `${todayPhotoCount} ảnh` : 'Bộ mi'}
+              <div className="shrink-0 not-italic flex items-center gap-2 transition-colors">
+                {isDone && b.customerId > 0 && onOpenCustomerNotes && (
+                  <button
+                    type="button"
+                    data-testid={`card-open-notes-${b.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenCustomerNotes(b);
+                    }}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9.5px] font-bold leading-none cursor-pointer ${
+                      (b.cvlNotes?.length || 0) > 0
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                        : isDark
+                          ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
+                          : 'bg-neutral-100 border-neutral-200 text-neutral-700'
+                    }`}
+                    title="Ghi chú CVL"
+                  >
+                    <PenLine className="w-2.5 h-2.5" strokeWidth={1.9} />
+                    <span className="tabular-nums">{(b.cvlNotes?.length || 0) > 0 ? b.cvlNotes!.length : 'Note'}</span>
+                  </button>
+                )}
+                <span className="flex items-center gap-1" style={{ color: 'var(--mos-accent)' }}>
+                  <span className="text-[9.5px] font-extrabold tabular-nums">
+                    {todayPhotoCount > 0 ? `${todayPhotoCount} ảnh` : 'Bộ mi'}
+                  </span>
+                  <Info className="w-3.5 h-3.5 stroke-[2.2]" />
                 </span>
-                <Info className="w-3.5 h-3.5 stroke-[2.2]" />
-              </span>
+              </div>
             </div>
           );
         })()}

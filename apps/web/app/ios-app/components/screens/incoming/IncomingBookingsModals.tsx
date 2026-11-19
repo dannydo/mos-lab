@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import type { IosCustomerHistoryTab, IosCustomerNoteItem } from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
 import { CustomerHistoryAndSpendingSheet } from '../../ui-kit/CustomerHistoryAndSpendingSheet';
 import { RotateCcw, Lock } from 'lucide-react';
@@ -16,6 +17,8 @@ interface IncomingBookingsModalsProps {
   >;
   selectedCustomerDetail: BookingItem | null;
   setSelectedCustomerDetail: React.Dispatch<React.SetStateAction<BookingItem | null>>;
+  initialHistoryTab?: IosCustomerHistoryTab;
+  onNoteCreated?: (note: IosCustomerNoteItem) => void;
   activeServicingBooking?: BookingItem | null;
   isSimulationMode?: boolean;
   isCvll?: boolean;
@@ -33,6 +36,8 @@ export function IncomingBookingsModals({
   setRevertConfirmModal,
   selectedCustomerDetail,
   setSelectedCustomerDetail,
+  initialHistoryTab = 'LASH_PHOTOS',
+  onNoteCreated,
   activeServicingBooking,
   isSimulationMode = false,
   isCvll = false,
@@ -195,9 +200,10 @@ export function IncomingBookingsModals({
               isOpen={Boolean(selectedCustomerDetail)}
               onClose={() => setSelectedCustomerDetail(null)}
               booking={selectedCustomerDetail}
-              initialTab="LASH_PHOTOS"
+              initialTab={initialHistoryTab}
               isSimulationMode={isSimulationMode}
               customerFacingMode={false}
+              onNoteCreated={onNoteCreated}
               primaryActionLabel={primaryLabel}
               onPrimaryAction={
                 primaryLabel

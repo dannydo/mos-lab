@@ -19,11 +19,14 @@ import {
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
 import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
+import { PostCheckoutCvlNoteCard } from './post-checkout/PostCheckoutCvlNoteCard';
 
 interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
+  isSimulationMode?: boolean;
+  onNoteCreated?: () => void;
   onFinishOrder: () => void;
   onBack?: () => void;
   simulationReplaySlot?: React.ReactNode;
@@ -33,6 +36,8 @@ export function Screen14ThermalReceiptDone({
   booking,
   actor,
   cvPlusRules,
+  isSimulationMode = false,
+  onNoteCreated,
   onFinishOrder,
   onBack,
   simulationReplaySlot,
@@ -608,6 +613,14 @@ export function Screen14ThermalReceiptDone({
           </div>
         )}
       </div>
+
+      <PostCheckoutCvlNoteCard
+        booking={booking}
+        isDark={isDark}
+        showStaffRewards={showStaffRewards}
+        isSimulationMode={isSimulationMode}
+        onNoteCreated={onNoteCreated}
+      />
 
       {simulationReplaySlot && <div className="pt-2">{simulationReplaySlot}</div>}
 
