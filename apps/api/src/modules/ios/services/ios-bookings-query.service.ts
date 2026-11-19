@@ -259,6 +259,7 @@ export async function queryIosBookingsList(
       if (
         settleStatus === 'SETTLED_COMPLETED' ||
         settleStatus === 'PENDING_COUNTER_SETTLEMENT' ||
+        settleStatus === 'PENDING_POST_CHECKOUT_ADJUSTMENT' ||
         settleStatus === 'DEMO_ONLY'
       ) {
         continue;

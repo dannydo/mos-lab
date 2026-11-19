@@ -20,6 +20,7 @@ import {
   fetchPromotionsByIds,
   resolveCheckoutOverridePromotions,
 } from './ios-promotions.service.js';
+import { executePostCheckoutAdjustmentAction } from './ios-post-checkout-adjustment.service.js';
 import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
@@ -120,6 +121,26 @@ export async function executeIosBookingAction(
             'CVL (Chuyên Viên Tự Chủ) chỉ được phép thao tác trên khách hàng kế tiếp (Đầu tua) hoặc khách book của chính mình, không được truy cập khách của Chuyên Viên khác.',
         },
       };
+    }
+
+    if (
+      action === 'SUBMIT_POST_CHECKOUT_ADJUSTMENT' ||
+      action === 'APPROVE_POST_CHECKOUT_ADJUSTMENT' ||
+      action === 'REJECT_POST_CHECKOUT_ADJUSTMENT'
+    ) {
+      return executePostCheckoutAdjustmentAction({
+        authUser,
+        action,
+        bookingId,
+        body,
+        current,
+        repo,
+        bridgeDepsOverride,
+        isSimulationMode,
+        actorStaffId,
+        actorStaffName,
+        actorStaffTier,
+      });
     }
 
     const isAlreadySettledOrder =
