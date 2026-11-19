@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { isDoneBookingPendingPostCheckoutAdjustment } from '@mos-lab/shared';
 import {
   BookingItem,
   KNOWN_STAFF_AVATARS,
@@ -81,6 +82,8 @@ export function IncomingBookingCard({
   const completionInfo = getBookingCompletionInfo(b, now, isDark);
   const isDone = bookingSegment === 'DONE' || b.status === 'DONE';
   const doneSummary = isDone ? getDoneBookingSummary(b) : null;
+  const isPendingPostAdj = isDone && isDoneBookingPendingPostCheckoutAdjustment(b);
+  const isDoneCardPendingCounter = Boolean(doneSummary && (doneSummary.isPendingCheckout || isPendingPostAdj));
 
   const isCurrentActiveServicing = Boolean(
     activeServicingBooking && Number(b.id) === Number(activeServicingBooking.id)
@@ -440,7 +443,7 @@ export function IncomingBookingCard({
           className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center items-end text-right self-stretch space-y-1 tabular-nums"
           style={{ borderColor: 'var(--mos-surface-border)' }}
         >
-          {doneSummary.isPendingCheckout ? (
+          {isDoneCardPendingCounter ? (
             <>
               {/* TẦNG 1: TRẠNG THÁI CHỜ QUẦY CHỐT (Pinned on top) */}
               <span
@@ -450,7 +453,7 @@ export function IncomingBookingCard({
                     : 'bg-amber-50 text-amber-800 border-amber-300'
                 }`}
               >
-                Chờ Quầy chốt
+                {isPendingPostAdj && !doneSummary.isPendingCheckout ? 'Chờ Quầy điều chỉnh' : 'Chờ Quầy chốt'}
               </span>
 
               {/* TẦNG 2: THỜI GIAN (09:00 · 84p) */}

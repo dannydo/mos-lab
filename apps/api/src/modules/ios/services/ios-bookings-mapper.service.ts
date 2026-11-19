@@ -20,6 +20,7 @@ import { computeCanonicalCvRotationPoints } from './ios-cv-points.helper.js';
 import { resolveItemizedBookingPromotions } from './ios-promotions.service.js';
 import { resolveEffectiveLiveOrderStateAndStatus } from './ios-legacy-state-reconciler.service.js';
 import {
+  buildDefaultLiveOrderAttributes,
   computeBookingFinancials,
   formatPhoneNumberDots,
   formatTime12h,
@@ -334,77 +335,18 @@ export function mapLiveOrdersToBookings(params: {
               material: normalizeLashMaterialLabel(override.attributes.material) || override.attributes.material,
             }
           : null) ||
-          (() => {
-            const isFirstVisitClient = effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship);
-            const savedProfile = customerNaturalLashMap[String(customerId)];
-            const matchedSpec = matchComboCategoryAndVolumeFromBooking({
-              material: isRawOrderPlaceholder ? lastSpecs?.material : undefined,
-              volume: actualSpecs?.volume || (isRawOrderPlaceholder ? lastSpecs?.volume : undefined),
-              count: actualSpecs?.count || (isRawOrderPlaceholder ? lastSpecs?.count : undefined),
-              serviceName: effectiveServiceName,
-              serviceKey: !isRawOrderPlaceholder ? r.service_key || undefined : lastSpecs?.serviceKey,
-              servicePrice: !isRawOrderPlaceholder ? servicePrice : undefined,
-            });
-            const catId = matchedSpec.categoryId;
-            const defaultMat =
-              catId === 'Classic_1D' || catId === 'Classic_Volume'
-                ? 'Classic 1D'
-                : catId === 'Volume_2D' || catId === 'Volume_3D'
-                  ? 'Volume'
-                  : catId.startsWith('HyperLight')
-                    ? 'HyperLight'
-                    : catId.startsWith('IvyLight')
-                      ? 'Ivylight'
-                      : catId.startsWith('UltraLight')
-                        ? 'UltraLight'
-                        : 'Flawless Mink';
-            const defaultVol =
-              defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
-                ? '1D'
-                : catId === 'Volume_3D'
-                  ? '3D'
-                  : catId === 'Volume_2D'
-                    ? '2D'
-                    : catId.includes('_')
-                      ? catId.split('_')[1]
-                      : '4X';
-            const unit =
-              defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
-                ? 'sợi'
-                : defaultMat === 'Ivylight'
-                  ? 'nhịp'
-                  : 'fan';
-            const fallbackCountPerEye =
-              defaultMat === 'Classic 1D' || defaultMat === 'Ivylight'
-                ? 90
-                : defaultMat === 'Flawless Mink'
-                  ? 60
-                  : defaultMat === 'UltraLight' || defaultMat === 'Volume'
-                    ? 80
-                    : 70;
-            const resolvedCountPerEye =
-              matchedSpec.volume !== 'under' && matchedSpec.volumeMeta?.countPerEye
-                ? matchedSpec.volumeMeta.countPerEye
-                : fallbackCountPerEye;
-            const defaultCount = `${resolvedCountPerEye} ${unit}`;
-            const normalizedLastMaterial = normalizeLashMaterialLabel(lastSpecs?.material);
-            const canInheritLastSpecs = isRawOrderPlaceholder || normalizedLastMaterial === defaultMat;
-
-            return {
-              material: canInheritLastSpecs ? normalizedLastMaterial || defaultMat : defaultMat,
-              style: actualSpecs?.style || lastSpecs?.style || 'Natural',
-              volume: actualSpecs?.volume || (canInheritLastSpecs ? lastSpecs?.volume || defaultVol : defaultVol),
-              count: actualSpecs?.count || (canInheritLastSpecs ? lastSpecs?.count || defaultCount : defaultCount),
-              color: actualSpecs?.color || lastSpecs?.color,
-              hasUnderMink: actualSpecs?.hasUnderMink,
-              underMinkServiceType: actualSpecs?.underMinkServiceType,
-              curl: 'C',
-              length: '10-12 mm',
-              thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
-              isNewClientDiagnosticDone: savedProfile ? true : isFirstVisitClient ? false : undefined,
-              notes: note || '',
-            };
-          })(),
+          buildDefaultLiveOrderAttributes({
+            isFirstVisitClient: effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship),
+            savedProfile: customerNaturalLashMap[String(customerId)],
+            isRawOrderPlaceholder,
+            lastSpecs,
+            actualSpecs,
+            effectiveServiceName,
+            serviceKey: r.service_key,
+            servicePrice,
+            note,
+            normalizeLashMaterialLabel,
+          }),
         customerNaturalLashMap[String(customerId)]
       );
 
@@ -455,6 +397,7 @@ export function mapLiveOrdersToBookings(params: {
         storeId: resolvedStoreId,
         branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
         branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
+        bookingDateYmd: targetDate,
         serviceName: effectiveServiceName,
         serviceType: override.serviceType || r.service_type || 'Normal',
         servicePrice,
@@ -515,6 +458,10 @@ export function mapLiveOrdersToBookings(params: {
         ...promoState,
         cvRewardBreakdown,
         billing,
+        pendingPostCheckoutAdjustment: override.pendingPostCheckoutAdjustment || null,
+        postCheckoutAdjustments: Array.isArray(override.postCheckoutAdjustments)
+          ? override.postCheckoutAdjustments
+          : [],
         isTrainingCvlOrder,
         trainingMentorName: matchedTrainingPair?.mentorDisplayName,
       };
@@ -634,6 +581,7 @@ export function buildDemoModeBookings(params: {
       storeId: resolvedStoreId,
       branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
       branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
+      bookingDateYmd: targetDate,
       status,
       orderState: override.orderState || (mock as unknown as IosBookingItem).orderState,
       serviceName: stripNewLashLabel(override.serviceName || mock.serviceName),
@@ -689,6 +637,8 @@ export function buildDemoModeBookings(params: {
       ...promoState,
       cvRewardBreakdown,
       billing,
+      pendingPostCheckoutAdjustment: override.pendingPostCheckoutAdjustment || null,
+      postCheckoutAdjustments: Array.isArray(override.postCheckoutAdjustments) ? override.postCheckoutAdjustments : [],
       isTrainingCvlOrder,
       trainingMentorName: matchedTrainingPair?.mentorDisplayName,
       lashHistory: mock.lashHistory ?? [],

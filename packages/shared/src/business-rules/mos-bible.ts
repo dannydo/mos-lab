@@ -587,6 +587,53 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'OPS-007',
+    book: 'SERVICE',
+    title:
+      'Điều chỉnh & Thêm Gói Combo sau Checkout (DONE): Thu bổ sung / Hủy thu lại, Chuyển giao quyền lợi Người Checkout & Lịch sử đối soát',
+    summary:
+      'Cho phép CVL (trên đơn của mình), CVLL, CC và Admin mở lại đơn đã Checkout (DONE) trong cùng ngày phục vụ (trước 23:59) để thêm/đổi/hủy gói Combo, thêm Dưỡng mi hoặc cập nhật Tip; hỗ trợ Thu bổ sung chênh lệch hoặc Hủy bill cũ & Thu lại từ đầu, đồng thời chuyển trọn Điểm, Bonus & 10% Tip Checkout sang Người Checkout mới được chỉ định kèm lưu lịch sử đối soát bất biến.',
+    commandments: [
+      '1. Khung thời gian & Phân quyền UI-010: Chỉ cho phép điều chỉnh đơn DONE trong cùng ngày phục vụ (trước 23:59 giờ Việt Nam). CVL chỉ thao tác trên đơn của chính mình (assigned/check-in/check-out); CVLL, CC và Admin được thao tác trên mọi đơn DONE trong ngày của chi nhánh.',
+      '2. Hai chế độ dòng tiền & Thuế VAT 8% (VAT-001): Mặc định Thu bổ sung chênh lệch (TOP_UP — giữ nguyên khoản đã thu lần 1, cấn trừ tiền lẻ nếu trừ buổi hôm nay vào Buổi 1 gói mới, chỉ thu phần chênh lệch và cộng dồn vào order_payment). Chế độ Hủy thanh toán cũ & Thu lại từ đầu (VOID_AND_RECOLLECT) hoặc điều chỉnh giảm tiền trên đơn đã Completed bắt buộc nhập Lý do điều chỉnh và phải qua Quầy (CC / Admin) xác nhận duyệt nếu người gửi là CVL/CVLL.',
+      '3. Chọn Người Chốt Gói (Checkout) & Chuyển giao Điểm/Bonus: Cho phép chọn rõ Người Chốt Gói (checkOutStaffId). Nếu Người Checkout mới khác với Người Checkout cũ, thay thế check_out_staff_id trên toàn đơn và chuyển trọn Điểm, Bonus gói Combo/Dưỡng mi và 10% Tip Checkout sang Người Checkout mới (chia 50/50 với CC Check-in nếu là CC theo CC-002; vẫn bảo toàn 100% điểm kỹ thuật + 70% Tip cho Chuyên Viên làm mi, giữ 10% Tip Check-in, và bảo toàn ngoại lệ Training Mentorship CC-006).',
+      '4. Đối soát nguyên tử Ví khách hàng & Sổ Legacy kèm Lịch sử bất biến: Khi áp dụng điều chỉnh lên đơn đã Completed, hệ thống hoàn tác nguyên tử các giao dịch buổi gói cũ của order_id trong user_service_balance, dọn và tái kết chuyển sổ staff_bonus / staff_tip / report_order / accountant_revenue, đồng thời lưu bản ghi audit bất biến postCheckoutAdjustments (Ai yêu cầu, Ai duyệt, Lý do, Trước -> Sau).',
+    ],
+    rationale:
+      'Giải quyết thực tế khách sau khi thanh toán xong mới quyết định mua thêm hoặc nâng cấp gói Combo ngay tại tiệm mà không tạo đơn ảo làm sai lệch số lần ghé của khách hàng hay sai sót hoa hồng giữa Chuyên Viên, CC và Quầy thu ngân.',
+    tags: [
+      'ios-app',
+      'post-checkout',
+      'combo',
+      'top-up',
+      'void',
+      'checkout-staff',
+      'bonus',
+      'audit-history',
+      'VAT-001',
+      'CC-002',
+      'CV-002',
+    ],
+    routeScopes: ['/ios-app', '/dashboard/cv', '/dashboard/cc', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-19',
+    sources: [
+      {
+        label: 'Shared Post-Checkout Delta & Eligibility Engine',
+        reference: 'packages/shared/src/types/ios-post-checkout.ts',
+      },
+      {
+        label: 'Post-Checkout Adjustment & Legacy Reconcile Bridge',
+        reference: 'apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts',
+      },
+      {
+        label: 'UI Điều chỉnh Gói Combo & Lịch sử Đối soát',
+        reference: 'apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx',
+      },
+    ],
+  },
+  {
     id: 'CC-001',
     book: 'PEOPLE',
     title: 'Không mượn danh người khác làm CC hay CV',

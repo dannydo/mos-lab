@@ -3,12 +3,25 @@ import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem 
 import type { IosCvSelfSpeedHistoryProfile, IosSelfChallengeTierKey } from '../utils/ios-self-challenge.js';
 import type { IosServicingRound } from '../utils/ios-servicing-rounds.js';
 import type { IosPromotionOption } from './ios-promotions.js';
+import {
+  isDoneBookingPendingPostCheckoutAdjustment,
+  type IosPostCheckoutAdjustmentEntry,
+  type IosPostCheckoutPaymentMode,
+  type IosPostCheckoutPendingDraft,
+} from './ios-post-checkout.js';
+
+export * from './ios-post-checkout.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
 export type CustomerBookingTab = 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
 export type IosBookingStatus = 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
-export type IosSettlementStatus = 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
+export type IosSettlementStatus =
+  | 'SETTLED_COMPLETED'
+  | 'PENDING_COUNTER_SETTLEMENT'
+  | 'PENDING_POST_CHECKOUT_ADJUSTMENT'
+  | 'DEMO_ONLY'
+  | 'BRIDGE_DEFERRED';
 
 export const IOS_SIM_BOOKING_ID_MIN = 900_000_000;
 
@@ -428,6 +441,7 @@ export interface IosBookingItem {
   storeId?: number;
   branchCode?: string;
   branchName?: string;
+  bookingDateYmd?: string;
   lastVisitDate?: string;
   lashHistory?: LashHistoryItem[];
   cvlNotes?: IosCustomerNoteItem[];
@@ -503,7 +517,14 @@ export interface IosBookingItem {
     bankTransferRef?: string;
     posTransactionId?: string;
     legacySyncedAt?: string;
+    previousPaidGrandTotal?: number;
+    previousPaymentMethod?: IosPaymentMethod;
+    previousPaymentBreakdown?: IosPaymentBreakdown;
+    lastAdjustmentMode?: IosPostCheckoutPaymentMode;
+    lastAdjustmentDeltaAmount?: number;
   };
+  pendingPostCheckoutAdjustment?: IosPostCheckoutPendingDraft | null;
+  postCheckoutAdjustments?: IosPostCheckoutAdjustmentEntry[];
 }
 
 export interface IosBookingListQuery {
@@ -557,6 +578,9 @@ export type IosBookingActionType =
   | 'UPDATE_CUSTOMER_AVATAR'
   | 'RESET_DEMO'
   | 'REVERT_TO_INCOMING'
+  | 'SUBMIT_POST_CHECKOUT_ADJUSTMENT'
+  | 'APPROVE_POST_CHECKOUT_ADJUSTMENT'
+  | 'REJECT_POST_CHECKOUT_ADJUSTMENT'
   | 'SIM_REVERT_CONSULTATION'
   | 'SIM_RESET_TO_INCOMING'
   | 'SIM_FAST_FORWARD_TO_UPSELL';
@@ -1324,12 +1348,12 @@ export function isDoneBookingPendingCheckout(b: Pick<IosBookingItem, 'orderState
   return state === 'CheckOut' || state === 'Check-out' || settlement === 'PENDING_COUNTER_SETTLEMENT';
 }
 
-export function sortDoneBookingsWithCheckoutFirst<T extends Pick<IosBookingItem, 'orderState' | 'billing'>>(
-  bookings: T[]
-): T[] {
+export function sortDoneBookingsWithCheckoutFirst<
+  T extends Pick<IosBookingItem, 'orderState' | 'billing' | 'pendingPostCheckoutAdjustment'>,
+>(bookings: T[]): T[] {
   return [...bookings].sort((a, b) => {
-    const aPending = isDoneBookingPendingCheckout(a) ? 0 : 1;
-    const bPending = isDoneBookingPendingCheckout(b) ? 0 : 1;
+    const aPending = isDoneBookingPendingCheckout(a) || isDoneBookingPendingPostCheckoutAdjustment(a) ? 0 : 1;
+    const bPending = isDoneBookingPendingCheckout(b) || isDoneBookingPendingPostCheckoutAdjustment(b) ? 0 : 1;
     return aPending - bPending;
   });
 }

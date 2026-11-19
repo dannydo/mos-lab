@@ -462,8 +462,10 @@ function IosAppInner() {
             booking={currentBooking}
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
+            isAdmin={state.isAdmin}
             isSimulationMode={state.isSimulationMode}
-            onNoteCreated={() => void state.refreshDb()}
+            isReadOnlyMentorView={state.isReadOnlyMentorView}
+            onRefreshDb={() => state.refreshDb()}
             onFinishOrder={state.handleFinishOrder}
             simulationReplaySlot={
               state.isSimulationMode ? (

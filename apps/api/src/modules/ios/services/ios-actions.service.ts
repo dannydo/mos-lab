@@ -12,7 +12,11 @@ import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
 import { settleIosOrderWithLegacyPhp, SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
-import { STEP_SYNC_ELIGIBLE_ACTIONS, syncIosStepWithLegacyPhp } from './ios-legacy-step-sync.service.js';
+import {
+  applyStepSyncResultToOverride,
+  STEP_SYNC_ELIGIBLE_ACTIONS,
+  syncIosStepWithLegacyPhp,
+} from './ios-legacy-step-sync.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
 import { persistIncomingRoundPhotosToCloud, persistRetainCountsByServiceIndex } from './ios-progress-sync.helper.js';
 import {
@@ -20,6 +24,7 @@ import {
   fetchPromotionsByIds,
   resolveCheckoutOverridePromotions,
 } from './ios-promotions.service.js';
+import { executePostCheckoutAdjustmentAction } from './ios-post-checkout-adjustment.service.js';
 import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
@@ -120,6 +125,26 @@ export async function executeIosBookingAction(
             'CVL (Chuyên Viên Tự Chủ) chỉ được phép thao tác trên khách hàng kế tiếp (Đầu tua) hoặc khách book của chính mình, không được truy cập khách của Chuyên Viên khác.',
         },
       };
+    }
+
+    if (
+      action === 'SUBMIT_POST_CHECKOUT_ADJUSTMENT' ||
+      action === 'APPROVE_POST_CHECKOUT_ADJUSTMENT' ||
+      action === 'REJECT_POST_CHECKOUT_ADJUSTMENT'
+    ) {
+      return executePostCheckoutAdjustmentAction({
+        authUser,
+        action,
+        bookingId,
+        body,
+        current,
+        repo,
+        bridgeDepsOverride,
+        isSimulationMode,
+        actorStaffId,
+        actorStaffName,
+        actorStaffTier,
+      });
     }
 
     const isAlreadySettledOrder =
@@ -623,43 +648,7 @@ export async function executeIosBookingAction(
           bridgeDepsOverride
         );
 
-        const hasRoundSyncPatch = Boolean(
-          stepSync.lastLegacyProgressState ||
-          stepSync.lastLegacyUpperState ||
-          stepSync.lastLegacyUnderState ||
-          stepSync.lastLegacyUpperPhotoSigs ||
-          stepSync.lastLegacyUnderPhotoSigs
-        );
-        const enrichedOverride: BookingOverrideRecord = {
-          ...nextOverride,
-          legacyStepSyncStatus: stepSync.status,
-          ...(stepSync.legacyOrderState ? { legacySyncedOrderState: stepSync.legacyOrderState } : {}),
-          ...(stepSync.synced ? { legacyStepSyncedAt: new Date().toISOString() } : {}),
-          ...(hasRoundSyncPatch && nextOverride.progress
-            ? {
-                progress: {
-                  ...nextOverride.progress,
-                  ...(stepSync.lastLegacyProgressState
-                    ? { lastLegacyProgressState: stepSync.lastLegacyProgressState }
-                    : {}),
-                  ...(stepSync.lastLegacyUpperState ? { lastLegacyUpperState: stepSync.lastLegacyUpperState } : {}),
-                  ...(stepSync.lastLegacyUnderState ? { lastLegacyUnderState: stepSync.lastLegacyUnderState } : {}),
-                  ...(stepSync.lastLegacyUpperPhotoSigs
-                    ? { lastLegacyUpperPhotoSigs: stepSync.lastLegacyUpperPhotoSigs }
-                    : {}),
-                  ...(stepSync.lastLegacyUnderPhotoSigs
-                    ? { lastLegacyUnderPhotoSigs: stepSync.lastLegacyUnderPhotoSigs }
-                    : {}),
-                },
-              }
-            : {}),
-        };
-        if (stepSync.warning) {
-          enrichedOverride.legacyStepSyncWarning = stepSync.warning;
-        } else {
-          delete enrichedOverride.legacyStepSyncWarning;
-        }
-        nextOverride = enrichedOverride;
+        nextOverride = applyStepSyncResultToOverride(nextOverride, stepSync);
         await repo.saveBookingOverride(bookingId, nextOverride);
 
         if (stepSync.synced) {

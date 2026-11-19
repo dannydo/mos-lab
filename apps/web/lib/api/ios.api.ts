@@ -4,6 +4,7 @@ import type {
   IosBookingListResponse,
   IosBookingActionPayload,
   IosBookingActionResponse,
+  IosCheckoutStaffOption,
   IosPrintReceiptPayload,
   IosPrintReceiptResponse,
   IosPromotionOption,
@@ -44,6 +45,22 @@ export const iosApi = {
         priority: options?.priority,
         timeout: options?.timeout,
       });
+      return res.data;
+    },
+
+    async listCheckoutEligibleStaff(
+      storeId?: number,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; staff: IosCheckoutStaffOption[]; error?: string }> {
+      const res = await api.get<{ success: boolean; staff: IosCheckoutStaffOption[]; error?: string }>(
+        '/ios/staff/checkout-eligible',
+        {
+          params: storeId ? { storeId } : undefined,
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
       return res.data;
     },
 
