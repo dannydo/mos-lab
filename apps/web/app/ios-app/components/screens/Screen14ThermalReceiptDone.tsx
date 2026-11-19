@@ -40,7 +40,6 @@ interface Screen14ThermalReceiptDoneProps {
   isSimulationMode?: boolean;
   isReadOnlyMentorView?: boolean;
   onRefreshDb?: () => Promise<unknown> | void;
-  onNoteCreated?: () => void;
   onFinishOrder: () => void;
   onBack?: () => void;
   simulationReplaySlot?: React.ReactNode;
@@ -54,7 +53,6 @@ export function Screen14ThermalReceiptDone({
   isSimulationMode = false,
   isReadOnlyMentorView = false,
   onRefreshDb,
-  onNoteCreated,
   onFinishOrder,
   onBack,
   simulationReplaySlot,
@@ -654,12 +652,8 @@ export function Screen14ThermalReceiptDone({
         isDark={isDark}
         showStaffRewards={showStaffRewards}
         isSimulationMode={isSimulationMode}
-        onNoteCreated={() => {
-          onNoteCreated?.();
-          void onRefreshDb?.();
-        }}
+        onNoteCreated={() => void onRefreshDb?.()}
       />
-
       <PostCheckoutAuditTimeline
         booking={booking}
         isDark={isDark}
