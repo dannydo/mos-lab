@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, MutableRefObject, Dispatch, SetStateAction } from 'react';
+import { canSwitchIosBranch } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { BookingItem, INITIAL_BOOKINGS } from './mockData';
 import { mergeServerBookingsWithLocalState } from './iosBookingMerge';
@@ -38,11 +39,11 @@ export interface UseIosBookingsSyncParams {
   }) => void;
   isAdmin?: boolean;
   role: IosUserRole;
-  isTechnicianRole: boolean;
   effectiveStoreId: number;
   scopeMode: BookingScopeMode;
   setScopeModeState: Dispatch<SetStateAction<BookingScopeMode>>;
   setSelectedStoreIdState: Dispatch<SetStateAction<number>>;
+  setServerAssignedStoreId?: Dispatch<SetStateAction<number | null>>;
   actor: ActiveActorProfile;
   activeBookingId: number;
   setActiveBookingId: Dispatch<SetStateAction<number>>;
@@ -65,11 +66,11 @@ export function useIosBookingsSync({
   onSimulationMetaLoaded,
   isAdmin = false,
   role,
-  isTechnicianRole,
   effectiveStoreId,
   scopeMode,
   setScopeModeState,
   setSelectedStoreIdState,
+  setServerAssignedStoreId,
   actor,
   activeBookingId,
   setActiveBookingId,
@@ -310,8 +311,8 @@ export function useIosBookingsSync({
         }
 
         if (data?.success && Array.isArray(data.bookings)) {
-          if (!isAdmin && !isSimulationMode && data.storeId && Number(data.storeId) !== effectiveStoreId) {
-            setSelectedStoreIdState(Number(data.storeId));
+          if (!isAdmin && data.storeId && Number(data.storeId) > 0) {
+            setServerAssignedStoreId?.(Number(data.storeId));
           }
           setBookings((prev) => mergeServerBookingsWithLocalState(prev, data.bookings, selectedDateOffset, storeId));
           if (data.counts) {
@@ -425,13 +426,13 @@ export function useIosBookingsSync({
       setActiveBookingId,
       setBookings,
       isAdmin,
-      setSelectedStoreIdState,
+      setServerAssignedStoreId,
     ]
   );
 
   const setSelectedStoreId = useCallback(
     (newStoreId: number) => {
-      if ((!isAdmin && !isSimulationMode) || (isTechnicianRole && !isAdmin && !isSimulationMode)) return;
+      if (!canSwitchIosBranch({ isAdmin, iosRole: role })) return;
       setSelectedStoreIdState(newStoreId);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('mos_ios_selected_store_id', String(newStoreId));
@@ -440,7 +441,7 @@ export function useIosBookingsSync({
       setScopeModeState('STORE_ALL');
       void refreshDb({ storeId: newStoreId, scope: 'STORE_ALL' });
     },
-    [refreshDb, isAdmin, isSimulationMode, isTechnicianRole, setBookings, setScopeModeState, setSelectedStoreIdState]
+    [refreshDb, isAdmin, role, setBookings, setScopeModeState, setSelectedStoreIdState]
   );
 
   const handleDateOffsetChange = useCallback(

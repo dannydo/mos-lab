@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { apiClient } from '~/lib/api-client';
 import {
   isAdminOrSuperAdminRole,
+  resolveAssignedSalonStoreId,
   resolveLockedIosRoleForUser,
   maskPhoneNumber,
   canViewUnmaskedCustomerPhone,
@@ -109,6 +110,7 @@ export function useIosAppState(
     }
     return 6;
   });
+  const [serverAssignedStoreId, setServerAssignedStoreId] = useState<number | null>(null);
 
   const prevDemoModeRef = useRef<boolean>(isDemoMode);
   useEffect(() => {
@@ -208,24 +210,16 @@ export function useIosAppState(
   const rawActor = resolveActorProfile(role, loggedInUser);
 
   // Invariant (UI-010 & Chuyên Viên / CC Salon Anchor):
-  // - Chuyên Viên (CV/CVL/CVLL) và CC không phải Admin luôn thuộc về chi nhánh gốc đang làm việc của mình.
-  // - Admin/Super Admin VÀ người dùng trong Sandbox Mode (Phòng tập luyện mô phỏng) được toàn quyền chọn chi nhánh vận hành (DT / EP).
-  const isTechnicianRole = role === 'CVL' || role === 'CVLL' || role === 'CV';
-  const ccAssignedStoreId =
-    !isAdmin && !isSimulationMode && role === 'CC'
-      ? Number(loggedInUser?.clientStoreId || loggedInUser?.storeId || 0)
-      : 0;
-  const effectiveStoreId =
-    isAdmin || isSimulationMode
-      ? selectedStoreId
-      : isTechnicianRole
-        ? rawActor.storeId || 6
-        : ccAssignedStoreId > 0
-          ? ccAssignedStoreId
-          : selectedStoreId;
+  // - Chuyên Viên (CV/CVL/CVLL) và CC không phải Admin luôn bị neo chặt vào duy nhất chi nhánh gốc của mình (kể cả trong Sandbox Mode).
+  // - Chỉ Admin / Super Admin được chọn chi nhánh vận hành (DT / EP).
+  const assignedStoreId =
+    serverAssignedStoreId && serverAssignedStoreId > 0
+      ? serverAssignedStoreId
+      : resolveAssignedSalonStoreId(loggedInUser?.clientStoreId ?? loggedInUser?.storeId);
+  const effectiveStoreId = isAdmin ? selectedStoreId : assignedStoreId;
 
   const actor = useMemo(() => {
-    if ((isAdmin || isSimulationMode) && rawActor.storeId !== effectiveStoreId) {
+    if (rawActor.storeId !== effectiveStoreId) {
       return {
         ...rawActor,
         storeId: effectiveStoreId,
@@ -234,7 +228,7 @@ export function useIosAppState(
       };
     }
     return rawActor;
-  }, [rawActor, isAdmin, isSimulationMode, effectiveStoreId]);
+  }, [rawActor, effectiveStoreId]);
 
   const currentBranch = useMemo(() => {
     return IOS_AVAILABLE_BRANCHES.find((b) => b.id === effectiveStoreId) || IOS_AVAILABLE_BRANCHES[0];
@@ -307,23 +301,27 @@ export function useIosAppState(
   }, [bookings, role, actor.staffId]);
 
   const visibleBookings = useMemo(() => {
+    const branchScoped =
+      !isAdmin || role === 'CVL'
+        ? bookings.filter((b) => !b.storeId || Number(b.storeId) === Number(effectiveStoreId))
+        : bookings;
     const shouldFilterCvl = role === 'CVL' || (role !== 'CC' && role !== 'STORE' && scopeMode === 'MY_CUSTOMERS');
     const effectiveStaffId = isSimulationMode && selectedMenteeStaffId ? selectedMenteeStaffId : actor.staffId;
     const baseScoped = shouldFilterCvl
-      ? filterBookingsForCvlScope(bookings, effectiveStaffId, { isToday: selectedDateOffset === 0 })
-      : bookings;
+      ? filterBookingsForCvlScope(branchScoped, effectiveStaffId, { isToday: selectedDateOffset === 0 })
+      : branchScoped;
     const includedIds = new Set(baseScoped.map((b) => Number(b.id)));
     const list = shouldFilterCvl
       ? [
           ...baseScoped,
-          ...bookings.filter(
+          ...branchScoped.filter(
             (b) =>
               b.isSimulationDraftBooking &&
               Number(b.assignedStaffId || 0) === Number(effectiveStaffId) &&
               !includedIds.has(Number(b.id))
           ),
         ]
-      : bookings;
+      : branchScoped;
 
     return list.map((b) => {
       const tab = resolveCustomerBookingTab(b, activeServicingBooking?.id);
@@ -357,6 +355,7 @@ export function useIosAppState(
     actor.staffId,
     activeServicingBooking,
     isAdmin,
+    effectiveStoreId,
     selectedDateOffset,
     isSimulationMode,
     selectedMenteeStaffId,
@@ -431,11 +430,11 @@ export function useIosAppState(
     onSimulationMetaLoaded,
     isAdmin,
     role,
-    isTechnicianRole,
     effectiveStoreId,
     scopeMode,
     setScopeModeState,
     setSelectedStoreIdState,
+    setServerAssignedStoreId,
     actor,
     activeBookingId,
     setActiveBookingId,

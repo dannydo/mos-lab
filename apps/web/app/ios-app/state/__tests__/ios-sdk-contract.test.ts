@@ -356,4 +356,77 @@ describe('iOS State, SDK Integration & Live/Demo Mode Contract', () => {
     expect(resolveCustomerBookingTab(afterCancel[0]!)).toBe('CANCEL');
     expect(getLocalProgressSnapshot(338978)).toBeNull();
   });
+
+  it('locks non-admin CVL to single assigned branch even in Simulation Mode or with stale localStorage (MOS-BUG-237)', async () => {
+    window.localStorage.setItem('mos_ios_selected_store_id', '16');
+    window.localStorage.setItem(
+      'mos_user',
+      JSON.stringify({
+        id: 21,
+        role: 'cvl',
+        displayName: 'Thảo Ly',
+        legacyStaffId: 46272,
+        clientStoreId: 6,
+      })
+    );
+
+    const getSpy = vi.spyOn(apiClient.ios, 'getBookings').mockResolvedValue({
+      success: true,
+      storeId: 6,
+      bookings: [
+        { ...INITIAL_BOOKINGS[0], id: 8801, storeId: 6, assignedStaffId: 46272, isUnassignedQueue: false },
+        { ...INITIAL_BOOKINGS[0], id: 8802, storeId: 16, assignedStaffId: 46272, isUnassignedQueue: false },
+      ],
+      counts: { incoming: 1, servicing: 0, done: 0, cancel: 0 },
+    } as any);
+
+    const { result } = renderHook(() => useIosAppState(1, true, 'CVL', undefined, false, true));
+
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalled();
+      expect(result.current.bookings).toHaveLength(1);
+    });
+
+    // Even in Simulation Mode with stale localStorage=16, DT CVL stays on DT (storeId=6)
+    expect(result.current.isSimulationMode).toBe(true);
+    expect(result.current.selectedStoreId).toBe(6);
+    expect(result.current.currentBranch.code).toBe('DT');
+    expect(result.current.bookings.map((b) => b.id)).toEqual([8801]);
+
+    // Attempting to switch branch to EP (16) is a no-op for non-admin CVL
+    act(() => {
+      result.current.setSelectedStoreId(16);
+    });
+    expect(result.current.selectedStoreId).toBe(6);
+    expect(result.current.currentBranch.code).toBe('DT');
+  });
+
+  it('syncs Estella CVL (clientStoreId=16) top-left branch badge to EP instead of staying stuck on DT (MOS-BUG-237)', async () => {
+    window.localStorage.setItem(
+      'mos_user',
+      JSON.stringify({
+        id: 22,
+        role: 'cvl',
+        displayName: 'Ngọc Anh',
+        legacyStaffId: 50001,
+      })
+    );
+
+    vi.spyOn(apiClient.ios, 'getBookings').mockResolvedValue({
+      success: true,
+      storeId: 16,
+      bookings: [{ ...INITIAL_BOOKINGS[0], id: 8901, storeId: 16, assignedStaffId: 50001, isUnassignedQueue: false }],
+      counts: { incoming: 1, servicing: 0, done: 0, cancel: 0 },
+    } as any);
+
+    const { result } = renderHook(() => useIosAppState(1, true, 'CVL', undefined, false, false));
+
+    await waitFor(() => {
+      expect(result.current.selectedStoreId).toBe(16);
+    });
+
+    expect(result.current.currentBranch.code).toBe('EP');
+    expect(result.current.actor.branchCode).toBe('EP');
+    expect(result.current.bookings.map((b) => b.id)).toEqual([8901]);
+  });
 });

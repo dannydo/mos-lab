@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
+import { canSwitchIosBranch, hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { useIosSessionAuth } from './state/useIosSessionAuth';
 import { useIosFontScale } from './state/useIosFontScale';
@@ -228,7 +228,7 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
+          onSelectBranch={canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined}
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           onRoleChange={(r) => {
@@ -578,7 +578,7 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
+          onSelectBranch={canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined}
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           isSimulationMode={state.isSimulationMode}

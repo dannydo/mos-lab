@@ -231,6 +231,35 @@ export function resolveLockedIosRoleForUser(
 }
 
 /**
+ * Resolves a staff member's canonical salon storeId for `/ios-app`:
+ * - Store ID `4` (Head Office) and missing/invalid IDs fall back to `6` (Đề Thám).
+ * - Only positive salon store IDs (e.g., `6` = Đề Thám, `16` = Estella Place) are returned.
+ */
+export function resolveAssignedSalonStoreId(storeId?: number | string | null): number {
+  const numeric = Number(storeId || 0);
+  if (Number.isFinite(numeric) && numeric > 0 && numeric !== 4) {
+    return numeric;
+  }
+  return 6;
+}
+
+/**
+ * Returns whether the current `/ios-app` user is permitted to switch between branches (DT / EP):
+ * - Strictly restricted to Admin / Super Admin AND only when not operating in a Chuyên Viên view (CVL, CVLL, CV).
+ * - Non-admin accounts (including CVL in Simulation Sandbox Mode) are locked to their assigned branch.
+ */
+export function canSwitchIosBranch(params: {
+  isAdmin: boolean;
+  iosRole?: string | null;
+}): boolean {
+  if (!params.isAdmin) return false;
+  const normalized = String(params.iosRole || '')
+    .trim()
+    .toUpperCase();
+  return normalized !== 'CVL' && normalized !== 'CVLL' && normalized !== 'CV';
+}
+
+/**
  * Returns the default landing route based on staff role.
  * - CV roles land directly on the CV report (/dashboard/cv).
  * - Other roles land on the main operations dashboard (/dashboard).
@@ -261,6 +290,7 @@ export interface Staff {
   avatarUrl?: string | null;
   notes?: string | null;
   legacyStaffId?: number | null;
+  clientStoreId?: number | null;
   lastLoginAt?: string | null;
   lastActiveAt?: string | null;
   lastOnboardingEmailSentAt?: string | null;
