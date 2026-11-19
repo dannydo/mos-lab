@@ -472,10 +472,11 @@ test('probeIsAntigravityPort rejects non-antigravity HTTP ports', async () => {
   }
 });
 
-test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orchestrator_carbon, orchestrator_argon, and flash cleanly', async () => {
+test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orchestrator_neon, orchestrator_carbon, orchestrator_argon, and flash cleanly', async () => {
   assert.equal(normalizeProvisionerModelTier(undefined), 'hydrogen');
   assert.equal(await resolveAntigravityPlanModel(undefined), 'gemini-4-hydrogen-high');
   assert.equal(await resolveAntigravityPlanModel('hydrogen'), 'gemini-4-hydrogen-high');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_neon'), 'gemini-pro-orchestrator-neon');
   assert.equal(await resolveAntigravityPlanModel('orchestrator_carbon'), 'gemini-pro-orchestrator');
   assert.equal(await resolveAntigravityPlanModel('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
   assert.equal(await resolveAntigravityPlanModel('flash'), 'MODEL_PLACEHOLDER_M318');
@@ -485,6 +486,7 @@ test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orch
 
   assert.equal(resolveAgentApiModelArg(undefined), 'gemini-4-hydrogen-high');
   assert.equal(resolveAgentApiModelArg('hydrogen'), 'gemini-4-hydrogen-high');
+  assert.equal(resolveAgentApiModelArg('orchestrator_neon'), 'gemini-pro-orchestrator-neon');
   assert.equal(resolveAgentApiModelArg('orchestrator_carbon'), 'gemini-pro-orchestrator');
   assert.equal(resolveAgentApiModelArg('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
   assert.equal(resolveAgentApiModelArg('flash'), 'gemini-3.8-flash-high');
@@ -494,6 +496,7 @@ test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orch
       JSON.stringify({
         clientModelConfigs: [
           { label: 'Gemini 4 Hydrogen (High)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_H_HIGH' } },
+          { label: 'Orchestrator (Neon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_ON' } },
           { label: 'Orchestrator (Carbon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_OC' } },
           { label: 'Orchestrator (Argon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_OA' } },
           { label: 'Gemini 3.8 Flash (High)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_M318' } },
@@ -504,6 +507,10 @@ test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orch
   assert.equal(
     await resolveAntigravityPlanModel('hydrogen', 'localhost:1234', 'csrf-1', mockFetcher),
     'MODEL_PLACEHOLDER_H_HIGH'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_neon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_ON'
   );
   assert.equal(
     await resolveAntigravityPlanModel('orchestrator_carbon', 'localhost:1234', 'csrf-1', mockFetcher),

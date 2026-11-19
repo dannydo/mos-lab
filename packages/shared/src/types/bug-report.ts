@@ -590,6 +590,7 @@ export function getExecutionOwnerDisplayName(owner?: string | null): string {
 /** Antigravity model tier selected by Danny when approving code/test execution. */
 export const INBOX_IMPLEMENTATION_MODEL_TIERS = [
   'hydrogen',
+  'orchestrator_neon',
   'orchestrator_carbon',
   'orchestrator_argon',
   'flash',

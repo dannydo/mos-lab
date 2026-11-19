@@ -516,6 +516,7 @@ export async function detectAntigravityLsEnv(): Promise<Record<string, string>> 
 
 const AGENTAPI_MODEL_ID_BY_TIER: Record<InboxImplementationModelTier, string> = {
   hydrogen: 'gemini-4-hydrogen-high',
+  orchestrator_neon: 'gemini-pro-orchestrator-neon',
   orchestrator_carbon: 'gemini-pro-orchestrator',
   orchestrator_argon: 'gemini-pro-orchestrator-argon',
   flash: 'gemini-3.8-flash-high',
@@ -523,6 +524,7 @@ const AGENTAPI_MODEL_ID_BY_TIER: Record<InboxImplementationModelTier, string> = 
 
 const DEFAULT_AG_MODEL_ENUM_BY_TIER: Record<InboxImplementationModelTier, string> = {
   hydrogen: 'gemini-4-hydrogen-high', // Gemini 4 Hydrogen (High)
+  orchestrator_neon: 'gemini-pro-orchestrator-neon', // Orchestrator (Neon)
   orchestrator_carbon: 'gemini-pro-orchestrator', // Orchestrator (Carbon)
   orchestrator_argon: 'gemini-pro-orchestrator-argon', // Orchestrator (Argon)
   flash: 'MODEL_PLACEHOLDER_M318', // Gemini 3.8 Flash (High)
@@ -531,6 +533,9 @@ const DEFAULT_AG_MODEL_ENUM_BY_TIER: Record<InboxImplementationModelTier, string
 export function normalizeProvisionerModelTier(modelTier?: string | null): InboxImplementationModelTier {
   const normalized = (modelTier || '').trim().toLowerCase();
   if (normalized === 'hydrogen' || normalized === 'gemini-4-hydrogen-high') return 'hydrogen';
+  if (normalized === 'orchestrator_neon' || normalized === 'gemini-pro-orchestrator-neon') {
+    return 'orchestrator_neon';
+  }
   if (normalized === 'orchestrator_carbon' || normalized === 'gemini-pro-orchestrator') {
     return 'orchestrator_carbon';
   }
@@ -596,15 +601,18 @@ export async function resolveAntigravityPlanModel(
           ? configs.find((c) => /Hydrogen.*\(High\)/i.test(c.label || '')) ||
             configs.find((c) => /Hydrogen/i.test(c.label || '')) ||
             configs.find((c) => c.modelOrAlias?.model === 'gemini-4-hydrogen-high')
-          : tier === 'orchestrator_carbon'
-            ? configs.find((c) => /Orchestrator.*Carbon/i.test(c.label || '')) ||
-              configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator')
-            : tier === 'orchestrator_argon'
-              ? configs.find((c) => /Orchestrator.*Argon/i.test(c.label || '')) ||
-                configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator-argon')
-              : configs.find((c) => /Flash.*\(High\)/i.test(c.label || '')) ||
-                configs.find((c) => /Flash/i.test(c.label || '')) ||
-                configs.find((c) => c.modelOrAlias?.model === 'gemini-3.8-flash-high');
+          : tier === 'orchestrator_neon'
+            ? configs.find((c) => /Orchestrator.*Neon/i.test(c.label || '')) ||
+              configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator-neon')
+            : tier === 'orchestrator_carbon'
+              ? configs.find((c) => /Orchestrator.*Carbon/i.test(c.label || '')) ||
+                configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator')
+              : tier === 'orchestrator_argon'
+                ? configs.find((c) => /Orchestrator.*Argon/i.test(c.label || '')) ||
+                  configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator-argon')
+                : configs.find((c) => /Flash.*\(High\)/i.test(c.label || '')) ||
+                  configs.find((c) => /Flash/i.test(c.label || '')) ||
+                  configs.find((c) => c.modelOrAlias?.model === 'gemini-3.8-flash-high');
       if (match?.modelOrAlias?.model) {
         return match.modelOrAlias.model;
       }

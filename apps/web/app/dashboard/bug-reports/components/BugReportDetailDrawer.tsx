@@ -266,6 +266,9 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                             <Radio value="hydrogen" className="whitespace-nowrap">
                               {MODEL_TIER_LABELS.hydrogen}
                             </Radio>
+                            <Radio value="orchestrator_neon" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.orchestrator_neon}
+                            </Radio>
                             <Radio value="orchestrator_carbon" className="whitespace-nowrap">
                               {MODEL_TIER_LABELS.orchestrator_carbon}
                             </Radio>

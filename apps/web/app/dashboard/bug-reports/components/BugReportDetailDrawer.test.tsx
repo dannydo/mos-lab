@@ -353,8 +353,9 @@ describe('BugReportDetailDrawer behavior', () => {
 
     const macRadio = screen.getByRole('radio', { name: /Máy Mac chính/i });
     fireEvent.click(macRadio);
-    const carbonRadio = screen.getByRole('radio', { name: /Orchestrator \(Carbon\)/i });
-    fireEvent.click(carbonRadio);
+    const neonRadio = screen.getByRole('radio', { name: /Orchestrator \(Neon\)/i });
+    fireEvent.click(neonRadio);
+    expect(screen.getByRole('radio', { name: /Orchestrator \(Carbon\)/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Orchestrator \(Argon\)/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Flash 3\.8/i })).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
@@ -363,7 +364,7 @@ describe('BugReportDetailDrawer behavior', () => {
         props.reportId,
         undefined,
         'AG_MAC',
-        'orchestrator_carbon'
+        'orchestrator_neon'
       )
     );
   });
