@@ -14,7 +14,7 @@ import { executeAdminComboExpiryAction } from './services/ios-combo-expiry.servi
 import { getIosCustomerHistory } from './services/ios-customer-history.service.js';
 import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
-import { scanIosProductByCode } from './services/ios-product-scan.service.js';
+import { fetchIosProductCatalog, scanIosProductByCode } from './services/ios-product-scan.service.js';
 import { fetchIosPromotionsForActor, resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
 import {
   executeIosSimulationBookingAction,
@@ -139,6 +139,21 @@ export async function iosRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, services });
     } catch (error: SafeAny) {
       return reply.status(500).send({ success: false, services: [], error: error?.message || 'Catalog failed' });
+    }
+  });
+
+  // GET /api/ios/products/catalog
+  fastify.get('/ios/products/catalog', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, products: [], error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, products: [], error: 'Forbidden' });
+      }
+      const products = await fetchIosProductCatalog();
+      return reply.send({ success: true, products });
+    } catch (error: SafeAny) {
+      return reply.status(500).send({ success: false, products: [], error: error?.message || 'Product catalog failed' });
     }
   });
 

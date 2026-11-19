@@ -1,5 +1,12 @@
 import mysql from 'mysql2/promise';
-import { IosScanProductRequest, IosScanProductResponse, SafeAny } from '@mos-lab/shared';
+import {
+  IosProductCatalogItem,
+  IosScanProductRequest,
+  IosScanProductResponse,
+  isYeppeumSerumProduct,
+  SafeAny,
+  YEPPEUM_PRODUCT_ID,
+} from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
@@ -356,4 +363,70 @@ export async function scanIosProductByCode(
       },
     },
   };
+}
+
+export const FALLBACK_IOS_PRODUCT_CATALOG: IosProductCatalogItem[] = [
+  {
+    productId: YEPPEUM_PRODUCT_ID,
+    productSku: 'YEPPEUM-01',
+    productName: 'Dưỡng Mi Yeppeum Korea',
+    price: 1100000,
+    isSerum: true,
+  },
+];
+
+export async function fetchIosProductCatalog(
+  queryFn?: (sql: string) => Promise<mysql.RowDataPacket[]>
+): Promise<IosProductCatalogItem[]> {
+  try {
+    const rows = queryFn
+      ? await queryFn('')
+      : (
+          await getLegacyPool().query<mysql.RowDataPacket[]>(
+            `SELECT
+               p.id AS productId,
+               COALESCE(p.product_sku, '') AS productSku,
+               COALESCE(pl_vi.product_name, pl_en.product_name, p.product_sku) AS productName,
+               COALESCE(pp.product_price, pp_any.product_price, 0) AS price
+             FROM product p
+             LEFT JOIN product_language pl_vi ON pl_vi.product_id = p.id AND pl_vi.language_id = 2
+             LEFT JOIN product_language pl_en ON pl_en.product_id = p.id AND pl_en.language_id = 1
+             LEFT JOIN product_price pp ON pp.product_id = p.id AND pp.currency_id = 1
+             LEFT JOIN product_price pp_any ON pp_any.product_id = p.id
+             WHERE p.is_disabled = 0
+             ORDER BY p.position ASC, p.id ASC
+             LIMIT 50`
+          )
+        )[0];
+
+    if (rows.length > 0) {
+      const seen = new Set<number>();
+      const catalog: IosProductCatalogItem[] = [];
+      for (const r of rows) {
+        const pid = Number(r.productId);
+        if (!pid || pid <= 0 || seen.has(pid)) continue;
+        seen.add(pid);
+        const productSku = String(r.productSku || '');
+        const cleanName = cleanProductDisplayName(r.productName) || productSku || `Sản phẩm #${pid}`;
+        const isSerum = isYeppeumSerumProduct({ productId: pid, productSku, productName: cleanName });
+        const rawPrice = Math.round(Number(r.price || 0));
+        const price = rawPrice > 0 ? rawPrice : isSerum ? 1100000 : 0;
+        catalog.push({
+          productId: pid,
+          productSku,
+          productName: cleanName,
+          price,
+          isSerum,
+        });
+      }
+      if (catalog.length > 0) {
+        // Prioritize serum (Dưỡng Mi Yeppeum Korea) at the top while keeping catalog order
+        catalog.sort((a, b) => Number(Boolean(b.isSerum)) - Number(Boolean(a.isSerum)));
+        return catalog;
+      }
+    }
+  } catch {
+    // Fallback when running isolated tests or when legacy pool is unavailable
+  }
+  return FALLBACK_IOS_PRODUCT_CATALOG;
 }

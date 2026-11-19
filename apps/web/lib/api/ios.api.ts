@@ -14,6 +14,7 @@ import type {
   IosScanProductResponse,
   IosCustomerLookupCandidate,
   IosBookingServiceCatalogItem,
+  IosProductCatalogItem,
   IosCreateBookingRequest,
   IosCreateBookingResponse,
   IosSimulationMenteeOption,
@@ -99,6 +100,21 @@ export const iosApi = {
     }> {
       const res = await api.get<{ success: boolean; services: IosBookingServiceCatalogItem[] }>(
         '/ios/services/catalog',
+        {
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
+      return res.data;
+    },
+
+    async getProductCatalog(options?: ApiRequestOptions): Promise<{
+      success: boolean;
+      products: IosProductCatalogItem[];
+    }> {
+      const res = await api.get<{ success: boolean; products: IosProductCatalogItem[] }>(
+        '/ios/products/catalog',
         {
           signal: options?.signal,
           priority: options?.priority,

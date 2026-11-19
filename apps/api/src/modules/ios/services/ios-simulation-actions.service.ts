@@ -20,6 +20,7 @@ import {
   buildSimulationAttemptSnapshot,
   hasAttemptWorthySimulationWork,
   loadSimulationAttempts,
+  mapAttemptUpsellToCartProducts,
   reconcileSimulationAttemptsForBooking,
 } from './ios-simulation-attempts.service.js';
 import {
@@ -568,13 +569,7 @@ export async function executeIosSimulationBookingAction(
               sessions: 5,
             }
           : null,
-        cartProducts: (targetAttempt.upsellProducts || []).map((p, idx) => ({
-          productId: idx + 1,
-          productName: p.productName,
-          price: p.totalPrice / (p.quantity || 1),
-          quantity: p.quantity,
-          totalPrice: p.totalPrice,
-        })),
+        cartProducts: mapAttemptUpsellToCartProducts(targetAttempt.upsellProducts),
         appliedPromotion: targetAttempt.promotionName
           ? {
               id: 'restored-promo',
