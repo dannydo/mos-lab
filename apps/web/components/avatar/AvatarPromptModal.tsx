@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal, message, Spin } from 'antd';
 import { Sparkles, Camera, Heart, ShieldCheck, ChevronRight, Clock, X, UserRound } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -18,6 +18,44 @@ interface AvatarPromptModalProps {
 
 const STORAGE_KEY_SNOOZE_UNTIL = 'mos_avatar_snooze_until';
 const STORAGE_KEY_SNOOZE_COUNT = 'mos_avatar_snooze_count';
+const STORAGE_KEY_SESSION_DISMISSED_PREFIX = 'mos_avatar_prompt_dismissed:';
+
+function getUserDismissKey(user: SafeAny): string | null {
+  return user?.id ? `${STORAGE_KEY_SESSION_DISMISSED_PREFIX}${user.id}` : null;
+}
+
+function isDismissedInSession(user: SafeAny): boolean {
+  if (typeof window === 'undefined') return false;
+  const key = getUserDismissKey(user);
+  if (!key) return false;
+  try {
+    return window.sessionStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markDismissedInSession(user: SafeAny): void {
+  if (typeof window === 'undefined') return;
+  const key = getUserDismissKey(user);
+  if (!key) return;
+  try {
+    window.sessionStorage.setItem(key, '1');
+  } catch {
+    // Ignore storage quota/security errors in restricted contexts
+  }
+}
+
+function clearDismissedInSession(user: SafeAny): void {
+  if (typeof window === 'undefined') return;
+  const key = getUserDismissKey(user);
+  if (!key) return;
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 // Check if user needs an avatar nudge
 export function shouldPromptForAvatar(user: SafeAny): boolean {
@@ -91,15 +129,24 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
   const [snoozeCount, setSnoozeCount] = useState<number>(0);
   const [nudgeData, setNudgeData] = useState<AvatarNudgeResponse | null>(null);
   const [isLoadingNudge, setIsLoadingNudge] = useState<boolean>(false);
+  const dismissedUserKeyRef = useRef<string | null>(null);
 
   // Evaluate whether to show popup
   useEffect(() => {
     if (forceOpen) {
+      dismissedUserKeyRef.current = null;
       setIsOpen(true);
       return;
     }
 
     if (currentUser) {
+      const userKey = getUserDismissKey(currentUser);
+      if (
+        (userKey && dismissedUserKeyRef.current === userKey) ||
+        isDismissedInSession(currentUser)
+      ) {
+        return;
+      }
       const needed = shouldPromptForAvatar(currentUser);
       if (needed) {
         setIsOpen(true);
@@ -244,6 +291,8 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
   const handleAvatarSuccess = (newAvatarUrl: string) => {
     setIsCropModalOpen(false);
     setIsOpen(false);
+    dismissedUserKeyRef.current = null;
+    clearDismissedInSession(currentUser);
     // Clear snooze so it doesn't prompt again
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY_SNOOZE_UNTIL);
@@ -253,6 +302,13 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
   };
 
   const handleClose = () => {
+    if (!forceOpen) {
+      const userKey = getUserDismissKey(currentUser);
+      if (userKey) {
+        dismissedUserKeyRef.current = userKey;
+      }
+      markDismissedInSession(currentUser);
+    }
     setIsOpen(false);
     onClose?.();
   };
@@ -265,7 +321,7 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
         footer={null}
         centered
         width={420}
-        destroyOnClose
+        destroyOnHidden
         closeIcon={
           <X size={18} className={isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'} />
         }
