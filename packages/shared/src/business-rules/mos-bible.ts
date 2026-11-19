@@ -1232,6 +1232,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '4. Hạch Toán Kế Toán Ví Gói (FIFO Paid vs Bonus 0đ): Ví gói khách hàng tách bạch Lượt Mua (combo_new_count, combo_refill_count) và Lượt Tặng kèm (bonus_new_count, bonus_refill_count giá 0đ). Khi khách dùng gói, hệ thống ưu tiên trừ Lượt Mua trước (ghi nhận doanh thu thực hiện theo đơn giá chuẩn New/Refill từ quỹ doanh thu chờ phân bổ Deferred Revenue); sau khi hết Lượt Mua mới trừ đến Lượt Tặng với giá trị hạch toán 0đ.',
       '5. Quy Đổi Linh Hoạt & Tự Động Tính Phụ Thu (Refill -> New & Up-size Volume): Nếu ví gói của khách chỉ còn lượt Dặm (Refill) nhưng khách làm Nối Mới (hoặc quá chu kỳ 25 ngày), hệ thống cho phép trừ 1 lượt Refill trong gói và tự động cộng phụ thu chênh lệch (Giá New - Giá Refill). Nếu khách nâng cấp số sợi (Up-size Volume) hoặc đổi lên dòng mi cao hơn, hệ thống trừ 1 lượt gói và tự động cộng phụ thu chênh lệch đơn giá.',
       '6. Thưởng Tiền Tươi Chốt Combo Cho CV🪶 / 🪶CV🪶: Tính tự động theo công thức tối giản hóa (Điều răn CV-002): Tổng giá trị đơn Combo < 2M thưởng 50.000đ; mỗi 1M kế tiếp (từ 2M trở lên) cộng thêm +50.000đ (2M-<3M: 100.000đ, 3M-<4M: 150.000đ, 4M-<5M: 200.000đ...). Nếu khách mua 2 gói Combo cùng 1 lúc trong cùng 1 đơn thanh toán (ví dụ Combo Mi Trên + Combo Mi Dưới cùng order_id), bắt buộc cộng gộp tổng tiền 2 gói lại trước rồi mới áp công thức tính thưởng 1 lần duy nhất.',
+      '7. Đa Ví Combo Mi Trên & Mi Dưới — Tự Do Chọn Ví Đích Danh Hoặc Đi Lẻ Lần Này: Khi khách hàng sở hữu từ 2 gói Combo Mi Trên hoặc 2 gói Combo Mi Dưới trở lên (bao gồm cả gói còn hạn và gói hết hạn còn buổi tồn), toàn bộ luồng /ios-app (Check-in, Tư vấn, Upsell, Checkout và Điều chỉnh sau Checkout) hiển thị đầy đủ từng ví độc lập kèm mã ví (#balanceId), số buổi ✦ Mới · ↻ Dặm và HSD. Hệ thống tự động gợi ý ví theo thứ tự ưu tiên: Dịch vụ đặt lịch hôm nay -> Lần ghé gần nhất -> Gói sắp hết hạn sớm nhất (FEFO), nhưng nhân viên và khách hàng được quyền đổi sang bất kỳ ví còn hạn nào (hoặc chọn "Không trừ gói / Đi lẻ lần này" với chu kỳ dặm 21 ngày) chỉ bằng một chạm; Legacy Bridge bảo đảm trừ đúng user_service_balance_id đã chọn và cách ly tuyệt đối trạng thái Bảo lưu/HSD của các ví còn lại theo Điều răn COMBO-004.',
     ],
     rationale:
       'Thay thế hoàn toàn trang tra cứu rời rạc bên ngoài bằng nguồn chân lý duy nhất trong mOS, ngăn chặn việc chọn nhầm gói tại quầy/giường và tự động hóa 100% kế toán doanh thu chờ phân bổ cũng như phụ thu nâng cấp.',
@@ -1242,6 +1243,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Welcome',
       'hạch toán combo',
       'trừ gói',
+      'đa ví combo',
       'phụ thu nâng cấp',
       'Deferred Revenue',
       'FIFO',
@@ -1249,8 +1251,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/dashboard/catalog', '/ios-app', '/dashboard/customers', '/dashboard/appointments'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-11-12',
+    version: '1.2.0',
+    effectiveFrom: '2026-11-19',
     sources: [
       {
         label: 'Wings Combo Catalog & Accounting Engine',

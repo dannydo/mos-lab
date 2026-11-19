@@ -1,12 +1,16 @@
 'use client';
 
 import React from 'react';
-import type { IosPromotionOption, IosPromotionTargetScope } from '@mos-lab/shared';
+import {
+  resolveActiveBookingComboWallets,
+  type IosPromotionOption,
+  type IosPromotionTargetScope,
+} from '@mos-lab/shared';
 import { Sparkles } from 'lucide-react';
 import { BookingItem } from '../../../state/mockData';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { CustomerPortfolioTriggerButton } from '../../ui-kit/CustomerPortfolioTriggerButton';
-import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
+import { CheckoutServiceComboStatusBadges, ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
 import { ReceiptItemPromotionBadge } from './ReceiptItemPromotionBadge';
 import { ReceiptTotalsSummary } from './ReceiptTotalsSummary';
 import { ReceiptQuickScanProductRow, ReceiptScannedSerialChips } from './ReceiptQuickSerumControls';
@@ -123,6 +127,7 @@ export function CheckoutReceiptSection({
   onToggleShowStaffRewards,
   onEditService,
 }: CheckoutReceiptSectionProps) {
+  const resolvedWallets = resolveActiveBookingComboWallets(booking || {});
   const hasNewComboWaiver =
     !comboRedemption &&
     (Boolean(selectedCombo && selectedCombo.todaySingleServiceWaived !== false) ||
@@ -239,70 +244,16 @@ export function CheckoutReceiptSection({
                   {booking?.attributes?.style ? `Dáng ${booking.attributes.style}` : ''}
                 </div>
               )}
-              {comboRedemption ? (
-                <div className="pt-0.5 space-y-0.5 text-[10px]">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span
-                      className={`font-bold ${
-                        isDark
-                          ? 'text-sky-300 bg-sky-950/40 border-sky-500/40'
-                          : 'text-sky-700 bg-sky-50 border-sky-200'
-                      } border px-1.5 py-0.5 rounded`}
-                    >
-                      Trừ 1 lượt gói ({comboRedemption.comboName || 'Gói cũ'})
-                    </span>
-                    <span className="text-neutral-400 font-semibold tabular-nums">
-                      Combo còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
-                    </span>
-                  </div>
-                  <ReceiptComboExpiryLine
-                    dateExpired={comboRedemption.dateExpired ?? booking?.comboLiveStatus?.dateExpired}
-                    dateExpiredDisplay={comboRedemption.dateExpiredDisplay}
-                    isDark={isDark}
-                    variant="redemption"
-                  />
-                </div>
-              ) : hasNewComboWaiver ? (
-                <div className="pt-0.5">
-                  <span
-                    className={`inline-flex items-center text-[10px] font-bold ${
-                      isDark
-                        ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
-                        : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                    } border px-1.5 py-0.5 rounded`}
-                  >
-                    {effectiveServiceCharge === 0
-                      ? 'Trừ Buổi 1 (Miễn phí ca này)'
-                      : 'Trừ Buổi 1 gói đã chọn · Thu lẻ phần còn lại'}
-                  </span>
-                </div>
-              ) : selectedCombo ? (
-                <div className="pt-0.5">
-                  <span
-                    className={`inline-flex items-center text-[10px] font-bold ${
-                      isDark
-                        ? 'text-indigo-300 bg-indigo-950/40 border-indigo-500/40'
-                        : 'text-indigo-700 bg-indigo-50 border-indigo-200'
-                    } border px-1.5 py-0.5 rounded`}
-                  >
-                    Trả lẻ ca này · Giữ trọn số buổi gói
-                  </span>
-                </div>
-              ) : (
-                upgradePrice > 0 && (
-                  <div className="pt-0.5">
-                    <span
-                      className={`inline-flex items-center text-[10px] font-bold ${
-                        isDark
-                          ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
-                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                      } border px-1.5 py-0.5 rounded tabular-nums`}
-                    >
-                      Nâng cấp (+{upgradePrice.toLocaleString('vi-VN')}đ)
-                    </span>
-                  </div>
-                )
-              )}
+              <CheckoutServiceComboStatusBadges
+                isDark={isDark}
+                booking={booking}
+                resolvedWallets={resolvedWallets}
+                comboRedemption={comboRedemption}
+                hasNewComboWaiver={hasNewComboWaiver}
+                selectedCombo={selectedCombo}
+                effectiveServiceCharge={effectiveServiceCharge}
+                upgradePrice={upgradePrice}
+              />
               <ReceiptItemPromotionBadge
                 isDark={isDark}
                 itemAmount={effectiveServiceCharge}

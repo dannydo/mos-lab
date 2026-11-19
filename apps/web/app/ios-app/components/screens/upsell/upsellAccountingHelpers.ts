@@ -1,4 +1,9 @@
-import { calculateComboRedemptionAccounting, MatchedComboPackageOption, WingsComboCategoryId } from '@mos-lab/shared';
+import {
+  calculateComboRedemptionAccounting,
+  resolveActiveBookingComboWallets,
+  MatchedComboPackageOption,
+  WingsComboCategoryId,
+} from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
 import { calculateCvComboTierBonus, resolveEffectiveServiceTotal } from '../../../state/useIosBillingCheckout';
 import { isYeppeumProductItem } from './upsellCheckoutHelpers';
@@ -25,13 +30,15 @@ export function computeUpsellRedemptionAccounting({
   daysSinceLastVisit,
 }: ComputeRedemptionAccountingParams) {
   if (!isExistingComboLive) return null;
-  const totalRem = booking?.comboLiveStatus?.remainingSessions ?? 2;
+  const resolved = booking ? resolveActiveBookingComboWallets(booking) : null;
+  const activeUpper = resolved?.effectiveComboLiveStatus ?? booking?.comboLiveStatus;
+  const totalRem = activeUpper?.remainingSessions ?? 2;
   const normalRem = simulateOnlyRefillLeft
     ? 0
-    : (booking?.comboLiveStatus?.normalRemaining ?? Math.max(1, Math.floor(totalRem / 2)));
+    : (activeUpper?.normalRemaining ?? Math.max(1, Math.floor(totalRem / 2)));
   const retainRem = simulateOnlyRefillLeft
     ? Math.max(1, totalRem)
-    : (booking?.comboLiveStatus?.retainRemaining ?? Math.max(0, totalRem - normalRem));
+    : (activeUpper?.retainRemaining ?? Math.max(0, totalRem - normalRem));
 
   const paidNewRem = normalRem > 1 ? normalRem - 1 : normalRem;
   const bonusNewRem = normalRem > 1 ? 1 : 0;
@@ -39,7 +46,7 @@ export function computeUpsellRedemptionAccounting({
   const bonusRefillRem = retainRem > 1 ? 1 : 0;
 
   return calculateComboRedemptionAccounting({
-    comboName: booking?.comboLiveStatus?.comboName || 'Gói Combo Đang Active',
+    comboName: activeUpper?.comboName || 'Gói Combo Đang Active',
     baseCategoryId: existingComboCategoryId,
     baseVolume: existingComboVolume,
     targetCategoryId,

@@ -4,11 +4,78 @@ import {
   calculateComboPurchaseAccounting,
   calculateComboRedemptionAccounting,
   formatExpiryDateDdMmYyyy,
+  getWingsComboCategory,
+  matchComboCategoryAndVolumeFromBooking,
+  resolveValidVolumeForCategory,
   type ComboPurchaseExpiryResult,
   type ComboTodayUsageMode,
   type IosScannedProductCatalogMatch,
   type IosScannedProductUnit,
 } from '@mos-lab/shared';
+
+export function resolvePreferredUpperComboSpec(
+  savedCombo: BookingItem['selectedCombo'] | null | undefined,
+  autoMatched: { categoryId: WingsComboCategoryId; volume: number | 'under' }
+): { categoryId: WingsComboCategoryId; volume: number | 'under' } {
+  if (savedCombo) {
+    const idParts = String(savedCombo.id || '').split(':');
+    const rawCat = savedCombo.categoryId || idParts[0];
+    const rawVolPart = idParts[2];
+    const parsedVol =
+      savedCombo.volume ??
+      (rawVolPart && rawVolPart !== 'under_390' && rawVolPart !== 'under' && Number.isFinite(Number(rawVolPart))
+        ? Number(rawVolPart)
+        : undefined);
+    if (rawCat && rawCat !== 'VVIP' && parsedVol !== undefined && parsedVol !== 'under') {
+      const resolvedCat = getWingsComboCategory(rawCat).id;
+      const resolvedVol = resolveValidVolumeForCategory(resolvedCat, parsedVol);
+      return { categoryId: resolvedCat, volume: resolvedVol };
+    }
+  }
+  return { categoryId: autoMatched.categoryId, volume: autoMatched.volume };
+}
+
+export function resolveValidSelectedNewComboId(
+  rawSelectedNewComboId: string,
+  matchedPackages: MatchedComboPackageOption[],
+  defaultNewComboSelection: string
+): string {
+  if (!rawSelectedNewComboId || rawSelectedNewComboId === 'NONE') return 'NONE';
+  const exact = matchedPackages.find((p) => p.id === rawSelectedNewComboId && !p.isLocked);
+  if (exact) return exact.id;
+
+  const idParts = rawSelectedNewComboId.split(':');
+  const desiredRule = (idParts[1] ? idParts[1].replace(/_/g, ' ') : rawSelectedNewComboId.replace(/^[^_]+_/, ''))
+    .trim()
+    .toLowerCase();
+  const ruleMatch = matchedPackages.find(
+    (p) => !p.isLocked && (p.ruleName.toLowerCase() === desiredRule || p.id.toLowerCase().endsWith(desiredRule))
+  );
+  if (ruleMatch) return ruleMatch.id;
+
+  return defaultNewComboSelection;
+}
+
+export function resolveUpsellAutoAndPreferredSpec(
+  booking: BookingItem | undefined,
+  comboName?: string | null,
+  serviceKey?: string | null
+): {
+  autoMatched: ReturnType<typeof matchComboCategoryAndVolumeFromBooking>;
+  preferredUpperSpec: { categoryId: WingsComboCategoryId; volume: number | 'under' };
+} {
+  const autoMatched = matchComboCategoryAndVolumeFromBooking({
+    serviceName: booking?.serviceName,
+    servicePrice: booking?.servicePrice,
+    material: booking?.attributes?.material,
+    volume: booking?.attributes?.volume,
+    count: booking?.attributes?.count,
+    comboName: comboName || undefined,
+    serviceKey: serviceKey || undefined,
+  });
+  const preferredUpperSpec = resolvePreferredUpperComboSpec(booking?.selectedCombo, autoMatched);
+  return { autoMatched, preferredUpperSpec };
+}
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { mergeExpiryIntoRemainingWallet } from '../consultation/comboExpiryConsultHelpers';
 
@@ -213,6 +280,10 @@ export interface BuildUpsellCheckoutPayloadParams {
   deductUnderTodayIntoCombo?: boolean;
   underTodayUsageMode?: ComboTodayUsageMode;
   selectedUnderExpiry?: ComboPurchaseExpiryResult | null;
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
 }
 
 export function buildUpsellCheckoutPayload({
@@ -238,6 +309,10 @@ export function buildUpsellCheckoutPayload({
   deductUnderTodayIntoCombo = true,
   underTodayUsageMode,
   selectedUnderExpiry,
+  selectedUpperComboBalanceId,
+  selectedUnderComboBalanceId,
+  skipUpperCombo,
+  skipUnderCombo,
 }: BuildUpsellCheckoutPayloadParams) {
   const cartProducts = upsertYeppeumInCartProducts(existingCartProducts, yeppeumCount, selectedSerumTier);
 
@@ -310,8 +385,10 @@ export function buildUpsellCheckoutPayload({
 
   const effectiveRedemptionExpiry = selectedUpperExpiry?.dateExpired || existingUpperComboDateExpired || null;
   const comboRedemption: NonNullable<BookingItem['comboRedemption']> | null =
-    effectiveUseOldComboToday && redemptionAccounting
+    effectiveUseOldComboToday && redemptionAccounting && !skipUpperCombo
       ? {
+          balanceId: selectedUpperComboBalanceId !== undefined ? selectedUpperComboBalanceId : null,
+          redeemSession: true,
           comboName: redemptionAccounting.comboName,
           deductedBucket: redemptionAccounting.deductedBucket,
           typeConversionSurcharge: redemptionAccounting.typeConversionSurcharge,
@@ -377,5 +454,14 @@ export function buildUpsellCheckoutPayload({
         }
       : null;
 
-  return { cartProducts, selectedCombo, selectedUnderCombo, comboRedemption };
+  return {
+    cartProducts,
+    selectedCombo,
+    selectedUnderCombo,
+    comboRedemption,
+    ...(selectedUpperComboBalanceId !== undefined ? { selectedUpperComboBalanceId } : {}),
+    ...(selectedUnderComboBalanceId !== undefined ? { selectedUnderComboBalanceId } : {}),
+    ...(skipUpperCombo !== undefined ? { skipUpperCombo } : {}),
+    ...(skipUnderCombo !== undefined ? { skipUnderCombo } : {}),
+  };
 }

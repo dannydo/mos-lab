@@ -223,6 +223,8 @@ export interface IosSelectedUnderCombo {
 }
 
 export interface IosComboRedemption {
+  balanceId?: number | null;
+  redeemSession?: boolean;
   comboName: string;
   deductedBucket: string;
   typeConversionSurcharge: number;
@@ -436,6 +438,10 @@ export interface IosBookingItem {
     expiryState?: ComboExpiryState;
   };
   comboWallets?: IosCustomerComboWalletItem[];
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
   diamondBalance?: number;
   debtAmount?: number;
   storeId?: number;

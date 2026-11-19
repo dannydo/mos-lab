@@ -1,5 +1,6 @@
 import {
   calculateComboPurchaseExpiry,
+  resolveActiveBookingComboWallets,
   type ComboPurchaseExpiryResult,
   type ComboTodayUsageMode,
   type ExistingComboSnapshotForExpiry,
@@ -16,7 +17,9 @@ import type { ComboExpiryPreviewItem } from '../../ui-kit/WingsUnifiedComboCard'
 export function extractExistingUpperExpirySnapshot(
   booking?: BookingItem | null
 ): ExistingComboSnapshotForExpiry | null {
-  const upper = booking?.comboLiveStatus;
+  if (!booking) return null;
+  const resolved = resolveActiveBookingComboWallets(booking);
+  const upper = resolved.displayUpperWallet ?? resolved.effectiveComboLiveStatus ?? booking.comboLiveStatus;
   if (!upper) return null;
 
   const remaining = Math.max(0, Number(upper.remainingSessions || 0));
@@ -50,7 +53,9 @@ export function extractExistingUpperExpirySnapshot(
 export function extractExistingUnderExpirySnapshot(
   booking?: BookingItem | null
 ): ExistingComboSnapshotForExpiry | null {
-  const under = booking?.underMinkComboStatus;
+  if (!booking) return null;
+  const resolved = resolveActiveBookingComboWallets(booking);
+  const under = resolved.displayUnderWallet ?? resolved.effectiveUnderMinkComboStatus ?? booking.underMinkComboStatus;
   if (!under) return null;
 
   const remaining = Math.max(0, Number(under.remainingSessions || 0));
@@ -79,15 +84,14 @@ export function extractExistingUnderExpirySnapshot(
 
 export function resolveDefaultUpperTodayUsageMode(booking?: BookingItem | null): ComboTodayUsageMode {
   const savedMode = booking?.selectedCombo?.todayUsageMode;
+  if (booking?.skipUpperCombo) {
+    return savedMode === 'USE_NEW_COMBO' ? 'USE_NEW_COMBO' : 'RETAIL_OR_VOUCHER';
+  }
   if (savedMode === 'USE_NEW_COMBO' || savedMode === 'USE_OLD_COMBO' || savedMode === 'RETAIL_OR_VOUCHER') {
     return savedMode;
   }
-  const isComboLive = Boolean(
-    booking?.comboLiveStatus?.isComboLive &&
-    !booking?.comboLiveStatus?.isExpired &&
-    booking.comboLiveStatus.remainingSessions > 0
-  );
-  if (isComboLive) {
+  const resolved = booking ? resolveActiveBookingComboWallets(booking) : null;
+  if (resolved?.isRedeemingUpperToday) {
     return 'USE_OLD_COMBO';
   }
   if (booking?.selectedCombo?.todaySingleServiceWaived === false) {
@@ -101,15 +105,14 @@ export function resolveDefaultUnderTodayUsageMode(
   hasUnderMink?: boolean
 ): ComboTodayUsageMode {
   const savedMode = booking?.selectedUnderCombo?.todayUsageMode;
+  if (booking?.skipUnderCombo) {
+    return savedMode === 'USE_NEW_COMBO' ? 'USE_NEW_COMBO' : 'RETAIL_OR_VOUCHER';
+  }
   if (savedMode === 'USE_NEW_COMBO' || savedMode === 'USE_OLD_COMBO' || savedMode === 'RETAIL_OR_VOUCHER') {
     return savedMode;
   }
-  const hasUnderCombo = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo &&
-    !booking?.underMinkComboStatus?.isExpired &&
-    (booking?.underMinkComboStatus?.remainingSessions || 0) > 0
-  );
-  if (hasUnderCombo) {
+  const resolved = booking ? resolveActiveBookingComboWallets(booking) : null;
+  if (resolved?.isRedeemingUnderToday) {
     return 'USE_OLD_COMBO';
   }
   if (booking?.selectedUnderCombo?.todaySingleServiceWaived === false || hasUnderMink === false) {

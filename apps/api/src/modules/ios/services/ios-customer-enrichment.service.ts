@@ -8,6 +8,7 @@ import {
   IosCustomerNoteItem,
   LashHistoryItem,
   matchComboCategoryAndVolumeFromBooking,
+  resolveActiveBookingComboWallets,
 } from '@mos-lab/shared';
 import { attachLashHistoryProgressPhotos } from './ios-progress-sync.helper.js';
 import { listIosCustomerCvlNotesBatch } from './ios-customer-notes.service.js';
@@ -46,6 +47,8 @@ export function createEmptyCustomerEnrichmentContext(): IosCustomerEnrichmentCon
 export interface RawComboBalanceRowInput {
   id?: number | null;
   user_id: number;
+  service_id?: number | null;
+  service_price_id?: number | null;
   remaining_sessions?: number | null;
   normal_remaining?: number | null;
   retain_remaining?: number | null;
@@ -87,6 +90,8 @@ export function buildWalletItemFromBalanceRow(
 
   return {
     balanceId: Number(row.id) || 0,
+    ...(row.service_id ? { serviceId: Number(row.service_id) } : {}),
+    ...(row.service_price_id ? { servicePriceId: Number(row.service_price_id) } : {}),
     serviceGroup,
     comboName,
     serviceKey: row.service_key ? String(row.service_key) : undefined,
@@ -153,38 +158,14 @@ export function enrichCustomerComboMapsFromRows(params: {
 
   for (const [uid, wallets] of upperWalletsByUser.entries()) {
     const lastVisitSvcKey = (ctx.lastVisitSpecsMap.get(uid)?.serviceKey || '').replace(/-refill$/i, '');
-    const liveWallets = wallets.filter((w) => !w.isExpired);
-    const poolToPick = liveWallets.length > 0 ? liveWallets : wallets;
-
-    const primary =
-      (lastVisitSvcKey &&
-        poolToPick.find((w) => String(w.serviceKey || '').replace(/-refill$/i, '') === lastVisitSvcKey)) ||
-      poolToPick[0];
-
-    if (!primary) continue;
-    const isComboLive = !primary.isExpired && primary.remainingSessions > 0;
-    const upsellOpportunity =
-      !isComboLive || primary.remainingSessions <= 2 || primary.isExpiringSoon || primary.isExpired;
-
-    ctx.comboBalanceMap.set(uid, {
-      balanceId: primary.balanceId,
-      isComboLive,
-      remainingSessions: primary.remainingSessions,
-      normalRemaining: primary.normalRemaining,
-      retainRemaining: primary.retainRemaining,
-      comboName: primary.comboName,
-      serviceKey: primary.serviceKey,
-      packageKey: primary.packageKey,
-      retainDaysLimit: primary.retainDaysLimit ?? 25,
-      upsellOpportunity,
-      dateExpired: primary.dateExpired,
-      isExpired: primary.isExpired,
-      isFrozen: primary.isFrozen,
-      isExpiringSoon: primary.isExpiringSoon,
-      daysRemaining: primary.daysRemaining,
-      avgDaysPerSession: primary.avgDaysPerSession,
-      expiryState: primary.expiryState,
+    const resolved = resolveActiveBookingComboWallets({
+      comboWallets: wallets,
+      lastVisitServiceKey: lastVisitSvcKey || undefined,
+      todayYmd,
     });
+    if (resolved.effectiveComboLiveStatus && (resolved.displayUpperWallet || resolved.activeUpperWallet)) {
+      ctx.comboBalanceMap.set(uid, resolved.effectiveComboLiveStatus);
+    }
   }
 
   const underWalletsByUser = new Map<number, IosCustomerComboWalletItem[]>();
@@ -203,64 +184,12 @@ export function enrichCustomerComboMapsFromRows(params: {
   }
 
   for (const [uid, wallets] of underWalletsByUser.entries()) {
-    const liveWallets = wallets.filter((w) => !w.isExpired);
-    if (liveWallets.length > 0) {
-      const primary = liveWallets[0];
-      const totalNormal = liveWallets.reduce((sum, w) => sum + w.normalRemaining, 0);
-      const totalRetain = liveWallets.reduce((sum, w) => sum + w.retainRemaining, 0);
-      const totalRem = totalNormal + totalRetain;
-      const anyFrozen = liveWallets.some((w) => w.isFrozen);
-      const latestDate = anyFrozen
-        ? null
-        : liveWallets
-            .map((w) => w.dateExpired)
-            .filter((d): d is string => Boolean(d))
-            .sort()
-            .at(-1) || primary.dateExpired;
-      const evaluated = evaluateComboWalletStatus({
-        normalRemaining: totalNormal,
-        retainRemaining: totalRetain,
-        remainingSessions: totalRem,
-        dateExpired: anyFrozen ? null : latestDate,
-        todayYmd,
-      });
-
-      ctx.underMinkComboMap.set(uid, {
-        balanceId: primary.balanceId,
-        hasUnderCombo: evaluated.isComboLive,
-        remainingSessions: totalRem,
-        normalRemaining: totalNormal,
-        retainRemaining: totalRetain,
-        comboName: primary.comboName,
-        packageKey: primary.packageKey,
-        dateExpired: evaluated.dateExpired,
-        isExpired: evaluated.isExpired,
-        isFrozen: evaluated.isFrozen,
-        isExpiringSoon: evaluated.isExpiringSoon,
-        daysRemaining: evaluated.daysRemaining,
-        avgDaysPerSession: evaluated.avgDaysPerSession,
-        expiryState: evaluated.expiryState,
-      });
-    } else if (wallets.length > 0) {
-      const expiredPrimary = wallets[0];
-      const totalNormal = wallets.reduce((sum, w) => sum + w.normalRemaining, 0);
-      const totalRetain = wallets.reduce((sum, w) => sum + w.retainRemaining, 0);
-      ctx.underMinkComboMap.set(uid, {
-        balanceId: expiredPrimary.balanceId,
-        hasUnderCombo: false,
-        remainingSessions: totalNormal + totalRetain,
-        normalRemaining: totalNormal,
-        retainRemaining: totalRetain,
-        comboName: expiredPrimary.comboName,
-        packageKey: expiredPrimary.packageKey,
-        dateExpired: expiredPrimary.dateExpired,
-        isExpired: true,
-        isFrozen: false,
-        isExpiringSoon: false,
-        daysRemaining: expiredPrimary.daysRemaining,
-        avgDaysPerSession: null,
-        expiryState: 'EXPIRED',
-      });
+    const resolved = resolveActiveBookingComboWallets({
+      comboWallets: wallets,
+      todayYmd,
+    });
+    if (resolved.effectiveUnderMinkComboStatus) {
+      ctx.underMinkComboMap.set(uid, resolved.effectiveUnderMinkComboStatus);
     }
   }
 }
@@ -338,6 +267,8 @@ export async function fetchCustomerEnrichmentContext(
       `SELECT
          usb.id,
          usb.user_id,
+         usb.service_id,
+         usb.service_price_id,
          (usb.normal_count + usb.retain_count) AS remaining_sessions,
          usb.normal_count AS normal_remaining,
          usb.retain_count AS retain_remaining,
@@ -368,6 +299,8 @@ export async function fetchCustomerEnrichmentContext(
       `SELECT
          usb.id,
          usb.user_id,
+         usb.service_id,
+         usb.service_price_id,
          (usb.normal_count + usb.retain_count) AS remaining_sessions,
          usb.normal_count AS normal_remaining,
          usb.retain_count AS retain_remaining,

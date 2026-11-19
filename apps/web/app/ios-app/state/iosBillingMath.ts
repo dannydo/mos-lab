@@ -1,6 +1,7 @@
 import {
   calculateCvSerumTierBonus,
   calculateIosItemizedPromotionDiscounts,
+  resolveActiveBookingComboWallets,
   resolveEffectiveServiceTotal,
   type CvToCvPlusRequirements,
 } from '@mos-lab/shared';
@@ -28,6 +29,11 @@ export function computeFreshBillingLineTotals(
     | 'attributes'
     | 'comboLiveStatus'
     | 'underMinkComboStatus'
+    | 'comboWallets'
+    | 'selectedUpperComboBalanceId'
+    | 'selectedUnderComboBalanceId'
+    | 'skipUpperCombo'
+    | 'skipUnderCombo'
     | 'cartProducts'
     | 'selectedCombo'
     | 'selectedUnderCombo'
@@ -61,11 +67,19 @@ export function computeFreshBillingLineTotals(
   unifiedOrderPromotionId: number | null;
   primaryPromotion: IosPromotionOption | null;
 } {
-  const hasUnderMinkComboActive = Boolean(
-    booking.underMinkComboStatus?.hasUnderCombo && (booking.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const resolvedWallets = resolveActiveBookingComboWallets({
+    comboWallets: booking.comboWallets,
+    comboLiveStatus: booking.comboLiveStatus,
+    underMinkComboStatus: booking.underMinkComboStatus,
+    selectedUpperComboBalanceId: booking.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: booking.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(booking.skipUpperCombo),
+    skipUnderCombo: Boolean(booking.skipUnderCombo),
+    bookedServiceName: booking.serviceName,
+  });
+  const hasUnderMinkComboActive = resolvedWallets.isRedeemingUnderToday;
   const shouldUseOldUpperCombo = Boolean(
-    booking.comboLiveStatus?.isComboLive &&
+    resolvedWallets.isRedeemingUpperToday &&
     (!booking.selectedCombo ||
       !booking.selectedCombo.todayUsageMode ||
       booking.selectedCombo.todayUsageMode === 'USE_OLD_COMBO')

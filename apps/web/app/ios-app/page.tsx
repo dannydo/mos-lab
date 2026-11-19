@@ -310,6 +310,7 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(1)}
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
+            onSelectComboWallet={state.handleSelectComboWallet}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
           />
         );
@@ -327,6 +328,7 @@ function IosAppInner() {
             isSimulationMode={state.isSimulationMode}
             isReadOnlyMentorView={state.isReadOnlyMentorView}
             onSimFastForwardToUpsell={state.handleSimFastForwardToUpsell}
+            onSelectComboWallet={state.handleSelectComboWallet}
           />
         );
       case 4:
@@ -423,6 +425,7 @@ function IosAppInner() {
             onRefreshDb={() => state.refreshDb()}
             onBack={state.handleBackToAfterPhoto}
             onUpdateCartProducts={state.handleUpdateCartProducts}
+            onSelectComboWallet={state.handleSelectComboWallet}
             onGoToBilling={state.handleGoToBilling}
           />
         );
@@ -443,6 +446,7 @@ function IosAppInner() {
             onChoosePayment={state.handleChoosePaymentMethod}
             onSavePromotion={state.handleSavePromotion}
             onUpdateCartProducts={state.handleUpdateCartProducts}
+            onSelectComboWallet={state.handleSelectComboWallet}
             onEditService={() => state.handleOpenConsultation(13)}
           />
         );

@@ -6,10 +6,12 @@ import {
   getWingsComboCategory,
   type IosCheckoutStaffOption,
   type MatchedComboPackageOption,
+  type ResolveActiveBookingComboWalletsResult,
   type WingsComboCategoryId,
 } from '@mos-lab/shared';
 import { ArrowRightLeft, Check, Gem, Heart, Minus, Package, Plus, Sparkles, XCircle } from 'lucide-react';
 import { SERUM_TIERS_CVL } from '../../../state/mockData';
+import { ComboWalletSelectorList } from '../../ui-kit/ComboWalletSelectorList';
 import { CvFeather1Badge, CvFeather2Badge } from '../../ui-kit/CvFeatherLabels';
 
 interface PostCheckoutComboFormSectionsProps {
@@ -40,6 +42,12 @@ interface PostCheckoutComboFormSectionsProps {
   diamondUsed: number;
   maxDiamonds: number;
   onSetDiamondUsed: (val: number) => void;
+  resolvedWallets?: ResolveActiveBookingComboWalletsResult;
+  hasUnderMink?: boolean;
+  onSelectUpperWallet?: (balanceId: number) => void;
+  onSkipUpperWallet?: () => void;
+  onSelectUnderWallet?: (balanceId: number) => void;
+  onSkipUnderWallet?: () => void;
 }
 
 export function PostCheckoutComboFormSections({
@@ -70,6 +78,12 @@ export function PostCheckoutComboFormSections({
   diamondUsed,
   maxDiamonds,
   onSetDiamondUsed,
+  resolvedWallets,
+  hasUnderMink = false,
+  onSelectUpperWallet,
+  onSkipUpperWallet,
+  onSelectUnderWallet,
+  onSkipUnderWallet,
 }: PostCheckoutComboFormSectionsProps) {
   const currentCategory = getWingsComboCategory(activeCategoryId);
   const familyInfo = getLashFamilyInfo(activeCategoryId);
@@ -178,6 +192,34 @@ export function PostCheckoutComboFormSections({
             </button>
           )}
         </div>
+
+        {resolvedWallets &&
+          (resolvedWallets.upperWallets.length > 0 || (hasUnderMink && resolvedWallets.underWallets.length > 0)) && (
+            <div className="space-y-2 pb-1">
+              {resolvedWallets.upperWallets.length > 0 && (
+                <ComboWalletSelectorList
+                  wallets={resolvedWallets.upperWallets}
+                  selectedBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+                  skipCombo={resolvedWallets.skipUpperCombo}
+                  serviceGroup="upper"
+                  compact
+                  onSelectWallet={(wallet) => onSelectUpperWallet?.(wallet.balanceId)}
+                  onSelectSkipCombo={() => onSkipUpperWallet?.()}
+                />
+              )}
+              {hasUnderMink && resolvedWallets.underWallets.length > 0 && (
+                <ComboWalletSelectorList
+                  wallets={resolvedWallets.underWallets}
+                  selectedBalanceId={resolvedWallets.selectedUnderComboBalanceId}
+                  skipCombo={resolvedWallets.skipUnderCombo}
+                  serviceGroup="under"
+                  compact
+                  onSelectWallet={(wallet) => onSelectUnderWallet?.(wallet.balanceId)}
+                  onSelectSkipCombo={() => onSkipUnderWallet?.()}
+                />
+              )}
+            </div>
+          )}
 
         {/* Category & Volume quick switcher */}
         <div className="flex flex-wrap gap-1.5">

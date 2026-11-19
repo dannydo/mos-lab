@@ -87,8 +87,8 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
         material: selectedMaterial || booking?.attributes?.material,
         volume: selectedVolume || booking?.attributes?.volume,
         count: selectedCount || booking?.attributes?.count,
-        comboName: booking?.comboLiveStatus?.comboName,
-        serviceKey: booking?.comboLiveStatus?.serviceKey,
+        comboName: design.resolvedWallets.effectiveComboLiveStatus.comboName,
+        serviceKey: design.resolvedWallets.effectiveComboLiveStatus.serviceKey,
       }),
     [
       booking?.serviceName,
@@ -99,8 +99,8 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
       booking?.attributes?.material,
       booking?.attributes?.volume,
       booking?.attributes?.count,
-      booking?.comboLiveStatus?.comboName,
-      booking?.comboLiveStatus?.serviceKey,
+      design.resolvedWallets.effectiveComboLiveStatus.comboName,
+      design.resolvedWallets.effectiveComboLiveStatus.serviceKey,
     ]
   );
 
@@ -250,9 +250,11 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
 
   const autoMatchedCategoryId = autoMatchedCombo.categoryId;
 
-  const upperSnapKey = `${booking?.id || 0}:${booking?.comboLiveStatus?.isComboLive ? 1 : 0}:${booking?.comboLiveStatus?.isExpired ? 1 : 0}:${booking?.comboLiveStatus?.isFrozen ? 1 : 0}:${booking?.comboLiveStatus?.remainingSessions ?? 0}:${booking?.comboLiveStatus?.normalRemaining ?? ''}:${booking?.comboLiveStatus?.retainRemaining ?? ''}:${booking?.comboLiveStatus?.dateExpired || ''}`;
-  const underSnapKey = `${booking?.id || 0}:${booking?.underMinkComboStatus?.hasUnderCombo ? 1 : 0}:${booking?.underMinkComboStatus?.isExpired ? 1 : 0}:${booking?.underMinkComboStatus?.isFrozen ? 1 : 0}:${booking?.underMinkComboStatus?.remainingSessions ?? 0}:${booking?.underMinkComboStatus?.normalRemaining ?? ''}:${booking?.underMinkComboStatus?.retainRemaining ?? ''}:${booking?.underMinkComboStatus?.dateExpired || ''}`;
-  const savedUsageKey = `${booking?.selectedCombo?.todayUsageMode || ''}:${booking?.selectedCombo?.todaySingleServiceWaived ?? ''}:${booking?.selectedUnderCombo?.todayUsageMode || ''}:${booking?.selectedUnderCombo?.todaySingleServiceWaived ?? ''}`;
+  const effUpper = design.resolvedWallets.displayUpperWallet || design.resolvedWallets.effectiveComboLiveStatus;
+  const effUnder = design.resolvedWallets.displayUnderWallet || design.resolvedWallets.effectiveUnderMinkComboStatus;
+  const upperSnapKey = `${booking?.id || 0}:${design.resolvedWallets.selectedUpperComboBalanceId ?? 'none'}:${design.resolvedWallets.skipUpperCombo ? 1 : 0}:${effUpper?.isExpired ? 1 : 0}:${effUpper?.isFrozen ? 1 : 0}:${effUpper?.remainingSessions ?? 0}:${effUpper?.normalRemaining ?? ''}:${effUpper?.retainRemaining ?? ''}:${effUpper?.dateExpired || ''}`;
+  const underSnapKey = `${booking?.id || 0}:${design.resolvedWallets.selectedUnderComboBalanceId ?? 'none'}:${design.resolvedWallets.skipUnderCombo ? 1 : 0}:${effUnder?.isExpired ? 1 : 0}:${effUnder?.isFrozen ? 1 : 0}:${effUnder?.remainingSessions ?? 0}:${effUnder?.normalRemaining ?? ''}:${effUnder?.retainRemaining ?? ''}:${effUnder?.dateExpired || ''}`;
+  const savedUsageKey = `${booking?.selectedCombo?.todayUsageMode || ''}:${booking?.selectedCombo?.todaySingleServiceWaived ?? ''}:${booking?.selectedUnderCombo?.todayUsageMode || ''}:${booking?.selectedUnderCombo?.todaySingleServiceWaived ?? ''}:${booking?.skipUpperCombo ? 1 : 0}:${booking?.skipUnderCombo ? 1 : 0}`;
 
   const existingUpperExpirySnapshot = useMemo(() => extractExistingUpperExpirySnapshot(booking), [upperSnapKey]);
   const existingUnderExpirySnapshot = useMemo(() => extractExistingUnderExpirySnapshot(booking), [underSnapKey]);
@@ -274,14 +276,18 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     mode: ComboTodayUsageMode;
   } | null>(null);
 
-  const upperTodayUsageMode: ComboTodayUsageMode =
+  const rawUpperTodayUsageMode: ComboTodayUsageMode =
     manualUpperUsageEdit && manualUpperUsageEdit.bookingId === booking?.id
       ? manualUpperUsageEdit.mode
       : defaultUpperUsageMode;
-  const underTodayUsageMode: ComboTodayUsageMode =
+  const upperTodayUsageMode: ComboTodayUsageMode =
+    !isComboLive && rawUpperTodayUsageMode === 'USE_OLD_COMBO' ? defaultUpperUsageMode : rawUpperTodayUsageMode;
+  const rawUnderTodayUsageMode: ComboTodayUsageMode =
     manualUnderUsageEdit && manualUnderUsageEdit.bookingId === booking?.id
       ? manualUnderUsageEdit.mode
       : defaultUnderUsageMode;
+  const underTodayUsageMode: ComboTodayUsageMode =
+    !hasUnderMinkCombo && rawUnderTodayUsageMode === 'USE_OLD_COMBO' ? defaultUnderUsageMode : rawUnderTodayUsageMode;
 
   const setUpperTodayUsageMode = useCallback(
     (mode: ComboTodayUsageMode) => {

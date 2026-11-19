@@ -4,6 +4,7 @@ import {
   calculateDualComboTierBonus,
   calculateIosItemizedPromotionDiscounts,
   filterBookingsForCvlScope,
+  hasCompleteNaturalLashAttributes,
   IosBookingItem,
   IosBookingStatus,
   IosCartProductItem,
@@ -17,6 +18,83 @@ import {
   resolveNormalizedPaymentBreakdown,
   SafeAny,
 } from '@mos-lab/shared';
+import type { LastVisitSpecSummary } from './ios-bookings-sql.service.js';
+
+export function stripNewLashLabel(value: string): string {
+  return value
+    .replace(
+      /\b(?:New\s+)+(?=(?:Classic|Volume|Flawless|Hyper(?:light)?|Ultra(?:light)?|Ivy(?:light)?|Mink|Under)\b)/gi,
+      ''
+    )
+    .trim();
+}
+
+export function normalizeLashMaterialLabel(value?: string): string | undefined {
+  if (!value) return value;
+  const cleaned = stripNewLashLabel(value);
+  return /^Classic$/i.test(cleaned) ? 'Classic 1D' : cleaned;
+}
+
+export function buildCanonicalServiceNameFromSpecs(specs?: LastVisitSpecSummary, visits = 0): string {
+  if (!specs?.material) {
+    return visits > 1 ? 'HyperLight 4X 770' : 'Chưa chọn mẫu mi (Tư vấn)';
+  }
+  const matched = matchComboCategoryAndVolumeFromBooking({
+    material: specs.material,
+    volume: specs.volume,
+    count: specs.count,
+    serviceKey: specs.serviceKey,
+  });
+  const sku = typeof matched.volume === 'number' ? matched.volume : 770;
+  switch (matched.categoryId) {
+    case 'Classic_1D':
+    case 'Classic_Volume':
+      return `Classic 1D ${sku}`;
+    case 'Volume_2D':
+      return `Volume 2D ${sku}`;
+    case 'Volume_3D':
+      return `Volume 3D ${sku}`;
+    case 'FlawlessMink':
+      return `Flawless Mink ${sku}`;
+    case 'HyperLight_2X':
+    case 'HyperLight_3X':
+    case 'HyperLight_4X':
+    case 'HyperLight_5X':
+      return `HyperLight ${matched.categoryId.split('_')[1]} ${sku}`;
+    case 'IvyLight_3L':
+    case 'IvyLight_4L':
+    case 'IvyLight_5L':
+      return `Ivylight ${matched.categoryId.split('_')[1]} ${sku}`;
+    case 'UltraLight_3D':
+    case 'UltraLight_4D':
+    case 'UltraLight_5D':
+      return `UltraLight ${matched.categoryId.split('_')[1]} ${sku}`;
+    default:
+      return visits > 1 ? `HyperLight 4X ${sku}` : 'Chưa chọn mẫu mi (Tư vấn)';
+  }
+}
+
+export function hydrateSavedNaturalLashAttributes(
+  attrs: IosBookingItem['attributes'],
+  savedProfile?: NaturalLashConsultationAttributes
+): IosBookingItem['attributes'] {
+  if (!attrs || !savedProfile) return attrs;
+  if (attrs.isNewClientDiagnosticDone === false) return attrs;
+  if (hasCompleteNaturalLashAttributes(attrs)) return attrs;
+  return {
+    ...savedProfile,
+    ...attrs,
+    naturalLashLength: attrs.naturalLashLength || savedProfile.naturalLashLength,
+    naturalLashThickness: attrs.naturalLashThickness || savedProfile.naturalLashThickness,
+    naturalLashCount: attrs.naturalLashCount || savedProfile.naturalLashCount,
+    naturalLashDensity: attrs.naturalLashDensity || savedProfile.naturalLashDensity,
+    lashTrail: attrs.lashTrail || savedProfile.lashTrail,
+    eyeShape: attrs.eyeShape || savedProfile.eyeShape,
+    lashHealth: attrs.lashHealth || savedProfile.lashHealth,
+    medicalProblem: attrs.medicalProblem || savedProfile.medicalProblem,
+    isNewClientDiagnosticDone: true,
+  };
+}
 
 export function resolveCustomerAvatar(dbAvatar: string | null | undefined, userId?: number): string | undefined {
   if (!dbAvatar) return undefined;

@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
+import {
+  hasCompleteNaturalLashSet,
+  resolveActiveBookingComboWallets,
+  type IosCustomerComboWalletItem,
+} from '@mos-lab/shared';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -77,6 +81,13 @@ interface Screen02CheckInProfileProps {
     targetBookingId?: number
   ) => void;
   onUpdateAvatar?: (avatarUrl: string, targetBookingId?: number) => Promise<any> | void;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+  }) => void;
 }
 
 export function Screen02CheckInProfile({
@@ -92,6 +103,7 @@ export function Screen02CheckInProfile({
   onCheckIn,
   onQuickCheckIn,
   onUpdateAvatar,
+  onSelectComboWallet,
 }: Screen02CheckInProfileProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -117,8 +129,9 @@ export function Screen02CheckInProfile({
     booking?.attributes?.isNewClientDiagnosticDone === false;
   const requiresNaturalLashCheck = !hasCompleteNaturalLashSet(booking);
   const customerNote = booking?.customerNote || 'Không có ghi chú đặc biệt';
-  const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
-  const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
+  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking), [booking]);
+  const isComboLive = resolvedWallets.isRedeemingUpperToday;
+  const remainingSessions = resolvedWallets.effectiveComboLiveStatus.remainingSessions ?? 0;
   const actorTierLabel =
     actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? <CvFeather1Badge /> : 'CC';
 
@@ -369,9 +382,17 @@ export function Screen02CheckInProfile({
       serviceType: initialServiceType,
       hasUnderMink: Boolean(booking?.attributes?.hasUnderMink),
       underMinkServiceType: booking?.attributes?.underMinkServiceType,
-      hasUnderMinkCombo: Boolean(booking?.underMinkComboStatus?.hasUnderCombo),
+      hasUnderMinkCombo: resolvedWallets.isRedeemingUnderToday,
     });
-  }, [isComboLive, preset, booking, quickServiceType, quickHasUnderMink, quickUnderServiceType]);
+  }, [
+    isComboLive,
+    preset,
+    booking,
+    quickServiceType,
+    quickHasUnderMink,
+    quickUnderServiceType,
+    resolvedWallets.isRedeemingUnderToday,
+  ]);
 
   const handleExecuteQuickCheckIn = () => {
     if (requiresNaturalLashCheck || !onQuickCheckIn) {
@@ -466,7 +487,9 @@ export function Screen02CheckInProfile({
                   <span className={`text-[14px] font-black select-none ${typeMeta.colorClass}`} title={typeMeta.label}>
                     {typeMeta.symbol}
                   </span>
-                  <h2 className="text-[17px] font-bold text-[var(--mos-text)] tracking-tight truncate">{customerName}</h2>
+                  <h2 className="text-[17px] font-bold text-[var(--mos-text)] tracking-tight truncate">
+                    {customerName}
+                  </h2>
                   {visits >= 5 && (
                     <span
                       className={`text-[11px] px-2 py-0.5 rounded-full font-bold tracking-tight border ${
@@ -481,7 +504,9 @@ export function Screen02CheckInProfile({
                 </div>
               );
             })()}
-            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">{customerPhone}</div>
+            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">
+              {customerPhone}
+            </div>
             <div className="text-[12px] text-[var(--mos-text-muted)] font-medium mt-0.5 flex flex-wrap items-center justify-between gap-2">
               <span>
                 Lần ghé: <strong className="font-bold text-[var(--mos-text)]">{visits}</strong>
@@ -528,6 +553,46 @@ export function Screen02CheckInProfile({
           }}
           onRequestServiceTypeChange={handleRequestQuickServiceTypeChange}
           onOpenWalletModal={() => setIsWalletModalOpen(true)}
+          onSelectUpperWallet={
+            onSelectComboWallet
+              ? (wallet: IosCustomerComboWalletItem) =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUpperComboBalanceId: wallet.balanceId,
+                    skipUpperCombo: false,
+                  })
+              : undefined
+          }
+          onSkipUpperCombo={
+            onSelectComboWallet
+              ? () =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUpperComboBalanceId: null,
+                    skipUpperCombo: true,
+                  })
+              : undefined
+          }
+          onSelectUnderWallet={
+            onSelectComboWallet
+              ? (wallet: IosCustomerComboWalletItem) =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUnderComboBalanceId: wallet.balanceId,
+                    skipUnderCombo: false,
+                  })
+              : undefined
+          }
+          onSkipUnderCombo={
+            onSelectComboWallet
+              ? () =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUnderComboBalanceId: null,
+                    skipUnderCombo: true,
+                  })
+              : undefined
+          }
         />
 
         {/* Cards 3, 3.5, Technical Notes, Natural Lash Profile & Lash History */}
@@ -603,6 +668,29 @@ export function Screen02CheckInProfile({
         onClose={() => setIsWalletModalOpen(false)}
         isAdmin={isAdmin}
         onUpdated={() => onRefreshDb?.()}
+        selectedUpperBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+        selectedUnderBalanceId={resolvedWallets.selectedUnderComboBalanceId}
+        skipUpperCombo={resolvedWallets.skipUpperCombo}
+        skipUnderCombo={resolvedWallets.skipUnderCombo}
+        onSelectWallet={
+          onSelectComboWallet
+            ? (wallet) => {
+                if (wallet.serviceGroup === 'under') {
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUnderComboBalanceId: wallet.balanceId,
+                    skipUnderCombo: false,
+                  });
+                } else {
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUpperComboBalanceId: wallet.balanceId,
+                    skipUpperCombo: false,
+                  });
+                }
+              }
+            : undefined
+        }
       />
 
       <CustomerHistoryAndSpendingSheet

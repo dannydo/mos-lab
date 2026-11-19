@@ -1,5 +1,6 @@
 'use client';
 
+import { resolveActiveBookingComboWallets } from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import {
   getLocalProgressSnapshot,
@@ -12,6 +13,7 @@ import {
 
 const LOCAL_OPTIMISTIC_MUTATION_TTL_MS = 10_000;
 const COMBO_MUTATION_ACTIONS = new Set([
+  'SELECT_COMBO_WALLET',
   'SAVE_CONSULTATION',
   'SAVE_CONSULTATION_DRAFT',
   'SAVE_UPSELL',
@@ -19,6 +21,42 @@ const COMBO_MUTATION_ACTIONS = new Set([
   'COMPLETE_ORDER',
   'COMPLETE_CHECKOUT',
 ]);
+
+function applyResolvedWalletMerge(base: BookingItem, preferLocal: boolean, existing?: BookingItem): BookingItem {
+  if (!preferLocal || !existing) return base;
+  const selectedUpperComboBalanceId = resolveComboField(
+    existing.selectedUpperComboBalanceId,
+    base.selectedUpperComboBalanceId,
+    true
+  );
+  const selectedUnderComboBalanceId = resolveComboField(
+    existing.selectedUnderComboBalanceId,
+    base.selectedUnderComboBalanceId,
+    true
+  );
+  const skipUpperCombo = resolveComboField(existing.skipUpperCombo, base.skipUpperCombo, true);
+  const skipUnderCombo = resolveComboField(existing.skipUnderCombo, base.skipUnderCombo, true);
+  const resolved = resolveActiveBookingComboWallets({
+    comboWallets: base.comboWallets || existing.comboWallets,
+    comboLiveStatus: base.comboLiveStatus || existing.comboLiveStatus,
+    underMinkComboStatus: base.underMinkComboStatus || existing.underMinkComboStatus,
+    selectedUpperComboBalanceId: selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(skipUpperCombo),
+    skipUnderCombo: Boolean(skipUnderCombo),
+    bookedServiceName: base.serviceName,
+  });
+  return {
+    ...base,
+    comboLiveStatus: resolved.effectiveComboLiveStatus,
+    underMinkComboStatus: resolved.effectiveUnderMinkComboStatus,
+    comboWallets: resolved.allWallets.length > 0 ? resolved.allWallets : base.comboWallets,
+    selectedUpperComboBalanceId: resolved.selectedUpperComboBalanceId,
+    selectedUnderComboBalanceId: resolved.selectedUnderComboBalanceId,
+    skipUpperCombo: resolved.skipUpperCombo,
+    skipUnderCombo: resolved.skipUnderCombo,
+  };
+}
 
 function resolveComboField<T>(
   existingVal: T | null | undefined,
@@ -62,23 +100,43 @@ export function mergeServerBookingsWithLocalState(
         setActiveServicingBookingId(null);
         setActiveServicingStep(null);
       }
-      return {
-        ...incoming,
-        status: 'INCOMING',
-        progress: undefined,
-        selectedCombo: resolveComboField(existing?.selectedCombo, incoming.selectedCombo, preferLocalComboAndPricing),
-        selectedUnderCombo: resolveComboField(
-          existing?.selectedUnderCombo,
-          incoming.selectedUnderCombo,
-          preferLocalComboAndPricing
-        ),
-        comboRedemption: resolveComboField(
-          existing?.comboRedemption,
-          incoming.comboRedemption,
-          preferLocalComboAndPricing
-        ),
-        _localComboUpdatedAt: hasFreshLocalComboMutation ? existing?._localComboUpdatedAt : undefined,
-      };
+      return applyResolvedWalletMerge(
+        {
+          ...incoming,
+          status: 'INCOMING',
+          progress: undefined,
+          selectedCombo: resolveComboField(existing?.selectedCombo, incoming.selectedCombo, preferLocalComboAndPricing),
+          selectedUnderCombo: resolveComboField(
+            existing?.selectedUnderCombo,
+            incoming.selectedUnderCombo,
+            preferLocalComboAndPricing
+          ),
+          comboRedemption: resolveComboField(
+            existing?.comboRedemption,
+            incoming.comboRedemption,
+            preferLocalComboAndPricing
+          ),
+          selectedUpperComboBalanceId: resolveComboField(
+            existing?.selectedUpperComboBalanceId,
+            incoming.selectedUpperComboBalanceId,
+            preferLocalComboAndPricing
+          ),
+          selectedUnderComboBalanceId: resolveComboField(
+            existing?.selectedUnderComboBalanceId,
+            incoming.selectedUnderComboBalanceId,
+            preferLocalComboAndPricing
+          ),
+          skipUpperCombo: Boolean(
+            resolveComboField(existing?.skipUpperCombo, incoming.skipUpperCombo, preferLocalComboAndPricing)
+          ),
+          skipUnderCombo: Boolean(
+            resolveComboField(existing?.skipUnderCombo, incoming.skipUnderCombo, preferLocalComboAndPricing)
+          ),
+          _localComboUpdatedAt: hasFreshLocalComboMutation ? existing?._localComboUpdatedAt : undefined,
+        },
+        preferLocalComboAndPricing,
+        existing
+      );
     }
 
     if (incoming.status === 'CANCELLED') {
@@ -131,6 +189,22 @@ export function mergeServerBookingsWithLocalState(
         selectedCombo: existing?.selectedCombo || incoming.selectedCombo,
         selectedUnderCombo: existing?.selectedUnderCombo || incoming.selectedUnderCombo,
         comboRedemption: existing?.comboRedemption || incoming.comboRedemption,
+        selectedUpperComboBalanceId: resolveComboField(
+          existing?.selectedUpperComboBalanceId,
+          incoming.selectedUpperComboBalanceId,
+          preferLocalComboAndPricing
+        ),
+        selectedUnderComboBalanceId: resolveComboField(
+          existing?.selectedUnderComboBalanceId,
+          incoming.selectedUnderComboBalanceId,
+          preferLocalComboAndPricing
+        ),
+        skipUpperCombo: Boolean(
+          resolveComboField(existing?.skipUpperCombo, incoming.skipUpperCombo, preferLocalComboAndPricing)
+        ),
+        skipUnderCombo: Boolean(
+          resolveComboField(existing?.skipUnderCombo, incoming.skipUnderCombo, preferLocalComboAndPricing)
+        ),
         cartProducts: existing?.cartProducts || incoming.cartProducts,
         billing: existing?.billing || incoming.billing,
         survey: existing?.survey || incoming.survey,
@@ -171,81 +245,101 @@ export function mergeServerBookingsWithLocalState(
           ? incoming.status
           : existing.status || incoming.status;
 
-      return {
-        ...incoming,
-        serviceName: resolvedServiceName,
-        servicePrice: preferLocalComboAndPricing
-          ? existing.servicePrice || incoming.servicePrice
-          : incoming.servicePrice || existing.servicePrice,
-        serviceType: preferLocalComboAndPricing
-          ? existing.serviceType || incoming.serviceType
-          : incoming.serviceType || existing.serviceType,
-        upgradePrice: preferLocalComboAndPricing
-          ? (existing.upgradePrice ?? incoming.upgradePrice)
-          : (incoming.upgradePrice ?? existing.upgradePrice),
-        attributes: mergedAttributes,
-        cvRotationPoints: preferLocalComboAndPricing
-          ? (existing.cvRotationPoints ?? incoming.cvRotationPoints)
-          : (incoming.cvRotationPoints ?? existing.cvRotationPoints),
-        cvRotationBreakdown: preferLocalComboAndPricing
-          ? (existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown)
-          : (incoming.cvRotationBreakdown ?? existing.cvRotationBreakdown),
-        status: isServicing ? 'SERVICING' : resolvedNonServicingStatus,
-        progress: isServicing
-          ? {
-              elapsedSeconds: incoming.progress?.elapsedSeconds ?? existing.progress?.elapsedSeconds ?? 0,
-              timerRunning: incoming.progress?.timerRunning ?? existing.progress?.timerRunning ?? false,
-              ...(incoming.progress || {}),
-              ...(localSnap || {}),
-              ...(existing.progress || {}),
-            }
-          : undefined,
-        selectedCombo: resolveComboField(existing.selectedCombo, incoming.selectedCombo, preferLocalComboAndPricing),
-        selectedUnderCombo: resolveComboField(
-          existing.selectedUnderCombo,
-          incoming.selectedUnderCombo,
-          preferLocalComboAndPricing
-        ),
-        comboRedemption: resolveComboField(
-          existing.comboRedemption,
-          incoming.comboRedemption,
-          preferLocalComboAndPricing
-        ),
-        _localComboUpdatedAt: hasFreshLocalComboMutation ? existing._localComboUpdatedAt : undefined,
-        cartProducts:
-          preferLocalComboAndPricing && existing.cartProducts
-            ? existing.cartProducts
-            : incoming.cartProducts && incoming.cartProducts.length > 0
-              ? incoming.cartProducts
-              : existing.cartProducts || incoming.cartProducts,
-        billing: preferLocalComboAndPricing
-          ? existing.billing || incoming.billing
-          : incoming.billing || existing.billing,
-        survey: existing.survey || incoming.survey,
-        checkInStaffId:
-          (!preferLocalComboAndPricing && incoming.checkInStaffId) ||
-          existing.checkInStaffId ||
-          incoming.checkInStaffId,
-        checkInStaffName:
-          (!preferLocalComboAndPricing && incoming.checkInStaffName) ||
-          existing.checkInStaffName ||
-          incoming.checkInStaffName,
-        checkInStaffTier:
-          (!preferLocalComboAndPricing && incoming.checkInStaffTier) ||
-          existing.checkInStaffTier ||
-          incoming.checkInStaffTier,
-        assignedStaffId:
-          !preferLocalComboAndPricing && incoming.assignedStaffId && incoming.assignedStaffId > 0
-            ? incoming.assignedStaffId
-            : existing.assignedStaffId || incoming.assignedStaffId,
-        assignedStaffName:
-          !preferLocalComboAndPricing &&
-          incoming.assignedStaffId &&
-          incoming.assignedStaffId > 0 &&
-          incoming.assignedStaffName
-            ? incoming.assignedStaffName
-            : existing.assignedStaffName || incoming.assignedStaffName,
-      };
+      return applyResolvedWalletMerge(
+        {
+          ...incoming,
+          serviceName: resolvedServiceName,
+          servicePrice: preferLocalComboAndPricing
+            ? existing.servicePrice || incoming.servicePrice
+            : incoming.servicePrice || existing.servicePrice,
+          serviceType: preferLocalComboAndPricing
+            ? existing.serviceType || incoming.serviceType
+            : incoming.serviceType || existing.serviceType,
+          upgradePrice: preferLocalComboAndPricing
+            ? (existing.upgradePrice ?? incoming.upgradePrice)
+            : (incoming.upgradePrice ?? existing.upgradePrice),
+          attributes: mergedAttributes,
+          cvRotationPoints: preferLocalComboAndPricing
+            ? (existing.cvRotationPoints ?? incoming.cvRotationPoints)
+            : (incoming.cvRotationPoints ?? existing.cvRotationPoints),
+          cvRotationBreakdown: preferLocalComboAndPricing
+            ? (existing.cvRotationBreakdown ?? incoming.cvRotationBreakdown)
+            : (incoming.cvRotationBreakdown ?? existing.cvRotationBreakdown),
+          status: isServicing ? 'SERVICING' : resolvedNonServicingStatus,
+          progress: isServicing
+            ? {
+                elapsedSeconds: incoming.progress?.elapsedSeconds ?? existing.progress?.elapsedSeconds ?? 0,
+                timerRunning: incoming.progress?.timerRunning ?? existing.progress?.timerRunning ?? false,
+                ...(incoming.progress || {}),
+                ...(localSnap || {}),
+                ...(existing.progress || {}),
+              }
+            : undefined,
+          selectedCombo: resolveComboField(existing.selectedCombo, incoming.selectedCombo, preferLocalComboAndPricing),
+          selectedUnderCombo: resolveComboField(
+            existing.selectedUnderCombo,
+            incoming.selectedUnderCombo,
+            preferLocalComboAndPricing
+          ),
+          comboRedemption: resolveComboField(
+            existing.comboRedemption,
+            incoming.comboRedemption,
+            preferLocalComboAndPricing
+          ),
+          selectedUpperComboBalanceId: resolveComboField(
+            existing.selectedUpperComboBalanceId,
+            incoming.selectedUpperComboBalanceId,
+            preferLocalComboAndPricing
+          ),
+          selectedUnderComboBalanceId: resolveComboField(
+            existing.selectedUnderComboBalanceId,
+            incoming.selectedUnderComboBalanceId,
+            preferLocalComboAndPricing
+          ),
+          skipUpperCombo: Boolean(
+            resolveComboField(existing.skipUpperCombo, incoming.skipUpperCombo, preferLocalComboAndPricing)
+          ),
+          skipUnderCombo: Boolean(
+            resolveComboField(existing.skipUnderCombo, incoming.skipUnderCombo, preferLocalComboAndPricing)
+          ),
+          _localComboUpdatedAt: hasFreshLocalComboMutation ? existing._localComboUpdatedAt : undefined,
+          cartProducts:
+            preferLocalComboAndPricing && existing.cartProducts
+              ? existing.cartProducts
+              : incoming.cartProducts && incoming.cartProducts.length > 0
+                ? incoming.cartProducts
+                : existing.cartProducts || incoming.cartProducts,
+          billing: preferLocalComboAndPricing
+            ? existing.billing || incoming.billing
+            : incoming.billing || existing.billing,
+          survey: existing.survey || incoming.survey,
+          checkInStaffId:
+            (!preferLocalComboAndPricing && incoming.checkInStaffId) ||
+            existing.checkInStaffId ||
+            incoming.checkInStaffId,
+          checkInStaffName:
+            (!preferLocalComboAndPricing && incoming.checkInStaffName) ||
+            existing.checkInStaffName ||
+            incoming.checkInStaffName,
+          checkInStaffTier:
+            (!preferLocalComboAndPricing && incoming.checkInStaffTier) ||
+            existing.checkInStaffTier ||
+            incoming.checkInStaffTier,
+          assignedStaffId:
+            !preferLocalComboAndPricing && incoming.assignedStaffId && incoming.assignedStaffId > 0
+              ? incoming.assignedStaffId
+              : existing.assignedStaffId || incoming.assignedStaffId,
+          assignedStaffName:
+            !preferLocalComboAndPricing &&
+            incoming.assignedStaffId &&
+            incoming.assignedStaffId > 0 &&
+            incoming.assignedStaffName
+              ? incoming.assignedStaffName
+              : existing.assignedStaffName || incoming.assignedStaffName,
+        },
+        preferLocalComboAndPricing,
+        existing
+      );
     }
     if (localSnap || isServicing) {
       return {

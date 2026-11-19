@@ -473,6 +473,7 @@ export function useIosAppState(
     handleCheckIn,
     handleSaveConsultation,
     handleAutoSaveConsultationDraft,
+    handleSelectComboWallet,
     handleAssignStaff,
     handleTransferToCv,
   } = useIosConsultationAndCheckIn({
@@ -602,6 +603,7 @@ export function useIosAppState(
     availableBranches: IOS_AVAILABLE_BRANCHES,
     handleUpdateCustomerAvatar,
     handleAutoSaveConsultationDraft,
+    handleSelectComboWallet,
     simulationActorStaffName,
     loggedInUser,
     ...simulation,

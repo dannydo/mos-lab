@@ -187,12 +187,58 @@ export async function executePostCheckoutAdjustmentAction(params: {
   const serviceName = String(
     current.serviceName || baseline?.serviceName || body?.simBookingMeta?.serviceName || 'Dịch vụ mi'
   );
-  const isComboLive = Boolean(
-    current.comboRedemption?.redeemSession || body?.isComboLive || body?.simBookingMeta?.isComboLive
-  );
+  const nextSkipUpperCombo = isApproveAction
+    ? Boolean(pendingDraft!.skipUpperCombo)
+    : body?.skipUpperCombo !== undefined
+      ? Boolean(body.skipUpperCombo)
+      : Boolean(current.skipUpperCombo);
+  const nextSkipUnderCombo = isApproveAction
+    ? Boolean(pendingDraft!.skipUnderCombo)
+    : body?.skipUnderCombo !== undefined
+      ? Boolean(body.skipUnderCombo)
+      : Boolean(current.skipUnderCombo);
+  const nextSelectedUpperComboBalanceId = isApproveAction
+    ? (pendingDraft!.selectedUpperComboBalanceId ?? null)
+    : body?.selectedUpperComboBalanceId !== undefined
+      ? body.selectedUpperComboBalanceId && Number(body.selectedUpperComboBalanceId) > 0
+        ? Number(body.selectedUpperComboBalanceId)
+        : null
+      : (current.selectedUpperComboBalanceId ?? null);
+  const nextSelectedUnderComboBalanceId = isApproveAction
+    ? (pendingDraft!.selectedUnderComboBalanceId ?? null)
+    : body?.selectedUnderComboBalanceId !== undefined
+      ? body.selectedUnderComboBalanceId && Number(body.selectedUnderComboBalanceId) > 0
+        ? Number(body.selectedUnderComboBalanceId)
+        : null
+      : (current.selectedUnderComboBalanceId ?? null);
+
+  const prevComboLive =
+    !current.skipUpperCombo &&
+    Boolean(
+      current.comboRedemption?.redeemSession || current.selectedUpperComboBalanceId || body?.simBookingMeta?.isComboLive
+    );
+  const nextIsComboLive =
+    !nextSkipUpperCombo &&
+    Boolean(
+      (isApproveAction ? pendingDraft!.comboRedemption?.redeemSession : body?.comboRedemption?.redeemSession) ||
+      nextSelectedUpperComboBalanceId ||
+      (!body?.skipUpperCombo &&
+        (current.comboRedemption?.redeemSession || body?.isComboLive || body?.simBookingMeta?.isComboLive))
+    );
   const hasUnderMink = Boolean(current.attributes?.hasUnderMink);
   const underMinkServiceType = current.attributes?.underMinkServiceType;
-  const hasUnderMinkCombo = Boolean(body?.hasUnderMinkCombo || body?.simBookingMeta?.hasUnderMinkCombo);
+  const prevHasUnderMinkCombo =
+    !current.skipUnderCombo &&
+    Boolean(
+      current.hasUnderMinkCombo || current.selectedUnderComboBalanceId || body?.simBookingMeta?.hasUnderMinkCombo
+    );
+  const nextHasUnderMinkCombo =
+    !nextSkipUnderCombo &&
+    Boolean(
+      nextSelectedUnderComboBalanceId ||
+      (body?.hasUnderMinkCombo !== undefined ? body.hasUnderMinkCombo : current.hasUnderMinkCombo) ||
+      body?.simBookingMeta?.hasUnderMinkCombo
+    );
   const isTrainingCvlOrder = Boolean(body?.isTrainingCvlOrder);
 
   const preAdjustmentSettlementStatus: IosSettlementStatus =
@@ -274,10 +320,10 @@ export async function executePostCheckoutAdjustmentAction(params: {
     checkOutStaffId: previousCheckOutStaffId,
     checkOutStaffName: previousCheckOutStaffName,
     checkOutStaffTier: previousCheckOutStaffTier,
-    isComboLive,
+    isComboLive: prevComboLive,
     hasUnderMink,
     underMinkServiceType,
-    hasUnderMinkCombo,
+    hasUnderMinkCombo: prevHasUnderMinkCombo,
     isTrainingCvlOrder,
   });
 
@@ -296,7 +342,12 @@ export async function executePostCheckoutAdjustmentAction(params: {
     ...current,
     selectedCombo: nextSelectedCombo,
     selectedUnderCombo: nextSelectedUnderCombo,
-    comboRedemption: nextComboRedemption,
+    comboRedemption: nextSkipUpperCombo ? null : nextComboRedemption,
+    selectedUpperComboBalanceId: nextSelectedUpperComboBalanceId,
+    selectedUnderComboBalanceId: nextSelectedUnderComboBalanceId,
+    skipUpperCombo: nextSkipUpperCombo,
+    skipUnderCombo: nextSkipUnderCombo,
+    hasUnderMinkCombo: nextHasUnderMinkCombo,
     cartProducts: nextCartProducts,
     billing: {
       ...(current.billing || {}),
@@ -315,10 +366,10 @@ export async function executePostCheckoutAdjustmentAction(params: {
     checkOutStaffId: targetCheckOutStaffId,
     checkOutStaffName: targetCheckOutStaffName,
     checkOutStaffTier: targetCheckOutStaffTier,
-    isComboLive,
+    isComboLive: nextIsComboLive,
     hasUnderMink,
     underMinkServiceType,
-    hasUnderMinkCombo,
+    hasUnderMinkCombo: nextHasUnderMinkCombo,
     isTrainingCvlOrder,
   });
 
@@ -373,7 +424,11 @@ export async function executePostCheckoutAdjustmentAction(params: {
       targetCheckOutStaffTier,
       selectedCombo: nextSelectedCombo,
       selectedUnderCombo: nextSelectedUnderCombo,
-      comboRedemption: nextComboRedemption,
+      comboRedemption: nextSkipUpperCombo ? null : nextComboRedemption,
+      selectedUpperComboBalanceId: nextSelectedUpperComboBalanceId,
+      selectedUnderComboBalanceId: nextSelectedUnderComboBalanceId,
+      skipUpperCombo: nextSkipUpperCombo,
+      skipUnderCombo: nextSkipUnderCombo,
       cartProducts: nextCartProducts,
       tipAmount: nextTipAmount,
       diamondUsed: nextDiamondUsed,
@@ -452,7 +507,12 @@ export async function executePostCheckoutAdjustmentAction(params: {
     checkOutStaffTier: targetCheckOutStaffTier,
     selectedCombo: nextSelectedCombo,
     selectedUnderCombo: nextSelectedUnderCombo,
-    comboRedemption: nextComboRedemption,
+    comboRedemption: nextSkipUpperCombo ? null : nextComboRedemption,
+    selectedUpperComboBalanceId: nextSelectedUpperComboBalanceId,
+    selectedUnderComboBalanceId: nextSelectedUnderComboBalanceId,
+    skipUpperCombo: nextSkipUpperCombo,
+    skipUnderCombo: nextSkipUnderCombo,
+    hasUnderMinkCombo: nextHasUnderMinkCombo,
     cartProducts: nextCartProducts,
     pendingPostCheckoutAdjustment: null,
     billing: {

@@ -2,10 +2,16 @@
 
 import React from 'react';
 import { Zap, Check, Sparkles, RotateCw } from 'lucide-react';
-import type { ComboPurchaseExpiryResult, ComboTodayUsageMode, MatchedComboPackageOption } from '@mos-lab/shared';
+import type {
+  ComboPurchaseExpiryResult,
+  ComboTodayUsageMode,
+  MatchedComboPackageOption,
+  ResolveActiveBookingComboWalletsResult,
+} from '@mos-lab/shared';
 import type { BookingItem } from '../../../state/mockData';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
 import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
+import { ComboWalletSelectorList } from '../../ui-kit/ComboWalletSelectorList';
 import { CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import {
   formatComboName,
@@ -85,6 +91,14 @@ interface ConsultationServiceAndUpgradeCardProps {
   setShowStaffRewards: (show: boolean) => void;
   handleOpenComboModal: (target: 'upper' | 'under') => void;
   handleSubmit: () => void;
+  resolvedWallets?: ResolveActiveBookingComboWalletsResult;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+  }) => void;
 }
 
 export function ConsultationServiceAndUpgradeCard({
@@ -153,8 +167,13 @@ export function ConsultationServiceAndUpgradeCard({
   setShowStaffRewards,
   handleOpenComboModal,
   handleSubmit,
+  resolvedWallets,
+  onSelectComboWallet,
 }: ConsultationServiceAndUpgradeCardProps) {
   const isOldComboExpired = Boolean(comboLiveStatus?.isExpired && (comboLiveStatus?.remainingSessions || 0) > 0);
+  const isSkipUpperWithLiveWallet = Boolean(
+    resolvedWallets?.skipUpperCombo && (resolvedWallets?.liveUpperWallets?.length ?? 0) > 0
+  );
   return (
     <div
       className={`rounded-2xl p-3 shadow-xs border space-y-2 transition-colors ${'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]'}`}
@@ -164,13 +183,17 @@ export function ConsultationServiceAndUpgradeCard({
         <div className="flex items-center gap-1.5 min-w-0">
           <span
             className={`w-5 h-5 rounded-full text-white inline-flex items-center justify-center shrink-0 ${
-              isOldComboExpired ? 'bg-rose-600' : 'bg-emerald-600'
+              isOldComboExpired ? 'bg-rose-600' : isSkipUpperWithLiveWallet ? 'bg-amber-500' : 'bg-emerald-600'
             }`}
           >
             <Zap className="w-3 h-3 fill-current" />
           </span>
           <span className={`text-[12px] font-extrabold truncate text-[var(--mos-text)]`}>
-            {isComboLive || isOldComboExpired ? formatComboName(comboName) : 'Khách Lẻ'}
+            {isComboLive || isOldComboExpired
+              ? formatComboName(comboName)
+              : isSkipUpperWithLiveWallet
+                ? 'Đi Lẻ Lần Này (Giữ Gói)'
+                : 'Khách Lẻ'}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0 tabular-nums">
@@ -214,6 +237,28 @@ export function ConsultationServiceAndUpgradeCard({
           />
         </div>
       </div>
+
+      {resolvedWallets && resolvedWallets.upperWallets.length > 0 && (
+        <ComboWalletSelectorList
+          wallets={resolvedWallets.upperWallets}
+          selectedBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+          skipCombo={resolvedWallets.skipUpperCombo}
+          serviceGroup="upper"
+          compact
+          onSelectWallet={(wallet) =>
+            onSelectComboWallet?.({
+              selectedUpperComboBalanceId: wallet.balanceId,
+              skipUpperCombo: false,
+            })
+          }
+          onSelectSkipCombo={() =>
+            onSelectComboWallet?.({
+              selectedUpperComboBalanceId: null,
+              skipUpperCombo: true,
+            })
+          }
+        />
+      )}
 
       {/* Khối Thông số Mi Trên + Nút +Mi dưới & 1 dòng thông số Mi Dưới tối giản */}
       <div

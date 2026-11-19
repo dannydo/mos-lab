@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import { resolveActiveBookingComboWallets, type IosCustomerComboWalletItem } from '@mos-lab/shared';
 import { useTheme } from '../../../../../context/ThemeContext';
 import { BookingItem } from '../../../state/mockData';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
 import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
+import { ComboWalletSelectorList } from '../../ui-kit/ComboWalletSelectorList';
 import {
   formatComboName,
   parseUnderMinkCountFibers,
@@ -39,6 +41,10 @@ interface QuickCheckInComboCardProps {
   onResetOverride: () => void;
   onRequestServiceTypeChange: (targetType: 'Normal' | 'Retain') => void;
   onOpenWalletModal?: () => void;
+  onSelectUpperWallet?: (wallet: IosCustomerComboWalletItem) => void;
+  onSkipUpperCombo?: () => void;
+  onSelectUnderWallet?: (wallet: IosCustomerComboWalletItem) => void;
+  onSkipUnderCombo?: () => void;
 }
 
 export function QuickCheckInComboCard({
@@ -62,15 +68,69 @@ export function QuickCheckInComboCard({
   onResetOverride,
   onRequestServiceTypeChange,
   onOpenWalletModal,
+  onSelectUpperWallet,
+  onSkipUpperCombo,
+  onSelectUnderWallet,
+  onSkipUnderCombo,
 }: QuickCheckInComboCardProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
+  const resolvedWallets = resolveActiveBookingComboWallets(booking);
+  const showUpperWalletSelector =
+    Boolean(onSelectUpperWallet && onSkipUpperCombo) &&
+    (resolvedWallets.upperWallets.length >= 2 ||
+      (resolvedWallets.upperWallets.length === 1 && !resolvedWallets.upperWallets[0].isExpired));
+  const showUnderWalletSelector =
+    Boolean(onSelectUnderWallet && onSkipUnderCombo) &&
+    (resolvedWallets.underWallets.length >= 2 ||
+      (resolvedWallets.underWallets.length === 1 && !resolvedWallets.underWallets[0].isExpired));
 
   if (!isComboLive) {
-    if (booking?.comboLiveStatus?.isExpired) {
-      const expNormal = booking.comboLiveStatus.normalRemaining ?? 0;
-      const expRetain = booking.comboLiveStatus.retainRemaining ?? 0;
-      const expTotal = booking.comboLiveStatus.remainingSessions ?? expNormal + expRetain;
+    if (
+      resolvedWallets.skipUpperCombo &&
+      resolvedWallets.hasAnyLiveUpperWallet &&
+      onSelectUpperWallet &&
+      onSkipUpperCombo
+    ) {
+      return (
+        <div className="rounded-2xl p-3 shadow-sm border border-amber-500/40 bg-[var(--mos-surface)] space-y-2.5 text-[var(--mos-text)]">
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={`text-[11.5px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
+                isDark ? 'text-amber-400' : 'text-amber-700'
+              }`}
+            >
+              <Sparkles className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+              Đi Lẻ Lần Này (Giữ Gói)
+            </span>
+            <span
+              className={`border text-[10.5px] font-black px-2.5 py-0.5 rounded-full ${
+                isDark
+                  ? 'bg-amber-400/20 text-amber-400 border-amber-400/30'
+                  : 'bg-amber-50 text-amber-700 border-amber-300'
+              }`}
+            >
+              ≤ 21N: Giá Dặm
+            </span>
+          </div>
+          <ComboWalletSelectorList
+            wallets={resolvedWallets.upperWallets}
+            selectedBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+            skipCombo={true}
+            serviceGroup="upper"
+            onSelectWallet={onSelectUpperWallet}
+            onSelectSkipCombo={onSkipUpperCombo}
+            compact
+          />
+        </div>
+      );
+    }
+
+    const effectiveStatus = resolvedWallets.effectiveComboLiveStatus;
+    if (effectiveStatus?.isExpired) {
+      const expNormal = effectiveStatus.normalRemaining ?? 0;
+      const expRetain = effectiveStatus.retainRemaining ?? 0;
+      const expTotal = effectiveStatus.remainingSessions ?? expNormal + expRetain;
 
       return (
         <div
@@ -84,7 +144,7 @@ export function QuickCheckInComboCard({
                 <Lock className="w-3 h-3 stroke-[2.5]" />
               </span>
               <span className={`text-[12.5px] font-black truncate ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
-                {formatComboName(booking.comboLiveStatus.comboName) || 'Gói Combo Đã Hết Hạn'}
+                {formatComboName(effectiveStatus.comboName) || 'Gói Combo Đã Hết Hạn'}
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 tabular-nums">
@@ -92,7 +152,7 @@ export function QuickCheckInComboCard({
                 normalRemaining={expNormal}
                 retainRemaining={expRetain}
                 remainingSessions={expTotal}
-                comboName={booking.comboLiveStatus.comboName}
+                comboName={effectiveStatus.comboName}
                 size="xs"
                 theme={isDark ? 'dark' : 'light'}
               />
@@ -115,7 +175,7 @@ export function QuickCheckInComboCard({
 
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <ComboExpiryStatusBadge
-              status={booking.comboLiveStatus}
+              status={effectiveStatus}
               theme={isDark ? 'dark' : 'light'}
               onClick={onOpenWalletModal}
             />
@@ -123,6 +183,18 @@ export function QuickCheckInComboCard({
               Đã khóa trừ 0đ · Check-in đi lẻ / Voucher
             </span>
           </div>
+
+          {showUpperWalletSelector && onSelectUpperWallet && onSkipUpperCombo && (
+            <ComboWalletSelectorList
+              wallets={resolvedWallets.upperWallets}
+              selectedBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+              skipCombo={resolvedWallets.skipUpperCombo}
+              serviceGroup="upper"
+              onSelectWallet={onSelectUpperWallet}
+              onSelectSkipCombo={onSkipUpperCombo}
+              compact
+            />
+          )}
 
           <div
             className={`rounded-xl border px-2.5 py-2 text-[11px] leading-relaxed ${
@@ -160,6 +232,7 @@ export function QuickCheckInComboCard({
     );
   }
 
+  const effectiveStatus = resolvedWallets.effectiveComboLiveStatus;
   return (
     <div className="rounded-2xl p-3 shadow-sm border border-emerald-500/40 bg-[var(--mos-surface)] space-y-2 text-[var(--mos-text)]">
       {/* Header gọn: Icon Zap + Tên gói + Badge Ngày ghé cuối & Tổng lượt */}
@@ -169,7 +242,7 @@ export function QuickCheckInComboCard({
             <Zap className="w-3 h-3 fill-current" />
           </span>
           <span className="text-[12.5px] font-black text-[var(--mos-text)] truncate">
-            {formatComboName(booking?.comboLiveStatus?.comboName) || 'Gói ❖ Live'}
+            {formatComboName(effectiveStatus?.comboName) || 'Gói ❖ Live'}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0 tabular-nums">
@@ -198,7 +271,7 @@ export function QuickCheckInComboCard({
               normalRemaining={preset.normalRemaining}
               retainRemaining={preset.retainRemaining}
               remainingSessions={remainingSessions}
-              comboName={booking?.comboLiveStatus?.comboName}
+              comboName={effectiveStatus?.comboName}
               size="xs"
               theme={isDark ? 'dark' : 'light'}
             />
@@ -207,10 +280,10 @@ export function QuickCheckInComboCard({
       </div>
 
       {/* Hàng HSD + Tốc độ đi trung bình (Avg: X.X ngày/buổi) + Nút mở Chi tiết Combo */}
-      {booking?.comboLiveStatus && (
+      {effectiveStatus && (
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <ComboExpiryStatusBadge
-            status={booking.comboLiveStatus}
+            status={effectiveStatus}
             showPace
             theme={isDark ? 'dark' : 'light'}
             onClick={onOpenWalletModal}
@@ -226,6 +299,18 @@ export function QuickCheckInComboCard({
             </button>
           )}
         </div>
+      )}
+
+      {showUpperWalletSelector && onSelectUpperWallet && onSkipUpperCombo && (
+        <ComboWalletSelectorList
+          wallets={resolvedWallets.upperWallets}
+          selectedBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+          skipCombo={resolvedWallets.skipUpperCombo}
+          serviceGroup="upper"
+          onSelectWallet={onSelectUpperWallet}
+          onSelectSkipCombo={onSkipUpperCombo}
+          compact
+        />
       )}
 
       {/* Khối Thông số Mi Trên + Mi Dưới tối giản */}
@@ -358,6 +443,19 @@ export function QuickCheckInComboCard({
               </button>
             </div>
           </div>
+        )}
+
+        {quickHasUnderMink && showUnderWalletSelector && onSelectUnderWallet && onSkipUnderCombo && (
+          <ComboWalletSelectorList
+            wallets={resolvedWallets.underWallets}
+            selectedBalanceId={resolvedWallets.selectedUnderComboBalanceId}
+            skipCombo={resolvedWallets.skipUnderCombo}
+            serviceGroup="under"
+            onSelectWallet={onSelectUnderWallet}
+            onSelectSkipCombo={onSkipUnderCombo}
+            compact
+            className="pt-1"
+          />
         )}
       </div>
 

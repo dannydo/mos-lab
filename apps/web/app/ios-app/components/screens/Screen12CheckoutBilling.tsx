@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   canDirectlySettleCounterPayment,
+  resolveActiveBookingComboWallets,
   resolveNormalizedPaymentBreakdown,
   type IosPaymentBreakdown,
   type IosPaymentMethod,
@@ -18,7 +19,12 @@ import { BookingItem, isDoneBookingPendingCheckout } from '../../state/mockData'
 import { addScannedProductToCartProducts, removeScannedUnitFromCartProducts } from './upsell/upsellCheckoutHelpers';
 import { compressLashImage } from '../../utils/imageCompressor';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
+import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import {
+  CheckoutComboWalletCard,
+  resolveCheckoutFallbackServicePrice,
+  type SelectComboWalletHandler,
+} from './checkout/CheckoutComboWalletCard';
 import { IosCloudSyncStatus } from '../ui-kit/IosCloudSyncBadge';
 import {
   calculateDualComboTierBonus,
@@ -65,6 +71,7 @@ interface Screen12CheckoutBillingProps {
   ) => void;
   onSavePromotion?: (promotion: IosPromotionOption | null, target?: SavePromotionTarget) => void;
   onUpdateCartProducts?: (cartProducts: NonNullable<BookingItem['cartProducts']>) => void;
+  onSelectComboWallet?: SelectComboWalletHandler;
   onEditService?: () => void;
 }
 
@@ -76,6 +83,7 @@ export function Screen12CheckoutBilling({
   onChoosePayment,
   onSavePromotion,
   onUpdateCartProducts,
+  onSelectComboWallet,
   onEditService,
 }: Screen12CheckoutBillingProps) {
   const { themeMode } = useTheme();
@@ -174,46 +182,33 @@ export function Screen12CheckoutBilling({
   const checkInStaff = booking?.checkInStaffName || actor?.name || 'Thảo Ly';
   const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
   const serviceName = resolveDisplayServiceName(booking);
-  const servicePrice = useMemo(() => {
-    if (booking?.servicePrice && booking.servicePrice > 0) return booking.servicePrice;
-    const menuDetail = getWingsMenuDetail(
-      booking?.attributes?.material || serviceName || '',
-      booking?.attributes?.count || '',
-      booking?.attributes?.volume || ''
-    );
-    if (menuDetail) {
-      const isRetainSvc =
-        String(booking?.serviceType || '').toLowerCase() === 'retain' ||
-        serviceName.toLowerCase().includes('dặm') ||
-        serviceName.toLowerCase().includes('refill');
-      return isRetainSvc ? menuDetail.refillPrice : menuDetail.newPrice;
-    }
-    return 770000;
-  }, [
-    booking?.servicePrice,
-    booking?.attributes?.material,
-    booking?.attributes?.count,
-    booking?.attributes?.volume,
-    booking?.serviceType,
-    serviceName,
-  ]);
+  const servicePrice = useMemo(() => resolveCheckoutFallbackServicePrice(booking, serviceName), [booking, serviceName]);
   const upgradePrice = booking?.upgradePrice || 0;
   const selectedCombo = booking?.selectedCombo || null;
   const selectedUnderCombo = booking?.selectedUnderCombo || null;
   const comboRedemption = booking?.comboRedemption || null;
+  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking || {}), [booking]);
   const isComboLive = Boolean(
-    booking?.comboLiveStatus?.isComboLive &&
+    resolvedWallets.isRedeemingUpperToday &&
     (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
   );
-  const hasUnderMinkCombo = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const hasUnderMinkCombo = resolvedWallets.isRedeemingUnderToday;
   const effectiveServiceCharge = resolveEffectiveServiceTotal({
-    servicePrice, upgradePrice, serviceName: booking?.serviceName, isComboLive,
-    hasUnderMink: booking?.attributes?.hasUnderMink, underMinkServiceType: booking?.attributes?.underMinkServiceType,
-    hasUnderMinkCombo, comboRedemption, selectedCombo, selectedUnderCombo,
+    servicePrice,
+    upgradePrice,
+    serviceName: booking?.serviceName,
+    isComboLive,
+    hasUnderMink: booking?.attributes?.hasUnderMink,
+    underMinkServiceType: booking?.attributes?.underMinkServiceType,
+    hasUnderMinkCombo,
+    comboRedemption,
+    selectedCombo,
+    selectedUnderCombo,
   });
-  const actorTipBreakdown = useMemo(() => calculateActorTipBreakdown(booking, actor, tipAmount), [booking, actor, tipAmount]);
+  const actorTipBreakdown = useMemo(
+    () => calculateActorTipBreakdown(booking, actor, tipAmount),
+    [booking, actor, tipAmount]
+  );
   const upperComboPrice = selectedCombo ? selectedCombo.price : 0;
   const underComboPrice = selectedUnderCombo ? selectedUnderCombo.price : 0;
   const comboTotal = upperComboPrice + underComboPrice;
@@ -321,7 +316,16 @@ export function Screen12CheckoutBilling({
         hasUnderMinkCombo,
         cartProducts,
       }),
-    [servicePrice, effectiveServiceCharge, booking?.serviceName, serviceName, booking?.attributes?.hasUnderMink, booking?.attributes?.underMinkServiceType, hasUnderMinkCombo, cartProducts]
+    [
+      servicePrice,
+      effectiveServiceCharge,
+      booking?.serviceName,
+      serviceName,
+      booking?.attributes?.hasUnderMink,
+      booking?.attributes?.underMinkServiceType,
+      hasUnderMinkCombo,
+      cartProducts,
+    ]
   );
 
   const percentTipSuggestions = useMemo(() => buildPercentageTipSuggestions(tipBaseAmount), [tipBaseAmount]);
@@ -547,6 +551,14 @@ export function Screen12CheckoutBilling({
             </p>
           </div>
         )}
+
+        <CheckoutComboWalletCard
+          isDark={isDark}
+          isSettled={isSettled}
+          booking={booking}
+          resolvedWallets={resolvedWallets}
+          onSelectComboWallet={onSelectComboWallet}
+        />
 
         <CheckoutReceiptSection
           isDark={isDark}

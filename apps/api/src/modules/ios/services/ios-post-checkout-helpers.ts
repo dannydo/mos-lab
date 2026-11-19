@@ -318,6 +318,12 @@ export function buildSnapshot(params: {
     selectedComboPrice: Number(override.selectedCombo?.price || 0),
     selectedUnderComboName: override.selectedUnderCombo?.name || null,
     selectedUnderComboPrice: Number(override.selectedUnderCombo?.price || 0),
+    selectedUpperComboBalanceId: override.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: override.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(override.skipUpperCombo),
+    skipUnderCombo: Boolean(override.skipUnderCombo),
+    redeemedUpperComboName: override.comboRedemption?.comboName || null,
+    redeemedUnderComboName: null,
     todaySingleServiceWaived: override.selectedCombo
       ? override.selectedCombo.todaySingleServiceWaived !== false
       : undefined,
