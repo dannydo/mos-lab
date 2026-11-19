@@ -522,3 +522,44 @@ export async function syncIosStepWithLegacyPhp(
     };
   }
 }
+
+export function applyStepSyncResultToOverride(
+  nextOverride: BookingOverrideRecord,
+  stepSync: SyncIosStepResult
+): BookingOverrideRecord {
+  const hasRoundSyncPatch = Boolean(
+    stepSync.lastLegacyProgressState ||
+    stepSync.lastLegacyUpperState ||
+    stepSync.lastLegacyUnderState ||
+    stepSync.lastLegacyUpperPhotoSigs ||
+    stepSync.lastLegacyUnderPhotoSigs
+  );
+  const enriched: BookingOverrideRecord = {
+    ...nextOverride,
+    legacyStepSyncStatus: stepSync.status,
+    ...(stepSync.legacyOrderState ? { legacySyncedOrderState: stepSync.legacyOrderState } : {}),
+    ...(stepSync.synced ? { legacyStepSyncedAt: new Date().toISOString() } : {}),
+    ...(hasRoundSyncPatch && nextOverride.progress
+      ? {
+          progress: {
+            ...nextOverride.progress,
+            ...(stepSync.lastLegacyProgressState ? { lastLegacyProgressState: stepSync.lastLegacyProgressState } : {}),
+            ...(stepSync.lastLegacyUpperState ? { lastLegacyUpperState: stepSync.lastLegacyUpperState } : {}),
+            ...(stepSync.lastLegacyUnderState ? { lastLegacyUnderState: stepSync.lastLegacyUnderState } : {}),
+            ...(stepSync.lastLegacyUpperPhotoSigs
+              ? { lastLegacyUpperPhotoSigs: stepSync.lastLegacyUpperPhotoSigs }
+              : {}),
+            ...(stepSync.lastLegacyUnderPhotoSigs
+              ? { lastLegacyUnderPhotoSigs: stepSync.lastLegacyUnderPhotoSigs }
+              : {}),
+          },
+        }
+      : {}),
+  };
+  if (stepSync.warning) {
+    enriched.legacyStepSyncWarning = stepSync.warning;
+  } else {
+    delete enriched.legacyStepSyncWarning;
+  }
+  return enriched;
+}

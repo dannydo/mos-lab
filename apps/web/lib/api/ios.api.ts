@@ -11,6 +11,8 @@ import type {
   IosAdminComboExpiryActionPayload,
   IosAdminComboExpiryActionResponse,
   IosCustomerHistoryResponse,
+  IosCreateCustomerNotePayload,
+  IosCreateCustomerNoteResponse,
   IosScanProductRequest,
   IosScanProductResponse,
   IosCustomerLookupCandidate,
@@ -242,6 +244,19 @@ export const iosApi = {
     ): Promise<IosCustomerHistoryResponse> {
       const res = await api.get<IosCustomerHistoryResponse>(`/ios/customers/${customerId}/history`, {
         params,
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
+      return res.data;
+    },
+
+    async createCustomerNote(
+      customerId: number,
+      payload: IosCreateCustomerNotePayload,
+      options?: ApiRequestOptions
+    ): Promise<IosCreateCustomerNoteResponse> {
+      const res = await api.post<IosCreateCustomerNoteResponse>(`/ios/customers/${customerId}/notes`, payload, {
         signal: options?.signal,
         priority: options?.priority,
         timeout: options?.timeout,

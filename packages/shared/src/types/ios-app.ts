@@ -444,6 +444,7 @@ export interface IosBookingItem {
   bookingDateYmd?: string;
   lastVisitDate?: string;
   lashHistory?: LashHistoryItem[];
+  cvlNotes?: IosCustomerNoteItem[];
   isSimulationBooking?: boolean;
   isSimulationDraftBooking?: boolean;
   simulationAttemptCount?: number;
@@ -1567,7 +1568,43 @@ export function formatIosPaymentMethodLabel(params: {
   return 'Chuyển khoản QR (Bank)';
 }
 
-export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS';
+export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS' | 'NOTES';
+
+export type IosCustomerNoteSource = 'CVL' | 'CRM';
+
+export interface IosCustomerNoteItem {
+  id: number;
+  customerId: number;
+  note: string;
+  noteFieldKey: string;
+  source: IosCustomerNoteSource;
+  isSticky: boolean;
+  isIssue?: boolean;
+  dateCreated: string;
+  dateDisplay: string;
+  timeDisplay: string;
+  daysAgoLabel: string;
+  staffId?: number;
+  staffName: string;
+  staffAvatar?: string | null;
+  branchName?: string | null;
+  orderId?: number | null;
+  orderNumber?: string | null;
+}
+
+export interface IosCreateCustomerNotePayload {
+  note: string;
+  tags?: string[];
+  isSticky?: boolean;
+  bookingId?: number;
+  simulationMode?: boolean;
+}
+
+export interface IosCreateCustomerNoteResponse {
+  success: boolean;
+  note?: IosCustomerNoteItem;
+  error?: string;
+}
 
 export interface IosCustomerHistoryLashSpec {
   serviceName?: string;
@@ -1670,5 +1707,6 @@ export interface IosCustomerHistoryResponse {
   payments: IosCustomerHistoryVisitItem[];
   fixVisits: IosCustomerHistoryVisitItem[];
   diamondTransactions: IosCustomerDiamondTxnItem[];
+  notes?: IosCustomerNoteItem[];
   error?: string;
 }

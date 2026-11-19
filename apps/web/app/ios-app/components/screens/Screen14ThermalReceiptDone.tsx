@@ -24,6 +24,7 @@ import {
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
 import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
+import { PostCheckoutCvlNoteCard } from './post-checkout/PostCheckoutCvlNoteCard';
 import { PostCheckoutComboSheet } from './post-checkout/PostCheckoutComboSheet';
 import {
   PostCheckoutAuditTimeline,
@@ -646,6 +647,13 @@ export function Screen14ThermalReceiptDone({
         )}
       </div>
 
+      <PostCheckoutCvlNoteCard
+        booking={booking}
+        isDark={isDark}
+        showStaffRewards={showStaffRewards}
+        isSimulationMode={isSimulationMode}
+        onNoteCreated={() => void onRefreshDb?.()}
+      />
       <PostCheckoutAuditTimeline
         booking={booking}
         isDark={isDark}

@@ -445,6 +445,7 @@ export function mapLiveOrdersToBookings(params: {
         underMinkComboStatus: customerContext.underMinkComboMap.get(customerId),
         comboWallets: customerContext.comboWalletsMap?.get(customerId) || [],
         lashHistory: customerHistory,
+        cvlNotes: customerContext.cvlNotesMap?.get(customerId) || [],
         selectedCombo,
         selectedUnderCombo,
         comboRedemption,

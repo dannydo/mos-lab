@@ -1,14 +1,17 @@
 'use client';
 
 import React from 'react';
+import type { IosCustomerNoteItem } from '@mos-lab/shared';
 import { FileText, ShieldCheck, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
 import { CvFeather2Badge } from '../../ui-kit/CvFeatherLabels';
+import { CvlCustomerNotesBanner } from '../../ui-kit/CvlCustomerNotesBanner';
 import type { ActiveActorProfile } from '../../../state/useIosAppState';
 import type { LashPricingAndCvPointResult } from '../LashMaterialConstraintMatrix';
 
 interface ConsultationNotesAndFooterPanelProps {
   isDark: boolean;
   actor?: ActiveActorProfile;
+  cvlNotes?: IosCustomerNoteItem[];
   notes: string;
   setNotes: (notes: string) => void;
   mustCompleteNaturalLashBeforeProceeding: boolean;
@@ -42,6 +45,7 @@ interface ConsultationNotesAndFooterPanelProps {
 export function ConsultationNotesAndFooterPanel({
   isDark,
   actor,
+  cvlNotes,
   notes,
   setNotes,
   mustCompleteNaturalLashBeforeProceeding,
@@ -73,6 +77,8 @@ export function ConsultationNotesAndFooterPanel({
 }: ConsultationNotesAndFooterPanelProps) {
   return (
     <>
+      <CvlCustomerNotesBanner notes={cvlNotes} isDark={isDark} compact maxItems={2} />
+
       {/* Ghi Chú Kỹ Thuật & Cam Kết Với Khách */}
       <div>
         <div

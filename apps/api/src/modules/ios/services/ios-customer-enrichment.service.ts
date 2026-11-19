@@ -5,10 +5,12 @@ import {
   getVietnamDateYmd,
   IosBookingItem,
   IosCustomerComboWalletItem,
+  IosCustomerNoteItem,
   LashHistoryItem,
   matchComboCategoryAndVolumeFromBooking,
 } from '@mos-lab/shared';
 import { attachLashHistoryProgressPhotos } from './ios-progress-sync.helper.js';
+import { listIosCustomerCvlNotesBatch } from './ios-customer-notes.service.js';
 
 export interface LastVisitSpecSummary {
   serviceKey?: string;
@@ -26,6 +28,7 @@ export interface IosCustomerEnrichmentContext {
   diamondBalanceMap: Map<number, number>;
   lashHistoryMap: Map<number, LashHistoryItem[]>;
   lastVisitSpecsMap: Map<number, LastVisitSpecSummary>;
+  cvlNotesMap: Map<number, IosCustomerNoteItem[]>;
 }
 
 export function createEmptyCustomerEnrichmentContext(): IosCustomerEnrichmentContext {
@@ -36,6 +39,7 @@ export function createEmptyCustomerEnrichmentContext(): IosCustomerEnrichmentCon
     diamondBalanceMap: new Map(),
     lashHistoryMap: new Map(),
     lastVisitSpecsMap: new Map(),
+    cvlNotesMap: new Map(),
   };
 }
 
@@ -399,12 +403,14 @@ export async function fetchCustomerEnrichmentContext(
       customerIds
     );
 
-    const [[historyRows], [balanceRows], [underBalanceRows], [diamondRows]] = await Promise.all([
+    const [[historyRows], [balanceRows], [underBalanceRows], [diamondRows], cvlNotesMap] = await Promise.all([
       historyPromise,
       balancePromise,
       underBalancePromise,
       diamondPromise,
+      listIosCustomerCvlNotesBatch(pool, customerIds),
     ]);
+    ctx.cvlNotesMap = cvlNotesMap;
 
     for (const dr of diamondRows) {
       ctx.diamondBalanceMap.set(Number(dr.user_id), Number(dr.amount || 0));

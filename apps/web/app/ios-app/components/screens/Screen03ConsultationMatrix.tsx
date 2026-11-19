@@ -293,6 +293,7 @@ export function Screen03ConsultationMatrix({
         <ConsultationNotesAndFooterPanel
           isDark={isDark}
           actor={actor}
+          cvlNotes={booking?.cvlNotes}
           showStaffRewards={design.showStaffRewards}
           notes={diagnostic.notes}
           setNotes={diagnostic.setNotes}

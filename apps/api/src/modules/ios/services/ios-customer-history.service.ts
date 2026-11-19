@@ -14,6 +14,8 @@ import {
   mapOrderStateDisplay,
 } from './ios-customer-history.mapper.js';
 import { fetchOrderLashPhotosAndSpecsBatch, OverrideBatchReader } from './ios-customer-history-lashes.helper.js';
+import { evaluateCvlCustomerNoteScope, listIosCustomerAllNotes } from './ios-customer-notes.service.js';
+import type { CrmConfigStoreAdapter } from './ios-overrides.service.js';
 
 export { formatDaysAgoLabel, mapOrderStateDisplay };
 
@@ -26,56 +28,12 @@ export interface CustomerHistoryQueryOptions {
 export interface CustomerHistoryServiceDeps {
   getPool?: () => mysql.Pool;
   overrideRepo?: OverrideBatchReader;
+  simStore?: CrmConfigStoreAdapter;
 }
 
 export interface CustomerHistoryServiceResult {
   statusCode: number;
   payload: IosCustomerHistoryResponse;
-}
-
-function checkCvlCustomerHistoryScope(params: {
-  actorStaffId: number;
-  requestedBookingId?: number;
-  isSim?: boolean;
-  orderRows: mysql.RowDataPacket[];
-  serviceRows: mysql.RowDataPacket[];
-}): boolean {
-  const { actorStaffId, requestedBookingId, isSim, orderRows, serviceRows } = params;
-  const hasStaffTouch = (row: mysql.RowDataPacket) =>
-    Number(row.assigned_staff_id || 0) === actorStaffId ||
-    Number(row.check_in_staff_id || 0) === actorStaffId ||
-    Number(row.check_out_staff_id || 0) === actorStaffId;
-
-  if (requestedBookingId && requestedBookingId > 0) {
-    const targetOrder = orderRows.find((r) => Number(r.order_id) === requestedBookingId);
-    const targetServices = serviceRows.filter((s) => Number(s.order_id) === requestedBookingId);
-    if (targetOrder) {
-      const state = String(targetOrder.order_state || '').toLowerCase();
-      const assignedOnOrder = Number(targetOrder.order_assigned_staff_id || 0);
-      const assignedOnService = targetServices.some((s) => Number(s.assigned_staff_id || 0) > 0);
-      const touchedByActor = assignedOnOrder === actorStaffId || targetServices.some(hasStaffTouch);
-      const isUnassignedActive =
-        assignedOnOrder === 0 &&
-        !assignedOnService &&
-        (state === 'new' || state === 'confirmed' || state === 'checkin');
-      return touchedByActor || isUnassignedActive;
-    }
-    return Boolean(isSim);
-  }
-
-  const touchedBefore =
-    orderRows.some((r) => Number(r.order_assigned_staff_id || 0) === actorStaffId) || serviceRows.some(hasStaffTouch);
-
-  const hasUnassignedActive = orderRows.some((r) => {
-    const oid = Number(r.order_id);
-    const state = String(r.order_state || '').toLowerCase();
-    if (state !== 'new' && state !== 'confirmed' && state !== 'checkin') return false;
-    const orderAssigned = Number(r.order_assigned_staff_id || 0);
-    const svcAssigned = serviceRows.some((s) => Number(s.order_id) === oid && Number(s.assigned_staff_id || 0) > 0);
-    return orderAssigned === 0 && !svcAssigned;
-  });
-
-  return touchedBefore || hasUnassignedActive;
 }
 
 export async function getIosCustomerHistory(
@@ -397,7 +355,7 @@ export async function getIosCustomerHistory(
   }
 
   if (isCvlStrict) {
-    const isAllowed = checkCvlCustomerHistoryScope({
+    const isAllowed = evaluateCvlCustomerNoteScope({
       actorStaffId: Number(authUser.legacyStaffId || 0),
       requestedBookingId: options?.bookingId ? Number(options.bookingId) : undefined,
       isSim: options?.sim,
@@ -415,12 +373,19 @@ export async function getIosCustomerHistory(
     }
   }
 
-  const lashHydrationByOrder = await fetchOrderLashPhotosAndSpecsBatch(
-    pool,
-    orderIds,
-    mergedServiceRows,
-    deps?.overrideRepo
-  );
+  const [lashHydrationByOrder, notes] = await Promise.all([
+    fetchOrderLashPhotosAndSpecsBatch(pool, orderIds, mergedServiceRows, deps?.overrideRepo),
+    listIosCustomerAllNotes(
+      pool,
+      customerId,
+      {
+        sim: options?.sim,
+        actorStaffId: Number(authUser.legacyStaffId || authUser.id || 0),
+        now,
+      },
+      { simStore: deps?.simStore }
+    ),
+  ]);
 
   return {
     statusCode: 200,
@@ -437,6 +402,7 @@ export async function getIosCustomerHistory(
       productRows: productResult[0],
       diamondTxnRows: diamondTxnResult[0],
       lashHydrationByOrder,
+      notes,
       now,
     }),
   };
