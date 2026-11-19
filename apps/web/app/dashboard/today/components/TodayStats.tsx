@@ -9,6 +9,7 @@ import { BookingData, ComingClientData, BranchDetail } from '../hooks/useTodayDa
 import { formatVND, formatCompactVND } from '../../../../lib/format-utils';
 import { calculateFractionToday, type ReportPeriodComparison } from '@mos-lab/shared';
 import PeriodComparison from '../../../../components/ui/PeriodComparison';
+import { useTodaySandbox } from '../context/SandboxModeContext';
 
 dayjs.extend(isoWeek);
 
@@ -160,6 +161,7 @@ export default function TodayStats({
   dateRangeMode = 'day',
   selectedDate,
 }: TodayStatsProps) {
+  const sandbox = useTodaySandbox();
   const getItemPrice = React.useCallback(
     (item: SafeAny) => {
       const rawPrice =
@@ -430,10 +432,23 @@ export default function TodayStats({
             }}
           >
             <div>
-              <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
-                <CalendarOutlined style={{ color: '#52c41a', marginRight: '6px' }} />
-                Booking Tạo Hôm Nay
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                  <CalendarOutlined style={{ color: '#52c41a', marginRight: '6px' }} />
+                  Booking Tạo Hôm Nay
+                </span>
+                {sandbox.isSandbox && (
+                  <span
+                    className={
+                      sandbox.mode === 'training'
+                        ? 'px-1.5 py-0.2 rounded text-[11px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                        : 'px-1.5 py-0.2 rounded text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                    }
+                  >
+                    {sandbox.mode === 'training' ? '🧪 Training Mode' : '💎 Sales Mode'}
+                  </span>
+                )}
+              </div>
               <PeriodComparison
                 comparison={comparison}
                 currentValue={allBookings.length}
