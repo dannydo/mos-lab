@@ -105,6 +105,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     sendMessage,
     sendThreadReply,
     updateSpaceConfig,
+    togglePinConversation,
+    pinnedConvIds,
   } = useMosChat();
 
   const resolvedFontStaffId =
@@ -1216,6 +1218,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         conversation={activeConversation}
         onClose={() => setSpaceConfigModalOpen(false)}
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
+        isPinned={activeConversation ? Boolean(pinnedConvIds?.has(activeConversation.id)) : false}
+        togglePinConversation={togglePinConversation}
         onUpdated={(updated) => {
           if (updateSpaceConfig && activeConversation) {
             void updateSpaceConfig(activeConversation.id, {

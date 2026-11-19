@@ -36,14 +36,18 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
   const [emoji, setEmoji] = useState('');
   const [color, setColor] = useState('#1a73e8');
   const [saving, setSaving] = useState(false);
+  const [localPinned, setLocalPinned] = useState<boolean | null>(null);
 
-  const isPinned = propIsPinned !== undefined
-    ? propIsPinned
-    : conversation
-      ? Boolean(pinnedConvIds?.has(conversation.id))
-      : false;
+  const isPinned = localPinned !== null
+    ? localPinned
+    : propIsPinned !== undefined
+      ? propIsPinned
+      : conversation
+        ? Boolean(pinnedConvIds?.has(conversation.id))
+        : false;
 
   useEffect(() => {
+    setLocalPinned(null);
     if (conversation && open) {
       setName(conversation.name || '');
       setSubtitle(conversation.subtitle || '');
@@ -202,8 +206,15 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
           </div>
           <button
             type="button"
-            onClick={() => {
-              if (conversation) void togglePin(conversation.id, !isPinned);
+            onClick={async () => {
+              if (!conversation) return;
+              const nextPinned = !isPinned;
+              setLocalPinned(nextPinned);
+              try {
+                await togglePin(conversation.id, nextPinned);
+              } catch {
+                setLocalPinned(!nextPinned);
+              }
             }}
             className={`px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
               isPinned

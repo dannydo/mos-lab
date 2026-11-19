@@ -4327,8 +4327,31 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const state = await loadChatState(fastify);
         const { conversations, userPrefsByUserKey } = state;
         const staffDirectory = await loadStaffDirectoryCached(fastify);
-        const targetConv = conversations.find((c) => c.id === convId);
-        const isSpecialPersonalConv = convId === 'ai-copilot-mos' || convId.startsWith('dm-self-');
+        let targetConv = conversations.find((c) => c.id === convId);
+        if (!targetConv && (fastify as SafeAny)?.prisma?.crm?.crmChatConversation) {
+          try {
+            const dbConv = await (fastify as SafeAny).prisma.crm.crmChatConversation.findUnique({
+              where: { id: convId },
+            });
+            if (dbConv) {
+              targetConv = {
+                id: dbConv.id,
+                type: dbConv.type as SafeAny,
+                name: dbConv.name,
+                color: dbConv.color,
+                subtitle: dbConv.subtitle || undefined,
+                unreadCount: 0,
+                updatedAt: dbConv.updatedAt ? new Date(dbConv.updatedAt).toISOString() : new Date().toISOString(),
+                messages: [],
+              };
+            }
+          } catch (_) {}
+        }
+        const isSpecialPersonalConv =
+          convId === 'ai-copilot-mos' ||
+          convId.startsWith('dm-self-') ||
+          convId.startsWith('space-') ||
+          convId.startsWith('dm-');
         if (!targetConv && !isSpecialPersonalConv) {
           return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
         }
@@ -4343,7 +4366,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           ? (currentPrefs.hiddenIds || []).filter((id) => id !== convId)
           : currentPrefs.hiddenIds || [];
 
-        const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
+        const isSpace = targetConv?.type === 'space' || convId.startsWith('space-');
+        const secKey = isSpace ? 'spaces' : 'dm';
         const nextConvOrder: Record<string, string[]> = { ...(currentPrefs.conversationOrder || {}) };
         if (shouldPin) {
           const curArr = nextConvOrder[secKey] || [];

@@ -3590,10 +3590,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           ? `#${targetConv.name}`
           : targetConv.name
         : 'mục này';
-      let willPin = false;
+      const isCurrentlyPinned = (userPrefs.pinnedIds || []).includes(convId);
+      const willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
+
       updateUserSidebarPrefs((prev) => {
-        const exists = (prev.pinnedIds || []).includes(convId);
-        willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !exists;
         const nextPinned = willPin
           ? [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)]
           : (prev.pinnedIds || []).filter((id) => id !== convId);
@@ -3630,7 +3630,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       // Tránh race condition khi toggle API đến sau updateUserPrefs (MOS-BUG-238)
       apiClient.chat.togglePinConversation(convId, willPin).catch(() => {});
     },
-    [allUserConversations, updateUserSidebarPrefs, notifyLivePeers, antdMessage]
+    [allUserConversations, userPrefs.pinnedIds, updateUserSidebarPrefs, notifyLivePeers, antdMessage]
   );
 
   const toggleMuteConversation = useCallback(

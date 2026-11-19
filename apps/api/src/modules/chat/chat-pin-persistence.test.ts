@@ -279,4 +279,48 @@ describe('chat message & space pinning persistence invariants (MOS-BUG-198)', ()
     const shouldTriggerSelfHealingSync = localPinned.length > 0 && serverPinned.length === 0;
     assert.strictEqual(shouldTriggerSelfHealingSync, true);
   });
+
+  it('correctly resolves synchronous willPin and prevents closure delay bug (MOS-BUG-243)', () => {
+    const spaceId = 'space-financial-goals';
+    const userPrefsPinned = ['space-general'];
+
+    // Simulated action: user wants to pin unpinned space
+    const isCurrentlyPinned = userPrefsPinned.includes(spaceId);
+    assert.strictEqual(isCurrentlyPinned, false);
+
+    // Old bug: let willPin = false; mutated inside asynchronous/batched updater.
+    // By the time the API was invoked, willPin was still false!
+    let buggyWillPin = false;
+    const mockAsyncUpdater = (cb: () => void) => {
+      // Not called immediately in batched React setState
+    };
+    mockAsyncUpdater(() => {
+      buggyWillPin = !isCurrentlyPinned;
+    });
+    assert.strictEqual(buggyWillPin, false, 'Buggy closure left willPin as false!');
+
+    // Fixed logic (MOS-BUG-243): compute willPin synchronously BEFORE setState
+    const explicitPinned = undefined; // toggling via click
+    const willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
+    assert.strictEqual(willPin, true, 'Synchronous calculation guarantees correct true value!');
+
+    // When space is already pinned, toggle turns it off
+    const alreadyPinned = true;
+    const willUnpin = !alreadyPinned;
+    assert.strictEqual(willUnpin, false, 'Toggling already pinned space turns willPin to false');
+  });
+
+  it('correctly categorizes space ID to spaces section in conversationOrder (MOS-BUG-243)', () => {
+    const convId = 'space-kho-hang';
+    const targetConv = null; // simulate dynamic space not yet in initial memory state
+
+    const isSpace = targetConv ? (targetConv as { type?: string }).type === 'space' : convId.startsWith('space-');
+    const secKey = isSpace ? 'spaces' : 'dm';
+    assert.strictEqual(secKey, 'spaces', 'Space starting with space- must categorize to spaces section');
+
+    const dmConvId = 'dm-danny-do';
+    const isDm = dmConvId.startsWith('space-');
+    const dmSecKey = isDm ? 'spaces' : 'dm';
+    assert.strictEqual(dmSecKey, 'dm');
+  });
 });

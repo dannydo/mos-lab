@@ -190,6 +190,9 @@ describe('Space Configuration & Emoji Selection (MOS-BUG-140)', () => {
       fireEvent.click(pinBtn);
       expect(handleTogglePin).toHaveBeenCalledWith('space-test-1', true);
 
+      // Optimistic UI update (MOS-BUG-243): button immediately shows 'Đã ghim'
+      expect(screen.getByRole('button', { name: 'Đã ghim' })).toBeInTheDocument();
+
       // Rerender with isPinned={true}
       rerender(
         <MosChatSpaceConfigModal

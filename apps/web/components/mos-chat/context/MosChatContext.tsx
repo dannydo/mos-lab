@@ -685,22 +685,24 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   );
 
   // Toggle pin conversation
-  const togglePinConversation = useCallback(async (convId: string, explicitPinned?: boolean) => {
-    let willPin = false;
-    setPinnedConvIds((prev) => {
-      const next = new Set(prev);
-      const isCurrentlyPinned = next.has(convId);
-      willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
-      if (willPin) next.add(convId);
-      else next.delete(convId);
-      return next;
-    });
-    try {
-      await apiClient.chat.togglePinConversation(convId, willPin);
-    } catch {
-      // ignore
-    }
-  }, []);
+  const togglePinConversation = useCallback(
+    async (convId: string, explicitPinned?: boolean) => {
+      const isCurrentlyPinned = pinnedConvIds.has(convId);
+      const willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
+      setPinnedConvIds((prev) => {
+        const next = new Set(prev);
+        if (willPin) next.add(convId);
+        else next.delete(convId);
+        return next;
+      });
+      try {
+        await apiClient.chat.togglePinConversation(convId, willPin);
+      } catch {
+        // ignore
+      }
+    },
+    [pinnedConvIds]
+  );
 
   // Start or open direct message with a staff member
   const startDirectMessage = useCallback(
