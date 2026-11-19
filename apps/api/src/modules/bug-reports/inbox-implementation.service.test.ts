@@ -2351,6 +2351,10 @@ test('extractModelTierFromLabel and stripModelTierMarker round-trip model tier m
   assert.equal(extractModelTierFromLabel(raw), 'hydrogen');
   assert.equal(stripModelTierMarker(raw), 'Chờ Antigravity tạo task/worktree');
   assert.equal(
+    extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:orchestrator_neon]'),
+    'orchestrator_neon'
+  );
+  assert.equal(
     extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:orchestrator_carbon]'),
     'orchestrator_carbon'
   );

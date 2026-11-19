@@ -20,6 +20,7 @@ export const EXECUTION_OWNER_LABELS: Record<'AG_WIN' | 'AUTO' | 'AG_MAC', string
 
 export const MODEL_TIER_LABELS: Record<InboxImplementationModelTier, string> = {
   hydrogen: '🚀 Hydrogen — Gemini 4 Hydrogen (Mặc định)',
+  orchestrator_neon: '✨ Orchestrator (Neon) — Đa tác nhân Neon (Thế hệ mới nhất)',
   orchestrator_carbon: '🎼 Orchestrator (Carbon) — Đa tác nhân Carbon (Task lớn/phức tạp)',
   orchestrator_argon: '🧠 Orchestrator (Argon) — Đa tác nhân Argon (Suy luận sâu)',
   flash: '⚡ Flash 3.8 — Gemini 3.8 Flash (Nhanh · Tiết kiệm token)',

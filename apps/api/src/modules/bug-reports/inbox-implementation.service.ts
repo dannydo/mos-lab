@@ -375,6 +375,7 @@ export function normalizeInboxModelTier(value: unknown): InboxImplementationMode
     .toLowerCase();
   if (
     normalized === 'hydrogen' ||
+    normalized === 'orchestrator_neon' ||
     normalized === 'orchestrator_carbon' ||
     normalized === 'orchestrator_argon' ||
     normalized === 'flash'
@@ -387,9 +388,10 @@ export function normalizeInboxModelTier(value: unknown): InboxImplementationMode
   return undefined;
 }
 
-const MODEL_TIER_LABEL_PATTERN = /\[model:(hydrogen|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/i;
+const MODEL_TIER_LABEL_PATTERN =
+  /\[model:(hydrogen|orchestrator_neon|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/i;
 const MODEL_TIER_LABEL_STRIP_PATTERN =
-  /\s*\[model:(?:hydrogen|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/gi;
+  /\s*\[model:(?:hydrogen|orchestrator_neon|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/gi;
 
 export function extractModelTierFromLabel(label: string | null | undefined): InboxImplementationModelTier | undefined {
   if (!label) return undefined;
