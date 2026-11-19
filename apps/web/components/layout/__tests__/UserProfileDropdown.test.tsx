@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import UserProfileDropdown from '../UserProfileDropdown';
 import { OPEN_BUG_REPORT_EVENT, setBugReportBadgeSummary } from '../../../lib/bug-diagnostics';
+import { BUG_REPORT_LAUNCHER_STORAGE_KEY } from '../../../lib/bug-report-launcher';
 
 vi.mock('../../../context/OmiCallContext', () => ({
   useOmiCall: () => ({
@@ -38,6 +39,7 @@ vi.mock('../../theme/ThemeSelector', () => ({
 
 describe('UserProfileDropdown bug report integration', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
   });
 
@@ -70,6 +72,14 @@ describe('UserProfileDropdown bug report integration', () => {
     fireEvent.click(trigger);
 
     expect(screen.queryByText('Nút phản hồi / báo lỗi')).toBeNull();
+    const floatingSwitch = screen.getByRole('switch', { name: 'Hiển thị nút phản hồi mOS' });
+    expect(floatingSwitch).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(floatingSwitch);
+    expect(floatingSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(JSON.parse(window.localStorage.getItem(BUG_REPORT_LAUNCHER_STORAGE_KEY) || '{}')).toMatchObject({
+      visible: false,
+    });
+
     const bugReportBtn = screen.getByRole('button', { name: /Báo lỗi \/ Góp ý/i });
     expect(bugReportBtn).toBeInTheDocument();
     expect(screen.getByText('2 mới')).toBeInTheDocument();
@@ -108,6 +118,7 @@ describe('UserProfileDropdown bug report integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Mở menu người dùng' }));
     expect(screen.queryByText('Báo lỗi / Góp ý')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Hiển thị nút phản hồi mOS' })).toBeNull();
   });
 
   it('hides top-right avatar trigger on mobile when hideTrigger is true and supports externalOpen with General controls', () => {
