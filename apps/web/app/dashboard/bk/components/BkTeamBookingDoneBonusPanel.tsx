@@ -14,11 +14,13 @@ import BkAvatar from './BkAvatar';
 interface BkTeamBookingDoneBonusPanelProps {
   summary: BkGameTeamBookingDoneBonusSummary;
   onOpenDetailsDrawer: (staffId?: number | null, rewardDate?: string | null) => void;
+  lastUpdatedAt?: Date | null;
 }
 
 export default function BkTeamBookingDoneBonusPanel({
   summary,
   onOpenDetailsDrawer,
+  lastUpdatedAt,
 }: BkTeamBookingDoneBonusPanelProps) {
   const defaultDayDate = useMemo(() => {
     const todayDay = summary.dailyResults.find((d) => d.isToday);
@@ -84,6 +86,17 @@ export default function BkTeamBookingDoneBonusPanel({
                     : 'Theo khung giờ Game'
                 }
               />
+              {lastUpdatedAt && (
+                <span
+                  data-testid="team-booking-done-live-indicator"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 tabular-nums"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>
+                    Live · {lastUpdatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                  </span>
+                </span>
+              )}
             </div>
             <Typography.Text type="secondary" className="text-xs block mt-0.5">
               Chốt 1 mốc Booking Team/ngày · Thưởng trên mỗi Done khách lẻ hoàn thành cùng ngày (loại trừ khách Combo) · Độc lập lương BK &amp; quỹ Team KPI.

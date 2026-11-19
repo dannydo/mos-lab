@@ -56,7 +56,15 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
   fastify.get('/kpi/bk/booking/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const payload = await BkLeaderboardService.getBookingLeaderboard(fastify, request.query as SafeAny);
+      const query = (request.query || {}) as SafeAny;
+      const shouldSkipCache = query.skipCache === true || query.skipCache === 'true';
+      if (shouldSkipCache || query.gameId) {
+        reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+      }
+      const payload = await BkLeaderboardService.getBookingLeaderboard(fastify, {
+        ...query,
+        skipCache: shouldSkipCache,
+      });
       return payload;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK booking leaderboard');
@@ -1435,6 +1443,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy Game BK.' });
       }
 
+      reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
       return reply.send(result);
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK game detail');
@@ -1483,6 +1492,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         }
 
         const summary = detail.teamBookingDoneBonusSummary || null;
+        reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         return reply.send({
           summary,
           data: summary?.records || [],

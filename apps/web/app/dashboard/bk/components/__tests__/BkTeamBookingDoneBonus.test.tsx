@@ -175,9 +175,16 @@ describe('BkTeamBookingDoneBonusPanel & BkTeamBookingDoneBonusDetailsDrawer', ()
 
   it('displays today team bookings, achieved tier, booker retail done, and switches daily history on click', () => {
     const handleOpenDrawer = vi.fn();
-    render(<BkTeamBookingDoneBonusPanel summary={mockSummary} onOpenDetailsDrawer={handleOpenDrawer} />);
+    render(
+      <BkTeamBookingDoneBonusPanel
+        summary={mockSummary}
+        onOpenDetailsDrawer={handleOpenDrawer}
+        lastUpdatedAt={new Date('2026-11-20T11:12:44+07:00')}
+      />
+    );
 
     expect(screen.getByText('Thưởng Done Khách Lẻ Theo Mốc Booking Team')).toBeInTheDocument();
+    expect(screen.getByTestId('team-booking-done-live-indicator')).toHaveTextContent(/Live/i);
     expect(screen.getByText('42 Booking')).toBeInTheDocument();
     expect(screen.getByText(/Mốc đạt: 40–49 Booking/i)).toBeInTheDocument();
     expect(screen.getAllByText('7.000 đ').length).toBeGreaterThan(0);

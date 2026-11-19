@@ -16,13 +16,6 @@ import { ComboRecognitionService } from '../../customers/services/combo-recognit
 const DAY_NAME_LABELS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-function formatIctDateTimeLocal(date: Date): string {
-  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
-  const datePart = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
-  const timePart = date.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
-  return `${datePart} ${timePart}`;
-}
-
 function formatIctDateLocal(date: Date): string {
   if (!(date instanceof Date) || isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -573,8 +566,10 @@ export class BkGameTeamBookingDoneBonusService {
       return null;
     }
 
-    const startIctDateTime = formatIctDateTimeLocal(game.startDate);
-    const endIctDateTime = formatIctDateTimeLocal(game.endDate);
+    // Daily bonus evaluation covers full calendar days in ICT (startDateStr..endDateStr),
+    // while effectiveWindow narrows booking creation hours within each day.
+    const dayStartIctDateTime = `${startDateStr} 00:00:00`;
+    const dayEndIctDateTime = `${endDateStr} 23:59:59`;
     const allowedChannels = parseChannelsLocal(game.allowedBookingChannels);
     const channelFilter = buildChannelFilterLocal(allowedChannels, 'o.booking_channels');
     const teamKpiConfig = parseTeamKpiConfigLocal(game.teamKpiConfig);
@@ -628,8 +623,8 @@ export class BkGameTeamBookingDoneBonusService {
             COUNT(DISTINCT o.id) AS teamBookings
           FROM \`order\` o
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.date_created >= '${startIctDateTime}'
-            AND o.date_created <= '${endIctDateTime}'
+            AND o.date_created >= '${dayStartIctDateTime}'
+            AND o.date_created <= '${dayEndIctDateTime}'
             ${timeWindowFilter}
             AND o.order_state != 'Cancelled'
             ${channelFilter}
@@ -647,11 +642,11 @@ export class BkGameTeamBookingDoneBonusService {
           LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
           LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.order_state = 'Completed'
+            AND o.order_state IN ('Completed', 'CheckOut')
             AND (
-              (ro.actual_booking_date_start >= '${startIctDateTime}' AND ro.actual_booking_date_start <= '${endIctDateTime}')
-              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startIctDateTime}' AND o.booking_date_start <= '${endIctDateTime}')
-              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start IS NULL AND o.date_created >= '${startIctDateTime}' AND o.date_created <= '${endIctDateTime}')
+              (ro.actual_booking_date_start >= '${dayStartIctDateTime}' AND ro.actual_booking_date_start <= '${dayEndIctDateTime}')
+              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${dayStartIctDateTime}' AND o.booking_date_start <= '${dayEndIctDateTime}')
+              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start IS NULL AND o.date_created >= '${dayStartIctDateTime}' AND o.date_created <= '${dayEndIctDateTime}')
             )
             ${channelFilter}
           ORDER BY completedAt DESC, o.id DESC

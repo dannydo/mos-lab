@@ -237,7 +237,7 @@ test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary queries legacy DB,
           if (sql.includes('COUNT(DISTINCT o.id) AS teamBookings')) {
             return [{ bookingDate: '2026-11-19', teamBookings: 35 }];
           }
-          if (sql.includes("o.order_state = 'Completed'")) {
+          if (sql.includes("o.order_state IN ('Completed', 'CheckOut')")) {
             return [
               {
                 orderId: 5001,
@@ -364,6 +364,66 @@ test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary queries legacy DB,
   assert.ok(bookingSql.includes("TIME(o.date_created) >= '08:00:00'"));
   assert.ok(bookingSql.includes("TIME(o.date_created) <= '17:00:59'"));
   assert.ok(bookingSql.includes("o.order_state != 'Cancelled'"));
+
+  const doneSql = queriesExecuted.find((q) => q.includes("o.order_state IN ('Completed', 'CheckOut')"))!;
+  assert.ok(doneSql.includes("2026-11-19 00:00:00"));
+  assert.ok(doneSql.includes("2026-11-19 23:59:59"));
+});
+
+test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary uses full ICT day bounds even when game timestamps are mid-day', async () => {
+  ComboRecognitionService.clearComboLiveCache();
+  const queriesExecuted: string[] = [];
+
+  const mockFastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          queriesExecuted.push(sql);
+          return [];
+        },
+      },
+      crm: {
+        crmBkGameTeamBookingDoneBonus: {
+          findMany: async () => [],
+        },
+      },
+    },
+    log: { info: () => {}, warn: () => {} },
+  } as unknown as FastifyInstance;
+
+  await BkGameTeamBookingDoneBonusService.syncAndComputeSummary(
+    mockFastify,
+    {
+      id: 89,
+      gameType: 'INDIVIDUAL',
+      status: 'ACTIVE',
+      startDate: new Date('2026-11-19T04:15:00.000Z'), // 11:15:00 ICT (mid-day)
+      endDate: new Date('2026-11-22T17:00:00.000Z'), // 2026-11-23 00:00:00 ICT (midnight)
+      teamBookingDoneBonusConfig: JSON.stringify({
+        enabled: true,
+        tiers: DEFAULT_BK_TEAM_BOOKING_DONE_TIERS,
+      }),
+    },
+    [
+      {
+        id: 1,
+        gameId: 89,
+        staffId: 101,
+        staffName: 'Ngọc Điệp',
+        betAmount: 0,
+        score: 0,
+        rewardAmount: 0,
+        status: 'ACTIVE',
+      },
+    ]
+  );
+
+  const bookingSql = queriesExecuted.find((q) => q.includes('teamBookings'))!;
+  const doneSql = queriesExecuted.find((q) => q.includes("o.order_state IN ('Completed', 'CheckOut')"))!;
+  assert.ok(bookingSql.includes("o.date_created >= '2026-11-19 00:00:00'"));
+  assert.ok(bookingSql.includes("o.date_created <= '2026-11-23 23:59:59'"));
+  assert.ok(doneSql.includes("ro.actual_booking_date_start >= '2026-11-19 00:00:00'"));
+  assert.ok(doneSql.includes("ro.actual_booking_date_start <= '2026-11-23 23:59:59'"));
 });
 
 test('BkGameService.updateGame serializes teamBookingDoneBonusConfig and rejects invalid timeWindow', async () => {
