@@ -659,4 +659,89 @@ describe('mOS Chat Google Workspace Reader & Files Integration', () => {
     fireEvent.click(canvaFilterBtn);
     expect(within(filesPane).getByText(/Google Sheets, Docs & Canva \(1\)/)).toBeDefined();
   });
+
+  it('MOS-BUG-244: applies iOS safe-area insets, 44px mobile header touch targets, and z-[1700] overlay on mobile', async () => {
+    const mobileSheetPreview: MosChatGoogleWorkspacePreviewResponse = {
+      success: true,
+      kind: 'spreadsheet',
+      fileId: '1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ',
+      title: '[HR][2025] TỒN KHO VẬT TƯ',
+      accessStatus: 'PUBLIC_LINK',
+      requestedRange: 'D17',
+      parsedRange: {
+        label: 'D17',
+        anchorCell: 'D17',
+        startCol: 3,
+        endCol: 3,
+        startRow: 17,
+        endRow: 17,
+      },
+      tabs: [
+        { sheetId: 516151439, gid: '516151439', title: 'ORDER', rowCount: 40 },
+        { sheetId: 998877, gid: '998877', title: 'QUY ĐỊNH', rowCount: 1003 },
+      ],
+      activeTab: {
+        gid: '516151439',
+        title: 'ORDER',
+        totalRows: 20,
+        totalCols: 5,
+        rows: [
+          ['#', 'C', 'D', 'E', 'F'],
+          ...Array.from({ length: 16 }, (_, idx) => [`${idx + 1}`, '', 'Liquid Hand Wash', 'X1 450G', '']),
+        ],
+      },
+      serviceAccountEmail: 'wings-sheets-sa@wings-lashes.iam.gserviceaccount.com',
+      canonicalUrl: SHEETS_URL,
+      embedUrl: `${SHEETS_URL}&rm=minimal`,
+      fetchedAt: new Date().toISOString(),
+    };
+
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockResolvedValueOnce(mobileSheetPreview);
+
+    render(<MosChatGoogleWorkspaceDrawer isMobile={true} isDark={true} activeConversationId="space-kho" />);
+
+    act(() => {
+      openGoogleWorkspaceReader({
+        url: SHEETS_URL,
+        gid: '516151439',
+        range: 'D17',
+        conversationId: 'space-kho',
+        messageId: 'msg-mobile-244',
+        initialMode: 'fast',
+      });
+    });
+
+    const drawer = await screen.findByTestId('google-workspace-split-drawer');
+    expect(drawer.className).toContain('fixed inset-0');
+    expect(drawer.className).toContain('z-[1700]');
+    expect(drawer.className).toContain('h-[100dvh]');
+
+    const header = screen.getByTestId('gw-reader-header');
+    expect(header.className).not.toContain('h-[52px]');
+    expect(header.className).toContain('safe-area-inset-top');
+    expect(header.className).toContain('safe-area-inset-left');
+    expect(header.className).toContain('safe-area-inset-right');
+
+    const closeBtn = screen.getByLabelText('Đóng trình đọc tài liệu');
+    expect(closeBtn.className).toContain('min-w-[44px]');
+    expect(closeBtn.className).toContain('min-h-[44px]');
+
+    const externalLink = screen.getByLabelText('Mở trên Google');
+    expect(externalLink.className).toContain('min-w-[44px]');
+    expect(externalLink.className).toContain('min-h-[44px]');
+
+    const sheetTabs = await screen.findByTestId('gw-reader-sheet-tabs');
+    expect(sheetTabs.className).toContain('safe-area-inset-bottom');
+
+    // Mode switch still works and keeps embed viewport safe from bottom home indicator
+    fireEvent.click(within(drawer).getByRole('button', { name: /Google Trực tiếp/ }));
+    const iframe = await screen.findByTestId('gw-reader-embed-iframe');
+    expect(iframe.className).toContain('min-h-0');
+    const embedContainer = screen.getByTestId('gw-reader-embed-container');
+    expect(embedContainer.className).toContain('safe-area-inset-bottom');
+
+    // Close cleanly from mobile header [X]
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId('google-workspace-split-drawer')).toBeNull();
+  });
 });
