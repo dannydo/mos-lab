@@ -6,6 +6,7 @@ import {
   FlaskConical,
   LayoutDashboard,
   MessageSquare,
+  MessageSquareWarning,
   Rocket,
   Smartphone,
   Trophy,
@@ -23,7 +24,7 @@ import {
 } from '@mos-lab/shared';
 
 export type EcosystemAppKey = 'general' | 'chat' | 'ios';
-export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab';
+export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab' | 'feedback';
 export type EcosystemTone = 'sky' | 'emerald' | 'amber' | 'violet' | 'rose' | 'cyan';
 
 export type QuickSwitchRoleGroup = 'CV_FEATHER' | 'CC' | 'CV_STANDARD' | 'ADMIN_MANAGER' | 'OTHER';
@@ -44,7 +45,7 @@ export interface EcosystemSuiteItem {
   shortLabel?: string;
   subtitle: string;
   href: string;
-  action?: 'open-bible';
+  action?: 'open-bible' | 'open-feedback';
   icon: LucideIcon;
   tone: EcosystemTone;
   badgeCount?: number;
@@ -164,6 +165,7 @@ export const ECOSYSTEM_ICONS = {
   mission: Rocket,
   bible: BookOpenCheck,
   lab: FlaskConical,
+  feedback: MessageSquareWarning,
   today: CalendarCheck,
   ccKpi: BarChart3,
   cvIncome: Wallet,
@@ -279,6 +281,7 @@ export function buildEcosystemNavModel(params: {
   teamCodes?: readonly string[] | null;
   unreadChatCount?: number;
   missionBadgeCount?: number;
+  bugAttentionCount?: number;
   savedAdminRole?: string | null;
   menuVisibility?: Record<string, boolean> | null;
 }): {
@@ -290,7 +293,15 @@ export function buildEcosystemNavModel(params: {
   suiteApps: EcosystemSuiteItem[];
   quickLinks: EcosystemQuickLink[];
 } {
-  const { userRole, teamCodes, unreadChatCount = 0, missionBadgeCount = 0, savedAdminRole, menuVisibility } = params;
+  const {
+    userRole,
+    teamCodes,
+    unreadChatCount = 0,
+    missionBadgeCount = 0,
+    bugAttentionCount = 0,
+    savedAdminRole,
+    menuVisibility,
+  } = params;
   const roleGroup = resolveQuickSwitchRoleGroup(userRole, teamCodes);
   const canAccessIos = canAccessIosConsultationApp(userRole, teamCodes);
   const isCcTeamMember = hasCcTeamMembership(teamCodes);
@@ -393,6 +404,21 @@ export function buildEcosystemNavModel(params: {
       href: LAB_ROUTE_BY_KEY[grantedLabKey] || '/dashboard/labs',
       icon: ECOSYSTEM_ICONS.lab,
       tone: 'cyan',
+    });
+  }
+
+  // Báo lỗi & Góp ý: Available to all non-CV staff
+  if (!isCv) {
+    suiteApps.push({
+      key: 'feedback',
+      label: 'Báo lỗi & Góp ý',
+      shortLabel: 'Góp ý',
+      subtitle: 'Phản hồi · Theo dõi xử lý',
+      href: '#bug-report',
+      action: 'open-feedback',
+      icon: ECOSYSTEM_ICONS.feedback,
+      tone: 'amber',
+      badgeCount: bugAttentionCount > 0 ? bugAttentionCount : undefined,
     });
   }
 

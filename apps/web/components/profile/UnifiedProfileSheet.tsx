@@ -41,7 +41,6 @@ import {
   openBugReport,
   subscribeBugReportBadgeSummary,
 } from '../../lib/bug-diagnostics';
-import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { ProfileOmiCallSection } from './ProfileOmiCallSection';
 import type { ActiveActorProfile, IosBranchConfig, IosUserRole } from '../../app/ios-app/state/useIosAppState';
 
@@ -176,11 +175,6 @@ export const UnifiedProfileSheet: React.FC<UnifiedProfileSheetProps> = ({
     getBugReportBadgeServerSnapshot
   );
   const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
-  const {
-    preferences: bugReportLauncherPreferences,
-    ready: bugReportLauncherReady,
-    setVisible: setBugReportLauncherVisible,
-  } = useBugReportLauncherPreferences();
 
   const fontStaffId = Number(actor?.staffId || effectiveUser?.legacyStaffId || effectiveUser?.id || 0) || undefined;
   const branchText = currentBranch?.name || effectiveUser?.branchName || 'Chi nhánh Đề Thám';
@@ -802,37 +796,6 @@ export const UnifiedProfileSheet: React.FC<UnifiedProfileSheetProps> = ({
                   <ChevronRight className="w-4 h-4 text-neutral-400" />
                 </span>
               </button>
-            )}
-
-            {appContext === 'general' && !isCv && (
-              <div
-                className={`w-full p-2.5 rounded-2xl border flex items-center justify-between gap-2 transition-colors ${
-                  isDark
-                    ? 'bg-neutral-900/80 border-neutral-800/80 text-white'
-                    : 'bg-neutral-50 border-neutral-200/80 text-neutral-900'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
-                    <MessageSquareWarning className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-                      Nút phản hồi nổi màn hình
-                    </div>
-                    <div className="text-[10.5px] text-neutral-400 truncate">
-                      Kéo đến vị trí thuận tiện để mở nhanh mọi nơi
-                    </div>
-                  </div>
-                </div>
-                <Switch
-                  size="small"
-                  checked={bugReportLauncherReady && bugReportLauncherPreferences.visible}
-                  disabled={!bugReportLauncherReady}
-                  aria-label="Hiển thị nút phản hồi mOS"
-                  onChange={setBugReportLauncherVisible}
-                />
-              </div>
             )}
 
             {/* Shared Core: Đăng xuất tài khoản */}
