@@ -962,7 +962,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               className={
                 activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
                   ? 'lg:col-span-7 flex flex-col'
-                  : 'lg:col-span-8 flex flex-col'
+                  : hasTeamBookingDoneBonus
+                    ? 'lg:col-span-12 flex flex-col'
+                    : 'lg:col-span-8 flex flex-col'
               }
             >
               <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
@@ -1084,7 +1086,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               </div>
             </div>
 
-            {/* SIDE PANEL: TEAM BATTLE OR CHALLENGE OVERVIEW */}
+            {/* SIDE PANEL: TEAM BATTLE OR CHALLENGE OVERVIEW (Hidden when Team-Booking Done Bonus replaces legacy challenge card) */}
+            {(activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2) ||
+            !hasTeamBookingDoneBonus ? (
             <div
               className={
                 activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
@@ -1236,6 +1240,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 </div>
               )}
             </div>
+            ) : null}
           </div>
           )}
 
