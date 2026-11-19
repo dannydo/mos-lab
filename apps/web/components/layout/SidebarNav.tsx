@@ -35,6 +35,7 @@ import {
 } from '../../config/sidebar.config';
 import { buildEcosystemNavModel, isLabPathname, isMissionPathname, isReportPathname } from '../../config/ecosystem-nav';
 import { openMosBible } from '../../lib/mos-bible-launcher';
+import { openBugReport } from '../../lib/bug-diagnostics';
 import { AppIcon } from '../ui/AppIcon';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { usePinnedLinks } from '../../hooks/usePinnedLinks';
@@ -188,9 +189,14 @@ function SidebarNavComponent({
     [userRole, teamCodes, unreadChatCount, bugInboxApprovalCount, menuVisibility]
   );
 
-  const handleEcosystemNavigate = (key: string, href: string, action?: 'open-bible') => {
+  const handleEcosystemNavigate = (key: string, href: string, action?: 'open-bible' | 'open-feedback') => {
     if (action === 'open-bible') {
       openMosBible();
+      onNavigate?.();
+      return;
+    }
+    if (action === 'open-feedback') {
+      openBugReport(undefined, { preferHistoryIfPending: true });
       onNavigate?.();
       return;
     }

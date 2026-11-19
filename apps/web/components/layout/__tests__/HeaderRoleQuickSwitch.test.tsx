@@ -82,9 +82,10 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.getByText('mOS General')).toBeDefined();
     expect(screen.getByText('mOS Chat')).toBeDefined();
     expect(screen.getByText('iOS-App')).toBeDefined();
-    // Suite row for un-granted Manager+CC shows mOS Reports (CC KPI) & mOS Bible, hides Zero-Trust Mission & Lab
+    // Suite row for un-granted Manager+CC shows mOS Reports (CC KPI), mOS Bible & Báo lỗi, hides Zero-Trust Mission & Lab
     expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
 
@@ -129,6 +130,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-suite="mission"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
     expect(screen.getByText('4')).toBeDefined();
 
     fireEvent.click(panel.querySelector('[data-launcher-suite="bible"]')!);
@@ -164,6 +166,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).toBeNull();
 
     fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/cv');
@@ -190,6 +193,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
 
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
 

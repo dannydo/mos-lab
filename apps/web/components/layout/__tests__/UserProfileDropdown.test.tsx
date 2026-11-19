@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import UserProfileDropdown from '../UserProfileDropdown';
 import { OPEN_BUG_REPORT_EVENT, setBugReportBadgeSummary } from '../../../lib/bug-diagnostics';
-import { BUG_REPORT_LAUNCHER_STORAGE_KEY } from '../../../lib/bug-report-launcher';
 
 vi.mock('../../../context/OmiCallContext', () => ({
   useOmiCall: () => ({
@@ -72,13 +71,7 @@ describe('UserProfileDropdown bug report integration', () => {
     fireEvent.click(trigger);
 
     expect(screen.queryByText('Nút phản hồi / báo lỗi')).toBeNull();
-    const floatingSwitch = screen.getByRole('switch', { name: 'Hiển thị nút phản hồi mOS' });
-    expect(floatingSwitch).toHaveAttribute('aria-checked', 'true');
-    fireEvent.click(floatingSwitch);
-    expect(floatingSwitch).toHaveAttribute('aria-checked', 'false');
-    expect(JSON.parse(window.localStorage.getItem(BUG_REPORT_LAUNCHER_STORAGE_KEY) || '{}')).toMatchObject({
-      visible: false,
-    });
+    expect(screen.queryByRole('switch', { name: 'Hiển thị nút phản hồi mOS' })).toBeNull();
 
     const bugReportBtn = screen.getByRole('button', { name: /Báo lỗi \/ Góp ý/i });
     expect(bugReportBtn).toBeInTheDocument();

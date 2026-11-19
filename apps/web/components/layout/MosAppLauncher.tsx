@@ -10,6 +10,7 @@ import { apiClient, resolveMediaUrl } from '../../lib/api-client';
 import {
   getBugReportBadgeServerSnapshot,
   getBugReportBadgeSummary,
+  openBugReport,
   subscribeBugReportBadgeSummary,
 } from '../../lib/bug-diagnostics';
 import { openMosBible } from '../../lib/mos-bible-launcher';
@@ -120,8 +121,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     getBugReportBadgeSummary,
     getBugReportBadgeServerSnapshot
   );
-  const effectiveMissionBadge =
-    missionBadgeCount ?? (!isCvRole(effectiveRole) ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0);
+  const isCv = isCvRole(effectiveRole);
+  const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
+  const effectiveMissionBadge = missionBadgeCount ?? bugAttentionCount;
+  const relevantChatCount = currentApp !== 'chat' ? unreadChatCount : 0;
+  const totalOutsideBadgeCount = relevantChatCount + bugAttentionCount;
 
   useEffect(() => {
     if (menuVisibilityProp || isAdminOrSuperAdminRole(effectiveRole) || typeof window === 'undefined') return;
@@ -151,10 +155,19 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         teamCodes: effectiveTeamCodes,
         unreadChatCount,
         missionBadgeCount: effectiveMissionBadge,
+        bugAttentionCount,
         savedAdminRole,
         menuVisibility: effectiveMenuVisibility,
       }),
-    [effectiveRole, effectiveTeamCodes, unreadChatCount, effectiveMissionBadge, savedAdminRole, effectiveMenuVisibility]
+    [
+      effectiveRole,
+      effectiveTeamCodes,
+      unreadChatCount,
+      effectiveMissionBadge,
+      bugAttentionCount,
+      savedAdminRole,
+      effectiveMenuVisibility,
+    ]
   );
 
   useEffect(() => {
@@ -276,7 +289,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         data-testid="mos-app-launcher-btn"
         aria-label="Mở bộ chuyển nhanh Hệ sinh thái mOS"
         aria-expanded={open}
-        title="Chuyển nhanh Hệ sinh thái mOS"
+        title={
+          totalOutsideBadgeCount > 0
+            ? `Chuyển nhanh Hệ sinh thái mOS (${totalOutsideBadgeCount} thông báo mới)`
+            : 'Chuyển nhanh Hệ sinh thái mOS'
+        }
         onClick={() => setOpen((prev) => !prev)}
         className={`${shapeClass} relative border flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
           open
@@ -287,12 +304,12 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         }`}
       >
         <LayoutGrid className="w-4 h-4 stroke-[2.2]" />
-        {unreadChatCount > 0 && currentApp !== 'chat' && !open && (
+        {totalOutsideBadgeCount > 0 && !open && (
           <span
             className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold leading-none flex items-center justify-center border border-[var(--mos-surface,#0e131f)] tabular-nums"
             aria-hidden="true"
           >
-            {unreadChatCount > 99 ? '99+' : unreadChatCount}
+            {totalOutsideBadgeCount > 99 ? '99+' : totalOutsideBadgeCount}
           </span>
         )}
       </button>
@@ -449,6 +466,12 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                                 setOpen(false);
                                 onAfterNavigate?.();
                                 openMosBible();
+                                return;
+                              }
+                              if (suite.action === 'open-feedback') {
+                                setOpen(false);
+                                onAfterNavigate?.();
+                                openBugReport(undefined, { preferHistoryIfPending: true });
                                 return;
                               }
                               navigateTo(suite.href, suite.key);
