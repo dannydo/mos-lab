@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { isYeppeumSerumProduct, YEPPEUM_PRODUCT_ID } from '@mos-lab/shared';
 import type {
   IosBookingItem,
   IosSimulationAttemptSummary,
@@ -522,13 +523,25 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
                           sessions: 5,
                         }
                       : null,
-                    cartProducts: (attempt.upsellProducts || []).map((p, idx) => ({
-                      productId: idx + 1,
-                      productName: p.productName,
-                      price: p.totalPrice / (p.quantity || 1),
-                      quantity: p.quantity,
-                      totalPrice: p.totalPrice,
-                    })),
+                    cartProducts: (attempt.upsellProducts || []).map((p, idx) => {
+                      const qty = Math.max(1, Number(p.quantity) || 1);
+                      const unitPrice = Number.isFinite(p.unitPrice)
+                        ? Math.max(0, Number(p.unitPrice))
+                        : Math.round(p.totalPrice / qty);
+                      const productId =
+                        Number(p.productId) > 0
+                          ? Number(p.productId)
+                          : isYeppeumSerumProduct({ productName: p.productName })
+                            ? YEPPEUM_PRODUCT_ID
+                            : idx + 1;
+                      return {
+                        productId,
+                        productName: p.productName,
+                        price: unitPrice,
+                        quantity: qty,
+                        totalPrice: p.totalPrice,
+                      };
+                    }),
                     appliedPromotion: attempt.promotionName
                       ? ({
                           promotionId: 9999,

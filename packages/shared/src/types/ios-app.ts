@@ -583,6 +583,14 @@ export interface IosBookingActionResponse {
 
 export type IosSimulationAttemptSourceAction = 'COMPLETE_ORDER' | 'SIM_REVERT_CONSULTATION' | 'SIM_RESET_TO_INCOMING';
 
+export interface IosSimulationUpsellProductItem {
+  productId?: number;
+  productName: string;
+  quantity: number;
+  unitPrice?: number;
+  totalPrice: number;
+}
+
 export interface IosSimulationAttemptSummary {
   attemptId: string;
   attemptNumber: number;
@@ -602,7 +610,7 @@ export interface IosSimulationAttemptSummary {
   selectedComboPrice: number;
   selectedUnderComboName?: string | null;
   selectedUnderComboPrice: number;
-  upsellProducts: Array<{ productName: string; quantity: number; totalPrice: number }>;
+  upsellProducts: IosSimulationUpsellProductItem[];
   upsellTotal: number;
   promotionName?: string | null;
   promotionDiscountAmount: number;
@@ -626,7 +634,7 @@ export interface IosUpdateSimulationAttemptRequest {
   selectedComboPrice?: number;
   selectedUnderComboName?: string | null;
   selectedUnderComboPrice?: number;
-  upsellProducts?: Array<{ productName: string; quantity: number; totalPrice: number }>;
+  upsellProducts?: IosSimulationUpsellProductItem[];
   promotionName?: string | null;
   promotionDiscountAmount?: number;
   tipAmount?: number;
@@ -659,6 +667,14 @@ export interface IosBookingServiceCatalogItem {
   serviceGroup: string;
   price: number;
   durationMinute: number;
+}
+
+export interface IosProductCatalogItem {
+  productId: number;
+  productSku: string;
+  productName: string;
+  price: number;
+  isSerum?: boolean;
 }
 
 export interface IosCreateBookingRequest {
@@ -862,6 +878,18 @@ export function calculateCvSerumTierBonus(
   const perUnit =
     unitPrice >= 1000000 ? origBonus : unitPrice > 550000 ? discBonus : unitPrice > 0 ? deepDiscBonus : freeBonus;
   return perUnit * quantity;
+}
+
+export const YEPPEUM_PRODUCT_ID = 36;
+
+export function isYeppeumSerumProduct(item: {
+  productId?: number;
+  productSku?: string | null;
+  productName?: string | null;
+}): boolean {
+  if (Number(item.productId) === YEPPEUM_PRODUCT_ID) return true;
+  const haystack = `${item.productSku || ''} ${item.productName || ''}`.toLowerCase();
+  return /yeppeum|dưỡng mi/i.test(haystack);
 }
 
 export function resolveServicePriceSplit(params: {

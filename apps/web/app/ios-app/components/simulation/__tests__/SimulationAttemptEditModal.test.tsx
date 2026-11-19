@@ -1,9 +1,11 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { IosSimulationAttemptSummary } from '@mos-lab/shared';
+import { YEPPEUM_PRODUCT_ID, type IosSimulationAttemptSummary } from '@mos-lab/shared';
 import { SimulationAttemptEditModal } from '../SimulationAttemptEditModal';
 import { IosSimulationHistorySheet } from '../IosSimulationHistorySheet';
+
+const mockGetProductCatalog = vi.fn();
 
 vi.mock('../../../../../context/ThemeContext', () => ({
   useTheme: () => ({
@@ -14,6 +16,14 @@ vi.mock('../../../../../context/ThemeContext', () => ({
     availableCoreThemes: [],
     setCoreThemeId: vi.fn(),
   }),
+}));
+
+vi.mock('~/lib/api-client', () => ({
+  apiClient: {
+    ios: {
+      getProductCatalog: (...args: any[]) => mockGetProductCatalog(...args),
+    },
+  },
 }));
 
 const MOCK_ATTEMPT: IosSimulationAttemptSummary = {
@@ -34,27 +44,47 @@ const MOCK_ATTEMPT: IosSimulationAttemptSummary = {
   selectedComboPrice: 1170000,
   selectedUnderComboName: null,
   selectedUnderComboPrice: 0,
-  upsellProducts: [{ productName: 'Serum Dưỡng Mi Wings', quantity: 1, totalPrice: 299000 }],
-  upsellTotal: 299000,
+  upsellProducts: [
+    {
+      productId: YEPPEUM_PRODUCT_ID,
+      productName: 'Dưỡng Mi Yeppeum Korea',
+      quantity: 1,
+      unitPrice: 1100000,
+      totalPrice: 1100000,
+    },
+  ],
+  upsellTotal: 1100000,
   promotionName: null,
   promotionDiscountAmount: 0,
-  grandTotal: 2019000,
+  grandTotal: 2820000,
   tipAmount: 0,
   tipActorShare: 0,
   comboBonusAmount: 50000,
-  serumBonusAmount: 20000,
+  serumBonusAmount: 100000,
   cvRotationPoints: 2,
-  totalEstimatedReward: 125000,
+  totalEstimatedReward: 150000,
   elapsedSeconds: 2700,
   notes: 'Kịch bản ban đầu',
 };
 
-describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-FEAT-228)', () => {
+describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-FEAT-228 & MOS-BUG-241)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetProductCatalog.mockResolvedValue({
+      success: true,
+      products: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productSku: 'YEPPEUM-01',
+          productName: 'Dưỡng Mi Yeppeum Korea',
+          price: 1100000,
+          isSerum: true,
+        },
+      ],
+    });
   });
 
-  it('renders modal with prefilled attempt values', () => {
+  it('renders modal with prefilled attempt values and real Wings upsell catalog (no fake mock products)', async () => {
     render(
       <SimulationAttemptEditModal
         isOpen={true}
@@ -65,9 +95,122 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
       />
     );
 
+    await waitFor(() => {
+      expect(mockGetProductCatalog).toHaveBeenCalledTimes(1);
+    });
+
     expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
     expect(screen.getByDisplayValue('Kịch bản ban đầu')).toBeDefined();
     expect(screen.getByText('Khách hàng: Ngọc Phạm · Dịch vụ: Classic 1D')).toBeDefined();
+
+    // Real product Dưỡng Mi Yeppeum Korea (1.100.000đ) is rendered
+    expect(screen.getByText('Dưỡng Mi Yeppeum Korea')).toBeDefined();
+    expect(screen.getByText('(1.100.000đ)')).toBeDefined();
+
+    // Old hardcoded fake products must NOT exist
+    expect(screen.queryByText(/Serum Dưỡng Mi Wings/i)).toBeNull();
+    expect(screen.queryByText(/Mascara Chuyên Nối Mi/i)).toBeNull();
+    expect(screen.queryByText(/Gel Tháo Mi Dưỡng Ẩm/i)).toBeNull();
+    expect(screen.queryByText(/Bọt Vệ Sinh Mi Kháng Khuẩn/i)).toBeNull();
+  });
+
+  it('supports switching Yeppeum price tiers and quantity while recalculating grandTotal and CV reward', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+    const attemptNoUpsell: IosSimulationAttemptSummary = {
+      ...MOCK_ATTEMPT,
+      upsellProducts: [],
+      upsellTotal: 0,
+      grandTotal: 1720000,
+      serumBonusAmount: 0,
+      totalEstimatedReward: 50000,
+    };
+
+    render(
+      <SimulationAttemptEditModal
+        isOpen={true}
+        onClose={vi.fn()}
+        attempt={attemptNoUpsell}
+        bookingId={771121}
+        onSave={handleSave}
+      />
+    );
+
+    // Select Dưỡng Mi Yeppeum Korea (1.100.000đ)
+    fireEvent.click(screen.getByRole('button', { name: /Dưỡng Mi Yeppeum Korea/i }));
+    expect(screen.getByText('2.820.000đ')).toBeDefined(); // 550k + 1170k + 1100k
+    expect(screen.getByText('+150.000đ')).toBeDefined(); // 50k combo + 100k serum
+
+    // Switch to Ưu đãi < 50% (770K -> +50K bonus)
+    fireEvent.click(screen.getByRole('button', { name: /Ưu đãi < 50% · 770K/i }));
+    expect(screen.getByText('2.490.000đ')).toBeDefined(); // 550k + 1170k + 770k
+    expect(screen.getByText('+100.000đ')).toBeDefined(); // 50k combo + 50k serum
+
+    // Increase quantity to 2 (1.540.000đ -> +100K serum bonus)
+    fireEvent.click(screen.getByRole('button', { name: /Tăng số lượng Dưỡng Mi Yeppeum Korea/i }));
+    expect(screen.getByText('3.260.000đ')).toBeDefined(); // 550k + 1170k + 1540k
+    expect(screen.getByText('+150.000đ')).toBeDefined(); // 50k combo + 100k serum
+
+    // Save and inspect payload
+    fireEvent.click(screen.getByRole('button', { name: /Lưu kịch bản/i }));
+    await waitFor(() => {
+      expect(handleSave).toHaveBeenCalledTimes(1);
+    });
+    const payload = handleSave.mock.calls[0][1];
+    expect(payload.upsellProducts).toEqual([
+      {
+        productId: YEPPEUM_PRODUCT_ID,
+        productName: 'Dưỡng Mi Yeppeum Korea (Ưu đãi < 50% (770.000đ))',
+        quantity: 2,
+        unitPrice: 770000,
+        totalPrice: 1540000,
+      },
+    ]);
+  });
+
+  it('loads additional active products from /api/ios/products/catalog and renders custom saved combo pill', async () => {
+    mockGetProductCatalog.mockResolvedValue({
+      success: true,
+      products: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productSku: 'YEPPEUM-01',
+          productName: 'Dưỡng Mi Yeppeum Korea',
+          price: 1100000,
+          isSerum: true,
+        },
+        {
+          productId: 55,
+          productSku: 'CLEAN-01',
+          productName: 'Cọ Vệ Sinh Mi Wings',
+          price: 90000,
+          isSerum: false,
+        },
+      ],
+    });
+
+    const attemptWithRealCombo: IosSimulationAttemptSummary = {
+      ...MOCK_ATTEMPT,
+      selectedComboName: 'VIP 15+3 Flawless Mink 90 sợi',
+      selectedComboPrice: 11100000,
+      upsellProducts: [],
+      upsellTotal: 0,
+    };
+
+    render(
+      <SimulationAttemptEditModal
+        isOpen={true}
+        onClose={vi.fn()}
+        attempt={attemptWithRealCombo}
+        bookingId={771121}
+        onSave={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('VIP 15+3 Flawless Mink 90 sợi (Đang chọn)')).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText('Cọ Vệ Sinh Mi Wings')).toBeDefined();
+    });
+    expect(screen.getByText('(90.000đ)')).toBeDefined();
   });
 
   it('updates form fields and calls onSave with recalculated totals', async () => {
@@ -112,7 +255,7 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
     expect(handleClose).toHaveBeenCalled();
   });
 
-  it('calls onApplyToWorkspace when clicking Nạp vào bàn làm việc', () => {
+  it('calls onApplyToWorkspace when clicking Nạp vào bàn làm việc', async () => {
     const handleApply = vi.fn();
     const handleClose = vi.fn();
 
@@ -127,6 +270,10 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
       />
     );
 
+    await waitFor(() => {
+      expect(mockGetProductCatalog).toHaveBeenCalledTimes(1);
+    });
+
     const applyBtn = screen.getByRole('button', { name: /Nạp vào bàn làm việc/i });
     fireEvent.click(applyBtn);
 
@@ -135,7 +282,7 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
     expect(handleApply.mock.calls[0][0].attemptId).toBe('sim-att-101');
   });
 
-  it('renders Chỉnh sửa kịch bản button on each attempt card in IosSimulationHistorySheet', () => {
+  it('renders Chỉnh sửa kịch bản button on each attempt card in IosSimulationHistorySheet', async () => {
     render(
       <IosSimulationHistorySheet
         isOpen={true}
@@ -151,9 +298,12 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
     // Click edit button opens SimulationAttemptEditModal
     fireEvent.click(editBtn);
     expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
+    await waitFor(() => {
+      expect(mockGetProductCatalog).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('renders Tạo & Chỉnh sửa kịch bản mới button when attempts is empty and opens edit modal', () => {
+  it('renders Tạo & Chỉnh sửa kịch bản mới button when attempts is empty and opens edit modal', async () => {
     render(
       <IosSimulationHistorySheet
         isOpen={true}
@@ -169,5 +319,8 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
 
     fireEvent.click(createBtn);
     expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
+    await waitFor(() => {
+      expect(mockGetProductCatalog).toHaveBeenCalledTimes(1);
+    });
   });
 });
