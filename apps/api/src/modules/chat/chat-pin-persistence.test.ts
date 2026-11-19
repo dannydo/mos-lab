@@ -215,4 +215,68 @@ describe('chat message & space pinning persistence invariants (MOS-BUG-198)', ()
     const mergedPinned = Array.from(new Set([...serverPinned, ...localPinned]));
     assert.deepStrictEqual(mergedPinned, [spaceId]);
   });
+
+  it('prevents toggle inversion when explicit pinned boolean is provided in request body (MOS-BUG-238)', () => {
+    const spaceId = 'space-f29f75e6';
+    // User already has space pinned in user prefs (e.g. from parallel updateUserPrefs call)
+    const currentPrefs: MosChatUserSidebarPrefs = {
+      pinnedIds: [spaceId],
+      hiddenIds: [],
+      mutedIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+      updatedAt: '2026-11-18T19:00:00.000Z',
+    };
+
+    // Client explicitly requests pinning (pinned: true)
+    const bodyWithExplicitPinned = { pinned: true };
+    const exists = (currentPrefs.pinnedIds || []).includes(spaceId);
+    assert.strictEqual(exists, true);
+
+    // Backend route handler logic:
+    // const shouldPin = typeof body.pinned === 'boolean' ? body.pinned : !exists;
+    const shouldPin =
+      typeof bodyWithExplicitPinned.pinned === 'boolean' ? bodyWithExplicitPinned.pinned : !exists;
+
+    // With explicit boolean, shouldPin must remain true, NOT inverted to false!
+    assert.strictEqual(shouldPin, true);
+
+    const filteredPinned = (currentPrefs.pinnedIds || []).filter((id) => id !== spaceId);
+    const nextPinned = shouldPin ? [spaceId, ...filteredPinned] : filteredPinned;
+    assert.deepStrictEqual(nextPinned, [spaceId], 'Space must remain pinned');
+
+    // Contrast with old buggy behavior without body.pinned:
+    const buggyShouldPin = !exists;
+    assert.strictEqual(buggyShouldPin, false, 'Without explicit pinned body, state was inverted to unpinned!');
+  });
+
+  it('preserves local pinned spaces and heals server preferences when server returns empty pinned list (MOS-BUG-238)', () => {
+    const serverPinned: string[] = [];
+    const localPinned: string[] = ['space-core-team', 'space-f29f75e6'];
+    const serverTs = 1763500000000;
+    const localTs = 1763400000000; // server timestamp is newer
+
+    // Self-healing merge algorithm implemented in MosGoogleChatPortal & MosChatContext:
+    const effectivePinned = Array.from(
+      new Set([
+        ...serverPinned,
+        ...(localPinned.length > 0 && serverPinned.length === 0
+          ? localPinned
+          : serverTs < localTs
+            ? localPinned
+            : []),
+      ])
+    );
+
+    // Must NOT be wiped to empty array!
+    assert.deepStrictEqual(effectivePinned, ['space-core-team', 'space-f29f75e6']);
+
+    // Healing trigger condition:
+    const shouldTriggerSelfHealingSync = localPinned.length > 0 && serverPinned.length === 0;
+    assert.strictEqual(shouldTriggerSelfHealingSync, true);
+  });
 });

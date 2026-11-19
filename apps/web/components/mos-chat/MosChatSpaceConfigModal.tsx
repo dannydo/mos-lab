@@ -15,7 +15,7 @@ export interface MosChatSpaceConfigModalProps {
   onUpdated: (updatedConv: MosChatConversation) => void;
   onOpenMembersModal?: () => void;
   isPinned?: boolean;
-  togglePinConversation?: (convId: string) => void | Promise<any>;
+  togglePinConversation?: (convId: string, pinned?: boolean) => void | Promise<any>;
 }
 
 export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = ({
@@ -203,7 +203,7 @@ export const MosChatSpaceConfigModal: React.FC<MosChatSpaceConfigModalProps> = (
           <button
             type="button"
             onClick={() => {
-              if (conversation) void togglePin(conversation.id);
+              if (conversation) void togglePin(conversation.id, !isPinned);
             }}
             className={`px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
               isPinned

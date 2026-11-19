@@ -188,7 +188,7 @@ describe('Space Configuration & Emoji Selection (MOS-BUG-140)', () => {
       expect(pinBtn).toBeInTheDocument();
 
       fireEvent.click(pinBtn);
-      expect(handleTogglePin).toHaveBeenCalledWith('space-test-1');
+      expect(handleTogglePin).toHaveBeenCalledWith('space-test-1', true);
 
       // Rerender with isPinned={true}
       rerender(

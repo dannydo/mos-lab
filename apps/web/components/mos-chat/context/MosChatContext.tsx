@@ -491,7 +491,17 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         }
       }
       if (res && res.userPrefs?.pinnedIds) {
-        setPinnedConvIds(new Set(res.userPrefs.pinnedIds));
+        setPinnedConvIds((prev) => {
+          const serverSet = new Set(res.userPrefs!.pinnedIds);
+          if (serverSet.size === 0 && prev.size > 0) {
+            // Self-healing: if server unexpectedly has 0 pinned items but local client has pins,
+            // preserve local pins and re-sync to server to avoid data loss (MOS-BUG-238)
+            const localArray = Array.from(prev);
+            apiClient.chat.updateUserPrefs({ pinnedIds: localArray }).catch(() => {});
+            return prev;
+          }
+          return serverSet;
+        });
       }
       if (res?.unchanged) {
         return;
@@ -522,7 +532,17 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         });
       }
       if (res && res.userPrefs?.pinnedIds) {
-        setPinnedConvIds(new Set(res.userPrefs.pinnedIds));
+        setPinnedConvIds((prev) => {
+          const serverSet = new Set(res.userPrefs!.pinnedIds);
+          if (serverSet.size === 0 && prev.size > 0) {
+            // Self-healing: if server unexpectedly has 0 pinned items but local client has pins,
+            // preserve local pins and re-sync to server to avoid data loss (MOS-BUG-238)
+            const localArray = Array.from(prev);
+            apiClient.chat.updateUserPrefs({ pinnedIds: localArray }).catch(() => {});
+            return prev;
+          }
+          return serverSet;
+        });
       }
       if (res && res.tasks) {
         setTasks(res.tasks);
@@ -665,15 +685,18 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   );
 
   // Toggle pin conversation
-  const togglePinConversation = useCallback(async (convId: string) => {
+  const togglePinConversation = useCallback(async (convId: string, explicitPinned?: boolean) => {
+    let willPin = false;
     setPinnedConvIds((prev) => {
       const next = new Set(prev);
-      if (next.has(convId)) next.delete(convId);
-      else next.add(convId);
+      const isCurrentlyPinned = next.has(convId);
+      willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
+      if (willPin) next.add(convId);
+      else next.delete(convId);
       return next;
     });
     try {
-      await apiClient.chat.togglePinConversation(convId);
+      await apiClient.chat.togglePinConversation(convId, willPin);
     } catch {
       // ignore
     }
