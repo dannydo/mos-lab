@@ -64,6 +64,10 @@ export interface UpsellPayload {
   selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
   selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
   comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
 }
 
 export interface UseIosBillingCheckoutParams {
@@ -97,7 +101,17 @@ export function useIosBillingCheckout({
     (payload: Record<string, any>) => {
       const simMeta =
         isSimulationMode && activeBooking ? { simBookingMeta: buildSimBookingMetaPayload(activeBooking) } : {};
-      void postAction('COMPLETE_ORDER', { ...simMeta, ...payload }).then((res) => {
+      const walletSnapshot = activeBooking
+        ? {
+            selectedUpperComboBalanceId: activeBooking.selectedUpperComboBalanceId ?? null,
+            selectedUnderComboBalanceId: activeBooking.selectedUnderComboBalanceId ?? null,
+            skipUpperCombo: Boolean(activeBooking.skipUpperCombo),
+            skipUnderCombo: Boolean(activeBooking.skipUnderCombo),
+            hasUnderMinkCombo:
+              !activeBooking.skipUnderCombo && Boolean(activeBooking.underMinkComboStatus?.hasUnderCombo),
+          }
+        : {};
+      void postAction('COMPLETE_ORDER', { ...simMeta, ...walletSnapshot, ...payload }).then((res) => {
         if (res?.data?.attemptSnapshot) {
           onSimulationAttemptSaved?.(activeBookingId, res.data.attemptSnapshot);
         }
@@ -121,6 +135,22 @@ export function useIosBillingCheckout({
             : prev.selectedUnderCombo || null;
         const nextRedemption =
           upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
+        const nextUpperBalanceId =
+          upsellPayload?.selectedUpperComboBalanceId !== undefined
+            ? upsellPayload.selectedUpperComboBalanceId
+            : (prev.selectedUpperComboBalanceId ?? null);
+        const nextUnderBalanceId =
+          upsellPayload?.selectedUnderComboBalanceId !== undefined
+            ? upsellPayload.selectedUnderComboBalanceId
+            : (prev.selectedUnderComboBalanceId ?? null);
+        const nextSkipUpper =
+          upsellPayload?.skipUpperCombo !== undefined
+            ? Boolean(upsellPayload.skipUpperCombo)
+            : Boolean(prev.skipUpperCombo);
+        const nextSkipUnder =
+          upsellPayload?.skipUnderCombo !== undefined
+            ? Boolean(upsellPayload.skipUnderCombo)
+            : Boolean(prev.skipUnderCombo);
         const {
           serviceTotal: effectiveServiceTotal,
           comboTotal,
@@ -143,7 +173,11 @@ export function useIosBillingCheckout({
           cartProducts: nextProducts,
           selectedCombo: nextCombo,
           selectedUnderCombo: nextUnderCombo,
-          comboRedemption: nextRedemption,
+          comboRedemption: nextSkipUpper ? null : nextRedemption,
+          selectedUpperComboBalanceId: nextUpperBalanceId,
+          selectedUnderComboBalanceId: nextUnderBalanceId,
+          skipUpperCombo: nextSkipUpper,
+          skipUnderCombo: nextSkipUnder,
         });
         const tipAmount = prev.billing?.tipAmount ?? 0;
         const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
@@ -189,7 +223,12 @@ export function useIosBillingCheckout({
           cartProducts: nextProducts,
           selectedCombo: resolvedNextCombo,
           selectedUnderCombo: resolvedNextUnderCombo,
-          comboRedemption: nextRedemption,
+          comboRedemption: nextSkipUpper ? null : nextRedemption,
+          selectedUpperComboBalanceId: nextUpperBalanceId,
+          selectedUnderComboBalanceId: nextUnderBalanceId,
+          skipUpperCombo: nextSkipUpper,
+          skipUnderCombo: nextSkipUnder,
+          hasUnderMinkCombo: !nextSkipUnder && Boolean(prev.underMinkComboStatus?.hasUnderCombo),
         });
 
         const tipBreakdown = calculateActorTipBreakdown(
@@ -210,7 +249,11 @@ export function useIosBillingCheckout({
           cartProducts: nextProducts,
           selectedCombo: resolvedNextCombo,
           selectedUnderCombo: resolvedNextUnderCombo,
-          comboRedemption: nextRedemption,
+          comboRedemption: nextSkipUpper ? null : nextRedemption,
+          selectedUpperComboBalanceId: nextUpperBalanceId,
+          selectedUnderComboBalanceId: nextUnderBalanceId,
+          skipUpperCombo: nextSkipUpper,
+          skipUnderCombo: nextSkipUnder,
           _localComboUpdatedAt: Date.now(),
           cvRewardBreakdown: {
             techTipPercent: 70,

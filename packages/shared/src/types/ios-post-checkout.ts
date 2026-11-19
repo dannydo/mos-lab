@@ -30,6 +30,12 @@ export interface IosPostCheckoutSnapshot {
   selectedComboPrice: number;
   selectedUnderComboName?: string | null;
   selectedUnderComboPrice: number;
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
+  redeemedUpperComboName?: string | null;
+  redeemedUnderComboName?: string | null;
   todaySingleServiceWaived?: boolean;
   cartProductsSummary: string;
   productTotal: number;
@@ -60,6 +66,10 @@ export interface IosPostCheckoutPendingDraft {
   selectedCombo: IosSelectedCombo | null;
   selectedUnderCombo: IosSelectedUnderCombo | null;
   comboRedemption: IosComboRedemption | null;
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
   cartProducts: IosCartProductItem[];
   tipAmount: number;
   diamondUsed: number;

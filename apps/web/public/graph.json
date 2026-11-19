@@ -41188,6 +41188,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/__tests__/ios-multi-combo-wallets.test.ts",
+      "type": "File",
+      "label": "ios-multi-combo-wallets.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/__tests__/ios-multi-combo-wallets.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 21846,
+        "lineCount": 614,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
       "type": "File",
       "label": "ios-under-lash-rounds.test.ts",
@@ -41357,6 +41370,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
+      "type": "File",
+      "label": "ios-action-wallet.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3036,
+        "lineCount": 72,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-actions.service.ts",
       "type": "File",
       "label": "ios-actions.service.ts",
@@ -41364,8 +41390,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27710,
-        "lineCount": 682,
+        "sizeBytes": 28306,
+        "lineCount": 689,
         "ext": ".ts"
       }
     },
@@ -41403,8 +41429,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-formatters.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18085,
-        "lineCount": 494,
+        "sizeBytes": 20993,
+        "lineCount": 572,
         "ext": ".ts"
       }
     },
@@ -41416,8 +41442,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-bookings-mapper.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27855,
-        "lineCount": 650,
+        "sizeBytes": 28799,
+        "lineCount": 644,
         "ext": ".ts"
       }
     },
@@ -41455,8 +41481,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16997,
-        "lineCount": 445,
+        "sizeBytes": 19179,
+        "lineCount": 494,
         "ext": ".ts"
       }
     },
@@ -41468,8 +41494,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24128,
-        "lineCount": 622,
+        "sizeBytes": 21443,
+        "lineCount": 555,
         "ext": ".ts"
       }
     },
@@ -41559,8 +41585,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23290,
-        "lineCount": 628,
+        "sizeBytes": 25533,
+        "lineCount": 687,
         "ext": ".ts"
       }
     },
@@ -41624,8 +41650,21 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20525,
-        "lineCount": 566,
+        "sizeBytes": 20678,
+        "lineCount": 568,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-wallet-reconciler.service.ts",
+      "type": "File",
+      "label": "ios-legacy-wallet-reconciler.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-wallet-reconciler.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14944,
+        "lineCount": 399,
         "ext": ".ts"
       }
     },
@@ -41663,8 +41702,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21879,
-        "lineCount": 569,
+        "sizeBytes": 24716,
+        "lineCount": 624,
         "ext": ".ts"
       }
     },
@@ -41676,8 +41715,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-post-checkout-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16443,
-        "lineCount": 445,
+        "sizeBytes": 16575,
+        "lineCount": 448,
         "ext": ".ts"
       }
     },
@@ -41689,8 +41728,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14176,
-        "lineCount": 341,
+        "sizeBytes": 14549,
+        "lineCount": 347,
         "ext": ".ts"
       }
     },
@@ -41773,6 +41812,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts",
+      "type": "File",
+      "label": "ios-simulation-enrichment.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12487,
+        "lineCount": 311,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-simulation.service.ts",
       "type": "File",
       "label": "ios-simulation.service.ts",
@@ -41780,8 +41832,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24099,
-        "lineCount": 668,
+        "sizeBytes": 15015,
+        "lineCount": 421,
         "ext": ".ts"
       }
     },
@@ -51127,8 +51179,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27643,
-        "lineCount": 618,
+        "sizeBytes": 30458,
+        "lineCount": 694,
         "ext": ".tsx"
       }
     },
@@ -51153,8 +51205,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20737,
-        "lineCount": 412,
+        "sizeBytes": 21659,
+        "lineCount": 429,
         "ext": ".tsx"
       }
     },
@@ -51270,8 +51322,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28478,
-        "lineCount": 684,
+        "sizeBytes": 27881,
+        "lineCount": 690,
         "ext": ".tsx"
       }
     },
@@ -51283,8 +51335,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29747,
-        "lineCount": 695,
+        "sizeBytes": 29537,
+        "lineCount": 691,
         "ext": ".tsx"
       }
     },
@@ -51296,7 +51348,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12723,
+        "sizeBytes": 12766,
         "lineCount": 277,
         "ext": ".tsx"
       }
@@ -51309,8 +51361,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32125,
-        "lineCount": 697,
+        "sizeBytes": 31229,
+        "lineCount": 686,
         "ext": ".tsx"
       }
     },
@@ -51497,6 +51549,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
+      "type": "File",
+      "label": "MultiComboWalletSelection.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14822,
+        "lineCount": 413,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/__tests__/PostCheckoutComboFlow.test.tsx",
       "type": "File",
       "label": "PostCheckoutComboFlow.test.tsx",
@@ -51647,8 +51712,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20228,
-        "lineCount": 436,
+        "sizeBytes": 24250,
+        "lineCount": 529,
         "ext": ".tsx"
       }
     },
@@ -51675,6 +51740,19 @@
       "metadata": {
         "sizeBytes": 5187,
         "lineCount": 167,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/checkout/CheckoutComboWalletCard.tsx",
+      "type": "File",
+      "label": "CheckoutComboWalletCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutComboWalletCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7364,
+        "lineCount": 205,
         "ext": ".tsx"
       }
     },
@@ -51712,8 +51790,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29429,
-        "lineCount": 658,
+        "sizeBytes": 26883,
+        "lineCount": 609,
         "ext": ".tsx"
       }
     },
@@ -51764,8 +51842,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/ReceiptComboExpiryLine.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6506,
-        "lineCount": 171,
+        "sizeBytes": 15550,
+        "lineCount": 392,
         "ext": ".tsx"
       }
     },
@@ -51881,8 +51959,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29128,
-        "lineCount": 652,
+        "sizeBytes": 30640,
+        "lineCount": 697,
         "ext": ".tsx"
       }
     },
@@ -51894,8 +51972,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationTypes.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2885,
-        "lineCount": 104,
+        "sizeBytes": 3302,
+        "lineCount": 116,
         "ext": ".ts"
       }
     },
@@ -51946,8 +52024,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/LashVolumeColorAndUnderMinkSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23707,
-        "lineCount": 497,
+        "sizeBytes": 25128,
+        "lineCount": 532,
         "ext": ".tsx"
       }
     },
@@ -51985,8 +52063,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7091,
-        "lineCount": 208,
+        "sizeBytes": 7504,
+        "lineCount": 211,
         "ext": ".ts"
       }
     },
@@ -52024,8 +52102,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17963,
-        "lineCount": 490,
+        "sizeBytes": 20468,
+        "lineCount": 541,
         "ext": ".ts"
       }
     },
@@ -52115,8 +52193,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationComboAndUpgrade.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25968,
-        "lineCount": 673,
+        "sizeBytes": 26608,
+        "lineCount": 681,
         "ext": ".ts"
       }
     },
@@ -52141,8 +52219,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25030,
-        "lineCount": 619,
+        "sizeBytes": 27827,
+        "lineCount": 692,
         "ext": ".ts"
       }
     },
@@ -52206,8 +52284,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboFormSections.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19868,
-        "lineCount": 463,
+        "sizeBytes": 21736,
+        "lineCount": 505,
         "ext": ".tsx"
       }
     },
@@ -52219,8 +52297,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26330,
-        "lineCount": 641,
+        "sizeBytes": 26685,
+        "lineCount": 653,
         "ext": ".tsx"
       }
     },
@@ -52274,6 +52352,19 @@
         "sizeBytes": 15920,
         "lineCount": 398,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts",
+      "type": "File",
+      "label": "postCheckoutWalletHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6236,
+        "lineCount": 151,
+        "ext": ".ts"
       }
     },
     {
@@ -52388,8 +52479,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellHeaderAndSerumSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14293,
-        "lineCount": 316,
+        "sizeBytes": 17829,
+        "lineCount": 395,
         "ext": ".tsx"
       }
     },
@@ -52427,8 +52518,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4816,
-        "lineCount": 150,
+        "sizeBytes": 5464,
+        "lineCount": 164,
         "ext": ".tsx"
       }
     },
@@ -52466,8 +52557,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellAccountingHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5597,
-        "lineCount": 150,
+        "sizeBytes": 5753,
+        "lineCount": 157,
         "ext": ".ts"
       }
     },
@@ -52479,8 +52570,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellCheckoutHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16109,
-        "lineCount": 382,
+        "sizeBytes": 19607,
+        "lineCount": 469,
         "ext": ".ts"
       }
     },
@@ -52492,8 +52583,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/useUpsellComboExpiry.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5574,
-        "lineCount": 164,
+        "sizeBytes": 5858,
+        "lineCount": 168,
         "ext": ".ts"
       }
     },
@@ -52609,8 +52700,21 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21900,
-        "lineCount": 459,
+        "sizeBytes": 24196,
+        "lineCount": 505,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx",
+      "type": "File",
+      "label": "ComboWalletSelectorList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10288,
+        "lineCount": 235,
         "ext": ".tsx"
       }
     },
@@ -53077,8 +53181,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27515,
-        "lineCount": 690,
+        "sizeBytes": 27771,
+        "lineCount": 694,
         "ext": ".tsx"
       }
     },
@@ -53168,8 +53272,8 @@
       "filePath": "apps/web/app/ios-app/state/iosBillingMath.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9042,
-        "lineCount": 272,
+        "sizeBytes": 9648,
+        "lineCount": 286,
         "ext": ".ts"
       }
     },
@@ -53181,8 +53285,8 @@
       "filePath": "apps/web/app/ios-app/state/iosBookingMerge.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12246,
-        "lineCount": 288,
+        "sizeBytes": 16565,
+        "lineCount": 382,
         "ext": ".ts"
       }
     },
@@ -53246,8 +53350,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20066,
-        "lineCount": 610,
+        "sizeBytes": 20124,
+        "lineCount": 612,
         "ext": ".ts"
       }
     },
@@ -53259,8 +53363,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBillingCheckout.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24529,
-        "lineCount": 635,
+        "sizeBytes": 26794,
+        "lineCount": 678,
         "ext": ".ts"
       }
     },
@@ -53298,8 +53402,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17694,
-        "lineCount": 454,
+        "sizeBytes": 24952,
+        "lineCount": 601,
         "ext": ".ts"
       }
     },
@@ -53350,8 +53454,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosSimulationMode.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23731,
-        "lineCount": 641,
+        "sizeBytes": 24047,
+        "lineCount": 645,
         "ext": ".ts"
       }
     },
@@ -54273,8 +54377,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 203306,
-        "lineCount": 2521,
+        "sizeBytes": 204406,
+        "lineCount": 2523,
         "ext": ".ts"
       }
     },
@@ -54299,8 +54403,8 @@
       "filePath": "packages/shared/src/catalog/combo-expiry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22153,
-        "lineCount": 535,
+        "sizeBytes": 42799,
+        "lineCount": 1007,
         "ext": ".ts"
       }
     },
@@ -54936,8 +55040,8 @@
       "filePath": "packages/shared/src/types/ios-app.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 53167,
-        "lineCount": 1713,
+        "sizeBytes": 53373,
+        "lineCount": 1719,
         "ext": ".ts"
       }
     },
@@ -54949,8 +55053,8 @@
       "filePath": "packages/shared/src/types/ios-post-checkout.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10825,
-        "lineCount": 315,
+        "sizeBytes": 11209,
+        "lineCount": 325,
         "ext": ".ts"
       }
     },
@@ -79824,6 +79928,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/__tests__/ios-multi-combo-wallets.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/__tests__/ios-multi-combo-wallets.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
       "target": "ws:packages/shared",
@@ -79882,6 +79993,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-action-wallet.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -80092,6 +80210,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-simulation-attempts.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-simulation-attempts.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83282,6 +83407,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "target": "ws:packages/shared",
@@ -83305,6 +83437,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/__tests__/LashPortfolioAcrossTabsAndUpsell.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83338,8 +83477,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/checkout/CheckoutBillingOverlays.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/checkout/CheckoutBillingOverlays.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkout/CheckoutComboWalletCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkout/CheckoutComboWalletCard.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83415,8 +83568,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/LashVolumeColorAndUnderMinkSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/consultation/LashVolumeColorAndUnderMinkSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83494,6 +83661,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutReconciliationCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutReconciliationCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83646,6 +83820,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx",
       "target": "ws:packages/shared",
@@ -83767,6 +83948,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/state/iosBillingMath.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/iosBillingMath.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/state/iosBookingMerge.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/iosBookingMerge.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -116449,8 +116637,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4278,
-    "totalEdges": 8712,
+    "totalNodes": 4286,
+    "totalEdges": 8724,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -116459,14 +116647,14 @@
       "SharedType": 1528,
       "DesignToken": 12,
       "UIComponent": 382,
-      "File": 1329
+      "File": 1337
     },
     "edgeTypeCounts": {
       "EXPORTS": 1723,
       "HANDLES_ROUTE": 776,
       "RENDERS": 447,
       "USES_TOKEN": 384,
-      "IMPORTS": 760,
+      "IMPORTS": 772,
       "QUERIES_MODEL": 436,
       "API_CALL": 4186
     },

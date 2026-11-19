@@ -5,6 +5,7 @@ import {
   defaultCallLegacyPhpEndpoint,
   DEMO_BOOKING_IDS,
   resolveActiveLegacyStaffToken,
+  resolveEffectiveLegacyWalletFlags,
   SettleLegacyOrderBridgeDeps,
 } from './ios-legacy-bridge.service.js';
 import { buildLegacyOrderPayloads, resolveLegacyOrderCatalogSnapshot } from './ios-legacy-payload.mapper.js';
@@ -240,6 +241,7 @@ export async function syncIosStepWithLegacyPhp(
       ...body,
     });
 
+    const walletFlags = resolveEffectiveLegacyWalletFlags(mergedOverride);
     const built = buildLegacyOrderPayloads({
       orderId: bookingId,
       assignedStaffId,
@@ -248,11 +250,11 @@ export async function syncIosStepWithLegacyPhp(
       attributes: mergedOverride.attributes,
       hasUnderMink: mergedOverride.attributes?.hasUnderMink,
       underMinkServiceType: mergedOverride.attributes?.underMinkServiceType,
-      isComboLive: Boolean(mergedOverride.comboRedemption?.redeemSession),
-      hasUnderMinkCombo: false,
+      isComboLive: walletFlags.effectiveRedeemUpper,
+      hasUnderMinkCombo: walletFlags.effectiveRedeemUnder,
       selectedCombo: mergedOverride.selectedCombo,
       selectedUnderCombo: mergedOverride.selectedUnderCombo,
-      comboRedemption: mergedOverride.comboRedemption,
+      comboRedemption: walletFlags.skipUpperCombo ? null : mergedOverride.comboRedemption,
       cartProducts: mergedOverride.cartProducts,
       servicePrice: mergedOverride.servicePrice,
       serviceName: mergedOverride.serviceName,

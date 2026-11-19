@@ -34,6 +34,7 @@ export function Screen03ConsultationMatrix({
   isSimulationMode = false,
   isReadOnlyMentorView = false,
   onSimFastForwardToUpsell,
+  onSelectComboWallet,
 }: Screen03ConsultationMatrixProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -165,7 +166,9 @@ export function Screen03ConsultationMatrix({
               setSelectedNewComboPkg={pricing.setSelectedNewComboPkg}
               selectedUnderComboPkg={pricing.selectedUnderComboPkg}
               setSelectedUnderComboPkg={pricing.setSelectedUnderComboPkg}
-              comboLiveStatus={booking?.comboLiveStatus}
+              comboLiveStatus={design.resolvedWallets.effectiveComboLiveStatus}
+              resolvedWallets={design.resolvedWallets}
+              onSelectComboWallet={onSelectComboWallet}
               onOpenWalletModal={() => setIsWalletModalOpen(true)}
               upperTodayUsageMode={pricing.upperTodayUsageMode}
               setUpperTodayUsageMode={pricing.setUpperTodayUsageMode}
@@ -237,6 +240,8 @@ export function Screen03ConsultationMatrix({
                 hasUnderMinkCombo={design.hasUnderMinkCombo}
                 underComboNormalRemaining={design.underComboNormalRemaining}
                 underComboRetainRemaining={design.underComboRetainRemaining}
+                resolvedWallets={design.resolvedWallets}
+                onSelectComboWallet={onSelectComboWallet}
               />
             </LashTechnicalSpecsStep>
           </div>
@@ -389,6 +394,18 @@ export function Screen03ConsultationMatrix({
         isAdmin={isAdmin}
         theme={isDark ? 'dark' : 'light'}
         onUpdated={onRefreshDb}
+        selectedUpperBalanceId={design.resolvedWallets.selectedUpperComboBalanceId}
+        selectedUnderBalanceId={design.resolvedWallets.selectedUnderComboBalanceId}
+        skipUpperCombo={design.resolvedWallets.skipUpperCombo}
+        skipUnderCombo={design.resolvedWallets.skipUnderCombo}
+        onSelectWallet={(wallet) => {
+          onSelectComboWallet?.(
+            wallet.serviceGroup === 'under'
+              ? { selectedUnderComboBalanceId: wallet.balanceId, skipUnderCombo: false }
+              : { selectedUpperComboBalanceId: wallet.balanceId, skipUpperCombo: false }
+          );
+          setIsWalletModalOpen(false);
+        }}
       />
 
       <CustomerHistoryAndSpendingSheet

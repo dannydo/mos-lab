@@ -13,6 +13,7 @@ import {
   getUnderLashComboPackages,
   getWingsComboCategory,
   matchComboCategoryAndVolumeFromBooking,
+  resolveActiveBookingComboWallets,
   resolveMatchedUnderComboFromSaved,
   resolveMatchedUpperComboFromSaved,
   resolveServicePriceSplit,
@@ -29,7 +30,6 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useTheme } from '../../../../../context/ThemeContext';
 import { apiClient } from '../../../../../lib/api-client';
 import type { ActiveActorProfile } from '../../../state/iosActorProfile';
-import { computeFreshBillingLineTotals } from '../../../state/iosBillingMath';
 import { type BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { IosStaffVisibilityToggle } from '../../ui-kit/IosStaffVisibilityToggle';
 import {
@@ -37,9 +37,10 @@ import {
   extractExistingUnderExpirySnapshot,
   extractExistingUpperExpirySnapshot,
 } from '../consultation/comboExpiryConsultHelpers';
-import { buildUpsellCheckoutPayload, resolveInitialSerumSelection } from '../upsell/upsellCheckoutHelpers';
+import { resolveInitialSerumSelection } from '../upsell/upsellCheckoutHelpers';
 import { PostCheckoutComboFormSections } from './PostCheckoutComboFormSections';
 import { PostCheckoutPendingPanel, PostCheckoutReconciliationCard } from './PostCheckoutReconciliationCard';
+import { buildSeedStaffOptions, computePostCheckoutDraftAndTotals } from './postCheckoutWalletHelpers';
 
 export interface PostCheckoutComboSheetProps {
   open: boolean;
@@ -50,30 +51,6 @@ export interface PostCheckoutComboSheetProps {
   isSimulationMode?: boolean;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
   onAdjusted?: () => Promise<unknown> | void;
-}
-
-function normalizeEligibleTier(rawTier?: string | null): 'CVL' | 'CVLL' | 'CC' {
-  const upper = String(rawTier || '')
-    .trim()
-    .toUpperCase();
-  if (upper === 'CVLL') return 'CVLL';
-  if (upper === 'CC') return 'CC';
-  return 'CVL';
-}
-
-function buildSeedStaffOptions(booking: BookingItem, actor?: ActiveActorProfile): IosCheckoutStaffOption[] {
-  const map = new Map<number, IosCheckoutStaffOption>();
-  const pushOption = (staffId?: number, name?: string, tier?: string) => {
-    const id = Number(staffId || 0);
-    if (id <= 0 || !name) return;
-    map.set(id, { staffId: id, name, tier: normalizeEligibleTier(tier), storeId: booking.storeId });
-  };
-  pushOption(booking.checkOutStaffId, booking.checkOutStaffName, booking.checkOutStaffTier || 'CVL');
-  pushOption(booking.assignedStaffId, booking.assignedStaffName, booking.assignedStaffTier || 'CVL');
-  if (actor && (actor.tier === 'CVL' || actor.tier === 'CVLL' || actor.tier === 'CC')) {
-    pushOption(actor.staffId, actor.name, actor.tier);
-  }
-  return Array.from(map.values());
 }
 
 export function PostCheckoutComboSheet({
@@ -139,10 +116,19 @@ export function PostCheckoutComboSheet({
   const [activeVolume, setActiveVolume] = useState<number | 'under'>(initialCategoryAndVolume.volume);
   const [selectedUpperComboId, setSelectedUpperComboId] = useState<string>('');
   const [selectedUnderComboId, setSelectedUnderComboId] = useState<string>('');
+  const initialWallets = useMemo(() => resolveActiveBookingComboWallets(booking), [booking]);
+  const [selectedUpperComboBalanceId, setSelectedUpperComboBalanceId] = useState<number | null>(
+    initialWallets.selectedUpperComboBalanceId
+  );
+  const [selectedUnderComboBalanceId, setSelectedUnderComboBalanceId] = useState<number | null>(
+    initialWallets.selectedUnderComboBalanceId
+  );
+  const [skipUpperCombo, setSkipUpperCombo] = useState<boolean>(initialWallets.skipUpperCombo);
+  const [skipUnderCombo, setSkipUnderCombo] = useState<boolean>(initialWallets.skipUnderCombo);
   const [todaySingleServiceWaived, setTodaySingleServiceWaived] = useState<boolean>(
     booking.selectedCombo
       ? booking.selectedCombo.todaySingleServiceWaived !== false
-      : !booking.comboLiveStatus?.isComboLive
+      : !initialWallets.isRedeemingUpperToday
   );
   const [yeppeumCount, setYeppeumCount] = useState<number>(0);
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(SERUM_TIERS_CVL[0].id);
@@ -171,16 +157,21 @@ export function PostCheckoutComboSheet({
     });
     const underPkg = resolveMatchedUnderComboFromSaved(booking.selectedUnderCombo, welcomeEligibility);
     const serum = resolveInitialSerumSelection(booking.cartProducts);
+    const resetWallets = resolveActiveBookingComboWallets(booking);
     setStaffOptions(seededStaff);
     setSelectedCheckOutStaffId(Number(booking.checkOutStaffId || actor?.staffId || booking.assignedStaffId || 0));
     setActiveCategoryId(initialCategoryAndVolume.categoryId);
     setActiveVolume(initialCategoryAndVolume.volume);
     setSelectedUpperComboId(upperPkg?.id || '');
     setSelectedUnderComboId(underPkg?.id || '');
+    setSelectedUpperComboBalanceId(resetWallets.selectedUpperComboBalanceId);
+    setSelectedUnderComboBalanceId(resetWallets.selectedUnderComboBalanceId);
+    setSkipUpperCombo(resetWallets.skipUpperCombo);
+    setSkipUnderCombo(resetWallets.skipUnderCombo);
     setTodaySingleServiceWaived(
       booking.selectedCombo
         ? booking.selectedCombo.todaySingleServiceWaived !== false
-        : !booking.comboLiveStatus?.isComboLive
+        : !resetWallets.isRedeemingUpperToday
     );
     setYeppeumCount(serum.count);
     setSelectedSerumTierId(serum.tierId);
@@ -235,11 +226,25 @@ export function PostCheckoutComboSheet({
     [underPackages, selectedUnderComboId]
   );
 
+  const effectiveBookingForWallets = useMemo<BookingItem>(
+    () => ({
+      ...booking,
+      selectedUpperComboBalanceId,
+      selectedUnderComboBalanceId,
+      skipUpperCombo,
+      skipUnderCombo,
+    }),
+    [booking, selectedUpperComboBalanceId, selectedUnderComboBalanceId, skipUpperCombo, skipUnderCombo]
+  );
+  const resolvedWallets = useMemo(
+    () => resolveActiveBookingComboWallets(effectiveBookingForWallets),
+    [effectiveBookingForWallets]
+  );
+  const effectiveUpperStatus = resolvedWallets.effectiveComboLiveStatus;
+
   const selectedSerumTier = SERUM_TIERS_CVL.find((t) => t.id === selectedSerumTierId) || SERUM_TIERS_CVL[0];
   const servicePrice = Number(booking.servicePrice || 770000);
-  const hasUnderMinkComboActive = Boolean(
-    booking.underMinkComboStatus?.hasUnderCombo && (booking.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const hasUnderMinkComboActive = resolvedWallets.isRedeemingUnderToday;
   const { upperServicePrice, underServicePrice } = useMemo(
     () =>
       resolveServicePriceSplit({
@@ -273,8 +278,14 @@ export function PostCheckoutComboSheet({
     [selectedUpperPkg, selectedUnderPkg, cvPlusRules]
   );
 
-  const existingUpperExpiry = useMemo(() => extractExistingUpperExpirySnapshot(booking), [booking]);
-  const existingUnderExpiry = useMemo(() => extractExistingUnderExpirySnapshot(booking), [booking]);
+  const existingUpperExpiry = useMemo(
+    () => extractExistingUpperExpirySnapshot(effectiveBookingForWallets),
+    [effectiveBookingForWallets]
+  );
+  const existingUnderExpiry = useMemo(
+    () => extractExistingUnderExpirySnapshot(effectiveBookingForWallets),
+    [effectiveBookingForWallets]
+  );
   const todayServiceType = booking.serviceType === 'Retain' ? 'Retain' : 'Normal';
   const underServiceType = booking.attributes?.underMinkServiceType === 'Retain' ? 'Retain' : 'Normal';
 
@@ -303,71 +314,46 @@ export function PostCheckoutComboSheet({
     [selectedUnderPkg, todaySingleServiceWaived, underServiceType, existingUnderExpiry]
   );
 
-  const isExistingComboLive = Boolean(
-    booking.comboLiveStatus?.isComboLive && (booking.comboLiveStatus?.remainingSessions ?? 0) > 0
-  );
-  const shouldUseOldUpperToday = isExistingComboLive && !todaySingleServiceWaived;
-
-  const draftPayload = useMemo(
+  const { draftPayload, effectiveComboRedemption, lineTotals } = useMemo(
     () =>
-      buildUpsellCheckoutPayload({
-        existingCartProducts: booking.cartProducts,
+      computePostCheckoutDraftAndTotals({
+        booking,
+        effectiveBookingForWallets,
+        resolvedWallets,
         yeppeumCount,
         selectedSerumTier,
-        isExistingComboLive,
-        shouldUseOldUpperComboToday: shouldUseOldUpperToday,
-        selectedNewComboPkg: selectedUpperPkg,
-        deductTodayIntoCombo: todaySingleServiceWaived,
-        upperTodayUsageMode: todaySingleServiceWaived ? 'USE_NEW_COMBO' : 'RETAIL_OR_VOUCHER',
+        selectedUpperPkg,
+        selectedUnderPkg,
+        todaySingleServiceWaived,
         selectedUpperExpiry,
-        existingUpperComboDateExpired: booking.comboLiveStatus?.dateExpired || null,
-        purchaseAccounting,
-        newComboBonus: dualBonus.upperBonus,
-        isUpTierPackage: activeCategoryId !== autoMatched.categoryId,
-        autoMatchedCategoryId: autoMatched.categoryId,
-        servicePrice,
-        redemptionAccounting: null,
-        selectedUnderComboPkg: selectedUnderPkg,
-        underPurchaseAccounting,
-        underComboBonus: dualBonus.underBonus,
-        deductUnderTodayIntoCombo: todaySingleServiceWaived,
-        underTodayUsageMode: todaySingleServiceWaived ? 'USE_NEW_COMBO' : 'RETAIL_OR_VOUCHER',
         selectedUnderExpiry,
+        purchaseAccounting,
+        underPurchaseAccounting,
+        dualBonus,
+        activeCategoryId,
+        autoMatchedCategoryId: autoMatched.categoryId,
+        autoMatchedVolume: autoMatched.volume,
+        servicePrice,
       }),
     [
-      booking.cartProducts,
-      booking.comboLiveStatus?.dateExpired,
+      booking,
+      effectiveBookingForWallets,
+      resolvedWallets,
       yeppeumCount,
       selectedSerumTier,
-      isExistingComboLive,
-      shouldUseOldUpperToday,
       selectedUpperPkg,
+      selectedUnderPkg,
       todaySingleServiceWaived,
       selectedUpperExpiry,
+      selectedUnderExpiry,
       purchaseAccounting,
-      dualBonus.upperBonus,
-      dualBonus.underBonus,
+      underPurchaseAccounting,
+      dualBonus,
       activeCategoryId,
       autoMatched.categoryId,
+      autoMatched.volume,
       servicePrice,
-      selectedUnderPkg,
-      underPurchaseAccounting,
-      selectedUnderExpiry,
     ]
-  );
-
-  const effectiveComboRedemption =
-    draftPayload.comboRedemption ?? (shouldUseOldUpperToday ? (booking.comboRedemption ?? null) : null);
-  const lineTotals = useMemo(
-    () =>
-      computeFreshBillingLineTotals({
-        ...booking,
-        selectedCombo: draftPayload.selectedCombo,
-        selectedUnderCombo: draftPayload.selectedUnderCombo,
-        comboRedemption: effectiveComboRedemption,
-        cartProducts: draftPayload.cartProducts,
-      }),
-    [booking, draftPayload, effectiveComboRedemption]
   );
 
   const newGrandTotal =
@@ -458,6 +444,11 @@ export function PostCheckoutComboSheet({
         selectedCombo: draftPayload.selectedCombo,
         selectedUnderCombo: draftPayload.selectedUnderCombo,
         comboRedemption: effectiveComboRedemption,
+        selectedUpperComboBalanceId: resolvedWallets.selectedUpperComboBalanceId,
+        selectedUnderComboBalanceId: resolvedWallets.selectedUnderComboBalanceId,
+        skipUpperCombo: resolvedWallets.skipUpperCombo,
+        skipUnderCombo: resolvedWallets.skipUnderCombo,
+        hasUnderMinkCombo: hasUnderMinkComboActive,
         cartProducts: draftPayload.cartProducts,
         tipAmount,
         diamondUsed,
@@ -606,6 +597,27 @@ export function PostCheckoutComboSheet({
                 diamondUsed={diamondUsed}
                 maxDiamonds={maxDiamonds}
                 onSetDiamondUsed={setDiamondUsed}
+                resolvedWallets={resolvedWallets}
+                hasUnderMink={Boolean(booking.attributes?.hasUnderMink)}
+                onSelectUpperWallet={(balanceId) => {
+                  setSelectedUpperComboBalanceId(balanceId);
+                  setSkipUpperCombo(false);
+                  if (!selectedUpperPkg) {
+                    setTodaySingleServiceWaived(false);
+                  }
+                }}
+                onSkipUpperWallet={() => {
+                  setSelectedUpperComboBalanceId(null);
+                  setSkipUpperCombo(true);
+                }}
+                onSelectUnderWallet={(balanceId) => {
+                  setSelectedUnderComboBalanceId(balanceId);
+                  setSkipUnderCombo(false);
+                }}
+                onSkipUnderWallet={() => {
+                  setSelectedUnderComboBalanceId(null);
+                  setSkipUnderCombo(true);
+                }}
               />
 
               <PostCheckoutReconciliationCard

@@ -29,8 +29,12 @@ export function buildSimBookingMetaPayload(booking?: IosBookingItem | null) {
     serviceName: booking.serviceName,
     servicePrice: booking.servicePrice,
     upgradePrice: booking.upgradePrice || 0,
-    isComboLive: Boolean(booking.comboLiveStatus?.isComboLive),
-    hasUnderMinkCombo: Boolean(booking.underMinkComboStatus?.hasUnderCombo),
+    isComboLive: !booking.skipUpperCombo && Boolean(booking.comboLiveStatus?.isComboLive),
+    hasUnderMinkCombo: !booking.skipUnderCombo && Boolean(booking.underMinkComboStatus?.hasUnderCombo),
+    selectedUpperComboBalanceId: booking.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: booking.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(booking.skipUpperCombo),
+    skipUnderCombo: Boolean(booking.skipUnderCombo),
     assignedStaffId: booking.assignedStaffId,
     assignedStaffTier: booking.assignedStaffTier,
     cvRotationPoints: booking.cvRotationPoints,
@@ -458,10 +462,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
           setAttemptsByBookingId((prev) => {
             const existing = prev[targetBookingId] || [];
             const idx = existing.findIndex((a) => a.attemptId === attemptId || a.attemptId === updated.attemptId);
-            const nextList =
-              idx >= 0
-                ? existing.map((a, i) => (i === idx ? updated : a))
-                : [...existing, updated];
+            const nextList = idx >= 0 ? existing.map((a, i) => (i === idx ? updated : a)) : [...existing, updated];
             return {
               ...prev,
               [targetBookingId]: nextList.sort((a, b) => Number(a.attemptNumber || 0) - Number(b.attemptNumber || 0)),
@@ -509,8 +510,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
                           name: attempt.selectedComboName,
                           price: attempt.selectedComboPrice,
                           bonus:
-                            attempt.comboBonusAmount ||
-                            (attempt.selectedComboPrice >= 1_000_000 ? 50_000 : 30_000),
+                            attempt.comboBonusAmount || (attempt.selectedComboPrice >= 1_000_000 ? 50_000 : 30_000),
                           sessions: 5,
                         }
                       : null,

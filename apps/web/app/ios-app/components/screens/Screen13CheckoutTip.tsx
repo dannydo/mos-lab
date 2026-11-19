@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { resolveActiveBookingComboWallets } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
@@ -70,16 +71,15 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
         0
       );
   const productTotal = (booking?.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
+  const resolvedWallets = resolveActiveBookingComboWallets(booking || {});
   const fallbackEffectiveService = resolveEffectiveServiceTotal({
     servicePrice: booking?.servicePrice ?? 0,
     upgradePrice: booking?.upgradePrice,
     serviceName: booking?.serviceName,
-    isComboLive: Boolean(booking?.comboLiveStatus?.isComboLive),
+    isComboLive: resolvedWallets.isRedeemingUpperToday,
     hasUnderMink: booking?.attributes?.hasUnderMink,
     underMinkServiceType: booking?.attributes?.underMinkServiceType,
-    hasUnderMinkCombo: Boolean(
-      booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-    ),
+    hasUnderMinkCombo: resolvedWallets.isRedeemingUnderToday,
     comboRedemption: booking?.comboRedemption || null,
     selectedCombo: booking?.selectedCombo || null,
     selectedUnderCombo: booking?.selectedUnderCombo || null,

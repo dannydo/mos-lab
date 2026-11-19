@@ -113,6 +113,9 @@ export async function reconcileCompletedOrderInLegacyDb(
       [Number(tx.id)]
     );
   }
+  await pool.query(`UPDATE order_service SET user_service_balance_transaction_id = NULL WHERE order_id = ?`, [
+    bookingId,
+  ]);
 
   // 1B. Thu hồi các lượt gói Combo đã cộng vào ví từ order_service_combo của đơn này
   const [priorCombos] = await pool.query<mysql.RowDataPacket[]>(

@@ -3,8 +3,10 @@
 import React from 'react';
 import type {
   ComboTodayUsageMode,
+  IosCustomerComboWalletItem,
   IosScannedProductCatalogMatch,
   MatchedComboPackageOption,
+  ResolveActiveBookingComboWalletsResult,
   WingsComboCategoryId,
 } from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
@@ -52,6 +54,8 @@ export interface UpsellOverlaysProps {
   onRemoveScannedUnit: (productIndex: number, inventoryWarehouseItemId?: number) => void;
   isWalletModalOpen: boolean;
   onCloseWalletModal: () => void;
+  resolvedWallets?: ResolveActiveBookingComboWalletsResult;
+  onSelectWalletFromModal?: (wallet: IosCustomerComboWalletItem) => void;
 }
 
 export function UpsellOverlays({
@@ -90,6 +94,8 @@ export function UpsellOverlays({
   onRemoveScannedUnit,
   isWalletModalOpen,
   onCloseWalletModal,
+  resolvedWallets,
+  onSelectWalletFromModal,
 }: UpsellOverlaysProps) {
   return (
     <>
@@ -143,6 +149,14 @@ export function UpsellOverlays({
         isAdmin={isAdmin}
         theme={isDark ? 'dark' : 'light'}
         onUpdated={onRefreshDb}
+        selectedUpperBalanceId={resolvedWallets?.selectedUpperComboBalanceId}
+        selectedUnderBalanceId={resolvedWallets?.selectedUnderComboBalanceId}
+        skipUpperCombo={resolvedWallets?.skipUpperCombo}
+        skipUnderCombo={resolvedWallets?.skipUnderCombo}
+        onSelectWallet={(wallet) => {
+          onSelectWalletFromModal?.(wallet);
+          onCloseWalletModal();
+        }}
       />
     </>
   );
