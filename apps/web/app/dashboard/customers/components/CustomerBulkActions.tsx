@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Space, Button, Typography, Popconfirm, Select, Dropdown } from 'antd';
 import { TeamOutlined, DeleteOutlined, WarningOutlined, RocketOutlined, MoreOutlined } from '@ant-design/icons';
 import { RevokeAssignmentModal } from './RevokeAssignmentModal';
@@ -10,6 +10,15 @@ import { canManageCustomerAllocation, SafeAny, Staff, vietnameseSearchFilter } f
 import CampaignPlusIcon from '../../../../components/icons/CampaignPlusIcon';
 import { AdaptiveModal, ResponsiveFormField, ResponsiveFormGrid } from '../../../../components/ui';
 import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
+import { apiClient } from '../../../../lib/api-client';
+import {
+  AllocationTeam,
+  NO_TEAM_VALUE,
+  filterStaff,
+  flattenTeams,
+  hasNoTeam,
+  normalizeRole,
+} from './allocationFilters';
 
 const { Text } = Typography;
 
@@ -88,6 +97,10 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   const [addToCampaignModalVisible, setAddToCampaignModalVisible] = useState(false);
   const [mobileDeleteConfirmVisible, setMobileDeleteConfirmVisible] = useState(false);
   const [targetRole, setTargetRole] = useState<string | undefined>(undefined);
+  const [targetGroupId, setTargetGroupId] = useState<number | undefined>(undefined);
+  const [allocationTeams, setAllocationTeams] = useState<AllocationTeam[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+  const [teamsLoaded, setTeamsLoaded] = useState(false);
   const responsiveTier = useResponsiveTier();
   const isMobile = responsiveTier === 'mobile';
 
@@ -105,21 +118,105 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         }),
     [staffList]
   );
+  useEffect(() => {
+    if (!assignModalVisible || teamsLoaded || !isManagerOrAdmin) return;
+    let cancelled = false;
+    setTeamsLoading(true);
+    apiClient.teams
+      .list()
+      .then((response) => {
+        if (!cancelled) setAllocationTeams(flattenTeams(response.teams || []));
+      })
+      .catch(() => {
+        // Group filter degrades gracefully: role filter keeps working.
+        if (!cancelled) setAllocationTeams([]);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setTeamsLoaded(true);
+          setTeamsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [assignModalVisible, teamsLoaded, isManagerOrAdmin]);
+
+  // Cascading options: role counts respect the chosen group and vice versa.
   const roleOptions = useMemo(() => {
     const counts = new Map<string, number>();
-    activeStaff.forEach((staff) => {
-      const role = staff.role.trim().toLowerCase();
+    filterStaff(activeStaff, allocationTeams, undefined, targetGroupId).forEach((staff) => {
+      const role = normalizeRole(staff.role);
       counts.set(role, (counts.get(role) || 0) + 1);
     });
     return Array.from(counts, ([value, count]) => ({
       value,
       label: `${roleLabel(value)} (${count})`,
     })).sort((left, right) => left.label.localeCompare(right.label, 'vi'));
-  }, [activeStaff]);
-  const targetRoleStaff = useMemo(
-    () => activeStaff.filter((staff) => staff.role.trim().toLowerCase() === targetRole),
-    [activeStaff, targetRole]
+  }, [activeStaff, allocationTeams, targetGroupId]);
+
+  const groupOptions = useMemo(() => {
+    const roleStaff = filterStaff(activeStaff, allocationTeams, targetRole, undefined);
+    const byDepartment = new Map<string, Array<{ value: number; label: string }>>();
+    allocationTeams.forEach((team) => {
+      const count = filterStaff(roleStaff, allocationTeams, undefined, team.id).length;
+      if (count === 0) return;
+      const list = byDepartment.get(team.departmentName) || [];
+      list.push({ value: team.id, label: `${team.name} (${count})` });
+      byDepartment.set(team.departmentName, list);
+    });
+    const groups: Array<{ label: string; options: Array<{ value: number; label: string }> }> = Array.from(
+      byDepartment,
+      ([label, options]) => ({ label, options })
+    );
+    const noTeamCount = roleStaff.filter((staff) => hasNoTeam(staff, allocationTeams)).length;
+    if (noTeamCount > 0) {
+      groups.push({
+        label: 'Khác',
+        options: [{ value: NO_TEAM_VALUE, label: `Chưa thuộc nhóm nào (${noTeamCount})` }],
+      });
+    }
+    return groups;
+  }, [activeStaff, allocationTeams, targetRole]);
+
+  const filteredStaff = useMemo(
+    () => filterStaff(activeStaff, allocationTeams, targetRole, targetGroupId),
+    [activeStaff, allocationTeams, targetRole, targetGroupId]
   );
+
+  const staffDetailLabel = (staff: Staff): string => {
+    const legacyId = staff.legacyStaffId == null ? undefined : Number(staff.legacyStaffId);
+    const teamNames =
+      legacyId == null
+        ? []
+        : allocationTeams.filter((team) => team.directLegacyStaffIds.has(legacyId)).map((team) => team.name);
+    return [
+      `${staff.displayName || staff.username} (ID: ${staff.id})`,
+      roleLabel(staff.role),
+      teamNames.length > 0 ? teamNames.join(', ') : undefined,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  };
+
+  const handleRoleChange = (value: string | undefined) => {
+    setTargetRole(value || undefined);
+    const stillValid = filterStaff(activeStaff, allocationTeams, value || undefined, targetGroupId);
+    if (targetGroupId != null && stillValid.length === 0) setTargetGroupId(undefined);
+    if (targetStaffId != null && !stillValid.some((staff) => staff.id === targetStaffId)) {
+      setTargetStaffId(undefined);
+    }
+  };
+
+  const handleGroupChange = (value: number | undefined) => {
+    const nextGroup = value ?? undefined;
+    setTargetGroupId(nextGroup);
+    const stillValid = filterStaff(activeStaff, allocationTeams, targetRole, nextGroup);
+    if (targetRole && stillValid.length === 0) setTargetRole(undefined);
+    if (targetStaffId != null && !stillValid.some((staff) => staff.id === targetStaffId)) {
+      setTargetStaffId(undefined);
+    }
+  };
 
   if (selectedRowKeys.length === 0 || !isManagerOrAdmin) {
     return null;
@@ -325,47 +422,67 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         onCancel={() => {
           setAssignModalVisible(false);
           setTargetRole(undefined);
+          setTargetGroupId(undefined);
           setTargetStaffId(undefined);
         }}
         confirmLoading={assigning}
         okText="Xác nhận Phân bổ"
         cancelText="Hủy"
         okButtonProps={{
-          disabled: !targetRole || !targetStaffId,
+          disabled: !targetStaffId,
         }}
       >
         <div style={{ margin: '16px 0' }}>
           <ResponsiveFormGrid columns={2}>
-            <ResponsiveFormField fullWidth>
-              <p style={{ marginBottom: '8px' }}>1. Chọn vai trò:</p>
+            <ResponsiveFormField>
+              <p className="mb-2">1. Chọn vai trò (tùy chọn):</p>
               <Select
                 showSearch
-                style={{ width: '100%' }}
-                placeholder="Chọn vai trò nhân sự..."
+                allowClear
+                className="w-full"
+                placeholder="Tất cả vai trò"
                 value={targetRole}
-                onChange={(value) => {
-                  setTargetRole(value);
-                  setTargetStaffId(undefined);
-                }}
+                onChange={handleRoleChange}
                 filterOption={vietnameseSearchFilter}
                 getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                 options={roleOptions}
               />
             </ResponsiveFormField>
-            <ResponsiveFormField fullWidth>
-              <p style={{ marginBottom: '8px' }}>2. Chọn nhân sự nhận phân bổ:</p>
+            <ResponsiveFormField>
+              <p className="mb-2">2. Chọn nhóm (tùy chọn):</p>
               <Select
                 showSearch
-                style={{ width: '100%' }}
-                placeholder={targetRole ? 'Tìm và chọn nhân sự...' : 'Chọn vai trò trước'}
-                value={targetStaffId}
-                onChange={(value) => setTargetStaffId(value)}
-                disabled={!targetRole}
+                allowClear
+                className="w-full"
+                placeholder="Tất cả nhóm"
+                loading={teamsLoading}
+                value={targetGroupId}
+                onChange={handleGroupChange}
                 filterOption={vietnameseSearchFilter}
                 getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                options={targetRoleStaff.map((staff) => ({
+                options={groupOptions}
+              />
+            </ResponsiveFormField>
+            <ResponsiveFormField fullWidth>
+              <p className="mb-2">
+                3. Chọn nhân sự nhận phân bổ{' '}
+                <Text type="secondary" className="tabular-nums">
+                  ({filteredStaff.length} nhân sự)
+                </Text>
+                :
+              </p>
+              <Select
+                showSearch
+                className="w-full"
+                placeholder="Tìm và chọn nhân sự..."
+                value={targetStaffId}
+                onChange={(value) => setTargetStaffId(value)}
+                notFoundContent="Không có nhân sự phù hợp"
+                filterOption={vietnameseSearchFilter}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                options={filteredStaff.map((staff) => ({
                   value: staff.id,
-                  label: `${staff.displayName || staff.username} (ID: ${staff.id})`,
+                  label: staffDetailLabel(staff),
                 }))}
               />
             </ResponsiveFormField>
