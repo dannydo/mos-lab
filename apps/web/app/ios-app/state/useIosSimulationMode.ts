@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { isYeppeumSerumProduct, YEPPEUM_PRODUCT_ID } from '@mos-lab/shared';
 import type {
   IosBookingItem,
   IosSimulationAttemptSummary,
@@ -28,8 +29,12 @@ export function buildSimBookingMetaPayload(booking?: IosBookingItem | null) {
     serviceName: booking.serviceName,
     servicePrice: booking.servicePrice,
     upgradePrice: booking.upgradePrice || 0,
-    isComboLive: Boolean(booking.comboLiveStatus?.isComboLive),
-    hasUnderMinkCombo: Boolean(booking.underMinkComboStatus?.hasUnderCombo),
+    isComboLive: !booking.skipUpperCombo && Boolean(booking.comboLiveStatus?.isComboLive),
+    hasUnderMinkCombo: !booking.skipUnderCombo && Boolean(booking.underMinkComboStatus?.hasUnderCombo),
+    selectedUpperComboBalanceId: booking.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: booking.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(booking.skipUpperCombo),
+    skipUnderCombo: Boolean(booking.skipUnderCombo),
     assignedStaffId: booking.assignedStaffId,
     assignedStaffTier: booking.assignedStaffTier,
     cvRotationPoints: booking.cvRotationPoints,
@@ -445,18 +450,22 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     async (attemptId: string, updates: IosUpdateSimulationAttemptRequest) => {
       setIsSimActionBusy(true);
       setSimActionError(null);
+      const targetBookingId = Number(updates.bookingId || historyBookingId || 0);
       try {
         const res = await apiClient.ios.updateSimulationAttempt(attemptId, {
           ...updates,
+          bookingId: targetBookingId,
           ...(selectedMenteeStaffId ? { menteeStaffId: selectedMenteeStaffId } : {}),
         });
         if (res?.success && res.attempt) {
           const updated = res.attempt;
           setAttemptsByBookingId((prev) => {
-            const existing = prev[updates.bookingId] || [];
+            const existing = prev[targetBookingId] || [];
+            const idx = existing.findIndex((a) => a.attemptId === attemptId || a.attemptId === updated.attemptId);
+            const nextList = idx >= 0 ? existing.map((a, i) => (i === idx ? updated : a)) : [...existing, updated];
             return {
               ...prev,
-              [updates.bookingId]: existing.map((a) => (a.attemptId === attemptId ? updated : a)),
+              [targetBookingId]: nextList.sort((a, b) => Number(a.attemptNumber || 0) - Number(b.attemptNumber || 0)),
             };
           });
         } else {
@@ -469,7 +478,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
         setIsSimActionBusy(false);
       }
     },
-    [selectedMenteeStaffId]
+    [historyBookingId, selectedMenteeStaffId]
   );
 
   const handleApplyAttemptToWorkspace = useCallback(
@@ -501,8 +510,7 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
                           name: attempt.selectedComboName,
                           price: attempt.selectedComboPrice,
                           bonus:
-                            attempt.comboBonusAmount ||
-                            (attempt.selectedComboPrice >= 1_000_000 ? 50_000 : 30_000),
+                            attempt.comboBonusAmount || (attempt.selectedComboPrice >= 1_000_000 ? 50_000 : 30_000),
                           sessions: 5,
                         }
                       : null,
@@ -515,13 +523,25 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
                           sessions: 5,
                         }
                       : null,
-                    cartProducts: (attempt.upsellProducts || []).map((p, idx) => ({
-                      productId: idx + 1,
-                      productName: p.productName,
-                      price: p.totalPrice / (p.quantity || 1),
-                      quantity: p.quantity,
-                      totalPrice: p.totalPrice,
-                    })),
+                    cartProducts: (attempt.upsellProducts || []).map((p, idx) => {
+                      const qty = Math.max(1, Number(p.quantity) || 1);
+                      const unitPrice = Number.isFinite(p.unitPrice)
+                        ? Math.max(0, Number(p.unitPrice))
+                        : Math.round(p.totalPrice / qty);
+                      const productId =
+                        Number(p.productId) > 0
+                          ? Number(p.productId)
+                          : isYeppeumSerumProduct({ productName: p.productName })
+                            ? YEPPEUM_PRODUCT_ID
+                            : idx + 1;
+                      return {
+                        productId,
+                        productName: p.productName,
+                        price: unitPrice,
+                        quantity: qty,
+                        totalPrice: p.totalPrice,
+                      };
+                    }),
                     appliedPromotion: attempt.promotionName
                       ? ({
                           promotionId: 9999,

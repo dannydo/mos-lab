@@ -38,6 +38,10 @@ export function useCheckoutItemizedPromotions({
   onForceResetDiamonds,
 }: UseCheckoutItemizedPromotionsParams) {
   const [servicePromo, setServicePromo] = useState<IosPromotionOption | null>(booking?.servicePromotion ?? null);
+  const [isServicePromoManuallyCleared, setIsServicePromoManuallyCleared] = useState<boolean>(false);
+  const [rememberedBookingPromo, setRememberedBookingPromo] = useState<IosPromotionOption | null>(
+    () => booking?.servicePromotion ?? booking?.appliedPromotion ?? null
+  );
   const [productPromos, setProductPromos] = useState<Array<IosPromotionOption | null>>(() =>
     (booking?.cartProducts || []).map((p) => p.appliedPromotion ?? null)
   );
@@ -47,18 +51,48 @@ export function useCheckoutItemizedPromotions({
   const [promoPickerTarget, setPromoPickerTarget] = useState<ReceiptPromotionOpenTarget | null>(null);
 
   useEffect(() => {
-    setServicePromo(booking?.servicePromotion ?? null);
-  }, [booking?.id, booking?.servicePromotion]);
+    setIsServicePromoManuallyCleared(false);
+    setRememberedBookingPromo(booking?.servicePromotion ?? booking?.appliedPromotion ?? null);
+  }, [booking?.id]);
+
+  useEffect(() => {
+    const incomingPromo = booking?.servicePromotion ?? booking?.appliedPromotion ?? null;
+    if (incomingPromo) {
+      setRememberedBookingPromo((prev) =>
+        prev && Number(prev.promotionId) === Number(incomingPromo.promotionId) ? prev : incomingPromo
+      );
+    }
+  }, [booking?.id, booking?.servicePromotion, booking?.appliedPromotion]);
+
+  useEffect(() => {
+    if (!isServicePromoManuallyCleared) {
+      setServicePromo(booking?.servicePromotion ?? null);
+    }
+  }, [booking?.id, booking?.servicePromotion, isServicePromoManuallyCleared]);
 
   useEffect(() => {
     setProductPromos((booking?.cartProducts || []).map((p) => p.appliedPromotion ?? null));
   }, [booking?.id, booking?.cartProducts]);
 
+  const isSessionWaivedIntoNewCombo = Boolean(
+    booking?.selectedCombo && booking.selectedCombo.todaySingleServiceWaived !== false
+  );
+
   useEffect(() => {
-    if (booking?.appliedPromotion?.isCreditAllowed === false && !booking?.servicePromotion) {
+    if (
+      !isSessionWaivedIntoNewCombo &&
+      booking?.appliedPromotion?.isCreditAllowed === false &&
+      !booking?.servicePromotion
+    ) {
       onForceResetDiamonds?.();
     }
-  }, [booking?.id, booking?.appliedPromotion, booking?.servicePromotion, onForceResetDiamonds]);
+  }, [
+    isSessionWaivedIntoNewCombo,
+    booking?.id,
+    booking?.appliedPromotion,
+    booking?.servicePromotion,
+    onForceResetDiamonds,
+  ]);
 
   const loadPromotions = useCallback(
     async (signal?: AbortSignal) => {
@@ -104,7 +138,11 @@ export function useCheckoutItemizedPromotions({
       target: { scope: IosPromotionTargetScope; productIndex?: number; productId?: number }
     ) => {
       if (target.scope === 'service') {
+        setIsServicePromoManuallyCleared(promo === null);
         setServicePromo(promo);
+        if (promo) {
+          setRememberedBookingPromo(promo);
+        }
       } else if (target.scope === 'product') {
         setProductPromos((prev) => {
           const baseLen = Math.max(prev.length, booking?.cartProducts?.length ?? 0);
@@ -145,8 +183,12 @@ export function useCheckoutItemizedPromotions({
     [applyPromoChange]
   );
 
-  const hasAnyItemPromo = Boolean(servicePromo || cartProducts.some((p) => p.appliedPromotion));
-  const fallbackOrderPromo = !hasAnyItemPromo ? (booking?.appliedPromotion ?? null) : null;
+  const activeServicePromo = isSessionWaivedIntoNewCombo ? null : servicePromo;
+  const hasAnyItemPromo = Boolean(activeServicePromo || cartProducts.some((p) => p.appliedPromotion));
+  const fallbackOrderPromo =
+    isSessionWaivedIntoNewCombo || isServicePromoManuallyCleared || hasAnyItemPromo
+      ? null
+      : (booking?.appliedPromotion ?? null);
   const hasAnyPromoObj = hasAnyItemPromo || Boolean(fallbackOrderPromo);
 
   const promoBreakdown = useMemo(
@@ -154,7 +196,7 @@ export function useCheckoutItemizedPromotions({
       calculateIosItemizedPromotionDiscounts({
         serviceAmount: effectiveServiceCharge,
         upgradeAmount: upgradePrice,
-        servicePromotion: servicePromo,
+        servicePromotion: activeServicePromo,
         comboAmount: upperComboPrice,
         underComboAmount: underComboPrice,
         products: cartProducts.map((p) => ({
@@ -168,7 +210,7 @@ export function useCheckoutItemizedPromotions({
     [
       effectiveServiceCharge,
       upgradePrice,
-      servicePromo,
+      activeServicePromo,
       upperComboPrice,
       underComboPrice,
       cartProducts,
@@ -177,26 +219,46 @@ export function useCheckoutItemizedPromotions({
     ]
   );
 
+  const effectiveDisplayServicePromo = useMemo(() => {
+    if (isSessionWaivedIntoNewCombo) return null;
+    if (activeServicePromo) return activeServicePromo;
+    if (fallbackOrderPromo && promoBreakdown.serviceDiscount > 0) return fallbackOrderPromo;
+    return null;
+  }, [isSessionWaivedIntoNewCombo, activeServicePromo, fallbackOrderPromo, promoBreakdown.serviceDiscount]);
+
+  const mergedPromotions = useMemo(() => {
+    if (!rememberedBookingPromo) return promotions;
+    if (promotions.some((p) => Number(p.promotionId) === Number(rememberedBookingPromo.promotionId))) {
+      return promotions;
+    }
+    return [rememberedBookingPromo, ...promotions];
+  }, [promotions, rememberedBookingPromo]);
+
   const activePromoNames = useMemo(() => {
     const names: string[] = [];
-    if (servicePromo) names.push(servicePromo.name);
+    if (effectiveDisplayServicePromo) names.push(effectiveDisplayServicePromo.name);
     cartProducts.forEach((p) => {
       if (p.appliedPromotion) names.push(p.appliedPromotion.name);
     });
     return Array.from(new Set(names));
-  }, [servicePromo, cartProducts]);
+  }, [effectiveDisplayServicePromo, cartProducts]);
 
   const appliedPromotionDisplayName =
     activePromoNames.length > 1
       ? `${activePromoNames.length} ưu đãi`
       : activePromoNames.length === 1
         ? activePromoNames[0]
-        : (fallbackOrderPromo?.name ?? (booking?.promotionId ? booking?.billing?.promotionName : undefined) ?? null);
+        : isSessionWaivedIntoNewCombo
+          ? null
+          : (fallbackOrderPromo?.name ?? (booking?.promotionId ? booking?.billing?.promotionName : undefined) ?? null);
 
   return {
-    servicePromo,
+    servicePromo: effectiveDisplayServicePromo,
+    rememberedServicePromo: servicePromo ?? rememberedBookingPromo,
+    isServicePromoSuspendedByNewCombo: Boolean(isSessionWaivedIntoNewCombo && (servicePromo || rememberedBookingPromo)),
+    isSessionWaivedIntoNewCombo,
     cartProducts,
-    promotions,
+    promotions: mergedPromotions,
     isPromotionsLoading,
     promotionsError,
     promoPickerTarget,

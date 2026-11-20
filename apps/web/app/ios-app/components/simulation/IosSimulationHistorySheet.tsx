@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { X, Trophy, TrendingUp, Clock, RotateCcw, BarChart3, Loader2, Pencil, Play } from 'lucide-react';
+import { X, Trophy, TrendingUp, Clock, RotateCcw, BarChart3, Loader2, Pencil, Play, Plus } from 'lucide-react';
 import type { IosBookingItem, IosSimulationAttemptSummary, IosUpdateSimulationAttemptRequest } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
@@ -66,6 +66,58 @@ export function IosSimulationHistorySheet({
     }
     return { bestRewardId, bestRevenueId };
   }, [attempts]);
+
+  const handleCreateNewAttempt = () => {
+    const targetBookingId = Number(booking?.id || 0);
+    const cartUpsells = Array.isArray(booking?.cartProducts)
+      ? booking.cartProducts.map((p) => {
+          const q = Math.max(1, Number(p.quantity || 1));
+          const uPrice = Number(p.price || 0);
+          return {
+            ...(Number(p.productId) > 0 ? { productId: Number(p.productId) } : {}),
+            productName: p.productName || 'Sản phẩm',
+            quantity: q,
+            unitPrice: uPrice,
+            totalPrice: uPrice * q,
+          };
+        })
+      : [];
+    const upsellTotal = cartUpsells.reduce((sum, p) => sum + p.totalPrice, 0);
+    const initialDraft: IosSimulationAttemptSummary = {
+      attemptId: `draft_${targetBookingId || Date.now()}`,
+      attemptNumber: (attempts?.length || 0) + 1,
+      bookingId: targetBookingId,
+      customerId: Number(booking?.customerId || 0),
+      customerName: booking?.customerName || 'Khách hàng',
+      orderNumber: booking?.orderNumber || (targetBookingId ? `#${targetBookingId}` : 'BK-NEW'),
+      staffId: Number(booking?.assignedStaffId || 0),
+      staffName: booking?.assignedStaffName || 'Chuyên viên',
+      statusAtSnapshot: booking?.status || 'SERVICING',
+      elapsedSeconds: Number(booking?.progress?.elapsedSeconds || 0),
+      serviceName: booking?.serviceName || 'Dịch vụ mi',
+      servicePrice: Number(booking?.servicePrice || 550000),
+      selectedStyle: 'Natural',
+      selectedComboName: booking?.selectedCombo?.name || null,
+      selectedComboPrice: Number(booking?.selectedCombo?.price || 0),
+      selectedUnderComboName: booking?.selectedUnderCombo?.name || null,
+      selectedUnderComboPrice: Number(booking?.selectedUnderCombo?.price || 0),
+      upsellProducts: cartUpsells,
+      upsellTotal,
+      promotionName: booking?.appliedPromotion?.name || null,
+      promotionDiscountAmount: Number(booking?.appliedPromotion?.discountAmount || 0),
+      tipAmount: Number(booking?.billing?.tipAmount || 0),
+      tipActorShare: Math.round(Number(booking?.billing?.tipAmount || 0) * 0.8),
+      grandTotal: Number(booking?.billing?.grandTotal || booking?.servicePrice || 550000),
+      comboBonusAmount: Number(booking?.selectedCombo?.price || 0) > 0 ? 50000 : 0,
+      serumBonusAmount: 0,
+      totalEstimatedReward: 55000,
+      cvRotationPoints: 1,
+      createdAt: new Date().toISOString(),
+      sourceAction: 'SIM_REVERT_CONSULTATION',
+      notes: (booking as any)?.notes || (booking as any)?.survey?.notes || undefined,
+    };
+    setEditingAttempt(initialDraft);
+  };
 
   if (!isOpen) return null;
 
@@ -143,7 +195,7 @@ export function IosSimulationHistorySheet({
             </div>
           ) : attempts.length === 0 ? (
             <div
-              className={`rounded-2xl p-6 text-center border space-y-1.5 ${
+              className={`rounded-2xl p-6 text-center border space-y-2.5 ${
                 isDark
                   ? 'bg-neutral-900/60 border-neutral-800 text-neutral-400'
                   : 'bg-neutral-50 border-neutral-200 text-neutral-600'
@@ -151,9 +203,22 @@ export function IosSimulationHistorySheet({
             >
               <div className="text-[13px] font-black text-amber-500">Chưa có phương án được lưu</div>
               <p className="text-[11.5px] leading-relaxed">
-                Hãy hoàn tất tư vấn & checkout (hoặc bấm Revert thử lại kịch bản) để hệ thống ghi nhận và so sánh thu
+                Hãy hoàn tất tư vấn &amp; checkout (hoặc bấm Revert thử lại kịch bản) để hệ thống ghi nhận và so sánh thu
                 nhập / doanh thu giữa các phương án.
               </p>
+              {!isReadOnly && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={handleCreateNewAttempt}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-[12px] font-black shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tạo &amp; Chỉnh sửa kịch bản mới</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             attempts.map((a) => {
@@ -384,20 +449,24 @@ export function IosSimulationHistorySheet({
             isOpen={Boolean(editingAttempt)}
             onClose={() => setEditingAttempt(null)}
             attempt={editingAttempt}
-            bookingId={booking?.id || 0}
+            bookingId={Number(booking?.id || editingAttempt.bookingId || 0)}
             isBusy={isBusy}
             onSave={async (attemptId, updates) => {
               if (onUpdateAttempt) {
-                await onUpdateAttempt(attemptId, updates);
+                await onUpdateAttempt(attemptId, {
+                  ...updates,
+                  bookingId: Number(booking?.id || editingAttempt.bookingId || updates.bookingId || 0),
+                });
               }
               setEditingAttempt(null);
             }}
             onApplyToWorkspace={
-              onApplyAttempt && booking && booking.id > 0
+              onApplyAttempt && (booking?.id || editingAttempt.bookingId)
                 ? (updatedAttempt) => {
+                    const targetBId = Number(booking?.id || editingAttempt.bookingId || 0);
                     setEditingAttempt(null);
                     onClose();
-                    onApplyAttempt(booking.id, updatedAttempt);
+                    onApplyAttempt(targetBId, updatedAttempt);
                   }
                 : undefined
             }

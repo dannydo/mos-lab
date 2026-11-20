@@ -3,10 +3,11 @@
 import { TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
-import { Row, Col, Table, Space, Tag, Badge, Typography } from 'antd';
-import { TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { Row, Col, Table, Space, Tag, Badge, Typography, Button } from 'antd';
+import { TeamOutlined, UserOutlined, CheckCircleOutlined, ClockCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { ShopCCData, ShopCVData } from '../hooks/useTodayData';
 import { SectionCard, StatusTag } from '../../../../components/ui';
+import { useTodaySandbox } from '../context/SandboxModeContext';
 
 const { Text } = Typography;
 
@@ -19,6 +20,7 @@ interface TodayStaffAttendanceProps {
 
 const TodayStaffAttendance = React.memo(
   function TodayStaffAttendance({ themeMode = 'light', token, ccList, cvList }: TodayStaffAttendanceProps) {
+    const sandbox = useTodaySandbox();
     const tableRegionRef = React.useRef<HTMLDivElement>(null);
     const goldText = token?.colorPrimary || (themeMode === 'dark' ? '#D4A84B' : '#855b0e');
     const infoText = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
@@ -186,8 +188,98 @@ const TodayStaffAttendance = React.memo(
             );
           },
         },
+        ...(sandbox.mode === 'training'
+          ? [
+              {
+                title: 'Thao tác Giả lập (Training)',
+                key: 'sandbox_actions',
+                render: (_: SafeAny, rec: ShopCVData) => {
+                  const ov = sandbox.staffOverrides[rec.name] || {};
+                  const isTimerRunning = Boolean(ov.timerStartedAt);
+                  if (rec.attendance === 'none') {
+                    return (
+                      <Button
+                        size="small"
+                        type="primary"
+                        ghost
+                        icon={<CheckCircleOutlined />}
+                        onClick={() => sandbox.simulateStaffCheckIn(rec.name, 'CV')}
+                        aria-label={`Giả lập check-in cho ${rec.name}`}
+                      >
+                        Check-in
+                      </Button>
+                    );
+                  }
+                  if (rec.attendance === 'checked_in') {
+                    if (rec.status === 'busy' || isTimerRunning) {
+                      return (
+                        <Space size={6}>
+                          <Tag color="processing" icon={<ClockCircleOutlined />} className="tabular-nums">
+                            Đang bấm giờ
+                          </Tag>
+                          <Button
+                            size="small"
+                            type="primary"
+                            onClick={() => sandbox.simulateStaffStopTimer(rec.name)}
+                            aria-label={`Hoàn tất phục vụ cho ${rec.name}`}
+                          >
+                            Xong mi (Check-out)
+                          </Button>
+                        </Space>
+                      );
+                    }
+                    return (
+                      <Space size={6}>
+                        <Button
+                          size="small"
+                          className="border-amber-500 text-amber-600 dark:text-amber-400 hover:text-amber-700"
+                          icon={<ClockCircleOutlined />}
+                          onClick={() =>
+                            sandbox.simulateStaffStartTimer(rec.name, 'Nối Mi Classic Thiết Kế (60p)', 60)
+                          }
+                          aria-label={`Bấm giờ phục vụ cho ${rec.name}`}
+                        >
+                          Bấm giờ
+                        </Button>
+                        <Button
+                          size="small"
+                          danger
+                          ghost
+                          onClick={() => sandbox.simulateStaffCheckOut(rec.name, 'CV')}
+                          aria-label={`Check-out ca cho ${rec.name}`}
+                        >
+                          Check-out ca
+                        </Button>
+                      </Space>
+                    );
+                  }
+                  return (
+                    <Space size={6}>
+                      <Tag color="default">Đã về</Tag>
+                      <Button
+                        size="small"
+                        type="link"
+                        onClick={() => sandbox.simulateStaffCheckIn(rec.name, 'CV')}
+                        aria-label={`Check-in lại cho ${rec.name}`}
+                      >
+                        Vào ca lại
+                      </Button>
+                    </Space>
+                  );
+                },
+              },
+            ]
+          : []),
       ],
-      [mutedText]
+      [
+        mutedText,
+        sandbox.mode,
+        sandbox.staffOverrides,
+        sandbox.simulateStaffCheckIn,
+        sandbox.simulateStaffCheckOut,
+        sandbox.simulateStaffStartTimer,
+        sandbox.simulateStaffStopTimer,
+      ]
     );
 
     const ccColumns = React.useMemo(
@@ -292,12 +384,101 @@ const TodayStaffAttendance = React.memo(
             </strong>
           ),
         },
+        ...(sandbox.mode === 'training'
+          ? [
+              {
+                title: 'Thao tác Giả lập (Training)',
+                key: 'sandbox_actions',
+                render: (_: SafeAny, rec: ShopCCData) => {
+                  if (rec.attendance === 'none') {
+                    return (
+                      <Button
+                        size="small"
+                        type="primary"
+                        ghost
+                        icon={<CheckCircleOutlined />}
+                        onClick={() => sandbox.simulateStaffCheckIn(rec.name, 'CC')}
+                        aria-label={`Giả lập check-in cho ${rec.name}`}
+                      >
+                        Check-in
+                      </Button>
+                    );
+                  }
+                  if (rec.attendance === 'checked_in') {
+                    return (
+                      <Button
+                        size="small"
+                        danger
+                        ghost
+                        onClick={() => sandbox.simulateStaffCheckOut(rec.name, 'CC')}
+                        aria-label={`Check-out ca cho ${rec.name}`}
+                      >
+                        Check-out ca
+                      </Button>
+                    );
+                  }
+                  return (
+                    <Button
+                      size="small"
+                      type="link"
+                      onClick={() => sandbox.simulateStaffCheckIn(rec.name, 'CC')}
+                      aria-label={`Check-in lại cho ${rec.name}`}
+                    >
+                      Vào ca lại
+                    </Button>
+                  );
+                },
+              },
+            ]
+          : []),
       ],
-      [goldText, infoText, mutedText, token.colorTextDescription]
+      [
+        goldText,
+        infoText,
+        mutedText,
+        token.colorTextDescription,
+        sandbox.mode,
+        sandbox.simulateStaffCheckIn,
+        sandbox.simulateStaffCheckOut,
+      ]
     );
 
     return (
       <div ref={tableRegionRef}>
+        {sandbox.mode === 'training' && (
+          <div className="bg-emerald-50/70 dark:bg-slate-800/60 border border-emerald-200 dark:border-slate-700 rounded-md p-3 mb-4 flex justify-between items-center flex-wrap gap-2">
+            <Space size={8}>
+              <Tag color="processing" className="font-semibold">
+                🧪 Phòng Tập Chấm Công & Bấm Giờ Phục Vụ
+              </Tag>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Mục tiêu training quy trình: bấm check-in ca, bấm giờ làm mi và bấm check-out hoàn tất.
+              </span>
+            </Space>
+            <Space size={8}>
+              <Button
+                size="small"
+                type="primary"
+                ghost
+                icon={<CheckCircleOutlined />}
+                onClick={() => sandbox.simulateBatchCheckInAll()}
+              >
+                ⚡ Check-in toàn bộ ca
+              </Button>
+              <Button
+                size="small"
+                className="border-amber-500 text-amber-600 dark:text-amber-400 hover:text-amber-700"
+                icon={<ClockCircleOutlined />}
+                onClick={() => sandbox.simulateBatchStartAllTimers()}
+              >
+                ⏱️ Bấm giờ đồng loạt
+              </Button>
+              <Button size="small" icon={<ReloadOutlined />} onClick={sandbox.resetTrainingState}>
+                🔄 Đặt lại phòng tập
+              </Button>
+            </Space>
+          </div>
+        )}
         <Row gutter={[24, 24]}>
           {/* CV list */}
           <Col xs={24} xl={12}>
@@ -355,7 +536,11 @@ const TodayStaffAttendance = React.memo(
     );
   },
   (prevProps, nextProps) => {
-    return prevProps.ccList === nextProps.ccList && prevProps.cvList === nextProps.cvList;
+    return (
+      prevProps.ccList === nextProps.ccList &&
+      prevProps.cvList === nextProps.cvList &&
+      prevProps.themeMode === nextProps.themeMode
+    );
   }
 );
 

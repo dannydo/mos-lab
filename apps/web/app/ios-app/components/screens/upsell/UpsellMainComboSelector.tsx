@@ -11,6 +11,7 @@ import {
   calculateComboPurchaseAccounting,
   type ComboPurchaseExpiryResult,
   type ComboTodayUsageMode,
+  type IosPromotionOption,
 } from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
 import { WingsUnifiedComboCard, type ComboExpiryPreviewItem } from '../../ui-kit/WingsUnifiedComboCard';
@@ -54,6 +55,7 @@ export interface UpsellMainComboSelectorProps {
   selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
   showStaffRewards: boolean;
   actorName: string;
+  activeBookingPromotion?: IosPromotionOption | null;
   onOpenLockedWelcomeModal: () => void;
 }
 
@@ -90,6 +92,7 @@ export function UpsellMainComboSelector({
   selectedUpperExpiry,
   showStaffRewards,
   actorName,
+  activeBookingPromotion,
   onOpenLockedWelcomeModal,
 }: UpsellMainComboSelectorProps) {
   return (
@@ -148,7 +151,9 @@ export function UpsellMainComboSelector({
           {/* Smart-Matched Header & Open Full 13-Category Consult Modal Button */}
           <div className="bg-[var(--mos-surface-raised)] text-[var(--mos-text)] border border-[var(--mos-surface-border)] rounded-xl p-2.5 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}>
+              <div
+                className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-[#FFB400]' : 'text-amber-700'}`}
+              >
                 {isUpTierPackage ? (
                   <>
                     <Sparkles className={`w-3 h-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -192,6 +197,28 @@ export function UpsellMainComboSelector({
               {isUpTierPackage && (
                 <div className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
                   Gốc làm hôm nay: {getWingsComboCategory(autoMatchedCategoryId).name} · Mã {autoMatchedVolume}
+                </div>
+              )}
+              {activeBookingPromotion && (
+                <div
+                  data-testid="upsell-preattached-promo-badge"
+                  className={`mt-1.5 inline-flex items-center gap-1.5 flex-wrap px-2 py-0.5 rounded-lg border text-[10px] font-bold ${
+                    upperTodayUsageMode === 'USE_NEW_COMBO'
+                      ? isDark
+                        ? 'bg-neutral-800/80 border-neutral-700 text-neutral-400'
+                        : 'bg-neutral-100 border-neutral-300 text-neutral-600'
+                      : isDark
+                        ? 'bg-amber-950/50 border-amber-500/40 text-amber-300'
+                        : 'bg-amber-50 border-amber-300 text-amber-800'
+                  }`}
+                >
+                  <span>Ưu đãi đặt lịch: {activeBookingPromotion.name}</span>
+                  <span>·</span>
+                  <span>
+                    {upperTodayUsageMode === 'USE_NEW_COMBO'
+                      ? 'Tạm ngưng vì đang chọn trừ Buổi 1 gói mới'
+                      : 'Đang áp dụng cho ca lẻ hôm nay'}
+                  </span>
                 </div>
               )}
             </div>
@@ -417,6 +444,7 @@ export function UpsellMainComboSelector({
             servicePrice={servicePrice}
             showStaffRewards={showStaffRewards}
             actorName={actorName}
+            activeBookingPromotion={activeBookingPromotion}
             onCollapseNewComboSection={onCollapseNewComboSection}
           />
         </div>

@@ -14,6 +14,8 @@ import BkGameCreateModal from './BkGameCreateModal';
 import BkGameEditModal from './BkGameEditModal';
 import BkGameFinalizeModal from './BkGameFinalizeModal';
 import BkDoneBonusDetailsDrawer from './BkDoneBonusDetailsDrawer';
+import BkTeamBookingDoneBonusPanel from './BkTeamBookingDoneBonusPanel';
+import BkTeamBookingDoneBonusDetailsDrawer from './BkTeamBookingDoneBonusDetailsDrawer';
 
 type GameMetric = 'calls' | 'pickups' | 'bookings' | 'done';
 
@@ -62,32 +64,49 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
   const [doneBonusDrawerOpen, setDoneBonusDrawerOpen] = useState(false);
   const [selectedBonusStaffId, setSelectedBonusStaffId] = useState<number | null>(null);
+  const [teamBookingDoneDrawerOpen, setTeamBookingDoneDrawerOpen] = useState(false);
+  const [selectedTeamBkBonusStaffId, setSelectedTeamBkBonusStaffId] = useState<number | null>(null);
+  const [selectedTeamBkBonusDate, setSelectedTeamBkBonusDate] = useState<string | null>(null);
 
   // Countdown timer in seconds
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   // 1. Load Live leaderboard (from BK Leaderboard)
-  const loadLeaderboard = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: Record<string, unknown> = {
-        storeId: 'ALL',
-      };
-      if (selectedGameId) {
-        params.gameId = selectedGameId;
-      } else {
-        params.dateFrom = dateRange[0].format('YYYY-MM-DD');
-        params.dateTo = dateRange[1].format('YYYY-MM-DD');
+  const loadLeaderboard = useCallback(
+    async (options?: { silent?: boolean; skipCache?: boolean }) => {
+      if (!options?.silent) {
+        setLoading(true);
       }
-      const response = await apiClient.bk.getBookingLeaderboard(params);
-      setLeaderboard(response.leaderboard || []);
-    } catch {
-      setError('Không thể tải bảng xếp hạng Game BK. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, selectedGameId]);
+      setError(null);
+      try {
+        const params: Record<string, unknown> = {
+          storeId: 'ALL',
+        };
+        if (selectedGameId) {
+          params.gameId = selectedGameId;
+        } else {
+          params.dateFrom = dateRange[0].format('YYYY-MM-DD');
+          params.dateTo = dateRange[1].format('YYYY-MM-DD');
+        }
+        if (options?.skipCache) {
+          params.skipCache = true;
+        }
+        const response = await apiClient.bk.getBookingLeaderboard(params);
+        setLeaderboard(response.leaderboard || []);
+        setLastUpdatedAt(new Date());
+      } catch {
+        if (!options?.silent) {
+          setError('Không thể tải bảng xếp hạng Game BK. Vui lòng thử lại.');
+        }
+      } finally {
+        if (!options?.silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [dateRange, selectedGameId]
+  );
 
   // 2. Load Configured Games list
   const loadGames = useCallback(async () => {
@@ -105,33 +124,52 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
   }, []);
 
   // 3. Load Selected Game detail
-  const loadSelectedGameDetail = useCallback(async (gameId: number) => {
+  const loadSelectedGameDetail = useCallback(async (gameId: number, options?: { silent?: boolean }) => {
     if (typeof apiClient.bk?.getGameDetail !== 'function') return;
-    setGameLoading(true);
+    if (!options?.silent) {
+      setGameLoading(true);
+    }
     try {
       const detail = await apiClient.bk.getGameDetail(gameId);
       setGameDetail(detail);
       setSecondsRemaining(detail.stats.timeRemainingSeconds);
+      setLastUpdatedAt(new Date());
     } catch {
       // Ignore
     } finally {
-      setGameLoading(false);
+      if (!options?.silent) {
+        setGameLoading(false);
+      }
     }
   }, []);
 
-  // Initial and periodic refresh
+  // Initial and periodic live refresh (15s + immediate sync on tab focus/visibility)
   useEffect(() => {
     void loadLeaderboard();
     void loadGames();
 
-    const timer = window.setInterval(() => {
-      void loadLeaderboard();
+    const refreshLive = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void loadLeaderboard({ silent: true, skipCache: true });
       if (selectedGameId) {
-        void loadSelectedGameDetail(selectedGameId);
+        void loadSelectedGameDetail(selectedGameId, { silent: true });
       }
-    }, 30_000);
+    };
 
-    return () => window.clearInterval(timer);
+    const timer = window.setInterval(refreshLive, 15_000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshLive();
+      }
+    };
+    window.addEventListener('focus', refreshLive);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshLive);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [loadLeaderboard, loadGames, selectedGameId, loadSelectedGameDetail]);
 
   useEffect(() => {
@@ -243,6 +281,41 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
     return map;
   }, [gameDetail]);
 
+  const teamBookingDoneBonusSummary = gameDetail?.teamBookingDoneBonusSummary || null;
+  const hasTeamBookingDoneBonus = Boolean(
+    teamBookingDoneBonusSummary && teamBookingDoneBonusSummary.config?.enabled
+  );
+
+  const staffTeamBookingDoneBonusMap = useMemo(() => {
+    const map = new Map<number, { singleDoneCount: number; totalBonus: number }>();
+    if (teamBookingDoneBonusSummary?.staffTotals) {
+      teamBookingDoneBonusSummary.staffTotals.forEach((s) => {
+        map.set(s.staffId, { singleDoneCount: s.singleDoneCount, totalBonus: s.totalBonus });
+      });
+    }
+    if (gameDetail?.leaderboard) {
+      gameDetail.leaderboard.forEach((p) => {
+        if (p.staffId && !map.has(p.staffId)) {
+          map.set(p.staffId, {
+            singleDoneCount: p.teamBookingDoneCount || 0,
+            totalBonus: p.totalTeamBookingDoneBonus || 0,
+          });
+        }
+      });
+    }
+    return map;
+  }, [teamBookingDoneBonusSummary, gameDetail]);
+
+  const openTeamBookingDoneDrawer = useCallback((staffId: number | null = null, rewardDate: string | null = null) => {
+    setSelectedTeamBkBonusStaffId(staffId);
+    setSelectedTeamBkBonusDate(rewardDate);
+    setTeamBookingDoneDrawerOpen(true);
+  }, []);
+
+  const heroBonusExtraCount = (hasDoneBonusConfig ? 1 : 0) + (hasTeamBookingDoneBonus ? 1 : 0);
+  const heroGridColsClass =
+    heroBonusExtraCount >= 2 ? 'lg:grid-cols-6' : heroBonusExtraCount === 1 ? 'lg:grid-cols-5' : 'md:grid-cols-4';
+
   return (
     <div className="space-y-4">
       {/* Informational Alert if no active campaign is running */}
@@ -264,7 +337,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           </Typography.Title>
           <Typography.Text type="secondary" className="text-xs">
             Thi đua theo {comparisonMode === 'day' ? 'ngày' : comparisonMode === 'week' ? 'tuần' : 'tháng'} · tự làm mới
-            mỗi 30 giây
+            mỗi 15 giây
           </Typography.Text>
         </div>
 
@@ -328,10 +401,20 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
             </Button>
           )}
 
+          {activeGame && hasTeamBookingDoneBonus && (
+            <Button
+              icon={<AppIcon icon={Trophy} size="sm" className="text-amber-500" />}
+              onClick={() => openTeamBookingDoneDrawer(null, null)}
+              className="font-medium !text-amber-700 dark:!text-amber-300 !border-amber-300 dark:!border-amber-700 hover:!bg-amber-50 dark:hover:!bg-amber-950/30"
+            >
+              Chi Tiết Thưởng Mốc BK
+            </Button>
+          )}
+
           <Button
             icon={<AppIcon icon={RefreshCw} size="action" />}
             onClick={() => {
-              void loadLeaderboard();
+              void loadLeaderboard({ skipCache: true });
               void loadGames();
               if (selectedGameId) void loadSelectedGameDetail(selectedGameId);
             }}
@@ -446,17 +529,13 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 <div className="text-2xl font-black tabular-nums tracking-wider text-amber-300">
                   {formatCountdown(secondsRemaining)}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-1">Tự động cập nhật mỗi 30s</div>
+                <div className="text-[11px] text-slate-400 mt-1">Live · Tự động cập nhật mỗi 15s</div>
               </div>
             </div>
 
             {/* Summary Stat Cards */}
             {activeGame.gameType === 'TEAM_KPI' && gameDetail?.teamKpiSummary ? (
-              <div
-                className={`grid grid-cols-2 ${
-                  hasDoneBonusConfig ? 'lg:grid-cols-5' : 'md:grid-cols-4'
-                } gap-3 mt-6 pt-6 border-t border-white/10`}
-              >
+              <div className={`grid grid-cols-2 ${heroGridColsClass} gap-3 mt-6 pt-6 border-t border-white/10`}>
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
                     <span>Mục Tiêu Hôm Nay</span>
@@ -510,6 +589,30 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                   </div>
                 )}
 
+                {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
+                  <div className="bg-amber-950/40 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/30">
+                    <div className="text-xs text-amber-300 uppercase font-medium flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <AppIcon icon={Trophy} size="sm" className="text-amber-400" />
+                        <span>Thưởng Mốc BK</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openTeamBookingDoneDrawer(null, null)}
+                        className="text-[10px] text-amber-300 hover:text-amber-100 underline decoration-dotted cursor-pointer"
+                      >
+                        Đối soát
+                      </button>
+                    </div>
+                    <div className="text-xl font-bold mt-1 text-amber-300 tabular-nums">
+                      +{teamBookingDoneBonusSummary.totalBonus.toLocaleString('vi-VN')} đ
+                    </div>
+                    <div className="text-xs text-slate-300 mt-0.5 tabular-nums">
+                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK · {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium">Tỷ Lệ Đạt KPI</div>
                   <div className="text-xl font-bold mt-1 text-white tabular-nums">
@@ -532,11 +635,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 </div>
               </div>
             ) : (
-              <div
-                className={`grid grid-cols-2 ${
-                  hasDoneBonusConfig ? 'lg:grid-cols-5' : 'md:grid-cols-4'
-                } gap-3 mt-6 pt-6 border-t border-white/10`}
-              >
+              <div className={`grid grid-cols-2 ${heroGridColsClass} gap-3 mt-6 pt-6 border-t border-white/10`}>
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
                     <span>Mục Tiêu KPI</span>
@@ -587,6 +686,30 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     </div>
                     <div className="text-xs text-slate-300 mt-0.5">
                       {totalDoneBonusBookings} đơn Done đạt thưởng
+                    </div>
+                  </div>
+                )}
+
+                {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
+                  <div className="bg-amber-950/40 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/30">
+                    <div className="text-xs text-amber-300 uppercase font-medium flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <AppIcon icon={Trophy} size="sm" className="text-amber-400" />
+                        <span>Thưởng Mốc BK</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openTeamBookingDoneDrawer(null, null)}
+                        className="text-[10px] text-amber-300 hover:text-amber-100 underline decoration-dotted cursor-pointer"
+                      >
+                        Đối soát
+                      </button>
+                    </div>
+                    <div className="text-xl font-bold mt-1 text-amber-300 tabular-nums">
+                      +{teamBookingDoneBonusSummary.totalBonus.toLocaleString('vi-VN')} đ
+                    </div>
+                    <div className="text-xs text-slate-300 mt-0.5 tabular-nums">
+                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK · {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
                     </div>
                   </div>
                 )}
@@ -839,7 +962,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               className={
                 activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
                   ? 'lg:col-span-7 flex flex-col'
-                  : 'lg:col-span-8 flex flex-col'
+                  : hasTeamBookingDoneBonus
+                    ? 'lg:col-span-12 flex flex-col'
+                    : 'lg:col-span-8 flex flex-col'
               }
             >
               <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
@@ -961,7 +1086,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               </div>
             </div>
 
-            {/* SIDE PANEL: TEAM BATTLE OR CHALLENGE OVERVIEW */}
+            {/* SIDE PANEL: TEAM BATTLE OR CHALLENGE OVERVIEW (Hidden when Team-Booking Done Bonus replaces legacy challenge card) */}
+            {(activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2) ||
+            !hasTeamBookingDoneBonus ? (
             <div
               className={
                 activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
@@ -1113,7 +1240,16 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 </div>
               )}
             </div>
+            ) : null}
           </div>
+          )}
+
+          {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
+            <BkTeamBookingDoneBonusPanel
+              summary={teamBookingDoneBonusSummary}
+              onOpenDetailsDrawer={openTeamBookingDoneDrawer}
+              lastUpdatedAt={lastUpdatedAt}
+            />
           )}
         </div>
       )}
@@ -1220,6 +1356,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               done: 'secondary',
               doneBonusCount: 'secondary',
               totalDoneBonus: 'primary',
+              teamBookingDoneCount: 'secondary',
+              totalTeamBookingDoneBonus: 'primary',
             }}
             columns={[
               {
@@ -1313,6 +1451,47 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     },
                   ]
                 : []),
+              ...(hasTeamBookingDoneBonus
+                ? [
+                    {
+                      title: 'Done Lẻ (Mốc BK)',
+                      key: 'teamBookingDoneCount',
+                      align: 'right' as const,
+                      render: (_: unknown, record: BkBookingLeaderboardEntry) => {
+                        const stat = staffTeamBookingDoneBonusMap.get(record.bookerId) || {
+                          singleDoneCount: 0,
+                          totalBonus: 0,
+                        };
+                        return (
+                          <span className="tabular-nums font-semibold text-amber-600 dark:text-amber-400">
+                            {stat.singleDoneCount}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      title: 'Thưởng Mốc BK',
+                      key: 'totalTeamBookingDoneBonus',
+                      align: 'right' as const,
+                      render: (_: unknown, record: BkBookingLeaderboardEntry) => {
+                        const stat = staffTeamBookingDoneBonusMap.get(record.bookerId) || {
+                          singleDoneCount: 0,
+                          totalBonus: 0,
+                        };
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => openTeamBookingDoneDrawer(record.bookerId, null)}
+                            className="inline-flex items-center gap-1 font-bold text-xs text-amber-600 dark:text-amber-400 hover:underline cursor-pointer tabular-nums"
+                            title="Bấm để xem chi tiết đơn Done khách lẻ được thưởng theo mốc Booking Team"
+                          >
+                            <span>+{stat.totalBonus.toLocaleString('vi-VN')} đ</span>
+                          </button>
+                        );
+                      },
+                    },
+                  ]
+                : []),
             ]}
           />
         )}
@@ -1361,6 +1540,17 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
         onClose={() => setDoneBonusDrawerOpen(false)}
         gameDetail={gameDetail}
         initialStaffId={selectedBonusStaffId}
+      />
+
+      {/* DRAWER: TEAM-BOOKING DONE BONUS DETAILS AUDIT (MOS-BUG-247) */}
+      <BkTeamBookingDoneBonusDetailsDrawer
+        open={teamBookingDoneDrawerOpen}
+        onClose={() => setTeamBookingDoneDrawerOpen(false)}
+        gameTitle={activeGame?.title}
+        gameId={activeGame?.id}
+        summary={teamBookingDoneBonusSummary}
+        initialStaffId={selectedTeamBkBonusStaffId}
+        initialRewardDate={selectedTeamBkBonusDate}
       />
     </div>
   );

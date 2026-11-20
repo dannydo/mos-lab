@@ -1,9 +1,14 @@
 'use client';
 
 import { useCallback, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
-import { hasCompleteNaturalLashAttributes, resolveEffectiveServiceTotal } from '@mos-lab/shared';
+import {
+  hasCompleteNaturalLashAttributes,
+  resolveActiveBookingComboWallets,
+  resolveEffectiveServiceTotal,
+} from '@mos-lab/shared';
 import { BookingItem } from './mockData';
 import type { IosUserRole, ActiveActorProfile } from './iosActorProfile';
+import { computeFreshBillingLineTotals } from './iosBillingMath';
 import { saveLocalProgressSnapshot, setActiveServicingBookingId } from './offlineSync';
 
 export interface UseIosConsultationAndCheckInParams {
@@ -242,10 +247,18 @@ export function useIosConsultationAndCheckIn({
               : nextServiceName;
           const originalBookedServicePrice = b.originalBookedServicePrice || b.servicePrice;
 
-          const isClientComboLive = Boolean(b.comboLiveStatus?.isComboLive);
-          const hasUnderMinkComboActive = Boolean(
-            b.underMinkComboStatus?.hasUnderCombo && (b.underMinkComboStatus?.remainingSessions ?? 0) > 0
-          );
+          const resolvedWallets = resolveActiveBookingComboWallets({
+            comboWallets: b.comboWallets,
+            comboLiveStatus: b.comboLiveStatus,
+            underMinkComboStatus: b.underMinkComboStatus,
+            selectedUpperComboBalanceId: b.selectedUpperComboBalanceId ?? null,
+            selectedUnderComboBalanceId: b.selectedUnderComboBalanceId ?? null,
+            skipUpperCombo: Boolean(b.skipUpperCombo),
+            skipUnderCombo: Boolean(b.skipUnderCombo),
+            bookedServiceName: nextServiceName,
+          });
+          const isClientComboLive = resolvedWallets.isRedeemingUpperToday;
+          const hasUnderMinkComboActive = resolvedWallets.isRedeemingUnderToday;
           const comboPrice = (nextCombo ? nextCombo.price : 0) + (nextUnderCombo ? nextUnderCombo.price : 0);
           const effectiveServiceTotal = resolveEffectiveServiceTotal({
             servicePrice: nextServicePrice,
@@ -257,7 +270,7 @@ export function useIosConsultationAndCheckIn({
             hasUnderMinkCombo: hasUnderMinkComboActive,
             selectedCombo: nextCombo,
             selectedUnderCombo: nextUnderCombo,
-            comboRedemption: b.comboRedemption,
+            comboRedemption: resolvedWallets.skipUpperCombo ? null : b.comboRedemption,
           });
           const productTotal = (b.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
           const subtotal = effectiveServiceTotal + comboPrice + productTotal;
@@ -330,6 +343,10 @@ export function useIosConsultationAndCheckIn({
         selectedCombo: selectedCombo !== undefined ? selectedCombo : targetBooking.selectedCombo || null,
         selectedUnderCombo:
           selectedUnderCombo !== undefined ? selectedUnderCombo : targetBooking.selectedUnderCombo || null,
+        selectedUpperComboBalanceId: targetBooking?.selectedUpperComboBalanceId ?? null,
+        selectedUnderComboBalanceId: targetBooking?.selectedUnderComboBalanceId ?? null,
+        skipUpperCombo: Boolean(targetBooking?.skipUpperCombo),
+        skipUnderCombo: Boolean(targetBooking?.skipUnderCombo),
         skuPricing,
         assignmentMode: isSelfAssignedCv ? 'SELF_SERVICE' : 'ASSIGN_OTHER',
         nextStatus: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
@@ -407,11 +424,143 @@ export function useIosConsultationAndCheckIn({
           notes,
           selectedCombo,
           selectedUnderCombo,
+          selectedUpperComboBalanceId: targetBooking?.selectedUpperComboBalanceId ?? null,
+          selectedUnderComboBalanceId: targetBooking?.selectedUnderComboBalanceId ?? null,
+          skipUpperCombo: Boolean(targetBooking?.skipUpperCombo),
+          skipUnderCombo: Boolean(targetBooking?.skipUnderCombo),
           skuPricing,
         });
       } catch (err) {
         console.warn('[useIosConsultationAndCheckIn] Failed to autosave consultation draft:', err);
       }
+    },
+    [activeBookingIdRef, postAction, setBookings]
+  );
+
+  const handleSelectComboWallet = useCallback(
+    (params: {
+      targetBookingId?: number;
+      selectedUpperComboBalanceId?: number | null;
+      selectedUnderComboBalanceId?: number | null;
+      skipUpperCombo?: boolean;
+      skipUnderCombo?: boolean;
+      comboRedemption?: BookingItem['comboRedemption'] | null;
+      serviceName?: string;
+      servicePrice?: number;
+      serviceType?: 'Normal' | 'Retain';
+      upgradePrice?: number;
+    }) => {
+      const targetId =
+        params.targetBookingId !== undefined ? Number(params.targetBookingId) : activeBookingIdRef.current;
+      const targetBooking = bookingsRef.current.find((b) => Number(b.id) === targetId);
+
+      setBookings((prev) =>
+        prev.map((b) => {
+          if (Number(b.id) !== targetId) return b;
+          const nextUpperId =
+            params.selectedUpperComboBalanceId !== undefined
+              ? params.selectedUpperComboBalanceId
+              : (b.selectedUpperComboBalanceId ?? null);
+          const nextUnderId =
+            params.selectedUnderComboBalanceId !== undefined
+              ? params.selectedUnderComboBalanceId
+              : (b.selectedUnderComboBalanceId ?? null);
+          const nextSkipUpper =
+            params.skipUpperCombo !== undefined ? Boolean(params.skipUpperCombo) : Boolean(b.skipUpperCombo);
+          const nextSkipUnder =
+            params.skipUnderCombo !== undefined ? Boolean(params.skipUnderCombo) : Boolean(b.skipUnderCombo);
+          const nextServiceName = params.serviceName !== undefined ? params.serviceName : b.serviceName;
+          const nextServicePrice = params.servicePrice !== undefined ? params.servicePrice : b.servicePrice;
+          const nextServiceType = params.serviceType !== undefined ? params.serviceType : b.serviceType;
+          const nextUpgradePrice = params.upgradePrice !== undefined ? params.upgradePrice : b.upgradePrice;
+          const nextComboRedemption = nextSkipUpper
+            ? null
+            : params.comboRedemption !== undefined
+              ? params.comboRedemption
+              : b.comboRedemption;
+
+          const resolved = resolveActiveBookingComboWallets({
+            comboWallets: b.comboWallets,
+            comboLiveStatus: b.comboLiveStatus,
+            underMinkComboStatus: b.underMinkComboStatus,
+            selectedUpperComboBalanceId: nextUpperId,
+            selectedUnderComboBalanceId: nextUnderId,
+            skipUpperCombo: nextSkipUpper,
+            skipUnderCombo: nextSkipUnder,
+            bookedServiceName: nextServiceName,
+          });
+
+          const nextDraft: BookingItem = {
+            ...b,
+            serviceName: nextServiceName,
+            servicePrice: nextServicePrice,
+            serviceType: nextServiceType,
+            upgradePrice: nextUpgradePrice,
+            comboLiveStatus: resolved.effectiveComboLiveStatus,
+            underMinkComboStatus: resolved.effectiveUnderMinkComboStatus,
+            comboWallets: resolved.allWallets.length > 0 ? resolved.allWallets : b.comboWallets,
+            selectedUpperComboBalanceId: resolved.selectedUpperComboBalanceId,
+            selectedUnderComboBalanceId: resolved.selectedUnderComboBalanceId,
+            skipUpperCombo: resolved.skipUpperCombo,
+            skipUnderCombo: resolved.skipUnderCombo,
+            comboRedemption: nextComboRedemption,
+            _localComboUpdatedAt: Date.now(),
+          };
+
+          if (!nextDraft.billing) {
+            return nextDraft;
+          }
+
+          const totals = computeFreshBillingLineTotals(nextDraft);
+          const tipAmount = nextDraft.billing.tipAmount ?? 0;
+          const diamondDiscountAmount = totals.isFullCreditLocked
+            ? 0
+            : (nextDraft.billing.diamondDiscountAmount ?? (nextDraft.billing.diamondUsed ?? 0) * 1000);
+          return {
+            ...nextDraft,
+            billing: {
+              ...nextDraft.billing,
+              subtotal: totals.subtotal,
+              serviceTotal: totals.serviceTotal,
+              comboTotal: totals.comboTotal,
+              productTotal: totals.productTotal,
+              promotionDiscountAmount: totals.promotionDiscountAmount,
+              serviceDiscountAmount: totals.serviceDiscountAmount,
+              comboDiscountAmount: totals.comboDiscountAmount,
+              productDiscountAmount: totals.productDiscountAmount,
+              vatRate: totals.vatRate,
+              vatAmount: totals.vatAmount,
+              ...(totals.isFullCreditLocked ? { diamondUsed: 0, diamondDiscountAmount: 0 } : {}),
+              grandTotal: Math.max(
+                0,
+                totals.subtotalAfterDiscount + totals.vatAmount + tipAmount - diamondDiscountAmount
+              ),
+            },
+          };
+        })
+      );
+
+      void postAction('SELECT_COMBO_WALLET', {
+        bookingId: targetId,
+        customerId: targetBooking?.customerId,
+        ...(params.selectedUpperComboBalanceId !== undefined
+          ? { selectedUpperComboBalanceId: params.selectedUpperComboBalanceId }
+          : {}),
+        ...(params.selectedUnderComboBalanceId !== undefined
+          ? { selectedUnderComboBalanceId: params.selectedUnderComboBalanceId }
+          : {}),
+        ...(params.skipUpperCombo !== undefined ? { skipUpperCombo: Boolean(params.skipUpperCombo) } : {}),
+        ...(params.skipUnderCombo !== undefined ? { skipUnderCombo: Boolean(params.skipUnderCombo) } : {}),
+        ...(params.skipUpperCombo
+          ? { comboRedemption: null }
+          : params.comboRedemption !== undefined
+            ? { comboRedemption: params.comboRedemption }
+            : {}),
+        ...(params.serviceName !== undefined ? { serviceName: params.serviceName } : {}),
+        ...(params.servicePrice !== undefined ? { servicePrice: params.servicePrice } : {}),
+        ...(params.serviceType !== undefined ? { serviceType: params.serviceType } : {}),
+        ...(params.upgradePrice !== undefined ? { upgradePrice: params.upgradePrice } : {}),
+      });
     },
     [activeBookingIdRef, postAction, setBookings]
   );
@@ -447,6 +596,7 @@ export function useIosConsultationAndCheckIn({
     handleCheckIn,
     handleSaveConsultation,
     handleAutoSaveConsultationDraft,
+    handleSelectComboWallet,
     handleAssignStaff,
     handleTransferToCv,
   };

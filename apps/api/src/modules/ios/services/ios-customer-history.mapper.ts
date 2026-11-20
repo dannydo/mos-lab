@@ -6,6 +6,7 @@ import type {
   IosCustomerHistoryStaffRef,
   IosCustomerHistorySummary,
   IosCustomerHistoryVisitItem,
+  IosCustomerNoteItem,
   SafeAny,
 } from '@mos-lab/shared';
 import { maskPhoneNumber } from '@mos-lab/shared';
@@ -38,11 +39,12 @@ export function buildEmptyCustomerHistoryResponse(customerId: number, error?: st
     payments: [],
     fixVisits: [],
     diamondTransactions: [],
+    notes: [],
     ...(error ? { error } : {}),
   };
 }
 
-function toVnDateParts(raw: Date | string | null | undefined): {
+export function toVnDateParts(raw: Date | string | null | undefined): {
   iso: string;
   dateKey: string;
   dateDisplay: string;
@@ -162,6 +164,7 @@ export function buildCustomerHistoryPayload(params: {
   productRows: mysql.RowDataPacket[];
   diamondTxnRows: mysql.RowDataPacket[];
   lashHydrationByOrder?: Map<number, OrderHistoryLashHydration>;
+  notes?: IosCustomerNoteItem[];
   now: Date;
 }): IosCustomerHistoryResponse {
   const {
@@ -177,6 +180,7 @@ export function buildCustomerHistoryPayload(params: {
     productRows,
     diamondTxnRows,
     lashHydrationByOrder,
+    notes,
     now,
   } = params;
 
@@ -441,5 +445,6 @@ export function buildCustomerHistoryPayload(params: {
     payments,
     fixVisits,
     diamondTransactions,
+    notes: notes ?? [],
   };
 }

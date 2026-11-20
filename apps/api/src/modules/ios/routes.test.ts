@@ -1062,3 +1062,104 @@ test('Promotion Visibility ACL & Booking Promotion Hydration', () => {
   // Service discount: 154,000 + Product discount: 50,000 = 204,000
   assert.equal(mappedItemized[0].billing?.promotionDiscountAmount, 204000);
 });
+
+test('MOS-BUG-237: CVL is strictly locked to 1 assigned branch in Live, Demo, and Simulation modes', async () => {
+  const store = createInMemoryConfigStore();
+  const mockFastify = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            const val = await store.getOne(where.key);
+            return val !== null ? { key: where.key, value: val } : null;
+          },
+          findMany: async () => [],
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  // 1. CVL at Đề Thám (clientStoreId=6) requesting EP (storeId=16) or ALL (storeId=0) stays locked at 6
+  const dtCvlAttemptEp = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 2,
+      legacyStaffId: 46272,
+      clientStoreId: 6,
+      username: 'thaoly_cvl',
+      displayName: 'Thảo Ly',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '16', demo: 'true' }
+  );
+  assert.equal(dtCvlAttemptEp.storeId, 6);
+  assert.ok(dtCvlAttemptEp.bookings.every((b) => !b.storeId || b.storeId === 6));
+
+  const dtCvlAttemptAll = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 2,
+      legacyStaffId: 46272,
+      clientStoreId: 6,
+      username: 'thaoly_cvl',
+      displayName: 'Thảo Ly',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '0', demo: 'true' }
+  );
+  assert.equal(dtCvlAttemptAll.storeId, 6);
+
+  // 2. CVL with Head Office (4) or missing clientStoreId cannot pass storeId=16 or storeId=0
+  const hoCvlAttemptEp = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 3,
+      legacyStaffId: 49999,
+      clientStoreId: 4,
+      username: 'minhthu_cvl',
+      displayName: 'Minh Thư',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '16', demo: 'true' }
+  );
+  assert.equal(hoCvlAttemptEp.storeId, 6);
+
+  // 3. Estella CVL (clientStoreId=16) stays locked at 16 even if frontend requests storeId=6
+  const epCvlAttemptDt = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 4,
+      legacyStaffId: 50001,
+      clientStoreId: 16,
+      username: 'ep_cvl',
+      displayName: 'Ngọc Anh',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '6', demo: 'true' }
+  );
+  assert.equal(epCvlAttemptDt.storeId, 16);
+  assert.ok(epCvlAttemptDt.bookings.every((b) => !b.storeId || b.storeId === 16));
+
+  // 4. applyIosScopeAndCounts drops any stray cross-branch booking when storeId is provided for CVL
+  const crossBranchBookings = [
+    { ...INITIAL_BOOKINGS[0], id: 951, storeId: 6, isUnassignedQueue: false, assignedStaffId: 46272 },
+    { ...INITIAL_BOOKINGS[0], id: 952, storeId: 16, isUnassignedQueue: false, assignedStaffId: 46272 },
+  ] as unknown as IosBookingItem[];
+  const scoped = applyIosScopeAndCounts(crossBranchBookings, {
+    effectiveRole: 'CVL',
+    scope: 'MY_CUSTOMERS',
+    activeStaffId: 46272,
+    storeId: 6,
+    targetDate: '2026-11-18',
+    todayVn: '2026-11-18',
+  });
+  assert.deepEqual(
+    scoped.effectiveList.map((b) => b.id),
+    [951]
+  );
+});

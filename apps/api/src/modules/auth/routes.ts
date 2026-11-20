@@ -49,10 +49,26 @@ export async function authRoutes(fastify: FastifyInstance) {
     return !!roleRecord?.omicallAutoInit;
   };
 
+  const resolveLegacyClientStoreId = async (legacyStaffId?: number | null): Promise<number | null> => {
+    if (!legacyStaffId) return null;
+    try {
+      const legacyFinder = (fastify.prisma as SafeAny)?.legacy?.user_profile?.findFirst;
+      if (typeof legacyFinder !== 'function') return null;
+      const legacyProfile = await legacyFinder({
+        where: { user_id: Number(legacyStaffId) },
+        select: { client_store_id: true },
+      });
+      return legacyProfile?.client_store_id ? Number(legacyProfile.client_store_id) : null;
+    } catch {
+      return null;
+    }
+  };
+
   const buildAuthUser = async (staffMember: SafeAny, includeTimestamps = true) => {
-    const [access, teamCodes] = await Promise.all([
+    const [access, teamCodes, clientStoreId] = await Promise.all([
       resolveGrowthAndOmiCallAccess(staffMember),
       TeamService.getActiveTeamCodesForStaff(fastify, staffMember.id, staffMember.legacyStaffId),
+      resolveLegacyClientStoreId(staffMember.legacyStaffId),
     ]);
     return {
       user: {
@@ -63,6 +79,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         isActive: staffMember.isActive,
         avatarUrl: staffMember.avatarUrl,
         legacyStaffId: staffMember.legacyStaffId,
+        clientStoreId,
         omicallAutoInit: staffMember.omicallAutoInit,
         isGrowthMember: access.isGrowthMember,
         canAccessOmiCall: access.canAccessOmiCall,

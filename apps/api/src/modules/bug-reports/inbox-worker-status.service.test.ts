@@ -109,3 +109,68 @@ test('InboxWorkerStatusService assigns active tasks to correct worker based on e
   assert.equal(status.codex.activeTask.phase, 'Chờ Danny duyệt commit');
   assert.equal(status.codex.activeTask.title, 'Thêm Game BK');
 });
+
+test('InboxWorkerStatusService tracks Win AG and Mac AG heartbeats and 2-slot caps separately', async () => {
+  InboxWorkerStatusService.resetForTesting();
+  const now = new Date('2026-11-18T10:00:00.000Z');
+
+  const fastifyMock = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findMany: async () => [],
+          upsert: async () => ({}),
+        },
+        crmInboxImplementationJob: {
+          count: async (args: { where: { executionOwner?: unknown } }) =>
+            args.where.executionOwner === 'AG_WIN' ? 2 : 1,
+          findMany: async () => [
+            {
+              id: 'job-win-1',
+              reportId: 244,
+              executionOwner: 'AG_WIN',
+              status: 'PENDING',
+              executionPhase: 'IDE_PROVISIONING_LEASED',
+              startedAt: now,
+              lastProgressAt: now,
+              report: { id: 244, requestType: 'BUG', title: 'Mobile chat link' },
+            },
+            {
+              id: 'job-mac-1',
+              reportId: 243,
+              executionOwner: 'AG_MAC',
+              status: 'RUNNING',
+              executionPhase: 'IMPLEMENTING',
+              startedAt: now,
+              lastProgressAt: now,
+              report: { id: 243, requestType: 'BUG', title: 'Pin space' },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  InboxWorkerStatusService.recordHeartbeat('AG', 'danny-win-ag', fastifyMock as never, now);
+  InboxWorkerStatusService.recordHeartbeat(
+    'AG',
+    'danny-antigravity-desktop',
+    fastifyMock as never,
+    new Date(now.getTime() - 60_000)
+  );
+
+  const status = await InboxWorkerStatusService.getDualWorkersStatus(fastifyMock as never, now);
+  assert.equal(status.agWin?.isOnline, true);
+  assert.equal(status.agWin?.activeCodingCount, 2);
+  assert.equal(status.agWin?.maxCodingSlots, 2);
+  assert.equal(status.agWin?.activeTask?.ticketKey, 'MOS-BUG-244');
+
+  assert.equal(status.agMac?.isOnline, false);
+  assert.equal(status.agMac?.activeCodingCount, 1);
+  assert.equal(status.agMac?.maxCodingSlots, 2);
+  assert.equal(status.agMac?.activeTask?.ticketKey, 'MOS-BUG-243');
+
+  assert.equal(status.ag.isOnline, true);
+  assert.equal(status.ag.activeCodingCount, 3);
+  assert.equal(status.ag.maxCodingSlots, 4);
+});

@@ -12,7 +12,11 @@ import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
 import { settleIosOrderWithLegacyPhp, SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
-import { STEP_SYNC_ELIGIBLE_ACTIONS, syncIosStepWithLegacyPhp } from './ios-legacy-step-sync.service.js';
+import {
+  applyStepSyncResultToOverride,
+  STEP_SYNC_ELIGIBLE_ACTIONS,
+  syncIosStepWithLegacyPhp,
+} from './ios-legacy-step-sync.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
 import { persistIncomingRoundPhotosToCloud, persistRetainCountsByServiceIndex } from './ios-progress-sync.helper.js';
 import {
@@ -20,7 +24,13 @@ import {
   fetchPromotionsByIds,
   resolveCheckoutOverridePromotions,
 } from './ios-promotions.service.js';
+import { executePostCheckoutAdjustmentAction } from './ios-post-checkout-adjustment.service.js';
 import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
+import {
+  buildSelectComboWalletOverride,
+  extractComboWalletSelectionPatch,
+  MUTATIVE_ACTIONS_AFTER_SETTLE,
+} from './ios-action-wallet.helper.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
 
@@ -122,22 +132,28 @@ export async function executeIosBookingAction(
       };
     }
 
+    if (
+      action === 'SUBMIT_POST_CHECKOUT_ADJUSTMENT' ||
+      action === 'APPROVE_POST_CHECKOUT_ADJUSTMENT' ||
+      action === 'REJECT_POST_CHECKOUT_ADJUSTMENT'
+    ) {
+      return executePostCheckoutAdjustmentAction({
+        authUser,
+        action,
+        bookingId,
+        body,
+        current,
+        repo,
+        bridgeDepsOverride,
+        isSimulationMode,
+        actorStaffId,
+        actorStaffName,
+        actorStaffTier,
+      });
+    }
+
     const isAlreadySettledOrder =
       current.orderState === 'Completed' || current.billing?.settlementStatus === 'SETTLED_COMPLETED';
-    const MUTATIVE_ACTIONS_AFTER_SETTLE = new Set([
-      'CHECK_IN',
-      'SAVE_CONSULTATION',
-      'SAVE_CONSULTATION_DRAFT',
-      'ASSIGN_STAFF',
-      'START_TIMER',
-      'FINISH_TIMER',
-      'SAVE_PHOTO',
-      'NEXT_SERVICE_ROUND',
-      'SAVE_SURVEY',
-      'UPDATE_CART_PRODUCTS',
-      'SAVE_PROMOTION',
-      'SAVE_TIP',
-    ]);
 
     if (isAlreadySettledOrder && action !== 'RESET_DEMO' && MUTATIVE_ACTIONS_AFTER_SETTLE.has(action)) {
       return {
@@ -149,12 +165,14 @@ export async function executeIosBookingAction(
       };
     }
 
+    const walletSelectionPatch = extractComboWalletSelectionPatch(body, current);
     let nextOverride: BookingOverrideRecord | null = null;
 
     if (action === 'CHECK_IN') {
       const shouldAutoAssignToSelf = actorStaffTier === 'CVL';
       nextOverride = {
         ...current,
+        ...walletSelectionPatch,
         status: 'CHECKED_IN',
         orderState: 'Check-in',
         checkInStaffId: actorStaffId,
@@ -169,17 +187,26 @@ export async function executeIosBookingAction(
               : 'Chờ phân công (Đầu tua)',
         checkedInAt: new Date().toISOString(),
       };
+    } else if (action === 'SELECT_COMBO_WALLET') {
+      nextOverride = buildSelectComboWalletOverride({
+        current,
+        effectiveCustomerId,
+        walletSelectionPatch,
+        body,
+      });
     } else if (action === 'SAVE_CONSULTATION_DRAFT') {
       const attrs = body.attributes || {};
       const mergedDraftAttrs = { ...(current.attributes || {}), ...attrs };
       nextOverride = {
         ...current,
         ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
+        ...walletSelectionPatch,
         attributes: mergedDraftAttrs,
         notes: body.notes !== undefined ? body.notes : current.notes,
         selectedCombo: body.selectedCombo !== undefined ? body.selectedCombo : current.selectedCombo,
         selectedUnderCombo:
           body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
+        comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
         serviceName: body.skuPricing?.skuName || current.serviceName,
         servicePrice: body.skuPricing?.skuPrice ?? current.servicePrice,
         serviceType: body.skuPricing?.serviceType || current.serviceType,
@@ -230,6 +257,7 @@ export async function executeIosBookingAction(
       nextOverride = {
         ...current,
         ...(effectiveCustomerId > 0 ? { customerId: effectiveCustomerId } : {}),
+        ...walletSelectionPatch,
         status: isAssignOther ? 'CHECKED_IN' : body.nextStatus || 'SERVICING',
         orderState: isAssignOther ? 'Consultation' : body.nextStatus === 'SERVICING' ? 'Service Start' : 'Consultation',
         checkInStaffId: current.checkInStaffId || actorStaffId,
@@ -428,6 +456,7 @@ export async function executeIosBookingAction(
     } else if (action === 'SAVE_UPSELL_AND_CHECKOUT' || action === 'SAVE_UPSELL') {
       nextOverride = {
         ...current,
+        ...walletSelectionPatch,
         orderState: 'Check-out',
         checkOutStaffId: actorStaffId,
         checkOutStaffName: actorStaffName,
@@ -437,6 +466,7 @@ export async function executeIosBookingAction(
         selectedUnderCombo:
           body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
         comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
+        ...(body.hasUnderMinkCombo !== undefined ? { hasUnderMinkCombo: Boolean(body.hasUnderMinkCombo) } : {}),
         checkedOutAt: new Date().toISOString(),
       };
     } else if (action === 'SAVE_PROMOTION') {
@@ -498,6 +528,7 @@ export async function executeIosBookingAction(
 
       const draftOverride: BookingOverrideRecord = {
         ...current,
+        ...walletSelectionPatch,
         status: 'DONE',
         checkInStaffId,
         assignedStaffId,
@@ -509,6 +540,7 @@ export async function executeIosBookingAction(
         selectedUnderCombo:
           body.selectedUnderCombo !== undefined ? body.selectedUnderCombo : current.selectedUnderCombo,
         comboRedemption: body.comboRedemption !== undefined ? body.comboRedemption : current.comboRedemption,
+        ...(body.hasUnderMinkCombo !== undefined ? { hasUnderMinkCombo: Boolean(body.hasUnderMinkCombo) } : {}),
         promotionId: resolvedPromos.promotionId,
         appliedPromotion: resolvedPromos.appliedPromotion,
         servicePromotionId: resolvedPromos.servicePromotionId,
@@ -623,43 +655,7 @@ export async function executeIosBookingAction(
           bridgeDepsOverride
         );
 
-        const hasRoundSyncPatch = Boolean(
-          stepSync.lastLegacyProgressState ||
-          stepSync.lastLegacyUpperState ||
-          stepSync.lastLegacyUnderState ||
-          stepSync.lastLegacyUpperPhotoSigs ||
-          stepSync.lastLegacyUnderPhotoSigs
-        );
-        const enrichedOverride: BookingOverrideRecord = {
-          ...nextOverride,
-          legacyStepSyncStatus: stepSync.status,
-          ...(stepSync.legacyOrderState ? { legacySyncedOrderState: stepSync.legacyOrderState } : {}),
-          ...(stepSync.synced ? { legacyStepSyncedAt: new Date().toISOString() } : {}),
-          ...(hasRoundSyncPatch && nextOverride.progress
-            ? {
-                progress: {
-                  ...nextOverride.progress,
-                  ...(stepSync.lastLegacyProgressState
-                    ? { lastLegacyProgressState: stepSync.lastLegacyProgressState }
-                    : {}),
-                  ...(stepSync.lastLegacyUpperState ? { lastLegacyUpperState: stepSync.lastLegacyUpperState } : {}),
-                  ...(stepSync.lastLegacyUnderState ? { lastLegacyUnderState: stepSync.lastLegacyUnderState } : {}),
-                  ...(stepSync.lastLegacyUpperPhotoSigs
-                    ? { lastLegacyUpperPhotoSigs: stepSync.lastLegacyUpperPhotoSigs }
-                    : {}),
-                  ...(stepSync.lastLegacyUnderPhotoSigs
-                    ? { lastLegacyUnderPhotoSigs: stepSync.lastLegacyUnderPhotoSigs }
-                    : {}),
-                },
-              }
-            : {}),
-        };
-        if (stepSync.warning) {
-          enrichedOverride.legacyStepSyncWarning = stepSync.warning;
-        } else {
-          delete enrichedOverride.legacyStepSyncWarning;
-        }
-        nextOverride = enrichedOverride;
+        nextOverride = applyStepSyncResultToOverride(nextOverride, stepSync);
         await repo.saveBookingOverride(bookingId, nextOverride);
 
         if (stepSync.synced) {

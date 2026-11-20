@@ -12,10 +12,12 @@ import { resolveIosAuth } from './services/ios-auth.service.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { executeAdminComboExpiryAction } from './services/ios-combo-expiry.service.js';
 import { getIosCustomerHistory } from './services/ios-customer-history.service.js';
+import { createIosCustomerNote } from './services/ios-customer-notes.service.js';
 import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
-import { scanIosProductByCode } from './services/ios-product-scan.service.js';
+import { fetchIosProductCatalog, scanIosProductByCode } from './services/ios-product-scan.service.js';
 import { fetchIosPromotionsForActor, resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
+import { listIosCheckoutEligibleStaff } from './services/ios-post-checkout-adjustment.service.js';
 import {
   executeIosSimulationBookingAction,
   loadOrReconcileSimulationAttemptsForActor,
@@ -142,6 +144,23 @@ export async function iosRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/ios/products/catalog
+  fastify.get('/ios/products/catalog', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, products: [], error: 'Unauthorized' });
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role)) {
+        return reply.status(403).send({ success: false, products: [], error: 'Forbidden' });
+      }
+      const products = await fetchIosProductCatalog();
+      return reply.send({ success: true, products });
+    } catch (error: SafeAny) {
+      return reply
+        .status(500)
+        .send({ success: false, products: [], error: error?.message || 'Product catalog failed' });
+    }
+  });
+
   // POST /api/ios/bookings/create
   fastify.post('/ios/bookings/create', async (request, reply) => {
     try {
@@ -240,6 +259,34 @@ export async function iosRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/ios/staff/checkout-eligible
+  fastify.get('/ios/staff/checkout-eligible', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, staff: [], error: 'Unauthorized' });
+      }
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role, authUser.teamCodes)) {
+        return reply.status(403).send({
+          success: false,
+          staff: [],
+          error: 'Tài khoản không có quyền truy cập ứng dụng /ios-app.',
+        });
+      }
+      const query = request.query as { storeId?: string };
+      const storeId = query.storeId ? Number(query.storeId) : undefined;
+      const staff = await listIosCheckoutEligibleStaff(fastify, storeId);
+      return reply.send({ success: true, staff });
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'Error fetching /api/ios/staff/checkout-eligible');
+      return reply.status(500).send({
+        success: false,
+        staff: [],
+        error: error?.message || 'Failed to fetch checkout-eligible staff',
+      });
+    }
+  });
+
   // GET /api/ios/promotions
   fastify.get('/ios/promotions', async (request, reply) => {
     try {
@@ -299,6 +346,26 @@ export async function iosRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         success: false,
         error: error?.message || 'Customer history fetch error',
+      });
+    }
+  });
+
+  // POST /api/ios/customers/:customerId/notes (Thêm Note CVL sau checkout / hồ sơ khách)
+  fastify.post('/ios/customers/:customerId/notes', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      }
+      const params = (request.params || {}) as { customerId?: string };
+      const customerId = Number(params.customerId || 0);
+      const result = await createIosCustomerNote(authUser, customerId, (request.body || {}) as SafeAny);
+      return reply.status(result.statusCode).send(result.payload);
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'Error creating /api/ios/customers/:customerId/notes');
+      return reply.status(500).send({
+        success: false,
+        error: error?.message || 'Customer note creation error',
       });
     }
   });

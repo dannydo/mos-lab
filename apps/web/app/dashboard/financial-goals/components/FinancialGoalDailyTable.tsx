@@ -20,6 +20,12 @@ export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = (
 }) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(15);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [month]);
 
   const formatCurrency = (amount: number): string => {
     if (!amount) return '0đ';
@@ -195,10 +201,21 @@ export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = (
           rowKey="date"
           size="small"
           pagination={{
-            pageSize: 15,
+            current: currentPage,
+            pageSize,
             showSizeChanger: true,
             pageSizeOptions: ['10', '15', '31'],
             size: 'small',
+            onChange: (page, newPageSize) => {
+              setCurrentPage(page);
+              if (newPageSize && newPageSize !== pageSize) {
+                setPageSize(newPageSize);
+              }
+            },
+            onShowSizeChange: (_curr, newPageSize) => {
+              setCurrentPage(1);
+              setPageSize(newPageSize);
+            },
           }}
           className={isDark ? 'dark-theme' : 'light-theme'}
         />

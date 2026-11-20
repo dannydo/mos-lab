@@ -41,6 +41,7 @@ export interface BkBookingLeaderboardParams {
   dateTo?: string;
   storeId?: string;
   gameId?: number;
+  skipCache?: boolean;
 }
 
 export interface BkBookingLeaderboardResponse {

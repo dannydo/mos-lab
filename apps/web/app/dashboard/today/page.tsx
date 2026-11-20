@@ -13,6 +13,7 @@ import { useTheme } from '../../../context/ThemeContext';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 import { useTodayData } from './hooks/useTodayData';
+import { TodaySandboxProvider, useTodaySandbox } from './context/SandboxModeContext';
 import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
@@ -119,9 +120,10 @@ const AutoRefreshCountdown = React.memo(
 );
 AutoRefreshCountdown.displayName = 'AutoRefreshCountdown';
 
-export default function TodayDashboard() {
+function TodayDashboardContent() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const sandbox = useTodaySandbox();
   const [mainViewMode, setMainViewMode] = useState<'operations' | 'calendar'>('operations');
 
   useEffect(() => {
@@ -249,8 +251,8 @@ export default function TodayDashboard() {
         }
       />
 
-      {/* VIEW MODE TOGGLE BAR */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '4px' }}>
+      {/* VIEW MODE TOGGLE BAR & SANDBOX MODE SELECTOR */}
+      <div className="flex justify-between items-center mb-1 flex-wrap gap-3">
         <Radio.Group
           value={mainViewMode}
           onChange={(e) => {
@@ -265,17 +267,107 @@ export default function TodayDashboard() {
           <Radio.Button value="operations">
             <Space size="small">
               <UnorderedListOutlined />
-              <span style={{ fontWeight: '600' }}>Bảng Vận Hành</span>
+              <span className="font-semibold">Bảng Vận Hành</span>
             </Space>
           </Radio.Button>
           <Radio.Button value="calendar">
             <Space size="small">
-              <CalendarOutlined style={{ color: mainViewMode === 'calendar' ? '#D4A84B' : undefined }} />
-              <span style={{ fontWeight: '600' }}>Lịch Tổng Quan</span>
+              <CalendarOutlined className={mainViewMode === 'calendar' ? 'text-amber-500' : ''} />
+              <span className="font-semibold">Lịch Tổng Quan</span>
             </Space>
           </Radio.Button>
         </Radio.Group>
+
+        {/* Sandbox Mode Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Chế độ Sandbox:
+          </span>
+          <Select
+            aria-label="Chọn chế độ Sandbox giả lập"
+            value={sandbox.mode}
+            onChange={(val) => sandbox.setMode(val)}
+            className="w-72"
+            options={[
+              {
+                value: 'live',
+                label: (
+                  <Space size={6}>
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>Chế độ Thực tế (Live)</span>
+                  </Space>
+                ),
+              },
+              {
+                value: 'training',
+                label: (
+                  <Space size={6}>
+                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+                    <span>Training Check-in / Bấm giờ</span>
+                  </Space>
+                ),
+              },
+              {
+                value: 'sales',
+                label: (
+                  <Space size={6}>
+                    <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+                    <span>Sales Simulation (Chốt Combo & Quà)</span>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </div>
       </div>
+
+      {/* Sandbox Mode Banner */}
+      {sandbox.isSandbox && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`rounded-lg p-3 flex justify-between items-center flex-wrap gap-3 border ${
+            sandbox.mode === 'training'
+              ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900'
+              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <Tag
+              color={sandbox.mode === 'training' ? 'processing' : 'warning'}
+              className="font-semibold text-xs m-0"
+            >
+              {sandbox.mode === 'training'
+                ? '🧪 SANDBOX: TRAINING CHECK-IN & BẤM GIỜ'
+                : '💎 SANDBOX: SALES SIMULATION'}
+            </Tag>
+            <span className="text-xs text-slate-700 dark:text-slate-200">
+              {sandbox.mode === 'training'
+                ? 'Đang ở chế độ giả lập chấm công ca, check-in, bấm giờ làm mi và check-out để training nhân sự. Dữ liệu độc lập, không ghi MySQL thật.'
+                : 'Đang ở chế độ mô phỏng chốt combo 10 tặng 6, combo mi dưỡng và quà tặng để lập kế hoạch & training bán hàng.'}
+            </span>
+          </div>
+          <Space>
+            {sandbox.mode === 'training' ? (
+              <Button size="small" onClick={sandbox.resetTrainingState} aria-label="Đặt lại phòng tập training">
+                Đặt lại phòng tập
+              </Button>
+            ) : (
+              <Button size="small" onClick={sandbox.resetSalesState} aria-label="Đặt lại kịch bản bán">
+                Đặt lại kịch bản
+              </Button>
+            )}
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => sandbox.setMode('live')}
+              aria-label="Trở về dữ liệu thực tế"
+            >
+              Trở về Live Data
+            </Button>
+          </Space>
+        </div>
+      )}
 
       <Spin spinning={data.loading}>
         {mainViewMode === 'calendar' ? (
@@ -620,5 +712,13 @@ export default function TodayDashboard() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function TodayDashboard() {
+  return (
+    <TodaySandboxProvider>
+      <TodayDashboardContent />
+    </TodaySandboxProvider>
   );
 }

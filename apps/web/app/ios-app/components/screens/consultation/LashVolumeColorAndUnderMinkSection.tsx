@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Sparkles, Crown, CheckCircle2, ArrowDownRight } from 'lucide-react';
+import type { ResolveActiveBookingComboWalletsResult } from '@mos-lab/shared';
+import { ComboWalletSelectorList } from '../../ui-kit/ComboWalletSelectorList';
 import {
   getWingsMenuDetail,
   UNDER_MINK_PREP_SPEC,
@@ -35,6 +37,14 @@ interface LashVolumeColorAndUnderMinkSectionProps {
   hasUnderMinkCombo: boolean;
   underComboNormalRemaining: number;
   underComboRetainRemaining: number;
+  resolvedWallets?: ResolveActiveBookingComboWalletsResult;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+  }) => void;
 }
 
 export function LashVolumeColorAndUnderMinkSection({
@@ -60,6 +70,8 @@ export function LashVolumeColorAndUnderMinkSection({
   hasUnderMinkCombo,
   underComboNormalRemaining,
   underComboRetainRemaining,
+  resolvedWallets,
+  onSelectComboWallet,
 }: LashVolumeColorAndUnderMinkSectionProps) {
   return (
     <>
@@ -488,6 +500,29 @@ export function LashVolumeColorAndUnderMinkSection({
                 </button>
               </div>
             </div>
+
+            {resolvedWallets && resolvedWallets.underWallets.length > 0 && (
+              <ComboWalletSelectorList
+                wallets={resolvedWallets.underWallets}
+                selectedBalanceId={resolvedWallets.selectedUnderComboBalanceId}
+                skipCombo={resolvedWallets.skipUnderCombo}
+                serviceGroup="under"
+                compact
+                className="pt-1.5 border-t border-purple-500/20"
+                onSelectWallet={(wallet) =>
+                  onSelectComboWallet?.({
+                    selectedUnderComboBalanceId: wallet.balanceId,
+                    skipUnderCombo: false,
+                  })
+                }
+                onSelectSkipCombo={() =>
+                  onSelectComboWallet?.({
+                    selectedUnderComboBalanceId: null,
+                    skipUnderCombo: true,
+                  })
+                }
+              />
+            )}
           </div>
         </div>
       )}

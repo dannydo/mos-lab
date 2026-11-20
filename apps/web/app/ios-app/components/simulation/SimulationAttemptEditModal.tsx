@@ -1,10 +1,29 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { X, Edit3, Sparkles, Plus, Minus, Trash2, Check, Loader2, Play } from 'lucide-react';
-import type { IosSimulationAttemptSummary, IosUpdateSimulationAttemptRequest } from '@mos-lab/shared';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Edit3, Sparkles, Check, Loader2, Play } from 'lucide-react';
+import {
+  calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
+  isYeppeumSerumProduct,
+  YEPPEUM_PRODUCT_ID,
+  type IosProductCatalogItem,
+  type IosSimulationAttemptSummary,
+  type IosSimulationUpsellProductItem,
+  type IosUpdateSimulationAttemptRequest,
+} from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { apiClient } from '~/lib/api-client';
+import { SERUM_TIERS_CVL } from '../../state/mockData';
+import { formatCartProductDisplayName } from '../screens/upsell/upsellCheckoutHelpers';
 import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
+import {
+  FALLBACK_IOS_SIMULATION_PRODUCTS,
+  formatYeppeumProductName,
+  matchesCatalogProduct,
+  resolveItemUnitPrice,
+  SimulationUpsellProductsSection,
+} from './SimulationUpsellProductsSection';
 
 interface SimulationAttemptEditModalProps {
   isOpen: boolean;
@@ -31,13 +50,6 @@ const COMMON_UNDER_COMBOS = [
   { name: 'Mi Dưới 5 Lần', price: 700000 },
 ];
 
-const COMMON_PRODUCTS = [
-  { productName: 'Serum Dưỡng Mi Wings', price: 299000 },
-  { productName: 'Mascara Chuyên Nối Mi', price: 199000 },
-  { productName: 'Gel Tháo Mi Dưỡng Ẩm', price: 120000 },
-  { productName: 'Bọt Vệ Sinh Mi Kháng Khuẩn', price: 150000 },
-];
-
 export function SimulationAttemptEditModal({
   isOpen,
   onClose,
@@ -56,18 +68,76 @@ export function SimulationAttemptEditModal({
   const [comboPrice, setComboPrice] = useState<number>(attempt.selectedComboPrice || 0);
   const [underComboName, setUnderComboName] = useState<string>(attempt.selectedUnderComboName || '');
   const [underComboPrice, setUnderComboPrice] = useState<number>(attempt.selectedUnderComboPrice || 0);
-  const [upsellProducts, setUpsellProducts] = useState<
-    Array<{ productName: string; quantity: number; totalPrice: number }>
-  >(attempt.upsellProducts || []);
+  const [upsellProducts, setUpsellProducts] = useState<IosSimulationUpsellProductItem[]>(attempt.upsellProducts || []);
+  const [catalogProducts, setCatalogProducts] = useState<IosProductCatalogItem[]>(FALLBACK_IOS_SIMULATION_PRODUCTS);
   const [promotionName, setPromotionName] = useState<string>(attempt.promotionName || '');
   const [promotionDiscount, setPromotionDiscount] = useState<number>(attempt.promotionDiscountAmount || 0);
   const [tipAmount, setTipAmount] = useState<number>(attempt.tipAmount || 0);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setNotes(attempt.notes || '');
+    setSelectedStyle(attempt.selectedStyle || 'Natural');
+    setComboName(attempt.selectedComboName || '');
+    setComboPrice(attempt.selectedComboPrice || 0);
+    setUnderComboName(attempt.selectedUnderComboName || '');
+    setUnderComboPrice(attempt.selectedUnderComboPrice || 0);
+    setUpsellProducts(attempt.upsellProducts || []);
+    setPromotionName(attempt.promotionName || '');
+    setPromotionDiscount(attempt.promotionDiscountAmount || 0);
+    setTipAmount(attempt.tipAmount || 0);
+    setErrorMsg(null);
+  }, [isOpen, attempt]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const fetchCatalog = apiClient?.ios?.getProductCatalog;
+    if (typeof fetchCatalog !== 'function') return;
+
+    fetchCatalog()
+      .then((res) => {
+        if (cancelled) return;
+        if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
+          setCatalogProducts(res.products);
+        }
+      })
+      .catch(() => {
+        // Keep canonical Yeppeum fallback when offline or in isolated tests
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const displayCatalogProducts = useMemo(() => {
+    const merged: IosProductCatalogItem[] = [...catalogProducts];
+    const hasSerumInCatalog = merged.some((p) => p.isSerum || isYeppeumSerumProduct(p));
+    if (!hasSerumInCatalog) {
+      merged.unshift(FALLBACK_IOS_SIMULATION_PRODUCTS[0]);
+    }
+    for (const existing of upsellProducts) {
+      const isSerumExisting = isYeppeumSerumProduct(existing);
+      const alreadyListed = merged.some((cat) => matchesCatalogProduct(existing, cat));
+      if (!alreadyListed) {
+        merged.push({
+          productId: Number(existing.productId) || 0,
+          productSku: '',
+          productName: formatCartProductDisplayName(existing.productName) || existing.productName,
+          price: resolveItemUnitPrice(existing),
+          isSerum: isSerumExisting,
+        });
+      }
+    }
+    return merged;
+  }, [catalogProducts, upsellProducts]);
+
   // Realtime calculated metrics
   const upsellTotal = useMemo(() => {
-    return upsellProducts.reduce((sum, p) => sum + p.totalPrice, 0);
+    return upsellProducts.reduce((sum, p) => sum + Number(p.totalPrice || 0), 0);
   }, [upsellProducts]);
 
   const servicePrice = Number(attempt.servicePrice) || 0;
@@ -76,44 +146,103 @@ export function SimulationAttemptEditModal({
     return Math.max(0, servicePrice + comboPrice + underComboPrice + upsellTotal - promotionDiscount + tipAmount);
   }, [servicePrice, comboPrice, underComboPrice, upsellTotal, promotionDiscount, tipAmount]);
 
+  const comboBonus = useMemo(() => {
+    return calculateDualComboTierBonus(comboPrice, underComboPrice).totalBonus;
+  }, [comboPrice, underComboPrice]);
+
+  const serumBonus = useMemo(() => {
+    return upsellProducts.reduce((sum, p) => {
+      const qty = Math.max(1, Number(p.quantity) || 1);
+      const unitPrice = resolveItemUnitPrice(p);
+      if (isYeppeumSerumProduct(p) || /serum/i.test(p.productName || '')) {
+        return sum + calculateCvSerumTierBonus(unitPrice, qty);
+      }
+      return sum;
+    }, 0);
+  }, [upsellProducts]);
+
   const estimatedReward = useMemo(() => {
-    const comboBonus = comboPrice > 0 ? (comboPrice >= 1000000 ? 50000 : 30000) : 0;
-    const serumBonus = upsellProducts.some((p) => /serum/i.test(p.productName)) ? 20000 : 0;
     const tipShare = Math.round(tipAmount * 0.8);
-    return Math.round(servicePrice * 0.1 + comboBonus + serumBonus + tipShare);
-  }, [servicePrice, comboPrice, upsellProducts, tipAmount]);
+    return comboBonus + serumBonus + tipShare;
+  }, [comboBonus, serumBonus, tipAmount]);
 
   const cvPoints = useMemo(() => {
-    let pts = attempt.cvRotationPoints || 1;
+    let pts = 1;
     if (comboPrice > 0) pts += 1;
+    if (underComboPrice > 0) pts += 1;
     if (upsellProducts.length > 0) pts += 1;
     return pts;
-  }, [attempt.cvRotationPoints, comboPrice, upsellProducts]);
+  }, [comboPrice, underComboPrice, upsellProducts]);
+
+  const hasCustomSavedCombo = useMemo(() => {
+    if (!attempt.selectedComboName && !(attempt.selectedComboPrice > 0)) return false;
+    return !COMMON_COMBOS.some(
+      (c) =>
+        (c.price === 0 ? !attempt.selectedComboName && attempt.selectedComboPrice === 0 : c.name === attempt.selectedComboName && c.price === attempt.selectedComboPrice)
+    );
+  }, [attempt.selectedComboName, attempt.selectedComboPrice]);
+
+  const hasCustomSavedUnderCombo = useMemo(() => {
+    if (!attempt.selectedUnderComboName && !(attempt.selectedUnderComboPrice > 0)) return false;
+    return !COMMON_UNDER_COMBOS.some(
+      (uc) =>
+        (uc.price === 0
+          ? !attempt.selectedUnderComboName && attempt.selectedUnderComboPrice === 0
+          : uc.name === attempt.selectedUnderComboName && uc.price === attempt.selectedUnderComboPrice)
+    );
+  }, [attempt.selectedUnderComboName, attempt.selectedUnderComboPrice]);
 
   if (!isOpen) return null;
 
-  const handleToggleProduct = (item: { productName: string; price: number }) => {
-    const existing = upsellProducts.find((p) => p.productName === item.productName);
+  const handleToggleProduct = (prod: IosProductCatalogItem) => {
+    const isSerum = Boolean(prod.isSerum || isYeppeumSerumProduct(prod));
+    const existing = upsellProducts.find((item) => matchesCatalogProduct(item, prod));
     if (existing) {
-      setUpsellProducts(upsellProducts.filter((p) => p.productName !== item.productName));
-    } else {
-      setUpsellProducts([...upsellProducts, { productName: item.productName, quantity: 1, totalPrice: item.price }]);
+      setUpsellProducts((prev) => prev.filter((p) => !matchesCatalogProduct(p, prod)));
+      return;
     }
+
+    const baseName = formatCartProductDisplayName(prod.productName) || prod.productName;
+    const defaultPrice = isSerum && prod.price <= 0 ? 1100000 : Math.max(0, Number(prod.price || 0));
+    setUpsellProducts((prev) => [
+      ...prev,
+      {
+        ...(prod.productId > 0 ? { productId: prod.productId } : {}),
+        productName: baseName,
+        quantity: 1,
+        unitPrice: defaultPrice,
+        totalPrice: defaultPrice,
+      },
+    ]);
   };
 
-  const handleQuantityChange = (productName: string, delta: number) => {
-    const catalogItem = COMMON_PRODUCTS.find((p) => p.productName === productName);
-    const unitPrice = catalogItem ? catalogItem.price : 0;
+  const handleQuantityChange = (prod: IosProductCatalogItem, delta: number) => {
     setUpsellProducts((prev) =>
       prev
         .map((p) => {
-          if (p.productName !== productName) return p;
+          if (!matchesCatalogProduct(p, prod)) return p;
           const nextQ = p.quantity + delta;
           if (nextQ <= 0) return null;
-          const uPrice = unitPrice || p.totalPrice / p.quantity;
-          return { ...p, quantity: nextQ, totalPrice: uPrice * nextQ };
+          const unitPrice = resolveItemUnitPrice(p);
+          return { ...p, quantity: nextQ, unitPrice, totalPrice: unitPrice * nextQ };
         })
-        .filter(Boolean) as Array<{ productName: string; quantity: number; totalPrice: number }>
+        .filter(Boolean) as IosSimulationUpsellProductItem[]
+    );
+  };
+
+  const handleSelectSerumTier = (prod: IosProductCatalogItem, tier: (typeof SERUM_TIERS_CVL)[number]) => {
+    setUpsellProducts((prev) =>
+      prev.map((p) => {
+        if (!isYeppeumSerumProduct(p)) return p;
+        const qty = Math.max(1, Number(p.quantity || 1));
+        return {
+          ...p,
+          productId: p.productId || prod.productId || YEPPEUM_PRODUCT_ID,
+          productName: formatYeppeumProductName(prod.productName, tier),
+          unitPrice: tier.price,
+          totalPrice: tier.price * qty,
+        };
+      })
     );
   };
 
@@ -123,7 +252,7 @@ export function SimulationAttemptEditModal({
     setErrorMsg(null);
     try {
       await onSave(attempt.attemptId, {
-        bookingId,
+        bookingId: Number(bookingId || attempt.bookingId || 0),
         notes: notes.trim(),
         selectedStyle,
         selectedComboName: comboName ? comboName : null,
@@ -249,6 +378,27 @@ export function SimulationAttemptEditModal({
               )}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
+              {hasCustomSavedCombo && attempt.selectedComboName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComboName(attempt.selectedComboName || '');
+                    setComboPrice(attempt.selectedComboPrice || 0);
+                  }}
+                  className={`col-span-2 p-2 rounded-xl text-left border text-[11px] transition-all cursor-pointer ${
+                    comboName === attempt.selectedComboName && comboPrice === attempt.selectedComboPrice
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                      : isDark
+                        ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                  }`}
+                >
+                  <div className="truncate">{attempt.selectedComboName} (Đang chọn)</div>
+                  <div className="text-[10px] opacity-75 tabular-nums">
+                    {Number(attempt.selectedComboPrice || 0).toLocaleString('vi-VN')}đ
+                  </div>
+                </button>
+              )}
               {COMMON_COMBOS.map((c) => {
                 const active = comboName === (c.price > 0 ? c.name : '') && comboPrice === c.price;
                 return (
@@ -293,6 +443,28 @@ export function SimulationAttemptEditModal({
               )}
             </div>
             <div className="grid grid-cols-3 gap-1.5">
+              {hasCustomSavedUnderCombo && attempt.selectedUnderComboName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnderComboName(attempt.selectedUnderComboName || '');
+                    setUnderComboPrice(attempt.selectedUnderComboPrice || 0);
+                  }}
+                  className={`col-span-3 p-2 rounded-xl text-left border text-[10.5px] transition-all cursor-pointer ${
+                    underComboName === attempt.selectedUnderComboName &&
+                    underComboPrice === attempt.selectedUnderComboPrice
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                      : isDark
+                        ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                  }`}
+                >
+                  <div className="truncate">{attempt.selectedUnderComboName} (Đang chọn)</div>
+                  <div className="text-[9.5px] opacity-75 tabular-nums">
+                    {Number(attempt.selectedUnderComboPrice || 0).toLocaleString('vi-VN')}đ
+                  </div>
+                </button>
+              )}
               {COMMON_UNDER_COMBOS.map((uc) => {
                 const active = underComboName === (uc.price > 0 ? uc.name : '') && underComboPrice === uc.price;
                 return (
@@ -327,79 +499,15 @@ export function SimulationAttemptEditModal({
           </div>
 
           {/* 5. Sản phẩm Upsell */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label className="font-bold text-[11.5px]">Sản phẩm Upsell kèm theo</label>
-              {upsellTotal > 0 && (
-                <span className="text-[11px] font-bold text-sky-400 tabular-nums">
-                  +{upsellTotal.toLocaleString('vi-VN')}đ
-                </span>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              {COMMON_PRODUCTS.map((prod) => {
-                const selected = upsellProducts.find((p) => p.productName === prod.productName);
-                return (
-                  <div
-                    key={prod.productName}
-                    className={`p-2 rounded-xl border flex items-center justify-between gap-2 ${
-                      selected
-                        ? isDark
-                          ? 'bg-sky-950/20 border-sky-500/40 text-sky-300'
-                          : 'bg-sky-50 border-sky-300 text-sky-800'
-                        : isDark
-                          ? 'bg-neutral-900 border-neutral-800 text-neutral-400'
-                          : 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleToggleProduct(prod)}
-                      className="flex-1 text-left min-w-0 cursor-pointer flex items-center gap-1.5"
-                    >
-                      <div
-                        className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
-                          selected
-                            ? 'bg-sky-500 border-sky-500 text-white'
-                            : isDark
-                              ? 'border-neutral-700 bg-neutral-800'
-                              : 'border-neutral-300 bg-white'
-                        }`}
-                      >
-                        {selected && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                      <div className="truncate text-[11.5px] font-semibold">{prod.productName}</div>
-                      <div className="text-[10px] opacity-75 tabular-nums shrink-0">
-                        ({prod.price.toLocaleString('vi-VN')}đ)
-                      </div>
-                    </button>
-
-                    {selected && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleQuantityChange(prod.productName, -1)}
-                          className="w-5 h-5 rounded-md flex items-center justify-center bg-neutral-800 text-white cursor-pointer hover:bg-neutral-700"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="font-bold tabular-nums text-[11px] min-w-[14px] text-center">
-                          {selected.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleQuantityChange(prod.productName, 1)}
-                          className="w-5 h-5 rounded-md flex items-center justify-center bg-sky-500 text-white cursor-pointer hover:bg-sky-400"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <SimulationUpsellProductsSection
+            isDark={isDark}
+            displayCatalogProducts={displayCatalogProducts}
+            upsellProducts={upsellProducts}
+            upsellTotal={upsellTotal}
+            onToggleProduct={handleToggleProduct}
+            onQuantityChange={handleQuantityChange}
+            onSelectSerumTier={handleSelectSerumTier}
+          />
 
           {/* 6. Ưu đãi & Tiền Tip */}
           <div className="grid grid-cols-2 gap-2">
@@ -495,7 +603,11 @@ export function SimulationAttemptEditModal({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800">
+          <div
+            className={`flex items-center justify-end gap-2 pt-2 border-t ${
+              isDark ? 'border-neutral-800' : 'border-neutral-200'
+            }`}
+          >
             {onApplyToWorkspace && (
               <button
                 type="button"
@@ -516,6 +628,8 @@ export function SimulationAttemptEditModal({
                     promotionDiscountAmount: promotionDiscount,
                     grandTotal,
                     tipAmount,
+                    comboBonusAmount: comboBonus,
+                    serumBonusAmount: serumBonus,
                     totalEstimatedReward: estimatedReward,
                     cvRotationPoints: cvPoints,
                   });

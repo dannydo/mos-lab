@@ -14,7 +14,7 @@ export interface BugReportLauncherPreferences {
 }
 
 export const DEFAULT_BUG_REPORT_LAUNCHER_PREFERENCES: BugReportLauncherPreferences = {
-  visible: true,
+  visible: false,
   position: null,
 };
 
@@ -51,7 +51,7 @@ export function parseBugReportLauncherPreferences(value: string | null): BugRepo
   try {
     const parsed = JSON.parse(value) as Partial<BugReportLauncherPreferences>;
     return {
-      visible: typeof parsed.visible === 'boolean' ? parsed.visible : true,
+      visible: typeof parsed.visible === 'boolean' ? parsed.visible : false,
       position: parsePosition(parsed.position),
     };
   } catch {

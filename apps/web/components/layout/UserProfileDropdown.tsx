@@ -5,7 +5,11 @@ import { Avatar, theme } from 'antd';
 import { UserRound } from 'lucide-react';
 import { isCvRole, type SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../lib/api-client';
-import { getBugReportBadgeSummary, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
+import {
+  getBugReportBadgeServerSnapshot,
+  getBugReportBadgeSummary,
+  subscribeBugReportBadgeSummary,
+} from '../../lib/bug-diagnostics';
 import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
 import { UnifiedProfileSheet } from '../profile/UnifiedProfileSheet';
 
@@ -53,10 +57,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   };
 
   const isCv = isCvRole(user?.role);
-  const bugBadge = React.useSyncExternalStore(subscribeBugReportBadgeSummary, getBugReportBadgeSummary, () => ({
-    actionRequiredCount: 0,
-    unreadCount: 0,
-  }));
+  const bugBadge = React.useSyncExternalStore(
+    subscribeBugReportBadgeSummary,
+    getBugReportBadgeSummary,
+    getBugReportBadgeServerSnapshot
+  );
   const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
 
   const rawAvatar = user?.avatarUrl || user?.avatar;

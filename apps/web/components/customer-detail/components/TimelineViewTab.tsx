@@ -13,7 +13,7 @@ interface TimelineViewTabProps {
 
 interface NoteItem {
   id: string;
-  department: 'BK' | 'CC' | 'CS' | 'KHÁC';
+  department: 'BK' | 'CC' | 'CS' | 'CVL' | 'KHÁC';
   staffName: string;
   note: string;
   date: Date;
@@ -35,8 +35,9 @@ interface GroupedBooking {
 const DEPT_PRIORITY = {
   BK: 1,
   CC: 2,
-  CS: 3,
-  KHÁC: 4,
+  CVL: 3,
+  CS: 4,
+  KHÁC: 5,
 };
 
 const DEPT_COLORS = {
@@ -60,6 +61,13 @@ const DEPT_COLORS = {
     avatarBg: '#52c41a',
     avatarColor: '#ffffff',
     label: 'CS (Chăm sóc KH)',
+  },
+  CVL: {
+    bg: '#fef3c7',
+    color: '#b45309',
+    avatarBg: '#f59e0b',
+    avatarColor: '#ffffff',
+    label: 'CVL (Chuyên Viên)',
   },
   KHÁC: {
     bg: '#f3e8ff',
@@ -250,10 +258,11 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = React.memo(({ boo
           noteText = `${labelStr}${statusTitle}: ${n.note}`;
         }
 
+        const isCvlNote = n.noteFieldKey === 'cvl_note';
         const item: NoteItem = {
           id: `cs-note-${n.id}`,
-          department: 'CS',
-          staffName: n.staffName || 'CS Staff',
+          department: isCvlNote ? 'CVL' : 'CS',
+          staffName: n.staffName || (isCvlNote ? 'Chuyên Viên' : 'CS Staff'),
           note: noteText,
           date: n.dateCreated ? new Date(n.dateCreated) : new Date(),
           formattedTime: n.dateCreated

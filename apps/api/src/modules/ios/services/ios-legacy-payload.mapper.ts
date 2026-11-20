@@ -401,6 +401,12 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
   const servicePromotion = input.servicePromotion ?? null;
   const comboPromotion = input.comboPromotion ?? null;
   const underComboPromotion = input.underComboPromotion ?? null;
+  const isSessionWaivedIntoNewCombo = Boolean(
+    hasUpperComboPurchase && selectedCombo?.todaySingleServiceWaived !== false
+  );
+  const hasSuspendedSessionPromo = Boolean(
+    isSessionWaivedIntoNewCombo && (appliedPromotion || servicePromotion || input.promotionId === null)
+  );
   const {
     hasAnyItemizedPromoObj,
     hasAnyPromoObj,
@@ -423,28 +429,34 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
     underComboPromotion,
     appliedPromotion,
     effectivePromotionId,
+    isSessionWaivedIntoNewCombo,
     billing,
     rawDiamondCredits: resolveDiamondCreditUnits(billing?.diamondUsed, billing?.diamondDiscountAmount),
   });
 
-  const resolvedServicePromoId =
-    servicePromotion?.promotionId ??
-    (input.servicePromotionId && Number(input.servicePromotionId) > 0 ? Number(input.servicePromotionId) : null) ??
-    effectivePromotionId;
+  const resolvedServicePromoId = isSessionWaivedIntoNewCombo
+    ? null
+    : (servicePromotion?.promotionId ??
+      (input.servicePromotionId && Number(input.servicePromotionId) > 0 ? Number(input.servicePromotionId) : null) ??
+      effectivePromotionId);
   const resolvedUpperComboPromoId =
     comboPromotion?.promotionId ??
     (input.comboPromotionId && Number(input.comboPromotionId) > 0 ? Number(input.comboPromotionId) : null) ??
-    effectivePromotionId;
+    (isSessionWaivedIntoNewCombo ? null : effectivePromotionId);
   const resolvedUnderComboPromoId =
     underComboPromotion?.promotionId ??
     (input.underComboPromotionId && Number(input.underComboPromotionId) > 0
       ? Number(input.underComboPromotionId)
       : null) ??
-    effectivePromotionId;
+    (isSessionWaivedIntoNewCombo ? null : effectivePromotionId);
 
   const isServiceCreditRestricted = Boolean(
-    (servicePromotion && servicePromotion.isCreditAllowed === false && serviceDiscount > 0) ||
-    (!hasAnyItemizedPromoObj && appliedPromotion && appliedPromotion.isCreditAllowed === false && serviceDiscount > 0)
+    !isSessionWaivedIntoNewCombo &&
+    ((servicePromotion && servicePromotion.isCreditAllowed === false && serviceDiscount > 0) ||
+      (!hasAnyItemizedPromoObj &&
+        appliedPromotion &&
+        appliedPromotion.isCreditAllowed === false &&
+        serviceDiscount > 0))
   );
 
   const chargeIncludesSingleUnder = Boolean(includeUnderServiceSlot && !underUsesBalancePackage);
@@ -569,13 +581,17 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
     catalogProducts: catalog.products,
     cartProducts,
     productDiscount,
-    effectivePromotionId,
+    effectivePromotionId: hasSuspendedSessionPromo ? null : effectivePromotionId,
     hasAnyPromoObj,
     itemizedProductDiscounts: itemizedPromo.productDiscounts,
     remainingProductCreditsToAssign,
   });
 
-  const orderLevelPromotionId = hasAnyItemizedPromoObj ? itemizedPromo.unifiedOrderPromotionId : effectivePromotionId;
+  const orderLevelPromotionId = hasAnyItemizedPromoObj
+    ? itemizedPromo.unifiedOrderPromotionId
+    : hasSuspendedSessionPromo
+      ? null
+      : effectivePromotionId;
 
   const upperAttrMap = buildUpperLashAttributeMap({ attributes, serviceName, selectedCombo });
   const underAttrMap = buildUnderLashAttributeMap(attributes);

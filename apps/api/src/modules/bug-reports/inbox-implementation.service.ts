@@ -3,7 +3,11 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { FastifyInstance } from 'fastify';
 import {
+  classifyAgNodeFromProvisionerId,
   formatBugReportKey,
+  getExecutionOwnerDisplayName,
+  isAgExecutionOwner,
+  isSupportedImplementationOwner,
   type InboxImplementationTestResult,
   type InboxImplementationWorkerJob,
   type InboxImplementationWorkerResult,
@@ -22,6 +26,7 @@ import {
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 import { InboxPlanService } from './inbox-plan.service.js';
+import { InboxWorkerStatusService, MAX_CODING_SLOTS_PER_NODE } from './inbox-worker-status.service.js';
 import { ExperienceJournalService } from '../experience-journal/experience-journal.service.js';
 import { Prisma } from '../../generated/crm-client/index.js';
 import { makeReleaseManifest, readReleaseManifest, matchesReleaseManifest } from './inbox-release-manifest.js';
@@ -55,6 +60,15 @@ type QualityGateRecoveryRootCause =
   typeof QUALITY_GATE_RECOVERY_ROOT_CAUSE | typeof LEGACY_GAME_BK_PRIVATE_QA_ROOT_CAUSE;
 const LEGACY_GAME_BK_PRIVATE_QA_RETRY_SEQUENCE = 4;
 const execFileAsync = promisify(execFile);
+
+const ALL_IMPLEMENTATION_OWNERS = ['AG_WIN', 'AG_MAC', 'AG', 'IDE', 'AUTO'] as const;
+
+function resolveRetryExecutionOwner(owner?: string | null): InboxImplementationExecutionOwner {
+  if (owner === 'AG_WIN' || owner === 'AG_MAC' || owner === 'AUTO') {
+    return owner;
+  }
+  return 'AG_WIN';
+}
 
 export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
   return source.status === 'FAILED' && source.retrySequence < MAX_DANNY_RETRY_SEQUENCE;
@@ -359,21 +373,35 @@ export function normalizeInboxModelTier(value: unknown): InboxImplementationMode
   const normalized = String(value || '')
     .trim()
     .toLowerCase();
-  if (normalized === 'flash_lite' || normalized === 'flash' || normalized === 'pro') {
+  if (
+    normalized === 'hydrogen' ||
+    normalized === 'orchestrator_neon' ||
+    normalized === 'orchestrator_carbon' ||
+    normalized === 'orchestrator_argon' ||
+    normalized === 'flash'
+  ) {
     return normalized;
   }
+  // Backward-compatible mapping for historical approvals/labels
+  if (normalized === 'pro') return 'orchestrator_argon';
+  if (normalized === 'flash_lite') return 'flash';
   return undefined;
 }
 
+const MODEL_TIER_LABEL_PATTERN =
+  /\[model:(hydrogen|orchestrator_neon|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/i;
+const MODEL_TIER_LABEL_STRIP_PATTERN =
+  /\s*\[model:(?:hydrogen|orchestrator_neon|orchestrator_carbon|orchestrator_argon|flash|flash_lite|pro)\]/gi;
+
 export function extractModelTierFromLabel(label: string | null | undefined): InboxImplementationModelTier | undefined {
   if (!label) return undefined;
-  const match = label.match(/\[model:(flash_lite|flash|pro)\]/i);
+  const match = label.match(MODEL_TIER_LABEL_PATTERN);
   return match ? normalizeInboxModelTier(match[1]) : undefined;
 }
 
 export function stripModelTierMarker(label: string | null | undefined): string | null {
   if (!label) return null;
-  const stripped = label.replace(/\s*\[model:(?:flash_lite|flash|pro)\]/gi, '').trim();
+  const stripped = label.replace(MODEL_TIER_LABEL_STRIP_PATTERN, '').trim();
   return stripped || null;
 }
 
@@ -845,30 +873,31 @@ export class InboxImplementationService {
     fastify: FastifyInstance,
     provisionerId: unknown
   ): Promise<InboxIdeTaskProvisioningRequest | null> {
-    safeWorkerId(provisionerId);
+    const rawProvisionerId = safeWorkerId(provisionerId);
+    const callerNode = classifyAgNodeFromProvisionerId(rawProvisionerId);
     const now = new Date();
 
-    // Guard: Max 3 concurrent active coding sessions for Antigravity (1 session reserved for Danny's manual work)
-    const MAX_CONCURRENT_CODING_SESSIONS = 3;
-    let activeCodingCount = 0;
-    if (typeof fastify.prisma?.crm?.crmInboxImplementationJob?.count === 'function') {
-      activeCodingCount = await fastify.prisma.crm.crmInboxImplementationJob.count({
-        where: {
-          executionOwner: { in: ['AG', 'IDE', 'AUTO'] },
-          status: 'PENDING',
-          ideTaskId: { not: null },
-          ideHandoffRevokedAt: null,
-          executionPhase: { in: ['IDE_HANDOFF_READY', 'RUNNING'] },
-        },
-      });
-    }
-    if (activeCodingCount >= MAX_CONCURRENT_CODING_SESSIONS) {
+    const activeNodeCount = await InboxWorkerStatusService.countNodeActiveCodingSessions(fastify, callerNode);
+    if (activeNodeCount >= MAX_CODING_SLOTS_PER_NODE) {
       return null;
+    }
+
+    let eligibleOwners: string[];
+    if (callerNode === 'AG_WIN') {
+      eligibleOwners = ['AG_WIN', 'AUTO', 'AG'];
+    } else {
+      const winOnline = await InboxWorkerStatusService.isNodeOnline(fastify, 'AG_WIN', now);
+      const winCount = await InboxWorkerStatusService.countNodeActiveCodingSessions(fastify, 'AG_WIN');
+      if (winOnline && winCount < MAX_CODING_SLOTS_PER_NODE) {
+        eligibleOwners = ['AG_MAC'];
+      } else {
+        eligibleOwners = winOnline ? ['AG_MAC', 'AUTO'] : ['AG_MAC', 'AUTO', 'AG'];
+      }
     }
 
     const candidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: {
-        executionOwner: { in: ['AG', 'IDE', 'AUTO'] },
+        executionOwner: { in: eligibleOwners },
         status: 'PENDING',
         ideTaskId: null,
         ideHandoffRevokedAt: null,
@@ -902,6 +931,7 @@ export class InboxImplementationService {
     });
     if (!candidate?.ideProvisioningRequestId) return null;
     const modelTier = extractModelTierFromLabel(candidate.progressLabel);
+    const nodeLabel = callerNode === 'AG_WIN' ? 'Win AG' : 'Mac AG';
     const leaseToken = randomUUID();
     const claimed = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
       where: {
@@ -916,7 +946,7 @@ export class InboxImplementationService {
         ],
       },
       data: {
-        executionOwner: 'AG',
+        executionOwner: callerNode,
         ideProvisioningState: 'LEASED',
         ideProvisioningLeaseToken: leaseToken,
         ideProvisioningLeaseExpiresAt: new Date(now.getTime() + IDE_PROVISIONING_LEASE_MS),
@@ -924,8 +954,8 @@ export class InboxImplementationService {
         ideProvisioningFailureCode: null,
         executionPhase: 'IDE_PROVISIONING_LEASED',
         progressLabel: modelTier
-          ? `Antigravity đang tạo handoff cục bộ. [model:${modelTier}]`
-          : 'Antigravity đang tạo handoff cục bộ.',
+          ? `${nodeLabel} đang tạo handoff cục bộ. [model:${modelTier}]`
+          : `${nodeLabel} đang tạo handoff cục bộ.`,
       },
     });
     if (!claimed.count) return null;
@@ -1113,7 +1143,7 @@ export class InboxImplementationService {
         : null;
       if (
         job &&
-        ['IDE', 'AG', 'AUTO'].includes(job.executionOwner) &&
+        isSupportedImplementationOwner(job.executionOwner) &&
         (expectedTaskId === undefined || job.ideTaskId === expectedTaskId || job.id === expectedTaskId) &&
         job.status === 'AWAITING_DEPLOY_REVIEW' &&
         job.executionPhase === 'AWAITING_DEPLOY_REVIEW' &&
@@ -1125,7 +1155,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
+        !isSupportedImplementationOwner(job.executionOwner) ||
         (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId && job.id !== expectedTaskId) ||
         job.status !== 'PENDING' ||
         job.executionPhase !== 'IDE_COMMIT_HANDOFF' ||
@@ -1182,7 +1212,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        !['IDE', 'AG'].includes(job.executionOwner) ||
+        !(isAgExecutionOwner(job.executionOwner) || job.executionOwner === 'IDE') ||
         job.ideHandoffRevokedAt ||
         (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId && job.id !== expectedTaskId) ||
         input?.handoff?.jobId !== job.id ||
@@ -1322,7 +1352,7 @@ export class InboxImplementationService {
       const updated = await tx.crmInboxImplementationJob.updateMany({
         where: {
           id: report.implementationActiveJobId,
-          executionOwner: { in: ['IDE', 'AG', 'AUTO'] },
+          executionOwner: { in: [...ALL_IMPLEMENTATION_OWNERS] },
           status: 'PENDING',
           ideHandoffRevokedAt: null,
         },
@@ -1371,7 +1401,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
+        !isSupportedImplementationOwner(job.executionOwner) ||
         job.status !== 'PENDING' ||
         job.ideHandoffRevokedAt
       )
@@ -1451,7 +1481,7 @@ export class InboxImplementationService {
       }));
     if (
       !job ||
-      !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
+      !isSupportedImplementationOwner(job.executionOwner) ||
       job.status !== 'PENDING' ||
       !['IDE_HANDOFF_READY', 'IDE_COMMIT_HANDOFF'].includes(job.executionPhase || '') ||
       job.ideHandoffRevokedAt ||
@@ -1467,7 +1497,7 @@ export class InboxImplementationService {
       data: {
         startedAt: job.startedAt || new Date(),
         lastProgressAt: new Date(),
-        progressLabel: `${job.executionOwner === 'AG' ? 'Antigravity' : 'Codex'} đang triển khai code và kiểm thử`,
+        progressLabel: `${getExecutionOwnerDisplayName(job.executionOwner)} đang triển khai code và kiểm thử`,
       },
     });
     const comments = await fastify.prisma.crm.crmBugReportComment.findMany({
@@ -1757,7 +1787,7 @@ export class InboxImplementationService {
     reportId: number,
     actorStaffId: number,
     expectedPlan?: BugReportPlanReviewCandidate,
-    executionOwner: InboxImplementationExecutionOwner = 'AUTO',
+    executionOwner: InboxImplementationExecutionOwner = 'AG_WIN',
     modelTier?: InboxImplementationModelTier
   ) {
     const normalizedModelTier = normalizeInboxModelTier(modelTier);
@@ -1825,12 +1855,11 @@ export class InboxImplementationService {
             reportId,
             actorStaffId,
             action: 'IMPLEMENTATION_APPROVED',
-            note:
-              executionOwner === 'AG'
-                ? 'Danny đã duyệt Antigravity (AG) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
-                : executionOwner === 'AUTO'
-                  ? 'Danny đã duyệt AI tự động (Antigravity hoặc Codex) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
-                  : 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
+            note: isAgExecutionOwner(executionOwner)
+              ? `Danny đã duyệt ${getExecutionOwnerDisplayName(executionOwner)} chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.`
+              : executionOwner === 'AUTO'
+                ? 'Danny đã duyệt Auto-overflow (Win AG mặc định, tự tràn sang Mac AG khi đầy slot/offline) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
+                : 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
             beforeJson: snapshot(report),
             afterJson: snapshot(
               {
@@ -1861,7 +1890,7 @@ export class InboxImplementationService {
   static async enqueueApproved(
     fastify: FastifyInstance,
     reportId: number,
-    executionOwner: InboxImplementationExecutionOwner = 'AUTO',
+    executionOwner: InboxImplementationExecutionOwner = 'AG_WIN',
     modelTier?: InboxImplementationModelTier
   ): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
@@ -1915,12 +1944,7 @@ export class InboxImplementationService {
       }
     }
 
-    const baseProgressLabel =
-      executionOwner === 'AG'
-        ? 'Chờ Antigravity tạo handoff cục bộ.'
-        : executionOwner === 'AUTO'
-          ? 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.'
-          : 'Chờ Codex IDE tạo handoff cục bộ.';
+    const baseProgressLabel = `Chờ ${getExecutionOwnerDisplayName(executionOwner)} tạo handoff cục bộ.`;
 
     const planVersion = gate.plan.planVersion;
     const id = randomUUID();
@@ -2000,6 +2024,7 @@ export class InboxImplementationService {
     const planVersion = gate.plan.planVersion;
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const retryOwner = resolveRetryExecutionOwner(failed.executionOwner);
     const now = new Date();
     const queued = await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.create({
@@ -2011,10 +2036,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'AUTO',
+          executionOwner: retryOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
+          progressLabel: `Chờ ${getExecutionOwnerDisplayName(retryOwner)} tạo handoff cục bộ.`,
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2100,6 +2125,7 @@ export class InboxImplementationService {
 
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const retryOwner = resolveRetryExecutionOwner(failed.executionOwner);
     const now = new Date();
     return fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.create({
@@ -2111,10 +2137,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'AUTO',
+          executionOwner: retryOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
+          progressLabel: `Chờ ${getExecutionOwnerDisplayName(retryOwner)} tạo handoff cục bộ.`,
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2198,6 +2224,7 @@ export class InboxImplementationService {
     const planVersion = gate.plan.planVersion;
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const retryOwner = resolveRetryExecutionOwner(failed.executionOwner);
     const now = new Date();
     return fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.create({
@@ -2209,10 +2236,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'AUTO',
+          executionOwner: retryOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
+          progressLabel: `Chờ ${getExecutionOwnerDisplayName(retryOwner)} tạo handoff cục bộ.`,
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2451,6 +2478,7 @@ export class InboxImplementationService {
     const planVersion = gate.plan.planVersion;
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const retryOwner = resolveRetryExecutionOwner(failed.executionOwner);
     const now = new Date();
     return fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.create({
@@ -2462,10 +2490,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'AUTO',
+          executionOwner: retryOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
+          progressLabel: `Chờ ${getExecutionOwnerDisplayName(retryOwner)} tạo handoff cục bộ.`,
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2549,6 +2577,7 @@ export class InboxImplementationService {
 
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const retryOwner = resolveRetryExecutionOwner(failed.executionOwner);
     const now = new Date();
     return fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.create({
@@ -2560,10 +2589,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'AUTO',
+          executionOwner: retryOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
+          progressLabel: `Chờ ${getExecutionOwnerDisplayName(retryOwner)} tạo handoff cục bộ.`,
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2641,7 +2670,7 @@ export class InboxImplementationService {
         'COMMIT_REVIEW_ARTIFACT_MISSING'
       );
     }
-    if (['IDE', 'AG', 'AUTO'].includes(job.executionOwner)) {
+    if (isSupportedImplementationOwner(job.executionOwner)) {
       const now = new Date();
       return fastify.prisma.crm.$transaction(async (tx) => {
         const updated = await tx.crmInboxImplementationJob.updateMany({
@@ -2754,8 +2783,8 @@ export class InboxImplementationService {
     if (!job?.commitSha) {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
     }
-    if (['IDE', 'AG'].includes(job.executionOwner)) {
-      const engineLabel = job.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE';
+    if (isAgExecutionOwner(job.executionOwner) || job.executionOwner === 'IDE') {
+      const engineLabel = getExecutionOwnerDisplayName(job.executionOwner);
       const deployProgressLabel = `${engineLabel} đang tự động merge main và triển khai production...`;
       return fastify.prisma.crm.$transaction(async (tx) => {
         await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
@@ -3742,7 +3771,7 @@ export class InboxImplementationService {
     if (!job) {
       throw new InboxImplementationError('Không tìm thấy commit đang chờ Danny xác nhận deploy.', 409);
     }
-    if (report.status === 'APPROVED' && !['IDE', 'AG', 'AUTO'].includes(job.executionOwner)) {
+    if (report.status === 'APPROVED' && !isSupportedImplementationOwner(job.executionOwner)) {
       throw new InboxImplementationError('Projection APPROVED chỉ hợp lệ cho commit IDE đã được duyệt.', 409);
     }
 

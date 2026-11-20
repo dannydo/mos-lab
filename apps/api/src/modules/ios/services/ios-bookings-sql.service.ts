@@ -24,6 +24,9 @@ export interface RawIosOrderSnapshot {
   booking_date_start: Date | string | null;
   booking_duration_minute: number | null;
   total_price: number | null;
+  os_service_price?: number | null;
+  os_discount_amount?: number | null;
+  catalog_single_price?: number | null;
   client_store_id: number | null;
   booking_note: string | null;
   user_id: number | null;
@@ -156,6 +159,8 @@ export async function fetchLiveOrderSnapshots(
              os.order_id,
              os.service_type,
              os.promotion_id AS os_promotion_id,
+             os.service_price AS os_service_price,
+             os.discount_amount AS os_discount_amount,
              os.created_staff_id AS os_created_staff_id,
              os.assigned_staff_id,
              os.booked_staff_id,
@@ -164,6 +169,7 @@ export async function fetchLiveOrderSnapshots(
              s.service_key,
              s.is_temporary,
              sl.service_name,
+             sp_single.service_price AS catalog_single_price,
              os_booker_up.full_name AS os_booker_name,
              os_booker_up.avatar AS os_booker_avatar,
              sp.full_name AS staff_name,
@@ -175,6 +181,7 @@ export async function fetchLiveOrderSnapshots(
            FROM order_service os
            LEFT JOIN service s ON s.id = os.service_id
            LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+           LEFT JOIN service_price sp_single ON sp_single.service_id = s.id AND sp_single.service_price_package_key = 'single' AND sp_single.is_disabled = 0
            LEFT JOIN user_profile os_booker_up ON os_booker_up.user_id = os.created_staff_id
            LEFT JOIN user_profile sp ON sp.user_id = os.assigned_staff_id
            LEFT JOIN user_profile checkin_up ON checkin_up.user_id = os.check_in_staff_id
@@ -355,6 +362,14 @@ export async function fetchLiveOrderSnapshots(
       booking_date_start: r.booking_date_start ?? null,
       booking_duration_minute: r.booking_duration_minute !== null ? Number(r.booking_duration_minute) : null,
       total_price: r.total_price !== null ? Number(r.total_price) : null,
+      os_service_price:
+        os?.os_service_price !== undefined && os?.os_service_price !== null ? Number(os.os_service_price) : null,
+      os_discount_amount:
+        os?.os_discount_amount !== undefined && os?.os_discount_amount !== null ? Number(os.os_discount_amount) : null,
+      catalog_single_price:
+        os?.catalog_single_price !== undefined && os?.catalog_single_price !== null
+          ? Number(os.catalog_single_price)
+          : null,
       client_store_id: r.client_store_id !== null ? Number(r.client_store_id) : null,
       booking_note: r.booking_note ? String(r.booking_note) : null,
       user_id: userId,

@@ -18,6 +18,9 @@ import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 
+const isLocalDevLoginEnabled =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_LOCAL_DEV_MOCK_LOGIN === '1';
+
 interface DevStaff {
   id: number;
   username: string;
@@ -75,7 +78,7 @@ export default function LoginPage() {
 
   // Load Dev staff directory
   useEffect(() => {
-    if (showMockOptions && devStaffs.length === 0 && process.env.NODE_ENV !== 'production') {
+    if (showMockOptions && devStaffs.length === 0 && isLocalDevLoginEnabled) {
       setLoadingStaffs(true);
       apiClient.auth
         .getDevDirectory()
@@ -105,6 +108,21 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('switch') === '1') {
+      [
+        'mos_token',
+        'mos_user',
+        'mos_omicall_auto_init',
+        'mos_original_token',
+        'mos_original_user',
+        'mos_impersonation_audit_id',
+      ].forEach((k) => localStorage.removeItem(k));
+      if (isLocalDevLoginEnabled) {
+        setShowMockOptions(true);
+      }
+      return;
+    }
     const token = localStorage.getItem('mos_token');
     const user = localStorage.getItem('mos_user');
     if (token && user) {
@@ -365,7 +383,7 @@ export default function LoginPage() {
           ></div>
 
           {/* Dev Mock login selection */}
-          {process.env.NODE_ENV !== 'production' &&
+          {isLocalDevLoginEnabled &&
             (!showMockOptions ? (
               <Button
                 type="default"
@@ -733,11 +751,9 @@ export default function LoginPage() {
 
               <Form.Item
                 name="password"
-                rules={
-                  process.env.NODE_ENV !== 'production' ? [] : [{ required: true, message: 'Vui lòng nhập mật khẩu!' }]
-                }
+                rules={isLocalDevLoginEnabled ? [] : [{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
                 extra={
-                  process.env.NODE_ENV !== 'production' ? (
+                  isLocalDevLoginEnabled ? (
                     <span style={{ fontSize: '11px', color: token.colorTextDescription }}>
                       Dev mode: Tài khoản thường không cần mật khẩu; Super Admin yêu cầu mật khẩu
                     </span>
@@ -747,9 +763,7 @@ export default function LoginPage() {
                 <Input.Password
                   prefix={<LockOutlined style={{ color: token.colorTextPlaceholder }} />}
                   placeholder={
-                    process.env.NODE_ENV !== 'production'
-                      ? 'Mật khẩu (Dev: Bỏ trống nếu không phải Super Admin)'
-                      : 'Mật khẩu'
+                    isLocalDevLoginEnabled ? 'Mật khẩu (Dev: Bỏ trống nếu không phải Super Admin)' : 'Mật khẩu'
                   }
                 />
               </Form.Item>

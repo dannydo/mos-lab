@@ -151,7 +151,7 @@ export class AgChatBridgeService {
       let csrfToken = matchCsrf ? matchCsrf[1] : '';
 
       const lsofCmd = existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : 'lsof';
-      const lsof = execSync(`${lsofCmd} -nP -p ${pid} | grep LISTEN`, {
+      const lsof = execSync(`${lsofCmd} -nP -p ${pid} 2>/dev/null | grep LISTEN || true`, {
         encoding: 'utf8',
         env: { ...process.env, PATH: `${process.env.PATH || ''}:/usr/sbin:/sbin:/usr/bin:/bin` },
       });
@@ -208,7 +208,8 @@ export class AgChatBridgeService {
   static async executeLocalAgPrompt(
     conversationId: string | undefined,
     prompt: string,
-    title?: string
+    title?: string,
+    options?: { timeoutMs?: number; model?: string }
   ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
     const command = this.resolveAgentApiCommand();
     if (!command) {
@@ -255,7 +256,7 @@ export class AgChatBridgeService {
       await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
     } else {
       const titleArg = title ? [`--title=${title}`] : ['--title=[mOS Copilot]'];
-      const model = process.env.MOS_AG_MODEL?.trim() || 'flash';
+      const model = options?.model?.trim() || process.env.MOS_AG_MODEL?.trim() || 'gemini-4-hydrogen-high';
       const modelArg = [`--model=${model}`];
       const args = command.endsWith('language_server')
         ? ['agentapi', 'new-conversation', ...modelArg, ...titleArg, prompt]
@@ -281,7 +282,11 @@ export class AgChatBridgeService {
     }
 
     // Wait for Antigravity to write response to transcript.jsonl
-    const response = await this.waitForAgResponse(targetConvId, initialLineCount, AG_RESPONSE_TIMEOUT_MS);
+    const response = await this.waitForAgResponse(
+      targetConvId,
+      initialLineCount,
+      options?.timeoutMs ?? AG_RESPONSE_TIMEOUT_MS
+    );
     return { conversationId: targetConvId, response };
   }
 

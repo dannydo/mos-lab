@@ -3,12 +3,25 @@ import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem 
 import type { IosCvSelfSpeedHistoryProfile, IosSelfChallengeTierKey } from '../utils/ios-self-challenge.js';
 import type { IosServicingRound } from '../utils/ios-servicing-rounds.js';
 import type { IosPromotionOption } from './ios-promotions.js';
+import {
+  isDoneBookingPendingPostCheckoutAdjustment,
+  type IosPostCheckoutAdjustmentEntry,
+  type IosPostCheckoutPaymentMode,
+  type IosPostCheckoutPendingDraft,
+} from './ios-post-checkout.js';
+
+export * from './ios-post-checkout.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
 export type CustomerBookingTab = 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
 export type IosBookingStatus = 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
-export type IosSettlementStatus = 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
+export type IosSettlementStatus =
+  | 'SETTLED_COMPLETED'
+  | 'PENDING_COUNTER_SETTLEMENT'
+  | 'PENDING_POST_CHECKOUT_ADJUSTMENT'
+  | 'DEMO_ONLY'
+  | 'BRIDGE_DEFERRED';
 
 export const IOS_SIM_BOOKING_ID_MIN = 900_000_000;
 
@@ -210,6 +223,8 @@ export interface IosSelectedUnderCombo {
 }
 
 export interface IosComboRedemption {
+  balanceId?: number | null;
+  redeemSession?: boolean;
   comboName: string;
   deductedBucket: string;
   typeConversionSurcharge: number;
@@ -423,13 +438,19 @@ export interface IosBookingItem {
     expiryState?: ComboExpiryState;
   };
   comboWallets?: IosCustomerComboWalletItem[];
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
   diamondBalance?: number;
   debtAmount?: number;
   storeId?: number;
   branchCode?: string;
   branchName?: string;
+  bookingDateYmd?: string;
   lastVisitDate?: string;
   lashHistory?: LashHistoryItem[];
+  cvlNotes?: IosCustomerNoteItem[];
   isSimulationBooking?: boolean;
   isSimulationDraftBooking?: boolean;
   simulationAttemptCount?: number;
@@ -502,7 +523,14 @@ export interface IosBookingItem {
     bankTransferRef?: string;
     posTransactionId?: string;
     legacySyncedAt?: string;
+    previousPaidGrandTotal?: number;
+    previousPaymentMethod?: IosPaymentMethod;
+    previousPaymentBreakdown?: IosPaymentBreakdown;
+    lastAdjustmentMode?: IosPostCheckoutPaymentMode;
+    lastAdjustmentDeltaAmount?: number;
   };
+  pendingPostCheckoutAdjustment?: IosPostCheckoutPendingDraft | null;
+  postCheckoutAdjustments?: IosPostCheckoutAdjustmentEntry[];
 }
 
 export interface IosBookingListQuery {
@@ -556,6 +584,9 @@ export type IosBookingActionType =
   | 'UPDATE_CUSTOMER_AVATAR'
   | 'RESET_DEMO'
   | 'REVERT_TO_INCOMING'
+  | 'SUBMIT_POST_CHECKOUT_ADJUSTMENT'
+  | 'APPROVE_POST_CHECKOUT_ADJUSTMENT'
+  | 'REJECT_POST_CHECKOUT_ADJUSTMENT'
   | 'SIM_REVERT_CONSULTATION'
   | 'SIM_RESET_TO_INCOMING'
   | 'SIM_FAST_FORWARD_TO_UPSELL';
@@ -583,6 +614,14 @@ export interface IosBookingActionResponse {
 
 export type IosSimulationAttemptSourceAction = 'COMPLETE_ORDER' | 'SIM_REVERT_CONSULTATION' | 'SIM_RESET_TO_INCOMING';
 
+export interface IosSimulationUpsellProductItem {
+  productId?: number;
+  productName: string;
+  quantity: number;
+  unitPrice?: number;
+  totalPrice: number;
+}
+
 export interface IosSimulationAttemptSummary {
   attemptId: string;
   attemptNumber: number;
@@ -602,7 +641,7 @@ export interface IosSimulationAttemptSummary {
   selectedComboPrice: number;
   selectedUnderComboName?: string | null;
   selectedUnderComboPrice: number;
-  upsellProducts: Array<{ productName: string; quantity: number; totalPrice: number }>;
+  upsellProducts: IosSimulationUpsellProductItem[];
   upsellTotal: number;
   promotionName?: string | null;
   promotionDiscountAmount: number;
@@ -626,7 +665,7 @@ export interface IosUpdateSimulationAttemptRequest {
   selectedComboPrice?: number;
   selectedUnderComboName?: string | null;
   selectedUnderComboPrice?: number;
-  upsellProducts?: Array<{ productName: string; quantity: number; totalPrice: number }>;
+  upsellProducts?: IosSimulationUpsellProductItem[];
   promotionName?: string | null;
   promotionDiscountAmount?: number;
   tipAmount?: number;
@@ -659,6 +698,14 @@ export interface IosBookingServiceCatalogItem {
   serviceGroup: string;
   price: number;
   durationMinute: number;
+}
+
+export interface IosProductCatalogItem {
+  productId: number;
+  productSku: string;
+  productName: string;
+  price: number;
+  isSerum?: boolean;
 }
 
 export interface IosCreateBookingRequest {
@@ -862,6 +909,18 @@ export function calculateCvSerumTierBonus(
   const perUnit =
     unitPrice >= 1000000 ? origBonus : unitPrice > 550000 ? discBonus : unitPrice > 0 ? deepDiscBonus : freeBonus;
   return perUnit * quantity;
+}
+
+export const YEPPEUM_PRODUCT_ID = 36;
+
+export function isYeppeumSerumProduct(item: {
+  productId?: number;
+  productSku?: string | null;
+  productName?: string | null;
+}): boolean {
+  if (Number(item.productId) === YEPPEUM_PRODUCT_ID) return true;
+  const haystack = `${item.productSku || ''} ${item.productName || ''}`.toLowerCase();
+  return /yeppeum|dưỡng mi/i.test(haystack);
 }
 
 export function resolveServicePriceSplit(params: {
@@ -1295,12 +1354,12 @@ export function isDoneBookingPendingCheckout(b: Pick<IosBookingItem, 'orderState
   return state === 'CheckOut' || state === 'Check-out' || settlement === 'PENDING_COUNTER_SETTLEMENT';
 }
 
-export function sortDoneBookingsWithCheckoutFirst<T extends Pick<IosBookingItem, 'orderState' | 'billing'>>(
-  bookings: T[]
-): T[] {
+export function sortDoneBookingsWithCheckoutFirst<
+  T extends Pick<IosBookingItem, 'orderState' | 'billing' | 'pendingPostCheckoutAdjustment'>,
+>(bookings: T[]): T[] {
   return [...bookings].sort((a, b) => {
-    const aPending = isDoneBookingPendingCheckout(a) ? 0 : 1;
-    const bPending = isDoneBookingPendingCheckout(b) ? 0 : 1;
+    const aPending = isDoneBookingPendingCheckout(a) || isDoneBookingPendingPostCheckoutAdjustment(a) ? 0 : 1;
+    const bPending = isDoneBookingPendingCheckout(b) || isDoneBookingPendingPostCheckoutAdjustment(b) ? 0 : 1;
     return aPending - bPending;
   });
 }
@@ -1515,7 +1574,43 @@ export function formatIosPaymentMethodLabel(params: {
   return 'Chuyển khoản QR (Bank)';
 }
 
-export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS';
+export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS' | 'NOTES';
+
+export type IosCustomerNoteSource = 'CVL' | 'CRM';
+
+export interface IosCustomerNoteItem {
+  id: number;
+  customerId: number;
+  note: string;
+  noteFieldKey: string;
+  source: IosCustomerNoteSource;
+  isSticky: boolean;
+  isIssue?: boolean;
+  dateCreated: string;
+  dateDisplay: string;
+  timeDisplay: string;
+  daysAgoLabel: string;
+  staffId?: number;
+  staffName: string;
+  staffAvatar?: string | null;
+  branchName?: string | null;
+  orderId?: number | null;
+  orderNumber?: string | null;
+}
+
+export interface IosCreateCustomerNotePayload {
+  note: string;
+  tags?: string[];
+  isSticky?: boolean;
+  bookingId?: number;
+  simulationMode?: boolean;
+}
+
+export interface IosCreateCustomerNoteResponse {
+  success: boolean;
+  note?: IosCustomerNoteItem;
+  error?: string;
+}
 
 export interface IosCustomerHistoryLashSpec {
   serviceName?: string;
@@ -1618,5 +1713,6 @@ export interface IosCustomerHistoryResponse {
   payments: IosCustomerHistoryVisitItem[];
   fixVisits: IosCustomerHistoryVisitItem[];
   diamondTransactions: IosCustomerDiamondTxnItem[];
+  notes?: IosCustomerNoteItem[];
   error?: string;
 }

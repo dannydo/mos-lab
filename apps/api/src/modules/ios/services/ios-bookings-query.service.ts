@@ -3,6 +3,7 @@ import {
   canViewUnmaskedCustomerPhone,
   IosBookingListResponse,
   isAdminOrSuperAdminRole,
+  resolveAssignedSalonStoreId,
   resolveLockedIosRoleForUser,
 } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
@@ -63,19 +64,23 @@ export async function queryIosBookingsList(
   const isAdmin = authUser.careerTier === 'ADMIN' || isAdminOrSuperAdminRole(authUser.role || '');
   const isSimulationMode = isIosDemoModeRequested(query.sim);
   const isDemoMode = !isSimulationMode && isIosDemoModeRequested(query.demo);
+  const effectiveRole = resolveLockedIosRoleForUser(
+    isAdmin ? 'admin' : authUser.careerTier || authUser.role,
+    query.role,
+    authUser.teamCodes
+  );
+  const assignedStoreId = resolveAssignedSalonStoreId(authUser.clientStoreId);
   const requestedStoreId = query.storeId !== undefined && query.storeId !== '' ? Number(query.storeId) : undefined;
-  const storeId =
-    !isAdmin && !isSimulationMode && authUser.clientStoreId && authUser.clientStoreId !== 4
-      ? authUser.clientStoreId
-      : (requestedStoreId ?? (authUser.clientStoreId && authUser.clientStoreId !== 4 ? authUser.clientStoreId : 6));
+  const validRequestedStoreId =
+    requestedStoreId !== undefined && Number.isFinite(requestedStoreId) && requestedStoreId > 0
+      ? requestedStoreId
+      : undefined;
+  // Invariant (UI-010): Non-admin accounts (including CVL in Live & Simulation Sandbox Mode)
+  // are strictly locked to their single assigned salon branch (never 2 branches / never storeId=0).
+  const storeId = isAdmin ? (validRequestedStoreId ?? assignedStoreId) : assignedStoreId;
   const segment = (query.segment || 'INCOMING').toUpperCase();
   const todayVn = resolveTodayVietnamDate();
   const targetDate = query.date || todayVn;
-
-  const effectiveRole = resolveLockedIosRoleForUser(
-    isAdmin ? 'admin' : authUser.careerTier || authUser.role,
-    query.role
-  );
   const canViewFullPhone = isAdmin && effectiveRole !== 'CVL' ? true : canViewUnmaskedCustomerPhone(effectiveRole);
 
   const rawScope = (query.scope || (effectiveRole === 'CVL' ? 'MY_CUSTOMERS' : 'STORE_ALL')).toUpperCase();
@@ -145,6 +150,7 @@ export async function queryIosBookingsList(
       effectiveRole,
       scope,
       activeStaffId,
+      storeId,
       targetDate,
       todayVn,
     });
@@ -191,7 +197,9 @@ export async function queryIosBookingsList(
   const pool = getLegacyPool();
   const rawSimDraftBookings =
     isSimulationMode && simCtx ? await loadSimulationCustomBookings(simCtx.targetStaffId, targetDate) : [];
-  const simDraftBookings = rawSimDraftBookings.filter((b) => !b.storeId || Number(b.storeId) === Number(storeId));
+  const simDraftBookings = rawSimDraftBookings.filter((b) =>
+    b.storeId ? Number(b.storeId) === Number(storeId) : storeId === assignedStoreId
+  );
   const activeRepo =
     isSimulationMode && simCtx ? getSimulationOverrideRepository(simCtx.targetStaffId) : defaultIosOverrideRepo;
 
@@ -251,6 +259,7 @@ export async function queryIosBookingsList(
       if (
         settleStatus === 'SETTLED_COMPLETED' ||
         settleStatus === 'PENDING_COUNTER_SETTLEMENT' ||
+        settleStatus === 'PENDING_POST_CHECKOUT_ADJUSTMENT' ||
         settleStatus === 'DEMO_ONLY'
       ) {
         continue;
@@ -345,6 +354,7 @@ export async function queryIosBookingsList(
     effectiveRole: simEffectiveRole,
     scope: simScope,
     activeStaffId: simActiveStaffId,
+    storeId,
     targetDate,
     todayVn,
   });

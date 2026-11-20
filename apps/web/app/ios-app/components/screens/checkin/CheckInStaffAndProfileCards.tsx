@@ -5,6 +5,7 @@ import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
 import { useTheme } from '../../../../../context/ThemeContext';
 import { BookingItem, LashHistoryItem } from '../../../state/mockData';
 import { CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
+import { CvlCustomerNotesBanner } from '../../ui-kit/CvlCustomerNotesBanner';
 import { calculateLashPricingAndCvPoints, resolveQuickCheckInComboPreset } from '../LashMaterialConstraintMatrix';
 import { resolveNaturalLashCountLabel } from '../NaturalLashAssessmentData';
 import { getFallbackLashHistory, getStaffInitials } from './checkinHelpers';
@@ -412,6 +413,8 @@ export function CheckInStaffAndProfileCards({
           </div>
         </div>
       )}
+
+      <CvlCustomerNotesBanner notes={booking.cvlNotes} isDark={isDark} />
 
       {/* Section 2.5: Hồ Sơ Mi Thật */}
       {visits <= 1 && !hasCompleteNaturalLashSet(booking) ? (

@@ -4,10 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { Form, Input, InputNumber, Select, TimePicker, Tooltip, Typography, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { Info, Sparkles, Target } from 'lucide-react';
-import { BkGame, BkGameDoneBonusRule, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
+import { BkGame, BkGameDoneBonusRule, BkGameTeamBookingDoneBonusConfig, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
 import BkDoneBonusConfigTable from './BkDoneBonusConfigTable';
+import BkTeamBookingDoneBonusConfigTable from './BkTeamBookingDoneBonusConfigTable';
 
 interface BkGameEditModalProps {
   open: boolean;
@@ -20,6 +21,16 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [doneBonusRules, setDoneBonusRules] = useState<BkGameDoneBonusRule[]>([]);
+  const [teamBookingDoneBonusConfig, setTeamBookingDoneBonusConfig] =
+    useState<BkGameTeamBookingDoneBonusConfig | null>(null);
+
+  const watchedTeamKpiTimeWindow = Form.useWatch('teamKpiTimeWindow', form) as [Dayjs, Dayjs] | undefined;
+  const teamKpiTimeWindowLabel =
+    watchedTeamKpiTimeWindow?.[0] && watchedTeamKpiTimeWindow?.[1]
+      ? `${watchedTeamKpiTimeWindow[0].format('HH:mm')}–${watchedTeamKpiTimeWindow[1].format('HH:mm')}`
+      : game?.teamKpiConfig?.timeWindowStart && game?.teamKpiConfig?.timeWindowEnd
+        ? `${game.teamKpiConfig.timeWindowStart}–${game.teamKpiConfig.timeWindowEnd}`
+        : '08:00–17:00';
 
   useEffect(() => {
     if (open && game) {
@@ -50,6 +61,7 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
         }
       }
       setDoneBonusRules(initialRules);
+      setTeamBookingDoneBonusConfig(game.teamBookingDoneBonusConfig ?? null);
     }
   }, [open, game, form]);
 
@@ -90,6 +102,10 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
         rewardDescription: values.rewardDescription,
         penaltyDescription: values.penaltyDescription,
         doneBonusConfig: doneBonusRules.length > 0 ? doneBonusRules : null,
+        teamBookingDoneBonusConfig:
+          teamBookingDoneBonusConfig && teamBookingDoneBonusConfig.tiers.length > 0
+            ? teamBookingDoneBonusConfig
+            : null,
         teamKpiConfig,
       });
       message.success('Cập nhật cấu hình Game BK thành công!');
@@ -318,6 +334,16 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
         {/* Cấu hình Thưởng Bonus / Done theo Dịch vụ */}
         <div className="my-2">
           <BkDoneBonusConfigTable value={doneBonusRules} onChange={setDoneBonusRules} />
+        </div>
+
+        {/* Cấu hình Thưởng Done khách lẻ theo mốc Booking Team (MOS-BUG-247) */}
+        <div className="my-2">
+          <BkTeamBookingDoneBonusConfigTable
+            value={teamBookingDoneBonusConfig}
+            onChange={setTeamBookingDoneBonusConfig}
+            gameType={game.gameType}
+            teamKpiTimeWindowLabel={teamKpiTimeWindowLabel}
+          />
         </div>
       </Form>
     </AdaptiveModal>

@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import {
   buildAgentPrompt,
   buildAntigravityCascadeConfig,
+  normalizeProvisionerModelTier,
   readManagedRuntimeConfig,
   readProvisioningLedger,
+  resolveAgentApiModelArg,
   resolveAntigravityPlanModel,
   runProvisionerOnce,
   runClarificationWatcher,
@@ -408,22 +410,29 @@ test('runPlanWatcher claims and completes plan job successfully', async () => {
   assert.equal(voiceNotified, true);
 });
 
-test('1 ticket -> 1 session: findExistingSessionForTicket finds existing session and reuses it', () => {
-  const temporary = join(tmpdir(), `ag-sessions-test-${Date.now()}.json`);
-  const sessions = {
-    'MOS-BUG-34': {
-      ticketKey: 'MOS-BUG-34',
-      reportId: 34,
-      conversationId: 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed',
-      worktreePath: '/tmp/worktree-34',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  };
-  writeTicketSessions(sessions, temporary);
-  const found = findExistingSessionForTicket('MOS-BUG-34', 34, temporary);
-  assert.equal(found?.conversationId, 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed');
-  assert.equal(found?.worktreePath, '/tmp/worktree-34');
+test('1 ticket -> 1 session: findExistingSessionForTicket finds existing session and reuses it', async () => {
+  const tempRoot = await mkdtemp(join(tmpdir(), 'ag-sessions-test-'));
+  const sessionsFile = join(tempRoot, 'sessions.json');
+  const brainRoot = join(tempRoot, 'brain');
+  try {
+    await mkdir(join(brainRoot, 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed'), { recursive: true });
+    const sessions = {
+      'MOS-BUG-34': {
+        ticketKey: 'MOS-BUG-34',
+        reportId: 34,
+        conversationId: 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed',
+        worktreePath: '/tmp/worktree-34',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    writeTicketSessions(sessions, sessionsFile);
+    const found = findExistingSessionForTicket('MOS-BUG-34', 34, sessionsFile, brainRoot);
+    assert.equal(found?.conversationId, 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed');
+    assert.equal(found?.worktreePath, '/tmp/worktree-34');
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('probeIsAntigravityPort identifies genuine Antigravity port and extracts csrfToken', async () => {
@@ -463,15 +472,226 @@ test('probeIsAntigravityPort rejects non-antigravity HTTP ports', async () => {
   }
 });
 
-test('resolveAntigravityPlanModel maps pro to Argon High (MODEL_PLACEHOLDER_M417), flash to Flash High (MODEL_PLACEHOLDER_M318), and flash_lite to Flash Low (MODEL_PLACEHOLDER_M320)', async () => {
-  assert.equal(await resolveAntigravityPlanModel('pro'), 'MODEL_PLACEHOLDER_M417');
+test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orchestrator_neon, orchestrator_carbon, orchestrator_argon, and flash cleanly', async () => {
+  assert.equal(normalizeProvisionerModelTier(undefined), 'hydrogen');
+  assert.equal(await resolveAntigravityPlanModel(undefined), 'gemini-4-hydrogen-high');
+  assert.equal(await resolveAntigravityPlanModel('hydrogen'), 'gemini-4-hydrogen-high');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_neon'), 'gemini-pro-orchestrator-neon');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_carbon'), 'gemini-pro-orchestrator');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
   assert.equal(await resolveAntigravityPlanModel('flash'), 'MODEL_PLACEHOLDER_M318');
-  assert.equal(await resolveAntigravityPlanModel('flash_lite'), 'MODEL_PLACEHOLDER_M320');
+  // Legacy tier compatibility
+  assert.equal(await resolveAntigravityPlanModel('pro'), 'gemini-pro-orchestrator-argon');
+  assert.equal(await resolveAntigravityPlanModel('flash_lite'), 'MODEL_PLACEHOLDER_M318');
 
-  const cascadeConfig = buildAntigravityCascadeConfig('MODEL_PLACEHOLDER_M417');
-  assert.equal(cascadeConfig.plannerConfig.planModel, 'MODEL_PLACEHOLDER_M417');
+  assert.equal(resolveAgentApiModelArg(undefined), 'gemini-4-hydrogen-high');
+  assert.equal(resolveAgentApiModelArg('hydrogen'), 'gemini-4-hydrogen-high');
+  assert.equal(resolveAgentApiModelArg('orchestrator_neon'), 'gemini-pro-orchestrator-neon');
+  assert.equal(resolveAgentApiModelArg('orchestrator_carbon'), 'gemini-pro-orchestrator');
+  assert.equal(resolveAgentApiModelArg('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
+  assert.equal(resolveAgentApiModelArg('flash'), 'gemini-3.8-flash-high');
+
+  const mockFetcher: typeof fetch = async () =>
+    new Response(
+      JSON.stringify({
+        clientModelConfigs: [
+          { label: 'Gemini 4 Hydrogen (High)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_H_HIGH' } },
+          { label: 'Orchestrator (Neon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_ON' } },
+          { label: 'Orchestrator (Carbon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_OC' } },
+          { label: 'Orchestrator (Argon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_OA' } },
+          { label: 'Gemini 3.8 Flash (High)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_M318' } },
+        ],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  assert.equal(
+    await resolveAntigravityPlanModel('hydrogen', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_H_HIGH'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_neon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_ON'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_carbon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_OC'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_argon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_OA'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('flash', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_M318'
+  );
+
+  const cascadeConfig = buildAntigravityCascadeConfig('MODEL_PLACEHOLDER_H_HIGH');
+  assert.equal(cascadeConfig.plannerConfig.planModel, 'MODEL_PLACEHOLDER_H_HIGH');
   assert.equal(
     cascadeConfig.plannerConfig.toolConfig.runCommand.autoCommandConfig.autoExecutionPolicy,
     'CASCADE_COMMANDS_AUTO_EXECUTION_EAGER'
   );
+});
+
+test('runPlanWatcher sends codebase paths, reporter directives, and multimodal screenshot inlineData to Gemini planner', async () => {
+  let completedPayload: { leaseToken?: string; result?: { action?: string; plan?: { scope?: string } } } | null = null;
+  let geminiParts: Array<{ text?: string; inlineData?: { mimeType?: string; data?: string } }> = [];
+
+  const mockJob = {
+    id: 'plan-job-multimodal-1',
+    ticketId: 246,
+    ticketKey: 'MOS-BUG-246',
+    eventKind: 'CLARITY_READY',
+    eventVersion: 'v1:multi',
+    leaseToken: 'lease-multi-1',
+    context: {
+      requestType: 'BUG',
+      title: 'chỗ này đang không hoạt động',
+      description: 'Bấm nút cập nhật không chạy',
+      status: 'NEW',
+      clarificationSummary: null,
+      businessContext: null,
+      sourcePath: '/dashboard/bug-reports',
+      reporterMessages: ['[Danny Do]: Kiểm tra ảnh đính kèm và sửa nút đóng'],
+      reopen: null,
+    },
+  };
+
+  const geminiModelsRequested: string[] = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/request-classifier/inbox-plans/claim')) {
+      return jsonResponse(mockJob);
+    }
+    if (url.endsWith('/agent/bug-reports/MOS-BUG-246')) {
+      return jsonResponse({
+        attachments: [{ id: 901, fileName: 'shot.png', mimeType: 'image/png', sizeBytes: 128 }],
+        report: { comments: [] },
+      });
+    }
+    if (url.endsWith('/agent/bug-reports/MOS-BUG-246/attachments/901')) {
+      return new Response(Uint8Array.from([137, 80, 78, 71]), {
+        status: 200,
+        headers: { 'Content-Type': 'image/png' },
+      });
+    }
+    if (url.includes('generativelanguage.googleapis.com')) {
+      geminiModelsRequested.push(url);
+      if (url.includes('gemini-3.8-flash')) {
+        return new Response(JSON.stringify({ error: { code: 503, message: 'High demand' } }), { status: 503 });
+      }
+      const body = JSON.parse(String(init?.body || '{}')) as {
+        contents?: Array<{ parts?: typeof geminiParts }>;
+      };
+      geminiParts = body.contents?.[0]?.parts || [];
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      evidence: 'Ảnh chụp cho thấy nút đóng modal bị disabled.',
+                      expectedOutcome: 'Nút đóng hoạt động đúng.',
+                      scope: 'apps/web/app/dashboard/bug-reports/page.tsx',
+                      steps: ['Kiểm tra state modal đóng trong BugReportDetailDrawer.tsx'],
+                      verification: 'pnpm verify:quick',
+                      risksAndRollback: 'Low risk',
+                      approvalRequest: 'Duyệt sửa nút đóng.',
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (url.includes('/complete')) {
+      completedPayload = JSON.parse(String(init?.body || '{}'));
+      return jsonResponse({ success: true });
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const result = await runPlanWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    bugAgentToken: 'agent-token-over-thirty-two-chars-long-example',
+    geminiApiKey: 'fake-gemini-key',
+    provisionerId: 'danny-win-ag',
+    repository: process.cwd(),
+    fetch: fetcher,
+  });
+
+  assert.equal(result, 'PLANNED');
+  assert.ok(geminiModelsRequested.some((u) => u.includes('gemini-3.8-flash')));
+  assert.ok(geminiModelsRequested.some((u) => u.includes('gemini-3.1-flash-lite')));
+  assert.equal(geminiParts.length, 2);
+  assert.match(geminiParts[0]?.text || '', /apps\/web\/app\/dashboard\/bug-reports\/page\.tsx/);
+  assert.match(geminiParts[0]?.text || '', /Kiểm tra ảnh đính kèm/);
+  assert.equal(geminiParts[1]?.inlineData?.mimeType, 'image/png');
+  assert.equal(completedPayload?.result?.action, 'POST_PLAN');
+  assert.equal(completedPayload?.result?.plan?.scope, 'apps/web/app/dashboard/bug-reports/page.tsx');
+});
+
+test('runPlanWatcher forwards discovered codeFiles and context to agPlanner fallback when Gemini is unavailable', async () => {
+  let receivedCodeFiles: string[] = [];
+  let completedPayload: any = null;
+
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/request-classifier/inbox-plans/claim')) {
+      return jsonResponse({
+        id: 'plan-job-ag-1',
+        ticketKey: 'MOS-BUG-241',
+        ticketId: 241,
+        reportId: 241,
+        leaseToken: 'lease-ag-1',
+        eventKind: 'NEW_REPORT',
+        context: {
+          requestType: 'BUG',
+          title: 'Lỗi tải trang bug-reports',
+          description: 'Trang bug-reports hiển thị sai badge',
+          sourcePath: '/dashboard/bug-reports',
+          clarificationSummary: null,
+          businessContext: null,
+          reporterMessages: ['Ưu tiên sửa trong hôm nay'],
+          reopen: null,
+        },
+      });
+    }
+    if (url.includes('/complete')) {
+      completedPayload = JSON.parse(String(init?.body || '{}'));
+      return jsonResponse({ success: true });
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const result = await runPlanWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    geminiApiKey: '',
+    provisionerId: 'danny-win-ag',
+    repository: process.cwd(),
+    fetch: fetcher,
+    agPlanner: async (_job, ctx) => {
+      receivedCodeFiles = ctx?.codeFiles || [];
+      return {
+        evidence: 'Xác minh BugReportDetailDrawer.tsx',
+        expectedOutcome: 'Hiển thị badge chuẩn',
+        scope: 'apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx',
+        steps: ['Kiểm tra BugReportDetailDrawer.tsx'],
+        verification: 'pnpm verify:quick',
+        risksAndRollback: 'Low',
+        approvalRequest: 'Duyệt sửa',
+      };
+    },
+  });
+
+  assert.equal(result, 'PLANNED');
+  assert.ok(receivedCodeFiles.some((f) => f.includes('bug-reports')));
+  assert.match(completedPayload?.result?.plan?.evidence || '', /<!-- agent-model: AG -->/);
 });

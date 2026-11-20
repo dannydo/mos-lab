@@ -46,7 +46,7 @@ import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconButton, IconText, RichTextEditor } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { GuidedRequestConversation } from './GuidedRequestConversation';
-import { BugReportWorkflowModal } from './BugReportWorkflowGuide';
+import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import {
   carryRequestDraft,
   createRequestDrafts,
@@ -109,6 +109,7 @@ export function BugReportSurface() {
   const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
+  const [externalWorkflowOpen, setExternalWorkflowOpen] = React.useState(false);
   const [activeView, setActiveView] = React.useState<'bug' | 'feature' | 'history'>('bug');
   const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
   const [drafts, setDrafts] = React.useState(createRequestDrafts);
@@ -166,7 +167,11 @@ export function BugReportSurface() {
     [activeRequestView, activeView]
   );
 
-  const enabled = authenticated && !isCvAccount && pathname.startsWith('/dashboard');
+  const normalizedPathname = pathname || '';
+  const isDashboardRoute = normalizedPathname.startsWith('/dashboard');
+  const isAppRoute =
+    isDashboardRoute || normalizedPathname.startsWith('/chat') || normalizedPathname.startsWith('/ios-app');
+  const enabled = authenticated && !isCvAccount && isAppRoute;
   const myBugs = useMyBugReports(enabled);
 
   React.useEffect(() => {
@@ -180,6 +185,16 @@ export function BugReportSurface() {
       setCanViewInbox(false);
     }
   }, [pathname]);
+
+  React.useEffect(() => {
+    const handleWorkflowVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      setExternalWorkflowOpen(Boolean(customEvent.detail?.open));
+    };
+
+    window.addEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
+    return () => window.removeEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
+  }, []);
 
   React.useEffect(() => {
     if (!enabled) return;

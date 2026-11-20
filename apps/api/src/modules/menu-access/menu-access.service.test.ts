@@ -97,7 +97,7 @@ test('limits policy administration to the explicit Super Admin role', () => {
   assert.equal(isMenuAccessSuperAdmin({ id: 2, role: 'admin', username: 'admin' }), false);
 });
 
-test('locks CV roles by default to only cv and career-path', () => {
+test('locks CV roles by default to only cv, career-path, and default-open mos-bible', () => {
   const cvVisibility = resolveMenuVisibility(
     [],
     [],
@@ -107,11 +107,23 @@ test('locks CV roles by default to only cv and career-path', () => {
 
   assert.equal(cvVisibility.cv, true);
   assert.equal(cvVisibility['career-path'], true);
+  assert.equal(cvVisibility['mos-bible'], true);
   assert.equal(cvVisibility.dashboard, false);
   assert.equal(cvVisibility.today, false);
   assert.equal(cvVisibility['schedule-calendar'], false);
   assert.equal(cvVisibility.branches, false);
   assert.equal(cvVisibility['customers-all'], false);
+
+  // Explicit restricted mos-bible policy excluding CV hides it for CV and non-CV alike
+  const restrictedBible = resolveMenuVisibility(
+    [{ menuKey: 'mos-bible', isRestricted: true, rules: [{ subjectType: 'STAFF', subjectId: 999 }] }],
+    [],
+    { departmentIds: new Set(), teamIds: new Set(), staffIds: new Set([101]), roleGroupIds: new Set([1]), role: 'cv' },
+    false
+  );
+  assert.equal(restrictedBible['mos-bible'], false);
+  assert.equal(restrictedBible.cv, true);
+  assert.equal(restrictedBible['career-path'], true);
 });
 
 test('allows explicitly granting an extra module to CV via ROLE group or STAFF override', () => {

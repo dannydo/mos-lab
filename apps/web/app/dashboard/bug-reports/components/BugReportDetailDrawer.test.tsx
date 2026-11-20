@@ -325,11 +325,16 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(props.approveImplementation).not.toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
     await waitFor(() =>
-      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AUTO', 'pro')
+      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(
+        props.reportId,
+        undefined,
+        'AG_WIN',
+        'hydrogen'
+      )
     );
   });
 
-  it('pre-selects flash for P2 tickets and allows overriding model tier in the confirmation popup', async () => {
+  it('pre-selects hydrogen for tickets and allows overriding model tier and machine in the confirmation popup', async () => {
     const props = propsFor(
       makeDetail({
         status: 'APPROVED',
@@ -346,15 +351,20 @@ describe('BugReportDetailDrawer behavior', () => {
     fireEvent.click(trigger);
     await screen.findByText('Duyệt AI chạy code/test?');
 
-    const flashLiteRadio = screen.getByRole('radio', { name: /Flash Lite/i });
-    fireEvent.click(flashLiteRadio);
+    const macRadio = screen.getByRole('radio', { name: /Máy Mac chính/i });
+    fireEvent.click(macRadio);
+    const neonRadio = screen.getByRole('radio', { name: /Orchestrator \(Neon\)/i });
+    fireEvent.click(neonRadio);
+    expect(screen.getByRole('radio', { name: /Orchestrator \(Carbon\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Orchestrator \(Argon\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Flash 3\.8/i })).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
     await waitFor(() =>
       expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(
         props.reportId,
         undefined,
-        'AUTO',
-        'flash_lite'
+        'AG_MAC',
+        'orchestrator_neon'
       )
     );
   });

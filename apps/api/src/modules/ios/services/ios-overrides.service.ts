@@ -3,6 +3,7 @@ import {
   hasCompleteNaturalLashAttributes,
   IosPaymentBreakdown,
   IosPaymentMethod,
+  IosSettlementStatus,
   NaturalLashConsultationAttributes,
   SafeAny,
 } from '@mos-lab/shared';
@@ -30,7 +31,7 @@ export type BookingOverrideRecord = Record<string, SafeAny>;
 
 export interface LegacySettlementReceipt {
   bookingId: number;
-  settlementStatus: 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
+  settlementStatus: IosSettlementStatus;
   orderState: string;
   paymentMethod: IosPaymentMethod;
   paymentBreakdown?: IosPaymentBreakdown;
@@ -440,6 +441,10 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     await store.upsert(getLegacySettleKey(bookingId), JSON.stringify(receipt));
   }
 
+  async function deleteSettlementReceipt(bookingId: number): Promise<void> {
+    await store.remove(getLegacySettleKey(bookingId));
+  }
+
   async function saveCustomerNaturalLashProfile(
     customerId: number,
     attrs: NaturalLashConsultationAttributes
@@ -553,6 +558,7 @@ export function createOverrideRepository(store: CrmConfigStoreAdapter = createMy
     applyConcurrentBookingOverride,
     loadSettlementReceipt,
     saveSettlementReceipt,
+    deleteSettlementReceipt,
   };
 }
 

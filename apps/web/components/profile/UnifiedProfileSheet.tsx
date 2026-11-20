@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
+import { Switch } from 'antd';
 import {
   BarChart3,
   Building2,
@@ -34,7 +35,12 @@ import { MobileThemeSelectorBlock } from '../theme/MobileThemeSheet';
 import { IosFontSizeControl } from '../../app/ios-app/components/ui-kit/IosFontSizeControl';
 import { CvFeather1Badge, CvFeather2Badge } from '../../app/ios-app/components/ui-kit/CvFeatherLabels';
 import { resolveMediaUrl } from '../../lib/api-client';
-import { getBugReportBadgeSummary, openBugReport, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
+import {
+  getBugReportBadgeServerSnapshot,
+  getBugReportBadgeSummary,
+  openBugReport,
+  subscribeBugReportBadgeSummary,
+} from '../../lib/bug-diagnostics';
 import { ProfileOmiCallSection } from './ProfileOmiCallSection';
 import type { ActiveActorProfile, IosBranchConfig, IosUserRole } from '../../app/ios-app/state/useIosAppState';
 
@@ -163,10 +169,11 @@ export const UnifiedProfileSheet: React.FC<UnifiedProfileSheetProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const bugBadge = React.useSyncExternalStore(subscribeBugReportBadgeSummary, getBugReportBadgeSummary, () => ({
-    actionRequiredCount: 0,
-    unreadCount: 0,
-  }));
+  const bugBadge = React.useSyncExternalStore(
+    subscribeBugReportBadgeSummary,
+    getBugReportBadgeSummary,
+    getBugReportBadgeServerSnapshot
+  );
   const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
 
   const fontStaffId = Number(actor?.staffId || effectiveUser?.legacyStaffId || effectiveUser?.id || 0) || undefined;

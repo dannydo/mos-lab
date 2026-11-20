@@ -10,6 +10,7 @@ import {
   IosCustomerComboWalletItem,
   isAdminOrSuperAdminRole,
   normalizeComboDateYmd,
+  resolveActiveBookingComboWallets,
   SafeAny,
 } from '@mos-lab/shared';
 import { getLegacyPool } from './db-pools.js';
@@ -126,49 +127,24 @@ export function applyCustomerComboExpiryOverridesToBooking(
     };
   });
 
-  let nextComboLiveStatus = booking.comboLiveStatus;
-  const upperWallets = updatedWallets.filter((w) => w.serviceGroup === 'upper');
-  if (nextComboLiveStatus && upperWallets.length > 0) {
-    const bestUpper = upperWallets.find((w) => !w.isExpired) || upperWallets[0];
-    const isComboLive = !bestUpper.isExpired && bestUpper.remainingSessions > 0;
-    nextComboLiveStatus = {
-      ...nextComboLiveStatus,
-      balanceId: bestUpper.balanceId,
-      isComboLive,
-      dateExpired: bestUpper.dateExpired,
-      isExpired: bestUpper.isExpired,
-      isFrozen: bestUpper.isFrozen,
-      isExpiringSoon: bestUpper.isExpiringSoon,
-      daysRemaining: bestUpper.daysRemaining,
-      avgDaysPerSession: bestUpper.avgDaysPerSession,
-      expiryState: bestUpper.expiryState,
-      upsellOpportunity:
-        !isComboLive || bestUpper.remainingSessions <= 2 || bestUpper.isExpiringSoon || bestUpper.isExpired,
-    };
-  }
-
-  let nextUnderStatus = booking.underMinkComboStatus;
-  const underWallets = updatedWallets.filter((w) => w.serviceGroup === 'under');
-  if (nextUnderStatus && underWallets.length > 0) {
-    const bestUnder = underWallets.find((w) => !w.isExpired) || underWallets[0];
-    nextUnderStatus = {
-      ...nextUnderStatus,
-      balanceId: bestUnder.balanceId,
-      hasUnderCombo: !bestUnder.isExpired && bestUnder.remainingSessions > 0,
-      dateExpired: bestUnder.dateExpired,
-      isExpired: bestUnder.isExpired,
-      isFrozen: bestUnder.isFrozen,
-      isExpiringSoon: bestUnder.isExpiringSoon,
-      daysRemaining: bestUnder.daysRemaining,
-      avgDaysPerSession: bestUnder.avgDaysPerSession,
-      expiryState: bestUnder.expiryState,
-    };
-  }
+  const resolved = resolveActiveBookingComboWallets({
+    comboWallets: updatedWallets,
+    comboLiveStatus: booking.comboLiveStatus,
+    underMinkComboStatus: booking.underMinkComboStatus,
+    selectedUpperComboBalanceId: booking.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: booking.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(booking.skipUpperCombo),
+    skipUnderCombo: Boolean(booking.skipUnderCombo),
+    bookedServiceName: booking.serviceName,
+    todayYmd,
+  });
 
   return {
     ...booking,
-    comboLiveStatus: nextComboLiveStatus,
-    underMinkComboStatus: nextUnderStatus,
+    comboLiveStatus: booking.comboLiveStatus ? resolved.effectiveComboLiveStatus : booking.comboLiveStatus,
+    underMinkComboStatus: booking.underMinkComboStatus
+      ? resolved.effectiveUnderMinkComboStatus
+      : booking.underMinkComboStatus,
     comboWallets: updatedWallets,
   };
 }
@@ -342,12 +318,37 @@ export async function syncSettledComboExpiryInLegacyDb(
     selectedCombo?: SafeAny;
     selectedUnderCombo?: SafeAny;
     comboRedemption?: SafeAny;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+    hasUnderMinkComboRedemption?: boolean;
+    upperComboCatalogServiceId?: number | null;
+    underComboCatalogServiceId?: number | null;
   }
 ): Promise<void> {
-  const { customerUserId, staffId, selectedCombo, selectedUnderCombo, comboRedemption } = params;
+  const {
+    customerUserId,
+    staffId,
+    selectedCombo,
+    selectedUnderCombo,
+    comboRedemption,
+    selectedUpperComboBalanceId,
+    selectedUnderComboBalanceId,
+    skipUpperCombo,
+    skipUnderCombo,
+    hasUnderMinkComboRedemption,
+    upperComboCatalogServiceId,
+    underComboCatalogServiceId,
+  } = params;
   if (!customerUserId || customerUserId <= 0) return;
 
-  const syncWalletGroup = async (isUnder: boolean, selectedPkg: SafeAny) => {
+  const syncWalletGroup = async (
+    isUnder: boolean,
+    selectedPkg: SafeAny,
+    targetCatalogServiceId?: number | null,
+    selectedBalanceId?: number | null
+  ) => {
     const targetYmd = normalizeComboDateYmd(selectedPkg?.dateExpired);
     if (!targetYmd) return;
 
@@ -356,7 +357,7 @@ export async function syncSettledComboExpiryInLegacyDb(
       : `(service_group IS NULL OR service_group != 'LashesUnder')`;
 
     const [activeRows] = await pool.query<mysql.RowDataPacket[]>(
-      `SELECT id, normal_count, retain_count, date_expired
+      `SELECT id, service_id, normal_count, retain_count, date_expired
        FROM user_service_balance
        WHERE user_id = ?
          AND (normal_count > 0 OR retain_count > 0)
@@ -366,15 +367,29 @@ export async function syncSettledComboExpiryInLegacyDb(
     );
     if (!activeRows.length) return;
 
-    const primaryId = Number(activeRows[0].id);
+    const primaryRow =
+      (targetCatalogServiceId && Number(targetCatalogServiceId) > 0
+        ? activeRows.find((r) => Number(r.service_id) === Number(targetCatalogServiceId))
+        : undefined) || activeRows[0];
+    const primaryId = Number(primaryRow.id);
     const dbDate = `${targetYmd} 23:59:59`;
 
     // Nếu mua gói mới để cứu gói cũ hết hạn mà PHP tạo dòng balance mới (bỏ sót dòng hết hạn cũ),
     // gộp buổi tồn dòng hết hạn vào dòng mới và đóng dòng hết hạn cũ để chống nhân đôi hoặc kẹt buổi.
     if (Number(selectedPkg?.revivedExpiredSessions || 0) > 0 && activeRows.length > 1) {
-      const expiredStranded = activeRows.slice(1).filter((r) => {
+      const todayVn = getVietnamDateYmd();
+      const expiredStranded = activeRows.filter((r) => {
+        if (Number(r.id) === primaryId) return false;
         const ymd = normalizeComboDateYmd(r.date_expired);
-        return Boolean(ymd && ymd < getVietnamDateYmd());
+        const isRowExpired = Boolean(ymd && ymd < todayVn);
+        if (!isRowExpired) return false;
+        if (selectedBalanceId && Number(selectedBalanceId) > 0 && Number(r.id) === Number(selectedBalanceId)) {
+          return true;
+        }
+        if (targetCatalogServiceId && Number(targetCatalogServiceId) > 0) {
+          return Number(r.service_id) === Number(targetCatalogServiceId);
+        }
+        return true;
       });
       if (expiredStranded.length > 0) {
         const extraNormal = expiredStranded.reduce((s, r) => s + Math.max(0, Number(r.normal_count || 0)), 0);
@@ -417,26 +432,60 @@ export async function syncSettledComboExpiryInLegacyDb(
   };
 
   try {
+    const effectiveUpperBalanceId = Number(selectedUpperComboBalanceId || comboRedemption?.balanceId || 0);
     if (selectedCombo?.dateExpired) {
-      await syncWalletGroup(false, selectedCombo);
-    } else if (comboRedemption) {
-      // Nếu khách dùng buổi trên gói đang Bảo lưu (date_expired IS NULL), kích hoạt lại HSD từ hôm nay
-      await pool.query(
-        `UPDATE user_service_balance usb
-         LEFT JOIN service_price sp ON sp.id = usb.service_price_id
-         SET usb.date_expired = DATE_ADD(CURDATE(), INTERVAL COALESCE(NULLIF(ROUND(sp.expiry_after_day), 0), 90) DAY),
-             usb.updated_staff_id = ?,
-             usb.date_updated = NOW()
-         WHERE usb.user_id = ?
-           AND usb.date_expired IS NULL
-           AND (usb.normal_count > 0 OR usb.retain_count > 0)
-           AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')`,
-        [staffId, customerUserId]
-      );
+      await syncWalletGroup(false, selectedCombo, upperComboCatalogServiceId, effectiveUpperBalanceId || null);
+    } else if (!skipUpperCombo && (comboRedemption || effectiveUpperBalanceId > 0)) {
+      // Chỉ mở băng ĐÚNG ví Bảo lưu được chọn dùng hôm nay (tuyệt đối không mở băng nhầm các ví Bảo lưu khác)
+      if (effectiveUpperBalanceId > 0) {
+        await pool.query(
+          `UPDATE user_service_balance usb
+           LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+           SET usb.date_expired = DATE_ADD(CURDATE(), INTERVAL COALESCE(NULLIF(ROUND(sp.expiry_after_day), 0), 90) DAY),
+               usb.updated_staff_id = ?,
+               usb.date_updated = NOW()
+           WHERE usb.id = ?
+             AND usb.user_id = ?
+             AND usb.date_expired IS NULL
+             AND (usb.normal_count > 0 OR usb.retain_count > 0)`,
+          [staffId, effectiveUpperBalanceId, customerUserId]
+        );
+      } else {
+        await pool.query(
+          `UPDATE user_service_balance usb
+           LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+           SET usb.date_expired = DATE_ADD(CURDATE(), INTERVAL COALESCE(NULLIF(ROUND(sp.expiry_after_day), 0), 90) DAY),
+               usb.updated_staff_id = ?,
+               usb.date_updated = NOW()
+           WHERE usb.user_id = ?
+             AND usb.date_expired IS NULL
+             AND (usb.normal_count > 0 OR usb.retain_count > 0)
+             AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
+           ORDER BY usb.id DESC
+           LIMIT 1`,
+          [staffId, customerUserId]
+        );
+      }
     }
 
+    const effectiveUnderBalanceId = Number(selectedUnderComboBalanceId || 0);
     if (selectedUnderCombo?.dateExpired) {
-      await syncWalletGroup(true, selectedUnderCombo);
+      await syncWalletGroup(true, selectedUnderCombo, underComboCatalogServiceId, effectiveUnderBalanceId || null);
+    } else if (!skipUnderCombo && (hasUnderMinkComboRedemption || effectiveUnderBalanceId > 0)) {
+      if (effectiveUnderBalanceId > 0) {
+        await pool.query(
+          `UPDATE user_service_balance usb
+           LEFT JOIN service_price sp ON sp.id = usb.service_price_id
+           SET usb.date_expired = DATE_ADD(CURDATE(), INTERVAL COALESCE(NULLIF(ROUND(sp.expiry_after_day), 0), 90) DAY),
+               usb.updated_staff_id = ?,
+               usb.date_updated = NOW()
+           WHERE usb.id = ?
+             AND usb.user_id = ?
+             AND usb.date_expired IS NULL
+             AND (usb.normal_count > 0 OR usb.retain_count > 0)`,
+          [staffId, effectiveUnderBalanceId, customerUserId]
+        );
+      }
     }
   } catch {
     // Non-blocking sync safeguard

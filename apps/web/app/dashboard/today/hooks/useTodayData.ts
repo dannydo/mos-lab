@@ -7,6 +7,13 @@ import { apiClient } from '../../../../lib/api-client';
 import { DEFAULT_BOOKER_TEAMS, BookerTeamConfig } from '../components/BookerTeamConfigModal';
 import type { RevenueHourlyResponse } from '@mos-lab/shared';
 import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import { useTodaySandbox } from '../context/SandboxModeContext';
+import {
+  getTrainingMockBranchesData,
+  getTrainingMockBookings,
+  getSalesMockBranchesData,
+  getSalesMockBookings,
+} from './mockTodayData';
 
 dayjs.extend(isoWeek);
 
@@ -168,6 +175,7 @@ function getDashboardDateRange(date: dayjs.Dayjs, mode: 'day' | 'week' | 'month'
 }
 
 export function useTodayData(options?: UseTodayDataOptions) {
+  const sandbox = useTodaySandbox();
   const optionsRef = useRef(options);
   const dashboardRequestVersion = useRef(0);
   const revenueRequestVersion = useRef(0);
@@ -322,6 +330,33 @@ export function useTodayData(options?: UseTodayDataOptions) {
       } else {
         setSilentLoading(true);
       }
+
+      if (sandbox.isSandbox) {
+        if (sandbox.mode === 'training') {
+          const mockBranches = getTrainingMockBranchesData(sandbox.staffOverrides);
+          const mockBookings = getTrainingMockBookings();
+          setBranchesData(mockBranches);
+          setBookingsCombo(mockBookings.combo);
+          setBookingsOc(mockBookings.oc);
+          setBookingsOther(mockBookings.other);
+          setPreviousDashboardData(null);
+        } else if (sandbox.mode === 'sales') {
+          const mockBranches = getSalesMockBranchesData(sandbox.simulatedCombos, sandbox.simulatedProducts);
+          const mockBookings = getSalesMockBookings(sandbox.simulatedCombos, sandbox.simulatedProducts);
+          setBranchesData(mockBranches);
+          setBookingsCombo(mockBookings.combo);
+          setBookingsOc(mockBookings.oc);
+          setBookingsOther(mockBookings.other);
+          setPreviousDashboardData(null);
+        }
+        if (!isSilent) {
+          setLoading(false);
+        } else {
+          setSilentLoading(false);
+        }
+        return;
+      }
+
       try {
         const previousRequest =
           includePreviousPeriod && previousPeriod
@@ -365,13 +400,39 @@ export function useTodayData(options?: UseTodayDataOptions) {
         }
       }
     },
-    [previousPeriod]
+    [previousPeriod, sandbox.isSandbox, sandbox.mode, sandbox.staffOverrides, sandbox.simulatedCombos, sandbox.simulatedProducts]
   );
 
   const fetchRevenueData = useCallback(
     async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', includePreviousPeriod = true) => {
       const requestVersion = ++revenueRequestVersion.current;
       setRevenueLoading(true);
+
+      if (sandbox.isSandbox) {
+        const totalRev =
+          sandbox.mode === 'sales' ? 12_050_000 + sandbox.totalSimulatedRevenue : 8_130_000;
+        const mockHourly: SafeAny = {
+          summary: {
+            totalRevenue: totalRev,
+            comboRevenue:
+              sandbox.mode === 'sales' ? 7_500_000 + sandbox.totalSimulatedComboRevenue : 4_500_000,
+            singleRevenue: 2_100_000,
+            productRevenue:
+              sandbox.mode === 'sales' ? 1_050_000 + sandbox.totalSimulatedProductRevenue : 530_000,
+            completedOrders: 18,
+            aov: Math.round(totalRev / 18),
+          },
+          hourlyBreakdown: [],
+          branchHourlyMatrix: [],
+        };
+        if (requestVersion === revenueRequestVersion.current) {
+          setRevenueData(mockHourly);
+          setPreviousRevenueData(null);
+          setRevenueLoading(false);
+        }
+        return;
+      }
+
       try {
         const revParams: SafeAny = { ...getDashboardDateRange(date, mode) };
         if (bookingBranch !== 'all') revParams.branchKey = bookingBranch;
@@ -404,7 +465,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
         if (requestVersion === revenueRequestVersion.current) setRevenueLoading(false);
       }
     },
-    [bookingBranch, previousPeriod, selectedBooker]
+    [bookingBranch, previousPeriod, sandbox.isSandbox, sandbox.mode, sandbox.totalSimulatedRevenue, sandbox.totalSimulatedComboRevenue, sandbox.totalSimulatedProductRevenue, selectedBooker]
   );
 
   const refreshTodayData = useCallback(
@@ -435,6 +496,44 @@ export function useTodayData(options?: UseTodayDataOptions) {
       void fetchRevenueData(selectedDate, dateRangeMode);
     }
   }, [showRevenueView, selectedDate, dateRangeMode, fetchRevenueData]);
+
+  // Synchronize mock data immediately when sandbox state changes
+  useEffect(() => {
+    if (!sandbox.isSandbox) return;
+    if (sandbox.mode === 'training') {
+      const mockBranches = getTrainingMockBranchesData(sandbox.staffOverrides);
+      const mockBookings = getTrainingMockBookings();
+      setBranchesData(mockBranches);
+      setBookingsCombo(mockBookings.combo);
+      setBookingsOc(mockBookings.oc);
+      setBookingsOther(mockBookings.other);
+      setPreviousDashboardData(null);
+    } else if (sandbox.mode === 'sales') {
+      const mockBranches = getSalesMockBranchesData(sandbox.simulatedCombos, sandbox.simulatedProducts);
+      const mockBookings = getSalesMockBookings(sandbox.simulatedCombos, sandbox.simulatedProducts);
+      setBranchesData(mockBranches);
+      setBookingsCombo(mockBookings.combo);
+      setBookingsOc(mockBookings.oc);
+      setBookingsOther(mockBookings.other);
+      setPreviousDashboardData(null);
+    }
+  }, [
+    sandbox.isSandbox,
+    sandbox.mode,
+    sandbox.staffOverrides,
+    sandbox.simulatedCombos,
+    sandbox.simulatedProducts,
+  ]);
+
+  // When switching back to live data, immediately fetch real data
+  useEffect(() => {
+    if (sandbox.mode === 'live' && selectedDate) {
+      void fetchDashboardData(selectedDate, dateRangeMode);
+      if (showRevenueView) {
+        void fetchRevenueData(selectedDate, dateRangeMode);
+      }
+    }
+  }, [sandbox.mode, selectedDate, dateRangeMode, showRevenueView, fetchDashboardData, fetchRevenueData]);
 
   // Instantly refresh today dashboard tables when popup/modal updates data
   useEffect(() => {
@@ -770,6 +869,11 @@ export function useTodayData(options?: UseTodayDataOptions) {
   }, []);
 
   return {
+    // Sandbox state
+    sandbox,
+    isSandbox: sandbox.isSandbox,
+    sandboxMode: sandbox.mode,
+
     // states
     loading,
     selectedDate,

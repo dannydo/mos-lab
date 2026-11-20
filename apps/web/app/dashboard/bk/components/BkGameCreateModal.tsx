@@ -25,11 +25,13 @@ import type {
   TeamListResponse,
   BkGameScoringRule,
   BkGameDoneBonusRule,
+  BkGameTeamBookingDoneBonusConfig,
 } from '@mos-lab/shared';
 import { removeVietnameseTones, BK_GAME_SCORING_RULES, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
 import BkDoneBonusConfigTable from './BkDoneBonusConfigTable';
+import BkTeamBookingDoneBonusConfigTable from './BkTeamBookingDoneBonusConfigTable';
 
 interface BkGameCreateModalProps {
   open: boolean;
@@ -59,8 +61,15 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('ALL');
   const [staffLoading, setStaffLoading] = useState(false);
   const [doneBonusRules, setDoneBonusRules] = useState<BkGameDoneBonusRule[]>([]);
+  const [teamBookingDoneBonusConfig, setTeamBookingDoneBonusConfig] =
+    useState<BkGameTeamBookingDoneBonusConfig | null>(null);
 
   const watchedMetricType = (Form.useWatch('metricType', form) || 'BOOKINGS') as BkGameMetricType;
+  const watchedTeamKpiTimeWindow = Form.useWatch('teamKpiTimeWindow', form) as [Dayjs, Dayjs] | undefined;
+  const teamKpiTimeWindowLabel =
+    watchedTeamKpiTimeWindow?.[0] && watchedTeamKpiTimeWindow?.[1]
+      ? `${watchedTeamKpiTimeWindow[0].format('HH:mm')}–${watchedTeamKpiTimeWindow[1].format('HH:mm')}`
+      : '08:00–17:00';
   const currentScoringRule = BK_GAME_SCORING_RULES[watchedMetricType] || BK_GAME_SCORING_RULES.BOOKINGS;
 
   useEffect(() => {
@@ -266,6 +275,10 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         rewardDescription: values.rewardDescription,
         penaltyDescription: values.penaltyDescription,
         doneBonusConfig: doneBonusRules.length > 0 ? doneBonusRules : null,
+        teamBookingDoneBonusConfig:
+          teamBookingDoneBonusConfig && teamBookingDoneBonusConfig.tiers.length > 0
+            ? teamBookingDoneBonusConfig
+            : null,
         winnerCriteria: 'TOP_1',
       };
 
@@ -315,6 +328,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
       onClose();
       form.resetFields();
       setDoneBonusRules([]);
+      setTeamBookingDoneBonusConfig(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Không thể tạo game. Vui lòng thử lại.';
       message.error(msg);
@@ -896,6 +910,16 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         {/* Cấu hình Thưởng Bonus / Done theo Dịch vụ */}
         <div className="my-2">
           <BkDoneBonusConfigTable value={doneBonusRules} onChange={setDoneBonusRules} />
+        </div>
+
+        {/* Cấu hình Thưởng Done khách lẻ theo mốc Booking Team (MOS-BUG-247) */}
+        <div className="my-2">
+          <BkTeamBookingDoneBonusConfigTable
+            value={teamBookingDoneBonusConfig}
+            onChange={setTeamBookingDoneBonusConfig}
+            gameType={gameType}
+            teamKpiTimeWindowLabel={teamKpiTimeWindowLabel}
+          />
         </div>
 
         {/* Bộ lọc vai trò & bộ phận */}

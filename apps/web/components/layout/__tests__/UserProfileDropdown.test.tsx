@@ -38,6 +38,7 @@ vi.mock('../../theme/ThemeSelector', () => ({
 
 describe('UserProfileDropdown bug report integration', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
   });
 
@@ -70,6 +71,8 @@ describe('UserProfileDropdown bug report integration', () => {
     fireEvent.click(trigger);
 
     expect(screen.queryByText('Nút phản hồi / báo lỗi')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Hiển thị nút phản hồi mOS' })).toBeNull();
+
     const bugReportBtn = screen.getByRole('button', { name: /Báo lỗi \/ Góp ý/i });
     expect(bugReportBtn).toBeInTheDocument();
     expect(screen.getByText('2 mới')).toBeInTheDocument();
@@ -108,6 +111,7 @@ describe('UserProfileDropdown bug report integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Mở menu người dùng' }));
     expect(screen.queryByText('Báo lỗi / Góp ý')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Hiển thị nút phản hồi mOS' })).toBeNull();
   });
 
   it('hides top-right avatar trigger on mobile when hideTrigger is true and supports externalOpen with General controls', () => {

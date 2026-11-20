@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
+import { canSwitchIosBranch, hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { useIosSessionAuth } from './state/useIosSessionAuth';
 import { useIosFontScale } from './state/useIosFontScale';
@@ -228,7 +228,9 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
+          onSelectBranch={
+            canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined
+          }
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           onRoleChange={(r) => {
@@ -295,6 +297,7 @@ function IosAppInner() {
             booking={currentBooking}
             actor={state.actor}
             isAdmin={state.isAdmin}
+            isSimulationMode={state.isSimulationMode}
             onRefreshDb={() => state.refreshDb()}
             isCheckInLocked={Boolean(
               !state.isAdmin &&
@@ -307,6 +310,7 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(1)}
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
+            onSelectComboWallet={state.handleSelectComboWallet}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
           />
         );
@@ -324,6 +328,7 @@ function IosAppInner() {
             isSimulationMode={state.isSimulationMode}
             isReadOnlyMentorView={state.isReadOnlyMentorView}
             onSimFastForwardToUpsell={state.handleSimFastForwardToUpsell}
+            onSelectComboWallet={state.handleSelectComboWallet}
           />
         );
       case 4:
@@ -420,6 +425,7 @@ function IosAppInner() {
             onRefreshDb={() => state.refreshDb()}
             onBack={state.handleBackToAfterPhoto}
             onUpdateCartProducts={state.handleUpdateCartProducts}
+            onSelectComboWallet={state.handleSelectComboWallet}
             onGoToBilling={state.handleGoToBilling}
           />
         );
@@ -440,6 +446,8 @@ function IosAppInner() {
             onChoosePayment={state.handleChoosePaymentMethod}
             onSavePromotion={state.handleSavePromotion}
             onUpdateCartProducts={state.handleUpdateCartProducts}
+            onSelectComboWallet={state.handleSelectComboWallet}
+            onUpdateCombos={state.handleUpdateCombos}
             onEditService={() => state.handleOpenConsultation(13)}
           />
         );
@@ -459,6 +467,10 @@ function IosAppInner() {
             booking={currentBooking}
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
+            isAdmin={state.isAdmin}
+            isSimulationMode={state.isSimulationMode}
+            isReadOnlyMentorView={state.isReadOnlyMentorView}
+            onRefreshDb={() => state.refreshDb()}
             onFinishOrder={state.handleFinishOrder}
             simulationReplaySlot={
               state.isSimulationMode ? (
@@ -577,7 +589,9 @@ function IosAppInner() {
           canSwitchRole={state.canSwitchRole}
           currentBranch={state.currentBranch}
           selectedStoreId={state.selectedStoreId}
-          onSelectBranch={state.isAdmin || state.isSimulationMode ? state.setSelectedStoreId : undefined}
+          onSelectBranch={
+            canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined
+          }
           availableBranches={state.availableBranches}
           isAdmin={state.isAdmin}
           isSimulationMode={state.isSimulationMode}

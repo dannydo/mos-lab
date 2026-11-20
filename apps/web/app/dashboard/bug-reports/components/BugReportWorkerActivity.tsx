@@ -8,7 +8,7 @@ import type {
   RequestClassifierWorkerHealth,
 } from '@mos-lab/shared';
 import type { LucideIcon } from 'lucide-react';
-import { Bot, RefreshCw, Sparkles } from 'lucide-react';
+import { Bot, Monitor, RefreshCw, Sparkles } from 'lucide-react';
 import { AppIcon } from '../../../../components/ui';
 import { bugReportWorkerActivity, formatElapsed, formatProgressUpdated } from '../bug-report-presenters';
 
@@ -78,8 +78,8 @@ function WorkerDebugTooltip({ worker, reports }: { worker: InboxWorkerStatusSumm
             </span>
             <div className="text-[10px] text-slate-400 mt-0.5">
               {(worker.activeCodingCount ?? 0) >= worker.maxCodingSlots
-                ? 'Đã đủ 3 session đang code, ticket mới sẽ xếp hàng chờ. 1 session luôn bảo lưu riêng cho Danny.'
-                : 'Tối đa 3 session song song, 1 session luôn bảo lưu riêng cho Danny.'}
+                ? `Đã đủ ${worker.maxCodingSlots} session đang code, ticket mới sẽ xếp hàng chờ hoặc tràn sang máy còn lại.`
+                : `Tối đa ${worker.maxCodingSlots} session song song trên máy này.`}
             </div>
           </div>
         )}
@@ -132,9 +132,12 @@ function MinimalWorkerPill({
 }) {
   const isOnline = worker.isOnline;
   const activeTask = worker.activeTask;
-  const shortName = worker.id === 'AG' ? 'AG' : 'Codex';
-  const hasSlotInfo = worker.id === 'AG' && typeof worker.maxCodingSlots === 'number';
-  const isSlotsFull = (worker.activeCodingCount ?? 0) >= (worker.maxCodingSlots ?? 3);
+  const shortName =
+    worker.id === 'AG_WIN' ? 'Win AG' : worker.id === 'AG_MAC' ? 'Mac AG' : worker.id === 'AG' ? 'AG' : 'Codex';
+  const isAgNode = worker.id === 'AG_WIN' || worker.id === 'AG_MAC' || worker.id === 'AG';
+  const hasSlotInfo = isAgNode && typeof worker.maxCodingSlots === 'number';
+  const maxSlots = worker.maxCodingSlots ?? 2;
+  const isSlotsFull = (worker.activeCodingCount ?? 0) >= maxSlots;
 
   return (
     <Tooltip title={<WorkerDebugTooltip worker={worker} reports={reports} />} placement="bottom">
@@ -142,7 +145,13 @@ function MinimalWorkerPill({
         <AppIcon
           icon={icon}
           size="sm"
-          className={worker.id === 'AG' ? 'text-indigo-600 dark:text-indigo-400' : 'text-sky-600 dark:text-sky-400'}
+          className={
+            worker.id === 'AG_WIN'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : isAgNode
+                ? 'text-indigo-600 dark:text-indigo-400'
+                : 'text-sky-600 dark:text-sky-400'
+          }
         />
         <span className="font-semibold tracking-tight text-slate-800 dark:text-slate-200">{shortName}</span>
         <span
@@ -208,49 +217,50 @@ export function InboxWorkerLiveBar({
   error: string | null;
   onRefresh: () => void;
 }) {
-  const workers = health?.workers ?? {
-    ag: {
-      id: 'AG' as const,
-      name: 'Antigravity (AG)',
-      isOnline: Boolean(health?.state === 'ONLINE' && (!liveWorker || liveWorker.workerId?.startsWith('ag-'))),
-      lastSeenAt: health?.lastHeartbeatAt ?? null,
-      activeCodingCount: 0,
-      maxCodingSlots: 3,
-      activeTask:
-        liveWorker && (!liveWorker.workerId || liveWorker.workerId.startsWith('ag-'))
-          ? {
-              ticketId: liveWorker.ticketId,
-              ticketKey: liveWorker.ticketKey,
-              phase: liveWorker.phase,
-              startedAt: liveWorker.startedAt,
-              lastProgressAt: liveWorker.lastProgressAt,
-            }
-          : null,
-    },
-    codex: {
-      id: 'IDE' as const,
-      name: 'Codex IDE',
-      isOnline: health?.state === 'ONLINE' && Boolean(liveWorker?.workerId?.startsWith('ide-')),
-      lastSeenAt: null,
-      activeTask:
-        liveWorker && liveWorker.workerId?.startsWith('ide-')
-          ? {
-              ticketId: liveWorker.ticketId,
-              ticketKey: liveWorker.ticketKey,
-              phase: liveWorker.phase,
-              startedAt: liveWorker.startedAt,
-              lastProgressAt: liveWorker.lastProgressAt,
-            }
-          : null,
-    },
+  const winWorker: InboxWorkerStatusSummary = health?.workers?.agWin ?? {
+    id: 'AG_WIN',
+    name: 'Win AG',
+    isOnline: Boolean(health?.state === 'ONLINE' && health?.workers?.ag?.isOnline),
+    lastSeenAt: health?.lastHeartbeatAt ?? null,
+    activeCodingCount: 0,
+    maxCodingSlots: 2,
+    activeTask:
+      liveWorker && liveWorker.workerId?.toLowerCase().includes('win')
+        ? {
+            ticketId: liveWorker.ticketId,
+            ticketKey: liveWorker.ticketKey,
+            phase: liveWorker.phase,
+            startedAt: liveWorker.startedAt,
+            lastProgressAt: liveWorker.lastProgressAt,
+          }
+        : null,
+  };
+
+  const macWorker: InboxWorkerStatusSummary = health?.workers?.agMac ?? {
+    id: 'AG_MAC',
+    name: 'Mac AG',
+    isOnline: Boolean(health?.workers?.ag?.isOnline && !health?.workers?.agWin?.isOnline),
+    lastSeenAt: health?.workers?.ag?.lastSeenAt ?? null,
+    activeCodingCount: 0,
+    maxCodingSlots: 2,
+    activeTask:
+      liveWorker && !liveWorker.workerId?.toLowerCase().includes('win') && !liveWorker.workerId?.startsWith('ide-')
+        ? {
+            ticketId: liveWorker.ticketId,
+            ticketKey: liveWorker.ticketKey,
+            phase: liveWorker.phase,
+            startedAt: liveWorker.startedAt,
+            lastProgressAt: liveWorker.lastProgressAt,
+          }
+        : null,
   };
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1 text-xs shadow-xs dark:border-slate-800/80 dark:bg-slate-900/40">
       <div className="flex flex-wrap items-center gap-2">
-        <MinimalWorkerPill worker={workers.ag} onOpen={onOpen} reports={reports} icon={Sparkles} />
+        <MinimalWorkerPill worker={winWorker} onOpen={onOpen} reports={reports} icon={Monitor} />
         <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
-        <MinimalWorkerPill worker={workers.codex} onOpen={onOpen} reports={reports} icon={Bot} />
+        <MinimalWorkerPill worker={macWorker} onOpen={onOpen} reports={reports} icon={Sparkles} />
       </div>
 
       <div className="flex items-center gap-1.5">

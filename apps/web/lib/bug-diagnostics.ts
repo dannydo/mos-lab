@@ -178,6 +178,10 @@ export function getBugReportBadgeSummary(): BugReportBadgeSummary {
   return currentBugReportBadgeSummary;
 }
 
+export function getBugReportBadgeServerSnapshot(): BugReportBadgeSummary {
+  return DEFAULT_BUG_REPORT_BADGE_SUMMARY;
+}
+
 export function setBugReportBadgeSummary(summary: BugReportBadgeSummary): void {
   const next: BugReportBadgeSummary = {
     actionRequiredCount: Math.max(0, Number(summary.actionRequiredCount) || 0),

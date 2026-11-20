@@ -18,7 +18,6 @@ import {
 } from '@ant-design/icons';
 import {
   BarChart3,
-  BookOpenCheck,
   CalendarPlus,
   Clock3,
   EllipsisVertical,
@@ -70,7 +69,6 @@ import { ErrorBoundary } from '../../components/ErrorBoundary';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 import UserProfileDropdown from '../../components/layout/UserProfileDropdown';
 const AvatarPromptModal = dynamic(() => import('../../components/avatar/AvatarPromptModal'), { ssr: false });
-const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderRoleQuickSwitch from '../../components/layout/HeaderRoleQuickSwitch';
@@ -79,7 +77,11 @@ import { HeaderNotificationCenter } from '../../components/notification-center/H
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 import { tabNotificationManager } from '../../lib/tab-notification';
-import { getBugReportBadgeSummary, subscribeBugReportBadgeSummary } from '../../lib/bug-diagnostics';
+import {
+  getBugReportBadgeServerSnapshot,
+  getBugReportBadgeSummary,
+  subscribeBugReportBadgeSummary,
+} from '../../lib/bug-diagnostics';
 
 const { Header, Sider, Content } = Layout;
 
@@ -130,13 +132,6 @@ const isCvRestrictedPath = (path: string): boolean => {
   return !isCvAllowedPath(path);
 };
 
-// Cached server snapshot for useSyncExternalStore to prevent React hydration warning loops
-const EMPTY_BUG_BADGE_SUMMARY = {
-  actionRequiredCount: 0,
-  unreadCount: 0,
-};
-const getEmptyBugBadgeSummary = () => EMPTY_BUG_BADGE_SUMMARY;
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -167,13 +162,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
-  const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
   const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
-  const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
   const bugBadgeSummary = React.useSyncExternalStore(
     subscribeBugReportBadgeSummary,
     getBugReportBadgeSummary,
-    getEmptyBugBadgeSummary
+    getBugReportBadgeServerSnapshot
   );
   const bugAttentionCount = !isCvRole(user?.role)
     ? bugBadgeSummary.actionRequiredCount || bugBadgeSummary.unreadCount
@@ -361,19 +354,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const hasAuthenticatedUser = !loading && Boolean(user?.id);
   const isCvAccount = isCvRole(user?.role);
-
-  useEffect(() => {
-    const handleOpenBible = (event: Event) => {
-      if (isCvAccount) return;
-      const customEvent = event as CustomEvent<{ commandmentId?: string }>;
-      setIsMosBibleOpen(true);
-      if (customEvent.detail?.commandmentId) {
-        setTargetBibleCommandmentId(customEvent.detail.commandmentId);
-      }
-    };
-    window.addEventListener('open-mos-bible', handleOpenBible);
-    return () => window.removeEventListener('open-mos-bible', handleOpenBible);
-  }, [isCvAccount]);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
   const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
@@ -735,18 +715,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // - All other non-admin accounts attempting to visit a newly introduced or restricted route directly by URL are redirected to their allowed landing route.
   useEffect(() => {
     if (!user) return;
-    if (isCvRole(user.role) && !isCvAllowedPath(pathname, routeVisibility, user.role)) {
+    if (isCvRole(user.role) && !isCvAllowedPath(pathname, routeVisibility, user.role, user.teamCodes)) {
       router.replace('/dashboard/cv');
       return;
     }
     if (
       !isAdminOrSuperAdminRole(user.role) &&
       Object.keys(routeVisibility).length > 0 &&
-      !isNonAdminAllowedDashboardPath(pathname, routeVisibility, user.role)
+      !isNonAdminAllowedDashboardPath(pathname, routeVisibility, user.role, user.teamCodes)
     ) {
       const firstAllowedPath =
-        MENU_ACCESS_DEFINITIONS.find((def) => routeVisibility[def.key] === true)?.path.split('?')[0] ||
-        getDefaultRouteForRole(user.role);
+        MENU_ACCESS_DEFINITIONS.find(
+          (def) => routeVisibility[def.key] === true && def.path.startsWith('/')
+        )?.path.split('?')[0] || getDefaultRouteForRole(user.role);
       if (firstAllowedPath && firstAllowedPath !== pathname) {
         router.replace(firstAllowedPath);
       }
@@ -855,12 +836,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               icon: <CalendarPlus size={16} aria-hidden />,
               label: 'Book lịch hẹn',
               onClick: () => setIsBookingWizardOpen(true),
-            },
-            {
-              key: 'mos-bible',
-              icon: <BookOpenCheck size={16} aria-hidden />,
-              label: 'Mở Kinh Thánh mOS',
-              onClick: () => setIsMosBibleOpen(true),
             },
           ]
         : []),
@@ -1395,18 +1370,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
 
           <QuickSearchModal open={isQuickSearchOpen} onClose={() => setIsQuickSearchOpen(false)} />
-
-          {!isCvAccount && (
-            <MosBibleDrawer
-              open={isMosBibleOpen}
-              pathname={pathname}
-              targetCommandmentId={targetBibleCommandmentId}
-              onClose={() => {
-                setIsMosBibleOpen(false);
-                setTargetBibleCommandmentId(undefined);
-              }}
-            />
-          )}
 
           <style jsx global>{`
             /* Compact persistent nav rail, never used for mobile navigation. */

@@ -143,19 +143,38 @@ export function ConsultationHeaderAndTabs({
             >
               {customerPhone}
             </span>
-            <span
-              className={`text-[9.5px] px-2 py-0.5 rounded-full font-black ${
-                isNewClient
-                  ? isDark
-                    ? 'bg-amber-950/80 text-amber-300 border border-amber-800'
-                    : 'bg-amber-100 text-amber-900 border border-amber-300'
-                  : isDark
-                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
-                    : 'bg-emerald-50 text-emerald-800'
-              }`}
-            >
-              {isNewClient ? 'KHÁCH MỚI' : `LẦN ${booking?.customerVisits || 2}`}
-            </span>
+            {onOpenCustomerHistory ? (
+              <button
+                type="button"
+                onClick={onOpenCustomerHistory}
+                title="Xem lịch sử đi và chi tiêu của khách hàng"
+                className={`text-[9.5px] px-2 py-0.5 rounded-full font-black cursor-pointer hover:opacity-85 active:scale-95 transition-all ${
+                  isNewClient
+                    ? isDark
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-800'
+                      : 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : isDark
+                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
+                      : 'bg-emerald-50 text-emerald-800'
+                }`}
+              >
+                {isNewClient ? 'KHÁCH MỚI' : `LẦN ${booking?.customerVisits || 2}`}
+              </button>
+            ) : (
+              <span
+                className={`text-[9.5px] px-2 py-0.5 rounded-full font-black ${
+                  isNewClient
+                    ? isDark
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-800'
+                      : 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : isDark
+                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
+                      : 'bg-emerald-50 text-emerald-800'
+                }`}
+              >
+                {isNewClient ? 'KHÁCH MỚI' : `LẦN ${booking?.customerVisits || 2}`}
+              </span>
+            )}
           </div>
           <div className={`text-[11.5px] mt-0.5 font-medium truncate text-[var(--mos-text-muted)]`}>
             Dịch vụ:{' '}

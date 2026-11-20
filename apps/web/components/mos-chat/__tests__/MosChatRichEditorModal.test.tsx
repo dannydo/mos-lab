@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import {
   MosChatRichEditorModal,
   detectActiveFormatsAtCursor,
@@ -335,5 +335,87 @@ describe('MosChatRichEditorModal', () => {
 
     // Restore innerWidth
     window.innerWidth = originalInnerWidth;
+  });
+
+  it('positions mobile modal as visualViewport-aware bottom sheet without overlapping iOS status bar when keyboard opens (MOS-FEAT-225)', () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    const originalVisualViewport = window.visualViewport;
+
+    const listeners: Record<string, Array<() => void>> = { resize: [], scroll: [] };
+    const mockVisualViewport = {
+      height: 844,
+      width: 390,
+      offsetTop: 0,
+      offsetLeft: 0,
+      pageTop: 0,
+      pageLeft: 0,
+      scale: 1,
+      addEventListener: vi.fn((event: string, cb: () => void) => {
+        if (!listeners[event]) listeners[event] = [];
+        listeners[event].push(cb);
+      }),
+      removeEventListener: vi.fn((event: string, cb: () => void) => {
+        if (listeners[event]) {
+          listeners[event] = listeners[event].filter((fn) => fn !== cb);
+        }
+      }),
+    };
+
+    window.innerWidth = 390;
+    window.innerHeight = 844;
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      writable: true,
+      value: mockVisualViewport,
+    });
+
+    try {
+      render(
+        <MosChatRichEditorModal
+          open={true}
+          onClose={vi.fn()}
+          initialValue="Tin nhắn kiểm tra bàn phím iOS"
+          initialMode="compact"
+          onApply={vi.fn()}
+          onSend={vi.fn()}
+        />
+      );
+
+      const modalWrap = document.querySelector('.ant-modal-wrap') as HTMLElement;
+      const modalDialog = document.querySelector('.ant-modal') as HTMLElement;
+      const modalContent = document.querySelector('.ant-modal-content') as HTMLElement;
+
+      expect(modalWrap).toBeTruthy();
+      expect(modalWrap.className).toContain('mos-rich-editor-mobile-wrap');
+      expect(modalWrap.style.top).toBe('0px');
+      expect(modalWrap.style.height).toBe('844px');
+
+      expect(modalDialog.className).toContain('adaptive-overlay');
+      expect(modalDialog.className).toContain('mos-rich-editor-mobile-modal');
+      // Must NOT use legacy top: 12px that collides with iOS status bar
+      expect(modalDialog.style.top).toBe('0px');
+      expect(modalContent.style.maxHeight).toBe('788px');
+
+      // Simulate iOS virtual keyboard opening + visualViewport scrolling down (offsetTop > 0)
+      mockVisualViewport.height = 460;
+      mockVisualViewport.offsetTop = 64;
+      act(() => {
+        listeners.resize.forEach((cb) => cb());
+      });
+
+      expect(modalWrap.style.top).toBe('64px');
+      expect(modalWrap.style.height).toBe('460px');
+      expect(modalDialog.style.top).toBe('0px');
+      expect(modalContent.style.maxHeight).toBe('404px');
+    } finally {
+      window.innerWidth = originalInnerWidth;
+      window.innerHeight = originalInnerHeight;
+      Object.defineProperty(window, 'visualViewport', {
+        configurable: true,
+        writable: true,
+        value: originalVisualViewport,
+      });
+    }
   });
 });

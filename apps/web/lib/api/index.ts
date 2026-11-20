@@ -20,6 +20,7 @@ import { bibleApi } from './bible.api';
 import { fundsApi } from './funds.api';
 import { financialGoalsApi } from './financial-goals.api';
 import { iosApi } from './ios.api';
+import { wingsGardenApi } from './wings-garden.api';
 
 export * from './base';
 export * from './ai.api';
@@ -33,6 +34,7 @@ export * from './bible.api';
 export * from './funds.api';
 export * from './financial-goals.api';
 export * from './ios.api';
+export * from './wings-garden.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -57,6 +59,7 @@ export const apiClient = {
   ...bibleApi,
   ...financialGoalsApi,
   ...iosApi,
+  ...wingsGardenApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,

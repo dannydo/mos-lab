@@ -173,8 +173,9 @@ export class BkLeaderboardService {
     const bkIdsStr = targetStaffIds.join(',');
     const normalizedStoreId = String(storeId || 'ALL').toUpperCase();
     const cacheKey = `kpi:bk:leaderboard:${startDateTimeStr}:${endDateTimeStr}:${normalizedStoreId}:${gameId || 'NONE'}`;
+    const shouldSkipCache = skipCache === true || (skipCache as unknown) === 'true';
 
-    if (!skipCache) {
+    if (!shouldSkipCache) {
       const cached = fastify.cache?.get<BkBookingLeaderboardResult>(cacheKey);
       if (cached) return cached;
     }
@@ -267,8 +268,8 @@ export class BkLeaderboardService {
       },
     };
 
-    if (!skipCache) {
-      fastify.cache?.set(cacheKey, payload, 60_000);
+    if (!shouldSkipCache) {
+      fastify.cache?.set(cacheKey, payload, gameId ? 10_000 : 60_000);
     }
 
     return payload;
