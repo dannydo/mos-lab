@@ -47,7 +47,7 @@ describe('UserProfileDropdown bug report integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows bug report entry with unread indicator and opens reporter in smart history mode', () => {
+  it('shows bug report entry with unread indicator and opens reporter in smart history mode', async () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     act(() => {
       setBugReportBadgeSummary({ actionRequiredCount: 2, unreadCount: 1 });
@@ -70,10 +70,9 @@ describe('UserProfileDropdown bug report integration', () => {
 
     fireEvent.click(trigger);
 
+    const bugReportBtn = await screen.findByRole('button', { name: /Báo lỗi \/ Góp ý/i });
     expect(screen.queryByText('Nút phản hồi / báo lỗi')).toBeNull();
     expect(screen.queryByRole('switch', { name: 'Hiển thị nút phản hồi mOS' })).toBeNull();
-
-    const bugReportBtn = screen.getByRole('button', { name: /Báo lỗi \/ Góp ý/i });
     expect(bugReportBtn).toBeInTheDocument();
     expect(screen.getByText('2 mới')).toBeInTheDocument();
 
@@ -86,7 +85,7 @@ describe('UserProfileDropdown bug report integration', () => {
     expect(matchingEvents[0].detail).toEqual({ preferHistoryIfPending: true });
   });
 
-  it('hides status dot when there are no pending bug reports and hides entry for CV role', () => {
+  it('hides status dot when there are no pending bug reports and hides entry for CV role', async () => {
     const { rerender } = render(
       <UserProfileDropdown
         user={{ id: 1, displayName: 'Danny', username: 'danny', role: 'super_admin' }}
@@ -110,11 +109,12 @@ describe('UserProfileDropdown bug report integration', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Mở menu người dùng' }));
+    await screen.findByRole('dialog', { name: /Hồ sơ & Cài đặt cá nhân/i });
     expect(screen.queryByText('Báo lỗi / Góp ý')).toBeNull();
     expect(screen.queryByRole('switch', { name: 'Hiển thị nút phản hồi mOS' })).toBeNull();
   });
 
-  it('hides top-right avatar trigger on mobile when hideTrigger is true and supports externalOpen with General controls', () => {
+  it('hides top-right avatar trigger on mobile when hideTrigger is true and supports externalOpen with General controls', async () => {
     const onExternalOpenChange = vi.fn();
     const onOpenDailyCalls = vi.fn();
     const onOpenTelesalesDashboard = vi.fn();
@@ -152,7 +152,7 @@ describe('UserProfileDropdown bug report integration', () => {
       />
     );
 
-    const dialog = screen.getByRole('dialog', { name: /Hồ sơ & Cài đặt cá nhân/i });
+    const dialog = await screen.findByRole('dialog', { name: /Hồ sơ & Cài đặt cá nhân/i });
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText('MANAGER · Nhóm CC')).toBeInTheDocument();
     expect(screen.getByText('Quản lý vận hành & Tư vấn chi nhánh (CC)')).toBeInTheDocument();

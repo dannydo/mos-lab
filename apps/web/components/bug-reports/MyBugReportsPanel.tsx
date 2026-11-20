@@ -30,7 +30,8 @@ import {
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
-import { AppIcon, StatePanel, StatusTag, RichTextViewer } from '../ui';
+import { AppIcon, StatePanel, StatusTag } from '../ui';
+import { RichTextViewer } from '../ui/rich-text';
 import { BugReportConversation } from './BugReportConversation';
 import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
 import { BugReportRejectionModal } from './BugReportRejectionModal';

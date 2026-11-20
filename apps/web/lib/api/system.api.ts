@@ -373,4 +373,7 @@ export const systemApi = {
       return response.data.data || [];
     },
   },
+  health: {
+    get: async (): Promise<{ status: string; mode?: string }> => dedupeApiGet('/health', undefined, 30_000),
+  },
 };

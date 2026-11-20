@@ -15,7 +15,8 @@ import CustomerBulkActions from './components/CustomerBulkActions';
 import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
 import AllocationBatchHeader from './components/AllocationBatchHeader';
-import CustomerRandomSelectorModal from './components/CustomerRandomSelectorModal';
+
+const CustomerRandomSelectorModal = dynamic(() => import('./components/CustomerRandomSelectorModal'), { ssr: false });
 import {
   CollapsibleSearchField,
   ContentSurface,
@@ -548,20 +549,22 @@ function CustomersPageContent() {
         handleOpenSmsModal={handleOpenSmsModal}
       />
 
-      <CustomerRandomSelectorModal
-        open={data.randomModalVisible}
-        loading={data.randomLoading}
-        count={data.randomCount}
-        setCount={data.setRandomCount}
-        excludeAssigned={data.excludeAssigned}
-        setExcludeAssigned={data.setExcludeAssigned}
-        excludeUnconfirmedAllocation={data.excludeUnconfirmedAllocation}
-        setExcludeUnconfirmedAllocation={data.setExcludeUnconfirmedAllocation}
-        excludeFutureBooking={data.excludeFutureBooking}
-        setExcludeFutureBooking={data.setExcludeFutureBooking}
-        onCancel={() => data.setRandomModalVisible(false)}
-        onSubmit={data.handleRandomSelect}
-      />
+      {data.randomModalVisible ? (
+        <CustomerRandomSelectorModal
+          open={data.randomModalVisible}
+          loading={data.randomLoading}
+          count={data.randomCount}
+          setCount={data.setRandomCount}
+          excludeAssigned={data.excludeAssigned}
+          setExcludeAssigned={data.setExcludeAssigned}
+          excludeUnconfirmedAllocation={data.excludeUnconfirmedAllocation}
+          setExcludeUnconfirmedAllocation={data.setExcludeUnconfirmedAllocation}
+          excludeFutureBooking={data.excludeFutureBooking}
+          setExcludeFutureBooking={data.setExcludeFutureBooking}
+          onCancel={() => data.setRandomModalVisible(false)}
+          onSubmit={data.handleRandomSelect}
+        />
+      ) : null}
 
       {/* CUSTOMER DETAIL DRAWER */}
       <CustomerDetailDrawer
