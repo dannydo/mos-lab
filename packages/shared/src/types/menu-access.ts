@@ -1,4 +1,10 @@
-import { canAccessIosConsultationApp, isAdminOrSuperAdminRole, isCvRole } from './auth.js';
+import {
+  UNIVERSAL_LANDING_ROUTE,
+  canAccessIosConsultationApp,
+  getPreferredLandingRoute,
+  isAdminOrSuperAdminRole,
+  isCvRole,
+} from './auth.js';
 
 /** Principal types that can receive a menu & API permission grant. */
 export type MenuAccessScopeType = 'ROLE' | 'DEPARTMENT' | 'TEAM' | 'STAFF';
@@ -210,6 +216,41 @@ export function isNonAdminAllowedDashboardPath(
   }
 
   return true;
+}
+
+/**
+ * Post-login landing route (used only when there is no `?next=` redirect).
+ * Fallback chain:
+ *   1. The role's preferred workspace, if the account may open it (Menu Access respected).
+ *   2. The first menu entry the account is allowed to see (menu order).
+ *   3. The universal mOS Chat page.
+ * `menuVisibility` may be omitted/empty (admins, or sidebar visibility not loaded): the preferred route is used as-is.
+ */
+export function resolveLandingRoute(params: {
+  role?: string | null;
+  menuVisibility?: Record<string, boolean> | null;
+  teamCodes?: readonly string[] | null;
+}): string {
+  const { role, menuVisibility, teamCodes } = params;
+  const visibility = menuVisibility || {};
+  const hasVisibility = Object.keys(visibility).length > 0;
+  const preferred = getPreferredLandingRoute(role);
+
+  if (preferred && isNonAdminAllowedDashboardPath(preferred, visibility, role, teamCodes)) {
+    return preferred;
+  }
+
+  if (hasVisibility && !isAdminOrSuperAdminRole(role)) {
+    const firstAllowed = MENU_ACCESS_DEFINITIONS.find(
+      (def) =>
+        visibility[def.key] === true &&
+        def.path.startsWith('/') &&
+        isNonAdminAllowedDashboardPath(def.path.split('?')[0], visibility, role, teamCodes)
+    );
+    if (firstAllowed) return firstAllowed.path.split('?')[0];
+  }
+
+  return UNIVERSAL_LANDING_ROUTE;
 }
 
 /**

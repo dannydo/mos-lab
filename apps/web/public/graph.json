@@ -14230,7 +14230,7 @@
         "path": "/api/wings-garden/actions",
         "module": "wings-garden",
         "handler": "inlineHandler",
-        "line": 84
+        "line": 79
       }
     },
     {
@@ -44175,8 +44175,8 @@
       "filePath": "apps/api/src/modules/wings-garden/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3621,
-        "lineCount": 102,
+        "sizeBytes": 3581,
+        "lineCount": 97,
         "ext": ".ts"
       }
     },
@@ -44201,8 +44201,8 @@
       "filePath": "apps/api/src/modules/wings-garden/wings-garden-rules.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14256,
-        "lineCount": 405,
+        "sizeBytes": 14320,
+        "lineCount": 412,
         "ext": ".ts"
       }
     },
@@ -44214,8 +44214,8 @@
       "filePath": "apps/api/src/modules/wings-garden/wings-garden.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15086,
-        "lineCount": 419,
+        "sizeBytes": 15169,
+        "lineCount": 443,
         "ext": ".ts"
       }
     },
@@ -44227,8 +44227,8 @@
       "filePath": "apps/api/src/modules/wings-garden/wings-garden.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51680,
-        "lineCount": 1361,
+        "sizeBytes": 51689,
+        "lineCount": 1368,
         "ext": ".ts"
       }
     },
@@ -54133,8 +54133,8 @@
       "filePath": "apps/web/app/login/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 33525,
-        "lineCount": 883,
+        "sizeBytes": 33082,
+        "lineCount": 866,
         "ext": ".tsx"
       }
     },
@@ -54159,8 +54159,8 @@
       "filePath": "apps/web/app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1252,
-        "lineCount": 42,
+        "sizeBytes": 1415,
+        "lineCount": 48,
         "ext": ".tsx"
       }
     },
@@ -54250,8 +54250,8 @@
       "filePath": "apps/web/app/wings-garden/components/GardenVisuals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13734,
-        "lineCount": 319,
+        "sizeBytes": 13953,
+        "lineCount": 342,
         "ext": ".tsx"
       }
     },
@@ -54263,8 +54263,8 @@
       "filePath": "apps/web/app/wings-garden/components/WingsGardenActionDialogs.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13172,
-        "lineCount": 346,
+        "sizeBytes": 13360,
+        "lineCount": 357,
         "ext": ".tsx"
       }
     },
@@ -54276,8 +54276,8 @@
       "filePath": "apps/web/app/wings-garden/components/WingsGardenDailyQuestStrip.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8836,
-        "lineCount": 188,
+        "sizeBytes": 8887,
+        "lineCount": 191,
         "ext": ".tsx"
       }
     },
@@ -54289,8 +54289,8 @@
       "filePath": "apps/web/app/wings-garden/components/WingsGardenIslandReportsTabs.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14992,
-        "lineCount": 318,
+        "sizeBytes": 15117,
+        "lineCount": 325,
         "ext": ".tsx"
       }
     },
@@ -54302,8 +54302,8 @@
       "filePath": "apps/web/app/wings-garden/components/WingsGardenRuleConfigEditor.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23640,
-        "lineCount": 510,
+        "sizeBytes": 23593,
+        "lineCount": 504,
         "ext": ".tsx"
       }
     },
@@ -54315,8 +54315,8 @@
       "filePath": "apps/web/app/wings-garden/components/WingsGardenTabs.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22909,
-        "lineCount": 501,
+        "sizeBytes": 23709,
+        "lineCount": 545,
         "ext": ".tsx"
       }
     },
@@ -54328,8 +54328,8 @@
       "filePath": "apps/web/app/wings-garden/components/WingsQrScannerModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23220,
-        "lineCount": 564,
+        "sizeBytes": 23290,
+        "lineCount": 570,
         "ext": ".tsx"
       }
     },
@@ -54341,8 +54341,8 @@
       "filePath": "apps/web/app/wings-garden/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26610,
-        "lineCount": 598,
+        "sizeBytes": 26726,
+        "lineCount": 616,
         "ext": ".tsx"
       }
     },
@@ -54354,8 +54354,8 @@
       "filePath": "apps/web/app/wings-garden/utils/soundFx.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2213,
-        "lineCount": 64,
+        "sizeBytes": 2211,
+        "lineCount": 62,
         "ext": ".ts"
       }
     },
@@ -55049,6 +55049,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/resolve-landing-route.ts",
+      "type": "File",
+      "label": "resolve-landing-route.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/resolve-landing-route.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1344,
+        "lineCount": 32,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/safe-storage.ts",
       "type": "File",
       "label": "safe-storage.ts",
@@ -55147,8 +55160,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 205865,
-        "lineCount": 2530,
+        "sizeBytes": 207096,
+        "lineCount": 2532,
         "ext": ".ts"
       }
     },
@@ -55381,8 +55394,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9025,
-        "lineCount": 185,
+        "sizeBytes": 10870,
+        "lineCount": 234,
         "ext": ".ts"
       }
     },
@@ -55394,8 +55407,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11932,
-        "lineCount": 385,
+        "sizeBytes": 13459,
+        "lineCount": 411,
         "ext": ".ts"
       }
     },
@@ -55862,8 +55875,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 29188,
-        "lineCount": 943,
+        "sizeBytes": 30585,
+        "lineCount": 984,
         "ext": ".ts"
       }
     },
@@ -56187,8 +56200,8 @@
       "filePath": "packages/shared/src/types/wings-garden.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 32241,
-        "lineCount": 1149,
+        "sizeBytes": 32272,
+        "lineCount": 1148,
         "ext": ".ts"
       }
     },
@@ -85184,13 +85197,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/page.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/payroll-adjustment-lab/adjustment-review-queue.tsx:ws:packages/shared",
       "source": "file:apps/web/app/payroll-adjustment-lab/adjustment-review-queue.tsx",
       "target": "ws:packages/shared",
@@ -85473,6 +85479,13 @@
     {
       "id": "edge:file:apps/web/lib/image-utils.ts:ws:packages/shared",
       "source": "file:apps/web/lib/image-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/resolve-landing-route.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/resolve-landing-route.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -119345,7 +119358,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 4349,
+    "totalNodes": 4350,
     "totalEdges": 8999,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -119355,7 +119368,7 @@
       "SharedType": 1566,
       "DesignToken": 12,
       "UIComponent": 382,
-      "File": 1358
+      "File": 1359
     },
     "edgeTypeCounts": {
       "EXPORTS": 1761,

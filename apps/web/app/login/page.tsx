@@ -12,7 +12,8 @@ import {
   CrownOutlined,
   KeyOutlined,
 } from '@ant-design/icons';
-import { getDefaultRouteForRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { resolveRoleLandingRoute } from '../../lib/resolve-landing-route';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -97,41 +98,27 @@ export default function LoginPage() {
   }, [showMockOptions, devStaffs.length]);
 
   // Check if already logged in
-  const resolvePostLoginRoute = (role?: string | null): string => {
+  const resolvePostLoginRoute = async (user?: SafeAny): Promise<string> => {
     if (typeof window !== 'undefined') {
       const nextParam = new URLSearchParams(window.location.search).get('next');
       if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
         return nextParam;
       }
     }
-    return getDefaultRouteForRole(role);
+    return resolveRoleLandingRoute(user);
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('switch') === '1') {
-      [
-        'mos_token',
-        'mos_user',
-        'mos_omicall_auto_init',
-        'mos_original_token',
-        'mos_original_user',
-        'mos_impersonation_audit_id',
-      ].forEach((k) => localStorage.removeItem(k));
-      if (isLocalDevLoginEnabled) {
-        setShowMockOptions(true);
-      }
-      return;
-    }
     const token = localStorage.getItem('mos_token');
     const user = localStorage.getItem('mos_user');
     if (token && user) {
+      let parsed: SafeAny = null;
       try {
-        const parsed = JSON.parse(user);
-        window.location.replace(resolvePostLoginRoute(parsed?.role));
+        parsed = JSON.parse(user);
       } catch {
-        window.location.replace(resolvePostLoginRoute(null));
+        parsed = null;
       }
+      void resolvePostLoginRoute(parsed).then((route) => window.location.replace(route));
     }
   }, []);
 
@@ -187,7 +174,7 @@ export default function LoginPage() {
 
       message.success(`Đăng nhập Google thành công! Chào mừng ${user.displayName}`);
       navigating = true;
-      window.location.replace(resolvePostLoginRoute(user?.role));
+      window.location.replace(await resolvePostLoginRoute(user));
     } catch (error) {
       console.error('Google login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Google thất bại.';
@@ -217,7 +204,7 @@ export default function LoginPage() {
 
       message.success(`Đăng nhập Google (Mock) thành công! Chào mừng ${user.displayName}`);
       navigating = true;
-      window.location.replace(resolvePostLoginRoute(user?.role));
+      window.location.replace(await resolvePostLoginRoute(user));
     } catch (error) {
       console.error('Mock login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Mock Google thất bại.';
@@ -246,7 +233,7 @@ export default function LoginPage() {
 
       message.success(`Đăng nhập thành công! Chào mừng ${user.displayName}`);
       navigating = true;
-      window.location.replace(resolvePostLoginRoute(user?.role));
+      window.location.replace(await resolvePostLoginRoute(user));
     } catch (error) {
       console.error('Login error:', error);
       const errMsg =

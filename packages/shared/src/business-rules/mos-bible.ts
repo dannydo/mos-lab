@@ -2381,6 +2381,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Tách Bạch 100% Dữ Liệu Thật (Live Mode) & Chế Độ Demo (?demo=1) Kèm Lưu Trữ Nguyên Tử Từng Ca Làm: Ở chế độ vận hành thật mặc định, /ios-app và API /api/ios/bookings tuyệt đối không tự bịa lịch sử mi giả, không gán doanh thu mặc định giả, không tự nhảy ngầm về ngày cũ và không trộn khách mẫu INITIAL_BOOKINGS (chỉ kích hoạt khách mẫu khi truyền tường minh ?demo=1). Mọi trạng thái ca làm (check-in, tư vấn, ảnh tiến trình, checkout) được lưu nguyên tử theo từng bookingId độc lập (IOS_BK_OVR:<bookingId>), không bao giờ ghi đè mất dữ liệu khi nhiều Chuyên Viên thao tác đồng thời.',
       'Note CVL Sau Checkout & Quyền Riêng Tư Trước Mặt Khách: Chuyên Viên (CVL/CVLL/CC/Admin) được phép thêm mới (append-only) Note CVL cho khách hàng sau khi checkout bất kể đơn đã đối soát quầy (SETTLED_COMPLETED) và không giới hạn thời gian trong ngày, tuân thủ đúng phạm vi khách hàng UI-010 (CVL chỉ thao tác trên khách của chính mình/đầu tua) và ẩn hoàn toàn nội dung note nội bộ khi bật chế độ đưa khách xem hóa đơn/hồ sơ.',
       'Hệ Sinh Thái Menu Đồng Nhất (MosAppLauncher & SidebarNav): Toàn hệ thống thống nhất 2 tầng điều hướng gồm 3 App lõi (mOS General, mOS Chat, iOS-App) và 4 Phân hệ hệ sinh thái (mOS Reports, mOS Mission, mOS Bible, mOS Lab). Việc hiển thị từng mục được lọc nghiêm ngặt theo Vai trò (Role), Đội nhóm CRM (teamCodes) và Ma trận MENU_ACCESS_DEFINITIONS: mOS General ẩn mặc định với CV nếu chưa mở phân hệ vận hành ngoài Báo cáo; mOS Lab & mOS Mission mặc định khóa cho Admin hoặc nhóm/cá nhân được cấp quyền; mOS Bible mở mặc định toàn hệ thống qua Drawer tại chỗ trên cả 3 App.',
+      'Trang Đích Sau Đăng Nhập Theo Vai Trò: Khi đăng nhập hoặc mở trang gốc mà không có đường dẫn quay lại (?next=), mỗi vai trò được đưa vào đúng nơi làm việc của mình thay vì Trung Tâm Vận Hành: Admin, Super Admin, Manager, BOSS, CHO, FM → Trung Tâm Vận Hành (/dashboard); Telesales / Booker → Mục Tiêu Telesales (/dashboard/telesale-target); CC → /ios-app; CS / CoCa / Kiểm soát → CS Hub (/dashboard/cskh); OC / LS → Vận Hành Hôm Nay (/dashboard/today); QA / QC → QA Shop (/dashboard/qa-shop); HR → Nhân Sự (/dashboard/staff); Kế toán → Dòng Tiền (/dashboard/finance/cash-flow); Chuyên Viên (CV, CV🪶, 🪶CV🪶) → Báo Cáo CV (/dashboard/cv). Nếu trang đích bị ẩn bởi Menu Access thì chuyển tới mục đầu tiên trong sidebar mà tài khoản được phép, cuối cùng là mOS Chat (/dashboard/chat); vai trò chưa khai báo cũng đi theo chuỗi này. Quy tắc chỉ áp dụng lúc đăng nhập; nhân sự có quyền vẫn tự mở Tổng quan (/dashboard) từ menu.',
     ],
     rationale:
       'Đảm bảo an toàn phân quyền tuyệt đối khi phát triển tính năng mới, bảo vệ quyền riêng tư dữ liệu khách hàng tại sảnh salon, đảm bảo nguyên tắc xoay tua công bằng không cho phép chọn khách (chỉ 1 khách đầu tua duy nhất), giữ độ tinh khiết 100% cho dữ liệu vận hành thật và chống mất dữ liệu khi nhiều Chuyên Viên Tự Chủ (CV🪶) thao tác song song.',
@@ -2413,12 +2414,16 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '/dashboard/bug-reports',
     ],
     status: 'ACTIVE',
-    version: '1.3.0',
-    effectiveFrom: '2026-11-18',
+    version: '1.4.0',
+    effectiveFrom: '2026-11-20',
     sources: [
       { label: 'Shared Auth & Role Guards', reference: 'packages/shared/src/types/auth.ts' },
       { label: 'Shared iOS Domain DTOs & Rules', reference: 'packages/shared/src/types/ios-app.ts' },
-      { label: 'Menu & API Access Guard Definitions', reference: 'packages/shared/src/types/menu-access.ts' },
+      {
+        label: 'Menu & API Access Guard Definitions (resolveLandingRoute)',
+        reference: 'packages/shared/src/types/menu-access.ts',
+      },
+      { label: 'Post-login Role Landing Resolver', reference: 'apps/web/lib/resolve-landing-route.ts' },
       { label: 'Unified Ecosystem Navigation Model', reference: 'apps/web/config/ecosystem-nav.ts' },
       { label: 'Unified 9-Dot App Launcher', reference: 'apps/web/components/layout/MosAppLauncher.tsx' },
       { label: 'iOS App State & Scope Lock', reference: 'apps/web/app/ios-app/state/useIosAppState.ts' },
