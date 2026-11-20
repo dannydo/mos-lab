@@ -33,7 +33,13 @@ import {
   SidebarItemConfig,
   SidebarGroupConfig,
 } from '../../config/sidebar.config';
-import { buildEcosystemNavModel, isLabPathname, isMissionPathname, isReportPathname } from '../../config/ecosystem-nav';
+import {
+  buildEcosystemNavModel,
+  isLabPathname,
+  isMissionPathname,
+  isReportPathname,
+  isWingsGardenPathname,
+} from '../../config/ecosystem-nav';
 import { openMosBible } from '../../lib/mos-bible-launcher';
 import { openBugReport } from '../../lib/bug-diagnostics';
 import { AppIcon } from '../ui/AppIcon';
@@ -189,7 +195,15 @@ function SidebarNavComponent({
     [userRole, teamCodes, unreadChatCount, bugInboxApprovalCount, menuVisibility]
   );
 
-  const handleEcosystemNavigate = (key: string, href: string, action?: 'open-bible' | 'open-feedback') => {
+  const handleEcosystemNavigate = (
+    key: string,
+    href: string,
+    action?: 'open-bible' | 'open-feedback',
+    comingSoon?: boolean
+  ) => {
+    if (comingSoon) {
+      return;
+    }
     if (action === 'open-bible') {
       openMosBible();
       onNavigate?.();
@@ -846,19 +860,30 @@ function SidebarNavComponent({
           {ecosystemModel.suiteApps.map((suite) => {
             const Icon = suite.icon;
             const isActive =
-              (suite.key === 'reports' && isReportPathname(pathname)) ||
-              (suite.key === 'mission' && isMissionPathname(pathname)) ||
-              (suite.key === 'lab' && isLabPathname(pathname));
+              !suite.comingSoon &&
+              ((suite.key === 'reports' && isReportPathname(pathname)) ||
+                (suite.key === 'mission' && isMissionPathname(pathname)) ||
+                (suite.key === 'lab' && isLabPathname(pathname)) ||
+                (suite.key === 'wings-garden' && isWingsGardenPathname(pathname)));
             return (
               <li className="sidebar-compact-item" key={`eco-rail-suite-${suite.key}`}>
-                <Tooltip placement="right" title={suite.label} mouseEnterDelay={0.2}>
+                <Tooltip
+                  placement="right"
+                  title={suite.comingSoon ? `${suite.label} · Coming soon` : suite.label}
+                  mouseEnterDelay={0.2}
+                >
                   <button
                     type="button"
                     role="menuitem"
+                    disabled={Boolean(suite.comingSoon)}
+                    aria-disabled={suite.comingSoon || undefined}
                     data-sidebar-eco-suite={suite.key}
-                    aria-label={suite.label}
-                    className={`sidebar-rail-action ${isActive ? 'sidebar-rail-action--active' : ''}`}
-                    onClick={() => handleEcosystemNavigate(suite.key, suite.href, suite.action)}
+                    data-coming-soon={suite.comingSoon ? 'true' : undefined}
+                    aria-label={suite.comingSoon ? `${suite.label} · Coming soon` : suite.label}
+                    className={`sidebar-rail-action ${isActive ? 'sidebar-rail-action--active' : ''} ${
+                      suite.comingSoon ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    onClick={() => handleEcosystemNavigate(suite.key, suite.href, suite.action, suite.comingSoon)}
                   >
                     <span className="sidebar-rail-action__icon relative" aria-hidden>
                       <AppIcon icon={Icon} size="sm" />
@@ -1081,17 +1106,24 @@ function SidebarNavComponent({
               {ecosystemModel.suiteApps.map((suite) => {
                 const Icon = suite.icon;
                 const isActive =
-                  (suite.key === 'reports' && isReportPathname(pathname)) ||
-                  (suite.key === 'mission' && isMissionPathname(pathname)) ||
-                  (suite.key === 'lab' && isLabPathname(pathname));
+                  !suite.comingSoon &&
+                  ((suite.key === 'reports' && isReportPathname(pathname)) ||
+                    (suite.key === 'mission' && isMissionPathname(pathname)) ||
+                    (suite.key === 'lab' && isLabPathname(pathname)) ||
+                    (suite.key === 'wings-garden' && isWingsGardenPathname(pathname)));
                 return (
                   <button
                     key={suite.key}
                     type="button"
+                    disabled={Boolean(suite.comingSoon)}
+                    aria-disabled={suite.comingSoon || undefined}
                     data-sidebar-eco-suite={suite.key}
-                    title={suite.label}
-                    onClick={() => handleEcosystemNavigate(suite.key, suite.href, suite.action)}
-                    className="px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-left text-[11px] font-semibold transition-all cursor-pointer active:scale-[0.99] min-w-0"
+                    data-coming-soon={suite.comingSoon ? 'true' : undefined}
+                    title={suite.comingSoon ? `${suite.label} · Coming soon` : suite.label}
+                    onClick={() => handleEcosystemNavigate(suite.key, suite.href, suite.action, suite.comingSoon)}
+                    className={`px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-left text-[11px] font-semibold transition-all min-w-0 ${
+                      suite.comingSoon ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer active:scale-[0.99]'
+                    }`}
                     style={{
                       background: isActive
                         ? token.colorPrimaryBg
@@ -1109,7 +1141,14 @@ function SidebarNavComponent({
                     }}
                   >
                     <AppIcon icon={Icon} size="sm" />
-                    <span className="flex-1 truncate">{suite.shortLabel || suite.label}</span>
+                    {suite.comingSoon ? (
+                      <span className="flex-1 min-w-0 flex flex-col leading-tight">
+                        <span className="truncate">{suite.shortLabel || suite.label}</span>
+                        <span className="text-[9px] font-medium opacity-70 truncate">Coming soon</span>
+                      </span>
+                    ) : (
+                      <span className="flex-1 truncate">{suite.shortLabel || suite.label}</span>
+                    )}
                     {suite.badgeCount && suite.badgeCount > 0 ? (
                       <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold tabular-nums shrink-0">
                         {suite.badgeCount > 99 ? '99+' : suite.badgeCount}

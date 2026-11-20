@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpenCheck,
   CalendarCheck,
+  Feather,
   FlaskConical,
   LayoutDashboard,
   MessageSquare,
@@ -24,7 +25,7 @@ import {
 } from '@mos-lab/shared';
 
 export type EcosystemAppKey = 'general' | 'chat' | 'ios';
-export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab' | 'feedback';
+export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab' | 'wings-garden' | 'feedback';
 export type EcosystemTone = 'sky' | 'emerald' | 'amber' | 'violet' | 'rose' | 'cyan';
 
 export type QuickSwitchRoleGroup = 'CV_FEATHER' | 'CC' | 'CV_STANDARD' | 'ADMIN_MANAGER' | 'OTHER';
@@ -49,6 +50,7 @@ export interface EcosystemSuiteItem {
   icon: LucideIcon;
   tone: EcosystemTone;
   badgeCount?: number;
+  comingSoon?: boolean;
 }
 
 export interface EcosystemQuickLink {
@@ -98,6 +100,11 @@ export function isLabPathname(pathname: string): boolean {
   return ['/dashboard/labs', '/dashboard/pilot-dark-lashes', '/dashboard/payroll-pilot', '/dashboard/career-path'].some(
     (prefix) => clean === prefix || clean.startsWith(`${prefix}/`)
   );
+}
+
+export function isWingsGardenPathname(pathname: string): boolean {
+  const clean = pathname.split('?')[0];
+  return clean === '/wings-garden' || clean.startsWith('/wings-garden/');
 }
 
 /**
@@ -165,6 +172,7 @@ export const ECOSYSTEM_ICONS = {
   mission: Rocket,
   bible: BookOpenCheck,
   lab: FlaskConical,
+  wingsGarden: Feather,
   feedback: MessageSquareWarning,
   today: CalendarCheck,
   ccKpi: BarChart3,
@@ -406,6 +414,18 @@ export function buildEcosystemNavModel(params: {
       tone: 'cyan',
     });
   }
+
+  // Wings Garden: Live for Admin / Super Admin, shown as Coming soon for all other role groups
+  suiteApps.push({
+    key: 'wings-garden',
+    label: 'Wings Garden',
+    shortLabel: 'Wings Garden',
+    subtitle: isAdmin ? 'Thiên Đường Nối Lông' : 'Coming soon',
+    href: isAdmin ? '/wings-garden' : '#wings-garden-coming-soon',
+    icon: ECOSYSTEM_ICONS.wingsGarden,
+    tone: 'emerald',
+    comingSoon: !isAdmin,
+  });
 
   // Báo lỗi & Góp ý: Available to all non-CV staff
   if (!isCv) {

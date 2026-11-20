@@ -248,10 +248,7 @@ export function resolveAssignedSalonStoreId(storeId?: number | string | null): n
  * - Strictly restricted to Admin / Super Admin AND only when not operating in a Chuyên Viên view (CVL, CVLL, CV).
  * - Non-admin accounts (including CVL in Simulation Sandbox Mode) are locked to their assigned branch.
  */
-export function canSwitchIosBranch(params: {
-  isAdmin: boolean;
-  iosRole?: string | null;
-}): boolean {
+export function canSwitchIosBranch(params: { isAdmin: boolean; iosRole?: string | null }): boolean {
   if (!params.isAdmin) return false;
   const normalized = String(params.iosRole || '')
     .trim()
@@ -259,16 +256,42 @@ export function canSwitchIosBranch(params: {
   return normalized !== 'CVL' && normalized !== 'CVLL' && normalized !== 'CV';
 }
 
+/** Landing route used when a role has no preferred workspace or it is hidden. Open to every signed-in staff. */
+export const UNIVERSAL_LANDING_ROUTE = '/dashboard/chat';
+
+const OPERATIONS_CENTER_ROLES = ['admin', 'super_admin', 'superadmin', 'manager', 'boss', 'cho', 'fm'];
+
 /**
- * Returns the default landing route based on staff role.
- * - CV roles land directly on the CV report (/dashboard/cv).
- * - Other roles land on the main operations dashboard (/dashboard).
+ * Preferred post-login workspace per role (used only when there is no `?next=` redirect).
+ * Returns `null` for roles without a preferred workspace.
+ * - Management roles keep the Operations Center (/dashboard).
+ * - Everyone else lands on the tool they actually work in.
+ * Menu Access may still hide the preferred route; see `resolveLandingRoute` for the fallback chain.
+ */
+export function getPreferredLandingRoute(role?: string | null): string | null {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  if (!normalizedRole) return null;
+  if (isCvRole(normalizedRole)) return '/dashboard/cv';
+  if (OPERATIONS_CENTER_ROLES.includes(normalizedRole)) return '/dashboard';
+  if (isTelesalesRole(normalizedRole)) return '/dashboard/telesale-target';
+  if (isCcRole(normalizedRole)) return '/ios-app';
+  if (['cs', 'coca', 'control'].includes(normalizedRole)) return '/dashboard/cskh';
+  if (['oc', 'ls'].includes(normalizedRole)) return '/dashboard/today';
+  if (['qa', 'qc', 'qa_qc'].includes(normalizedRole)) return '/dashboard/qa-shop';
+  if (normalizedRole === 'hr') return '/dashboard/staff';
+  if (normalizedRole === 'accountant') return '/dashboard/finance/cash-flow';
+  return null;
+}
+
+/**
+ * Returns the default landing route based on staff role (ignores Menu Access).
+ * Roles without a preferred workspace land on the universal mOS Chat page.
+ * Prefer `resolveLandingRoute` when menu visibility is available.
  */
 export function getDefaultRouteForRole(role?: string | null): string {
-  if (isCvRole(role)) {
-    return '/dashboard/cv';
-  }
-  return '/dashboard';
+  return getPreferredLandingRoute(role) ?? UNIVERSAL_LANDING_ROUTE;
 }
 
 export interface Staff {

@@ -26,6 +26,8 @@ vi.mock('antd', () => {
       {children}
     </button>
   );
+  type MockOption = { value: string | number; label: string };
+  type MockGroup = { label: string; options: MockOption[] };
   const Select = ({
     options = [],
     value,
@@ -33,28 +35,29 @@ vi.mock('antd', () => {
     placeholder,
     disabled,
   }: {
-    options?: Array<{ value: string | number; label: string }>;
+    options?: Array<MockOption | MockGroup>;
     value?: string | number;
-    onChange?: (value: string | number) => void;
+    onChange?: (value: string | number | undefined) => void;
     placeholder?: string;
     disabled?: boolean;
-  }) => (
-    <select
-      aria-label={placeholder}
-      disabled={disabled}
-      value={value ?? ''}
-      onChange={(event) =>
-        onChange?.(options.find((option) => String(option.value) === event.target.value)?.value || '')
-      }
-    >
-      <option value="">{placeholder}</option>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
+  }) => {
+    const flat = options.flatMap((option) => ('options' in option ? option.options : [option]));
+    return (
+      <select
+        aria-label={placeholder}
+        disabled={disabled}
+        value={value ?? ''}
+        onChange={(event) => onChange?.(flat.find((option) => String(option.value) === event.target.value)?.value)}
+      >
+        <option value="">{placeholder}</option>
+        {flat.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  };
   return {
     Alert: ({ message, description }: { message: React.ReactNode; description: React.ReactNode }) => (
       <div>
@@ -84,6 +87,29 @@ vi.mock('@mos-lab/shared', () => ({
   vietnameseSearchFilter: () => true,
 }));
 
+vi.mock('../../../../../lib/api-client', () => ({
+  apiClient: {
+    teams: {
+      list: vi.fn().mockResolvedValue({
+        departments: [],
+        teams: [
+          {
+            id: 1,
+            code: 'BK',
+            name: 'Booking',
+            isActive: true,
+            department: { name: 'Kinh doanh' },
+            activeStaffIds: [],
+            children: [
+              { id: 2, code: 'BK_TELESALES', name: 'Telesales A', isActive: true, activeStaffIds: [100, 200] },
+              { id: 3, code: 'BK_CS', name: 'CS', isActive: true, activeStaffIds: [300] },
+            ],
+          },
+        ],
+      }),
+    },
+  },
+}));
 vi.mock('../RevokeAssignmentModal', () => ({ RevokeAssignmentModal: () => null }));
 vi.mock('../RetainDataButton', () => ({ RetainDataButton: () => null }));
 vi.mock('../../../../../components/campaign/AddToCampaignModal', () => ({ AddToCampaignModal: () => null }));
@@ -107,6 +133,7 @@ vi.mock('../../../../../hooks/useResponsiveTier', () => ({ useResponsiveTier: ()
 const staff = [
   {
     id: 10,
+    legacyStaffId: 100,
     username: 'bich.phuong',
     displayName: 'Bích Phượng',
     role: 'telesales' as const,
@@ -115,6 +142,7 @@ const staff = [
   },
   {
     id: 20,
+    legacyStaffId: 200,
     username: 'ngoc.diep',
     displayName: 'Ngọc Điệp',
     role: 'telesales' as const,
@@ -123,6 +151,7 @@ const staff = [
   },
   {
     id: 30,
+    legacyStaffId: 300,
     username: 'minh.manager',
     displayName: 'Minh',
     role: 'manager' as const,
@@ -163,29 +192,51 @@ function AllocationHarness() {
   );
 }
 
-describe('CustomerBulkActions allocation role selector', () => {
-  it('requires a role and limits active staff options to that role', () => {
+describe('CustomerBulkActions allocation role/group selectors', () => {
+  it('lists all active staff by default and enables confirm once a staff is chosen', async () => {
     render(<AllocationHarness />);
 
     const confirm = screen.getByRole('button', { name: 'Xác nhận Phân bổ' });
-    const roleSelect = screen.getByLabelText('Chọn vai trò nhân sự...');
-    const staffSelect = screen.getByLabelText('Chọn vai trò trước');
+    const staffSelect = screen.getByLabelText('Tìm và chọn nhân sự...');
 
     expect(screen.getByRole('option', { name: 'Telesales Executive (2)' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Quản lý (1)' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: /Đã nghỉ/ })).not.toBeInTheDocument();
-    expect(staffSelect).toBeDisabled();
+    expect(screen.queryByText(/Đã nghỉ/)).not.toBeInTheDocument();
+    expect(staffSelect).toBeEnabled();
     expect(confirm).toBeDisabled();
 
-    fireEvent.change(roleSelect, { target: { value: 'telesales' } });
+    expect(await screen.findByRole('option', { name: 'Telesales A (2)' })).toBeInTheDocument();
 
-    const selectedRoleStaff = screen.getByLabelText('Tìm và chọn nhân sự...');
-    expect(selectedRoleStaff).toBeEnabled();
-    expect(screen.getByRole('option', { name: 'Bích Phượng (ID: 10)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Ngọc Điệp (ID: 20)' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Minh (ID: 30)' })).not.toBeInTheDocument();
-
-    fireEvent.change(selectedRoleStaff, { target: { value: '10' } });
+    fireEvent.change(staffSelect, { target: { value: '10' } });
     expect(confirm).toBeEnabled();
+  });
+
+  it('narrows staff by role and group with cascading counts', async () => {
+    render(<AllocationHarness />);
+    await screen.findByRole('option', { name: 'Telesales A (2)' });
+
+    fireEvent.change(screen.getByLabelText('Tất cả vai trò'), { target: { value: 'telesales' } });
+    expect(
+      screen.getByRole('option', { name: /Bích Phượng \(ID: 10\) · Telesales Executive · Telesales A/ })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Minh \(ID: 30\)/ })).not.toBeInTheDocument();
+    // Group list now only counts telesales role staff; CS group (manager only) disappears.
+    expect(screen.queryByRole('option', { name: /^CS \(/ })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Tất cả nhóm'), { target: { value: '1' } });
+    // Parent group includes sub-group members.
+    expect(screen.getByRole('option', { name: 'Booking (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Ngọc Điệp/ })).toBeInTheDocument();
+  });
+
+  it('clears an invalid selected staff when the filters change', async () => {
+    render(<AllocationHarness />);
+    await screen.findByRole('option', { name: 'Telesales A (2)' });
+
+    fireEvent.change(screen.getByLabelText('Tìm và chọn nhân sự...'), { target: { value: '10' } });
+    expect(screen.getByRole('button', { name: 'Xác nhận Phân bổ' })).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText('Tất cả vai trò'), { target: { value: 'manager' } });
+    expect(screen.getByRole('button', { name: 'Xác nhận Phân bổ' })).toBeDisabled();
   });
 });
