@@ -342,28 +342,29 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'REWARDS',
     title: 'Thưởng Done khách lẻ theo mốc Booking Team trong Game BK',
     summary:
-      'Trong Game BK có bật cơ chế này, tổng Booking hợp lệ của toàn Team trong ngày quyết định mức thưởng trên mỗi đơn Done khách lẻ thực tế hoàn thành cùng ngày cho Booker tạo lịch.',
+      'Trong Game BK có bật cơ chế này, tổng Booking tạo ra của toàn Team trong ngày quyết định mức thưởng trên mỗi đơn Done khách lẻ thực tế hoàn thành cùng ngày cho Booker tạo lịch.',
     commandments: [
       'Các mốc Booking Team/ngày và mức thưởng/Done được cấu hình trực tiếp trên giao diện Tạo/Sửa Game BK, không hard-code.',
-      'Booking Team tính theo thời điểm tạo đơn (order.date_created) trong thời gian và khung giờ Game đã cấu hình, kế thừa quy tắc Booking hợp lệ hiện có (loại trừ Cancelled, tuân thủ kênh tiếp nhận của Game).',
+      'Booking Team tính theo tổng đơn tạo mới (order.date_created) trong thời gian và khung giờ Game đã cấu hình cho danh sách nhân sự BK_TELESALES đang hoạt động, bao gồm cả đơn bị huỷ sau đó (chấp nhận book ảo theo chỉ đạo 2026-11-20; vẫn tuân thủ kênh tiếp nhận của Game).',
       'Mỗi ngày chốt một mốc thưởng duy nhất theo tổng Booking Team đạt được trong ngày đó.',
-      "Chỉ thưởng cho đơn Done khách lẻ thực tế hoàn thành (order_state IN ('Completed', 'CheckOut') — cập nhật live ngay khi khách hoàn tất thanh toán/CheckOut hoặc quầy chốt Completed, phân định Khách lẻ theo Điều răn BK-005 và ComboRecognitionService) trong cùng ngày Team đạt mốc; tuyệt đối không tính Done khách Combo.",
+      'Chỉ thưởng cho đơn Done khách lẻ thực tế hoàn thành (order_state IN (\'Completed\', \'CheckOut\') — cập nhật live ngay khi khách hoàn tất thanh toán/CheckOut hoặc quầy chốt Completed, phân định Khách lẻ theo Điều răn BK-005 và ComboRecognitionService) trong cùng ngày Team đạt mốc; tuyệt đối không tính Done khách Combo.',
       'Ghi nhận Done và tiền thưởng cho nhân viên tạo Booking (order.created_staff_id); mỗi Done hợp lệ chỉ được thưởng tối đa một lần trong Game.',
       'Công thức: Thưởng cá nhân/ngày = Done khách lẻ hợp lệ trong ngày × Mức thưởng theo mốc Booking Team ngày đó.',
       'Khoản thưởng này độc lập hoàn toàn với lương thưởng Telesales và quỹ thưởng/phạt Team KPI, và không làm thay đổi các Game đang vận hành không bật cấu hình.',
     ],
     rationale:
-      'Gắn chặt nỗ lực tạo lịch tập thể của cả Team theo ngày với chất lượng chuyển đổi khách lẻ đến làm dịch vụ thực tế, tạo động lực kép cho WINGS BOOKING RACE.',
+      'Gắn chặt nỗ lực tạo lịch tập thể của cả Team theo ngày với chất lượng chuyển đổi khách lẻ đến làm dịch vụ thực tế, tạo động lực kép cho WINGS BOOKING RACE. Lưu ý: việc không loại trừ đơn Cancelled là ngoại lệ có chủ đích cho mechanic hiện tại (đã ghi nhận review thiết kế game với Tâm Nguyễn).',
     examples: [
-      'Cấu hình mốc: Dưới 30 Booking = 0đ/Done; 30–39 = 5.000đ/Done; 40–49 = 7.000đ/Done; Từ 50 = 10.000đ/Done. Ngày 20/11 cả Team tạo được 42 Booking hợp lệ -> chốt mức 7.000đ/Done. Booker A có 4 Done khách lẻ và 2 Done khách Combo hoàn thành ngày 20/11 -> được tính 4 × 7.000đ = 28.000đ.',
+      'Cấu hình mốc: Dưới 30 Booking = 0đ/Done; 30–39 = 5.000đ/Done; 40–49 = 7.000đ/Done; Từ 50 = 10.000đ/Done. Ngày 20/11 cả Team tạo được 42 Booking -> chốt mức 7.000đ/Done. Booker A có 4 Done khách lẻ và 2 Done khách Combo hoàn thành ngày 20/11 -> được tính 4 × 7.000đ = 28.000đ.',
     ],
     tags: ['Game BK', 'WINGS BOOKING RACE', 'Booking Team', 'Done khách lẻ', 'Mốc thưởng', 'Khách lẻ'],
     routeScopes: ['/dashboard/bk', '/dashboard/kpi'],
     status: 'ACTIVE',
-    version: '1.0.1',
-    effectiveFrom: '2026-11-19',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-20',
     sources: [
       { label: 'Ticket yêu cầu', reference: 'MOS-BUG-247' },
+      { label: 'Game Mechanic Review Note', reference: 'docs/retro-game-bk-booking-race-2026-11-20.md' },
       { label: 'Shared Game BK Types', reference: 'packages/shared/src/types/bk-game.ts' },
       {
         label: 'Team-Booking Done Bonus Engine',
@@ -583,53 +584,6 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       {
         label: 'Sheet Hồ Sơ Bộ Mi & Lịch Sử Chi Tiêu',
         reference: 'apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx',
-      },
-    ],
-  },
-  {
-    id: 'OPS-007',
-    book: 'SERVICE',
-    title:
-      'Điều chỉnh & Thêm Gói Combo sau Checkout (DONE): Thu bổ sung / Hủy thu lại, Chuyển giao quyền lợi Người Checkout & Lịch sử đối soát',
-    summary:
-      'Cho phép CVL (trên đơn của mình), CVLL, CC và Admin mở lại đơn đã Checkout (DONE) trong cùng ngày phục vụ (trước 23:59) để thêm/đổi/hủy gói Combo, thêm Dưỡng mi hoặc cập nhật Tip; hỗ trợ Thu bổ sung chênh lệch hoặc Hủy bill cũ & Thu lại từ đầu, đồng thời chuyển trọn Điểm, Bonus & 10% Tip Checkout sang Người Checkout mới được chỉ định kèm lưu lịch sử đối soát bất biến.',
-    commandments: [
-      '1. Khung thời gian & Phân quyền UI-010: Chỉ cho phép điều chỉnh đơn DONE trong cùng ngày phục vụ (trước 23:59 giờ Việt Nam). CVL chỉ thao tác trên đơn của chính mình (assigned/check-in/check-out); CVLL, CC và Admin được thao tác trên mọi đơn DONE trong ngày của chi nhánh.',
-      '2. Hai chế độ dòng tiền & Thuế VAT 8% (VAT-001): Mặc định Thu bổ sung chênh lệch (TOP_UP — giữ nguyên khoản đã thu lần 1, cấn trừ tiền lẻ nếu trừ buổi hôm nay vào Buổi 1 gói mới, chỉ thu phần chênh lệch và cộng dồn vào order_payment). Chế độ Hủy thanh toán cũ & Thu lại từ đầu (VOID_AND_RECOLLECT) hoặc điều chỉnh giảm tiền trên đơn đã Completed bắt buộc nhập Lý do điều chỉnh và phải qua Quầy (CC / Admin) xác nhận duyệt nếu người gửi là CVL/CVLL.',
-      '3. Chọn Người Chốt Gói (Checkout) & Chuyển giao Điểm/Bonus: Cho phép chọn rõ Người Chốt Gói (checkOutStaffId). Nếu Người Checkout mới khác với Người Checkout cũ, thay thế check_out_staff_id trên toàn đơn và chuyển trọn Điểm, Bonus gói Combo/Dưỡng mi và 10% Tip Checkout sang Người Checkout mới (chia 50/50 với CC Check-in nếu là CC theo CC-002; vẫn bảo toàn 100% điểm kỹ thuật + 70% Tip cho Chuyên Viên làm mi, giữ 10% Tip Check-in, và bảo toàn ngoại lệ Training Mentorship CC-006).',
-      '4. Đối soát nguyên tử Ví khách hàng & Sổ Legacy kèm Lịch sử bất biến: Khi áp dụng điều chỉnh lên đơn đã Completed, hệ thống hoàn tác nguyên tử các giao dịch buổi gói cũ của order_id trong user_service_balance, dọn và tái kết chuyển sổ staff_bonus / staff_tip / report_order / accountant_revenue, đồng thời lưu bản ghi audit bất biến postCheckoutAdjustments (Ai yêu cầu, Ai duyệt, Lý do, Trước -> Sau).',
-    ],
-    rationale:
-      'Giải quyết thực tế khách sau khi thanh toán xong mới quyết định mua thêm hoặc nâng cấp gói Combo ngay tại tiệm mà không tạo đơn ảo làm sai lệch số lần ghé của khách hàng hay sai sót hoa hồng giữa Chuyên Viên, CC và Quầy thu ngân.',
-    tags: [
-      'ios-app',
-      'post-checkout',
-      'combo',
-      'top-up',
-      'void',
-      'checkout-staff',
-      'bonus',
-      'audit-history',
-      'VAT-001',
-      'CC-002',
-      'CV-002',
-    ],
-    routeScopes: ['/ios-app', '/dashboard/cv', '/dashboard/cc', '/dashboard/kpi'],
-    status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-19',
-    sources: [
-      {
-        label: 'Shared Post-Checkout Delta & Eligibility Engine',
-        reference: 'packages/shared/src/types/ios-post-checkout.ts',
-      },
-      {
-        label: 'Post-Checkout Adjustment & Legacy Reconcile Bridge',
-        reference: 'apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts',
-      },
-      {
-        label: 'UI Điều chỉnh Gói Combo & Lịch sử Đối soát',
-        reference: 'apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx',
       },
     ],
   },
@@ -1232,7 +1186,6 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '4. Hạch Toán Kế Toán Ví Gói (FIFO Paid vs Bonus 0đ): Ví gói khách hàng tách bạch Lượt Mua (combo_new_count, combo_refill_count) và Lượt Tặng kèm (bonus_new_count, bonus_refill_count giá 0đ). Khi khách dùng gói, hệ thống ưu tiên trừ Lượt Mua trước (ghi nhận doanh thu thực hiện theo đơn giá chuẩn New/Refill từ quỹ doanh thu chờ phân bổ Deferred Revenue); sau khi hết Lượt Mua mới trừ đến Lượt Tặng với giá trị hạch toán 0đ.',
       '5. Quy Đổi Linh Hoạt & Tự Động Tính Phụ Thu (Refill -> New & Up-size Volume): Nếu ví gói của khách chỉ còn lượt Dặm (Refill) nhưng khách làm Nối Mới (hoặc quá chu kỳ 25 ngày), hệ thống cho phép trừ 1 lượt Refill trong gói và tự động cộng phụ thu chênh lệch (Giá New - Giá Refill). Nếu khách nâng cấp số sợi (Up-size Volume) hoặc đổi lên dòng mi cao hơn, hệ thống trừ 1 lượt gói và tự động cộng phụ thu chênh lệch đơn giá.',
       '6. Thưởng Tiền Tươi Chốt Combo Cho CV🪶 / 🪶CV🪶: Tính tự động theo công thức tối giản hóa (Điều răn CV-002): Tổng giá trị đơn Combo < 2M thưởng 50.000đ; mỗi 1M kế tiếp (từ 2M trở lên) cộng thêm +50.000đ (2M-<3M: 100.000đ, 3M-<4M: 150.000đ, 4M-<5M: 200.000đ...). Nếu khách mua 2 gói Combo cùng 1 lúc trong cùng 1 đơn thanh toán (ví dụ Combo Mi Trên + Combo Mi Dưới cùng order_id), bắt buộc cộng gộp tổng tiền 2 gói lại trước rồi mới áp công thức tính thưởng 1 lần duy nhất.',
-      '7. Đa Ví Combo Mi Trên & Mi Dưới — Tự Do Chọn Ví Đích Danh Hoặc Đi Lẻ Lần Này: Khi khách hàng sở hữu từ 2 gói Combo Mi Trên hoặc 2 gói Combo Mi Dưới trở lên (bao gồm cả gói còn hạn và gói hết hạn còn buổi tồn), toàn bộ luồng /ios-app (Check-in, Tư vấn, Upsell, Checkout và Điều chỉnh sau Checkout) hiển thị đầy đủ từng ví độc lập kèm mã ví (#balanceId), số buổi ✦ Mới · ↻ Dặm và HSD. Hệ thống tự động gợi ý ví theo thứ tự ưu tiên: Dịch vụ đặt lịch hôm nay -> Lần ghé gần nhất -> Gói sắp hết hạn sớm nhất (FEFO), nhưng nhân viên và khách hàng được quyền đổi sang bất kỳ ví còn hạn nào (hoặc chọn "Không trừ gói / Đi lẻ lần này" với chu kỳ dặm 21 ngày) chỉ bằng một chạm; Legacy Bridge bảo đảm trừ đúng user_service_balance_id đã chọn và cách ly tuyệt đối trạng thái Bảo lưu/HSD của các ví còn lại theo Điều răn COMBO-004.',
     ],
     rationale:
       'Thay thế hoàn toàn trang tra cứu rời rạc bên ngoài bằng nguồn chân lý duy nhất trong mOS, ngăn chặn việc chọn nhầm gói tại quầy/giường và tự động hóa 100% kế toán doanh thu chờ phân bổ cũng như phụ thu nâng cấp.',
@@ -1243,7 +1196,6 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Welcome',
       'hạch toán combo',
       'trừ gói',
-      'đa ví combo',
       'phụ thu nâng cấp',
       'Deferred Revenue',
       'FIFO',
@@ -1251,8 +1203,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/dashboard/catalog', '/ios-app', '/dashboard/customers', '/dashboard/appointments'],
     status: 'ACTIVE',
-    version: '1.2.0',
-    effectiveFrom: '2026-11-19',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-12',
     sources: [
       {
         label: 'Wings Combo Catalog & Accounting Engine',
@@ -2379,9 +2331,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Khóa Cứng Vai Trò & Chi Nhánh Theo Tài Khoản Đăng Nhập: Trên /ios-app, nhân sự đăng nhập vai trò nào bị khóa cứng ở đúng vai trò đó (kể cả khi tự sửa tham số ?role= trên URL) và CC / Chuyên Viên không phải Admin được neo về đúng chi nhánh đang làm việc (client_store_id). Chỉ duy nhất Admin / Super Admin mới có thanh chuyển đổi vai trò (Role Switcher) và chuyển chi nhánh để kiểm thử.',
       'Phạm Vi Dữ Liệu Theo Vai Trò — CC Xem Toàn Bộ Chi Nhánh & Bảo Mật Khách Hàng Của CV🪶 (CVL): Tư Vấn Viên (CC) được xem tất cả khách chờ đón (Chờ đón), đang làm (Đang làm) và đã xong (Đã xong) thuộc chi nhánh mình đang làm việc (STORE_ALL). Ngược lại, tài khoản CV🪶 bị ẩn nút "Toàn Bộ Sảnh" (STORE_ALL) và tuyệt đối không được xem hay thao tác trên khách hàng đã được phân công cho Chuyên Viên khác; CV🪶 chỉ được hiển thị đúng: (a) duy nhất 1 khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua) để nhận ca — ưu tiên khách trễ giờ đến trước, tiếp theo là khách có giờ hẹn sớm nhất (MOS-BUG-227: tuyệt đối không hiện từ 2 khách tua trở lên khi chưa được phân công); và (b) danh sách khách hàng book đích danh / được phân công cho chính mình trong ngày.',
       'Tách Bạch 100% Dữ Liệu Thật (Live Mode) & Chế Độ Demo (?demo=1) Kèm Lưu Trữ Nguyên Tử Từng Ca Làm: Ở chế độ vận hành thật mặc định, /ios-app và API /api/ios/bookings tuyệt đối không tự bịa lịch sử mi giả, không gán doanh thu mặc định giả, không tự nhảy ngầm về ngày cũ và không trộn khách mẫu INITIAL_BOOKINGS (chỉ kích hoạt khách mẫu khi truyền tường minh ?demo=1). Mọi trạng thái ca làm (check-in, tư vấn, ảnh tiến trình, checkout) được lưu nguyên tử theo từng bookingId độc lập (IOS_BK_OVR:<bookingId>), không bao giờ ghi đè mất dữ liệu khi nhiều Chuyên Viên thao tác đồng thời.',
-      'Note CVL Sau Checkout & Quyền Riêng Tư Trước Mặt Khách: Chuyên Viên (CVL/CVLL/CC/Admin) được phép thêm mới (append-only) Note CVL cho khách hàng sau khi checkout bất kể đơn đã đối soát quầy (SETTLED_COMPLETED) và không giới hạn thời gian trong ngày, tuân thủ đúng phạm vi khách hàng UI-010 (CVL chỉ thao tác trên khách của chính mình/đầu tua) và ẩn hoàn toàn nội dung note nội bộ khi bật chế độ đưa khách xem hóa đơn/hồ sơ.',
       'Hệ Sinh Thái Menu Đồng Nhất (MosAppLauncher & SidebarNav): Toàn hệ thống thống nhất 2 tầng điều hướng gồm 3 App lõi (mOS General, mOS Chat, iOS-App) và 4 Phân hệ hệ sinh thái (mOS Reports, mOS Mission, mOS Bible, mOS Lab). Việc hiển thị từng mục được lọc nghiêm ngặt theo Vai trò (Role), Đội nhóm CRM (teamCodes) và Ma trận MENU_ACCESS_DEFINITIONS: mOS General ẩn mặc định với CV nếu chưa mở phân hệ vận hành ngoài Báo cáo; mOS Lab & mOS Mission mặc định khóa cho Admin hoặc nhóm/cá nhân được cấp quyền; mOS Bible mở mặc định toàn hệ thống qua Drawer tại chỗ trên cả 3 App.',
-      'Trang Đích Sau Đăng Nhập Theo Vai Trò: Khi đăng nhập hoặc mở trang gốc mà không có đường dẫn quay lại (?next=), mỗi vai trò được đưa vào đúng nơi làm việc của mình thay vì Trung Tâm Vận Hành: Admin, Super Admin, Manager, BOSS, CHO, FM → Trung Tâm Vận Hành (/dashboard); Telesales / Booker → Mục Tiêu Telesales (/dashboard/telesale-target); CC → /ios-app; CS / CoCa / Kiểm soát → CS Hub (/dashboard/cskh); OC / LS → Vận Hành Hôm Nay (/dashboard/today); QA / QC → QA Shop (/dashboard/qa-shop); HR → Nhân Sự (/dashboard/staff); Kế toán → Dòng Tiền (/dashboard/finance/cash-flow); Chuyên Viên (CV, CV🪶, 🪶CV🪶) → Báo Cáo CV (/dashboard/cv). Nếu trang đích bị ẩn bởi Menu Access thì chuyển tới mục đầu tiên trong sidebar mà tài khoản được phép, cuối cùng là mOS Chat (/dashboard/chat); vai trò chưa khai báo cũng đi theo chuỗi này. Quy tắc chỉ áp dụng lúc đăng nhập; nhân sự có quyền vẫn tự mở Tổng quan (/dashboard) từ menu.',
     ],
     rationale:
       'Đảm bảo an toàn phân quyền tuyệt đối khi phát triển tính năng mới, bảo vệ quyền riêng tư dữ liệu khách hàng tại sảnh salon, đảm bảo nguyên tắc xoay tua công bằng không cho phép chọn khách (chỉ 1 khách đầu tua duy nhất), giữ độ tinh khiết 100% cho dữ liệu vận hành thật và chống mất dữ liệu khi nhiều Chuyên Viên Tự Chủ (CV🪶) thao tác song song.',
@@ -2414,16 +2364,12 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '/dashboard/bug-reports',
     ],
     status: 'ACTIVE',
-    version: '1.4.0',
-    effectiveFrom: '2026-11-20',
+    version: '1.3.0',
+    effectiveFrom: '2026-11-18',
     sources: [
       { label: 'Shared Auth & Role Guards', reference: 'packages/shared/src/types/auth.ts' },
       { label: 'Shared iOS Domain DTOs & Rules', reference: 'packages/shared/src/types/ios-app.ts' },
-      {
-        label: 'Menu & API Access Guard Definitions (resolveLandingRoute)',
-        reference: 'packages/shared/src/types/menu-access.ts',
-      },
-      { label: 'Post-login Role Landing Resolver', reference: 'apps/web/lib/resolve-landing-route.ts' },
+      { label: 'Menu & API Access Guard Definitions', reference: 'packages/shared/src/types/menu-access.ts' },
       { label: 'Unified Ecosystem Navigation Model', reference: 'apps/web/config/ecosystem-nav.ts' },
       { label: 'Unified 9-Dot App Launcher', reference: 'apps/web/components/layout/MosAppLauncher.tsx' },
       { label: 'iOS App State & Scope Lock', reference: 'apps/web/app/ios-app/state/useIosAppState.ts' },

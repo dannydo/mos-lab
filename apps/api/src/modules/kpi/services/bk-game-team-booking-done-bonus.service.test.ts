@@ -358,12 +358,12 @@ test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary queries legacy DB,
   assert.deepEqual(deletedIds, [10]);
   assert.deepEqual(upsertedOrderIds, [5001]);
 
-  // Verify channel filter & time window filter were inherited in SQL
+  // Verify channel filter, time window filter, and virtual/cancelled booking inclusion were inherited in SQL
   const bookingSql = queriesExecuted.find((q) => q.includes('teamBookings'))!;
   assert.ok(bookingSql.includes("UPPER(o.booking_channels) IN ('GB')"));
   assert.ok(bookingSql.includes("TIME(o.date_created) >= '08:00:00'"));
   assert.ok(bookingSql.includes("TIME(o.date_created) <= '17:00:59'"));
-  assert.ok(bookingSql.includes("o.order_state != 'Cancelled'"));
+  assert.ok(!bookingSql.includes("o.order_state != 'Cancelled'"));
 
   const doneSql = queriesExecuted.find((q) => q.includes("o.order_state IN ('Completed', 'CheckOut')"))!;
   assert.ok(doneSql.includes("2026-11-19 00:00:00"));
@@ -487,4 +487,100 @@ test('BkGameService.updateGame serializes teamBookingDoneBonusConfig and rejects
   assert.ok(updated.teamBookingDoneBonusConfig?.enabled);
   assert.equal(updated.teamBookingDoneBonusConfig?.tiers.length, 3);
   assert.ok(typeof (updatedData as Record<string, unknown> | null)?.teamBookingDoneBonusConfig === 'string');
+});
+
+test('BkGameTeamBookingDoneBonusService merges newly added active BK_TELESALES staff into live calculation', async () => {
+  ComboRecognitionService.clearComboLiveCache();
+  let capturedStaffFilter = '';
+  const createdParticipantStaffIds: number[] = [];
+
+  const mockFastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('SELECT user_id FROM user_profile')) {
+            return [{ user_id: 50670 }, { user_id: 52853 }];
+          }
+          if (sql.includes('FROM user_profile up')) {
+            return [{ staffId: 52853, staffName: 'Ngọc Huyền', avatar: null }];
+          }
+          if (sql.includes('teamBookings')) {
+            capturedStaffFilter = sql;
+            return [{ bookingDate: '2026-11-20', teamBookings: 28 }];
+          }
+          if (sql.includes("o.order_state IN ('Completed', 'CheckOut')")) {
+            return [
+              {
+                orderId: 339915,
+                orderKey: 'WL-339915',
+                staffId: 52853,
+                customerName: 'Chị Hương',
+                completedAt: new Date('2026-11-20T04:00:00Z'),
+                completedDate: '2026-11-20',
+              },
+            ];
+          }
+          if (sql.includes('hasLiveComboAtBooking')) {
+            return [{ orderId: 339915, hasLiveComboAtBooking: 0 }];
+          }
+          return [];
+        },
+      },
+      crm: {
+        crmTeam: {
+          findUnique: async () => null,
+        },
+        crmConfig: {
+          findUnique: async () => ({
+            key: 'ACTIVE_BK_TELESALES_STAFF_CONFIG',
+            value: JSON.stringify([50670, 52853]),
+          }),
+        },
+        crmBkGameParticipant: {
+          createMany: async ({ data }: { data: Array<{ staffId: number }> }) => {
+            createdParticipantStaffIds.push(...data.map((d) => d.staffId));
+            return { count: data.length };
+          },
+        },
+        crmBkGameTeamBookingDoneBonus: {
+          findMany: async () => [],
+          upsert: async () => ({}),
+        },
+      },
+    },
+    log: { info: () => {}, warn: () => {} },
+  } as unknown as FastifyInstance;
+
+  const summary = await BkGameTeamBookingDoneBonusService.syncAndComputeSummary(
+    mockFastify,
+    {
+      id: 5,
+      gameType: 'INDIVIDUAL',
+      status: 'ACTIVE',
+      startDate: new Date('2026-11-18T17:00:00.000Z'),
+      endDate: new Date('2026-11-20T16:59:59.000Z'),
+      teamBookingDoneBonusConfig: JSON.stringify({
+        enabled: true,
+        tiers: DEFAULT_BK_TEAM_BOOKING_DONE_TIERS,
+      }),
+    },
+    [
+      {
+        id: 1,
+        gameId: 5,
+        staffId: 50670,
+        staffName: 'Bích Phượng',
+        betAmount: 0,
+        score: 0,
+        rewardAmount: 0,
+        status: 'ACTIVE',
+      },
+    ]
+  );
+
+  assert.ok(summary);
+  assert.ok(capturedStaffFilter.includes('50670,52853'));
+  assert.deepEqual(createdParticipantStaffIds, [52853]);
+  assert.equal(summary.totalSingleDone, 1);
+  assert.ok(summary.staffTotals.some((s) => s.staffId === 52853 && s.staffName === 'Ngọc Huyền' && s.singleDoneCount === 1));
 });

@@ -24,6 +24,7 @@ import {
 import { getActiveBkTelesalesIds, getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
 import {
   BkGameTeamBookingDoneBonusService,
+  mergeActiveBkTelesalesParticipants,
   normalizeTimeHHmm,
   parseTeamBookingDoneBonusConfig,
 } from './bk-game-team-booking-done-bonus.service.js';
@@ -642,6 +643,11 @@ export class BkGameService {
 
     const allowedChannels = parseAllowedBookingChannels(game.allowedBookingChannels);
     const channelFilter = buildBookingChannelFilter(allowedChannels, 'o.booking_channels');
+
+    const hasTeamBookingDoneBonus = Boolean(parseTeamBookingDoneBonusConfig(game.teamBookingDoneBonusConfig)?.enabled);
+    if (game.status === 'ACTIVE' && game.gameType !== 'TEAM' && hasTeamBookingDoneBonus) {
+      participants = await mergeActiveBkTelesalesParticipants(fastify, game, participants);
+    }
 
     // If game is ACTIVE, compute live scores from the database
     if (game.status === 'ACTIVE' && participants.length > 0) {
