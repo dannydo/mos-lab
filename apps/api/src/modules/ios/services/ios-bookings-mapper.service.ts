@@ -27,6 +27,7 @@ import {
   formatTimeSlot,
   hydrateSavedNaturalLashAttributes,
   normalizeLashMaterialLabel,
+  resolveCanonicalBookedServicePrice,
   resolveCustomerAvatar,
   resolveStaffAvatar,
   stripNewLashLabel,
@@ -80,7 +81,7 @@ export function mapLiveOrdersToBookings(params: {
       : rawOverride;
 
     const duration = Number(r.booking_duration_minute) || 90;
-    const servicePrice = Number(override.servicePrice ?? r.total_price) || 550000;
+    const servicePrice = resolveCanonicalBookedServicePrice(r, override.servicePrice);
     const orderNum = r.order_number ? `BK-${r.order_number}` : `BK-${r.id}`;
     const note = r.booking_note || '';
     const rawVisits = Number(r.total_visits) || 0;
@@ -186,7 +187,11 @@ export function mapLiveOrdersToBookings(params: {
       r.os_promotion_id,
       r.product_promotion_map,
       rawCartProducts,
-      promotionsById
+      promotionsById,
+      {
+        servicePrice,
+        osDiscountAmount: r.os_discount_amount,
+      }
     );
     const cartProducts = promoState.cartProducts;
     const upgradePrice = Number(override.upgradePrice || 0);

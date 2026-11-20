@@ -9,7 +9,6 @@ import {
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
 import { useTheme } from '../../../../context/ThemeContext';
-import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import {
@@ -22,8 +21,6 @@ import {
 import { resolveNaturalLashCountLabel } from './NaturalLashAssessmentData';
 import { CustomerAvatarPicker } from '../ui-kit/CustomerAvatarPicker';
 import { History } from 'lucide-react';
-import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
-import { CustomerHistoryAndSpendingSheet } from '../ui-kit/CustomerHistoryAndSpendingSheet';
 import { QuickCheckInComboCard } from './checkin/QuickCheckInComboCard';
 import { CheckInStaffAndProfileCards } from './checkin/CheckInStaffAndProfileCards';
 import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
@@ -652,52 +649,17 @@ export function Screen02CheckInProfile({
         quickServiceType={quickServiceType}
         quickUnderServiceType={quickUnderServiceType}
         booking={booking}
-      />
-
-      {/* Lash History Modal / Bottom Sheet */}
-      <Screen02LashHistorySheet
-        item={selectedLashHistory}
-        isOpen={isLashHistoryOpen}
-        onClose={() => setIsLashHistoryOpen(false)}
-        onApplySpecs={() => setIsLashHistoryOpen(false)}
-      />
-
-      <ComboWalletDetailModal
-        booking={booking}
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
+        selectedLashHistory={selectedLashHistory}
+        isLashHistoryOpen={isLashHistoryOpen}
+        setIsLashHistoryOpen={setIsLashHistoryOpen}
+        isWalletModalOpen={isWalletModalOpen}
+        setIsWalletModalOpen={setIsWalletModalOpen}
         isAdmin={isAdmin}
-        onUpdated={() => onRefreshDb?.()}
-        selectedUpperBalanceId={resolvedWallets.selectedUpperComboBalanceId}
-        selectedUnderBalanceId={resolvedWallets.selectedUnderComboBalanceId}
-        skipUpperCombo={resolvedWallets.skipUpperCombo}
-        skipUnderCombo={resolvedWallets.skipUnderCombo}
-        onSelectWallet={
-          onSelectComboWallet
-            ? (wallet) => {
-                if (wallet.serviceGroup === 'under') {
-                  onSelectComboWallet({
-                    targetBookingId: booking?.id,
-                    selectedUnderComboBalanceId: wallet.balanceId,
-                    skipUnderCombo: false,
-                  });
-                } else {
-                  onSelectComboWallet({
-                    targetBookingId: booking?.id,
-                    selectedUpperComboBalanceId: wallet.balanceId,
-                    skipUpperCombo: false,
-                  });
-                }
-              }
-            : undefined
-        }
-      />
-
-      <CustomerHistoryAndSpendingSheet
-        isOpen={isHistoryModalOpen}
-        onClose={() => setIsHistoryModalOpen(false)}
-        initialTab="ALL"
-        booking={booking}
+        onRefreshDb={onRefreshDb}
+        resolvedWallets={resolvedWallets}
+        onSelectComboWallet={onSelectComboWallet}
+        isHistoryModalOpen={isHistoryModalOpen}
+        setIsHistoryModalOpen={setIsHistoryModalOpen}
         isSimulationMode={isSimulationMode}
       />
     </div>

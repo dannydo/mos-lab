@@ -18,7 +18,7 @@ import {
   resolveNormalizedPaymentBreakdown,
   SafeAny,
 } from '@mos-lab/shared';
-import type { LastVisitSpecSummary } from './ios-bookings-sql.service.js';
+import type { LastVisitSpecSummary, RawIosOrderSnapshot } from './ios-bookings-sql.service.js';
 
 export function stripNewLashLabel(value: string): string {
   return value
@@ -94,6 +94,42 @@ export function hydrateSavedNaturalLashAttributes(
     medicalProblem: attrs.medicalProblem || savedProfile.medicalProblem,
     isNewClientDiagnosticDone: true,
   };
+}
+
+/**
+ * Chuẩn hóa giá dịch vụ niêm yết gốc (gross) trước khuyến mãi để tránh giảm trùng 2 lần (double-discount)
+ * và tránh dò sai size gói Combo khi `order.total_price` đã bị trừ sẵn mã 50% từ lúc đặt lịch.
+ */
+export function resolveCanonicalBookedServicePrice(
+  r: Pick<
+    RawIosOrderSnapshot,
+    | 'os_service_price'
+    | 'os_discount_amount'
+    | 'catalog_single_price'
+    | 'total_price'
+    | 'is_temporary'
+    | 'promotion_id'
+    | 'os_promotion_id'
+  >,
+  overrideServicePrice?: unknown
+): number {
+  const explicitOverride = Number(overrideServicePrice);
+  if (Number.isFinite(explicitOverride) && explicitOverride > 0) return explicitOverride;
+  const osGross = Number(r.os_service_price);
+  if (Number.isFinite(osGross) && osGross > 0) return osGross;
+  const catalogSingle = Number(r.catalog_single_price);
+  if (Number(r.is_temporary) !== 1 && Number.isFinite(catalogSingle) && catalogSingle > 0) {
+    return catalogSingle;
+  }
+  const totalPrice = Number(r.total_price) || 0;
+  const osDiscount = Number(r.os_discount_amount) || 0;
+  const hasLegacyPromo = Boolean(
+    (r.promotion_id && Number(r.promotion_id) > 0) || (r.os_promotion_id && Number(r.os_promotion_id) > 0)
+  );
+  if (hasLegacyPromo && osDiscount > 0 && totalPrice >= 0 && totalPrice + osDiscount > 0) {
+    return totalPrice + osDiscount;
+  }
+  return totalPrice > 0 ? totalPrice : 550000;
 }
 
 export function resolveCustomerAvatar(dbAvatar: string | null | undefined, userId?: number): string | undefined {
@@ -278,17 +314,22 @@ export function computeBookingFinancials(params: {
 
   const subtotal = effectiveServiceTotal + comboTotal + productTotal;
   const vatRate = 0.08;
+  const isSessionWaivedIntoNewCombo = Boolean(
+    normalizedSelectedCombo && normalizedSelectedCombo.todaySingleServiceWaived !== false
+  );
+  const effectiveServicePromo = isSessionWaivedIntoNewCombo ? null : servicePromotion;
+  const effectiveFallbackOrderPromo = isSessionWaivedIntoNewCombo ? null : appliedPromotion;
   const hasAnyPromotionObject = Boolean(
-    servicePromotion ||
+    effectiveServicePromo ||
     comboPromotion ||
     underComboPromotion ||
     cartProducts.some((p) => p.appliedPromotion) ||
-    appliedPromotion
+    effectiveFallbackOrderPromo
   );
   const itemizedPromo = calculateIosItemizedPromotionDiscounts({
     serviceAmount: effectiveServiceTotal,
     upgradeAmount: upgradePrice,
-    servicePromotion,
+    servicePromotion: effectiveServicePromo,
     comboAmount: upperComboTotal,
     comboPromotion,
     underComboAmount: underComboTotal,
@@ -298,12 +339,12 @@ export function computeBookingFinancials(params: {
       amount: Number(p.price || 0) * Number(p.quantity || 1),
       promotion: p.appliedPromotion ?? undefined,
     })),
-    fallbackOrderPromotion: appliedPromotion,
+    fallbackOrderPromotion: effectiveFallbackOrderPromo,
     vatRate,
   });
   const effectivePromotionDiscount = hasAnyPromotionObject
     ? itemizedPromo.totalDiscount
-    : promotionId && overrideBilling?.promotionDiscountAmount
+    : !isSessionWaivedIntoNewCombo && promotionId && overrideBilling?.promotionDiscountAmount
       ? Math.max(0, Math.round(Number(overrideBilling.promotionDiscountAmount) || 0))
       : 0;
   const subtotalAfterDiscount = Math.max(0, subtotal - effectivePromotionDiscount);
@@ -374,11 +415,12 @@ export function computeBookingFinancials(params: {
       promotionId:
         itemizedPromo.unifiedOrderPromotionId ??
         itemizedPromo.primaryPromotion?.promotionId ??
-        promotionId ??
-        overrideBilling?.promotionId ??
-        null,
+        (isSessionWaivedIntoNewCombo ? null : (promotionId ?? overrideBilling?.promotionId ?? null)),
       promotionName:
-        itemizedPromo.primaryPromotion?.name ?? appliedPromotion?.name ?? overrideBilling?.promotionName ?? undefined,
+        itemizedPromo.primaryPromotion?.name ??
+        (isSessionWaivedIntoNewCombo
+          ? undefined
+          : (appliedPromotion?.name ?? overrideBilling?.promotionName ?? undefined)),
       promotionDiscountAmount: effectivePromotionDiscount,
       serviceDiscountAmount: hasAnyPromotionObject
         ? itemizedPromo.serviceDiscount

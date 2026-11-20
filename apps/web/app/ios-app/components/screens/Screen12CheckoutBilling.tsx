@@ -10,21 +10,15 @@ import {
   type IosPromotionOption,
   type IosScannedProductCatalogMatch,
 } from '@mos-lab/shared';
-import { GraduationCap, Lock } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
-import { CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import { BookingItem, isDoneBookingPendingCheckout } from '../../state/mockData';
 import { addScannedProductToCartProducts, removeScannedUnitFromCartProducts } from './upsell/upsellCheckoutHelpers';
 import { compressLashImage } from '../../utils/imageCompressor';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
-import {
-  CheckoutComboWalletCard,
-  resolveCheckoutFallbackServicePrice,
-  type SelectComboWalletHandler,
-} from './checkout/CheckoutComboWalletCard';
+import { CheckoutComboWalletCard, type SelectComboWalletHandler } from './checkout/CheckoutComboWalletCard';
 import { IosCloudSyncStatus } from '../ui-kit/IosCloudSyncBadge';
 import {
   calculateDualComboTierBonus,
@@ -34,11 +28,14 @@ import {
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
 import type { CvToCvPlusRequirements, SavePromotionTarget } from '../../state/useIosBillingCheckout';
+import { buildCheckoutVietQrInfo } from '../../state/iosBillingMath';
 import { useCheckoutItemizedPromotions } from '../../state/useCheckoutItemizedPromotions';
+import { resolveCheckoutBaseServicePrice, useCheckoutComboSelection } from '../../state/useCheckoutComboSelection';
 import { CheckoutReceiptSection } from './checkout/CheckoutReceiptSection';
 import { CheckoutTipAndDiamondSection } from './checkout/CheckoutTipAndDiamondSection';
 import { CheckoutPaymentMethodSection } from './checkout/CheckoutPaymentMethodSection';
 import { CheckoutBillingOverlays } from './checkout/CheckoutBillingOverlays';
+import { CheckoutStatusBanners } from './checkout/CheckoutStatusBanners';
 
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
@@ -72,6 +69,11 @@ interface Screen12CheckoutBillingProps {
   onSavePromotion?: (promotion: IosPromotionOption | null, target?: SavePromotionTarget) => void;
   onUpdateCartProducts?: (cartProducts: NonNullable<BookingItem['cartProducts']>) => void;
   onSelectComboWallet?: SelectComboWalletHandler;
+  onUpdateCombos?: (payload: {
+    selectedCombo: BookingItem['selectedCombo'];
+    selectedUnderCombo: BookingItem['selectedUnderCombo'];
+    comboRedemption?: BookingItem['comboRedemption'];
+  }) => void;
   onEditService?: () => void;
 }
 
@@ -84,6 +86,7 @@ export function Screen12CheckoutBilling({
   onSavePromotion,
   onUpdateCartProducts,
   onSelectComboWallet,
+  onUpdateCombos,
   onEditService,
 }: Screen12CheckoutBillingProps) {
   const { themeMode } = useTheme();
@@ -123,11 +126,6 @@ export function Screen12CheckoutBilling({
   useEffect(() => {
     setLocalCartProducts(booking?.cartProducts || []);
   }, [booking?.id, booking?.cartProducts]);
-
-  const bookingWithLocalProducts = useMemo(
-    () => (booking ? { ...booking, cartProducts: localCartProducts } : undefined),
-    [booking, localCartProducts]
-  );
 
   const handleForceResetDiamonds = useCallback(() => setDiamondUsed(0), []);
   const [isProductQrScannerOpen, setIsProductQrScannerOpen] = useState<boolean>(false);
@@ -182,12 +180,32 @@ export function Screen12CheckoutBilling({
   const checkInStaff = booking?.checkInStaffName || actor?.name || 'Thảo Ly';
   const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
   const serviceName = resolveDisplayServiceName(booking);
-  const servicePrice = useMemo(() => resolveCheckoutFallbackServicePrice(booking, serviceName), [booking, serviceName]);
+  const servicePrice = useMemo(() => resolveCheckoutBaseServicePrice(booking, serviceName), [booking, serviceName]);
   const upgradePrice = booking?.upgradePrice || 0;
-  const selectedCombo = booking?.selectedCombo || null;
-  const selectedUnderCombo = booking?.selectedUnderCombo || null;
-  const comboRedemption = booking?.comboRedemption || null;
   const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking || {}), [booking]);
+  const comboSelection = useCheckoutComboSelection({
+    booking,
+    serviceName,
+    servicePrice,
+    cvPlusRules,
+    onUpdateCombos,
+  });
+  const selectedCombo = comboSelection.selectedCombo;
+  const selectedUnderCombo = comboSelection.selectedUnderCombo;
+  const comboRedemption = comboSelection.comboRedemption;
+  const bookingWithLocalSelections = useMemo(
+    () =>
+      booking
+        ? {
+            ...booking,
+            cartProducts: localCartProducts,
+            selectedCombo,
+            selectedUnderCombo,
+            comboRedemption,
+          }
+        : undefined,
+    [booking, localCartProducts, selectedCombo, selectedUnderCombo, comboRedemption]
+  );
   const isComboLive = Boolean(
     resolvedWallets.isRedeemingUpperToday &&
     (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
@@ -216,6 +234,8 @@ export function Screen12CheckoutBilling({
 
   const {
     servicePromo,
+    rememberedServicePromo,
+    isSessionWaivedIntoNewCombo,
     cartProducts,
     promotions,
     isPromotionsLoading,
@@ -230,7 +250,7 @@ export function Screen12CheckoutBilling({
     promoBreakdown,
     appliedPromotionDisplayName,
   } = useCheckoutItemizedPromotions({
-    booking: bookingWithLocalProducts,
+    booking: bookingWithLocalSelections,
     actorTier: actor?.tier,
     effectiveServiceCharge,
     upgradePrice,
@@ -267,7 +287,7 @@ export function Screen12CheckoutBilling({
   const subtotal = effectiveServiceCharge + comboTotal + productTotal;
   const promotionDiscountAmount = hasAnyPromoObj
     ? promoBreakdown.totalDiscount
-    : booking?.promotionId && booking?.billing?.promotionDiscountAmount
+    : !isSessionWaivedIntoNewCombo && booking?.promotionId && booking?.billing?.promotionDiscountAmount
       ? Math.max(0, Math.round(Number(booking.billing.promotionDiscountAmount) || 0))
       : 0;
   const subtotalAfterDiscount = Math.max(0, subtotal - promotionDiscountAmount);
@@ -363,14 +383,11 @@ export function Screen12CheckoutBilling({
     [finalGrandTotal, isSplitPaymentMode, selectedMethod, effectivePaymentSplit]
   );
   const vietQrTransferAmount = finalGrandTotal === 0 ? 0 : effectivePaymentSplit.vietqrAmount;
-
-  const branchCode = booking?.branchCode || 'DT';
-  const orderNumericCode = booking?.orderNumber?.replace(/\D/g, '') || String(booking?.id || '609609');
-  const tipCode = tipAmount > 0 ? (tipAmount >= 1000 ? `${Math.round(tipAmount / 1000)}K` : String(tipAmount)) : '0';
-  const qrTransferContent = `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
-  const vietQrUrl = `https://img.vietqr.io/image/VCB-1024731897-qr_only.png?amount=${vietQrTransferAmount}&addInfo=${encodeURIComponent(
-    qrTransferContent
-  )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
+  const { branchCode, qrTransferContent, vietQrUrl } = buildCheckoutVietQrInfo({
+    booking,
+    tipAmount,
+    vietQrTransferAmount,
+  });
 
   const copyToClipboard = (text: string, label: string) => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -434,8 +451,11 @@ export function Screen12CheckoutBilling({
       transferProofPhoto || undefined,
       zaloConsentData,
       {
-        promotionId: promoBreakdown.unifiedOrderPromotionId ?? fallbackOrderPromo?.promotionId ?? null,
-        appliedPromotion: fallbackOrderPromo,
+        promotionId:
+          promoBreakdown.unifiedOrderPromotionId ??
+          (isSessionWaivedIntoNewCombo ? null : fallbackOrderPromo?.promotionId) ??
+          null,
+        appliedPromotion: isSessionWaivedIntoNewCombo ? null : fallbackOrderPromo,
         servicePromotionId: servicePromo?.promotionId ?? null,
         servicePromotion: servicePromo,
         comboPromotionId: null,
@@ -504,53 +524,16 @@ export function Screen12CheckoutBilling({
       />
 
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
-        {isSettled && (
-          <div
-            className={`rounded-2xl border p-3 text-xs flex items-center gap-2.5 shadow-2xs ${
-              isDark
-                ? 'bg-emerald-950/40 border-emerald-700/50 text-emerald-200'
-                : 'bg-emerald-50 border-emerald-300 text-emerald-900'
-            }`}
-          >
-            <Lock className="w-4 h-4 text-emerald-500 shrink-0" />
-            <div className="leading-relaxed">
-              <strong className="block text-[12px] font-bold">ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)</strong>
-              <span className="text-[11px] opacity-90">
-                Mọi thông tin dịch vụ, khuyến mãi, cấn trừ Kim Cương và thanh toán đã được khóa sổ, không thể chỉnh sửa.
-              </span>
-            </div>
-          </div>
-        )}
-        {showStaffRewards && booking?.isTrainingCvlOrder && actor?.tier === 'CC' && (
-          <div
-            className={`rounded-2xl border p-3 text-xs ${
-              isDark
-                ? 'bg-amber-950/40 border-amber-700/50 text-amber-100'
-                : 'bg-amber-50 border-amber-300 text-amber-950'
-            }`}
-          >
-            <div className="flex items-center justify-between gap-2 font-bold">
-              <span className="inline-flex items-center gap-1.5">
-                <GraduationCap className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Ca Đào Tạo</span>
-                <CvFeather1Badge className="text-[11px] text-amber-500" />
-                <span>{assignedStaff}</span>
-              </span>
-              {booking.trainingMentorName && (
-                <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300">
-                  Mentor: CC {booking.trainingMentorName}
-                </span>
-              )}
-            </div>
-            <p className={`mt-1 leading-relaxed text-[11px] ${isDark ? 'text-amber-200/90' : 'text-amber-900/90'}`}>
-              100% thưởng Gói Combo
-              {dualComboBonus.totalBonus > 0 ? ` (+${dualComboBonus.totalBonus.toLocaleString('vi-VN')}đ)` : ''}, Dưỡng
-              mi &amp; +20% Tip ca này cộng trực tiếp cho <strong>{assignedStaff}</strong>. CC bấm Check-out giùm nhận{' '}
-              <strong className="tabular-nums">0đ</strong> ca này &bull; Cuối tháng Mentor CC nhận{' '}
-              <strong className="tabular-nums">1.000.000đ + 50%</strong> khi tỷ lệ Combo &ge; 20%.
-            </p>
-          </div>
-        )}
+        <CheckoutStatusBanners
+          isDark={isDark}
+          isSettled={isSettled}
+          showStaffRewards={showStaffRewards}
+          isTrainingCvlOrder={booking?.isTrainingCvlOrder}
+          actorTier={actor?.tier}
+          assignedStaff={assignedStaff}
+          trainingMentorName={booking?.trainingMentorName}
+          dualComboTotalBonus={dualComboBonus.totalBonus}
+        />
 
         <CheckoutComboWalletCard
           isDark={isDark}
@@ -562,7 +545,7 @@ export function Screen12CheckoutBilling({
 
         <CheckoutReceiptSection
           isDark={isDark}
-          booking={booking}
+          booking={bookingWithLocalSelections}
           customerName={customerName}
           customerPhone={customerPhone}
           assignedStaff={assignedStaff}
@@ -604,6 +587,8 @@ export function Screen12CheckoutBilling({
           showStaffRewards={showStaffRewards}
           onToggleShowStaffRewards={() => setShowStaffRewards((prev) => !prev)}
           onEditService={isSettled ? undefined : onEditService}
+          comboSelection={comboSelection}
+          rememberedServicePromo={rememberedServicePromo}
         />
 
         <CheckoutTipAndDiamondSection
@@ -700,6 +685,7 @@ export function Screen12CheckoutBilling({
         cartProducts={cartProducts}
         onScannedProduct={handleScannedProduct}
         onRemoveScannedUnit={handleRemoveScannedUnit}
+        comboSelection={comboSelection}
       />
     </div>
   );

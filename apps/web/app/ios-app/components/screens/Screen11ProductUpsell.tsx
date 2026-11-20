@@ -40,6 +40,7 @@ import {
   resolveValidSelectedNewComboId,
 } from './upsell/upsellCheckoutHelpers';
 import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
+import { hasBookingPreattachedOrServicePromotion } from './consultation/comboExpiryConsultHelpers';
 
 interface Screen11ProductUpsellProps {
   booking?: BookingItem;
@@ -167,13 +168,15 @@ export function Screen11ProductUpsell({
   const isExistingComboLive = resolvedWallets.isRedeemingUpperToday;
   const remainingSessions = effectiveUpperStatus.remainingSessions ?? 0;
 
-  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn và chưa chọn sẵn gói ở Tư Vấn): mặc định ẨN phần mua thêm combo
+  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn, chưa chọn sẵn gói ở Tư Vấn, và không có mã 50% gắn sẵn): mặc định ẨN phần mua thêm combo
   const hasPreselectedAnyCombo = Boolean(booking?.selectedCombo || booking?.selectedUnderCombo);
+  const activeBookingPromotion = booking?.servicePromotion ?? booking?.appliedPromotion ?? null;
   const shouldAutoExpandRenewal = Boolean(
     effectiveUpperStatus.isExpired ||
     effectiveUpperStatus.isExpiringSoon ||
     remainingSessions <= 2 ||
-    hasPreselectedAnyCombo
+    hasPreselectedAnyCombo ||
+    hasBookingPreattachedOrServicePromotion(booking)
   );
   const shouldCollapseNewComboByDefault = isExistingComboLive && !shouldAutoExpandRenewal;
   const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!shouldCollapseNewComboByDefault);
@@ -569,6 +572,7 @@ export function Screen11ProductUpsell({
           selectedUpperExpiry={selectedUpperExpiry}
           showStaffRewards={showStaffRewards}
           actorName={actorName}
+          activeBookingPromotion={activeBookingPromotion}
           onOpenLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(true)}
         />
 
@@ -584,6 +588,8 @@ export function Screen11ProductUpsell({
           selectedUnderComboPkg={selectedUnderComboPkg}
           selectedNewComboPkg={selectedNewComboPkg}
           deductTodayIntoCombo={deductTodayIntoCombo}
+          upperTodayUsageMode={upperTodayUsageMode}
+          activeBookingPromotion={activeBookingPromotion}
           underExpiryPreviewMap={underExpiryPreviewMap}
           selectedUpperExpiry={selectedUpperExpiry}
           selectedUnderExpiry={selectedUnderExpiry}
