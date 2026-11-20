@@ -1,11 +1,10 @@
 import type { MosNotificationFeedResponse, MarkNotificationReadRequest } from '@mos-lab/shared';
-import { api, ApiRequestOptions } from './base';
+import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
 export const notificationsApi = {
   notifications: {
     getFeed: async (options?: ApiRequestOptions): Promise<MosNotificationFeedResponse> => {
-      const res = await api.get<MosNotificationFeedResponse>('/notifications', options);
-      return res.data;
+      return dedupeApiGet<MosNotificationFeedResponse>('/notifications', undefined, 5_000, options);
     },
     markAsRead: async (
       notificationId: string,
@@ -16,6 +15,7 @@ export const notificationsApi = {
         { notificationId } satisfies MarkNotificationReadRequest,
         options
       );
+      invalidateApiGetCache(['/notifications']);
       return res.data;
     },
     markAllAsRead: async (options?: ApiRequestOptions): Promise<{ success: boolean; message: string }> => {
@@ -24,6 +24,7 @@ export const notificationsApi = {
         { all: true } satisfies MarkNotificationReadRequest,
         options
       );
+      invalidateApiGetCache(['/notifications']);
       return res.data;
     },
     markAsUnread: async (
@@ -35,6 +36,7 @@ export const notificationsApi = {
         { notificationId, unread: true } satisfies MarkNotificationReadRequest,
         options
       );
+      invalidateApiGetCache(['/notifications']);
       return res.data;
     },
   },

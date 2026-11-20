@@ -286,9 +286,9 @@ function SidebarNavComponent({
       });
   }, [isCvAccount]);
 
-  const fetchMenuVisibility = useCallback(() => {
+  const fetchMenuVisibility = useCallback((force = false) => {
     apiClient.menuAccess
-      .getSidebarVisibility()
+      .getSidebarVisibility(force ? { force: true } : undefined)
       .then((response) => {
         setMenuVisibility(response.data.visibility || {});
         setCategoryVisibility(response.data.categoryVisibility || {});
@@ -339,7 +339,10 @@ function SidebarNavComponent({
   }, [fetchAcademyAccess, fetchActiveCampaigns, fetchAcademySidebarCampaigns, fetchMenuVisibility]);
 
   useEffect(() => {
-    fetchActiveCampaigns();
+    const timer = window.setTimeout(() => {
+      fetchActiveCampaigns();
+    }, 200);
+    return () => window.clearTimeout(timer);
   }, [fetchActiveCampaigns]);
 
   useEffect(() => {
@@ -348,11 +351,14 @@ function SidebarNavComponent({
 
   useEffect(() => {
     if (!userRole) return;
-    fetchAcademyAccess();
+    const timer = window.setTimeout(() => {
+      fetchAcademyAccess();
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [fetchAcademyAccess, userRole]);
 
   useEffect(() => {
-    const handleMenuAccessUpdated = () => fetchMenuVisibility();
+    const handleMenuAccessUpdated = () => fetchMenuVisibility(true);
     window.addEventListener('menu-access-updated', handleMenuAccessUpdated);
     return () => window.removeEventListener('menu-access-updated', handleMenuAccessUpdated);
   }, [fetchMenuVisibility]);
@@ -363,8 +369,10 @@ function SidebarNavComponent({
   }, [fetchMenuVisibility, userRole]);
 
   useEffect(() => {
-    fetchBugInboxApprovalCount();
-    if (!canTriageBugInbox) return;
+    const initialTimer = window.setTimeout(() => {
+      fetchBugInboxApprovalCount();
+    }, 300);
+    if (!canTriageBugInbox) return () => window.clearTimeout(initialTimer);
     const refresh = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       fetchBugInboxApprovalCount();
@@ -372,6 +380,7 @@ function SidebarNavComponent({
     const interval = window.setInterval(refresh, 30_000);
     window.addEventListener(BUG_INBOX_UPDATED_EVENT, refresh);
     return () => {
+      window.clearTimeout(initialTimer);
       window.clearInterval(interval);
       window.removeEventListener(BUG_INBOX_UPDATED_EVENT, refresh);
     };
