@@ -5,6 +5,7 @@ import { requireAuth, requireCatalogAdmin } from '../../middlewares/auth.js';
 import { parseComboDateBounds } from '../customers/services/combo-recognition.service.js';
 import { LashBenchmarkService, parseLashSpecs } from './services/lash-benchmark.service.js';
 import { BranchService } from './services/branch.service.js';
+import { CustomerServiceFilterCatalogService } from '../customers/services/customer-service-filter-catalog.service.js';
 
 /*
  * Legacy catalog rows and Fastify request payloads are intentionally dynamic: the
@@ -180,6 +181,13 @@ function mapProductDto(
 }
 
 export async function catalogRoutes(fastify: FastifyInstance) {
+  // Invalidate cached customer service filter options whenever catalog metadata mutates
+  fastify.addHook('onResponse', async (request, reply) => {
+    if (request.method !== 'GET' && reply.statusCode < 400) {
+      CustomerServiceFilterCatalogService.invalidateOptionsCache(fastify);
+    }
+  });
+
   // ==========================================
   // METADATA
   // ==========================================

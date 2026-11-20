@@ -149,57 +149,93 @@ const stripCatalogEraPrefix = (value: string): string => value.replace(/^(?:(?:n
 const hasFamilyPrefix = (value: string, prefixes: readonly string[]): boolean =>
   prefixes.some((prefix) => value === prefix || value.startsWith(`${prefix} `));
 
-export class CustomerServiceFilterCatalogService {
-  static async getOptions(fastify: FastifyInstance): Promise<CustomerServiceFilterOptionsResponse> {
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<ServiceCatalogRow[]>(`
-      SELECT
-        s.id,
-        COALESCE(MAX(sl.service_name), s.service_key) AS name,
-        s.service_key AS serviceKey,
-        s.service_type AS serviceType,
-        s.service_group AS serviceGroup,
-        MIN(CASE WHEN sp.service_price > 0 THEN sp.service_price END) AS singlePrice
-      FROM service s
-      LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
-      LEFT JOIN service_price sp
-        ON sp.service_id = s.id
-        AND sp.currency_id = 2
-        AND sp.service_price_package_key = 'single'
-        AND sp.is_disabled = 0
-      WHERE s.is_disabled = 0
-        AND s.is_temporary = 0
-      GROUP BY s.id, s.service_key, s.service_type, s.service_group, s.position
-      ORDER BY s.position ASC, name ASC, s.id ASC
-    `);
+const SERVICE_FILTER_OPTIONS_TTL_MS = 5 * 60 * 1000;
+const serviceFilterOptionsCacheByFastify = new WeakMap<
+  object,
+  { data?: CustomerServiceFilterOptionsResponse; promise?: Promise<CustomerServiceFilterOptionsResponse>; expiresAt: number }
+>();
 
-    const services: CustomerServiceFilterOption[] = rows.map((row) => {
-      const singlePrice = Number(row.singlePrice);
-      return {
-        id: Number(row.id),
-        name: String(row.name),
-        serviceType: row.serviceType || null,
-        serviceGroup: row.serviceGroup || null,
-        singlePrice: Number.isFinite(singlePrice) && singlePrice > 0 ? Math.round(singlePrice) : null,
-      };
+export class CustomerServiceFilterCatalogService {
+  static invalidateOptionsCache(fastify: FastifyInstance): void {
+    serviceFilterOptionsCacheByFastify.delete(fastify as object);
+  }
+
+  static async getOptions(fastify: FastifyInstance): Promise<CustomerServiceFilterOptionsResponse> {
+    const cacheKeyObj = fastify as object;
+    const now = Date.now();
+    const existing = serviceFilterOptionsCacheByFastify.get(cacheKeyObj);
+    if (existing?.data && existing.expiresAt > now) {
+      return existing.data;
+    }
+    if (existing?.promise) {
+      return existing.promise;
+    }
+
+    const loadPromise = (async () => {
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<ServiceCatalogRow[]>(`
+        SELECT
+          s.id,
+          COALESCE(MAX(sl.service_name), s.service_key) AS name,
+          s.service_key AS serviceKey,
+          s.service_type AS serviceType,
+          s.service_group AS serviceGroup,
+          MIN(CASE WHEN sp.service_price > 0 THEN sp.service_price END) AS singlePrice
+        FROM service s
+        LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+        LEFT JOIN service_price sp
+          ON sp.service_id = s.id
+          AND sp.currency_id = 2
+          AND sp.service_price_package_key = 'single'
+          AND sp.is_disabled = 0
+        WHERE s.is_disabled = 0
+          AND s.is_temporary = 0
+        GROUP BY s.id, s.service_key, s.service_type, s.service_group, s.position
+        ORDER BY s.position ASC, name ASC, s.id ASC
+      `);
+
+      const services: CustomerServiceFilterOption[] = rows.map((row) => {
+        const singlePrice = Number(row.singlePrice);
+        return {
+          id: Number(row.id),
+          name: String(row.name),
+          serviceType: row.serviceType || null,
+          serviceGroup: row.serviceGroup || null,
+          singlePrice: Number.isFinite(singlePrice) && singlePrice > 0 ? Math.round(singlePrice) : null,
+        };
+      });
+
+      const categories: CustomerServiceFilterCategory[] = LASH_FAMILY_DEFINITIONS.map((family) => {
+        const serviceIds = rows
+          .filter((row) => {
+            const displayName = normalizeCatalogName(row.name);
+            const displayWithoutEra = stripCatalogEraPrefix(displayName);
+            const catalogKey = normalizeCatalogName(row.serviceKey);
+            return (
+              hasFamilyPrefix(displayName, family.namePrefixes) ||
+              hasFamilyPrefix(displayWithoutEra, family.namePrefixes) ||
+              hasFamilyPrefix(catalogKey, family.namePrefixes)
+            );
+          })
+          .map((row) => Number(row.id));
+
+        return { key: family.key, label: family.label, serviceIds };
+      }).filter((category) => category.serviceIds.length > 0);
+
+      const response = { services, categories };
+      serviceFilterOptionsCacheByFastify.set(cacheKeyObj, {
+        data: response,
+        expiresAt: Date.now() + SERVICE_FILTER_OPTIONS_TTL_MS,
+      });
+      return response;
+    })().catch((err) => {
+      serviceFilterOptionsCacheByFastify.delete(cacheKeyObj);
+      throw err;
     });
 
-    const categories: CustomerServiceFilterCategory[] = LASH_FAMILY_DEFINITIONS.map((family) => {
-      const serviceIds = rows
-        .filter((row) => {
-          const displayName = normalizeCatalogName(row.name);
-          const displayWithoutEra = stripCatalogEraPrefix(displayName);
-          const catalogKey = normalizeCatalogName(row.serviceKey);
-          return (
-            hasFamilyPrefix(displayName, family.namePrefixes) ||
-            hasFamilyPrefix(displayWithoutEra, family.namePrefixes) ||
-            hasFamilyPrefix(catalogKey, family.namePrefixes)
-          );
-        })
-        .map((row) => Number(row.id));
-
-      return { key: family.key, label: family.label, serviceIds };
-    }).filter((category) => category.serviceIds.length > 0);
-
-    return { services, categories };
+    serviceFilterOptionsCacheByFastify.set(cacheKeyObj, {
+      promise: loadPromise,
+      expiresAt: now + SERVICE_FILTER_OPTIONS_TTL_MS,
+    });
+    return loadPromise;
   }
 }
