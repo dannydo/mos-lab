@@ -23,6 +23,7 @@ import {
   isLabPathname,
   isMissionPathname,
   isReportPathname,
+  isWingsGardenPathname,
 } from '../../config/ecosystem-nav';
 import { CvFeather1Badge, CvFeather2Badge } from '../../app/ios-app/components/ui-kit/CvFeatherLabels';
 
@@ -243,7 +244,8 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         currentApp === 'general' &&
         !isReportPathname(pathname) &&
         !isMissionPathname(pathname) &&
-        !isLabPathname(pathname)
+        !isLabPathname(pathname) &&
+        !isWingsGardenPathname(pathname)
       );
     }
     if (key === 'chat') return currentApp === 'chat' || pathname.startsWith('/chat');
@@ -254,6 +256,7 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     if (key === 'reports') return isReportPathname(pathname);
     if (key === 'mission') return isMissionPathname(pathname);
     if (key === 'lab') return isLabPathname(pathname);
+    if (key === 'wings-garden') return isWingsGardenPathname(pathname);
     return false;
   };
 
@@ -454,14 +457,20 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                     <div className={`grid gap-2 ${suiteColsClass}`}>
                       {navModel.suiteApps.map((suite) => {
                         const Icon = suite.icon;
-                        const active = isSuiteActive(suite.key);
+                        const isComingSoon = Boolean(suite.comingSoon);
+                        const active = !isComingSoon && isSuiteActive(suite.key);
                         return (
                           <button
                             key={suite.key}
                             type="button"
+                            disabled={isComingSoon}
+                            aria-disabled={isComingSoon || undefined}
                             data-launcher-suite={suite.key}
+                            data-coming-soon={isComingSoon ? 'true' : undefined}
                             aria-current={active ? 'page' : undefined}
+                            title={isComingSoon ? `${suite.label} · Coming soon` : suite.label}
                             onClick={() => {
+                              if (isComingSoon) return;
                               if (suite.action === 'open-bible') {
                                 setOpen(false);
                                 onAfterNavigate?.();
@@ -490,7 +499,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                                   ? 'rgba(255,255,255,0.04)'
                                   : '#f1f5f9',
                             }}
-                            className="p-2.5 rounded-2xl border flex items-center gap-2.5 text-left transition-all active:scale-95 cursor-pointer hover:border-amber-400/50"
+                            className={`p-2.5 rounded-2xl border flex items-center gap-2.5 text-left transition-all ${
+                              isComingSoon
+                                ? 'cursor-not-allowed opacity-70'
+                                : 'active:scale-95 cursor-pointer hover:border-amber-400/50'
+                            }`}
                           >
                             <div
                               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${toneClass(suite.tone)}`}
@@ -499,9 +512,19 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="text-[11.5px] font-extrabold leading-tight truncate">{suite.label}</div>
-                              <div className="text-[9.5px] opacity-65 leading-tight truncate mt-0.5">
-                                {suite.subtitle}
-                              </div>
+                              {isComingSoon ? (
+                                <span
+                                  className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide mt-0.5 ${
+                                    isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-200/90 text-slate-600'
+                                  }`}
+                                >
+                                  Coming soon
+                                </span>
+                              ) : (
+                                <div className="text-[9.5px] opacity-65 leading-tight truncate mt-0.5">
+                                  {suite.subtitle}
+                                </div>
+                              )}
                             </div>
                             {suite.badgeCount && suite.badgeCount > 0 ? (
                               <span className="min-w-[17px] h-[17px] px-1.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none inline-flex items-center justify-center tabular-nums shrink-0">
