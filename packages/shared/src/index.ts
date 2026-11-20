@@ -94,3 +94,4 @@ export * from './utils/ios-self-challenge.js';
 export * from './utils/ios-servicing-rounds.js';
 export * from './types/ios-promotions.js';
 export * from './types/ios-app.js';
+export * from './types/wings-garden.js';

@@ -14192,6 +14192,48 @@
       }
     },
     {
+      "id": "route:GET:/api/wings-garden/state",
+      "type": "FastifyRoute",
+      "label": "GET /api/wings-garden/state",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/wings-garden/state",
+        "module": "wings-garden",
+        "handler": "inlineHandler",
+        "line": 42
+      }
+    },
+    {
+      "id": "route:GET:/api/wings-garden/qr/lookup",
+      "type": "FastifyRoute",
+      "label": "GET /api/wings-garden/qr/lookup",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/wings-garden/qr/lookup",
+        "module": "wings-garden",
+        "handler": "inlineHandler",
+        "line": 60
+      }
+    },
+    {
+      "id": "route:POST:/api/wings-garden/actions",
+      "type": "FastifyRoute",
+      "label": "POST /api/wings-garden/actions",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/wings-garden/actions",
+        "module": "wings-garden",
+        "handler": "inlineHandler",
+        "line": 84
+      }
+    },
+    {
       "id": "page:/academy/workshops/display/[code]",
       "type": "Component",
       "label": "App Page: /academy/workshops/display/[code]",
@@ -15130,6 +15172,18 @@
         "routePath": "/payroll-native-cc-run",
         "apiCallsCount": 0,
         "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/wings-garden",
+      "type": "Component",
+      "label": "App Page: /wings-garden",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/wings-garden/page.tsx",
+      "metadata": {
+        "routePath": "/wings-garden",
+        "apiCallsCount": 3,
+        "apiCalls": ["auth.me", "wingsGarden.getState", "wingsGarden.executeAction"]
       }
     },
     {
@@ -33469,6 +33523,462 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:WingsGardenCategory",
+      "type": "SharedType",
+      "label": "WingsGardenCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenPayMethod",
+      "type": "SharedType",
+      "label": "WingsGardenPayMethod",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenPayMethod",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenWarehouseId",
+      "type": "SharedType",
+      "label": "WingsGardenWarehouseId",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenWarehouseId",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenPreviewRole",
+      "type": "SharedType",
+      "label": "WingsGardenPreviewRole",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenPreviewRole",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenChestKind",
+      "type": "SharedType",
+      "label": "WingsGardenChestKind",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenChestKind",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenPerkKind",
+      "type": "SharedType",
+      "label": "WingsGardenPerkKind",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenPerkKind",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenWarehouseMeta",
+      "type": "SharedType",
+      "label": "WingsGardenWarehouseMeta",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenWarehouseMeta",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenSkuConfig",
+      "type": "SharedType",
+      "label": "WingsGardenSkuConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenSkuConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenWingTier",
+      "type": "SharedType",
+      "label": "WingsGardenWingTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenWingTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenChestConfig",
+      "type": "SharedType",
+      "label": "WingsGardenChestConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenChestConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenFeatherRuleTrigger",
+      "type": "SharedType",
+      "label": "WingsGardenFeatherRuleTrigger",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenFeatherRuleTrigger",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenClaimMode",
+      "type": "SharedType",
+      "label": "WingsGardenClaimMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenClaimMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenMilestoneTier",
+      "type": "SharedType",
+      "label": "WingsGardenMilestoneTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenMilestoneTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenFeatherRule",
+      "type": "SharedType",
+      "label": "WingsGardenFeatherRule",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenFeatherRule",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenPendingClaim",
+      "type": "SharedType",
+      "label": "WingsGardenPendingClaim",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenPendingClaim",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenDailyQuestProgress",
+      "type": "SharedType",
+      "label": "WingsGardenDailyQuestProgress",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenDailyQuestProgress",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenQrStageRecord",
+      "type": "SharedType",
+      "label": "WingsGardenQrStageRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenQrStageRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenEconomyPreview",
+      "type": "SharedType",
+      "label": "WingsGardenEconomyPreview",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenEconomyPreview",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenConfig",
+      "type": "SharedType",
+      "label": "WingsGardenConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenPerkCard",
+      "type": "SharedType",
+      "label": "WingsGardenPerkCard",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenPerkCard",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenWallet",
+      "type": "SharedType",
+      "label": "WingsGardenWallet",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenWallet",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenItemTimelineEntry",
+      "type": "SharedType",
+      "label": "WingsGardenItemTimelineEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenItemTimelineEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenOverlayItem",
+      "type": "SharedType",
+      "label": "WingsGardenOverlayItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenOverlayItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenUsedRecord",
+      "type": "SharedType",
+      "label": "WingsGardenUsedRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenUsedRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenAirshipOrder",
+      "type": "SharedType",
+      "label": "WingsGardenAirshipOrder",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenAirshipOrder",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenDarkCloud",
+      "type": "SharedType",
+      "label": "WingsGardenDarkCloud",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenDarkCloud",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenLedgerEntry",
+      "type": "SharedType",
+      "label": "WingsGardenLedgerEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenLedgerEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenIslandState",
+      "type": "SharedType",
+      "label": "WingsGardenIslandState",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenIslandState",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenLegacyQrLookup",
+      "type": "SharedType",
+      "label": "WingsGardenLegacyQrLookup",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenLegacyQrLookup",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenLiveSampleQr",
+      "type": "SharedType",
+      "label": "WingsGardenLiveSampleQr",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenLiveSampleQr",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenMandatorySkuStatus",
+      "type": "SharedType",
+      "label": "WingsGardenMandatorySkuStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenMandatorySkuStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenMandatoryCoverage",
+      "type": "SharedType",
+      "label": "WingsGardenMandatoryCoverage",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenMandatoryCoverage",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenLegacyWarehouseCounts",
+      "type": "SharedType",
+      "label": "WingsGardenLegacyWarehouseCounts",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenLegacyWarehouseCounts",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenReportsSummary",
+      "type": "SharedType",
+      "label": "WingsGardenReportsSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenReportsSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenStateResponse",
+      "type": "SharedType",
+      "label": "WingsGardenStateResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenStateResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenActionType",
+      "type": "SharedType",
+      "label": "WingsGardenActionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenActionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenActionRequest",
+      "type": "SharedType",
+      "label": "WingsGardenActionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenActionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:WingsGardenActionResponse",
+      "type": "SharedType",
+      "label": "WingsGardenActionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "WingsGardenActionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "token:color:primary",
       "type": "DesignToken",
       "label": "Color: Primary Gold (#D4A84B)",
@@ -41208,8 +41718,8 @@
       "filePath": "apps/api/src/modules/ios/__tests__/ios-prebooked-promo-combo.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8524,
-        "lineCount": 254,
+        "sizeBytes": 8481,
+        "lineCount": 243,
         "ext": ".ts"
       }
     },
@@ -41624,8 +42134,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28120,
-        "lineCount": 673,
+        "sizeBytes": 28144,
+        "lineCount": 676,
         "ext": ".ts"
       }
     },
@@ -43658,6 +44168,71 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/wings-garden/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3621,
+        "lineCount": 102,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/wings-garden-legacy.service.ts",
+      "type": "File",
+      "label": "wings-garden-legacy.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/wings-garden-legacy.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 18606,
+        "lineCount": 556,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/wings-garden-rules.service.ts",
+      "type": "File",
+      "label": "wings-garden-rules.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/wings-garden-rules.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14256,
+        "lineCount": 405,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/wings-garden.service.test.ts",
+      "type": "File",
+      "label": "wings-garden.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/wings-garden.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15086,
+        "lineCount": 419,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/wings-garden.service.ts",
+      "type": "File",
+      "label": "wings-garden.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/wings-garden.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 51680,
+        "lineCount": 1361,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/plugins/cache.test.ts",
       "type": "File",
       "label": "cache.test.ts",
@@ -45017,8 +45592,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17532,
-        "lineCount": 437,
+        "sizeBytes": 17668,
+        "lineCount": 439,
         "ext": ".ts"
       }
     },
@@ -51348,8 +51923,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28025,
-        "lineCount": 699,
+        "sizeBytes": 28015,
+        "lineCount": 693,
         "ext": ".tsx"
       }
     },
@@ -51712,8 +52287,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24197,
-        "lineCount": 487,
+        "sizeBytes": 24347,
+        "lineCount": 494,
         "ext": ".tsx"
       }
     },
@@ -51829,8 +52404,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutStatusBanners.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3052,
-        "lineCount": 76,
+        "sizeBytes": 3108,
+        "lineCount": 80,
         "ext": ".tsx"
       }
     },
@@ -52544,8 +53119,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellMainComboSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21722,
-        "lineCount": 453,
+        "sizeBytes": 21753,
+        "lineCount": 455,
         "ext": ".tsx"
       }
     },
@@ -52596,8 +53171,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellUnderComboAndSummary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20287,
-        "lineCount": 454,
+        "sizeBytes": 20156,
+        "lineCount": 445,
         "ext": ".tsx"
       }
     },
@@ -53402,8 +53977,8 @@
       "filePath": "apps/web/app/ios-app/state/useCheckoutItemizedPromotions.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9629,
-        "lineCount": 273,
+        "sizeBytes": 9641,
+        "lineCount": 275,
         "ext": ".ts"
       }
     },
@@ -53558,8 +54133,8 @@
       "filePath": "apps/web/app/login/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 33038,
-        "lineCount": 865,
+        "sizeBytes": 33525,
+        "lineCount": 883,
         "ext": ".tsx"
       }
     },
@@ -53664,6 +54239,123 @@
       "metadata": {
         "sizeBytes": 7098,
         "lineCount": 201,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/GardenVisuals.tsx",
+      "type": "File",
+      "label": "GardenVisuals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/GardenVisuals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13734,
+        "lineCount": 319,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/WingsGardenActionDialogs.tsx",
+      "type": "File",
+      "label": "WingsGardenActionDialogs.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/WingsGardenActionDialogs.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13172,
+        "lineCount": 346,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/WingsGardenDailyQuestStrip.tsx",
+      "type": "File",
+      "label": "WingsGardenDailyQuestStrip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/WingsGardenDailyQuestStrip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8836,
+        "lineCount": 188,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/WingsGardenIslandReportsTabs.tsx",
+      "type": "File",
+      "label": "WingsGardenIslandReportsTabs.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/WingsGardenIslandReportsTabs.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14992,
+        "lineCount": 318,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/WingsGardenRuleConfigEditor.tsx",
+      "type": "File",
+      "label": "WingsGardenRuleConfigEditor.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/WingsGardenRuleConfigEditor.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 23640,
+        "lineCount": 510,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/WingsGardenTabs.tsx",
+      "type": "File",
+      "label": "WingsGardenTabs.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/WingsGardenTabs.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 22909,
+        "lineCount": 501,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/components/WingsQrScannerModal.tsx",
+      "type": "File",
+      "label": "WingsQrScannerModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/components/WingsQrScannerModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 23220,
+        "lineCount": 564,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 26610,
+        "lineCount": 598,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/wings-garden/utils/soundFx.ts",
+      "type": "File",
+      "label": "soundFx.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/wings-garden/utils/soundFx.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2213,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -53948,8 +54640,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1848,
-        "lineCount": 67,
+        "sizeBytes": 1958,
+        "lineCount": 70,
         "ext": ".ts"
       }
     },
@@ -54093,6 +54785,19 @@
       "metadata": {
         "sizeBytes": 6771,
         "lineCount": 186,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/wings-garden.api.ts",
+      "type": "File",
+      "label": "wings-garden.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/wings-garden.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1676,
+        "lineCount": 55,
         "ext": ".ts"
       }
     },
@@ -54533,8 +55238,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3681,
-        "lineCount": 97,
+        "sizeBytes": 3722,
+        "lineCount": 98,
         "ext": ".ts"
       }
     },
@@ -55471,6 +56176,19 @@
       "metadata": {
         "sizeBytes": 6240,
         "lineCount": 208,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/wings-garden.ts",
+      "type": "File",
+      "label": "wings-garden.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 32241,
+        "lineCount": 1149,
         "ext": ".ts"
       }
     },
@@ -62346,6 +63064,27 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/wings-garden/state:ws:apps/api",
+      "source": "route:GET:/api/wings-garden/state",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/wings-garden/qr/lookup:ws:apps/api",
+      "source": "route:GET:/api/wings-garden/qr/lookup",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/wings-garden/actions:ws:apps/api",
+      "source": "route:POST:/api/wings-garden/actions",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:page:/academy/workshops/display/[code]:ws:apps/web",
       "source": "page:/academy/workshops/display/[code]",
       "target": "ws:apps/web",
@@ -62796,6 +63535,13 @@
     {
       "id": "edge:page:/payroll-native-cc-run:ws:apps/web",
       "source": "page:/payroll-native-cc-run",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/wings-garden:ws:apps/web",
+      "source": "page:/wings-garden",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -73497,6 +74243,272 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:WingsGardenCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenPayMethod:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenPayMethod",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenWarehouseId:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenWarehouseId",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenPreviewRole:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenPreviewRole",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenChestKind:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenChestKind",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenPerkKind:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenPerkKind",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenWarehouseMeta:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenWarehouseMeta",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenSkuConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenSkuConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenWingTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenWingTier",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenChestConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenChestConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenFeatherRuleTrigger:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenFeatherRuleTrigger",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenClaimMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenClaimMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenMilestoneTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenMilestoneTier",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenFeatherRule:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenFeatherRule",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenPendingClaim:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenPendingClaim",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenDailyQuestProgress:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenDailyQuestProgress",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenQrStageRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenQrStageRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenEconomyPreview:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenEconomyPreview",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenPerkCard:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenPerkCard",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenWallet:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenWallet",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenItemTimelineEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenItemTimelineEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenOverlayItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenOverlayItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenUsedRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenUsedRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenAirshipOrder:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenAirshipOrder",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenDarkCloud:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenDarkCloud",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenLedgerEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenLedgerEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenIslandState:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenIslandState",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenLegacyQrLookup:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenLegacyQrLookup",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenLiveSampleQr:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenLiveSampleQr",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenMandatorySkuStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenMandatorySkuStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenMandatoryCoverage:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenMandatoryCoverage",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenLegacyWarehouseCounts:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenLegacyWarehouseCounts",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenReportsSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenReportsSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenStateResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenStateResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenActionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenActionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenActionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenActionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:WingsGardenActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:WingsGardenActionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:token:color:primary:ws:packages/shared",
       "source": "token:color:primary",
       "target": "ws:packages/shared",
@@ -80952,6 +81964,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/wings-garden/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/wings-garden-legacy.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/wings-garden-legacy.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/wings-garden-rules.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/wings-garden-rules.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/wings-garden.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/wings-garden.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/wings-garden.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/wings-garden.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/plugins/prisma.ts:ws:packages/shared",
       "source": "file:apps/api/src/plugins/prisma.ts",
       "target": "ws:packages/shared",
@@ -84179,6 +85226,62 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/wings-garden/components/GardenVisuals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/GardenVisuals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/components/WingsGardenActionDialogs.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/WingsGardenActionDialogs.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/components/WingsGardenDailyQuestStrip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/WingsGardenDailyQuestStrip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/components/WingsGardenIslandReportsTabs.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/WingsGardenIslandReportsTabs.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/components/WingsGardenRuleConfigEditor.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/WingsGardenRuleConfigEditor.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/components/WingsGardenTabs.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/WingsGardenTabs.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/components/WingsQrScannerModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/components/WingsQrScannerModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/wings-garden/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/wings-garden/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/lib/academy-workshop-live.ts:ws:packages/shared",
       "source": "file:apps/web/lib/academy-workshop-live.ts",
       "target": "ws:packages/shared",
@@ -84335,6 +85438,13 @@
     {
       "id": "edge:file:apps/web/lib/api/telesale-competency.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/telesale-competency.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/wings-garden.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/wings-garden.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87315,6 +88425,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/wings-garden/wings-garden.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/wings-garden/wings-garden.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/safe-dev/legacy-cc-parity-replay.ts:prisma:crm:CrmPayrollPeriod",
       "source": "file:apps/api/src/safe-dev/legacy-cc-parity-replay.ts",
       "target": "prisma:crm:CrmPayrollPeriod",
@@ -87444,6 +88561,13 @@
       "id": "edge:page:/academy/workshops/display/[code]:route:GET:/api/academy-sales/workshops/:workshopId/live-state",
       "source": "page:/academy/workshops/display/[code]",
       "target": "route:GET:/api/academy-sales/workshops/:workshopId/live-state",
+      "type": "API_CALL",
+      "label": "CALLS academyWorkshopsPublic.getState"
+    },
+    {
+      "id": "edge:page:/academy/workshops/display/[code]:route:GET:/api/wings-garden/state",
+      "source": "page:/academy/workshops/display/[code]",
+      "target": "route:GET:/api/wings-garden/state",
       "type": "API_CALL",
       "label": "CALLS academyWorkshopsPublic.getState"
     },
@@ -102197,6 +103321,27 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/wings-garden/state",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/wings-garden/state",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/wings-garden/qr/lookup",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/wings-garden/qr/lookup",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/wings-garden/actions",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/wings-garden/actions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/access",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/academy-sales/access",
@@ -107625,6 +108770,27 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/user-preferences/pinned-links/:id",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:DELETE:/api/user-preferences/pinned-links/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/wings-garden/state",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/wings-garden/state",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/wings-garden/qr/lookup",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/wings-garden/qr/lookup",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/wings-garden/actions",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/wings-garden/actions",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -116638,6 +117804,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/wings-garden/state",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/wings-garden/state",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/wings-garden/qr/lookup",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/wings-garden/qr/lookup",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/wings-garden/actions",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/wings-garden/actions",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/telesale-target:route:GET:/api/campaigns/:id/shared-pool/overview",
       "source": "page:/dashboard/telesale-target",
       "target": "route:GET:/api/campaigns/:id/shared-pool/overview",
@@ -116734,34 +117921,1455 @@
       "target": "route:GET:/api/fal/cases",
       "type": "API_CALL",
       "label": "CALLS safeDevPayrollAdjustmentLab.getCase"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/talent-assessments/:id",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/talent-payments",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/talent-payments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy/workshops/state",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy/workshops/state",
+      "type": "API_CALL",
+      "label": "CALLS wingsGarden.getState"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/workshop-menu-templates",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/workshop-menu-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/academy-sales/workshop-menu-templates/:templateId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/academy-sales/workshop-menu-templates/:templateId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/workshop-equipment-templates",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/workshop-equipment-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/academy-sales/workshop-equipment-templates/:templateId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/workshops/:workshopId/live-state",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/academy-sales/workshops/:workshopId/live-state",
+      "type": "API_CALL",
+      "label": "CALLS wingsGarden.getState"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/auth/dev-directory",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/auth/dev-directory",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/auth/login",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/auth/login",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/auth/google",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/auth/google",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/auth/me",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/auth/me",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/auth/impersonate",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/auth/impersonate",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/auth/impersonate/exit",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/auth/impersonate/exit",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-schema-recovery-retry",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-schema-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-build-lock-recovery-retry",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-build-lock-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/comments",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/comments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-approval",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-approval",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-retry",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/ide-implementation-receipt",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/ide-implementation-receipt",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-worker-recovery-retry",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-worker-recovery-retry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-commit-approval",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-commit-approval",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-deploy-approval",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-deploy-approval",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/bug-reports/:id/implementation-request-changes",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/bug-reports/:id/implementation-request-changes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PATCH:/api/bug-reports/:id/implementation-acceptance",
+      "source": "page:/wings-garden",
+      "target": "route:PATCH:/api/bug-reports/:id/implementation-acceptance",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/bug-reports/:id/attachments/:attachmentId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/bug-reports/:id/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/agent/bug-reports/:key/attachments/:attachmentId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/agent/bug-reports/:key/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/claim",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/claim",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/start",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/start",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/renew",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/renew",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/complete",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/complete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/commit-complete",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/commit-complete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/deploy-complete",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/deploy-complete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/progress",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/progress",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/continue",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/continue",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/request-classifier/inbox-implementations/:id/fail",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/fail",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/request-classifier/jobs/:id/attachments/:attachmentId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/request-classifier/jobs/:id/attachments/:attachmentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/calls/:customerId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/calls/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/campaigns/:id/resume",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/campaigns/:id/resume",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/campaigns/:id/customers",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/campaigns/:id/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/campaigns/:id/customers",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/campaigns/:id/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/campaigns/:id/transfer-customers",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/campaigns/:id/transfer-customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/campaigns/:id/customers/:customerId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/campaigns/:id/customers/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/campaigns/:id/customers/batch-remove",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/campaigns/:id/customers/batch-remove",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/campaigns/customer/:customerId/active-promotions",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/campaigns/customer/:customerId/active-promotions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/chat/media/:fileName",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/chat/media/:fileName",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/messages",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/messages/:messageId/reaction",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/messages/:messageId/reaction",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/messages/:messageId/pin",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/messages/:messageId/pin",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/chat/messages/:messageId",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/chat/messages/:messageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/chat/messages/:messageId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/chat/messages/:messageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/messages/:messageId/buzz",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/messages/:messageId/buzz",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/conversations/:id/threads/:messageId/read",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/conversations/:id/threads/:messageId/read",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/conversations/:id/members",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/conversations/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/chat/conversations/:id/members/:staffId",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/chat/conversations/:id/nickname",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/chat/conversations/:id/nickname",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/chat/messages/search",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/chat/messages/search",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/cs/tickets/department-handlers",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/cs/tickets/department-handlers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/cs/tickets/department-handlers",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/cs/tickets/department-handlers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/cs/tickets/:id/comments",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/cs/tickets/:id/comments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/appointments",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/appointments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/missed/log",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/missed/log",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/missed/summary",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/missed/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/booking/:id/logs",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/booking/:id/logs",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/booking",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/booking",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/booking/:id/promotions",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/booking/:id/promotions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/booking/:id/reschedule-eligibility",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/booking/:id/reschedule-eligibility",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/customers/booking/:id",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/customers/booking/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/customers/booking/:id",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/customers/booking/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/booking-slots",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/booking-slots",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/assign",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/assign",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/revoke/preview",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/revoke/preview",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/revoke",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/revoke",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/unassign",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/unassign",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/retain",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/retain",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/booker-retain-quota",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/booker-retain-quota",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/assignment-history",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/assignment-history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/assignment-history/:batchId/details",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/assignment-history/:batchId/details",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/assignment-history/undo",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/assignment-history/undo",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/assignment-timeline",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/assignment-timeline",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/customers/:id",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/customers/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/bulk-delete",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/bulk-delete",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/:id/restore",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/:id/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/history",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/customers/:id",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/customers/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/detailed",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/detailed",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/summary",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/bookings",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/bookings",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/calls",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/elsa/reminders",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/random-ids",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/random-ids",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/services",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/services",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/service-filter-options",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/service-filter-options",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/staff",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/staff",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/promotions",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/promotions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/referrals",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/referrals",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/create-options",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/create-options",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/create",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/create",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/:id/notes",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/:id/notes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/:id/notes/:noteId/unpin",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/:id/notes/:noteId/unpin",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/:id/notes/:noteId/pin",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/:id/notes/:noteId/pin",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/notes",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/:id/notes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/stats",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/stats",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/loca-stats",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/loca-stats",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/nyc-stats",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/nyc-stats",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/cv-schedule-roster",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/cv-schedule-roster",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/cv-realtime-status",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/cv-realtime-status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/loca-staff-activity",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/loca-staff-activity",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/customers/loca-touchpoint",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/customers/loca-touchpoint",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/loca-touchpoints",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/loca-touchpoints",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/holiday-work/periods/:holidayId/payroll/adjustments",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/holiday-work/periods/:holidayId/payroll/adjustments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/ios/photos/:filename",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/ios/photos/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/ios/customers/lookup",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/ios/customers/lookup",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/ios/simulation/mentees",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/ios/simulation/mentees",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/ios/customers/:customerId/history",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/bk/games",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/bk/games/:id",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/kpi/bk/games",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/wings-garden",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/kpi/bk/games/:id/finalize",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/kpi/bk/games/:id/finalize",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/kpi/bk/games/:id",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/cv-tip/customer-history",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/cv-tip/customer-history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/kpi/booker-appointments",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/kpi/booker-appointments",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/menu-access/sidebar",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/menu-access/sidebar",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/menu-access/configuration",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/menu-access/configuration",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/menu-access/policies/:menuKey",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/menu-access/inspect",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/menu-access/inspect",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/pilot/media/:filename",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/wings-garden",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/wings-garden",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/pilot/metrics",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/pilot/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/sms/history/:customerId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/sms/history/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/sms/user-url/:customerId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/sms/user-url/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/staff/merge",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/staff/merge",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PUT:/api/teams/:id/members",
+      "source": "page:/wings-garden",
+      "target": "route:PUT:/api/teams/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/wings-garden",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/wings-garden/state",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/wings-garden/state",
+      "type": "API_CALL",
+      "label": "CALLS wingsGarden.getState"
     }
   ],
   "stats": {
-    "totalNodes": 4291,
-    "totalEdges": 8729,
+    "totalNodes": 4349,
+    "totalEdges": 8999,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 776,
-      "Component": 65,
-      "SharedType": 1528,
+      "FastifyRoute": 779,
+      "Component": 66,
+      "SharedType": 1566,
       "DesignToken": 12,
       "UIComponent": 382,
-      "File": 1342
+      "File": 1358
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1723,
-      "HANDLES_ROUTE": 776,
-      "RENDERS": 447,
+      "EXPORTS": 1761,
+      "HANDLES_ROUTE": 779,
+      "RENDERS": 448,
       "USES_TOKEN": 384,
-      "IMPORTS": 777,
-      "QUERIES_MODEL": 436,
-      "API_CALL": 4186
+      "IMPORTS": 791,
+      "QUERIES_MODEL": 437,
+      "API_CALL": 4399
     },
-    "fastifyRouteCount": 781,
+    "fastifyRouteCount": 784,
     "prismaModelCount": 183,
-    "nextPageCount": 65,
-    "sharedTypeCount": 1528
+    "nextPageCount": 66,
+    "sharedTypeCount": 1566
   },
   "routes": [
     {
@@ -122230,6 +124838,27 @@
       "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
       "handler": "preHandler",
       "moduleName": "user-preferences"
+    },
+    {
+      "method": "GET",
+      "path": "/api/wings-garden/state",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "wings-garden"
+    },
+    {
+      "method": "GET",
+      "path": "/api/wings-garden/qr/lookup",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "wings-garden"
+    },
+    {
+      "method": "POST",
+      "path": "/api/wings-garden/actions",
+      "filePath": "apps/api/src/modules/wings-garden/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "wings-garden"
     }
   ],
   "prismaModels": [
