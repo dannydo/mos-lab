@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, Typography, Select, Tag, Segmented, Button, Tooltip, Alert, Space, Spin } from 'antd';
 import {
   DesktopOutlined,
@@ -12,8 +13,11 @@ import {
   DeploymentUnitOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '../../../components/ui';
-import { MermaidViewer } from '../../../components/ui/MermaidViewer';
 import { useTheme } from '../../../context/ThemeContext';
+
+const MermaidViewer = dynamic(() => import('../../../components/ui/MermaidViewer').then((m) => m.MermaidViewer), {
+  ssr: false,
+});
 
 import { useSearchParams } from 'next/navigation';
 

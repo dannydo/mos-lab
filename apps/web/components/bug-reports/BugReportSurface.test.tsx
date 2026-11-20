@@ -55,8 +55,8 @@ vi.mock('./GuidedRequestConversation', () => ({
   GuidedRequestConversation: () => null,
 }));
 
-vi.mock('../ui', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../ui')>();
+vi.mock('../ui/rich-text', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../ui/rich-text')>();
   return {
     ...actual,
     RichTextEditor: ({ id, value, onChange }: { id?: string; value?: string; onChange?: (next: string) => void }) => (

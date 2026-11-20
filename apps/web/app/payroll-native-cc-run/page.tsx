@@ -28,6 +28,7 @@ function capSourceLabel(component: string): string {
 
 export default function PayrollNativeCcRunPage() {
   const [authorized, setAuthorized] = useState<boolean>(false);
+  const [safeDevEnabled, setSafeDevEnabled] = useState<boolean | null>(null);
   const [run, setRun] = useState<NativeCcPayrollLocalRunResponse | null>(null);
   const [legacyComparison, setLegacyComparison] = useState<import('@mos-lab/shared').LegacyCcComparisonResponse | null>(
     null
@@ -41,6 +42,7 @@ export default function PayrollNativeCcRunPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let active = true;
     try {
       const token = window.localStorage.getItem('mos_token');
       const rawUser = window.localStorage.getItem('mos_user');
@@ -63,26 +65,60 @@ export default function PayrollNativeCcRunPage() {
       return;
     }
 
-    void apiClient.safeDevNativeCcPayroll
-      .run()
-      .then(setRun)
-      .catch(() => setError('Không thể chạy rehearsal local. Kiểm tra Safe Dev và database loopback rồi thử lại.'));
-    void apiClient.safeDevLegacyCcComparison
-      .run()
-      .then(setLegacyComparison)
-      .catch(() => setLegacyError('Chưa có connector Legacy chỉ-đọc trên runtime local này.'));
-    void apiClient.safeDevLegacyCcParityReplay
-      .run()
-      .then(setParityReplay)
+    void apiClient.health
+      .get()
+      .then((health) => {
+        if (!active) return;
+        const enabled = health?.mode === 'safe-dev';
+        setSafeDevEnabled(enabled);
+        if (!enabled) return;
+
+        void apiClient.safeDevNativeCcPayroll
+          .run()
+          .then((res) => {
+            if (active) setRun(res);
+          })
+          .catch(() => {
+            if (active) {
+              setError('Không thể chạy rehearsal local. Kiểm tra Safe Dev và database loopback rồi thử lại.');
+            }
+          });
+        void apiClient.safeDevLegacyCcComparison
+          .run()
+          .then((res) => {
+            if (active) setLegacyComparison(res);
+          })
+          .catch(() => {
+            if (active) setLegacyError('Chưa có connector Legacy chỉ-đọc trên runtime local này.');
+          });
+        void apiClient.safeDevLegacyCcParityReplay
+          .run()
+          .then((res) => {
+            if (active) setParityReplay(res);
+          })
+          .catch(() => {
+            if (active) {
+              setLegacyError('Không thể hoàn tất replay parity local từ nguồn Legacy chỉ-đọc.');
+            }
+          });
+        void apiClient.safeDevLegacyCcCohortAudit
+          .run()
+          .then((res) => {
+            if (active) setCohortAudit(res);
+          })
+          .catch(() => {
+            if (active) {
+              setLegacyError('Không thể hoàn tất audit cohort CC từ nguồn Legacy chỉ-đọc.');
+            }
+          });
+      })
       .catch(() => {
-        setLegacyError('Không thể hoàn tất replay parity local từ nguồn Legacy chỉ-đọc.');
+        if (active) setSafeDevEnabled(false);
       });
-    void apiClient.safeDevLegacyCcCohortAudit
-      .run()
-      .then(setCohortAudit)
-      .catch(() => {
-        setLegacyError('Không thể hoàn tất audit cohort CC từ nguồn Legacy chỉ-đọc.');
-      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (!authorized) {
@@ -103,6 +139,15 @@ export default function PayrollNativeCcRunPage() {
               chiếu Legacy, nếu có, chỉ được đọc riêng ở local; không tạo Adjustment và không post tiền.
             </Paragraph>
           </div>
+
+          {safeDevEnabled === false ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="Chế độ Safe Dev chưa được bật trên API server này"
+              description="Các endpoint mô phỏng /api/safe-dev/* chỉ khả dụng khi backend đang chạy ở chế độ Safe Dev."
+            />
+          ) : null}
 
           <Alert
             type="success"

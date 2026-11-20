@@ -43,7 +43,8 @@ import {
 } from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
-import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconButton, IconText, RichTextEditor } from '../ui';
+import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconButton, IconText } from '../ui';
+import { RichTextEditor } from '../ui/rich-text';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { GuidedRequestConversation } from './GuidedRequestConversation';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
