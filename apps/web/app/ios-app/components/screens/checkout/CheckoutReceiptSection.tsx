@@ -6,7 +6,7 @@ import { BookingItem } from '../../../state/mockData';
 import type { CheckoutComboSelectionController } from '../../../state/useCheckoutComboSelection';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { CustomerPortfolioTriggerButton } from '../../ui-kit/CustomerPortfolioTriggerButton';
-import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
+import { ReceiptComboExpiryLine, CheckoutServiceComboStatusBadges } from './ReceiptComboExpiryLine';
 import { ReceiptComboItemsSection } from './ReceiptComboItemsSection';
 import { ReceiptItemPromotionBadge } from './ReceiptItemPromotionBadge';
 import { ReceiptTotalsSummary } from './ReceiptTotalsSummary';
