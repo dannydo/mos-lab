@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  getCustomerBirthdayThisMonthStatus,
   hasCompleteNaturalLashSet,
   resolveActiveBookingComboWallets,
   type IosCustomerComboWalletItem,
@@ -19,7 +20,7 @@ import {
 } from './LashMaterialConstraintMatrix';
 import { resolveNaturalLashCountLabel } from './NaturalLashAssessmentData';
 import { CustomerAvatarPicker } from '../ui-kit/CustomerAvatarPicker';
-import { History } from 'lucide-react';
+import { History, Cake } from 'lucide-react';
 import { QuickCheckInComboCard } from './checkin/QuickCheckInComboCard';
 import { CheckInStaffAndProfileCards } from './checkin/CheckInStaffAndProfileCards';
 import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
@@ -48,6 +49,7 @@ export function Screen02CheckInProfile({
   const isDark = themeMode === 'dark';
   const customerName = (booking?.customerName || 'Khách Hàng').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim();
   const customerPhone = (booking?.customerPhone || '0901.xxx.xxx').replace(/\*+\s*/g, '').trim();
+  const birthdayStatus = getCustomerBirthdayThisMonthStatus(booking?.customerDateOfBirth);
   const serviceName = resolveDisplayServiceName(booking);
   const hasAssignedStaff = Boolean(
     booking?.assignedStaffName &&
@@ -451,8 +453,29 @@ export function Screen02CheckInProfile({
                 </div>
               );
             })()}
-            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">
-              {customerPhone}
+            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums flex flex-wrap items-center gap-2">
+              <span>{customerPhone}</span>
+              {birthdayStatus.normalizedDob && (
+                <span
+                  data-testid="checkin-header-birthday-badge"
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none ${
+                    birthdayStatus.isBirthdayThisMonth
+                      ? isDark
+                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
+                        : 'bg-amber-50 border-amber-300 text-amber-800'
+                      : isDark
+                        ? 'bg-neutral-800/80 border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-100 border-neutral-200 text-neutral-600'
+                  }`}
+                >
+                  <Cake className="h-3 w-3 shrink-0" />
+                  <span>
+                    {birthdayStatus.isBirthdayToday
+                      ? `Hôm nay SN (${birthdayStatus.ddMm})`
+                      : `Sinh nhật ${birthdayStatus.ddMmYyyy}`}
+                  </span>
+                </span>
+              )}
             </div>
             <div className="text-[12px] text-[var(--mos-text-muted)] font-medium mt-0.5 flex flex-wrap items-center justify-between gap-2">
               <span>

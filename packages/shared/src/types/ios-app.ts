@@ -362,6 +362,7 @@ export interface IosBookingItem {
   customerName: string;
   customerPhone: string;
   customerId: number;
+  customerDateOfBirth?: string | null;
   customerVisits: number;
   customerNote: string;
   timeSlot: string;
@@ -1710,6 +1711,7 @@ export interface IosCustomerHistoryResponse {
   customerName: string;
   customerPhone: string;
   customerCode?: string | null;
+  customerDateOfBirth?: string | null;
   summary: IosCustomerHistorySummary;
   visits: IosCustomerHistoryVisitItem[];
   payments: IosCustomerHistoryVisitItem[];

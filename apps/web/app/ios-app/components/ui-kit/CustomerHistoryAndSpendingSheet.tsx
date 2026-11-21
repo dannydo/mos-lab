@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Calendar, CreditCard, History, RefreshCw, X } from 'lucide-react';
-import type {
-  IosBookingItem,
-  IosCustomerHistoryResponse,
-  IosCustomerHistoryTab,
-  IosCustomerNoteItem,
+import { AlertCircle, Cake, Calendar, CreditCard, History, RefreshCw, X } from 'lucide-react';
+import {
+  getCustomerBirthdayThisMonthStatus,
+  type IosBookingItem,
+  type IosCustomerHistoryResponse,
+  type IosCustomerHistoryTab,
+  type IosCustomerNoteItem,
 } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -116,6 +117,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const fixVisits = data?.fixVisits || [];
   const diamondTxns = data?.diamondTransactions || [];
   const customerNotes = data?.notes || booking.cvlNotes || [];
+  const birthdayStatus = getCustomerBirthdayThisMonthStatus(data?.customerDateOfBirth ?? booking.customerDateOfBirth);
   const effectiveTab: IosCustomerHistoryTab = customerFacingMode ? 'LASH_PHOTOS' : activeTab;
 
   const getTabCount = (key: IosCustomerHistoryTab) => {
@@ -166,6 +168,24 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                     <span>{(data?.customerPhone ?? booking.customerPhone) || 'Chưa có SĐT'}</span>
                     <span>·</span>
                     <span>ID #{booking.customerId || 0}</span>
+                    {birthdayStatus.normalizedDob && (
+                      <>
+                        <span>·</span>
+                        <span
+                          data-testid="customer-history-birthday"
+                          className={`inline-flex items-center gap-1 font-semibold ${
+                            birthdayStatus.isBirthdayThisMonth
+                              ? isDark
+                                ? 'text-amber-300'
+                                : 'text-amber-700'
+                              : ''
+                          }`}
+                        >
+                          <Cake className="h-3 w-3 shrink-0" />
+                          <span>{birthdayStatus.ddMm}</span>
+                        </span>
+                      </>
+                    )}
                   </>
                 )}
               </div>

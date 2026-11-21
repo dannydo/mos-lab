@@ -63,8 +63,16 @@ export async function getIosCustomerHistory(
   const pool = (deps?.getPool || getLegacyPool)();
 
   const [profileRows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT up.user_id, up.full_name, up.first_name, up.last_name, up.passcode
+    `SELECT up.user_id, up.full_name, up.first_name, up.last_name, up.passcode,
+       CASE
+         WHEN u.date_of_birth IS NOT NULL
+          AND CAST(u.date_of_birth AS CHAR) != '0000-00-00'
+          AND u.date_of_birth != '1970-01-01'
+         THEN DATE_FORMAT(u.date_of_birth, '%Y-%m-%d')
+         ELSE NULL
+       END AS date_of_birth
      FROM user_profile up
+     LEFT JOIN user u ON u.id = up.user_id
      WHERE up.user_id = ?
      LIMIT 1`,
     [customerId]

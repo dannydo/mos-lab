@@ -103,6 +103,7 @@ export function mergeServerBookingsWithLocalState(
       return applyResolvedWalletMerge(
         {
           ...incoming,
+          customerDateOfBirth: incoming.customerDateOfBirth ?? existing?.customerDateOfBirth,
           status: 'INCOMING',
           progress: undefined,
           selectedCombo: resolveComboField(existing?.selectedCombo, incoming.selectedCombo, preferLocalComboAndPricing),
@@ -178,6 +179,7 @@ export function mergeServerBookingsWithLocalState(
       }
       return {
         ...incoming,
+        customerDateOfBirth: incoming.customerDateOfBirth ?? existing?.customerDateOfBirth,
         status: 'DONE',
         serviceName:
           existing?.serviceName && !existing.serviceName.toLowerCase().includes('any')
@@ -248,6 +250,7 @@ export function mergeServerBookingsWithLocalState(
       return applyResolvedWalletMerge(
         {
           ...incoming,
+          customerDateOfBirth: incoming.customerDateOfBirth ?? existing.customerDateOfBirth,
           serviceName: resolvedServiceName,
           servicePrice: preferLocalComboAndPricing
             ? existing.servicePrice || incoming.servicePrice
