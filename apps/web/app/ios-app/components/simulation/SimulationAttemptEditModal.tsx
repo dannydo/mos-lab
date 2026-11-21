@@ -2,15 +2,13 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Edit3, Sparkles, Plus, Minus, Check, Loader2, Play } from 'lucide-react';
+import { X, Edit3, Plus, Minus, Check, Loader2, Play } from 'lucide-react';
 import {
   calculateCvSerumTierBonus,
   type IosSimulationAttemptSummary,
   type IosUpdateSimulationAttemptRequest,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
-import { SERUM_TIERS_CVL } from '../../state/mockData';
-import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import {
   FALLBACK_IOS_SIMULATION_PRODUCTS,
   formatYeppeumProductName,
@@ -18,6 +16,8 @@ import {
   resolveItemUnitPrice,
   SimulationUpsellProductsSection,
 } from './SimulationUpsellProductsSection';
+import { COMMON_STYLES, COMMON_COMBOS, COMMON_UNDER_COMBOS, REAL_UPSELL_PRODUCTS } from './simulationConstants';
+import { SimulationFinancialSummary } from './SimulationFinancialSummary';
 
 interface SimulationAttemptEditModalProps {
   isOpen: boolean;
@@ -28,28 +28,6 @@ interface SimulationAttemptEditModalProps {
   onApplyToWorkspace?: (attempt: IosSimulationAttemptSummary) => void;
   isBusy?: boolean;
 }
-
-const COMMON_STYLES = ['Natural', 'Katun', 'Baby Doll', 'Sexy', 'Whispy', 'Mắt Mèo', 'Thiết Kế Riêng'];
-
-const COMMON_COMBOS = [
-  { name: 'Không dùng Combo', price: 0 },
-  { name: 'Gói 3 Lần (Tiết kiệm)', price: 1170000 },
-  { name: 'Gói 5 Lần (Phổ biến)', price: 1850000 },
-  { name: 'Gói 10 Lần (VIP)', price: 3500000 },
-];
-
-const COMMON_UNDER_COMBOS = [
-  { name: 'Không dùng Mi Dưới', price: 0 },
-  { name: 'Mi Dưới 3 Lần', price: 450000 },
-  { name: 'Mi Dưới 5 Lần', price: 700000 },
-];
-
-const REAL_UPSELL_PRODUCTS = SERUM_TIERS_CVL.map((tier) => ({
-  productName: tier.id === 'serum-orig' ? 'Dưỡng Mi Yeppeum Korea' : `Dưỡng Mi Yeppeum Korea (${tier.label})`,
-  price: tier.price,
-  cvBonus: tier.cvBonus,
-  desc: tier.desc,
-}));
 
 export function SimulationAttemptEditModal({
   isOpen,
@@ -97,18 +75,14 @@ export function SimulationAttemptEditModal({
     let cancelled = false;
     const fetchCatalog = apiClient?.ios?.getProductCatalog;
     if (typeof fetchCatalog !== 'function') return;
-
     fetchCatalog()
       .then((res) => {
-        if (cancelled) return;
-        if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
+        if (!cancelled && res?.success && Array.isArray(res.products) && res.products.length > 0)
           setCatalogProducts(res.products);
-        }
       })
       .catch(() => {
-        // Keep canonical Yeppeum fallback when offline or in isolated tests
+        /* keep Yeppeum fallback when offline */
       });
-
     return () => {
       cancelled = true;
     };
@@ -140,9 +114,7 @@ export function SimulationAttemptEditModal({
   const upsellTotal = useMemo(() => {
     return upsellProducts.reduce((sum, p) => sum + Number(p.totalPrice || 0), 0);
   }, [upsellProducts]);
-
   const servicePrice = Number(attempt.servicePrice) || 0;
-
   const grandTotal = useMemo(() => {
     return Math.max(0, servicePrice + comboPrice + underComboPrice + upsellTotal - promotionDiscount + tipAmount);
   }, [servicePrice, comboPrice, underComboPrice, upsellTotal, promotionDiscount, tipAmount]);
@@ -184,19 +156,19 @@ export function SimulationAttemptEditModal({
 
   const hasCustomSavedCombo = useMemo(() => {
     if (!attempt.selectedComboName && !(attempt.selectedComboPrice > 0)) return false;
-    return !COMMON_COMBOS.some(
-      (c) =>
-        (c.price === 0 ? !attempt.selectedComboName && attempt.selectedComboPrice === 0 : c.name === attempt.selectedComboName && c.price === attempt.selectedComboPrice)
+    return !COMMON_COMBOS.some((c) =>
+      c.price === 0
+        ? !attempt.selectedComboName && attempt.selectedComboPrice === 0
+        : c.name === attempt.selectedComboName && c.price === attempt.selectedComboPrice
     );
   }, [attempt.selectedComboName, attempt.selectedComboPrice]);
 
   const hasCustomSavedUnderCombo = useMemo(() => {
     if (!attempt.selectedUnderComboName && !(attempt.selectedUnderComboPrice > 0)) return false;
-    return !COMMON_UNDER_COMBOS.some(
-      (uc) =>
-        (uc.price === 0
-          ? !attempt.selectedUnderComboName && attempt.selectedUnderComboPrice === 0
-          : uc.name === attempt.selectedUnderComboName && uc.price === attempt.selectedUnderComboPrice)
+    return !COMMON_UNDER_COMBOS.some((uc) =>
+      uc.price === 0
+        ? !attempt.selectedUnderComboName && attempt.selectedUnderComboPrice === 0
+        : uc.name === attempt.selectedUnderComboName && uc.price === attempt.selectedUnderComboPrice
     );
   }, [attempt.selectedUnderComboName, attempt.selectedUnderComboPrice]);
 
@@ -665,35 +637,12 @@ export function SimulationAttemptEditModal({
           </div>
 
           {/* 7. Bảng tổng hợp tính toán tài chính Realtime */}
-          <div
-            className={`p-3 rounded-2xl border space-y-2 ${
-              isDark ? 'bg-neutral-950/70 border-neutral-800' : 'bg-neutral-50 border-neutral-200'
-            }`}
-          >
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-500">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Chỉ số tài chính sau chỉnh sửa (Tự động tính)</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 text-center">
-              <div className={`p-2 rounded-xl ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
-                <div className="text-[9.5px] opacity-65 font-semibold">Khách thanh toán</div>
-                <div className="text-[12.5px] font-black tabular-nums">{grandTotal.toLocaleString('vi-VN')}đ</div>
-              </div>
-              <div className={`p-2 rounded-xl ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
-                <div className="text-[9.5px] opacity-65 font-semibold">Thưởng + Tip CV</div>
-                <div className="text-[12.5px] font-black text-emerald-400 tabular-nums">
-                  +{estimatedReward.toLocaleString('vi-VN')}đ
-                </div>
-              </div>
-              <div className={`p-2 rounded-xl ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
-                <div className="text-[9.5px] opacity-65 font-semibold">Điểm Xoay Tua</div>
-                <div className="text-[12.5px] font-black text-amber-400 tabular-nums inline-flex items-center justify-center gap-0.5">
-                  <span>+{cvPoints}</span>
-                  <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                </div>
-              </div>
-            </div>
-          </div>
+          <SimulationFinancialSummary
+            grandTotal={grandTotal}
+            estimatedReward={estimatedReward}
+            cvPoints={cvPoints}
+            isDark={isDark}
+          />
 
           {/* Actions */}
           <div
