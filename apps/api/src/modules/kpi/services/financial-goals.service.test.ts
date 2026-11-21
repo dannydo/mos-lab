@@ -127,4 +127,150 @@ describe('FinancialGoalsService', () => {
     assert.equal(overviewWithoutVat.kpiSub.combo.actual, Math.round(600_000 / 1.08));
     assert.equal(overviewWithoutVat.kpiSub.product.actual, Math.round(100_000 / 1.08));
   });
+
+  it('uses OPS-002 actual_booking_date_start SQL cutoff and excludes future-day revenue/cumulative in IN_PROGRESS month', async () => {
+    const fixedNow = new Date('2026-11-16T10:05:00Z'); // 17:05 ICT on 2026-11-16
+    let capturedOrderSql = '';
+    let capturedOrderParams: SafeAny[] = [];
+
+    const mockFastify = {
+      prisma: {
+        crm: {
+          crmConfig: {
+            findUnique: async () => null,
+          },
+        },
+        legacy: {
+          $queryRawUnsafe: async (sql: string, ...params: SafeAny[]) => {
+            if (sql.includes('order_service_combo') || sql.includes('order_product')) {
+              return [];
+            }
+            capturedOrderSql = sql;
+            capturedOrderParams = params;
+            return [
+              // Order #338068 scenario: checked in early on 2026-11-16 (880,000đ -> 814,815đ ex-VAT)
+              {
+                orderId: 338068,
+                total_price: 880_000,
+                checkin_time: new Date('2026-11-16T04:34:38Z'),
+                checkin_date: '2026-11-16',
+              },
+              // Anomalous future row that must still be dropped by defense-in-depth guard
+              {
+                orderId: 999999,
+                total_price: 5_000_000,
+                checkin_time: new Date('2026-11-18T11:00:00Z'),
+                checkin_date: '2026-11-18',
+              },
+            ];
+          },
+        },
+      },
+    } as unknown as FastifyInstance;
+
+    const overview = await FinancialGoalsService.getOverview(mockFastify, '2026-11', false, fixedNow);
+
+    assert.equal(overview.todayDate, '2026-11-16');
+    assert.equal(overview.periodStatus, 'IN_PROGRESS');
+    assert.equal(overview.workDaysElapsed, 16);
+    assert.equal(overview.workDaysRemaining, 14);
+
+    // SQL must follow OPS-002 (actual_booking_date_start primary + booking_date_start fallback, never booking_date_end)
+    assert.ok(capturedOrderSql.includes('ro.actual_booking_date_start'));
+    assert.ok(capturedOrderSql.includes('o.booking_date_start'));
+    assert.ok(!capturedOrderSql.includes('booking_date_end'));
+    assert.deepEqual(capturedOrderParams, [
+      '2026-11-01 00:00:00',
+      '2026-11-16 23:59:59',
+      '2026-11-01 00:00:00',
+      '2026-11-16 23:59:59',
+    ]);
+
+    // Future order 999999 dropped; 338068 included on 2026-11-16
+    assert.equal(overview.kpiMain.actual, Math.round(880_000 / 1.08));
+    const day16 = overview.dailyBreakdown.find((d) => d.date === '2026-11-16');
+    assert.ok(day16);
+    assert.equal(day16.isFuture, false);
+    assert.equal(day16.totalRevenue, 814_815);
+    assert.equal(day16.cumulativeTotal, 814_815);
+    assert.equal(day16.orderCount, 1);
+
+    // Days 17..30 must be flagged isFuture=true with zero revenue, cumulativeTotal=0, orderCount=0
+    const futureDays = overview.dailyBreakdown.filter((d) => d.date > '2026-11-16');
+    assert.equal(futureDays.length, 14);
+    for (const fd of futureDays) {
+      assert.equal(fd.isFuture, true);
+      assert.equal(fd.totalRevenue, 0);
+      assert.equal(fd.comboRevenue, 0);
+      assert.equal(fd.retailRevenue, 0);
+      assert.equal(fd.productRevenue, 0);
+      assert.equal(fd.cumulativeTotal, 0);
+      assert.equal(fd.orderCount, 0);
+    }
+  });
+
+  it('skips order queries and marks all days isFuture=true for NOT_STARTED future month', async () => {
+    const fixedNow = new Date('2026-11-16T10:05:00Z');
+    let legacyQueryCount = 0;
+
+    const mockFastify = {
+      prisma: {
+        crm: {
+          crmConfig: {
+            findUnique: async () => null,
+          },
+        },
+        legacy: {
+          $queryRawUnsafe: async () => {
+            legacyQueryCount += 1;
+            return [];
+          },
+        },
+      },
+    } as unknown as FastifyInstance;
+
+    const overview = await FinancialGoalsService.getOverview(mockFastify, '2026-12', true, fixedNow);
+
+    assert.equal(legacyQueryCount, 0);
+    assert.equal(overview.periodStatus, 'NOT_STARTED');
+    assert.equal(overview.todayDate, '2026-11-16');
+    assert.equal(overview.kpiMain.actual, 0);
+    assert.equal(overview.dailyBreakdown.length, 31);
+    assert.ok(overview.dailyBreakdown.every((d) => d.isFuture === true && d.cumulativeTotal === 0 && d.totalRevenue === 0));
+  });
+
+  it('queries full month and sets all days isFuture=false for COMPLETED past month', async () => {
+    const fixedNow = new Date('2026-11-16T10:05:00Z');
+    let capturedParams: SafeAny[] = [];
+
+    const mockFastify = {
+      prisma: {
+        crm: {
+          crmConfig: {
+            findUnique: async () => null,
+          },
+        },
+        legacy: {
+          $queryRawUnsafe: async (sql: string, ...params: SafeAny[]) => {
+            if (!sql.includes('order_service_combo') && !sql.includes('order_product')) {
+              capturedParams = params;
+            }
+            return [];
+          },
+        },
+      },
+    } as unknown as FastifyInstance;
+
+    const overview = await FinancialGoalsService.getOverview(mockFastify, '2026-10', true, fixedNow);
+
+    assert.equal(overview.periodStatus, 'COMPLETED');
+    assert.deepEqual(capturedParams, [
+      '2026-10-01 00:00:00',
+      '2026-10-31 23:59:59',
+      '2026-10-01 00:00:00',
+      '2026-10-31 23:59:59',
+    ]);
+    assert.equal(overview.dailyBreakdown.length, 31);
+    assert.ok(overview.dailyBreakdown.every((d) => d.isFuture === false));
+  });
 });

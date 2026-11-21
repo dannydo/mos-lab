@@ -311,6 +311,7 @@ function FinancialGoalsContent() {
           <FinancialGoalDailyTable
             data={overview.dailyBreakdown || []}
             month={overview.month}
+            todayDate={overview.todayDate}
             includeVat={includeVat}
           />
         </div>

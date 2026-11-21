@@ -31,4 +31,53 @@ describe('FinancialGoalDailyTable', () => {
 
     expect(screen.getByText('Chưa VAT')).toBeDefined();
   });
+
+  it('renders today badge for todayDate and masks future days with dashes and Chưa tới', () => {
+    const dataWithFuture: FinancialGoalDayBreakdown[] = [
+      {
+        date: '2026-11-16',
+        dayOfWeek: 'T2',
+        totalRevenue: 26_053_889,
+        comboRevenue: 21_790_000,
+        retailRevenue: 4_263_889,
+        productRevenue: 0,
+        cumulativeTotal: 285_151_782,
+        orderCount: 24,
+        isFuture: false,
+      },
+      {
+        date: '2026-11-17',
+        dayOfWeek: 'T3',
+        totalRevenue: 0,
+        comboRevenue: 0,
+        retailRevenue: 0,
+        productRevenue: 0,
+        cumulativeTotal: 0,
+        orderCount: 0,
+        isFuture: true,
+      },
+      {
+        date: '2026-11-18',
+        dayOfWeek: 'T4',
+        totalRevenue: 0,
+        comboRevenue: 0,
+        retailRevenue: 0,
+        productRevenue: 0,
+        cumulativeTotal: 0,
+        orderCount: 0,
+        isFuture: true,
+      },
+    ];
+
+    render(
+      <FinancialGoalDailyTable data={dataWithFuture} month="2026-11" todayDate="2026-11-16" includeVat={false} />
+    );
+
+    expect(screen.getByText('Hôm nay')).toBeDefined();
+    expect(screen.getByText('1/3 ngày đã qua')).toBeDefined();
+    expect(screen.getByText('285.151.782đ')).toBeDefined();
+    expect(screen.getByText('24 đơn')).toBeDefined();
+    expect(screen.getAllByText('Chưa tới')).toHaveLength(2);
+    expect(screen.getAllByText('—')).toHaveLength(10);
+  });
 });

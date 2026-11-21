@@ -22,6 +22,31 @@ export class FinancialGoalsService {
     return `FINANCIAL_GOALS_CONFIG_${month}`;
   }
 
+  private static getVnDateParts(now: Date = new Date()): {
+    year: number;
+    month: number;
+    day: number;
+    ym: string;
+    todayStr: string;
+  } {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+    const yearStr = parts.find((p) => p.type === 'year')?.value ?? '1970';
+    const monthStr = parts.find((p) => p.type === 'month')?.value ?? '01';
+    const dayStr = parts.find((p) => p.type === 'day')?.value ?? '01';
+    return {
+      year: parseInt(yearStr, 10),
+      month: parseInt(monthStr, 10),
+      day: parseInt(dayStr, 10),
+      ym: `${yearStr}-${monthStr}`,
+      todayStr: `${yearStr}-${monthStr}-${dayStr}`,
+    };
+  }
+
   static async getConfig(fastify: FastifyInstance, month: string): Promise<FinancialGoalsConfigDto> {
     const key = this.getConfigKey(month);
     const existing = await fastify.prisma.crm.crmConfig.findUnique({
@@ -90,14 +115,11 @@ export class FinancialGoalsService {
   static async getOverview(
     fastify: FastifyInstance,
     rawMonth?: string,
-    includeVat: boolean = true
+    includeVat: boolean = true,
+    now: Date = new Date()
   ): Promise<FinancialGoalsOverview> {
-    // 1. Determine valid target month in Vietnam Timezone
-    const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-    const currentYear = vnNow.getFullYear();
-    const currentMonthNum = vnNow.getMonth() + 1;
-    const currentDay = vnNow.getDate();
-    const currentYm = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}`;
+    // 1. Determine valid target month and current day in Vietnam Timezone (Asia/Ho_Chi_Minh)
+    const { day: currentDay, ym: currentYm, todayStr } = this.getVnDateParts(now);
 
     const month = typeof rawMonth === 'string' && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentYm;
 
@@ -107,7 +129,7 @@ export class FinancialGoalsService {
     const daysInMonth = new Date(year, m, 0).getDate();
 
     const startDateStr = `${month}-01 00:00:00`;
-    const endDateStr = `${month}-${String(daysInMonth).padStart(2, '0')} 23:59:59`;
+    const monthEndDate = `${month}-${String(daysInMonth).padStart(2, '0')}`;
 
     // 2. Determine Period Status and Time Elapsed
     let periodStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' = 'IN_PROGRESS';
@@ -128,6 +150,8 @@ export class FinancialGoalsService {
       workDaysRemaining = Math.max(0, daysInMonth - workDaysElapsed);
     }
 
+    const maxAllowedDate = periodStatus === 'IN_PROGRESS' ? todayStr : monthEndDate;
+    const effectiveEndDateStr = `${maxAllowedDate} 23:59:59`;
     const pacingRatio = daysInMonth > 0 ? Number((workDaysElapsed / daysInMonth).toFixed(4)) : 0;
 
     // 3. Load Target Configuration
@@ -136,40 +160,64 @@ export class FinancialGoalsService {
     const isConfigured = Boolean(existingConfigRecord?.value);
     const config = await this.getConfig(fastify, month);
 
-    // 4. Query Actual Completed Orders for the entire month
-    const rawOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-      `
-      SELECT 
+    // 4. Query Actual Completed Orders up to maxAllowedDate using OPS-002 actual check-in timestamp
+    //    (COALESCE(ro.actual_booking_date_start, o.booking_date_start)) via sargable UNION ALL.
+    //    Never use scheduled booking_date_end (early check-ins would otherwise record future-day revenue),
+    //    and never record actual revenue for future months (NOT_STARTED) or future days.
+    const rawOrders: SafeAny[] =
+      periodStatus === 'NOT_STARTED'
+        ? []
+        : await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            `
+      SELECT
         o.id as orderId,
         o.total_price,
-        COALESCE(o.booking_date_end, ro.actual_booking_date_start, o.booking_date_start) as checkin_time,
-        DATE_FORMAT(COALESCE(o.booking_date_end, ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as checkin_date
+        ro.actual_booking_date_start as checkin_time,
+        DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%d') as checkin_date
+      FROM report_order ro
+      INNER JOIN \`order\` o ON o.id = ro.order_id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start >= ?
+        AND ro.actual_booking_date_start <= ?
+      UNION ALL
+      SELECT
+        o.id as orderId,
+        o.total_price,
+        o.booking_date_start as checkin_time,
+        DATE_FORMAT(o.booking_date_start, '%Y-%m-%d') as checkin_date
       FROM \`order\` o
       LEFT JOIN report_order ro ON o.id = ro.order_id
       WHERE o.order_state = 'Completed'
-        AND (
-          (o.booking_date_end >= ? AND o.booking_date_end <= ?)
-          OR (
-            o.booking_date_end IS NULL
-            AND ro.actual_booking_date_start >= ? AND ro.actual_booking_date_start <= ?
-          )
-          OR (
-            o.booking_date_end IS NULL AND ro.actual_booking_date_start IS NULL
-            AND o.booking_date_start >= ? AND o.booking_date_start <= ?
-          )
-        )
+        AND ro.actual_booking_date_start IS NULL
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start <= ?
       ORDER BY checkin_time ASC
     `,
-      startDateStr,
-      endDateStr,
-      startDateStr,
-      endDateStr,
-      startDateStr,
-      endDateStr
-    );
+            startDateStr,
+            effectiveEndDateStr,
+            startDateStr,
+            effectiveEndDateStr
+          );
+
+    // Defense-in-depth: deduplicate by orderId and drop any anomalous/future-dated rows beyond maxAllowedDate
+    const seenOrderIds = new Set<number>();
+    const eligibleOrders: SafeAny[] = [];
+    const monthStartDate = `${month}-01`;
+    if (periodStatus !== 'NOT_STARTED') {
+      for (const o of rawOrders) {
+        const orderId = Number(o.orderId);
+        if (!Number.isFinite(orderId) || orderId <= 0 || seenOrderIds.has(orderId)) continue;
+        const dateKey = String(o.checkin_date || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || dateKey < monthStartDate || dateKey > maxAllowedDate) {
+          continue;
+        }
+        seenOrderIds.add(orderId);
+        eligibleOrders.push(o);
+      }
+    }
 
     // 5. Query combo and product line items for revenue attribution
-    const orderIds = rawOrders.map((o) => Number(o.orderId)).filter((id) => id > 0);
+    const orderIds = eligibleOrders.map((o) => Number(o.orderId));
     const combosMap: Record<number, number> = {};
     const productsMap: Record<number, number> = {};
 
@@ -222,7 +270,7 @@ export class FinancialGoalsService {
     let actualRetail = 0;
     let actualProduct = 0;
 
-    for (const o of rawOrders) {
+    for (const o of eligibleOrders) {
       let comboRev = combosMap[o.orderId] || 0;
       let productRev = productsMap[o.orderId] || 0;
       let orderTotal = Number(o.total_price || 0);
@@ -282,8 +330,22 @@ export class FinancialGoalsService {
     const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     let runningCumulative = 0;
     const dailyBreakdown = Array.from(dailyMap.entries()).map(([dateStr, item]) => {
-      runningCumulative += Math.round(item.totalRevenue);
+      const isFuture = periodStatus === 'NOT_STARTED' || (periodStatus === 'IN_PROGRESS' && dateStr > todayStr);
       const d = new Date(`${dateStr}T00:00:00+07:00`);
+      if (isFuture) {
+        return {
+          date: dateStr,
+          dayOfWeek: daysOfWeek[d.getDay()] || '',
+          totalRevenue: 0,
+          comboRevenue: 0,
+          retailRevenue: 0,
+          productRevenue: 0,
+          cumulativeTotal: 0,
+          orderCount: 0,
+          isFuture: true,
+        };
+      }
+      runningCumulative += Math.round(item.totalRevenue);
       return {
         date: dateStr,
         dayOfWeek: daysOfWeek[d.getDay()] || '',
@@ -293,6 +355,7 @@ export class FinancialGoalsService {
         productRevenue: Math.round(item.productRevenue),
         cumulativeTotal: runningCumulative,
         orderCount: item.orderCount,
+        isFuture: false,
       };
     });
 
@@ -365,6 +428,7 @@ export class FinancialGoalsService {
 
     return {
       month,
+      todayDate: todayStr,
       daysInMonth,
       workDaysElapsed,
       workDaysRemaining,

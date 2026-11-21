@@ -38,10 +38,12 @@ export interface FinancialGoalDayBreakdown {
   productRevenue: number;
   cumulativeTotal: number;
   orderCount: number;
+  isFuture?: boolean;
 }
 
 export interface FinancialGoalsOverview {
   month: string;
+  todayDate?: string; // YYYY-MM-DD (Asia/Ho_Chi_Minh)
   daysInMonth: number;
   workDaysElapsed: number;
   workDaysRemaining: number;
