@@ -155,6 +155,7 @@ import {
   filterAndFormatConversationsForUser,
   filterTasksForUser,
 } from './chat-format.service.js';
+import { createCoalescedBulkSync } from './chat-bulk-sync.js';
 
 export {
   decodeAndValidateChatFile,
@@ -499,6 +500,7 @@ let memoryStaffCache: {
 } | null = null;
 
 let writeChain: Promise<void> = Promise.resolve();
+
 let jsonBackupChain: Promise<void> = Promise.resolve();
 const loadChatStateInFlightByFastify = new WeakMap<
   FastifyInstance,
@@ -1181,6 +1183,35 @@ function scheduleTasksJsonPersist(fastify: FastifyInstance, snapshot: MosChatTas
   tasksJsonPersistTimeout.unref?.();
 }
 
+function scheduleBulkConversationsSync(fastify: FastifyInstance): void {
+  if (!bulkConversationsSyncRunner) {
+    bulkConversationsSyncRunner = createCoalescedBulkSync(
+      async () => {
+        const latest = memoryChatCache?.conversations;
+        if (latest) await syncConversationsToRelationalDb(fastify, latest);
+      },
+      (err) => fastify.log.error(err, 'bulk conversations sync error:')
+    );
+  }
+  bulkConversationsSyncRunner();
+}
+
+function scheduleBulkTasksSync(fastify: FastifyInstance): void {
+  if (!bulkTasksSyncRunner) {
+    bulkTasksSyncRunner = createCoalescedBulkSync(
+      async () => {
+        const latest = memoryChatCache?.tasks;
+        if (latest) await syncTasksToRelationalDb(fastify, latest);
+      },
+      (err) => fastify.log.error(err, 'bulk tasks sync error:')
+    );
+  }
+  bulkTasksSyncRunner();
+}
+
+let bulkConversationsSyncRunner: (() => void) | null = null;
+let bulkTasksSyncRunner: (() => void) | null = null;
+
 async function saveConversations(
   fastify: FastifyInstance,
   conversations: MosChatConversation[],
@@ -1193,6 +1224,8 @@ async function saveConversations(
       reply: MosChatThreadReply;
     };
     deletedMessageIds?: string[];
+    /** Persist the full relational re-sync in the background lane (does not block or queue behind user writes). */
+    bulkBackground?: boolean;
   }
 ) {
   const trimmed = trimConversationsRetention(conversations);
@@ -1205,6 +1238,10 @@ async function saveConversations(
   invalidateNotificationsCache();
   // Keep relational DB O(1) upserts on the critical request path and debounce the 2.5MB crmConfig snapshot backup asynchronously.
   scheduleConversationsJsonPersist(fastify, trimmed);
+  if (hint?.bulkBackground) {
+    scheduleBulkConversationsSync(fastify);
+    return;
+  }
   writeChain = writeChain
     .then(async () => {
       if (hint?.deletedMessageIds && hint.deletedMessageIds.length > 0) {
@@ -1259,6 +1296,8 @@ async function saveTasks(
   hint?: {
     touchedTask?: MosChatTaskItem;
     deletedTaskId?: string;
+    /** Persist the full relational re-sync in the background lane (does not block or queue behind user writes). */
+    bulkBackground?: boolean;
   }
 ) {
   const trimmed = trimTasksRetention(tasks, memoryChatCache?.conversations);
@@ -1270,6 +1309,10 @@ async function saveTasks(
   }
   invalidateNotificationsCache();
   scheduleTasksJsonPersist(fastify, trimmed);
+  if (hint?.bulkBackground) {
+    scheduleBulkTasksSync(fastify);
+    return;
+  }
   writeChain = writeChain
     .then(async () => {
       if (hint?.deletedTaskId) {
@@ -1467,7 +1510,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           tasks
         );
         if (missionMutated) {
-          await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+          // Polling endpoint: persist in the background lane so reads/writes never queue behind a full re-sync.
+          await Promise.all([
+            saveConversations(fastify, conversations, { bulkBackground: true }),
+            saveTasks(fastify, tasks, { bulkBackground: true }),
+          ]);
         }
         const version = memoryChatCache?.version || state.version;
 
@@ -5535,7 +5582,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           tasks
         );
         if (didSyncMissions) {
-          await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+          // Polling endpoint: persist in the background lane so reads/writes never queue behind a full re-sync.
+          await Promise.all([
+            saveConversations(fastify, conversations, { bulkBackground: true }),
+            saveTasks(fastify, tasks, { bulkBackground: true }),
+          ]);
         }
 
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
