@@ -107,6 +107,11 @@ vi.mock('../../../lib/api-client', () => ({
         },
       }),
     },
+    ai: {
+      listSessions: vi.fn().mockResolvedValue({ sessions: [] }),
+      getSession: vi.fn().mockRejectedValue({ response: { status: 404 } }),
+      sendMessage: vi.fn(),
+    },
     staff: {
       list: vi.fn().mockResolvedValue([
         { id: 1, name: 'Tuyết Nhi', role: 'Telesales' },
@@ -1198,7 +1203,12 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
         onOpen={onOpenSpy}
         onClose={vi.fn()}
         onToggle={onToggleSpy}
-        currentUser={{ id: 6, displayName: 'Nguyễn Quang Khải', username: 'khai.nguyen@wingslashes.com', role: 'admin' }}
+        currentUser={{
+          id: 6,
+          displayName: 'Nguyễn Quang Khải',
+          username: 'khai.nguyen@wingslashes.com',
+          role: 'admin',
+        }}
       />
     );
 
@@ -1282,11 +1292,79 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     });
 
     await waitFor(() => {
-      expect(replaceStateSpy).toHaveBeenCalledWith(
-        null,
-        '',
-        expect.stringContaining('convId=dm-pair-1-6')
-      );
+      expect(replaceStateSpy).toHaveBeenCalledWith(null, '', expect.stringContaining('convId=dm-pair-1-6'));
     });
+  });
+});
+
+describe('MosGoogleChatPortal AI session permalink', () => {
+  const SESSION_ID = '3f2b8c1e-9d4a-4e0b-8a57-1c2d3e4f5a6b';
+  const getSession = apiClient.ai.getSession as unknown as ReturnType<typeof vi.fn>;
+
+  const backendSession = (staffId: number) => ({
+    session: {
+      id: SESSION_ID,
+      staffId,
+      title: 'Ticket 255',
+      scope: 'mos-chat-private',
+      createdAt: '2026-11-21T10:00:00.000Z',
+      updatedAt: '2026-11-21T11:00:00.000Z',
+    },
+    messages: [
+      {
+        id: 'ai-msg-1',
+        sessionId: SESSION_ID,
+        role: 'user',
+        content: 'Nội dung phiên của ticket 255',
+        createdAt: '2026-11-21T10:00:00.000Z',
+      },
+    ],
+  });
+
+  const renderWithPermalink = (currentUserId: number) =>
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        standalone={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: currentUserId, displayName: 'Danny Do', role: 'super_admin' }}
+        targetNavigation={{ conversationId: 'dm-wings-ai-copilot', aiSessionId: SESSION_ID, timestamp: 1 }}
+      />
+    );
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    getSession.mockReset();
+    window.history.replaceState(null, '', '/chat');
+  });
+
+  it('loads the exact AI session from the permalink and mirrors it in the address bar', async () => {
+    getSession.mockResolvedValue(backendSession(99));
+    renderWithPermalink(99);
+
+    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID));
+    await waitFor(() => {
+      expect(window.location.search).toContain(`sessionId=${SESSION_ID}`);
+      expect(window.location.search).toContain('convId=dm-wings-ai-copilot');
+    });
+    expect(screen.queryByTestId('mos-chat-ai-session-readonly-banner')).toBeNull();
+  });
+
+  it('shows a read-only banner when an Admin opens a session owned by someone else', async () => {
+    getSession.mockResolvedValue(backendSession(7));
+    renderWithPermalink(99);
+
+    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID));
+    await waitFor(() => expect(screen.getByTestId('mos-chat-ai-session-readonly-banner')).toBeDefined());
+  });
+
+  it('does not touch the address bar or show the banner when the session is forbidden', async () => {
+    getSession.mockRejectedValue({ response: { status: 403 } });
+    renderWithPermalink(99);
+
+    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID));
+    expect(screen.queryByTestId('mos-chat-ai-session-readonly-banner')).toBeNull();
+    expect(window.location.search).not.toContain('sessionId=');
   });
 });

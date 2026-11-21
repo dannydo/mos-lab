@@ -253,6 +253,8 @@ import { MosChatModals } from './components/MosChatModals';
 import { MosChatSearchModal } from './components/MosChatSearchModal';
 import type { MosChatSearchResultItem } from '@mos-lab/shared';
 import { MosChatReactionUsersModal } from './components/MosChatReactionUsersModal';
+import { MosChatAiSessionsModal, copyMosChatSessionPermalink } from './components/MosChatAiSessionsModal';
+import { MOS_CHAT_SESSION_QUERY_KEYS, syncConversationIntoUrl } from './utils/mos-chat-permalink';
 import type { MosChatActiveSubtab, MosChatReactionUsersTarget } from './types/mos-chat-types';
 import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
@@ -293,6 +295,8 @@ export interface MosGoogleChatPortalProps {
     timestamp?: number;
     openTab?: MosChatActiveSubtab;
     taskId?: string;
+    /** Permalink: open this exact AI Copilot (MAI) session. */
+    aiSessionId?: string;
   } | null;
 }
 
@@ -703,7 +707,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [currentUser?.id, currentUser?.username]
   );
   const [aiSessionId, setAiSessionId] = useState<string | null>(null);
+  // Owner of the AI session currently shown. When it is not the current user (Admin opened someone's permalink) the view is read-only.
+  const [aiSessionOwnerId, setAiSessionOwnerId] = useState<number | null>(null);
+  const [aiSessionsModalOpen, setAiSessionsModalOpen] = useState<boolean>(false);
+  const aiPermalinkPendingRef = useRef<string | null>(targetNavigation?.aiSessionId || null);
+  const lastProcessedAiSessionNavRef = useRef<string | null>(null);
+  const currentUserNumericId = Number(currentUser?.id) || 0;
+  const isAiSessionReadOnly =
+    aiSessionOwnerId !== null && currentUserNumericId > 0 && aiSessionOwnerId !== currentUserNumericId;
+  const aiSessionReadOnlyRef = useRef<boolean>(false);
+  aiSessionReadOnlyRef.current = isAiSessionReadOnly;
+  const aiSessionIdRef = useRef<string | null>(null);
   const [aiMessages, setAiMessages] = useState<MosChatMessage[]>([]);
+  aiSessionIdRef.current = aiSessionId;
   const [aiThinkingActive, setAiThinkingActive] = useState<boolean>(false);
   const [aiElapsedSec, setAiElapsedSec] = useState<number>(0);
   const [expandedThinkingIds, setExpandedThinkingIds] = useState<Record<string, boolean>>({});
@@ -850,6 +866,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   useEffect(() => {
     if (!aiHydratedRef.current) return;
+    // Never persist someone else's session (read-only permalink view) into this user's private cache.
+    if (aiSessionReadOnlyRef.current) return;
     try {
       window.localStorage.setItem(
         aiPersonalStorageKey,
@@ -886,6 +904,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (!resolvedSessionId) return;
 
         const sessRes = await apiClient.ai.getSession(resolvedSessionId);
+        if (sessRes?.session?.staffId !== undefined) {
+          setAiSessionOwnerId(Number(sessRes.session.staffId) || null);
+        }
         if (!sessRes?.messages || sessRes.messages.length === 0) return;
 
         const mappedBackend: MosChatMessage[] = sessRes.messages.map((bm) => formatBackendAiMessage(bm, currentUser));
@@ -3523,6 +3544,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (isMobile) {
       setMobileActiveView('conversation');
     }
+    // Permalink: keep the address bar pointing at the conversation the user is looking at.
+    if (standalone && typeof window !== 'undefined') {
+      try {
+        const nextUrl = syncConversationIntoUrl(
+          window.location.href,
+          convId,
+          convId === AI_COPILOT_CONV_ID ? aiSessionId : null
+        );
+        if (nextUrl) window.history.replaceState(null, '', nextUrl);
+      } catch {
+        // ignore
+      }
+    }
     const targetConv = allUserConversations.find((c) => c.id === convId);
     const msgs = targetConv?.messages || [];
     const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
@@ -4277,11 +4311,68 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     []
   );
 
+  const replaceBrowserUrl = useCallback(
+    (nextUrl: string | null) => {
+      if (!standalone || !nextUrl || typeof window === 'undefined') return;
+      try {
+        window.history.replaceState(null, '', nextUrl);
+      } catch {
+        // ignore
+      }
+    },
+    [standalone]
+  );
+
   const handleClearAiChat = useCallback(() => {
+    aiPermalinkPendingRef.current = null;
     setAiSessionId(null);
+    setAiSessionOwnerId(null);
     setAiMessages([buildInitialAiWelcomeMessage()]);
+    if (typeof window !== 'undefined') {
+      replaceBrowserUrl(syncConversationIntoUrl(window.location.href, AI_COPILOT_CONV_ID, null));
+    }
     antdMessage.success('Đã làm mới phiên hội thoại riêng tư với MAI');
-  }, [buildInitialAiWelcomeMessage]);
+  }, [buildInitialAiWelcomeMessage, replaceBrowserUrl]);
+
+  /** Permalink / history: load one AI Copilot session by id and show it in the MAI conversation. */
+  const openAiSessionById = useCallback(
+    async (sessionId: string): Promise<boolean> => {
+      try {
+        const res = await apiClient.ai.getSession(sessionId);
+        const mapped: MosChatMessage[] = (res?.messages || []).map((bm) => formatBackendAiMessage(bm, currentUser));
+        setAiMessages([buildInitialAiWelcomeMessage(), ...mapped]);
+        setAiSessionId(res.session.id);
+        setAiSessionOwnerId(Number(res.session.staffId) || null);
+        setActiveConvId(AI_COPILOT_CONV_ID);
+        setActiveSubtab('chat');
+        if (isMobile) setMobileActiveView('conversation');
+        if (typeof window !== 'undefined') {
+          replaceBrowserUrl(syncConversationIntoUrl(window.location.href, AI_COPILOT_CONV_ID, res.session.id));
+        }
+        scrollToChatBottom('main', 'auto');
+        return true;
+      } catch (err: SafeAny) {
+        const status = err?.response?.status;
+        if (status === 403) {
+          antdMessage.warning('Bạn không có quyền xem phiên hội thoại này.');
+        } else if (status === 404) {
+          antdMessage.warning('Không tìm thấy phiên hội thoại. Liên kết có thể đã bị xóa hoặc không đúng.');
+        } else {
+          antdMessage.error('Không tải được phiên hội thoại. Vui lòng thử lại.');
+        }
+        return false;
+      }
+    },
+    [buildInitialAiWelcomeMessage, currentUser, isMobile, replaceBrowserUrl, scrollToChatBottom]
+  );
+
+  const handleCopyAiSessionPermalink = useCallback(() => {
+    if (!aiSessionId) {
+      antdMessage.info('Phiên này chưa có nội dung. Hãy nhắn cho MAI trước để tạo liên kết cố định.');
+      return;
+    }
+    void copyMosChatSessionPermalink(aiSessionId);
+  }, [aiSessionId]);
 
   const handleExecuteAiAction = useCallback(
     (action: { type: string; label: string; payload: Record<string, unknown> }, msgId: string, actionKey?: string) => {
@@ -4371,6 +4462,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
     // CASE 1: Private 1-1 Chat with 🤖 MAI (mOS AI) (100% personal)
     if (targetConvId === AI_COPILOT_CONV_ID) {
+      if (aiSessionReadOnlyRef.current) {
+        antdMessage.info(
+          'Đây là phiên hội thoại của người khác (chỉ xem). Bấm "Làm mới hội thoại MAI" để bắt đầu phiên của bạn.'
+        );
+        return;
+      }
       setAiMessages((prev) => [...prev, optimisticMsg]);
       setAiThinkingActive(true);
       scrollToChatBottom('main', 'smooth');
@@ -4394,6 +4491,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         });
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
+          setAiSessionOwnerId(null);
         }
         const botMsg: MosChatMessage = {
           id: aiRes?.message?.id || `msg-ai-${Date.now()}`,
@@ -4550,7 +4648,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       try {
         const imageDataUrl = await convertAttachmentToDataUrl(cleanAttachments?.[0]);
         const aiRes = await apiClient.ai.sendMessage({
-          sessionId: aiSessionId || undefined,
+          sessionId: aiSessionReadOnlyRef.current ? undefined : aiSessionId || undefined,
           message: cleanedPrompt,
           scope: `mos-chat-space:${targetConvId}`,
           imageDataUrl,
@@ -4560,7 +4658,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             myRole: currentUser?.role || 'super_admin',
           },
         });
-        if (aiRes?.session?.id) {
+        if (aiRes?.session?.id && !aiSessionReadOnlyRef.current) {
           setAiSessionId(aiRes.session.id);
         }
         // Backend auto-delivers the bot reply directly to targetConvId in DB!
@@ -5483,6 +5581,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         try {
           const url = new URL(window.location.href);
           url.searchParams.set('convId', convId);
+          if (convId !== AI_COPILOT_CONV_ID) {
+            for (const key of MOS_CHAT_SESSION_QUERY_KEYS) url.searchParams.delete(key);
+          }
           if (msgId) {
             url.searchParams.set('msgId', msgId);
           } else {
@@ -5610,6 +5711,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     targetNavigation?.openTab,
   ]);
 
+  // Permalink: open the exact AI Copilot session requested by the link (needs the signed-in user to be known).
+  useEffect(() => {
+    const sessionId = targetNavigation?.aiSessionId;
+    if (!sessionId || !currentUser?.id) return;
+    const navKey = `${sessionId}:${targetNavigation?.timestamp || 0}`;
+    if (lastProcessedAiSessionNavRef.current === navKey) return;
+    lastProcessedAiSessionNavRef.current = navKey;
+    // The address bar echoing the session we are already showing (first message created it) needs no reload.
+    if (aiSessionIdRef.current === sessionId) return;
+    aiPermalinkPendingRef.current = sessionId;
+    void openAiSessionById(sessionId).finally(() => {
+      aiPermalinkPendingRef.current = null;
+    });
+  }, [targetNavigation?.aiSessionId, targetNavigation?.timestamp, currentUser?.id, openAiSessionById]);
+
+  // Permalink: once a session exists (first message creates it) mirror it into the address bar.
+  useEffect(() => {
+    if (!standalone || typeof window === 'undefined') return;
+    if (aiPermalinkPendingRef.current) return;
+    if (activeConvId !== AI_COPILOT_CONV_ID || !aiSessionId) return;
+    try {
+      const nextUrl = syncConversationIntoUrl(window.location.href, AI_COPILOT_CONV_ID, aiSessionId);
+      if (nextUrl) window.history.replaceState(null, '', nextUrl);
+    } catch {
+      // ignore
+    }
+  }, [standalone, activeConvId, aiSessionId]);
+
   const handleMessageTap = (m: MosChatMessage, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (
@@ -5699,6 +5828,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
     // CASE 1: Private 1-1 Chat with 🤖 MAI (mOS AI)
     if (activeConversation.id === AI_COPILOT_CONV_ID) {
+      if (aiSessionReadOnlyRef.current) {
+        antdMessage.info(
+          'Đây là phiên hội thoại của người khác (chỉ xem). Bấm "Làm mới hội thoại MAI" để bắt đầu phiên của bạn.'
+        );
+        return;
+      }
       setAiMessages((prev) =>
         prev.map((m) =>
           m.id === targetMsgId ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] } : m
@@ -5867,7 +6002,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
         const imageDataUrl = await convertAttachmentToDataUrl(attachmentsToSend?.[0]);
         const aiRes = await apiClient.ai.sendMessage({
-          sessionId: aiSessionId || undefined,
+          sessionId: aiSessionReadOnlyRef.current ? undefined : aiSessionId || undefined,
           message: contextPayload,
           scope: `mos-chat-thread:${activeConversation.id}:${targetMsgId}`,
           imageDataUrl,
@@ -5877,7 +6012,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             myRole: currentUser?.role || 'super_admin',
           },
         });
-        if (aiRes?.session?.id) {
+        if (aiRes?.session?.id && !aiSessionReadOnlyRef.current) {
           setAiSessionId(aiRes.session.id);
         }
         // Backend auto-delivers the bot reply directly to targetMsgId in DB!
@@ -7204,6 +7339,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         note: missionNote.trim() || undefined,
         pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/dashboard',
         sourceMessage: missionSourceMsg || undefined,
+        aiSessionId: convId === AI_COPILOT_CONV_ID ? aiSessionId : undefined,
       });
 
       if (res?.mission) {
@@ -11245,6 +11381,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               },
                             ]
                           : []),
+                        // AI session history & permalink (AI copilot only)
+                        ...(activeConversation?.id === AI_COPILOT_CONV_ID
+                          ? [
+                              { type: 'divider' as const },
+                              {
+                                key: 'ai-sessions',
+                                icon: <History size={15} />,
+                                label: 'Lịch sử phiên hội thoại MAI',
+                              },
+                              {
+                                key: 'copy-ai-session-link',
+                                icon: <LinkIcon size={15} />,
+                                label: 'Sao chép liên kết cố định của phiên',
+                                disabled: !aiSessionId,
+                              },
+                            ]
+                          : []),
                         // Clear AI Chat (AI copilot only)
                         ...(activeConversation?.id === AI_COPILOT_CONV_ID
                           ? [
@@ -11299,6 +11452,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           toggleManualUnreadConversation(activeConversation);
                         } else if (key === 'mini-dock') {
                           handlePopOutToMiniDock();
+                        } else if (key === 'ai-sessions') {
+                          setAiSessionsModalOpen(true);
+                        } else if (key === 'copy-ai-session-link') {
+                          handleCopyAiSessionPermalink();
                         } else if (key === 'clear-ai') {
                           handleClearAiChat();
                         } else if (key === 'access-config') {
@@ -11564,6 +11721,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     openCustomerDetail={openCustomerDetail}
                     handleReplyToMessage={handleReplyToMessage}
                   />
+
+                  {activeConversation?.id === AI_COPILOT_CONV_ID && isAiSessionReadOnly && (
+                    <div
+                      role="status"
+                      data-testid="mos-chat-ai-session-readonly-banner"
+                      className="flex items-center justify-between gap-3 px-3 py-2 text-xs"
+                      style={{
+                        background: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fffbeb',
+                        borderTop: `1px solid ${isDark ? 'rgba(245, 158, 11, 0.35)' : '#fde68a'}`,
+                        color: isDark ? '#fcd34d' : '#92400e',
+                      }}
+                    >
+                      <span>Bạn đang xem phiên hội thoại của người khác qua liên kết (chỉ xem, không thể nhắn).</span>
+                      <button
+                        type="button"
+                        onClick={handleClearAiChat}
+                        className="px-2 py-1 rounded-md font-medium cursor-pointer whitespace-nowrap"
+                        style={{ background: isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7', color: 'inherit' }}
+                      >
+                        Bắt đầu phiên của tôi
+                      </button>
+                    </div>
+                  )}
 
                   {/* Clean Single-Line Composer with Staging Thumbnails, AI Quick Prompts & Icon-only Toolbar */}
                   <MosChatComposer
@@ -11965,6 +12145,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       />
 
       {/* Reaction Users Details Modal (MOS-BUG-217) */}
+      <MosChatAiSessionsModal
+        open={aiSessionsModalOpen}
+        onClose={() => setAiSessionsModalOpen(false)}
+        activeSessionId={aiSessionId}
+        onSelectSession={(sessionId) => {
+          setAiSessionsModalOpen(false);
+          void openAiSessionById(sessionId);
+        }}
+      />
       <MosChatReactionUsersModal
         open={reactionUsersModalOpen}
         target={reactionUsersTarget}

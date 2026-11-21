@@ -2004,6 +2004,36 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     }
   }, [aiPersonalStorageKey, buildInitialAiWelcomeMessage]);
 
+  // Permalink: open one AI Copilot session by id. Mobile has no read-only mode, so it only opens the user's own sessions.
+  const openAiSessionById = useCallback(
+    async (sessionId: string): Promise<boolean> => {
+      try {
+        const res = await apiClient.ai.getSession(sessionId);
+        const myId = Number(effectiveUser?.id) || 0;
+        if (myId > 0 && Number(res.session.staffId) !== myId) {
+          antdMessage.warning('Phiên hội thoại này thuộc người khác. Vui lòng mở liên kết trên máy tính để xem.');
+          return false;
+        }
+        const mapped = (res.messages || []).map((bm) => formatBackendAiMessage(bm, effectiveUser));
+        setAiMessages([buildInitialAiWelcomeMessage(), ...mapped]);
+        setAiSessionId(res.session.id);
+        setActiveConvId(AI_COPILOT_CONV_ID);
+        return true;
+      } catch (err) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 403) {
+          antdMessage.warning('Bạn không có quyền xem phiên hội thoại này.');
+        } else if (status === 404) {
+          antdMessage.warning('Không tìm thấy phiên hội thoại. Liên kết có thể đã bị xóa hoặc không đúng.');
+        } else {
+          antdMessage.error('Không tải được phiên hội thoại. Vui lòng thử lại.');
+        }
+        return false;
+      }
+    },
+    [effectiveUser, buildInitialAiWelcomeMessage]
+  );
+
   const value = useMemo<MosChatContextValue>(
     () => ({
       currentUser: effectiveUser,
@@ -2084,6 +2114,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       updateMemberNickname,
       updateSpaceConfig,
       resetAiChat,
+      openAiSessionById,
       refresh: fetchBootstrap,
       openCustomerDetail,
     }),
@@ -2153,6 +2184,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       removeMemberFromSpace,
       updateMemberNickname,
       updateSpaceConfig,
+      openAiSessionById,
       fetchBootstrap,
       openCustomerDetail,
     ]

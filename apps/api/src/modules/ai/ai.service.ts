@@ -497,21 +497,38 @@ export class AiAssistantService {
   }
 
   /**
-   * Get single session with its messages (strictly verifies staffId)
+   * Whether a session id exists at all (any owner). Used by the permalink route to tell
+   * "forbidden" (exists, not yours) apart from "not found" without leaking its content.
+   */
+  static async sessionExists(crm: CrmPrismaClient, sessionId: string): Promise<boolean> {
+    const found = await crm.crmAiChatSession.findFirst({
+      where: { id: sessionId },
+      select: { id: true },
+    });
+    return Boolean(found);
+  }
+
+  /**
+   * Get single session with its messages.
+   * By default strictly verifies staffId (Private Workspace isolation). Admin/Super Admin viewers may
+   * open any session through its permalink by passing `allowAnyOwner` (read-only access, resolved by the route).
    */
   static async getSession(
     crm: CrmPrismaClient,
     sessionId: string,
-    staffId: number
+    staffId: number,
+    options: { allowAnyOwner?: boolean } = {}
   ): Promise<{
     session: AiChatSession;
     messages: AiChatMessage[];
   } | null> {
     const session = await crm.crmAiChatSession.findFirst({
-      where: {
-        id: sessionId,
-        staffId,
-      },
+      where: options.allowAnyOwner
+        ? { id: sessionId }
+        : {
+            id: sessionId,
+            staffId,
+          },
       include: {
         messages: {
           orderBy: {

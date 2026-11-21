@@ -198,11 +198,27 @@ export async function aiRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const staffId = request.user.id;
-      const result = await AiAssistantService.getSession(fastify.prisma.crm, request.params.id, staffId);
-      if (!result) {
-        return reply.status(404).send({ error: 'Session not found or unauthorized' });
+      // Permalink access: the owner, or Admin/Super Admin (read-only). Everyone else gets 403.
+      const canViewAnyOwner = isDannyOrSuperAdminUser(request.user) || isAdminOrSuperAdminRole(request.user?.role);
+      const result = await AiAssistantService.getSession(fastify.prisma.crm, request.params.id, staffId, {
+        allowAnyOwner: canViewAnyOwner,
+      });
+      if (result) {
+        if (result.session.staffId !== staffId) {
+          request.log.info(
+            { sessionId: result.session.id, ownerStaffId: result.session.staffId, viewerStaffId: staffId },
+            'AI chat session opened by admin via permalink'
+          );
+        }
+        return reply.send(result);
       }
-      return reply.send(result);
+      if (!canViewAnyOwner && (await AiAssistantService.sessionExists(fastify.prisma.crm, request.params.id))) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Bạn không có quyền xem phiên hội thoại này.',
+        });
+      }
+      return reply.status(404).send({ error: 'Session not found or unauthorized' });
     }
   );
 

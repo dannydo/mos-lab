@@ -420,7 +420,14 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     rationale: 'Ngày tạo lịch đo công Booker; ngày check-in/hoàn thành mới đo nghiệm thu dịch vụ và thực thu.',
     tags: ['doanh thu', 'Completed', 'actual_booking_date_start', 'check-in'],
-    routeScopes: ['/dashboard/today', '/dashboard/kpi', '/dashboard/cc', '/dashboard/cv', '/dashboard/catalog', '/dashboard/financial-goals'],
+    routeScopes: [
+      '/dashboard/today',
+      '/dashboard/kpi',
+      '/dashboard/cc',
+      '/dashboard/cv',
+      '/dashboard/catalog',
+      '/dashboard/financial-goals',
+    ],
     status: 'ACTIVE',
     version: '1.1.0',
     effectiveFrom: '2026-11-19',
@@ -2425,6 +2432,38 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
         reference: 'apps/web/components/mos-chat/components/MosChatGoogleWorkspaceDrawer.tsx',
       },
       { label: 'Chat Room Files Pane', reference: 'apps/web/components/mos-chat/components/MosChatFilesPane.tsx' },
+    ],
+  },
+  {
+    id: 'UI-012',
+    book: 'SYSTEM',
+    title: 'Liên Kết Cố Định (Perm Link) Cho Mọi Phiên Hội Thoại MAI Trong mOS Chat',
+    summary:
+      'Mỗi phiên hội thoại riêng tư với MAI có một đường dẫn cố định /chat?convId=dm-wings-ai-copilot&sessionId=<mã phiên>; mở đường dẫn là vào đúng phiên đó trên mọi thiết bị, và Ticket mOS Mission tạo từ MAI luôn lưu đường dẫn này để lần ngược về đúng phiên.',
+    commandments: [
+      'Mọi Phiên Đều Có Perm Link: Mỗi phiên MAI (mã phiên lưu trên máy chủ) có đường dẫn cố định dạng /chat?convId=dm-wings-ai-copilot&sessionId=<mã phiên>. Thanh địa chỉ tự cập nhật theo phiên đang mở; menu ⋮ của hội thoại MAI có mục "Sao chép liên kết cố định của phiên" và "Lịch sử phiên hội thoại MAI" (mở lại phiên cũ, sao chép liên kết từng phiên, dán liên kết hoặc mã phiên để mở).',
+      'Ai Được Mở Perm Link: Chỉ chủ phiên và Admin / Super Admin mới mở được; người khác nhận 403 và phiên không tồn tại nhận 404. Admin mở phiên của người khác chỉ ở chế độ chỉ xem (không nhắn tiếp, không ghi vào bộ nhớ riêng của Admin); muốn nhắn tiếp bấm "Bắt đầu phiên của tôi". Trên điện thoại chỉ mở được phiên của chính mình.',
+      'Ticket Lần Ngược Về Phiên: Khi Danny giao mOS Mission từ tin nhắn MAI, hệ thống lưu mã phiên (chatSessionId) vào ngữ cảnh Ticket và ghi dòng "Phiên hội thoại MAI (perm link)" vào mô tả; mã phiên lấy từ bản ghi tin nhắn trên máy chủ, không tin giá trị do trình duyệt gửi lên.',
+    ],
+    rationale:
+      'Ticket được tạo từ MAI trước đây chỉ nhớ hội thoại chung của MAI nên không tìm lại được đúng phiên đã trao đổi. Perm link giúp lần ngược mọi yêu cầu về đúng ngữ cảnh gốc mà vẫn giữ quyền riêng tư theo chủ phiên.',
+    examples: [
+      'Ticket MOS-FEAT-255 tạo từ một tin nhắn MAI: mở ngữ cảnh Ticket sẽ vào thẳng đúng phiên MAI đã trao đổi, thay vì phiên gần nhất.',
+      'Nhân sự không phải Admin gõ thử một perm link của người khác: nhận thông báo không có quyền xem, không thấy nội dung.',
+    ],
+    tags: ['mos-chat', 'MAI', 'perm link', 'phiên hội thoại', 'session', 'ticket', 'mission', 'quyền riêng tư'],
+    routeScopes: ['/dashboard/chat', '/chat', '/dashboard'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-21',
+    sources: [
+      { label: 'Permalink helpers', reference: 'apps/web/components/mos-chat/utils/mos-chat-permalink.ts' },
+      {
+        label: 'Session history modal',
+        reference: 'apps/web/components/mos-chat/components/MosChatAiSessionsModal.tsx',
+      },
+      { label: 'Session access rules (GET /ai/chat/sessions/:id)', reference: 'apps/api/src/modules/ai/routes.ts' },
+      { label: 'Mission → session link', reference: 'apps/api/src/modules/chat/chat-mission-bridge.service.ts' },
     ],
   },
 ];

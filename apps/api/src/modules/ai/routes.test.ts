@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import Fastify from 'fastify';
 import { aiRoutes } from './routes.js';
+import type { UserRole } from '@mos-lab/shared';
 import { extractThinkingAndAction, generateAssistantFallback } from './ai.service.js';
 
 test('AI Voice Chat route returns 400 when message is missing or empty', async () => {
@@ -159,7 +160,9 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
           }));
       },
       findFirst: async (args: SafeAny) => {
-        const found = mockSessions.find((s) => s.id === args.where.id && s.staffId === args.where.staffId);
+        const found = mockSessions.find(
+          (s) => s.id === args.where.id && (args.where.staffId === undefined || s.staffId === args.where.staffId)
+        );
         if (!found) return null;
         return {
           ...found,
@@ -214,7 +217,7 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
       id: staffId,
       username: `user_${staffId}`,
       displayName: `User ${staffId}`,
-      role: 'admin',
+      role: String(this.headers['x-role'] || 'admin') as UserRole,
     };
   });
 
@@ -260,13 +263,38 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
   assert.equal(sessionDetails.session.id, session1.id);
   assert.equal(sessionDetails.messages.length, 2); // 1 user + 1 assistant
 
-  // 4. PRIVATE WORKSPACE ISOLATION: Staff 2 cannot view Staff 1's session (must return 404)
-  const getResStaff2 = await app.inject({
+  // 4. PRIVATE WORKSPACE ISOLATION: a non-admin staff member cannot open Staff 1's permalink (403),
+  //    and an unknown session id is a plain 404 for everyone.
+  const getResNonAdmin = await app.inject({
     method: 'GET',
     url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '202', 'x-role': 'telesales' },
+  });
+  assert.equal(getResNonAdmin.statusCode, 403);
+  assert.equal(JSON.parse(getResNonAdmin.body).session, undefined);
+
+  const getResUnknown = await app.inject({
+    method: 'GET',
+    url: '/ai/chat/sessions/does-not-exist',
+    headers: { 'x-staff-id': '202', 'x-role': 'telesales' },
+  });
+  assert.equal(getResUnknown.statusCode, 404);
+
+  const getResUnknownAdmin = await app.inject({
+    method: 'GET',
+    url: '/ai/chat/sessions/does-not-exist',
     headers: { 'x-staff-id': '202' },
   });
-  assert.equal(getResStaff2.statusCode, 404);
+  assert.equal(getResUnknownAdmin.statusCode, 404);
+
+  // 4b. PERMALINK: another Admin may open the session read-only (owner stays Staff 101)
+  const getResAdminViewer = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+  });
+  assert.equal(getResAdminViewer.statusCode, 200);
+  assert.equal(JSON.parse(getResAdminViewer.body).session.staffId, 101);
 
   // 5. Staff 2 lists sessions -> empty for Staff 2
   const listResStaff2 = await app.inject({

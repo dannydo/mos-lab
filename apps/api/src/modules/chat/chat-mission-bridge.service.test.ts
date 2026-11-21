@@ -1027,4 +1027,99 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
       InboxImplementationService.approve = origApprove;
     }
   });
+
+  it('stores the MAI session permalink (chatSessionId) in the ticket context when the mission comes from an AI session', async () => {
+    let createdReportData: Record<string, unknown> | null = null;
+    const SESSION_ID = '3f2b8c1e-9d4a-4e0b-8a57-1c2d3e4f5a6b';
+
+    const mockReport = {
+      id: 255,
+      requestType: 'FEATURE',
+      title: 'Tạo từ MAI session',
+      status: 'APPROVED',
+      priority: 'P1',
+      clarificationStatus: 'READY',
+      clarificationSummary: 'Tạo từ MAI',
+      businessContext: 'Yêu cầu từ MAI',
+      reporterStaffId: 1,
+      reporter: { id: 1, displayName: 'Danny Do' },
+      resolution: null,
+      comments: [],
+      updatedAt: new Date(),
+    };
+
+    const fastify = {
+      prisma: {
+        crm: {
+          crmAiChatMessage: {
+            findFirst: async ({ where }: { where: { id: string } }) =>
+              where.id === 'ai-msg-1' ? { sessionId: SESSION_ID } : null,
+          },
+          crmBugReport: {
+            create: async ({ data }: { data: Record<string, unknown> }) => {
+              createdReportData = data;
+              return { id: 255, ...data, updatedAt: new Date() };
+            },
+            findUnique: async () => mockReport,
+            findFirst: async () => mockReport,
+            findMany: async () => [mockReport],
+          },
+          crmBugReportComment: {
+            create: async ({ data }: { data: Record<string, unknown> }) => ({ id: 1001, ...data }),
+            count: async () => 0,
+          },
+          crmBugReportAudit: { create: async () => ({}) },
+          crmBugReportAttachment: { create: async () => ({}), findMany: async () => [] },
+          crmInboxPlanJob: { upsert: async ({ create }: { create: Record<string, unknown> }) => create },
+          crmInboxImplementationJob: { findMany: async () => [] },
+          crmStaff: { findUnique: async () => ({ id: 1, displayName: 'Danny Do' }) },
+          $transaction: async (cb: (tx: SafeAny) => Promise<SafeAny>) => cb(fastify.prisma.crm),
+        },
+      },
+      log: { warn: () => {}, error: () => {} },
+    } as unknown as FastifyInstance;
+
+    const user: JwtUserPayload = { id: 1, username: 'dannydo', role: 'super_admin', displayName: 'Danny Do' };
+    const sourceMessage: MosChatMessage = {
+      id: 'ai-msg-1',
+      conversationId: 'dm-wings-ai-copilot',
+      senderId: 'wings-ai-copilot',
+      senderName: '🤖 MAI',
+      senderRole: 'mOS AI',
+      text: 'Nâng cấp mOS Chat: mọi session đều có perm link',
+      timeLabel: '07:15',
+      createdAt: new Date().toISOString(),
+      thread: [],
+      reactions: {},
+    };
+
+    const origApprove = InboxImplementationService.approve;
+    InboxImplementationService.approve = (async () => ({})) as SafeAny;
+    try {
+      await ChatMissionBridgeService.createMissionFromChat(
+        fastify,
+        user,
+        {
+          conversationId: 'dm-wings-ai-copilot',
+          messageId: 'ai-msg-1',
+          type: 'FEATURE',
+          sourceMessage,
+          // A stale/forged client hint must lose against the session stored with the message.
+          aiSessionId: 'client-hint-session-id',
+        },
+        [],
+        [],
+        [{ id: 1, name: 'Danny Do', displayName: 'Danny Do', role: 'super_admin' } as SafeAny],
+        '/tmp'
+      );
+
+      assert.ok(createdReportData);
+      const context = JSON.parse((createdReportData as SafeAny).contextJson);
+      assert.equal(context.query.chatSessionId, SESSION_ID);
+      assert.equal(context.query.chatConvId, 'dm-wings-ai-copilot');
+      assert.match((createdReportData as SafeAny).description, new RegExp(`sessionId=${SESSION_ID}`));
+    } finally {
+      InboxImplementationService.approve = origApprove;
+    }
+  });
 });
