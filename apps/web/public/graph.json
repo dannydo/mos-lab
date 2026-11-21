@@ -5690,7 +5690,7 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 264
+        "line": 312
       }
     },
     {
@@ -5704,7 +5704,7 @@
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 372
+        "line": 439
       }
     },
     {
@@ -5718,7 +5718,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 517
+        "line": 584
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1451
+        "line": 1494
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1542
+        "line": 1589
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1633
+        "line": 1680
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1716
+        "line": 1763
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1742
+        "line": 1789
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1837
+        "line": 1884
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1847
+        "line": 1894
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/upload-video",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1857
+        "line": 1904
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1926
+        "line": 1973
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2085
+        "line": 2132
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2090
+        "line": 2137
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2095
+        "line": 2142
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2265
+        "line": 2312
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2427
+        "line": 2474
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2482
+        "line": 2529
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2642
+        "line": 2689
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2751
+        "line": 2798
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2799
+        "line": 2846
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2905
+        "line": 2952
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3004
+        "line": 3051
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3111
+        "line": 3158
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3262
+        "line": 3309
       }
     },
     {
@@ -8588,7 +8588,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3570
+        "line": 3617
       }
     },
     {
@@ -8602,7 +8602,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3920
+        "line": 3967
       }
     },
     {
@@ -8616,7 +8616,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3971
+        "line": 4018
       }
     },
     {
@@ -8630,7 +8630,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4168
+        "line": 4215
       }
     },
     {
@@ -8644,7 +8644,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4252
+        "line": 4299
       }
     },
     {
@@ -8658,7 +8658,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4312
+        "line": 4359
       }
     },
     {
@@ -8672,7 +8672,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4356
+        "line": 4403
       }
     },
     {
@@ -8686,7 +8686,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4439
+        "line": 4486
       }
     },
     {
@@ -8700,7 +8700,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4545
+        "line": 4592
       }
     },
     {
@@ -8714,7 +8714,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4620
+        "line": 4667
       }
     },
     {
@@ -8728,7 +8728,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4726
+        "line": 4773
       }
     },
     {
@@ -8742,7 +8742,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4842
+        "line": 4889
       }
     },
     {
@@ -8756,7 +8756,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4944
+        "line": 4991
       }
     },
     {
@@ -8770,7 +8770,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5015
+        "line": 5062
       }
     },
     {
@@ -8784,7 +8784,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5038
+        "line": 5085
       }
     },
     {
@@ -8798,7 +8798,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5219
+        "line": 5266
       }
     },
     {
@@ -8812,7 +8812,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5396
+        "line": 5443
       }
     },
     {
@@ -8826,7 +8826,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5498
+        "line": 5545
       }
     },
     {
@@ -8840,7 +8840,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5511
+        "line": 5558
       }
     },
     {
@@ -8854,7 +8854,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5574
+        "line": 5625
       }
     },
     {
@@ -8868,7 +8868,7 @@
         "path": "/api/chat/messages/search",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5639
+        "line": 5690
       }
     },
     {
@@ -8882,7 +8882,7 @@
         "path": "/api/chat/calls/active",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 6030
+        "line": 6081
       }
     },
     {
@@ -8896,7 +8896,7 @@
         "path": "/api/chat/push/config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 6387
+        "line": 6438
       }
     },
     {
@@ -11122,7 +11122,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1511
+        "line": 1507
       }
     },
     {
@@ -11136,7 +11136,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1529
+        "line": 1525
       }
     },
     {
@@ -11150,7 +11150,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1550
+        "line": 1546
       }
     },
     {
@@ -11164,7 +11164,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1571
+        "line": 1567
       }
     },
     {
@@ -18317,6 +18317,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ListAiSessionsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiSessionAccessMode",
+      "type": "SharedType",
+      "label": "AiSessionAccessMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiSessionAccessMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiSessionAccessLogEntry",
+      "type": "SharedType",
+      "label": "AiSessionAccessLogEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiSessionAccessLogEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiSessionAccessInfo",
+      "type": "SharedType",
+      "label": "AiSessionAccessInfo",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiSessionAccessInfo",
         "package": "@mos-lab/shared"
       }
     },
@@ -36021,6 +36057,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatAiSessionsModal.test",
+      "type": "UIComponent",
+      "label": "<MosChatAiSessionsModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatAiSessionsModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatAiSessionsModal.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatAvatar.test",
       "type": "UIComponent",
       "label": "<MosChatAvatar.test />",
@@ -36521,6 +36569,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatRealtimeSync.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatAiAuditReasonModal",
+      "type": "UIComponent",
+      "label": "<MosChatAiAuditReasonModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatAiAuditReasonModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatAiAuditReasonModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatAiSessionsModal",
+      "type": "UIComponent",
+      "label": "<MosChatAiSessionsModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatAiSessionsModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatAiSessionsModal",
         "isPrimitive": false
       }
     },
@@ -37289,6 +37361,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "google-workspace-bridge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mos-chat-permalink.test",
+      "type": "UIComponent",
+      "label": "<mos-chat-permalink.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/mos-chat-permalink.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mos-chat-permalink.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mos-chat-permalink",
+      "type": "UIComponent",
+      "label": "<mos-chat-permalink />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/mos-chat-permalink.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mos-chat-permalink",
         "isPrimitive": false
       }
     },
@@ -39294,6 +39390,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ai/ag-chat-bridge.service.test.ts",
+      "type": "File",
+      "label": "ag-chat-bridge.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1172,
+        "lineCount": 24,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "type": "File",
       "label": "ag-chat-bridge.service.ts",
@@ -39301,8 +39410,34 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17061,
-        "lineCount": 490,
+        "sizeBytes": 17663,
+        "lineCount": 506,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ai-session-access.test.ts",
+      "type": "File",
+      "label": "ai-session-access.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai-session-access.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4206,
+        "lineCount": 106,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ai-session-access.ts",
+      "type": "File",
+      "label": "ai-session-access.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai-session-access.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5009,
+        "lineCount": 142,
         "ext": ".ts"
       }
     },
@@ -39314,8 +39449,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51321,
-        "lineCount": 1109,
+        "sizeBytes": 56105,
+        "lineCount": 1225,
         "ext": ".ts"
       }
     },
@@ -39340,8 +39475,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11863,
-        "lineCount": 315,
+        "sizeBytes": 17172,
+        "lineCount": 445,
         "ext": ".ts"
       }
     },
@@ -39353,8 +39488,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38091,
-        "lineCount": 735,
+        "sizeBytes": 41183,
+        "lineCount": 802,
         "ext": ".ts"
       }
     },
@@ -40256,6 +40391,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-bulk-sync.test.ts",
+      "type": "File",
+      "label": "chat-bulk-sync.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-bulk-sync.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1788,
+        "lineCount": 62,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-bulk-sync.ts",
+      "type": "File",
+      "label": "chat-bulk-sync.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-bulk-sync.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1075,
+        "lineCount": 32,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-buzz.test.ts",
       "type": "File",
       "label": "chat-buzz.test.ts",
@@ -40380,8 +40541,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 36104,
-        "lineCount": 1031,
+        "sizeBytes": 40650,
+        "lineCount": 1141,
         "ext": ".ts"
       }
     },
@@ -40393,8 +40554,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62849,
-        "lineCount": 1600,
+        "sizeBytes": 64759,
+        "lineCount": 1644,
         "ext": ".ts"
       }
     },
@@ -40640,8 +40801,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 255053,
-        "lineCount": 6647,
+        "sizeBytes": 256942,
+        "lineCount": 6698,
         "ext": ".ts"
       }
     },
@@ -41706,8 +41867,8 @@
       "filePath": "apps/api/src/modules/ios/__tests__/ios-customer-notes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7654,
-        "lineCount": 227,
+        "sizeBytes": 10896,
+        "lineCount": 323,
         "ext": ".ts"
       }
     },
@@ -41745,8 +41906,8 @@
       "filePath": "apps/api/src/modules/ios/__tests__/ios-multi-combo-wallets.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22091,
-        "lineCount": 639,
+        "sizeBytes": 30629,
+        "lineCount": 859,
         "ext": ".ts"
       }
     },
@@ -41920,6 +42081,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/db-pools.test.ts",
+      "type": "File",
+      "label": "db-pools.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/db-pools.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 896,
+        "lineCount": 26,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/db-pools.ts",
       "type": "File",
       "label": "db-pools.ts",
@@ -41927,8 +42101,8 @@
       "filePath": "apps/api/src/modules/ios/services/db-pools.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1728,
-        "lineCount": 67,
+        "sizeBytes": 3456,
+        "lineCount": 104,
         "ext": ".ts"
       }
     },
@@ -42057,7 +42231,7 @@
       "filePath": "apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19179,
+        "sizeBytes": 19159,
         "lineCount": 494,
         "ext": ".ts"
       }
@@ -42122,8 +42296,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-notes.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16676,
-        "lineCount": 454,
+        "sizeBytes": 18335,
+        "lineCount": 503,
         "ext": ".ts"
       }
     },
@@ -42239,8 +42413,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-wallet-reconciler.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14928,
-        "lineCount": 395,
+        "sizeBytes": 16519,
+        "lineCount": 428,
         "ext": ".ts"
       }
     },
@@ -42395,8 +42569,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation-attempts.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18878,
-        "lineCount": 527,
+        "sizeBytes": 18833,
+        "lineCount": 519,
         "ext": ".ts"
       }
     },
@@ -42434,8 +42608,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-staff-stats.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17404,
-        "lineCount": 441,
+        "sizeBytes": 17839,
+        "lineCount": 457,
         "ext": ".ts"
       }
     },
@@ -42447,8 +42621,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 64423,
-        "lineCount": 1587,
+        "sizeBytes": 64359,
+        "lineCount": 1583,
         "ext": ".ts"
       }
     },
@@ -42733,8 +42907,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22138,
-        "lineCount": 587,
+        "sizeBytes": 22614,
+        "lineCount": 666,
         "ext": ".ts"
       }
     },
@@ -42746,8 +42920,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 32837,
-        "lineCount": 902,
+        "sizeBytes": 32926,
+        "lineCount": 914,
         "ext": ".ts"
       }
     },
@@ -42772,8 +42946,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 46437,
-        "lineCount": 1288,
+        "sizeBytes": 46315,
+        "lineCount": 1275,
         "ext": ".ts"
       }
     },
@@ -42954,8 +43128,8 @@
       "filePath": "apps/api/src/modules/kpi/services/financial-goals.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6898,
-        "lineCount": 185,
+        "sizeBytes": 12274,
+        "lineCount": 331,
         "ext": ".ts"
       }
     },
@@ -42967,8 +43141,8 @@
       "filePath": "apps/api/src/modules/kpi/services/financial-goals.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14742,
-        "lineCount": 415,
+        "sizeBytes": 16644,
+        "lineCount": 469,
         "ext": ".ts"
       }
     },
@@ -42993,7 +43167,7 @@
       "filePath": "apps/api/src/modules/kpi/services/package-audit.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10195,
+        "sizeBytes": 10175,
         "lineCount": 228,
         "ext": ".ts"
       }
@@ -45944,8 +46118,8 @@
       "filePath": "apps/web/app/chat/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4730,
-        "lineCount": 136,
+        "sizeBytes": 5185,
+        "lineCount": 144,
         "ext": ".tsx"
       }
     },
@@ -47296,8 +47470,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12763,
-        "lineCount": 389,
+        "sizeBytes": 12818,
+        "lineCount": 396,
         "ext": ".tsx"
       }
     },
@@ -47309,8 +47483,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 79446,
-        "lineCount": 1558,
+        "sizeBytes": 81348,
+        "lineCount": 1600,
         "ext": ".tsx"
       }
     },
@@ -47374,8 +47548,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkTeamBookingDoneBonusPanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20411,
-        "lineCount": 420,
+        "sizeBytes": 20383,
+        "lineCount": 419,
         "ext": ".tsx"
       }
     },
@@ -49324,8 +49498,8 @@
       "filePath": "apps/web/app/dashboard/financial-goals/components/FinancialGoalDailyTable.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7078,
-        "lineCount": 226,
+        "sizeBytes": 9800,
+        "lineCount": 293,
         "ext": ".tsx"
       }
     },
@@ -49350,8 +49524,8 @@
       "filePath": "apps/web/app/dashboard/financial-goals/components/__tests__/FinancialGoalDailyTable.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4456,
-        "lineCount": 125,
+        "sizeBytes": 5869,
+        "lineCount": 168,
         "ext": ".tsx"
       }
     },
@@ -49376,8 +49550,8 @@
       "filePath": "apps/web/app/dashboard/financial-goals/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12601,
-        "lineCount": 345,
+        "sizeBytes": 12644,
+        "lineCount": 346,
         "ext": ".tsx"
       }
     },
@@ -49753,8 +49927,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75174,
-        "lineCount": 1897,
+        "sizeBytes": 75856,
+        "lineCount": 1913,
         "ext": ".tsx"
       }
     },
@@ -52210,8 +52384,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/IncomingLashSpecFormat.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6322,
-        "lineCount": 168,
+        "sizeBytes": 7088,
+        "lineCount": 182,
         "ext": ".ts"
       }
     },
@@ -52236,8 +52410,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14822,
-        "lineCount": 413,
+        "sizeBytes": 18517,
+        "lineCount": 515,
         "ext": ".tsx"
       }
     },
@@ -52704,8 +52878,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30640,
-        "lineCount": 697,
+        "sizeBytes": 30740,
+        "lineCount": 699,
         "ext": ".tsx"
       }
     },
@@ -52808,8 +52982,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18533,
-        "lineCount": 464,
+        "sizeBytes": 18602,
+        "lineCount": 465,
         "ext": ".ts"
       }
     },
@@ -52847,8 +53021,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20468,
-        "lineCount": 541,
+        "sizeBytes": 20682,
+        "lineCount": 550,
         "ext": ".ts"
       }
     },
@@ -52938,8 +53112,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationComboAndUpgrade.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26596,
-        "lineCount": 679,
+        "sizeBytes": 27353,
+        "lineCount": 698,
         "ext": ".ts"
       }
     },
@@ -52964,8 +53138,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27820,
-        "lineCount": 688,
+        "sizeBytes": 28229,
+        "lineCount": 697,
         "ext": ".ts"
       }
     },
@@ -53302,8 +53476,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellAccountingHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5753,
-        "lineCount": 157,
+        "sizeBytes": 5821,
+        "lineCount": 158,
         "ext": ".ts"
       }
     },
@@ -53367,8 +53541,8 @@
       "filePath": "apps/web/app/ios-app/components/simulation/SimulationAttemptEditModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29016,
-        "lineCount": 661,
+        "sizeBytes": 29099,
+        "lineCount": 666,
         "ext": ".tsx"
       }
     },
@@ -53978,8 +54152,8 @@
       "filePath": "apps/web/app/ios-app/state/__tests__/wings-combo-catalog.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3356,
-        "lineCount": 92,
+        "sizeBytes": 5277,
+        "lineCount": 144,
         "ext": ".ts"
       }
     },
@@ -54615,8 +54789,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2488,
-        "lineCount": 76,
+        "sizeBytes": 3155,
+        "lineCount": 88,
         "ext": ".ts"
       }
     },
@@ -54719,8 +54893,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18628,
-        "lineCount": 460,
+        "sizeBytes": 18610,
+        "lineCount": 457,
         "ext": ".ts"
       }
     },
@@ -54784,8 +54958,8 @@
       "filePath": "apps/web/lib/api/ios.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9658,
-        "lineCount": 314,
+        "sizeBytes": 9620,
+        "lineCount": 310,
         "ext": ".ts"
       }
     },
@@ -55291,8 +55465,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 200916,
-        "lineCount": 2481,
+        "sizeBytes": 206003,
+        "lineCount": 2526,
         "ext": ".ts"
       }
     },
@@ -55330,8 +55504,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 237774,
-        "lineCount": 6685,
+        "sizeBytes": 239803,
+        "lineCount": 6738,
         "ext": ".ts"
       }
     },
@@ -55486,8 +55660,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2279,
-        "lineCount": 101,
+        "sizeBytes": 3174,
+        "lineCount": 126,
         "ext": ".ts"
       }
     },
@@ -55902,8 +56076,8 @@
       "filePath": "packages/shared/src/types/financial-goals.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1515,
-        "lineCount": 61,
+        "sizeBytes": 1592,
+        "lineCount": 63,
         "ext": ".ts"
       }
     },
@@ -56032,8 +56206,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 34725,
-        "lineCount": 1316,
+        "sizeBytes": 34864,
+        "lineCount": 1318,
         "ext": ".ts"
       }
     },
@@ -65513,6 +65687,27 @@
     {
       "id": "edge:type:@mos-lab/shared:ListAiSessionsResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:ListAiSessionsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiSessionAccessMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiSessionAccessMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiSessionAccessLogEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiSessionAccessLogEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiSessionAccessInfo:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiSessionAccessInfo",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -76956,6 +77151,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatAiSessionsModal.test:ws:apps/web",
+      "source": "uicomp:MosChatAiSessionsModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatAiSessionsModal.test:token:color:primary",
+      "source": "uicomp:MosChatAiSessionsModal.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatAvatar.test:ws:apps/web",
       "source": "uicomp:MosChatAvatar.test",
       "target": "ws:apps/web",
@@ -77539,6 +77748,34 @@
     {
       "id": "edge:uicomp:useChatRealtimeSync.test:token:color:primary",
       "source": "uicomp:useChatRealtimeSync.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatAiAuditReasonModal:ws:apps/web",
+      "source": "uicomp:MosChatAiAuditReasonModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatAiAuditReasonModal:token:color:primary",
+      "source": "uicomp:MosChatAiAuditReasonModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatAiSessionsModal:ws:apps/web",
+      "source": "uicomp:MosChatAiSessionsModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatAiSessionsModal:token:color:primary",
+      "source": "uicomp:MosChatAiSessionsModal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -78435,6 +78672,34 @@
     {
       "id": "edge:uicomp:google-workspace-bridge:token:color:primary",
       "source": "uicomp:google-workspace-bridge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-permalink.test:ws:apps/web",
+      "source": "uicomp:mos-chat-permalink.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-permalink.test:token:color:primary",
+      "source": "uicomp:mos-chat-permalink.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-permalink:ws:apps/web",
+      "source": "uicomp:mos-chat-permalink",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-permalink:token:color:primary",
+      "source": "uicomp:mos-chat-permalink",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -80260,6 +80525,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ai/ai-session-access.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ai-session-access.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ai/ai.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/ai.service.ts",
       "target": "ws:packages/shared",
@@ -80269,6 +80541,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ai/live-customer-context.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/live-customer-context.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/routes.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86780,6 +87059,13 @@
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmInboxImplementationJob",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "target": "prisma:crm:CrmInboxImplementationJob",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmAiChatSession",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "prisma:crm:CrmAiChatSession",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -119545,31 +119831,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4360,
-    "totalEdges": 9007,
+    "totalNodes": 4374,
+    "totalEdges": 9023,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 780,
       "Component": 66,
-      "SharedType": 1566,
+      "SharedType": 1569,
       "DesignToken": 12,
-      "UIComponent": 382,
-      "File": 1368
+      "UIComponent": 387,
+      "File": 1374
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1761,
+      "EXPORTS": 1764,
       "HANDLES_ROUTE": 780,
-      "RENDERS": 448,
-      "USES_TOKEN": 384,
-      "IMPORTS": 795,
-      "QUERIES_MODEL": 437,
+      "RENDERS": 453,
+      "USES_TOKEN": 389,
+      "IMPORTS": 797,
+      "QUERIES_MODEL": 438,
       "API_CALL": 4402
     },
     "fastifyRouteCount": 785,
     "prismaModelCount": 183,
     "nextPageCount": 66,
-    "sharedTypeCount": 1566
+    "sharedTypeCount": 1569
   },
   "routes": [
     {

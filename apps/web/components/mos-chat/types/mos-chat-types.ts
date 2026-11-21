@@ -210,6 +210,8 @@ export interface MosChatContextValue {
 
   // Refresh & AI
   resetAiChat?: () => Promise<void>;
+  /** Permalink: load one AI Copilot session by id (mobile supports the owner's own sessions only). */
+  openAiSessionById?: (sessionId: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 
   // Customer Detail Drawer Integration

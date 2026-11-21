@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type { FastifyInstance } from 'fastify';
+import { parseSessionMetadata, withMissionLink } from '../ai/ai-session-access.js';
 import {
   AI_COPILOT_CONV_ID,
   BUG_REPORT_MAX_ATTACHMENTS,
@@ -864,11 +865,30 @@ export class ChatMissionBridgeService {
       .trim();
     const title = rawTitleSource.slice(0, 180);
 
+    // Permalink: remember which MAI session this ticket came from (DB record of the message wins over the client hint).
+    let aiSessionId: string | undefined;
+    if (isAiConv) {
+      const hinted = typeof body.aiSessionId === 'string' ? body.aiSessionId.trim() : '';
+      if (/^[A-Za-z0-9_-]{8,64}$/.test(hinted)) aiSessionId = hinted;
+      if (fastify?.prisma?.crm?.crmAiChatMessage) {
+        const aiMsgRecord = await fastify.prisma.crm.crmAiChatMessage
+          .findFirst({ where: { id: targetMsg.id }, select: { sessionId: true } })
+          .catch(() => null);
+        if (aiMsgRecord?.sessionId) aiSessionId = aiMsgRecord.sessionId;
+      }
+    }
+
     const descriptionSections: string[] = [
       `### 💬 Nguồn yêu cầu từ mOS Chat (${isAiConv ? 'Trò chuyện với 🤖 MAI' : conv.type === 'dm' ? `Trò chuyện với ${conv.name}` : `#${conv.name}`})`,
       `**Người khởi tạo / Phối hợp:** ${verifiedReporter?.displayName || targetMsg.senderName}`,
       `**Nội dung gốc ([${targetMsg.timeLabel}] ${targetMsg.senderName}):**\n${rawRootText}`,
     ];
+
+    if (aiSessionId) {
+      descriptionSections.push(
+        `**🔗 Phiên hội thoại MAI (perm link):** /chat?convId=${AI_COPILOT_CONV_ID}&sessionId=${aiSessionId}`
+      );
+    }
 
     if (threadTranscriptLines.length > 0) {
       descriptionSections.push(
@@ -939,7 +959,11 @@ export class ChatMissionBridgeService {
           contextJson: JSON.stringify({
             capturedAt: now.toISOString(),
             path: '/dashboard',
-            query: { chatConvId: conv.id, chatMsgId: targetMsg.id },
+            query: {
+              chatConvId: conv.id,
+              chatMsgId: targetMsg.id,
+              ...(aiSessionId ? { chatSessionId: aiSessionId } : {}),
+            },
             pageTitle: `mOS Chat · ${conv.name}`,
             overlays: ['mOS Chat'],
             themeMode: 'light',
@@ -968,6 +992,7 @@ export class ChatMissionBridgeService {
             clarificationStatus: report.clarificationStatus,
             chatConversationId: conv.id,
             chatMessageId: targetMsg.id,
+            ...(aiSessionId ? { chatSessionId: aiSessionId } : {}),
           }),
         },
       });
@@ -1026,6 +1051,25 @@ export class ChatMissionBridgeService {
 
       return report;
     });
+
+    // Permalink privacy: mark the MAI session as mission-linked so the Super Admin may reopen it from the ticket.
+    if (aiSessionId && fastify?.prisma?.crm?.crmAiChatSession) {
+      try {
+        const sessionRow = await fastify.prisma.crm.crmAiChatSession.findFirst({ where: { id: aiSessionId } });
+        if (sessionRow) {
+          await fastify.prisma.crm.crmAiChatSession.update({
+            where: { id: sessionRow.id },
+            data: {
+              metadataJson: JSON.stringify(
+                withMissionLink(parseSessionMetadata(sessionRow.metadataJson), createdReport.id)
+              ),
+            },
+          });
+        }
+      } catch (err) {
+        fastify.log?.warn?.({ err, aiSessionId }, 'Could not link MAI session to mission (non-blocking)');
+      }
+    }
 
     // Save image attachments if any
     for (const [index, att] of bugAttachments.entries()) {

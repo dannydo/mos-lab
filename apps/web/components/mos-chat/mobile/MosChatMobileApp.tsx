@@ -69,6 +69,8 @@ export interface MosChatMobileAppProps {
     threadRootMessageId?: string;
     openTab?: MosChatActiveSubtab;
     taskId?: string;
+    /** Permalink: open this exact AI Copilot session. */
+    aiSessionId?: string;
     timestamp?: number;
   } | null;
 }
@@ -107,6 +109,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     updateSpaceConfig,
     togglePinConversation,
     pinnedConvIds,
+    openAiSessionById,
   } = useMosChat();
 
   const resolvedFontStaffId =
@@ -221,6 +224,19 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   );
 
   const handledInitialNavKeyRef = useRef<string | null>(null);
+
+  // Permalink: /chat?convId=dm-wings-ai-copilot&sessionId=<id>
+  const handledAiSessionNavKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sessionId = initialNavTarget?.aiSessionId;
+    if (!sessionId || !openAiSessionById || !currentUser?.id) return;
+    const navKey = `${sessionId}::${initialNavTarget?.timestamp || ''}`;
+    if (handledAiSessionNavKeyRef.current === navKey) return;
+    handledAiSessionNavKeyRef.current = navKey;
+    void openAiSessionById(sessionId).then((ok) => {
+      if (ok) setMobileView('room');
+    });
+  }, [initialNavTarget?.aiSessionId, initialNavTarget?.timestamp, openAiSessionById, currentUser?.id, setMobileView]);
 
   useEffect(() => {
     if (!initialNavTarget?.conversationId) return;

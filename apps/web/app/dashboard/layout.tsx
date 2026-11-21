@@ -77,6 +77,7 @@ import { HeaderNotificationCenter } from '../../components/notification-center/H
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 import { tabNotificationManager } from '../../lib/tab-notification';
+import { readMosChatSessionId } from '../../components/mos-chat/utils/mos-chat-permalink';
 import {
   getBugReportBadgeServerSnapshot,
   getBugReportBadgeSummary,
@@ -90,6 +91,7 @@ function openMosChatWindow(options?: {
   messageId?: string;
   openTab?: string;
   taskId?: string;
+  aiSessionId?: string;
 }) {
   if (typeof window === 'undefined') return;
   const params = new URLSearchParams();
@@ -97,6 +99,7 @@ function openMosChatWindow(options?: {
   if (options?.messageId) params.set('msgId', options.messageId);
   if (options?.openTab) params.set('tab', options.openTab);
   if (options?.taskId) params.set('taskId', options.taskId);
+  if (options?.aiSessionId) params.set('sessionId', options.aiSessionId);
   const qs = params.toString();
   const url = qs ? `/chat?${qs}` : '/chat';
   window.open(url, 'mOS_Chat_Window');
@@ -105,7 +108,7 @@ function openMosChatWindow(options?: {
 function ChatDeepLinkWatcher({
   onOpenChat,
 }: {
-  onOpenChat?: (options: { conversationId?: string; messageId?: string }) => void;
+  onOpenChat?: (options: { conversationId?: string; messageId?: string; aiSessionId?: string }) => void;
 }) {
   const searchParams = useSearchParams();
 
@@ -116,11 +119,14 @@ function ChatDeepLinkWatcher({
     const chatMsgId =
       searchParams.get('chatMsgId') || searchParams.get('messageId') || searchParams.get('msgId') || undefined;
 
+    // Ticket/permalink context may carry the exact AI Copilot session (chatSessionId / sessionId).
+    const chatSessionId = readMosChatSessionId((key) => searchParams.get(key));
+
     if (chatConvId) {
       if (onOpenChat) {
-        onOpenChat({ conversationId: chatConvId, messageId: chatMsgId });
+        onOpenChat({ conversationId: chatConvId, messageId: chatMsgId, aiSessionId: chatSessionId });
       } else {
-        openMosChatWindow({ conversationId: chatConvId, messageId: chatMsgId });
+        openMosChatWindow({ conversationId: chatConvId, messageId: chatMsgId, aiSessionId: chatSessionId });
       }
     }
   }, [searchParams, onOpenChat]);
@@ -209,6 +215,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     timestamp?: number;
     openTab?: 'chat' | 'tasks' | 'pinned';
     taskId?: string;
+    aiSessionId?: string;
   } | null>(null);
 
   const setAndPersistChatDisplayMode = useCallback((mode: 'embedded' | 'tab') => {
@@ -226,6 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         messageId?: string;
         openTab?: 'chat' | 'tasks' | 'pinned';
         taskId?: string;
+        aiSessionId?: string;
       }
     ) => {
       const mode = modeOverride || chatDisplayMode;
@@ -235,12 +243,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       setHasEverOpenedEmbeddedChat(true);
       setIsMosChatOpen(true);
-      if (navOptions?.conversationId || navOptions?.messageId || navOptions?.openTab || navOptions?.taskId) {
+      if (
+        navOptions?.conversationId ||
+        navOptions?.messageId ||
+        navOptions?.openTab ||
+        navOptions?.taskId ||
+        navOptions?.aiSessionId
+      ) {
         setTargetChatNavigation({
           conversationId: navOptions.conversationId,
           messageId: navOptions.messageId,
           openTab: navOptions.openTab,
           taskId: navOptions.taskId,
+          aiSessionId: navOptions.aiSessionId,
           timestamp: Date.now(),
         });
       }
@@ -265,6 +280,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         messageId?: string;
         openTab?: 'chat' | 'tasks' | 'pinned';
         taskId?: string;
+        aiSessionId?: string;
         forceMode?: 'embedded' | 'tab';
       }>;
       openChatWithMode(customEvent.detail?.forceMode, customEvent.detail);
@@ -1212,8 +1228,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 <Suspense fallback={null}>
                   <ChatDeepLinkWatcher
-                    onOpenChat={({ conversationId, messageId }) => {
-                      openChatWithMode(undefined, { conversationId, messageId });
+                    onOpenChat={({ conversationId, messageId, aiSessionId }) => {
+                      openChatWithMode(undefined, { conversationId, messageId, aiSessionId });
                     }}
                   />
                 </Suspense>

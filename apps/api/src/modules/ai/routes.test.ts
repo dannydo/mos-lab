@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import Fastify from 'fastify';
 import { aiRoutes } from './routes.js';
+import type { UserRole } from '@mos-lab/shared';
 import { extractThinkingAndAction, generateAssistantFallback } from './ai.service.js';
 
 test('AI Voice Chat route returns 400 when message is missing or empty', async () => {
@@ -159,7 +160,9 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
           }));
       },
       findFirst: async (args: SafeAny) => {
-        const found = mockSessions.find((s) => s.id === args.where.id && s.staffId === args.where.staffId);
+        const found = mockSessions.find(
+          (s) => s.id === args.where.id && (args.where.staffId === undefined || s.staffId === args.where.staffId)
+        );
         if (!found) return null;
         return {
           ...found,
@@ -214,7 +217,7 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
       id: staffId,
       username: `user_${staffId}`,
       displayName: `User ${staffId}`,
-      role: 'admin',
+      role: String(this.headers['x-role'] || 'admin') as UserRole,
     };
   });
 
@@ -260,13 +263,140 @@ test('AI Assistant Chat routes enforce Private Workspace isolation between staff
   assert.equal(sessionDetails.session.id, session1.id);
   assert.equal(sessionDetails.messages.length, 2); // 1 user + 1 assistant
 
-  // 4. PRIVATE WORKSPACE ISOLATION: Staff 2 cannot view Staff 1's session (must return 404)
-  const getResStaff2 = await app.inject({
+  // 4. PRIVATE BY DEFAULT: nobody but the owner can open the permalink. A non-admin only learns it is forbidden,
+  //    an Admin is additionally told that a logged security audit is available. Unknown ids are a plain 404.
+  const getResNonAdmin = await app.inject({
     method: 'GET',
     url: `/ai/chat/sessions/${session1.id}`,
-    headers: { 'x-staff-id': '202' },
+    headers: { 'x-staff-id': '303', 'x-role': 'telesales' },
   });
-  assert.equal(getResStaff2.statusCode, 404);
+  assert.equal(getResNonAdmin.statusCode, 403);
+  assert.equal(JSON.parse(getResNonAdmin.body).auditAvailable, false);
+  assert.equal(JSON.parse(getResNonAdmin.body).session, undefined);
+
+  const getResAdminNoAudit = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+  });
+  assert.equal(getResAdminNoAudit.statusCode, 403);
+  assert.equal(JSON.parse(getResAdminNoAudit.body).auditAvailable, true);
+
+  const getResUnknown = await app.inject({
+    method: 'GET',
+    url: '/ai/chat/sessions/does-not-exist',
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+  });
+  assert.equal(getResUnknown.statusCode, 404);
+
+  // 4b. Super Admin has no shortcut while the session is not linked to a mOS Mission
+  const getResSuperUnlinked = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '1', 'x-role': 'super_admin' },
+  });
+  assert.equal(getResSuperUnlinked.statusCode, 403);
+
+  // 4c. Security audit: Admin must give a written reason; the view is read-only and logged for the owner
+  const getResAuditShort = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}?purpose=security_audit&reason=abc`,
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+  });
+  assert.equal(getResAuditShort.statusCode, 403);
+
+  const getResAudit = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}?purpose=security_audit&reason=${encodeURIComponent('Rà soát nhân viên nghi dùng MAI sai mục đích')}`,
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+  });
+  assert.equal(getResAudit.statusCode, 200);
+  const auditBody = JSON.parse(getResAudit.body);
+  assert.equal(auditBody.access.mode, 'audit');
+  assert.equal(auditBody.access.readOnly, true);
+  assert.equal(auditBody.session.metadata, null, "someone else's session metadata is never returned");
+  assert.equal(auditBody.access.accessLog, undefined, 'only the owner sees the access log');
+
+  const ownerAfterAudit = JSON.parse(
+    (
+      await app.inject({
+        method: 'GET',
+        url: `/ai/chat/sessions/${session1.id}`,
+        headers: { 'x-staff-id': '101' },
+      })
+    ).body
+  );
+  assert.equal(ownerAfterAudit.access.mode, 'owner');
+  assert.equal(ownerAfterAudit.access.accessLog.length, 1);
+  assert.equal(ownerAfterAudit.access.accessLog[0].mode, 'audit');
+  assert.equal(ownerAfterAudit.access.accessLog[0].viewerStaffId, 202);
+  assert.match(ownerAfterAudit.access.accessLog[0].reason, /Rà soát/);
+
+  // 4d. Mission-linked session: Super Admin can open it (logged); a regular Admin still cannot
+  const mockSession = mockSessions.find((x) => x.id === session1.id);
+  mockSession.metadataJson = JSON.stringify({
+    ...JSON.parse(mockSession.metadataJson || '{}'),
+    missionReportIds: [255],
+  });
+  const getResSuperLinked = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '1', 'x-role': 'super_admin' },
+  });
+  assert.equal(getResSuperLinked.statusCode, 200);
+  assert.equal(JSON.parse(getResSuperLinked.body).access.mode, 'mission');
+  const getResAdminLinked = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+  });
+  assert.equal(getResAdminLinked.statusCode, 403);
+
+  // 4e. Owner shares the link: any signed-in staff may view (read-only); only the owner can toggle sharing
+  const shareByOther = await app.inject({
+    method: 'PATCH',
+    url: `/ai/chat/sessions/${session1.id}/sharing`,
+    headers: { 'x-staff-id': '202', 'x-role': 'admin' },
+    payload: { enabled: true },
+  });
+  assert.equal(shareByOther.statusCode, 404);
+  const shareBad = await app.inject({
+    method: 'PATCH',
+    url: `/ai/chat/sessions/${session1.id}/sharing`,
+    headers: { 'x-staff-id': '101' },
+    payload: {},
+  });
+  assert.equal(shareBad.statusCode, 400);
+  const shareOn = await app.inject({
+    method: 'PATCH',
+    url: `/ai/chat/sessions/${session1.id}/sharing`,
+    headers: { 'x-staff-id': '101' },
+    payload: { enabled: true },
+  });
+  assert.equal(shareOn.statusCode, 200);
+  assert.equal(JSON.parse(shareOn.body).sharingEnabled, true);
+
+  const getResShared = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '303', 'x-role': 'telesales' },
+  });
+  assert.equal(getResShared.statusCode, 200);
+  assert.equal(JSON.parse(getResShared.body).access.mode, 'shared');
+  assert.equal(JSON.parse(getResShared.body).access.readOnly, true);
+
+  await app.inject({
+    method: 'PATCH',
+    url: `/ai/chat/sessions/${session1.id}/sharing`,
+    headers: { 'x-staff-id': '101' },
+    payload: { enabled: false },
+  });
+  const getResRevoked = await app.inject({
+    method: 'GET',
+    url: `/ai/chat/sessions/${session1.id}`,
+    headers: { 'x-staff-id': '303', 'x-role': 'telesales' },
+  });
+  assert.equal(getResRevoked.statusCode, 403);
 
   // 5. Staff 2 lists sessions -> empty for Staff 2
   const listResStaff2 = await app.inject({

@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { isCvRole } from '@mos-lab/shared';
 import type { MosChatActiveSubtab } from '../../components/mos-chat/types/mos-chat-types';
+import { AI_COPILOT_CONV_ID } from '../../components/mos-chat/constants/chat-constants';
+import { readMosChatSessionId } from '../../components/mos-chat/utils/mos-chat-permalink';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 import { apiClient } from '../../lib/api-client';
@@ -68,8 +70,13 @@ function ChatPageContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Permalink: /chat?convId=dm-wings-ai-copilot&sessionId=<id> opens that exact AI Copilot session.
+  const aiSessionId = readMosChatSessionId((key) => searchParams?.get(key));
   const convId =
-    searchParams?.get('chatConvId') || searchParams?.get('conversationId') || searchParams?.get('convId') || undefined;
+    searchParams?.get('chatConvId') ||
+    searchParams?.get('conversationId') ||
+    searchParams?.get('convId') ||
+    (aiSessionId ? AI_COPILOT_CONV_ID : undefined);
   const msgId =
     searchParams?.get('chatMsgId') || searchParams?.get('messageId') || searchParams?.get('msgId') || undefined;
   const threadRootMessageId = searchParams?.get('threadId') || searchParams?.get('threadRootMessageId') || undefined;
@@ -77,16 +84,17 @@ function ChatPageContent() {
   const taskId = searchParams?.get('taskId') || undefined;
 
   const targetNavigation = useMemo(() => {
-    if (!convId && !msgId && !threadRootMessageId && !tab && !taskId) return null;
+    if (!convId && !msgId && !threadRootMessageId && !tab && !taskId && !aiSessionId) return null;
     return {
       conversationId: convId,
       messageId: msgId,
       threadRootMessageId,
       openTab: tab,
       taskId: taskId,
+      aiSessionId,
       timestamp: Date.now(),
     };
-  }, [convId, msgId, threadRootMessageId, tab, taskId]);
+  }, [convId, msgId, threadRootMessageId, tab, taskId, aiSessionId]);
 
   if (isMobile) {
     return (

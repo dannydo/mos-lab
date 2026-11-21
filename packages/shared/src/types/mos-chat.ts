@@ -721,6 +721,8 @@ export interface CreateMosChatMissionRequest {
   title?: string | null;
   pageUrl?: string | null;
   sourceMessage?: MosChatMessage | null;
+  /** AI Copilot (MAI) session the message belongs to, so the ticket can link back to the exact session. */
+  aiSessionId?: string | null;
 }
 
 export interface CreateMosChatMissionResponse {
