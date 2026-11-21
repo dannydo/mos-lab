@@ -37,6 +37,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Popconfirm, message as antdMessage } from 'antd';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatTaskInlineChecklist } from '../components/MosChatTaskInlineChecklist';
+import { resolveMissionActionFlags } from '../shared/missions/mission-action-flags';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -133,40 +134,13 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
 
   const mission = task.mission;
 
-  const canApproveImplementation = Boolean(
-    mission &&
-    (mission.superAdminActions?.canApproveImplementation ||
-      mission.status === 'NEW' ||
-      (mission.status === 'APPROVED' && !mission.superAdminActions?.activeJobId))
-  );
-
-  const canSuperAdminApproveCommit = Boolean(
-    mission &&
-    (mission.canSuperAdminApproveCommit ||
-      mission.superAdminActions?.canApproveCommit ||
-      mission.status === 'AWAITING_DANNY_COMMIT_REVIEW' ||
-      mission.superAdminActions?.executionPhase === 'AWAITING_COMMIT_REVIEW')
-  );
-
-  const canSuperAdminApproveDeploy = Boolean(
-    mission &&
-    (mission.canSuperAdminApproveDeploy ||
-      mission.superAdminActions?.canApproveDeploy ||
-      mission.status === 'AWAITING_DANNY_DEPLOY_APPROVAL' ||
-      mission.superAdminActions?.executionPhase === 'AWAITING_DEPLOY_REVIEW')
-  );
-
-  const canReporterAccept = Boolean(
-    mission &&
-    (mission.canReporterAccept ||
-      mission.reporterActions?.canAcceptOrReopen ||
-      mission.status === 'FIXED' ||
-      mission.status === 'AWAITING_REPORTER_ACCEPTANCE')
-  );
-
-  const canRequestUpgradeOrRework = Boolean(
-    mission && (canReporterAccept || mission.stage === 'COMPLETED' || mission.status === 'CLOSED')
-  );
+  const {
+    canApproveImplementation,
+    canSuperAdminApproveCommit,
+    canSuperAdminApproveDeploy,
+    canReporterAccept,
+    canRequestUpgradeOrRework,
+  } = resolveMissionActionFlags(mission);
 
   const handleExecuteMissionAction = async (action: MosChatMissionActionType, feedback?: string) => {
     if (!mission) return;
