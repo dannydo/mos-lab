@@ -457,7 +457,7 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const authUser = await resolveIosAuth(fastify, request);
       if (!authUser) return reply.status(401).send({ success: false, error: 'Unauthorized' });
 
-      const tier = authUser.careerTier || authUser.role;
+      const tier = authUser.careerTier || authUser.role || '';
       const allowedTiers = ['CVL', 'CVLL', 'CC', 'ADMIN', 'admin', 'super_admin'];
       if (!allowedTiers.includes(tier)) {
         return reply

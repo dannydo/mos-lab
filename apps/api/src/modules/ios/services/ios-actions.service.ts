@@ -18,6 +18,11 @@ import {
   syncIosStepWithLegacyPhp,
 } from './ios-legacy-step-sync.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
+import {
+  MUTATIVE_ACTIONS_AFTER_SETTLE,
+  extractComboWalletSelectionPatch,
+  buildSelectComboWalletOverride,
+} from './ios-action-wallet.helper.js';
 import { persistIncomingRoundPhotosToCloud, persistRetainCountsByServiceIndex } from './ios-progress-sync.helper.js';
 import {
   applyTargetedPromotionToOverride,

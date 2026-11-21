@@ -25,6 +25,7 @@ import {
   formatTime12h,
   formatTimeSlot,
   hydrateSavedNaturalLashAttributes,
+  buildDefaultLiveOrderAttributes,
   normalizeLashMaterialLabel,
   resolveCanonicalBookedServicePrice,
   resolveCustomerAvatar,
@@ -79,13 +80,13 @@ export function mapLiveOrdersToBookings(params: {
         }
       : rawOverride;
 
-      const duration = Number(r.booking_duration_minute) || 90;
-      const servicePrice = resolveCanonicalBookedServicePrice(r, override.servicePrice);
-      const orderNum = r.order_number ? `BK-${r.order_number}` : `BK-${r.id}`;
-      const note = r.booking_note || '';
-      const rawVisits = Number(r.total_visits) || 0;
-      const rawIsNew = r.is_new !== null && r.is_new !== undefined ? Number(r.is_new) : null;
-      const customerId = Number(r.user_id) || 0;
+    const duration = Number(r.booking_duration_minute) || 90;
+    const servicePrice = resolveCanonicalBookedServicePrice(r, override.servicePrice);
+    const orderNum = r.order_number ? `BK-${r.order_number}` : `BK-${r.id}`;
+    const note = r.booking_note || '';
+    const rawVisits = Number(r.total_visits) || 0;
+    const rawIsNew = r.is_new !== null && r.is_new !== undefined ? Number(r.is_new) : null;
+    const customerId = Number(r.user_id) || 0;
 
     const checkInStaffId = override.checkInStaffId ?? (r.check_in_staff_id ? Number(r.check_in_staff_id) : undefined);
     const checkInStaffName = override.checkInStaffName ?? r.check_in_staff_name ?? undefined;
@@ -144,50 +145,16 @@ export function mapLiveOrdersToBookings(params: {
     const baseUnderComboStatus = customerContext.underMinkComboMap.get(customerId);
     const rawCustomerWallets = customerContext.comboWalletsMap?.get(customerId) || [];
 
-      const selectedCombo = override.selectedCombo || null;
-      const selectedUnderCombo = override.selectedUnderCombo || null;
-      const comboRedemption = override.comboRedemption || null;
-      const rawCartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts) ? override.cartProducts : [];
-      const promoState = resolveItemizedBookingPromotions(
-        override,
-        r.promotion_id,
-        r.os_promotion_id,
-        r.product_promotion_map,
-        rawCartProducts,
-        promotionsById,
-        {
-          servicePrice,
-          osDiscountAmount: r.os_discount_amount,
-        }
-      );
-      const cartProducts = promoState.cartProducts;
-      const upgradePrice = Number(override.upgradePrice || 0);
-
-      const underComboStatus = customerContext.underMinkComboMap.get(customerId);
-      const hasUnderMinkComboActive = Boolean(
-        underComboStatus?.hasUnderCombo && (underComboStatus?.remainingSessions ?? 0) > 0
-      );
-      const overrideAttrs = override.attributes as IosBookingItem['attributes'] | undefined;
-      const actualSpecs = r.actual_order_specs || undefined;
-      const matchedTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
-        activeTrainingPairs,
-        assignedStaffId,
-        targetDate
-      );
-      const isTrainingCvlOrder = Boolean(matchedTrainingPair);
-
-      const { cvRewardBreakdown, billing } = computeBookingFinancials({
-        servicePrice,
-        upgradePrice,
-        serviceName: override.serviceName || r.service_name,
+    const preHydratedExpiryBooking = applyCustomerComboExpiryOverridesToBooking(
+      {
+        comboWallets: rawCustomerWallets,
         comboLiveStatus: baseComboInfo,
         underMinkComboStatus: baseUnderComboStatus,
-        comboWallets: rawCustomerWallets,
         selectedUpperComboBalanceId: override.selectedUpperComboBalanceId ?? null,
         selectedUnderComboBalanceId: override.selectedUnderComboBalanceId ?? null,
         skipUpperCombo: Boolean(override.skipUpperCombo),
         skipUnderCombo: Boolean(override.skipUnderCombo),
-      } as IosBookingItem,
+      } as unknown as IosBookingItem,
       customerComboExpiryMap[String(customerId)],
       todayVn
     );
