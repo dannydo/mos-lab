@@ -18,6 +18,7 @@ import { addScannedProductToCartProducts, removeScannedUnitFromCartProducts } fr
 import { compressLashImage } from '../../utils/imageCompressor';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
+import { CheckoutComboWalletCard, type SelectComboWalletHandler } from './checkout/CheckoutComboWalletCard';
 import { IosCloudSyncStatus } from '../ui-kit/IosCloudSyncBadge';
 import {
   calculateDualComboTierBonus,
@@ -40,7 +41,6 @@ interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
   actor?: ActiveActorProfile;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
-  /** Referral đang chờ — được truyền từ Screen02 sau khi CVL xác nhận người GT */
   pendingReferral?: { referrerUserId: number; referrerName: string; referrerPhone: string } | null;
   onBack: () => void;
   onChoosePayment: (
@@ -69,6 +69,7 @@ interface Screen12CheckoutBillingProps {
   ) => void;
   onSavePromotion?: (promotion: IosPromotionOption | null, target?: SavePromotionTarget) => void;
   onUpdateCartProducts?: (cartProducts: NonNullable<BookingItem['cartProducts']>) => void;
+  onSelectComboWallet?: SelectComboWalletHandler;
   onUpdateCombos?: (payload: {
     selectedCombo: BookingItem['selectedCombo'];
     selectedUnderCombo: BookingItem['selectedUnderCombo'];
@@ -81,11 +82,11 @@ export function Screen12CheckoutBilling({
   booking,
   actor,
   cvPlusRules,
-  pendingReferral,
   onBack,
   onChoosePayment,
   onSavePromotion,
   onUpdateCartProducts,
+  onSelectComboWallet,
   onUpdateCombos,
   onEditService,
 }: Screen12CheckoutBillingProps) {
@@ -182,6 +183,7 @@ export function Screen12CheckoutBilling({
   const serviceName = resolveDisplayServiceName(booking);
   const servicePrice = useMemo(() => resolveCheckoutBaseServicePrice(booking, serviceName), [booking, serviceName]);
   const upgradePrice = booking?.upgradePrice || 0;
+  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking || {}), [booking]);
   const comboSelection = useCheckoutComboSelection({
     booking,
     serviceName,
@@ -532,6 +534,14 @@ export function Screen12CheckoutBilling({
           assignedStaff={assignedStaff}
           trainingMentorName={booking?.trainingMentorName}
           dualComboTotalBonus={dualComboBonus.totalBonus}
+        />
+
+        <CheckoutComboWalletCard
+          isDark={isDark}
+          isSettled={isSettled}
+          booking={booking}
+          resolvedWallets={resolvedWallets}
+          onSelectComboWallet={onSelectComboWallet}
         />
 
         <CheckoutReceiptSection

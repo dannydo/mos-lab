@@ -362,3 +362,66 @@ export function buildCheckoutVietQrInfo(params: {
   )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
   return { branchCode, qrTransferContent, vietQrUrl };
 }
+
+export function buildRecordedTipBillingSnapshot(
+  prev: BookingItem,
+  tipAmount: number,
+  actorTier?: string,
+  completedAt: string = new Date().toISOString()
+) {
+  const cvShare = Math.round(tipAmount * 0.7);
+  const checkInShare = Math.round(tipAmount * 0.1);
+  const checkOutShare = Math.round(tipAmount * 0.1);
+  const ccShare = checkInShare + checkOutShare;
+  const {
+    serviceTotal: freshServiceTotal,
+    comboTotal: freshComboTotal,
+    productTotal: freshProductTotal,
+    subtotal,
+    promotionDiscountAmount,
+    subtotalAfterDiscount,
+    vatRate,
+    vatAmount,
+    creditEligiblePayableWithVat,
+    hasAnyCreditRestrictedItem,
+    isFullCreditLocked,
+  } = computeFreshBillingLineTotals(prev);
+  const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
+  const rawDiamondUsed = prev.billing?.diamondUsed ?? 0;
+  const clampedDiamondUsed = isFullCreditLocked
+    ? 0
+    : hasAnyCreditRestrictedItem
+      ? Math.max(0, Math.min(rawDiamondUsed, maxEligibleDiamonds))
+      : rawDiamondUsed;
+  const diamondDiscountAmount = isFullCreditLocked
+    ? 0
+    : hasAnyCreditRestrictedItem
+      ? clampedDiamondUsed * 1000
+      : (prev.billing?.diamondDiscountAmount ?? rawDiamondUsed * 1000);
+  const grandTotal = Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
+  const method = prev.billing?.paymentMethod || 'VIETQR';
+  const optimisticSettlement: IosSettlementStatus =
+    grandTotal <= 0 || method === 'VIETQR' || canDirectlySettleCounterPayment(actorTier)
+      ? 'SETTLED_COMPLETED'
+      : 'PENDING_COUNTER_SETTLEMENT';
+
+  return {
+    ...(prev.billing || {}),
+    subtotal,
+    serviceTotal: freshServiceTotal,
+    comboTotal: freshComboTotal,
+    productTotal: freshProductTotal,
+    promotionDiscountAmount,
+    paymentMethod: method,
+    settlementStatus: optimisticSettlement,
+    vatRate,
+    vatAmount,
+    tipAmount,
+    tipCvShare: cvShare,
+    tipCheckInShare: checkInShare,
+    tipCheckOutShare: checkOutShare,
+    tipCcShare: ccShare,
+    grandTotal,
+    completedAt,
+  };
+}

@@ -1,12 +1,16 @@
 'use client';
 
 import React from 'react';
-import type { IosPromotionOption, IosPromotionTargetScope } from '@mos-lab/shared';
+import {
+  resolveActiveBookingComboWallets,
+  type IosPromotionOption,
+  type IosPromotionTargetScope,
+} from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
 import type { CheckoutComboSelectionController } from '../../../state/useCheckoutComboSelection';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { CustomerPortfolioTriggerButton } from '../../ui-kit/CustomerPortfolioTriggerButton';
-import { ReceiptComboExpiryLine, CheckoutServiceComboStatusBadges } from './ReceiptComboExpiryLine';
+import { CheckoutServiceComboStatusBadges, ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
 import { ReceiptComboItemsSection } from './ReceiptComboItemsSection';
 import { ReceiptItemPromotionBadge } from './ReceiptItemPromotionBadge';
 import { ReceiptTotalsSummary } from './ReceiptTotalsSummary';

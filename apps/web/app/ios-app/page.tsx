@@ -447,6 +447,7 @@ function IosAppInner() {
             onChoosePayment={state.handleChoosePaymentMethod}
             onSavePromotion={state.handleSavePromotion}
             onUpdateCartProducts={state.handleUpdateCartProducts}
+            onSelectComboWallet={state.handleSelectComboWallet}
             onUpdateCombos={state.handleUpdateCombos}
             onEditService={() => state.handleOpenConsultation(13)}
             pendingReferral={state.pendingReferral}

@@ -461,7 +461,15 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
       selectedComboPrice: 1850000,
       selectedUnderComboName: 'Mi Dưới 3 Lần',
       selectedUnderComboPrice: 450000,
-      upsellProducts: [{ productName: 'Dưỡng Mi Yeppeum Korea', quantity: 1, totalPrice: 1100000 }],
+      upsellProducts: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productName: 'Dưỡng Mi Yeppeum Korea',
+          quantity: 1,
+          unitPrice: 1100000,
+          totalPrice: 1100000,
+        },
+      ],
       promotionName: 'Tri Ân Khách Cũ',
       promotionDiscountAmount: 100000,
       tipAmount: 50000,
@@ -476,14 +484,98 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
   assert.equal(updated.selectedUnderComboName, 'Mi Dưới 3 Lần');
   assert.equal(updated.selectedUnderComboPrice, 450000);
   assert.equal(updated.upsellTotal, 1100000);
+  assert.equal(updated.upsellProducts[0]?.productId, YEPPEUM_PRODUCT_ID);
   assert.equal(updated.promotionDiscountAmount, 100000);
   assert.equal(updated.tipAmount, 50000);
   // grandTotal = 500000 (service) + 1850000 (combo) + 450000 (under) + 1100000 (upsell) - 100000 (promo) + 50000 (tip) = 3850000
   assert.equal(updated.grandTotal, 3850000);
-  // comboBonus = 50000, serumBonus = 100000 (Yeppeum >= 1M), tipShare = 40000, serviceShare = 50000 -> 240000
-  assert.equal(updated.comboBonusAmount, 50000);
+  // Dual combo = 1850000 + 450000 = 2300000 -> calculateDualComboTierBonus = 100000
+  // Serum Yeppeum 1.1M -> calculateCvSerumTierBonus = 100000
+  // tipActorShare = 50000 * 0.8 = 40000 -> totalEstimatedReward = 240000
+  assert.equal(updated.comboBonusAmount, 100000);
   assert.equal(updated.serumBonusAmount, 100000);
   assert.equal(updated.totalEstimatedReward, 240000);
+
+  // 2b. Verify all Yeppeum price tiers (770K -> +50K, 550K -> +10K, 0đ -> +1K)
+  const tier770 = await updateSimulationAttempt(
+    staffId,
+    bookingId,
+    targetAttempt.attemptId,
+    {
+      bookingId,
+      upsellProducts: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productName: 'Dưỡng Mi Yeppeum Korea (Ưu đãi < 50% (770.000đ))',
+          quantity: 2,
+          unitPrice: 770000,
+          totalPrice: 1540000,
+        },
+      ],
+    },
+    store
+  );
+  assert.equal(tier770.serumBonusAmount, 100000); // 50K * 2
+
+  const tier550 = await updateSimulationAttempt(
+    staffId,
+    bookingId,
+    targetAttempt.attemptId,
+    {
+      bookingId,
+      upsellProducts: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productName: 'Dưỡng Mi Yeppeum Korea (Giảm sâu ≥ 50% (550.000đ))',
+          quantity: 1,
+          unitPrice: 550000,
+          totalPrice: 550000,
+        },
+      ],
+    },
+    store
+  );
+  assert.equal(tier550.serumBonusAmount, 10000);
+
+  const tierFree = await updateSimulationAttempt(
+    staffId,
+    bookingId,
+    targetAttempt.attemptId,
+    {
+      bookingId,
+      upsellProducts: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productName: 'Dưỡng Mi Yeppeum Korea (Tặng kèm Combo (Trị giá 1.100.000đ))',
+          quantity: 1,
+          unitPrice: 0,
+          totalPrice: 0,
+        },
+      ],
+    },
+    store
+  );
+  assert.equal(tierFree.serumBonusAmount, 1000);
+
+  // Restore original 1.1M Yeppeum before SIM_APPLY_ATTEMPT assertion
+  await updateSimulationAttempt(
+    staffId,
+    bookingId,
+    targetAttempt.attemptId,
+    {
+      bookingId,
+      upsellProducts: [
+        {
+          productId: YEPPEUM_PRODUCT_ID,
+          productName: 'Dưỡng Mi Yeppeum Korea',
+          quantity: 1,
+          unitPrice: 1100000,
+          totalPrice: 1100000,
+        },
+      ],
+    },
+    store
+  );
 
   // 3. Verify updating nonexistent attempt throws 404
   await assert.rejects(
@@ -527,8 +619,28 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
   assert.equal(appliedOverride.selectedCombo?.name, 'Gói 5 Lần');
   assert.equal(appliedOverride.selectedUnderCombo?.name, 'Mi Dưới 3 Lần');
   assert.equal(appliedOverride.cartProducts?.length, 1);
+  assert.equal(appliedOverride.cartProducts?.[0]?.productId, YEPPEUM_PRODUCT_ID);
   assert.equal(appliedOverride.cartProducts?.[0]?.productName, 'Dưỡng Mi Yeppeum Korea');
   assert.equal(appliedOverride.billing?.grandTotal, 3850000);
+});
+
+test('MOS-BUG-241: fetchIosProductCatalog prioritizes real Wings serum and strips (Giá gốc ...) labels', async () => {
+  const catalog = await fetchIosProductCatalog(async () => [
+    { productId: 40, productSku: 'LASH-CLEAN', productName: 'Bọt vệ sinh mi', price: 250000 } as any,
+    {
+      productId: 36,
+      productSku: 'YEPPEUM-01',
+      productName: 'Dưỡng Mi Yeppeum Korea (Giá gốc 1.100.000đ)',
+      price: 1100000,
+    } as any,
+  ]);
+  assert.equal(catalog.length, 2);
+  assert.equal(catalog[0].productId, 36);
+  assert.equal(catalog[0].productName, 'Dưỡng Mi Yeppeum Korea');
+  assert.equal(catalog[0].price, 1100000);
+  assert.equal(catalog[0].isSerum, true);
+  assert.equal(catalog[1].productId, 40);
+  assert.equal(catalog[1].isSerum, false);
 });
 
 test('MOS-BUG-230: reconciles missing attempts for completed/checked-out scenarios and preserves state across reopen & apply', async () => {

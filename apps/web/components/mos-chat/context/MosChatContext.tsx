@@ -683,26 +683,19 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   // Toggle pin conversation
   const togglePinConversation = useCallback(
-    async (convId: string) => {
-      const nextPinnedState = !pinnedConvIds.has(convId);
+    async (convId: string, explicitPinned?: boolean) => {
+      const isCurrentlyPinned = pinnedConvIds.has(convId);
+      const willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
       setPinnedConvIds((prev) => {
         const next = new Set(prev);
-        if (nextPinnedState) next.add(convId);
+        if (willPin) next.add(convId);
         else next.delete(convId);
         return next;
       });
       try {
-        const res = await apiClient.chat.togglePinConversation(convId, nextPinnedState);
-        if (res?.userPrefs?.pinnedIds) {
-          setPinnedConvIds(new Set(res.userPrefs.pinnedIds));
-        }
+        await apiClient.chat.togglePinConversation(convId, willPin);
       } catch {
-        setPinnedConvIds((prev) => {
-          const reverted = new Set(prev);
-          if (nextPinnedState) reverted.delete(convId);
-          else reverted.add(convId);
-          return reverted;
-        });
+        // ignore
       }
     },
     [pinnedConvIds]

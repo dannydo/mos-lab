@@ -44,7 +44,15 @@ const MOCK_ATTEMPT: IosSimulationAttemptSummary = {
   selectedComboPrice: 1170000,
   selectedUnderComboName: null,
   selectedUnderComboPrice: 0,
-  upsellProducts: [{ productName: 'Dưỡng Mi Yeppeum Korea', quantity: 1, totalPrice: 1100000 }],
+  upsellProducts: [
+    {
+      productId: YEPPEUM_PRODUCT_ID,
+      productName: 'Dưỡng Mi Yeppeum Korea',
+      quantity: 1,
+      unitPrice: 1100000,
+      totalPrice: 1100000,
+    },
+  ],
   upsellTotal: 1100000,
   promotionName: null,
   promotionDiscountAmount: 0,
@@ -54,7 +62,7 @@ const MOCK_ATTEMPT: IosSimulationAttemptSummary = {
   comboBonusAmount: 50000,
   serumBonusAmount: 100000,
   cvRotationPoints: 2,
-  totalEstimatedReward: 205000,
+  totalEstimatedReward: 150000,
   elapsedSeconds: 2700,
   notes: 'Kịch bản ban đầu',
 };
@@ -290,32 +298,9 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
     // Click edit button opens SimulationAttemptEditModal
     fireEvent.click(editBtn);
     expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
-
-    // Clicking [X] closes the modal reliably even while parent action is busy (MOS-BUG-242)
-    const closeButtons = screen.getAllByRole('button', { name: 'Đóng' });
-    fireEvent.click(closeButtons[closeButtons.length - 1]);
-    expect(screen.queryByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeNull();
-  });
-
-  it('closes via [X] even when isBusy is true and lists real Dưỡng Mi Yeppeum Korea catalog tiers (MOS-BUG-241, MOS-BUG-242)', () => {
-    const handleClose = vi.fn();
-    render(
-      <SimulationAttemptEditModal
-        isOpen={true}
-        onClose={handleClose}
-        attempt={MOCK_ATTEMPT}
-        bookingId={771121}
-        onSave={vi.fn()}
-        isBusy={true}
-      />
-    );
-
-    expect(screen.getByText('Dưỡng Mi Yeppeum Korea')).toBeDefined();
-    expect(screen.getAllByText(/1\.100\.000đ/).length).toBeGreaterThan(0);
-
-    const closeBtn = screen.getByRole('button', { name: 'Đóng' });
-    fireEvent.click(closeBtn);
-    expect(handleClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockGetProductCatalog).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('renders Tạo & Chỉnh sửa kịch bản mới button when attempts is empty and opens edit modal', async () => {

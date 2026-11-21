@@ -13,8 +13,7 @@ import {
 import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, CrmConfigStoreAdapter } from './ios-overrides.service.js';
-import { executeIosBookingAction } from './ios-actions.service.js';
-import { ExecuteIosActionResult } from './ios-actions.types.js';
+import { executeIosBookingAction, ExecuteIosActionResult } from './ios-actions.service.js';
 import { computeBookingFinancials } from './ios-bookings-formatters.js';
 import {
   appendSimulationAttempt,

@@ -293,5 +293,17 @@ export const iosApi = {
       );
       return res.data;
     },
+
+    async createCustomerNote(
+      customerId: number,
+      payload: IosCreateCustomerNotePayload,
+      options?: ApiRequestOptions
+    ): Promise<IosCreateCustomerNoteResponse> {
+      const res = await api.post<IosCreateCustomerNoteResponse>(`/ios/customers/${customerId}/notes`, payload, {
+        signal: options?.signal,
+        timeout: options?.timeout ?? 8000,
+      });
+      return res.data;
+    },
   },
 };

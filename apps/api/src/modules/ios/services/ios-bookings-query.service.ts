@@ -71,10 +71,13 @@ export async function queryIosBookingsList(
   );
   const assignedStoreId = resolveAssignedSalonStoreId(authUser.clientStoreId);
   const requestedStoreId = query.storeId !== undefined && query.storeId !== '' ? Number(query.storeId) : undefined;
-  const storeId =
-    !isAdmin && authUser.clientStoreId && authUser.clientStoreId !== 4
-      ? authUser.clientStoreId
-      : (requestedStoreId ?? (authUser.clientStoreId && authUser.clientStoreId !== 4 ? authUser.clientStoreId : 6));
+  const validRequestedStoreId =
+    requestedStoreId !== undefined && Number.isFinite(requestedStoreId) && requestedStoreId > 0
+      ? requestedStoreId
+      : undefined;
+  // Invariant (UI-010): Non-admin accounts (including CVL in Live & Simulation Sandbox Mode)
+  // are strictly locked to their single assigned salon branch (never 2 branches / never storeId=0).
+  const storeId = isAdmin ? (validRequestedStoreId ?? assignedStoreId) : assignedStoreId;
   const segment = (query.segment || 'INCOMING').toUpperCase();
   const todayVn = resolveTodayVietnamDate();
   const targetDate = query.date || todayVn;

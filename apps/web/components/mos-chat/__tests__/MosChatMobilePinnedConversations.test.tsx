@@ -177,7 +177,7 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
     const unpinOption = screen.getByText(/Bỏ ghim Không gian này/i);
     fireEvent.click(unpinOption);
 
-    // API should be invoked with space-core-team and explicit pinned=false
+    // API should be invoked with space-core-team and explicit false for unpinning (MOS-BUG-238)
     expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-core-team', false);
   });
 
@@ -208,5 +208,45 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
     // Click pin button - should pass explicit true for pinning (MOS-BUG-238)
     fireEvent.click(pinHeaderBtn);
     expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-general', true);
+  });
+
+  it('MOS-BUG-238: preserves local pinned spaces and heals server preferences when server returns empty pinned list', async () => {
+    // Initial bootstrap with pinned spaces
+    (apiClient.chat.bootstrap as any).mockResolvedValueOnce({
+      ...mockBootstrapData,
+      userPrefs: { pinnedIds: ['space-core-team'] },
+    });
+
+    const { rerender } = render(
+      <MosChatProvider currentUser={{ id: 2, name: 'Quang Khải', role: 'CV' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Core Team')).toBeInTheDocument();
+    });
+
+    // Subsequent bootstrap returns empty pinnedIds (simulating server race or transient empty prefs)
+    (apiClient.chat.bootstrap as any).mockResolvedValueOnce({
+      ...mockBootstrapData,
+      userPrefs: { pinnedIds: [] },
+    });
+
+    // Re-trigger bootstrap / refresh
+    // Note: Local pin should NOT be wiped out
+    rerender(
+      <MosChatProvider currentUser={{ id: 2, name: 'Quang Khải', role: 'CV' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Core Team')).toBeInTheDocument();
+    });
+
+    // Core team should still have pinned badge
+    const pinnedBadges = screen.getAllByLabelText('Đã ghim');
+    expect(pinnedBadges.length).toBeGreaterThanOrEqual(1);
   });
 });

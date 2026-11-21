@@ -35,6 +35,7 @@ import { grantReferralDiamond } from './ios-referral-diamond.service.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
 import { ExecuteIosActionResult, ExecuteIosActionOptions } from './ios-actions.types.js';
+export type { ExecuteIosActionResult, ExecuteIosActionOptions };
 
 export async function executeIosBookingAction(
   authUser: IosAuthContext,

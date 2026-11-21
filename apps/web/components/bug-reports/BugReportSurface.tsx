@@ -35,7 +35,6 @@ import {
   type RequestClassificationJob,
 } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
-import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '../../lib/bug-report-launcher';
 import {
   captureBugReportContext,
   OPEN_BUG_REPORT_EVENT,
@@ -44,15 +43,8 @@ import {
 } from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
-import {
-  AdaptiveModal,
-  AdaptiveOverlayFooter,
-  AppIcon,
-  HeaderActionIndicator,
-  IconButton,
-  IconText,
-  RichTextEditor,
-} from '../ui';
+import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconButton, IconText } from '../ui';
+import { RichTextEditor } from '../ui/rich-text';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { GuidedRequestConversation } from './GuidedRequestConversation';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
@@ -63,14 +55,10 @@ import {
   updateRequestDraft,
   type RequestDraftView,
 } from './bug-report-drafts';
-import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
 const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
 const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
-const LAUNCHER_SIZE = 44;
-const LAUNCHER_MARGIN = 12;
-const DRAG_THRESHOLD = 4;
 const EXPERT_DETAILS_PREFERENCE_KEY = 'mos_bug_report_expert_details_v1';
 
 const FEATURE_AUDIENCE_OPTIONS: Array<{ value: FeatureRequestAudience; label: string }> = [
@@ -140,19 +128,7 @@ export function BugReportSurface() {
   const [context, setContext] = React.useState<BugReportContext | null>(null);
   const [classification, setClassification] = React.useState<RequestClassificationJob | null>(null);
   const [conversationSessionId, setConversationSessionId] = React.useState<string | null>(null);
-  const [launcherPosition, setLauncherPosition] = React.useState<BugReportLauncherPosition | null>(null);
-  const [dragging, setDragging] = React.useState(false);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
-  const dragRef = React.useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-    moved: boolean;
-    latest: BugReportLauncherPosition;
-  } | null>(null);
-  const suppressClickUntilRef = React.useRef(0);
   const announcedNotificationsRef = React.useRef(new Set<number>());
   const handledReviewLinkRef = React.useRef<string | null>(null);
   const classificationVersionRef = React.useRef(0);
@@ -192,107 +168,12 @@ export function BugReportSurface() {
     [activeRequestView, activeView]
   );
 
-  const enabled =
-    authenticated &&
-    !isCvAccount &&
-    (pathname.startsWith('/dashboard') || pathname.startsWith('/chat') || pathname.startsWith('/ios-app'));
+  const normalizedPathname = pathname || '';
+  const isDashboardRoute = normalizedPathname.startsWith('/dashboard');
+  const isAppRoute =
+    isDashboardRoute || normalizedPathname.startsWith('/chat') || normalizedPathname.startsWith('/ios-app');
+  const enabled = authenticated && !isCvAccount && isAppRoute;
   const myBugs = useMyBugReports(enabled);
-  const {
-    preferences,
-    ready: launcherPreferencesReady,
-    setPosition: persistLauncherPosition,
-  } = useBugReportLauncherPreferences();
-
-  React.useEffect(() => {
-    if (!launcherPreferencesReady) return;
-    if (!preferences.position || typeof window === 'undefined') {
-      setLauncherPosition(null);
-      return;
-    }
-    setLauncherPosition(
-      clampBugReportLauncherPosition(
-        preferences.position,
-        { width: window.innerWidth, height: window.innerHeight },
-        LAUNCHER_SIZE,
-        LAUNCHER_MARGIN
-      )
-    );
-  }, [launcherPreferencesReady, preferences.position]);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onResize = () => {
-      if (!preferences.position) return;
-      setLauncherPosition(
-        clampBugReportLauncherPosition(
-          preferences.position,
-          { width: window.innerWidth, height: window.innerHeight },
-          LAUNCHER_SIZE,
-          LAUNCHER_MARGIN
-        )
-      );
-    };
-    const onWorkflowVisibility = (event: Event) => {
-      const detail = (event as CustomEvent<{ open?: boolean }>).detail;
-      setExternalWorkflowOpen(Boolean(detail?.open));
-    };
-    window.addEventListener('resize', onResize);
-    window.addEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, onWorkflowVisibility);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, onWorkflowVisibility);
-    };
-  }, [preferences.position]);
-
-  const beginLauncherDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0 && event.pointerType === 'mouse') return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const origin = { x: rect.left, y: rect.top };
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: origin.x,
-      originY: origin.y,
-      moved: false,
-      latest: origin,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }, []);
-
-  const moveLauncher = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (!drag.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) return;
-    drag.moved = true;
-    setDragging(true);
-    drag.latest = clampBugReportLauncherPosition(
-      { x: drag.originX + deltaX, y: drag.originY + deltaY },
-      { width: window.innerWidth, height: window.innerHeight },
-      LAUNCHER_SIZE,
-      LAUNCHER_MARGIN
-    );
-    setLauncherPosition(drag.latest);
-  }, []);
-
-  const finishLauncherDrag = React.useCallback(
-    (event: React.PointerEvent<HTMLButtonElement>) => {
-      const drag = dragRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) return;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-      if (drag.moved) {
-        suppressClickUntilRef.current = Date.now() + 300;
-        persistLauncherPosition(drag.latest);
-      }
-      dragRef.current = null;
-      setDragging(false);
-    },
-    [persistLauncherPosition]
-  );
 
   React.useEffect(() => {
     setAuthenticated(Boolean(safeStorage.getItem('mos_token')));
@@ -713,75 +594,6 @@ export function BugReportSurface() {
 
   return (
     <>
-      {launcherPreferencesReady && preferences.visible && !open && !workflowOpen && !externalWorkflowOpen ? (
-        <HeaderActionIndicator
-          variant="count"
-          count={myBugs.actionRequiredCount || myBugs.unreadCount}
-          surface="accent"
-          style={{
-            position: 'fixed',
-            left: launcherPosition ? launcherPosition.x : 'max(12px, env(safe-area-inset-left))',
-            top: launcherPosition ? launcherPosition.y : undefined,
-            bottom: launcherPosition
-              ? undefined
-              : pathname.startsWith('/ios-app') || pathname.startsWith('/chat')
-                ? 'max(76px, calc(env(safe-area-inset-bottom) + 64px))'
-                : 'max(14px, env(safe-area-inset-bottom))',
-            zIndex: BUG_REPORT_Z_INDEX.LAUNCHER,
-            width: LAUNCHER_SIZE,
-            height: LAUNCHER_SIZE,
-            transition: dragging ? 'none' : undefined,
-          }}
-        >
-          <Button
-            type="primary"
-            shape="circle"
-            aria-label={
-              myBugs.actionRequiredCount
-                ? `Phản hồi mOS — ${myBugs.actionRequiredCount} yêu cầu đang chờ bạn phản hồi hoặc xác nhận`
-                : myBugs.unreadCount
-                  ? `Phản hồi mOS — ${myBugs.unreadCount} cập nhật mới đang chờ bạn xem`
-                  : 'Phản hồi mOS'
-            }
-            title={
-              myBugs.actionRequiredCount
-                ? `${myBugs.actionRequiredCount} yêu cầu đang chờ bạn phản hồi hoặc xác nhận — bấm để mở Yêu cầu của tôi, kéo để di chuyển`
-                : myBugs.unreadCount
-                  ? `${myBugs.unreadCount} cập nhật mới đang chờ bạn xem — bấm để mở Yêu cầu của tôi, kéo để di chuyển`
-                  : 'Báo lỗi hoặc yêu cầu chức năng — kéo để di chuyển'
-            }
-            data-bug-report-launcher
-            onPointerDown={beginLauncherDrag}
-            onPointerMove={moveLauncher}
-            onPointerUp={finishLauncherDrag}
-            onPointerCancel={finishLauncherDrag}
-            onClick={(event) => {
-              if (Date.now() < suppressClickUntilRef.current) {
-                event.preventDefault();
-                return;
-              }
-              if (myBugs.actionRequiredCount || myBugs.unreadCount) {
-                showHistory(
-                  myBugs.data.find((item) => item.clarification.status === 'WAITING_REPORTER' || item.canReview)?.key ||
-                    myBugs.notifications.find((item) => !item.readAt)?.reportKey
-                );
-                return;
-              }
-              showReporter(null);
-            }}
-            icon={<AppIcon icon={MessageSquareWarning} size={18} />}
-            style={{
-              width: LAUNCHER_SIZE,
-              minWidth: LAUNCHER_SIZE,
-              height: LAUNCHER_SIZE,
-              cursor: dragging ? 'grabbing' : 'grab',
-              touchAction: 'none',
-              boxShadow: token.boxShadowSecondary,
-            }}
-          />
-        </HeaderActionIndicator>
-      ) : null}
-
       <AdaptiveModal
         intent={activeView === 'history' ? 'data' : 'form'}
         width={activeView === 'history' ? 'min(1200px, calc(100vw - 48px))' : undefined}

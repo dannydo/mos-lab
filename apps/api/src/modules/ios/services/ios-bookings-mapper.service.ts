@@ -20,12 +20,12 @@ import { resolveItemizedBookingPromotions } from './ios-promotions.service.js';
 import { resolveEffectiveLiveOrderStateAndStatus } from './ios-legacy-state-reconciler.service.js';
 import {
   buildCanonicalServiceNameFromSpecs,
+  buildDefaultLiveOrderAttributes,
   computeBookingFinancials,
   formatPhoneNumberDots,
   formatTime12h,
   formatTimeSlot,
   hydrateSavedNaturalLashAttributes,
-  buildDefaultLiveOrderAttributes,
   normalizeLashMaterialLabel,
   resolveCanonicalBookedServicePrice,
   resolveCustomerAvatar,
@@ -147,14 +147,16 @@ export function mapLiveOrdersToBookings(params: {
 
     const preHydratedExpiryBooking = applyCustomerComboExpiryOverridesToBooking(
       {
-        comboWallets: rawCustomerWallets,
+        customerId,
+        serviceName: override.serviceName || r.service_name,
         comboLiveStatus: baseComboInfo,
         underMinkComboStatus: baseUnderComboStatus,
+        comboWallets: rawCustomerWallets,
         selectedUpperComboBalanceId: override.selectedUpperComboBalanceId ?? null,
         selectedUnderComboBalanceId: override.selectedUnderComboBalanceId ?? null,
         skipUpperCombo: Boolean(override.skipUpperCombo),
         skipUnderCombo: Boolean(override.skipUnderCombo),
-      } as unknown as IosBookingItem,
+      } as IosBookingItem,
       customerComboExpiryMap[String(customerId)],
       todayVn
     );

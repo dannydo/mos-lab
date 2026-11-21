@@ -3590,16 +3590,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           ? `#${targetConv.name}`
           : targetConv.name
         : 'mục này';
-      const currentlyPinned = (userPrefs.pinnedIds || []).includes(convId);
-      const nextPinnedState = !currentlyPinned;
-      lastLocalPrefsMutationAtRef.current = Date.now();
+      const isCurrentlyPinned = (userPrefs.pinnedIds || []).includes(convId);
+      const willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
 
-      // Optimistic local state update WITHOUT firing a competing updateUserPrefs PUT
-      updateUserPrefsLocalOnly((prev) => {
-        const exists = (prev.pinnedIds || []).includes(convId);
-        const nextPinned = exists
-          ? (prev.pinnedIds || []).filter((id) => id !== convId)
-          : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
+      updateUserSidebarPrefs((prev) => {
+        const nextPinned = willPin
+          ? [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)]
+          : (prev.pinnedIds || []).filter((id) => id !== convId);
 
         // Pinned Trumps Hidden (MOS-BUG-216): Khi ghim thì tự động bỏ khỏi hiddenIds
         const nextHidden = willPin ? (prev.hiddenIds || []).filter((id) => id !== convId) : prev.hiddenIds || [];
@@ -3616,47 +3613,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           }
         }
 
+        antdMessage.success(
+          !willPin
+            ? `Đã bỏ ghim ${convLabel} khỏi danh sách cá nhân`
+            : `📌 Đã ghim ${convLabel} lên đầu danh sách cá nhân (đã lưu)`
+        );
         return {
           ...prev,
           pinnedIds: nextPinned,
           hiddenIds: nextHidden,
           conversationOrder: nextConvOrder,
-          updatedAt: new Date().toISOString(),
         };
       });
-
-      antdMessage.success(
-        nextPinnedState
-          ? `📌 Đã ghim ${convLabel} lên đầu danh sách cá nhân (đã lưu)`
-          : `Đã bỏ ghim ${convLabel} khỏi danh sách cá nhân`
-      );
       notifyLivePeers();
-
-      // Single authoritative backend mutation with explicit { pinned: nextPinnedState } (prevents double-toggle race)
-      apiClient.chat
-        .togglePinConversation(convId, nextPinnedState)
-        .then((res) => {
-          if (res?.userPrefs) {
-            updateUserPrefsLocalOnly(() => res.userPrefs!);
-          }
-          notifyLivePeers();
-        })
-        .catch(() => {
-          // Roll back optimistic toggle if backend failed
-          updateUserPrefsLocalOnly((prev) => {
-            const revertedPinned = nextPinnedState
-              ? (prev.pinnedIds || []).filter((id) => id !== convId)
-              : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
-            return {
-              ...prev,
-              pinnedIds: revertedPinned,
-              updatedAt: new Date().toISOString(),
-            };
-          });
-          antdMessage.error('Không thể đồng bộ trạng thái ghim lên máy chủ, vui lòng thử lại');
-        });
+      // Kích hoạt song song API backend để đồng bộ tức thì trên relational database kèm trạng thái đích thực
+      // Tránh race condition khi toggle API đến sau updateUserPrefs (MOS-BUG-238)
+      apiClient.chat.togglePinConversation(convId, willPin).catch(() => {});
     },
-    [allUserConversations, userPrefs.pinnedIds, updateUserPrefsLocalOnly, notifyLivePeers]
+    [allUserConversations, userPrefs.pinnedIds, updateUserSidebarPrefs, notifyLivePeers, antdMessage]
   );
 
   const toggleMuteConversation = useCallback(

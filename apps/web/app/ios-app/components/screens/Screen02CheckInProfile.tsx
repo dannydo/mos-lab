@@ -9,7 +9,6 @@ import {
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
 import { useTheme } from '../../../../context/ThemeContext';
-import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import {
   calculateLashPricingAndCvPoints,
@@ -27,61 +26,7 @@ import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
 import { CheckInModals, PendingComboNewConfirmationState, PendingOverrideState } from './checkin/CheckInModals';
 import { NewCustomerReferralModal, PendingReferral } from './checkin/NewCustomerReferralModal';
 import { ReferralDiamondBanner } from './checkin/ReferralDiamondBanner';
-
-interface Screen02CheckInProfileProps {
-  booking: BookingItem;
-  actor?: ActiveActorProfile;
-  isAdmin?: boolean;
-  isSimulationMode?: boolean;
-  onRefreshDb?: () => void;
-  isCheckInLocked?: boolean;
-  activeServicingCustomerName?: string;
-  onResumeServicing?: () => void;
-  onBack: () => void;
-  onCheckIn: (bookingId?: number) => void;
-  onQuickCheckIn?: (
-    attributes: {
-      style: string;
-      curl: string;
-      length: string;
-      thickness: string;
-      material?: string;
-      color?: string;
-      volume?: string;
-      count?: string;
-      hasUnderMink?: boolean;
-      underMinkServiceType?: 'Normal' | 'Retain';
-      underMinkCurl?: string;
-      underMinkThickness?: string;
-      underMinkLength?: string;
-      underMinkCount?: string;
-      isOverridden?: boolean;
-      overrideReason?: string;
-      eyeShape?: string;
-      naturalLashLength?: string;
-      naturalLashThickness?: string;
-      naturalLashDensity?: string;
-      naturalLashCount?: string;
-      isNewClientDiagnosticDone?: boolean;
-      lashHealth?: string;
-      lashTrail?: string;
-      medicalProblem?: string;
-      notes?: string;
-    },
-    selectedCombo?: { id: string; name: string; price: number; bonus: number; sessions: number } | null,
-    skuPricing?: {
-      skuName?: string;
-      skuPrice?: number;
-      upgradePrice?: number;
-      cvPoints?: number;
-      cvBreakdown?: string;
-      serviceType?: string;
-    } | null,
-    targetBookingId?: number
-  ) => void;
-  onUpdateAvatar?: (avatarUrl: string, targetBookingId?: number) => Promise<any> | void;
-  onReferralConfirmed?: (referral: PendingReferral | null) => void;
-}
+import type { Screen02CheckInProfileProps } from './checkin/Screen02CheckInProfile.types';
 
 export function Screen02CheckInProfile({
   booking,
@@ -97,6 +42,7 @@ export function Screen02CheckInProfile({
   onQuickCheckIn,
   onUpdateAvatar,
   onReferralConfirmed,
+  onSelectComboWallet,
 }: Screen02CheckInProfileProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';

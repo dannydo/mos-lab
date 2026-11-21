@@ -87,8 +87,8 @@ export function Screen01IncomingBookings({
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
 
-  // Invariant (UI-010 / MOS-BUG-237): CV/CVL/CVLL không bao giờ được đổi qua lại giữa các chi nhánh (kể cả trong Sandbox)
-  const canSwitchBranch = Boolean(role !== 'CVL' && role !== 'CVLL' && role !== 'CV' && (isAdmin || isSimulationMode));
+  // Invariant (UI-010): Chỉ Admin thực sự (và không ở vai trò CV/CVL/CVLL) mới được đổi chi nhánh
+  const canSwitchBranch = canSwitchIosBranch({ isAdmin, iosRole: role });
 
   const effectiveBranch = useMemo(() => {
     if (currentBranch) return currentBranch;

@@ -3,6 +3,7 @@ import { computeBookingFinancials } from './ios-bookings-formatters.js';
 import {
   calculateActorTipBreakdown,
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
   IosCartProductItem,
   IosSimulationAttemptSourceAction,
   IosSimulationAttemptSummary,
@@ -19,9 +20,7 @@ export function mapAttemptUpsellToCartProducts(
 ): IosCartProductItem[] {
   return (upsellProducts || []).map((p, idx) => {
     const qty = Math.max(1, Number(p.quantity) || 1);
-    const unitPrice = Number.isFinite(p.unitPrice)
-      ? Math.max(0, Number(p.unitPrice))
-      : Math.round(p.totalPrice / qty);
+    const unitPrice = Number.isFinite(p.unitPrice) ? Math.max(0, Number(p.unitPrice)) : Math.round(p.totalPrice / qty);
     const productId =
       Number(p.productId) > 0
         ? Number(p.productId)
@@ -260,12 +259,14 @@ export async function updateSimulationAttempt(
     servicePrice + selectedComboPrice + selectedUnderComboPrice + upsellTotal - promotionDiscountAmount + tipAmount
   );
 
-  const comboBonusAmount = selectedComboPrice > 0 ? (selectedComboPrice >= 1_000_000 ? 50_000 : 30_000) : 0;
+  const comboBonusAmount = calculateDualComboTierBonus(selectedComboPrice, selectedUnderComboPrice).totalBonus;
   const serumBonusAmount = upsellProducts.reduce((sum, p) => {
-    if (!/serum|yeppeum|dưỡng mi/i.test(p.productName)) return sum;
     const qty = Math.max(1, Number(p.quantity) || 1);
-    const unitPrice = qty > 0 ? Math.round(Number(p.totalPrice || 0) / qty) : 0;
-    return sum + calculateCvSerumTierBonus(unitPrice, qty);
+    const unitPrice = Number.isFinite(p.unitPrice) ? Math.max(0, Number(p.unitPrice)) : Math.round(p.totalPrice / qty);
+    if (isYeppeumSerumProduct({ productId: p.productId, productName: p.productName }) || /serum/i.test(p.productName)) {
+      return sum + calculateCvSerumTierBonus(unitPrice, qty);
+    }
+    return sum;
   }, 0);
   const tipActorShare = Math.round(tipAmount * 0.8);
   const totalEstimatedReward = comboBonusAmount + serumBonusAmount + tipActorShare;

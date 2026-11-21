@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { DataTable } from '../../../../components/ui/DataTable';
-import { Calendar } from 'lucide-react';
+import { Calendar, TrendingUp } from 'lucide-react';
 import { FinancialGoalDayBreakdown } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -16,10 +16,10 @@ interface FinancialGoalDailyTableProps {
 export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = ({ data, month, includeVat = true }) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(15);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setCurrentPage(1);
   }, [month]);
 
@@ -200,17 +200,15 @@ export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = (
             showSizeChanger: true,
             pageSizeOptions: ['10', '15', '31'],
             size: 'small',
-            onChange: (page, nextPageSize) => {
-              if (nextPageSize && nextPageSize !== pageSize) {
-                setPageSize(nextPageSize);
-                setCurrentPage(1);
-                return;
-              }
+            onChange: (page, newPageSize) => {
               setCurrentPage(page);
+              if (newPageSize && newPageSize !== pageSize) {
+                setPageSize(newPageSize);
+              }
             },
-            onShowSizeChange: (_current, nextPageSize) => {
-              setPageSize(nextPageSize);
+            onShowSizeChange: (_curr, newPageSize) => {
               setCurrentPage(1);
+              setPageSize(newPageSize);
             },
           }}
           className={isDark ? 'dark-theme' : 'light-theme'}

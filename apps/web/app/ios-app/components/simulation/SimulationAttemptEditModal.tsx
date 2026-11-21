@@ -1,14 +1,22 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Edit3, Plus, Minus, Check, Loader2, Play } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Edit3, Sparkles, Check, Loader2, Play } from 'lucide-react';
 import {
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
+  isYeppeumSerumProduct,
+  YEPPEUM_PRODUCT_ID,
+  type IosProductCatalogItem,
   type IosSimulationAttemptSummary,
+  type IosSimulationUpsellProductItem,
   type IosUpdateSimulationAttemptRequest,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { apiClient } from '~/lib/api-client';
+import { SERUM_TIERS_CVL } from '../../state/mockData';
+import { formatCartProductDisplayName } from '../screens/upsell/upsellCheckoutHelpers';
+import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import {
   FALLBACK_IOS_SIMULATION_PRODUCTS,
   formatYeppeumProductName,
@@ -16,9 +24,6 @@ import {
   resolveItemUnitPrice,
   SimulationUpsellProductsSection,
 } from './SimulationUpsellProductsSection';
-import { COMMON_STYLES, COMMON_COMBOS, COMMON_UNDER_COMBOS, REAL_UPSELL_PRODUCTS } from './simulationConstants';
-import { SimulationComboSelectors } from './SimulationComboSelectors';
-import { SimulationFinancialSummary } from './SimulationFinancialSummary';
 
 interface SimulationAttemptEditModalProps {
   isOpen: boolean;
@@ -29,6 +34,21 @@ interface SimulationAttemptEditModalProps {
   onApplyToWorkspace?: (attempt: IosSimulationAttemptSummary) => void;
   isBusy?: boolean;
 }
+
+const COMMON_STYLES = ['Natural', 'Katun', 'Baby Doll', 'Sexy', 'Whispy', 'Mắt Mèo', 'Thiết Kế Riêng'];
+
+const COMMON_COMBOS = [
+  { name: 'Không dùng Combo', price: 0 },
+  { name: 'Gói 3 Lần (Tiết kiệm)', price: 1170000 },
+  { name: 'Gói 5 Lần (Phổ biến)', price: 1850000 },
+  { name: 'Gói 10 Lần (VIP)', price: 3500000 },
+];
+
+const COMMON_UNDER_COMBOS = [
+  { name: 'Không dùng Mi Dưới', price: 0 },
+  { name: 'Mi Dưới 3 Lần', price: 450000 },
+  { name: 'Mi Dưới 5 Lần', price: 700000 },
+];
 
 export function SimulationAttemptEditModal({
   isOpen,
@@ -76,14 +96,18 @@ export function SimulationAttemptEditModal({
     let cancelled = false;
     const fetchCatalog = apiClient?.ios?.getProductCatalog;
     if (typeof fetchCatalog !== 'function') return;
+
     fetchCatalog()
       .then((res) => {
-        if (!cancelled && res?.success && Array.isArray(res.products) && res.products.length > 0)
+        if (cancelled) return;
+        if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
           setCatalogProducts(res.products);
+        }
       })
       .catch(() => {
-        /* keep Yeppeum fallback when offline */
+        // Keep canonical Yeppeum fallback when offline or in isolated tests
       });
+
     return () => {
       cancelled = true;
     };
@@ -115,7 +139,9 @@ export function SimulationAttemptEditModal({
   const upsellTotal = useMemo(() => {
     return upsellProducts.reduce((sum, p) => sum + Number(p.totalPrice || 0), 0);
   }, [upsellProducts]);
+
   const servicePrice = Number(attempt.servicePrice) || 0;
+
   const grandTotal = useMemo(() => {
     return Math.max(0, servicePrice + comboPrice + underComboPrice + upsellTotal - promotionDiscount + tipAmount);
   }, [servicePrice, comboPrice, underComboPrice, upsellTotal, promotionDiscount, tipAmount]);
@@ -136,13 +162,6 @@ export function SimulationAttemptEditModal({
   }, [upsellProducts]);
 
   const estimatedReward = useMemo(() => {
-    const comboBonus = comboPrice > 0 ? (comboPrice >= 1000000 ? 50000 : 30000) : 0;
-    const serumBonus = upsellProducts.reduce((sum, p) => {
-      if (!/serum|yeppeum|dưỡng mi/i.test(p.productName)) return sum;
-      const qty = Math.max(1, Number(p.quantity) || 1);
-      const unitPrice = qty > 0 ? Math.round(Number(p.totalPrice || 0) / qty) : 0;
-      return sum + calculateCvSerumTierBonus(unitPrice, qty);
-    }, 0);
     const tipShare = Math.round(tipAmount * 0.8);
     return comboBonus + serumBonus + tipShare;
   }, [comboBonus, serumBonus, tipAmount]);
@@ -173,30 +192,6 @@ export function SimulationAttemptEditModal({
     );
   }, [attempt.selectedUnderComboName, attempt.selectedUnderComboPrice]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSaving) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isSaving, onClose]);
-
-  const displayedCatalogProducts = useMemo(() => {
-    const knownNames = new Set(REAL_UPSELL_PRODUCTS.map((p) => p.productName));
-    const legacyExtras = upsellProducts
-      .filter((p) => !knownNames.has(p.productName))
-      .map((p) => ({
-        productName: p.productName,
-        price: p.quantity > 0 ? Math.round(p.totalPrice / p.quantity) : p.totalPrice,
-        cvBonus: calculateCvSerumTierBonus(p.quantity > 0 ? Math.round(p.totalPrice / p.quantity) : p.totalPrice, 1),
-        desc: 'Sản phẩm đã lưu trước đó',
-      }));
-    return [...REAL_UPSELL_PRODUCTS, ...legacyExtras];
-  }, [upsellProducts]);
-
   if (!isOpen) return null;
 
   const handleToggleProduct = (prod: IosProductCatalogItem) => {
@@ -221,20 +216,34 @@ export function SimulationAttemptEditModal({
     ]);
   };
 
-  const handleQuantityChange = (productName: string, delta: number) => {
-    const catalogItem = displayedCatalogProducts.find((p) => p.productName === productName);
-    const unitPrice = catalogItem ? catalogItem.price : 0;
+  const handleQuantityChange = (prod: IosProductCatalogItem, delta: number) => {
     setUpsellProducts(
       (prev) =>
         prev
           .map((p) => {
-            if (p.productName !== productName) return p;
+            if (!matchesCatalogProduct(p, prod)) return p;
             const nextQ = p.quantity + delta;
             if (nextQ <= 0) return null;
-            const uPrice = catalogItem ? unitPrice : p.totalPrice / p.quantity;
-            return { ...p, quantity: nextQ, totalPrice: uPrice * nextQ };
+            const unitPrice = resolveItemUnitPrice(p);
+            return { ...p, quantity: nextQ, unitPrice, totalPrice: unitPrice * nextQ };
           })
-          .filter(Boolean) as Array<{ productName: string; quantity: number; totalPrice: number }>
+          .filter(Boolean) as IosSimulationUpsellProductItem[]
+    );
+  };
+
+  const handleSelectSerumTier = (prod: IosProductCatalogItem, tier: (typeof SERUM_TIERS_CVL)[number]) => {
+    setUpsellProducts((prev) =>
+      prev.map((p) => {
+        if (!isYeppeumSerumProduct(p)) return p;
+        const qty = Math.max(1, Number(p.quantity || 1));
+        return {
+          ...p,
+          productId: p.productId || prod.productId || YEPPEUM_PRODUCT_ID,
+          productName: formatYeppeumProductName(prod.productName, tier),
+          unitPrice: tier.price,
+          totalPrice: tier.price * qty,
+        };
+      })
     );
   };
 
@@ -264,18 +273,14 @@ export function SimulationAttemptEditModal({
     }
   };
 
-  const modalContent = (
+  return (
     <div
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!isSaving) onClose();
+      onClick={() => {
+        if (!isSaving && !isBusy) onClose();
       }}
-      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4"
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Chỉnh sửa Kịch bản · Phương án #${attempt.attemptNumber}`}
         onClick={(e) => e.stopPropagation()}
         className={`w-full max-w-[460px] max-h-[92dvh] rounded-t-3xl sm:rounded-3xl border shadow-2xl flex flex-col overflow-hidden ${
           isDark ? 'bg-[#141414] border-neutral-800 text-white' : 'bg-white border-neutral-200 text-neutral-900'
@@ -300,13 +305,10 @@ export function SimulationAttemptEditModal({
           </div>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isSaving) onClose();
-            }}
-            disabled={isSaving}
+            onClick={onClose}
+            disabled={isSaving || isBusy}
             aria-label="Đóng"
-            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 cursor-pointer touch-manipulation disabled:opacity-50 ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 ${
               isDark
                 ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
                 : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-600'
@@ -366,99 +368,147 @@ export function SimulationAttemptEditModal({
             </div>
           </div>
 
-          {/* 3 & 4. Gói Combo Nối Mi + Gói Mi Dưới */}
-          <SimulationComboSelectors
-            attempt={attempt}
-            comboName={comboName}
-            comboPrice={comboPrice}
-            underComboName={underComboName}
-            underComboPrice={underComboPrice}
-            isDark={isDark}
-            hasCustomSavedCombo={hasCustomSavedCombo}
-            hasCustomSavedUnderCombo={hasCustomSavedUnderCombo}
-            setComboName={setComboName}
-            setComboPrice={setComboPrice}
-            setUnderComboName={setUnderComboName}
-            setUnderComboPrice={setUnderComboPrice}
-          />
-
-          {/* 5. Sản phẩm Upsell */}
+          {/* 3. Gói Combo Nối Mi */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="font-bold text-[11.5px]">Sản phẩm Upsell kèm theo</label>
-              {upsellTotal > 0 && (
-                <span className="text-[11px] font-bold text-sky-400 tabular-nums">
-                  +{upsellTotal.toLocaleString('vi-VN')}đ
+              <label className="font-bold text-[11.5px]">Gói Combo Nối Mi</label>
+              {comboPrice > 0 && (
+                <span className="text-[11px] font-bold text-amber-500 tabular-nums">
+                  {comboPrice.toLocaleString('vi-VN')}đ
                 </span>
               )}
             </div>
-            <div className="space-y-1.5">
-              {displayedCatalogProducts.map((prod) => {
-                const selected = upsellProducts.find((p) => p.productName === prod.productName);
+            <div className="grid grid-cols-2 gap-1.5">
+              {hasCustomSavedCombo && attempt.selectedComboName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComboName(attempt.selectedComboName || '');
+                    setComboPrice(attempt.selectedComboPrice || 0);
+                  }}
+                  className={`col-span-2 p-2 rounded-xl text-left border text-[11px] transition-all cursor-pointer ${
+                    comboName === attempt.selectedComboName && comboPrice === attempt.selectedComboPrice
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                      : isDark
+                        ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                  }`}
+                >
+                  <div className="truncate">{attempt.selectedComboName} (Đang chọn)</div>
+                  <div className="text-[10px] opacity-75 tabular-nums">
+                    {Number(attempt.selectedComboPrice || 0).toLocaleString('vi-VN')}đ
+                  </div>
+                </button>
+              )}
+              {COMMON_COMBOS.map((c) => {
+                const active = comboName === (c.price > 0 ? c.name : '') && comboPrice === c.price;
                 return (
-                  <div
-                    key={prod.productName}
-                    className={`p-2 rounded-xl border flex items-center justify-between gap-2 ${
-                      selected
-                        ? isDark
-                          ? 'bg-sky-950/20 border-sky-500/40 text-sky-300'
-                          : 'bg-sky-50 border-sky-300 text-sky-800'
+                  <button
+                    key={c.name}
+                    type="button"
+                    onClick={() => {
+                      if (c.price === 0) {
+                        setComboName('');
+                        setComboPrice(0);
+                      } else {
+                        setComboName(c.name);
+                        setComboPrice(c.price);
+                      }
+                    }}
+                    className={`p-2 rounded-xl text-left border text-[11px] transition-all cursor-pointer ${
+                      active
+                        ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
                         : isDark
-                          ? 'bg-neutral-900 border-neutral-800 text-neutral-400'
-                          : 'bg-neutral-50 border-neutral-200 text-neutral-600'
+                          ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                          : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
                     }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleToggleProduct(prod)}
-                      className="flex-1 text-left min-w-0 cursor-pointer flex items-center gap-1.5"
-                    >
-                      <div
-                        className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
-                          selected
-                            ? 'bg-sky-500 border-sky-500 text-white'
-                            : isDark
-                              ? 'border-neutral-700 bg-neutral-800'
-                              : 'border-neutral-300 bg-white'
-                        }`}
-                      >
-                        {selected && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[11.5px] font-semibold">{prod.productName}</div>
-                        <div className="text-[9.5px] opacity-75 truncate">{prod.desc}</div>
-                      </div>
-                      <div className="text-[10.5px] font-bold opacity-85 tabular-nums shrink-0">
-                        {prod.price > 0 ? `${prod.price.toLocaleString('vi-VN')}đ` : '0đ (Tặng)'}
-                      </div>
-                    </button>
-
-                    {selected && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleQuantityChange(prod.productName, -1)}
-                          className="w-5 h-5 rounded-md flex items-center justify-center bg-neutral-800 text-white cursor-pointer hover:bg-neutral-700"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="font-bold tabular-nums text-[11px] min-w-[14px] text-center">
-                          {selected.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleQuantityChange(prod.productName, 1)}
-                          className="w-5 h-5 rounded-md flex items-center justify-center bg-sky-500 text-white cursor-pointer hover:bg-sky-400"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    <div className="truncate">{c.name}</div>
+                    <div className="text-[10px] opacity-75 tabular-nums">
+                      {c.price > 0 ? `${c.price.toLocaleString('vi-VN')}đ` : 'Không chọn'}
+                    </div>
+                  </button>
                 );
               })}
             </div>
           </div>
+
+          {/* 4. Gói Mi Dưới */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <label className="font-bold text-[11.5px]">Gói Mi Dưới</label>
+              {underComboPrice > 0 && (
+                <span className="text-[11px] font-bold text-amber-500 tabular-nums">
+                  {underComboPrice.toLocaleString('vi-VN')}đ
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {hasCustomSavedUnderCombo && attempt.selectedUnderComboName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnderComboName(attempt.selectedUnderComboName || '');
+                    setUnderComboPrice(attempt.selectedUnderComboPrice || 0);
+                  }}
+                  className={`col-span-3 p-2 rounded-xl text-left border text-[10.5px] transition-all cursor-pointer ${
+                    underComboName === attempt.selectedUnderComboName &&
+                    underComboPrice === attempt.selectedUnderComboPrice
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                      : isDark
+                        ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                  }`}
+                >
+                  <div className="truncate">{attempt.selectedUnderComboName} (Đang chọn)</div>
+                  <div className="text-[9.5px] opacity-75 tabular-nums">
+                    {Number(attempt.selectedUnderComboPrice || 0).toLocaleString('vi-VN')}đ
+                  </div>
+                </button>
+              )}
+              {COMMON_UNDER_COMBOS.map((uc) => {
+                const active = underComboName === (uc.price > 0 ? uc.name : '') && underComboPrice === uc.price;
+                return (
+                  <button
+                    key={uc.name}
+                    type="button"
+                    onClick={() => {
+                      if (uc.price === 0) {
+                        setUnderComboName('');
+                        setUnderComboPrice(0);
+                      } else {
+                        setUnderComboName(uc.name);
+                        setUnderComboPrice(uc.price);
+                      }
+                    }}
+                    className={`p-2 rounded-xl text-left border text-[10.5px] transition-all cursor-pointer ${
+                      active
+                        ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                        : isDark
+                          ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                          : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                    }`}
+                  >
+                    <div className="truncate">{uc.name}</div>
+                    <div className="text-[9.5px] opacity-75 tabular-nums">
+                      {uc.price > 0 ? `${uc.price.toLocaleString('vi-VN')}đ` : 'Không'}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 5. Sản phẩm Upsell */}
+          <SimulationUpsellProductsSection
+            isDark={isDark}
+            displayCatalogProducts={displayCatalogProducts}
+            upsellProducts={upsellProducts}
+            upsellTotal={upsellTotal}
+            onToggleProduct={handleToggleProduct}
+            onQuantityChange={handleQuantityChange}
+            onSelectSerumTier={handleSelectSerumTier}
+          />
 
           {/* 6. Ưu đãi & Tiền Tip */}
           <div className="grid grid-cols-2 gap-2">
@@ -523,12 +573,35 @@ export function SimulationAttemptEditModal({
           </div>
 
           {/* 7. Bảng tổng hợp tính toán tài chính Realtime */}
-          <SimulationFinancialSummary
-            grandTotal={grandTotal}
-            estimatedReward={estimatedReward}
-            cvPoints={cvPoints}
-            isDark={isDark}
-          />
+          <div
+            className={`p-3 rounded-2xl border space-y-2 ${
+              isDark ? 'bg-neutral-950/70 border-neutral-800' : 'bg-neutral-50 border-neutral-200'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-500">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Chỉ số tài chính sau chỉnh sửa (Tự động tính)</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              <div className={`p-2 rounded-xl ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
+                <div className="text-[9.5px] opacity-65 font-semibold">Khách thanh toán</div>
+                <div className="text-[12.5px] font-black tabular-nums">{grandTotal.toLocaleString('vi-VN')}đ</div>
+              </div>
+              <div className={`p-2 rounded-xl ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
+                <div className="text-[9.5px] opacity-65 font-semibold">Thưởng + Tip CV</div>
+                <div className="text-[12.5px] font-black text-emerald-400 tabular-nums">
+                  +{estimatedReward.toLocaleString('vi-VN')}đ
+                </div>
+              </div>
+              <div className={`p-2 rounded-xl ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
+                <div className="text-[9.5px] opacity-65 font-semibold">Điểm Xoay Tua</div>
+                <div className="text-[12.5px] font-black text-amber-400 tabular-nums inline-flex items-center justify-center gap-0.5">
+                  <span>+{cvPoints}</span>
+                  <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Actions */}
           <div
@@ -589,9 +662,4 @@ export function SimulationAttemptEditModal({
       </div>
     </div>
   );
-
-  if (typeof document !== 'undefined') {
-    return createPortal(modalContent, document.body);
-  }
-  return modalContent;
 }

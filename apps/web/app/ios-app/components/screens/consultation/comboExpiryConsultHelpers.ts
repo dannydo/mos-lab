@@ -5,6 +5,7 @@ import {
   calculateDualComboTierBonus,
   formatExpiryDateDdMmYyyy,
   matchComboCategoryAndVolumeFromBooking,
+  resolveActiveBookingComboWallets,
   type ComboPurchaseExpiryResult,
   type ComboTodayUsageMode,
   type CvToCvPlusRequirements,

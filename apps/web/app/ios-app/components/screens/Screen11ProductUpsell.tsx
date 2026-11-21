@@ -21,6 +21,7 @@ import {
   resolveMatchedUpperComboFromSaved,
   resolveMatchedUnderComboFromSaved,
   resolveServicePriceSplit,
+  resolveActiveBookingComboWallets,
 } from '@mos-lab/shared';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
 import { UpsellHeaderAndSerumSection } from './upsell/UpsellHeaderAndSerumSection';
@@ -35,6 +36,8 @@ import {
   isYeppeumProductItem,
   removeScannedUnitFromCartProducts,
   resolveInitialSerumSelection,
+  resolveUpsellAutoAndPreferredSpec,
+  resolveValidSelectedNewComboId,
 } from './upsell/upsellCheckoutHelpers';
 import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
 import { hasBookingPreattachedOrServicePromotion } from './consultation/comboExpiryConsultHelpers';
