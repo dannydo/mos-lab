@@ -477,6 +477,22 @@ export class AgChatBridgeService {
   /**
    * Complete remote chat job: Danny's Mac posts the AG response back
    */
+  /**
+   * The bridge daemon could not execute the job (e.g. Antigravity Language Server unreachable).
+   * Reject the waiting request immediately so the API falls back right away instead of idling until timeout.
+   */
+  static failRemoteChatJob(jobId: string, reason?: string): boolean {
+    const entry = this.pendingBridgeJobs.get(jobId);
+    if (!entry) return false;
+
+    clearTimeout(entry.timer);
+    this.pendingBridgeJobs.delete(jobId);
+    entry.reject(
+      new Error(`Remote Antigravity bridge failed for job ${jobId}: ${(reason || 'unknown').slice(0, 200)}`)
+    );
+    return true;
+  }
+
   static completeRemoteChatJob(jobId: string, result: { conversationId: string; response: ParsedAiResponse }): boolean {
     const entry = this.pendingBridgeJobs.get(jobId);
     if (!entry) return false;

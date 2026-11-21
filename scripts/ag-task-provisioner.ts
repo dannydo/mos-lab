@@ -1948,6 +1948,7 @@ export async function runAgChatWatcher(deps: {
 }): Promise<'IDLE' | 'ANSWERED'> {
   if (isChatWatcherRunning) return 'IDLE';
   isChatWatcherRunning = true;
+  let claimedJobId: string | null = null;
 
   try {
     let res: Response;
@@ -1963,6 +1964,7 @@ export async function runAgChatWatcher(deps: {
     const payload = (await res.json()) as { success?: boolean; data?: AgChatBridgeJob | null };
     const job = payload?.data;
     if (!job || !job.id || !job.prompt) return 'IDLE';
+    claimedJobId = job.id;
 
     process.stdout.write(
       `[${new Date().toISOString()}] [AgChatBridge] Received chat request (${job.id}). Executing via local Antigravity...\n`
@@ -1984,9 +1986,20 @@ export async function runAgChatWatcher(deps: {
     );
     return 'ANSWERED';
   } catch (err) {
-    process.stderr.write(
-      `[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${err instanceof Error ? err.message : String(err)}\n`
-    );
+    const reason = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${reason}\n`);
+    if (claimedJobId) {
+      // Tell the API right away so it can fall back instead of waiting for its 90s bridge timeout.
+      await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(claimedJobId)}/fail`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${deps.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => undefined);
+    }
     return 'IDLE';
   } finally {
     isChatWatcherRunning = false;

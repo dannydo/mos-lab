@@ -368,6 +368,25 @@ export async function aiRoutes(fastify: FastifyInstance) {
     return reply.send({ success: ok });
   });
 
+  // AG Task Bridge: the daemon reports it cannot execute the chat job so the API can fall back immediately
+  fastify.post<{
+    Params: { jobId: string };
+    Body: { reason?: string };
+  }>('/ag-task-bridge/chat/:jobId/fail', async (request, reply) => {
+    const bridgeToken = (process.env.MOS_AG_TASK_BRIDGE_TOKEN || process.env.MOS_IDE_TASK_BRIDGE_TOKEN || '').trim();
+    const auth = String(request.headers.authorization || '');
+    if (
+      !bridgeToken ||
+      bridgeToken.length < 32 ||
+      !auth.startsWith('Bearer ') ||
+      auth.slice(7).trim() !== bridgeToken
+    ) {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'Bridge token không hợp lệ' });
+    }
+    const ok = AgChatBridgeService.failRemoteChatJob(request.params.jobId, request.body?.reason);
+    return reply.send({ success: ok });
+  });
+
   // POST /api/ai/avatar-score - Analyze human portrait avatar with Gemini Vision
   fastify.post('/ai/avatar-score', { preHandler: [requireAuth] }, async (request, reply) => {
     const body = request.body as AvatarScoreRequest;
