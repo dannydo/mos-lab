@@ -254,8 +254,10 @@ import { MosChatSearchModal } from './components/MosChatSearchModal';
 import type { MosChatSearchResultItem } from '@mos-lab/shared';
 import { MosChatReactionUsersModal } from './components/MosChatReactionUsersModal';
 import { MosChatAiSessionsModal, copyMosChatSessionPermalink } from './components/MosChatAiSessionsModal';
+import { MosChatAiAuditReasonModal } from './components/MosChatAiAuditReasonModal';
 import { MOS_CHAT_SESSION_QUERY_KEYS, syncConversationIntoUrl } from './utils/mos-chat-permalink';
 import type { MosChatActiveSubtab, MosChatReactionUsersTarget } from './types/mos-chat-types';
+import type { AiSessionAccessInfo } from '@mos-lab/shared';
 import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
 import { MosChatPinnedPane } from './components/MosChatPinnedPane';
@@ -710,11 +712,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // Owner of the AI session currently shown. When it is not the current user (Admin opened someone's permalink) the view is read-only.
   const [aiSessionOwnerId, setAiSessionOwnerId] = useState<number | null>(null);
   const [aiSessionsModalOpen, setAiSessionsModalOpen] = useState<boolean>(false);
+  // How the current user got into the shown session (owner / shared / mission / audit) — server is the source of truth.
+  const [aiSessionAccess, setAiSessionAccess] = useState<AiSessionAccessInfo | null>(null);
+  const [aiAuditPrompt, setAiAuditPrompt] = useState<{ sessionId: string } | null>(null);
+  const [aiAuditLoading, setAiAuditLoading] = useState<boolean>(false);
   const aiPermalinkPendingRef = useRef<string | null>(targetNavigation?.aiSessionId || null);
   const lastProcessedAiSessionNavRef = useRef<string | null>(null);
   const currentUserNumericId = Number(currentUser?.id) || 0;
-  const isAiSessionReadOnly =
-    aiSessionOwnerId !== null && currentUserNumericId > 0 && aiSessionOwnerId !== currentUserNumericId;
+  const isAiSessionReadOnly = aiSessionAccess
+    ? aiSessionAccess.readOnly
+    : aiSessionOwnerId !== null && currentUserNumericId > 0 && aiSessionOwnerId !== currentUserNumericId;
   const aiSessionReadOnlyRef = useRef<boolean>(false);
   aiSessionReadOnlyRef.current = isAiSessionReadOnly;
   const aiSessionIdRef = useRef<string | null>(null);
@@ -780,7 +787,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       isAiBot: true,
       text:
         `Xin chào ${userDisplayName}! MAI là **mOS AI** đã được tích hợp trực tiếp vào **mOS Chat**.\n` +
-        '• **Kênh 1-1 riêng tư**: Mọi trao đổi và phân tích dữ liệu tại đây chỉ một mình bạn nhìn thấy.\n' +
+        '• **Kênh 1-1 riêng tư**: Mặc định chỉ bạn xem được phiên này. Bạn có thể chia sẻ từng phiên bằng liên kết (người khác chỉ xem). Super Admin chỉ xem phiên gắn với mOS Mission, và Quản trị chỉ xem khi rà soát bảo mật (có ghi nhật ký để bạn biết).\n' +
         '• **Gọi @MAI trong #Space**: Gõ `@MAI` kèm câu hỏi trong bất kỳ nhóm Space nào để MAI phân tích và trả lời công khai cho cả nhóm.',
       timeLabel: dayjs().format('HH:mm'),
       createdAt: new Date().toISOString(),
@@ -888,6 +895,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     async (targetSessionId?: string | null) => {
       if (!currentUser?.id && !currentUser?.username) return;
       if (isSyncingDesktopAiRef.current) return;
+      // A read-only (shared / mission / audit) view is loaded once; polling would re-log every view.
+      if (aiSessionReadOnlyRef.current && !targetSessionId) return;
       isSyncingDesktopAiRef.current = true;
       try {
         let resolvedSessionId = targetSessionId || aiSessionId;
@@ -907,6 +916,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (sessRes?.session?.staffId !== undefined) {
           setAiSessionOwnerId(Number(sessRes.session.staffId) || null);
         }
+        if (sessRes?.access) setAiSessionAccess(sessRes.access);
         if (!sessRes?.messages || sessRes.messages.length === 0) return;
 
         const mappedBackend: MosChatMessage[] = sessRes.messages.map((bm) => formatBackendAiMessage(bm, currentUser));
@@ -4327,6 +4337,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     aiPermalinkPendingRef.current = null;
     setAiSessionId(null);
     setAiSessionOwnerId(null);
+    setAiSessionAccess(null);
     setAiMessages([buildInitialAiWelcomeMessage()]);
     if (typeof window !== 'undefined') {
       replaceBrowserUrl(syncConversationIntoUrl(window.location.href, AI_COPILOT_CONV_ID, null));
@@ -4336,13 +4347,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   /** Permalink / history: load one AI Copilot session by id and show it in the MAI conversation. */
   const openAiSessionById = useCallback(
-    async (sessionId: string): Promise<boolean> => {
+    async (sessionId: string, options?: { auditReason?: string }): Promise<boolean> => {
       try {
-        const res = await apiClient.ai.getSession(sessionId);
+        const res = await apiClient.ai.getSession(sessionId, options);
         const mapped: MosChatMessage[] = (res?.messages || []).map((bm) => formatBackendAiMessage(bm, currentUser));
         setAiMessages([buildInitialAiWelcomeMessage(), ...mapped]);
         setAiSessionId(res.session.id);
         setAiSessionOwnerId(Number(res.session.staffId) || null);
+        setAiSessionAccess(res.access || null);
         setActiveConvId(AI_COPILOT_CONV_ID);
         setActiveSubtab('chat');
         if (isMobile) setMobileActiveView('conversation');
@@ -4354,7 +4366,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       } catch (err: SafeAny) {
         const status = err?.response?.status;
         if (status === 403) {
-          antdMessage.warning('Bạn không có quyền xem phiên hội thoại này.');
+          if (err?.response?.data?.auditAvailable) {
+            // Admin / Super Admin may still review it, but only with a written reason (logged, read-only).
+            setAiAuditPrompt({ sessionId });
+          } else {
+            antdMessage.warning(
+              'Phiên hội thoại này là riêng tư. Chỉ chủ phiên hoặc người được chủ phiên chia sẻ mới xem được.'
+            );
+          }
         } else if (status === 404) {
           antdMessage.warning('Không tìm thấy phiên hội thoại. Liên kết có thể đã bị xóa hoặc không đúng.');
         } else {
@@ -4366,13 +4385,49 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [buildInitialAiWelcomeMessage, currentUser, isMobile, replaceBrowserUrl, scrollToChatBottom]
   );
 
+  const handleConfirmAiAudit = useCallback(
+    async (reason: string) => {
+      if (!aiAuditPrompt) return;
+      setAiAuditLoading(true);
+      const ok = await openAiSessionById(aiAuditPrompt.sessionId, { auditReason: reason });
+      setAiAuditLoading(false);
+      if (ok) setAiAuditPrompt(null);
+    },
+    [aiAuditPrompt, openAiSessionById]
+  );
+
   const handleCopyAiSessionPermalink = useCallback(() => {
     if (!aiSessionId) {
       antdMessage.info('Phiên này chưa có nội dung. Hãy nhắn cho MAI trước để tạo liên kết cố định.');
       return;
     }
     void copyMosChatSessionPermalink(aiSessionId);
-  }, [aiSessionId]);
+    if (!aiSessionReadOnlyRef.current && !aiSessionAccess?.sharingEnabled) {
+      antdMessage.info(
+        'Phiên đang riêng tư: chỉ bạn mở được liên kết này. Bật "Chia sẻ phiên" nếu muốn người khác xem.'
+      );
+    }
+  }, [aiSessionId, aiSessionAccess?.sharingEnabled]);
+
+  const handleToggleAiSessionSharing = useCallback(async () => {
+    if (!aiSessionId || aiSessionReadOnlyRef.current) return;
+    const next = !aiSessionAccess?.sharingEnabled;
+    try {
+      const res = await apiClient.ai.setSessionSharing(aiSessionId, next);
+      setAiSessionAccess((prev) => ({
+        ...(prev || { mode: 'owner' as const, readOnly: false }),
+        sharingEnabled: res.sharingEnabled,
+      }));
+      if (res.sharingEnabled) {
+        antdMessage.success('Đã chia sẻ phiên: người đã đăng nhập mOS có liên kết sẽ xem được (chỉ xem).');
+        void copyMosChatSessionPermalink(aiSessionId);
+      } else {
+        antdMessage.success('Đã dừng chia sẻ: chỉ bạn mở được liên kết của phiên này.');
+      }
+    } catch {
+      antdMessage.error('Không đổi được trạng thái chia sẻ. Vui lòng thử lại.');
+    }
+  }, [aiSessionId, aiSessionAccess?.sharingEnabled]);
 
   const handleExecuteAiAction = useCallback(
     (action: { type: string; label: string; payload: Record<string, unknown> }, msgId: string, actionKey?: string) => {
@@ -11396,6 +11451,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 label: 'Sao chép liên kết cố định của phiên',
                                 disabled: !aiSessionId,
                               },
+                              ...(!isAiSessionReadOnly
+                                ? [
+                                    {
+                                      key: 'toggle-ai-session-share',
+                                      icon: <Users size={15} />,
+                                      label: aiSessionAccess?.sharingEnabled
+                                        ? 'Dừng chia sẻ phiên này'
+                                        : 'Chia sẻ phiên này (người khác chỉ xem)',
+                                      disabled: !aiSessionId,
+                                    },
+                                  ]
+                                : []),
                             ]
                           : []),
                         // Clear AI Chat (AI copilot only)
@@ -11456,6 +11523,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           setAiSessionsModalOpen(true);
                         } else if (key === 'copy-ai-session-link') {
                           handleCopyAiSessionPermalink();
+                        } else if (key === 'toggle-ai-session-share') {
+                          void handleToggleAiSessionSharing();
                         } else if (key === 'clear-ai') {
                           handleClearAiChat();
                         } else if (key === 'access-config') {
@@ -11733,7 +11802,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         color: isDark ? '#fcd34d' : '#92400e',
                       }}
                     >
-                      <span>Bạn đang xem phiên hội thoại của người khác qua liên kết (chỉ xem, không thể nhắn).</span>
+                      <span>
+                        {aiSessionAccess?.mode === 'audit'
+                          ? 'Rà soát bảo mật: bạn đang xem phiên riêng tư của nhân sự khác (chỉ xem). Lượt xem này đã được ghi lại.'
+                          : aiSessionAccess?.mode === 'mission'
+                            ? 'Phiên này gắn với mOS Mission nên bạn được xem (chỉ xem). Lượt xem này đã được ghi lại.'
+                            : 'Phiên được chủ phiên chia sẻ qua liên kết (chỉ xem, không thể nhắn).'}
+                      </span>
                       <button
                         type="button"
                         onClick={handleClearAiChat}
@@ -12145,6 +12220,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       />
 
       {/* Reaction Users Details Modal (MOS-BUG-217) */}
+      <MosChatAiAuditReasonModal
+        open={Boolean(aiAuditPrompt)}
+        loading={aiAuditLoading}
+        onCancel={() => setAiAuditPrompt(null)}
+        onConfirm={(reason) => void handleConfirmAiAudit(reason)}
+      />
       <MosChatAiSessionsModal
         open={aiSessionsModalOpen}
         onClose={() => setAiSessionsModalOpen(false)}

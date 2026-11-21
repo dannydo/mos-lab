@@ -67,9 +67,34 @@ export interface ListAiSessionsResponse {
   sessions: AiChatSession[];
 }
 
+/** How a viewer got access to a session (see Kinh Thánh mOS UI-012). Everything except `owner` is read-only. */
+export type AiSessionAccessMode = 'owner' | 'shared' | 'mission' | 'audit';
+
+export interface AiSessionAccessLogEntry {
+  at: string;
+  viewerStaffId: number;
+  viewerName: string;
+  viewerRole: string;
+  mode: AiSessionAccessMode;
+  reason?: string;
+  missionReportIds?: number[];
+}
+
+export interface AiSessionAccessInfo {
+  mode: AiSessionAccessMode;
+  readOnly: boolean;
+  /** Owner only: whether the session link is currently shared with signed-in staff. */
+  sharingEnabled?: boolean;
+  /** Owner only: Super Admin / Admin views of this session (mission or security audit) so the owner can see them. */
+  accessLog?: AiSessionAccessLogEntry[];
+  /** True when the session is linked to at least one mOS Mission. */
+  missionLinked?: boolean;
+}
+
 export interface GetAiSessionResponse {
   session: AiChatSession;
   messages: AiChatMessage[];
+  access?: AiSessionAccessInfo;
 }
 
 export interface StaffCareerLiveSnapshot {
@@ -97,4 +122,3 @@ export interface StaffCareerLiveSnapshot {
   };
   specialCertifications?: string[];
 }
-

@@ -249,7 +249,9 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
             tabIndex={0}
             aria-label={`Đi đến tin nhắn đã ghim: ${currentPinnedMsg.senderName}`}
           >
-            <Pin className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`} />
+            <Pin
+              className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400 fill-amber-400' : 'text-amber-600 fill-amber-600'}`}
+            />
             <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs">
               <span className={`font-bold shrink-0 tabular-nums ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                 Ghim
@@ -330,7 +332,9 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
         {activeConversation?.id === AI_COPILOT_CONV_ID ? (
           <div
             className={`pt-6 pb-4 text-center border-b border-purple-500/30 mb-4 rounded-2xl ${
-              isDark ? 'bg-gradient-to-b from-purple-950/20 to-transparent' : 'bg-gradient-to-b from-purple-500/10 to-transparent'
+              isDark
+                ? 'bg-gradient-to-b from-purple-950/20 to-transparent'
+                : 'bg-gradient-to-b from-purple-500/10 to-transparent'
             }`}
           >
             <div className="w-14 h-14 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white mb-2.5 shadow-lg shadow-purple-500/25">
@@ -349,7 +353,7 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
               </span>
             </h2>
             <p className="text-xs text-[var(--mos-text-muted)] mt-1 max-w-xs mx-auto leading-relaxed">
-              Kênh 1-1 riêng tư · Mọi trao đổi và phân tích dữ liệu chỉ một mình bạn nhìn thấy.
+              Kênh 1-1 riêng tư · Mặc định chỉ bạn xem được; bạn có thể chia sẻ từng phiên (người khác chỉ xem).
             </p>
           </div>
         ) : (
@@ -435,9 +439,12 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
               🤖
             </div>
             <div className="flex-1 min-w-0">
-              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span> Đang suy nghĩ và trả lời vào nhóm...
+              <span className={`font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>MAI Copilot:</span>{' '}
+              Đang suy nghĩ và trả lời vào nhóm...
             </div>
-            <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+            <Loader2
+              className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}
+            />
           </div>
         )}
 

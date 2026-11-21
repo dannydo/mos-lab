@@ -183,7 +183,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       isAiBot: true,
       text:
         `Xin chào ${userDisplayName}! MAI là **mOS AI** đã được tích hợp trực tiếp vào **mOS Chat**.\n` +
-        '• **Kênh 1-1 riêng tư**: Mọi trao đổi và phân tích dữ liệu tại đây chỉ một mình bạn nhìn thấy.\n' +
+        '• **Kênh 1-1 riêng tư**: Mặc định chỉ bạn xem được phiên này. Bạn có thể chia sẻ từng phiên bằng liên kết (người khác chỉ xem). Super Admin chỉ xem phiên gắn với mOS Mission, và Quản trị chỉ xem khi rà soát bảo mật (có ghi nhật ký để bạn biết).\n' +
         '• **Gọi @MAI trong #Space**: Gõ `@MAI` kèm câu hỏi trong bất kỳ nhóm Space nào để MAI phân tích và trả lời công khai cho cả nhóm.',
       timeLabel: dayjs().format('HH:mm'),
       createdAt: new Date().toISOString(),

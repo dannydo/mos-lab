@@ -1301,7 +1301,7 @@ describe('MosGoogleChatPortal AI session permalink', () => {
   const SESSION_ID = '3f2b8c1e-9d4a-4e0b-8a57-1c2d3e4f5a6b';
   const getSession = apiClient.ai.getSession as unknown as ReturnType<typeof vi.fn>;
 
-  const backendSession = (staffId: number) => ({
+  const backendSession = (staffId: number, access?: Record<string, unknown>) => ({
     session: {
       id: SESSION_ID,
       staffId,
@@ -1319,6 +1319,7 @@ describe('MosGoogleChatPortal AI session permalink', () => {
         createdAt: '2026-11-21T10:00:00.000Z',
       },
     ],
+    ...(access ? { access } : {}),
   });
 
   const renderWithPermalink = (currentUserId: number) =>
@@ -1340,10 +1341,10 @@ describe('MosGoogleChatPortal AI session permalink', () => {
   });
 
   it('loads the exact AI session from the permalink and mirrors it in the address bar', async () => {
-    getSession.mockResolvedValue(backendSession(99));
+    getSession.mockResolvedValue(backendSession(99, { mode: 'owner', readOnly: false, sharingEnabled: false }));
     renderWithPermalink(99);
 
-    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID));
+    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID, undefined));
     await waitFor(() => {
       expect(window.location.search).toContain(`sessionId=${SESSION_ID}`);
       expect(window.location.search).toContain('convId=dm-wings-ai-copilot');
@@ -1352,18 +1353,43 @@ describe('MosGoogleChatPortal AI session permalink', () => {
   });
 
   it('shows a read-only banner when an Admin opens a session owned by someone else', async () => {
-    getSession.mockResolvedValue(backendSession(7));
+    getSession.mockResolvedValue(backendSession(7, { mode: 'shared', readOnly: true }));
     renderWithPermalink(99);
 
-    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID));
+    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID, undefined));
     await waitFor(() => expect(screen.getByTestId('mos-chat-ai-session-readonly-banner')).toBeDefined());
+    expect(screen.getByTestId('mos-chat-ai-session-readonly-banner').textContent).toContain('chia sẻ');
+  });
+
+  it('asks an Admin for a written reason before opening a private session, then opens it as a logged audit view', async () => {
+    getSession.mockRejectedValueOnce({ response: { status: 403, data: { auditAvailable: true } } });
+    getSession.mockResolvedValue(backendSession(7, { mode: 'audit', readOnly: true }));
+    renderWithPermalink(99);
+
+    await waitFor(() => expect(screen.getByTestId('mos-chat-ai-audit-modal')).toBeDefined());
+    // No access without a reason
+    expect(getSession).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('mos-chat-ai-session-readonly-banner')).toBeNull();
+
+    const reasonBox = screen.getByLabelText('Lý do rà soát bảo mật');
+    fireEvent.change(reasonBox, { target: { value: 'Rà soát nhân viên nghi dùng MAI sai mục đích' } });
+    fireEvent.click(screen.getByText('Mở để rà soát (chỉ xem)'));
+
+    await waitFor(() =>
+      expect(getSession).toHaveBeenLastCalledWith(SESSION_ID, {
+        auditReason: 'Rà soát nhân viên nghi dùng MAI sai mục đích',
+      })
+    );
+    await waitFor(() => expect(screen.getByTestId('mos-chat-ai-session-readonly-banner')).toBeDefined());
+    expect(screen.getByTestId('mos-chat-ai-session-readonly-banner').textContent).toContain('Rà soát bảo mật');
   });
 
   it('does not touch the address bar or show the banner when the session is forbidden', async () => {
-    getSession.mockRejectedValue({ response: { status: 403 } });
+    getSession.mockRejectedValue({ response: { status: 403, data: { auditAvailable: false } } });
     renderWithPermalink(99);
 
-    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID));
+    await waitFor(() => expect(getSession).toHaveBeenCalledWith(SESSION_ID, undefined));
+    expect(screen.queryByTestId('mos-chat-ai-audit-modal')).toBeNull();
     expect(screen.queryByTestId('mos-chat-ai-session-readonly-banner')).toBeNull();
     expect(window.location.search).not.toContain('sessionId=');
   });

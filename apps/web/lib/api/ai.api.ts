@@ -45,8 +45,20 @@ export const aiApi = {
       const response = await api.post<{ session: AiChatSession }>('/ai/chat/sessions', data);
       return response.data;
     },
-    getSession: async (sessionId: string): Promise<GetAiSessionResponse> => {
-      const response = await api.get<GetAiSessionResponse>(`/ai/chat/sessions/${sessionId}`);
+    /**
+     * `auditReason` turns the request into a logged security-audit view (Admin / Super Admin, read-only).
+     * Without it only the owner, a shared link or a Super Admin on a mission-linked session gets in.
+     */
+    getSession: async (sessionId: string, options?: { auditReason?: string }): Promise<GetAiSessionResponse> => {
+      const response = await api.get<GetAiSessionResponse>(`/ai/chat/sessions/${sessionId}`, {
+        params: options?.auditReason ? { purpose: 'security_audit', reason: options.auditReason } : undefined,
+      });
+      return response.data;
+    },
+    setSessionSharing: async (sessionId: string, enabled: boolean): Promise<{ sharingEnabled: boolean }> => {
+      const response = await api.patch<{ sharingEnabled: boolean }>(`/ai/chat/sessions/${sessionId}/sharing`, {
+        enabled,
+      });
       return response.data;
     },
     deleteSession: async (sessionId: string): Promise<{ success: boolean }> => {

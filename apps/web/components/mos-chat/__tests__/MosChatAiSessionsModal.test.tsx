@@ -12,7 +12,11 @@ vi.mock('../../../lib/api-client', () => ({
   },
 }));
 
-import { MosChatAiSessionsModal, parseSessionIdFromInput } from '../components/MosChatAiSessionsModal';
+import {
+  MosChatAiSessionsModal,
+  parseSessionIdFromInput,
+  summarizeSessionPrivacy,
+} from '../components/MosChatAiSessionsModal';
 
 const SESSION_A = '3f2b8c1e-9d4a-4e0b-8a57-1c2d3e4f5a6b';
 const SESSION_B = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d';
@@ -36,6 +40,25 @@ describe('parseSessionIdFromInput', () => {
   });
 });
 
+describe('summarizeSessionPrivacy', () => {
+  it('reads the sharing flag and the Admin / Super Admin view log from metadata', () => {
+    expect(summarizeSessionPrivacy(null)).toEqual({ shared: false, adminViews: 0 });
+    expect(
+      summarizeSessionPrivacy({
+        sharing: { enabled: true },
+        accessLog: [
+          { viewerName: 'A', mode: 'audit', at: '2026-11-20T01:00:00.000Z' },
+          { viewerName: 'Danny', mode: 'mission', at: '2026-11-21T01:00:00.000Z' },
+        ],
+      })
+    ).toEqual({
+      shared: true,
+      adminViews: 2,
+      lastView: { name: 'Danny', mode: 'mission', at: '2026-11-21T01:00:00.000Z' },
+    });
+  });
+});
+
 describe('MosChatAiSessionsModal', () => {
   beforeEach(() => {
     listSessions.mockReset();
@@ -50,6 +73,10 @@ describe('MosChatAiSessionsModal', () => {
           updatedAt: '2026-11-21T11:00:00.000Z',
           lastMessage: 'Đã nâng cấp mOS Chat',
           messageCount: 4,
+          metadata: {
+            sharing: { enabled: true },
+            accessLog: [{ viewerName: 'Danny Do', mode: 'mission', at: '2026-11-21T11:30:00.000Z' }],
+          },
         },
         {
           id: SESSION_B,
@@ -71,6 +98,9 @@ describe('MosChatAiSessionsModal', () => {
     await waitFor(() => expect(screen.getByText('Ticket 255 - perm link')).toBeDefined());
     expect(listSessions).toHaveBeenCalledWith({ scope: 'mos-chat-private' });
     expect(screen.getByText('Đang mở')).toBeDefined();
+    // Owner transparency: sharing state + Admin/Super Admin views are visible
+    expect(screen.getByText('Đang chia sẻ')).toBeDefined();
+    expect(screen.getByText(/Quản trị đã xem 1 lần/).textContent).toContain('liên quan mOS Mission');
 
     fireEvent.click(screen.getByLabelText('Mở phiên Ticket 255 - perm link'));
     expect(onSelect).toHaveBeenCalledWith(SESSION_A);

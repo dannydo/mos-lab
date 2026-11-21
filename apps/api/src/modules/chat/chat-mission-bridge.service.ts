@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type { FastifyInstance } from 'fastify';
+import { parseSessionMetadata, withMissionLink } from '../ai/ai-session-access.js';
 import {
   AI_COPILOT_CONV_ID,
   BUG_REPORT_MAX_ATTACHMENTS,
@@ -1050,6 +1051,25 @@ export class ChatMissionBridgeService {
 
       return report;
     });
+
+    // Permalink privacy: mark the MAI session as mission-linked so the Super Admin may reopen it from the ticket.
+    if (aiSessionId && fastify?.prisma?.crm?.crmAiChatSession) {
+      try {
+        const sessionRow = await fastify.prisma.crm.crmAiChatSession.findFirst({ where: { id: aiSessionId } });
+        if (sessionRow) {
+          await fastify.prisma.crm.crmAiChatSession.update({
+            where: { id: sessionRow.id },
+            data: {
+              metadataJson: JSON.stringify(
+                withMissionLink(parseSessionMetadata(sessionRow.metadataJson), createdReport.id)
+              ),
+            },
+          });
+        }
+      } catch (err) {
+        fastify.log?.warn?.({ err, aiSessionId }, 'Could not link MAI session to mission (non-blocking)');
+      }
+    }
 
     // Save image attachments if any
     for (const [index, att] of bugAttachments.entries()) {

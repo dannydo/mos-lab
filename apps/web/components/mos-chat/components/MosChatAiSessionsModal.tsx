@@ -45,6 +45,25 @@ export function parseSessionIdFromInput(input: string): string | undefined {
   }
 }
 
+/** Owner-side privacy summary read from the session metadata (sharing flag + Admin/Super Admin views). */
+export function summarizeSessionPrivacy(metadata: AiChatSession['metadata']): {
+  shared: boolean;
+  adminViews: number;
+  lastView?: { name: string; mode: string; at: string };
+} {
+  const meta = (metadata || {}) as {
+    sharing?: { enabled?: boolean };
+    accessLog?: Array<{ viewerName?: string; mode?: string; at?: string }>;
+  };
+  const log = Array.isArray(meta.accessLog) ? meta.accessLog : [];
+  const last = log[log.length - 1];
+  return {
+    shared: meta.sharing?.enabled === true,
+    adminViews: log.length,
+    ...(last ? { lastView: { name: last.viewerName || 'Quản trị', mode: last.mode || '', at: last.at || '' } } : {}),
+  };
+}
+
 function formatSessionTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -162,6 +181,7 @@ export const MosChatAiSessionsModal: React.FC<MosChatAiSessionsModalProps> = ({
           {!loading &&
             sessions.map((s) => {
               const isActive = s.id === activeSessionId;
+              const privacy = summarizeSessionPrivacy(s.metadata);
               return (
                 <div
                   key={s.id}
@@ -182,6 +202,14 @@ export const MosChatAiSessionsModal: React.FC<MosChatAiSessionsModalProps> = ({
                       <span className="truncate text-sm font-medium" style={{ color: token.colorText }}>
                         {s.title || 'Hội thoại mới'}
                       </span>
+                      {privacy.shared && (
+                        <span
+                          className="inline-flex items-center justify-center leading-none rounded-full px-2 py-1 text-[10px]"
+                          style={{ background: token.colorSuccessBg, color: token.colorSuccess }}
+                        >
+                          Đang chia sẻ
+                        </span>
+                      )}
                       {isActive && (
                         <span
                           className="inline-flex items-center justify-center leading-none rounded-full px-2 py-1 text-[10px]"
@@ -202,6 +230,13 @@ export const MosChatAiSessionsModal: React.FC<MosChatAiSessionsModalProps> = ({
                     >
                       {formatSessionTime(s.updatedAt)} · {s.messageCount ?? 0} tin nhắn
                     </div>
+                    {privacy.adminViews > 0 && privacy.lastView && (
+                      <div className="text-[11px] mt-0.5" style={{ color: token.colorWarning }}>
+                        Quản trị đã xem {privacy.adminViews} lần · gần nhất: {privacy.lastView.name} (
+                        {privacy.lastView.mode === 'mission' ? 'liên quan mOS Mission' : 'rà soát bảo mật'}
+                        {privacy.lastView.at ? `, ${formatSessionTime(privacy.lastView.at)}` : ''})
+                      </div>
+                    )}
                   </button>
                   <Tooltip title="Sao chép liên kết cố định">
                     <button

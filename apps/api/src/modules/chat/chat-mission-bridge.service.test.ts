@@ -1031,6 +1031,10 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
   it('stores the MAI session permalink (chatSessionId) in the ticket context when the mission comes from an AI session', async () => {
     let createdReportData: Record<string, unknown> | null = null;
     const SESSION_ID = '3f2b8c1e-9d4a-4e0b-8a57-1c2d3e4f5a6b';
+    const storedSession: { id: string; metadataJson: string | null } = {
+      id: SESSION_ID,
+      metadataJson: JSON.stringify({ lastEngine: 'ag' }),
+    };
 
     const mockReport = {
       id: 255,
@@ -1054,6 +1058,13 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
           crmAiChatMessage: {
             findFirst: async ({ where }: { where: { id: string } }) =>
               where.id === 'ai-msg-1' ? { sessionId: SESSION_ID } : null,
+          },
+          crmAiChatSession: {
+            findFirst: async ({ where }: { where: { id: string } }) => (where.id === SESSION_ID ? storedSession : null),
+            update: async ({ data }: { data: { metadataJson: string } }) => {
+              storedSession.metadataJson = data.metadataJson;
+              return storedSession;
+            },
           },
           crmBugReport: {
             create: async ({ data }: { data: Record<string, unknown> }) => {
@@ -1118,6 +1129,10 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
       assert.equal(context.query.chatSessionId, SESSION_ID);
       assert.equal(context.query.chatConvId, 'dm-wings-ai-copilot');
       assert.match((createdReportData as SafeAny).description, new RegExp(`sessionId=${SESSION_ID}`));
+      // The session is now mission-linked (lets the Super Admin reopen it) and its other metadata is preserved.
+      const storedMeta = JSON.parse(storedSession.metadataJson as string);
+      assert.deepEqual(storedMeta.missionReportIds, [255]);
+      assert.equal(storedMeta.lastEngine, 'ag');
     } finally {
       InboxImplementationService.approve = origApprove;
     }

@@ -5690,7 +5690,7 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 281
+        "line": 312
       }
     },
     {
@@ -5704,7 +5704,7 @@
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 408
+        "line": 439
       }
     },
     {
@@ -5718,7 +5718,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 553
+        "line": 584
       }
     },
     {
@@ -18317,6 +18317,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ListAiSessionsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiSessionAccessMode",
+      "type": "SharedType",
+      "label": "AiSessionAccessMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiSessionAccessMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiSessionAccessLogEntry",
+      "type": "SharedType",
+      "label": "AiSessionAccessLogEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiSessionAccessLogEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiSessionAccessInfo",
+      "type": "SharedType",
+      "label": "AiSessionAccessInfo",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiSessionAccessInfo",
         "package": "@mos-lab/shared"
       }
     },
@@ -36537,6 +36573,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatAiAuditReasonModal",
+      "type": "UIComponent",
+      "label": "<MosChatAiAuditReasonModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatAiAuditReasonModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatAiAuditReasonModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatAiSessionsModal",
       "type": "UIComponent",
       "label": "<MosChatAiSessionsModal />",
@@ -39368,6 +39416,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ai/ai-session-access.test.ts",
+      "type": "File",
+      "label": "ai-session-access.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai-session-access.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4206,
+        "lineCount": 106,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ai-session-access.ts",
+      "type": "File",
+      "label": "ai-session-access.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai-session-access.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5009,
+        "lineCount": 142,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ai/ai.service.ts",
       "type": "File",
       "label": "ai.service.ts",
@@ -39375,8 +39449,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 52068,
-        "lineCount": 1126,
+        "sizeBytes": 56105,
+        "lineCount": 1225,
         "ext": ".ts"
       }
     },
@@ -39401,8 +39475,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13001,
-        "lineCount": 343,
+        "sizeBytes": 17172,
+        "lineCount": 445,
         "ext": ".ts"
       }
     },
@@ -39414,8 +39488,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39757,
-        "lineCount": 771,
+        "sizeBytes": 41183,
+        "lineCount": 802,
         "ext": ".ts"
       }
     },
@@ -40467,8 +40541,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39838,
-        "lineCount": 1126,
+        "sizeBytes": 40650,
+        "lineCount": 1141,
         "ext": ".ts"
       }
     },
@@ -40480,8 +40554,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 63881,
-        "lineCount": 1624,
+        "sizeBytes": 64759,
+        "lineCount": 1644,
         "ext": ".ts"
       }
     },
@@ -54715,8 +54789,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2488,
-        "lineCount": 76,
+        "sizeBytes": 3155,
+        "lineCount": 88,
         "ext": ".ts"
       }
     },
@@ -55391,8 +55465,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 204468,
-        "lineCount": 2514,
+        "sizeBytes": 206003,
+        "lineCount": 2526,
         "ext": ".ts"
       }
     },
@@ -55586,8 +55660,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2279,
-        "lineCount": 101,
+        "sizeBytes": 3174,
+        "lineCount": 126,
         "ext": ".ts"
       }
     },
@@ -65613,6 +65687,27 @@
     {
       "id": "edge:type:@mos-lab/shared:ListAiSessionsResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:ListAiSessionsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiSessionAccessMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiSessionAccessMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiSessionAccessLogEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiSessionAccessLogEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiSessionAccessInfo:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiSessionAccessInfo",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -77658,6 +77753,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatAiAuditReasonModal:ws:apps/web",
+      "source": "uicomp:MosChatAiAuditReasonModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatAiAuditReasonModal:token:color:primary",
+      "source": "uicomp:MosChatAiAuditReasonModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatAiSessionsModal:ws:apps/web",
       "source": "uicomp:MosChatAiSessionsModal",
       "target": "ws:apps/web",
@@ -80411,6 +80520,13 @@
     {
       "id": "edge:file:apps/api/src/modules/academy-workshops/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/academy-workshops/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/ai-session-access.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ai-session-access.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86943,6 +87059,13 @@
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmInboxImplementationJob",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "target": "prisma:crm:CrmInboxImplementationJob",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmAiChatSession",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "prisma:crm:CrmAiChatSession",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -119708,31 +119831,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4368,
-    "totalEdges": 9016,
+    "totalNodes": 4374,
+    "totalEdges": 9023,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 780,
       "Component": 66,
-      "SharedType": 1566,
+      "SharedType": 1569,
       "DesignToken": 12,
-      "UIComponent": 386,
-      "File": 1372
+      "UIComponent": 387,
+      "File": 1374
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1761,
+      "EXPORTS": 1764,
       "HANDLES_ROUTE": 780,
-      "RENDERS": 452,
-      "USES_TOKEN": 388,
-      "IMPORTS": 796,
-      "QUERIES_MODEL": 437,
+      "RENDERS": 453,
+      "USES_TOKEN": 389,
+      "IMPORTS": 797,
+      "QUERIES_MODEL": 438,
       "API_CALL": 4402
     },
     "fastifyRouteCount": 785,
     "prismaModelCount": 183,
     "nextPageCount": 66,
-    "sharedTypeCount": 1566
+    "sharedTypeCount": 1569
   },
   "routes": [
     {

@@ -7,12 +7,24 @@ import {
   type AiAssistantChatResponse,
   type AiChatSession,
   type AiChatMessage,
+  type AiSessionAccessInfo,
   type SafeAny,
 } from '@mos-lab/shared';
 
 import type { PrismaClient as CrmPrismaClient } from '../../generated/crm-client/index.js';
 import type { PrismaClient as LegacyPrismaClient } from '../../generated/legacy-client/index.js';
 import type { FastifyInstance } from 'fastify';
+import {
+  buildAccessLogEntry,
+  decideAiSessionAccess,
+  normalizeAuditReason,
+  parseSessionMetadata,
+  readSessionPrivacyMeta,
+  withAccessLogEntry,
+  withMissionLink,
+  withSharing,
+  type AiSessionViewer,
+} from './ai-session-access.js';
 import { LiveCustomerContextService } from './live-customer-context.service.js';
 import { StaffCareerContextService } from './staff-career-context.service.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
@@ -497,56 +509,143 @@ export class AiAssistantService {
   }
 
   /**
-   * Whether a session id exists at all (any owner). Used by the permalink route to tell
-   * "forbidden" (exists, not yours) apart from "not found" without leaking its content.
-   */
-  static async sessionExists(crm: CrmPrismaClient, sessionId: string): Promise<boolean> {
-    const found = await crm.crmAiChatSession.findFirst({
-      where: { id: sessionId },
-      select: { id: true },
-    });
-    return Boolean(found);
-  }
-
-  /**
-   * Get single session with its messages.
-   * By default strictly verifies staffId (Private Workspace isolation). Admin/Super Admin viewers may
-   * open any session through its permalink by passing `allowAnyOwner` (read-only access, resolved by the route).
+   * Get single session with its messages, strictly owner-scoped (Private Workspace isolation).
+   * Permalink viewers other than the owner go through `getSessionForViewer`.
    */
   static async getSession(
     crm: CrmPrismaClient,
     sessionId: string,
-    staffId: number,
-    options: { allowAnyOwner?: boolean } = {}
+    staffId: number
   ): Promise<{
     session: AiChatSession;
     messages: AiChatMessage[];
   } | null> {
     const session = await crm.crmAiChatSession.findFirst({
-      where: options.allowAnyOwner
-        ? { id: sessionId }
-        : {
-            id: sessionId,
-            staffId,
-          },
-      include: {
-        messages: {
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-      },
+      where: { id: sessionId, staffId },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
-
     if (!session) return null;
+    return AiAssistantService.mapSessionDetail(session, true);
+  }
 
+  /**
+   * Permalink access (Kinh Thánh mOS UI-012): owner, shared link, Super Admin for mission-linked sessions,
+   * or Admin/Super Admin with a written security-audit reason. Non-owner views are read-only; mission/audit
+   * views are recorded in the session's access log so the owner can see them. Metadata of someone else's
+   * session is never returned.
+   */
+  static async getSessionForViewer(
+    crm: CrmPrismaClient,
+    sessionId: string,
+    viewer: AiSessionViewer,
+    options: { auditRequested?: boolean; auditReason?: unknown } = {}
+  ): Promise<
+    | { status: 'not_found' }
+    | { status: 'forbidden'; auditAvailable: boolean; invalidAuditReason?: boolean }
+    | { status: 'ok'; result: { session: AiChatSession; messages: AiChatMessage[]; access: AiSessionAccessInfo } }
+  > {
+    const session = await crm.crmAiChatSession.findFirst({
+      where: { id: sessionId },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!session) return { status: 'not_found' };
+
+    const metadata = parseSessionMetadata(session.metadataJson);
+    const decision = decideAiSessionAccess({
+      ownerStaffId: session.staffId,
+      viewer,
+      metadata,
+      auditRequested: options.auditRequested,
+      auditReason: options.auditReason,
+    });
+    if (!decision.allowed) {
+      return {
+        status: 'forbidden',
+        auditAvailable: decision.auditAvailable,
+        ...(decision.invalidAuditReason ? { invalidAuditReason: true } : {}),
+      };
+    }
+
+    const privacy = readSessionPrivacyMeta(metadata);
+    if (decision.logAccess) {
+      const reason = decision.mode === 'audit' ? normalizeAuditReason(options.auditReason) : null;
+      const entry = buildAccessLogEntry(viewer, decision.mode, reason, privacy.missionReportIds);
+      // Recording the view is part of the access: if it cannot be stored, the view is refused.
+      await crm.crmAiChatSession.update({
+        where: { id: session.id },
+        data: { metadataJson: JSON.stringify(withAccessLogEntry(metadata, entry)) },
+      });
+      privacy.accessLog = [...privacy.accessLog, entry];
+    }
+
+    const isOwner = decision.mode === 'owner';
+    const detail = AiAssistantService.mapSessionDetail(session, isOwner);
+    const access: AiSessionAccessInfo = {
+      mode: decision.mode,
+      readOnly: !isOwner,
+      missionLinked: privacy.missionReportIds.length > 0,
+      ...(isOwner ? { sharingEnabled: privacy.sharingEnabled, accessLog: privacy.accessLog } : {}),
+    };
+    return { status: 'ok', result: { ...detail, access } };
+  }
+
+  /** Owner-only: switch link sharing on/off for one session. Returns null when the staff member does not own it. */
+  static async setSessionSharing(
+    crm: CrmPrismaClient,
+    sessionId: string,
+    staffId: number,
+    enabled: boolean
+  ): Promise<{ sharingEnabled: boolean } | null> {
+    const session = await crm.crmAiChatSession.findFirst({ where: { id: sessionId, staffId } });
+    if (!session) return null;
+    const metadata = withSharing(parseSessionMetadata(session.metadataJson), enabled, staffId);
+    await crm.crmAiChatSession.update({
+      where: { id: session.id },
+      data: { metadataJson: JSON.stringify(metadata) },
+    });
+    return { sharingEnabled: enabled };
+  }
+
+  /** Remember that a session produced a mOS Mission, so the Super Admin can reopen it from the ticket. */
+  static async linkSessionToMission(crm: CrmPrismaClient, sessionId: string, reportId: number): Promise<boolean> {
+    const session = await crm.crmAiChatSession.findFirst({ where: { id: sessionId } });
+    if (!session) return false;
+    const metadata = withMissionLink(parseSessionMetadata(session.metadataJson), reportId);
+    await crm.crmAiChatSession.update({
+      where: { id: session.id },
+      data: { metadataJson: JSON.stringify(metadata) },
+    });
+    return true;
+  }
+
+  private static mapSessionDetail(
+    session: {
+      id: string;
+      staffId: number;
+      title: string;
+      scope: string;
+      metadataJson: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      messages: Array<{
+        id: string;
+        sessionId: string;
+        role: string;
+        content: string | null;
+        thinking: string | null;
+        suggestedActionJson: string | null;
+        createdAt: Date;
+      }>;
+    },
+    includeMetadata: boolean
+  ): { session: AiChatSession; messages: AiChatMessage[] } {
     return {
       session: {
         id: session.id,
         staffId: session.staffId,
         title: session.title,
         scope: session.scope,
-        metadata: session.metadataJson ? JSON.parse(session.metadataJson) : null,
+        metadata: includeMetadata && session.metadataJson ? JSON.parse(session.metadataJson) : null,
         createdAt: session.createdAt.toISOString(),
         updatedAt: session.updatedAt.toISOString(),
       },

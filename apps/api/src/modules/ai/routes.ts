@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 import { requireAuth } from '../../middlewares/auth.js';
 import { AiAssistantService } from './ai.service.js';
+import { AI_SESSION_AUDIT_PURPOSE, AI_SESSION_AUDIT_REASON_MIN } from './ai-session-access.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
 import { InboxWorkerStatusService } from '../bug-reports/inbox-worker-status.service.js';
 import {
@@ -193,32 +194,63 @@ export async function aiRoutes(fastify: FastifyInstance) {
     }
   );
 
-  fastify.get<{ Params: { id: string } }>(
+  fastify.get<{ Params: { id: string }; Querystring: { purpose?: string; reason?: string } }>(
     '/ai/chat/sessions/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      const staffId = request.user.id;
-      // Permalink access: the owner, or Admin/Super Admin (read-only). Everyone else gets 403.
-      const canViewAnyOwner = isDannyOrSuperAdminUser(request.user) || isAdminOrSuperAdminRole(request.user?.role);
-      const result = await AiAssistantService.getSession(fastify.prisma.crm, request.params.id, staffId, {
-        allowAnyOwner: canViewAnyOwner,
-      });
-      if (result) {
-        if (result.session.staffId !== staffId) {
-          request.log.info(
-            { sessionId: result.session.id, ownerStaffId: result.session.staffId, viewerStaffId: staffId },
-            'AI chat session opened by admin via permalink'
-          );
+      const user = request.user;
+      // Permalink access (Kinh Thánh mOS UI-012): owner, shared link, Super Admin for mission-linked sessions,
+      // or Admin/Super Admin with a written security-audit reason. Everyone else gets 403.
+      const outcome = await AiAssistantService.getSessionForViewer(
+        fastify.prisma.crm,
+        request.params.id,
+        { id: user.id, role: user.role, displayName: user.displayName, username: user.username },
+        {
+          auditRequested: request.query?.purpose === AI_SESSION_AUDIT_PURPOSE,
+          auditReason: request.query?.reason,
         }
-        return reply.send(result);
+      );
+
+      if (outcome.status === 'not_found') {
+        return reply.status(404).send({ error: 'Session not found or unauthorized' });
       }
-      if (!canViewAnyOwner && (await AiAssistantService.sessionExists(fastify.prisma.crm, request.params.id))) {
+      if (outcome.status === 'forbidden') {
         return reply.status(403).send({
           error: 'Forbidden',
-          message: 'Bạn không có quyền xem phiên hội thoại này.',
+          message: outcome.invalidAuditReason
+            ? `Cần ghi rõ lý do rà soát bảo mật (tối thiểu ${AI_SESSION_AUDIT_REASON_MIN} ký tự).`
+            : 'Phiên hội thoại này là riêng tư. Chỉ chủ phiên hoặc người được chủ phiên chia sẻ mới xem được.',
+          auditAvailable: outcome.auditAvailable,
         });
       }
-      return reply.status(404).send({ error: 'Session not found or unauthorized' });
+      if (outcome.result.access.mode === 'mission' || outcome.result.access.mode === 'audit') {
+        request.log.info(
+          { sessionId: request.params.id, viewerStaffId: user.id, mode: outcome.result.access.mode },
+          'AI chat session opened outside ownership via permalink'
+        );
+      }
+      return reply.send(outcome.result);
+    }
+  );
+
+  // Owner-only: share / stop sharing the permalink of one session (read-only for signed-in staff).
+  fastify.patch<{ Params: { id: string }; Body: { enabled?: boolean } }>(
+    '/ai/chat/sessions/:id/sharing',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      if (typeof request.body?.enabled !== 'boolean') {
+        return reply.status(400).send({ error: 'Thiếu trạng thái chia sẻ (enabled: true | false).' });
+      }
+      const result = await AiAssistantService.setSessionSharing(
+        fastify.prisma.crm,
+        request.params.id,
+        request.user.id,
+        request.body.enabled
+      );
+      if (!result) {
+        return reply.status(404).send({ error: 'Session not found or unauthorized' });
+      }
+      return reply.send(result);
     }
   );
 
