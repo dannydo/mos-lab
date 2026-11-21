@@ -335,17 +335,28 @@ test('Legacy wallet reconciler handles 2 same-service wallets, cross-line upgrad
         const os = orderServices.get(Number(params[0]));
         return [os ? [os] : []];
       }
+      if (clean.includes('FROM user_service_balance_transaction WHERE id = ?')) {
+        const tx = transactions.get(Number(params[0]));
+        return [tx ? [tx] : []];
+      }
       if (clean.includes('FROM user_service_balance_transaction WHERE user_service_balance_id = ? AND user_id = ?')) {
-        const [balId, userId] = params;
-        const list = Array.from(transactions.values()).filter(
-          (t) =>
-            t.user_service_balance_id === Number(balId) &&
-            t.user_id === Number(userId) &&
-            !t.used_staff_id &&
-            !t.changed_staff_id &&
-            !t.cancelled_staff_id &&
-            (t.normal_count > 0 || t.retain_count > 0)
-        );
+        const [balId, userId, preferredServiceType] = params;
+        const list = Array.from(transactions.values())
+          .filter(
+            (t) =>
+              t.user_service_balance_id === Number(balId) &&
+              t.user_id === Number(userId) &&
+              !t.used_staff_id &&
+              !t.changed_staff_id &&
+              !t.cancelled_staff_id &&
+              (t.normal_count > 0 || t.retain_count > 0)
+          )
+          .sort((a, b) => {
+            const aMatch = preferredServiceType === 'Retain' ? a.retain_count > 0 : a.normal_count > 0;
+            const bMatch = preferredServiceType === 'Retain' ? b.retain_count > 0 : b.normal_count > 0;
+            if (aMatch !== bMatch) return aMatch ? -1 : 1;
+            return a.id - b.id;
+          });
         return [list.slice(0, 1)];
       }
       if (
@@ -635,4 +646,213 @@ test('executePostCheckoutAdjustmentAction supports 0-delta swap from Wallet #101
   assert.equal(res.payload.override?.comboRedemption?.balanceId, 102);
   assert.equal(res.payload.override?.postCheckoutAdjustments?.length, 1);
   assert.equal(res.payload.override?.postCheckoutAdjustments?.[0]?.deltaAmount, 0);
+});
+
+test('MOS-BUG-256: buildLegacyWalletReconciliationPlan maps CONVERTED_REFILL_TO_NEW to Retain slot even for Normal service', () => {
+  const mergedOverride = {
+    serviceType: 'Normal',
+    selectedUpperComboBalanceId: 82863,
+    skipUpperCombo: false,
+    comboRedemption: {
+      balanceId: 82863,
+      redeemSession: true,
+      deductedBucket: 'CONVERTED_REFILL_TO_NEW',
+    },
+  } as SafeAny;
+
+  const plan = buildLegacyWalletReconciliationPlan({
+    mergedOverride,
+    walletFlags: {
+      selectedUpperBalanceId: 82863,
+      selectedUnderBalanceId: null,
+      skipUpperCombo: false,
+      skipUnderCombo: true,
+      effectiveRedeemUpper: true,
+      effectiveRedeemUnder: false,
+    },
+    effectiveComboRedemption: mergedOverride.comboRedemption,
+    activeOrderServiceIds: [501088],
+  });
+
+  assert.equal(plan.targetWalletSlots.length, 1);
+  assert.equal(plan.targetWalletSlots[0]?.preferredServiceType, 'Retain');
+});
+
+test('MOS-BUG-256: reconcileSelectedWalletDeductionInLegacyDb swaps Normal tx mis-deducted by legacy PHP back to Retain tx on same balance', async () => {
+  const balances = new Map<number, SafeAny>([
+    [
+      82863,
+      {
+        id: 82863,
+        normal_count: 1,
+        retain_count: 8,
+        total_normal_balance_amount: 550000,
+        total_retain_balance_amount: 2720000,
+        date_expired: '2027-07-15 23:59:59',
+      },
+    ],
+  ]);
+
+  const transactions = new Map<number, SafeAny>([
+    // PHP mistakenly consumed Normal tx #90001 on a Retain order because -refill service_price had normal_count = -1
+    [
+      90001,
+      {
+        id: 90001,
+        user_service_balance_id: 82863,
+        user_id: 9648,
+        normal_count: 1,
+        retain_count: 0,
+        normal_balance_amount: 550000,
+        retain_balance_amount: 0,
+        used_staff_id: 13783,
+        changed_staff_id: null,
+        cancelled_staff_id: null,
+        order_id: 339182,
+        order_service_id: 6001,
+        date_expired: '2027-07-15 23:59:59',
+      },
+    ],
+    // Correct unused Retain tx #90002 on the same balance
+    [
+      90002,
+      {
+        id: 90002,
+        user_service_balance_id: 82863,
+        user_id: 9648,
+        normal_count: 0,
+        retain_count: 1,
+        normal_balance_amount: 0,
+        retain_balance_amount: 340000,
+        used_staff_id: null,
+        changed_staff_id: null,
+        cancelled_staff_id: null,
+        order_id: null,
+        order_service_id: null,
+        date_expired: '2027-07-15 23:59:59',
+      },
+    ],
+  ]);
+
+  const orderServices = new Map<number, SafeAny>([
+    [6001, { id: 6001, order_id: 339182, user_service_balance_transaction_id: 90001, balance_price: 550000 }],
+  ]);
+
+  const fakePool = {
+    query: async (sql: string, params: SafeAny[] = []) => {
+      const clean = sql.replace(/\s+/g, ' ').trim();
+      if (clean.startsWith('SELECT id, user_service_balance_transaction_id FROM order_service WHERE id = ?')) {
+        const os = orderServices.get(Number(params[0]));
+        return [os ? [os] : []];
+      }
+      if (clean.includes('FROM user_service_balance_transaction WHERE id = ?')) {
+        const tx = transactions.get(Number(params[0]));
+        return [tx ? [tx] : []];
+      }
+      if (clean.includes('FROM user_service_balance_transaction WHERE user_service_balance_id = ? AND user_id = ?')) {
+        const [balId, userId, preferredServiceType] = params;
+        const list = Array.from(transactions.values())
+          .filter(
+            (t) =>
+              t.user_service_balance_id === Number(balId) &&
+              t.user_id === Number(userId) &&
+              !t.used_staff_id &&
+              !t.changed_staff_id &&
+              !t.cancelled_staff_id &&
+              (t.normal_count > 0 || t.retain_count > 0)
+          )
+          .sort((a, b) => {
+            const aMatch = preferredServiceType === 'Retain' ? a.retain_count > 0 : a.normal_count > 0;
+            const bMatch = preferredServiceType === 'Retain' ? b.retain_count > 0 : b.normal_count > 0;
+            if (aMatch !== bMatch) return aMatch ? -1 : 1;
+            return a.id - b.id;
+          });
+        return [list.slice(0, 1)];
+      }
+      if (clean.includes('FROM user_service_balance_transaction WHERE order_id = ? AND used_staff_id IS NOT NULL')) {
+        const bookingId = Number(params[0]);
+        return [Array.from(transactions.values()).filter((t) => t.order_id === bookingId && t.used_staff_id !== null)];
+      }
+      if (clean.startsWith('UPDATE user_service_balance SET normal_count = normal_count + ?')) {
+        const [incN, incR, incNAmt, incRAmt, _exp, _staff, balId] = params;
+        const bal = balances.get(Number(balId));
+        if (bal) {
+          bal.normal_count += Number(incN);
+          bal.retain_count += Number(incR);
+          bal.total_normal_balance_amount += Number(incNAmt);
+          bal.total_retain_balance_amount += Number(incRAmt);
+        }
+        return [{ affectedRows: 1 }];
+      }
+      if (clean.startsWith('UPDATE user_service_balance SET normal_count = GREATEST(0, normal_count - ?)')) {
+        const [decN, decR, decNAmt, decRAmt, _dn2, _dr2, _staff, balId] = params;
+        const bal = balances.get(Number(balId));
+        if (bal) {
+          bal.normal_count = Math.max(0, bal.normal_count - Number(decN));
+          bal.retain_count = Math.max(0, bal.retain_count - Number(decR));
+          bal.total_normal_balance_amount = Math.max(0, bal.total_normal_balance_amount - Number(decNAmt));
+          bal.total_retain_balance_amount = Math.max(0, bal.total_retain_balance_amount - Number(decRAmt));
+        }
+        return [{ affectedRows: 1 }];
+      }
+      if (
+        clean.startsWith(
+          'SELECT normal_count, retain_count, total_normal_balance_amount, total_retain_balance_amount FROM user_service_balance WHERE id = ?'
+        )
+      ) {
+        const bal = balances.get(Number(params[0]));
+        return [bal ? [bal] : []];
+      }
+      if (clean.startsWith('UPDATE user_service_balance_transaction SET used_staff_id = NULL')) {
+        const tx = transactions.get(Number(params[0]));
+        if (tx) {
+          tx.used_staff_id = null;
+          tx.order_id = null;
+          tx.order_service_id = null;
+        }
+        return [{ affectedRows: 1 }];
+      }
+      if (clean.startsWith('UPDATE user_service_balance_transaction SET used_staff_id = ?')) {
+        const [staffId, orderId, osId, leftN, leftR, _laN, _laR, txId] = params;
+        const tx = transactions.get(Number(txId));
+        if (tx) {
+          tx.used_staff_id = staffId;
+          tx.order_id = orderId;
+          tx.order_service_id = osId;
+          tx.total_normal_count_left = leftN;
+          tx.total_retain_count_left = leftR;
+        }
+        return [{ affectedRows: 1 }];
+      }
+      if (
+        clean.startsWith(
+          'UPDATE order_service SET user_service_balance_transaction_id = ?, balance_price = ? WHERE id = ?'
+        )
+      ) {
+        const [txId, price, osId] = params;
+        const os = orderServices.get(Number(osId));
+        if (os) {
+          os.user_service_balance_transaction_id = txId;
+          os.balance_price = price;
+        }
+        return [{ affectedRows: 1 }];
+      }
+      return [[]];
+    },
+  } as unknown as mysql.Pool;
+
+  await reconcileSelectedWalletDeductionInLegacyDb(fakePool, {
+    bookingId: 339182,
+    customerUserId: 9648,
+    staffId: 13783,
+    slots: [{ orderServiceId: 6001, targetBalanceId: 82863, preferredServiceType: 'Retain' }],
+  });
+
+  // Mis-deducted Normal tx #90001 must be restored, and Retain tx #90002 must be deducted instead
+  assert.equal(transactions.get(90001)?.used_staff_id, null);
+  assert.equal(transactions.get(90002)?.used_staff_id, 13783);
+  assert.equal(transactions.get(90002)?.order_service_id, 6001);
+  assert.equal(orderServices.get(6001)?.user_service_balance_transaction_id, 90002);
+  assert.equal(balances.get(82863)?.normal_count, 2);
+  assert.equal(balances.get(82863)?.retain_count, 7);
 });

@@ -52,6 +52,7 @@ export function computeUpsellRedemptionAccounting({
     targetCategoryId,
     targetVolume,
     requestedServiceType: (booking?.serviceType as 'Normal' | 'Retain') || 'Normal',
+    respectRequestedServiceType: booking?.serviceType === 'Retain',
     daysSinceLastVisit,
     paidNewRemaining: paidNewRem,
     paidRefillRemaining: paidRefillRem,

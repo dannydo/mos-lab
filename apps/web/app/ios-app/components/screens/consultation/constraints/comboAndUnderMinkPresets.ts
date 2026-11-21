@@ -1,4 +1,8 @@
-import { resolveActiveBookingComboWallets, type IosCustomerComboWalletItem } from '@mos-lab/shared';
+import {
+  getVietnamDateYmd,
+  resolveActiveBookingComboWallets,
+  type IosCustomerComboWalletItem,
+} from '@mos-lab/shared';
 import type {
   AutoResolvedComboServiceSpec,
   LashMaterialSpec,
@@ -26,7 +30,7 @@ export function getRetainCycleDaysLimit(isComboLive?: boolean): number {
  */
 export function parseDaysSinceLastVisit(
   lastVisitDateStr?: string,
-  referenceDateStr: string = '03/11/2026'
+  referenceDateStr?: string
 ): number | null {
   if (!lastVisitDateStr || !lastVisitDateStr.trim()) return null;
 
@@ -36,6 +40,10 @@ export function parseDaysSinceLastVisit(
       const [dd, mm, yyyy] = clean.split('/').map(Number);
       return new Date(yyyy, mm - 1, dd, 12, 0, 0);
     }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+      const [yyyy, mm, dd] = clean.split('-').map(Number);
+      return new Date(yyyy, mm - 1, dd, 12, 0, 0);
+    }
     const d = new Date(clean);
     return isNaN(d.getTime()) ? null : d;
   };
@@ -43,7 +51,8 @@ export function parseDaysSinceLastVisit(
   const lastDate = parseDate(lastVisitDateStr);
   if (!lastDate) return null;
 
-  const refDate = parseDate(referenceDateStr) || new Date(2026, 10, 3, 12, 0, 0);
+  const refSource = referenceDateStr?.trim() || getVietnamDateYmd();
+  const refDate = parseDate(refSource) || new Date();
   const diffMs = refDate.getTime() - lastDate.getTime();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
   return Math.max(0, diffDays);

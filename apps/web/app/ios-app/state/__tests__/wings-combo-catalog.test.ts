@@ -4,6 +4,7 @@ import {
   getLashFamilyInfo,
   matchComboCategoryAndVolumeFromBooking,
   getComboPackagesForCategoryAndVolume,
+  calculateComboRedemptionAccounting,
 } from '@mos-lab/shared';
 
 describe('Wings Combo Catalog Refactoring - Classic 1D, Volume 2D/3D, Mink 𝓜', () => {
@@ -87,5 +88,56 @@ describe('Wings Combo Catalog Refactoring - Classic 1D, Volume 2D/3D, Mink 𝓜'
       includeVvipPass: true,
     });
     expect(volumePkgs.some((p) => p.packageKind === 'vvip_pass')).toBe(true);
+  });
+
+  it('matches Hyperlight 550 and Ultralight 550 sibling tiers without defaulting to 770', () => {
+    const hyper550 = matchComboCategoryAndVolumeFromBooking({
+      serviceName: '❖ Hyperlight 550 10+6',
+      comboName: '❖ Hyperlight 550 10+6',
+      serviceKey: 'hyperlight-550',
+    });
+    expect(hyper550.categoryId).toBe('HyperLight_3X');
+    expect(hyper550.volume).toBe(550);
+
+    const ultra550 = matchComboCategoryAndVolumeFromBooking({
+      serviceName: '❖ Ultralight 550 4+1',
+      comboName: '❖ Ultralight 550 4+1',
+    });
+    expect(ultra550.categoryId).toBe('UltraLight_3D');
+    expect(ultra550.volume).toBe(550);
+
+    const conv = calculateComboRedemptionAccounting({
+      comboName: '❖ Hyperlight 550 10+6',
+      baseCategoryId: hyper550.categoryId,
+      baseVolume: hyper550.volume,
+      targetCategoryId: hyper550.categoryId,
+      targetVolume: hyper550.volume,
+      requestedServiceType: 'Normal',
+      daysSinceLastVisit: 50,
+      paidNewRemaining: 0,
+      paidRefillRemaining: 8,
+      bonusNewRemaining: 0,
+      bonusRefillRemaining: 0,
+    });
+    expect(conv.deductedBucket).toBe('CONVERTED_REFILL_TO_NEW');
+    expect(conv.typeConversionSurcharge).toBe(210000);
+  });
+
+  it('preserves Retain slot when respectRequestedServiceType is true even past 25 days', () => {
+    const retainKept = calculateComboRedemptionAccounting({
+      comboName: '❖ Classic 1D 550',
+      baseCategoryId: 'Classic_1D',
+      baseVolume: 550,
+      requestedServiceType: 'Retain',
+      respectRequestedServiceType: true,
+      daysSinceLastVisit: 40,
+      paidNewRemaining: 3,
+      paidRefillRemaining: 7,
+      bonusNewRemaining: 0,
+      bonusRefillRemaining: 0,
+    });
+    expect(retainKept.deductedBucket).toBe('PAID_REFILL');
+    expect(retainKept.typeConversionSurcharge).toBe(0);
+    expect(retainKept.totalCustomerPayToday).toBe(0);
   });
 });

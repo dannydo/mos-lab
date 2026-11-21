@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, SetStateAction } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, SetStateAction } from 'react';
 import {
   checkWelcomeComboEligibility,
   matchComboCategoryAndVolumeFromBooking,
@@ -445,15 +445,34 @@ export function useConsultationComboAndUpgrade({ booking, design }: UseConsultat
     selectedUnderExpiry,
   ]);
 
+  const prevBookingIdForRetainModeRef = useRef<number | undefined>(booking?.id);
+  const prevBalanceIdForRetainModeRef = useRef<number | null | undefined>(
+    design.resolvedWallets.selectedUpperComboBalanceId
+  );
+
   useEffect(() => {
+    const contextChanged =
+      prevBookingIdForRetainModeRef.current !== booking?.id ||
+      prevBalanceIdForRetainModeRef.current !== design.resolvedWallets.selectedUpperComboBalanceId;
+    prevBookingIdForRetainModeRef.current = booking?.id;
+    prevBalanceIdForRetainModeRef.current = design.resolvedWallets.selectedUpperComboBalanceId;
+
     if (isComboLive) {
       if (!hasComboNormalRemaining && hasComboRetainRemaining) {
         setRetainUpgradeMode('PAY_DIFF');
-      } else if (hasComboNormalRemaining && !hasComboRetainRemaining) {
+      } else if (hasComboNormalRemaining && (!hasComboRetainRemaining || contextChanged)) {
         setRetainUpgradeMode('DEDUCT_NORMAL');
       }
+    } else if (contextChanged) {
+      setRetainUpgradeMode('DEDUCT_NORMAL');
     }
-  }, [isComboLive, hasComboNormalRemaining, hasComboRetainRemaining]);
+  }, [
+    booking?.id,
+    design.resolvedWallets.selectedUpperComboBalanceId,
+    isComboLive,
+    hasComboNormalRemaining,
+    hasComboRetainRemaining,
+  ]);
 
   const cleanServiceName = useMemo(() => {
     return livePricingAndCvPoints.skuName.replace(/\s*\d+[Kk]\b/g, '').trim();

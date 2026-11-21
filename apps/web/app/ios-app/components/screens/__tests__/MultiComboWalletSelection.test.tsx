@@ -409,4 +409,106 @@ describe('Multi-Combo Wallet Selection across Check-in, Consultation, Polling & 
     expect(submitted.skipUpperCombo).toBe(false);
     expect(submitted.comboRedemption?.balanceId).toBe(102);
   });
+
+  it('Screen03ConsultationMatrix computes real days since last visit, auto-selects Normal past 25d even when normalRemaining=0, shows +210.000đ for 550, and preserves saved overridden Retain', () => {
+    const todayMidnight = new Date();
+    const fiftyDaysAgo = new Date(
+      todayMidnight.getFullYear(),
+      todayMidnight.getMonth(),
+      todayMidnight.getDate() - 50,
+      12,
+      0,
+      0
+    );
+    const dd = String(fiftyDaysAgo.getDate()).padStart(2, '0');
+    const mm = String(fiftyDaysAgo.getMonth() + 1).padStart(2, '0');
+    const yyyy = fiftyDaysAgo.getFullYear();
+    const fiftyDaysAgoStr = `${dd}/${mm}/${yyyy}`;
+
+    const hyper550Wallet = makeWallet({
+      balanceId: 82863,
+      comboName: '❖ Hyperlight 550 10+6',
+      serviceKey: 'hyperlight-550',
+      normalRemaining: 0,
+      retainRemaining: 8,
+      remainingSessions: 8,
+      dateExpired: '2027-07-15 23:59:59',
+    });
+
+    const bookingPast25Days = makeMultiWalletBooking({
+      id: 339182,
+      serviceName: '❖ Hyperlight 550 10+6',
+      serviceType: 'Normal',
+      lashHistory: [{ date: fiftyDaysAgoStr, serviceName: '❖ Hyperlight 550 10+6', staffName: 'Khanh Cao' }],
+      lastVisitDate: fiftyDaysAgoStr,
+      comboWallets: [hyper550Wallet],
+      selectedUpperComboBalanceId: 82863,
+      selectedUnderComboBalanceId: null,
+      underMinkComboStatus: {
+        hasUnderCombo: false,
+        comboName: '',
+        remainingSessions: 0,
+        normalRemaining: 0,
+        retainRemaining: 0,
+        dateExpired: null,
+      },
+      comboLiveStatus: {
+        balanceId: 82863,
+        isComboLive: true,
+        comboName: '❖ Hyperlight 550 10+6',
+        serviceKey: 'hyperlight-550',
+        remainingSessions: 8,
+        normalRemaining: 0,
+        retainRemaining: 8,
+        dateExpired: '2027-07-15 23:59:59',
+        upsellOpportunity: false,
+      },
+    });
+
+    const { rerender } = render(
+      <Screen03ConsultationMatrix
+        booking={bookingPast25Days}
+        onBack={vi.fn()}
+        onSave={vi.fn()}
+        onSelectComboWallet={vi.fn()}
+      />
+    );
+
+    // Must render real elapsed days (50N / 49N..51N depending on timezone boundary), never legacy hardcoded 33N
+    expect(screen.getByText(/^(49|50|51)N$/)).toBeInTheDocument();
+    expect(screen.queryByText('33N')).not.toBeInTheDocument();
+
+    // Auto-selects Nối Mới (Normal) past 25 days even when normalRemaining = 0, and computes +210.000 đ (not 300k)
+    expect(screen.getByRole('button', { name: /^Mới \(0\)$/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByText(/\+210\.000 đ/).length).toBeGreaterThan(0);
+
+    // Preserves saved overridden Retain if already persisted on booking
+    rerender(
+      <Screen03ConsultationMatrix
+        booking={{
+          ...bookingPast25Days,
+          id: 339142,
+          serviceType: 'Retain',
+          attributes: {
+            ...(bookingPast25Days.attributes ?? {
+              style: 'Tự Nhiên',
+              curl: 'C',
+              length: '9-11mm',
+              thickness: '0.07',
+            }),
+            style: bookingPast25Days.attributes?.style || 'Tự Nhiên',
+            curl: bookingPast25Days.attributes?.curl || 'C',
+            length: bookingPast25Days.attributes?.length || '9-11mm',
+            thickness: bookingPast25Days.attributes?.thickness || '0.07',
+            isOverridden: true,
+            overrideReason: 'Khách tự chọn Dặm',
+          },
+        }}
+        onBack={vi.fn()}
+        onSave={vi.fn()}
+        onSelectComboWallet={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: /^Dặm \(8\)$/i })).toHaveAttribute('aria-pressed', 'true');
+  });
 });

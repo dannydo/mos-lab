@@ -126,7 +126,7 @@ export function useLashDesignSelection(booking?: BookingItem) {
         return 'Normal';
       }
       if (!hasComboNormalRemaining && hasComboRetainRemaining) {
-        return 'Retain';
+        return isWithin25Days ? 'Retain' : 'Normal';
       }
       if (isWithin25Days && hasComboRetainRemaining) {
         return 'Retain';
@@ -200,9 +200,14 @@ export function useLashDesignSelection(booking?: BookingItem) {
     return parts.length > 0 ? parts : [raw];
   });
   const selectedColor = useMemo(() => selectedColors.join(' + '), [selectedColors]);
+  const resolvedInitialServiceType: 'Normal' | 'Retain' =
+    booking?.attributes?.isOverridden && (booking?.serviceType === 'Normal' || booking?.serviceType === 'Retain')
+      ? booking.serviceType
+      : expectedAutoServiceType;
+
   const [selectedVolume, setSelectedVolume] = useState<string>(autoComboSpec.volume || initialMat.defaultVolume);
   const [selectedCount, setSelectedCount] = useState<string>(autoComboSpec.count || initialMat.defaultCount);
-  const [serviceType, setServiceType] = useState<'Normal' | 'Retain'>(expectedAutoServiceType);
+  const [serviceType, setServiceType] = useState<'Normal' | 'Retain'>(resolvedInitialServiceType);
 
   // Trạng thái CVL Override & Cảnh báo xác nhận
   const [hasManualMaterialEdit, setHasManualMaterialEdit] = useState<boolean>(false);
@@ -241,7 +246,7 @@ export function useLashDesignSelection(booking?: BookingItem) {
       setSelectedCount(
         initialMat.allowedCounts.includes(autoComboSpec.count) ? autoComboSpec.count : initialMat.defaultCount
       );
-      setServiceType(expectedAutoServiceType);
+      setServiceType(resolvedInitialServiceType);
       setIsOverridden(Boolean(booking?.attributes?.isOverridden));
       setOverrideReason(booking?.attributes?.overrideReason || '');
       return;
@@ -270,16 +275,20 @@ export function useLashDesignSelection(booking?: BookingItem) {
       setSelectedCount(
         initialMat.allowedCounts.includes(autoComboSpec.count) ? autoComboSpec.count : initialMat.defaultCount
       );
-      setServiceType(expectedAutoServiceType);
+      setServiceType(resolvedInitialServiceType);
       setIsOverridden(Boolean(booking?.attributes?.isOverridden));
       setOverrideReason(booking?.attributes?.overrideReason || '');
     }
   }, [
     booking?.id,
+    booking?.serviceType,
+    booking?.attributes?.isOverridden,
+    booking?.attributes?.overrideReason,
     initialMat.id,
     autoComboSpec.volume,
     autoComboSpec.count,
     expectedAutoServiceType,
+    resolvedInitialServiceType,
     resolvedWallets.selectedUpperComboBalanceId,
     resolvedWallets.skipUpperCombo,
     hasManualMaterialEdit,

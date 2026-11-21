@@ -39,6 +39,15 @@ export function resolveEffectiveLegacyWalletFlags(mergedOverride: BookingOverrid
   };
 }
 
+export function doesTxMatchPreferredServiceType(
+  tx: Record<string, unknown>,
+  preferredServiceType: 'Normal' | 'Retain'
+): boolean {
+  const normalCount = Number(tx.normal_count || 0);
+  const retainCount = Number(tx.retain_count || 0);
+  return preferredServiceType === 'Retain' ? retainCount > 0 : normalCount > 0;
+}
+
 export function buildLegacyWalletReconciliationPlan(params: {
   mergedOverride: BookingOverrideRecord;
   walletFlags: EffectiveLegacyWalletFlags;
@@ -58,10 +67,19 @@ export function buildLegacyWalletReconciliationPlan(params: {
       Boolean(effectiveComboRedemption?.redeemSession));
 
   if (upperUsingOldWallet && activeOrderServiceIds[0] && walletFlags.selectedUpperBalanceId) {
+    const upperBucket = effectiveComboRedemption?.deductedBucket;
+    const upperPreferredServiceType: 'Normal' | 'Retain' =
+      upperBucket === 'CONVERTED_REFILL_TO_NEW' || upperBucket === 'PAID_REFILL' || upperBucket === 'BONUS_REFILL'
+        ? 'Retain'
+        : upperBucket === 'PAID_NEW' || upperBucket === 'BONUS_NEW'
+          ? 'Normal'
+          : String(mergedOverride.serviceType || '').toLowerCase() === 'retain'
+            ? 'Retain'
+            : 'Normal';
     targetWalletSlots.push({
       orderServiceId: activeOrderServiceIds[0],
       targetBalanceId: walletFlags.selectedUpperBalanceId,
-      preferredServiceType: String(mergedOverride.serviceType || '').toLowerCase() === 'retain' ? 'Retain' : 'Normal',
+      preferredServiceType: upperPreferredServiceType,
     });
   } else if (
     walletFlags.skipUpperCombo &&
@@ -141,13 +159,14 @@ export async function pinSelectedWalletTransactionsBeforeReport(
     const currentTxId = Number(osRows?.[0]?.user_service_balance_transaction_id || 0);
     if (currentTxId > 0) {
       const [curTxRows] = await pool.query<mysql.RowDataPacket[]>(
-        `SELECT id, user_service_balance_id, used_staff_id FROM user_service_balance_transaction WHERE id = ? LIMIT 1`,
+        `SELECT id, user_service_balance_id, used_staff_id, normal_count, retain_count FROM user_service_balance_transaction WHERE id = ? LIMIT 1`,
         [currentTxId]
       );
       if (
         curTxRows?.[0] &&
         Number(curTxRows[0].user_service_balance_id) === Number(slot.targetBalanceId) &&
-        !curTxRows[0].used_staff_id
+        !curTxRows[0].used_staff_id &&
+        doesTxMatchPreferredServiceType(curTxRows[0], slot.preferredServiceType)
       ) {
         continue;
       }
@@ -198,8 +217,20 @@ export async function reconcileSelectedWalletDeductionInLegacyDb(
     if (!slot.orderServiceId || !slot.targetBalanceId) continue;
 
     const matchingUsed = (usedTxRows || []).find((tx) => Number(tx.order_service_id) === Number(slot.orderServiceId));
+    let prefetchedTargetTx: mysql.RowDataPacket | null = null;
     if (matchingUsed && Number(matchingUsed.user_service_balance_id) === Number(slot.targetBalanceId)) {
-      continue;
+      if (doesTxMatchPreferredServiceType(matchingUsed, slot.preferredServiceType)) {
+        continue;
+      }
+      // Cùng đúng ví nhưng PHP trừ nhầm loại lượt (vd: service_price -refill cấu hình normal_count = -1 làm trừ lượt Nối Mới thay vì Dặm)
+      prefetchedTargetTx = await findAvailableTxForBalanceId(pool, {
+        targetBalanceId: slot.targetBalanceId,
+        customerUserId: params.customerUserId,
+        preferredServiceType: slot.preferredServiceType,
+      });
+      if (!prefetchedTargetTx || !doesTxMatchPreferredServiceType(prefetchedTargetTx, slot.preferredServiceType)) {
+        continue;
+      }
     }
 
     if (matchingUsed) {
@@ -241,11 +272,13 @@ export async function reconcileSelectedWalletDeductionInLegacyDb(
       );
     }
 
-    const targetTx = await findAvailableTxForBalanceId(pool, {
-      targetBalanceId: slot.targetBalanceId,
-      customerUserId: params.customerUserId,
-      preferredServiceType: slot.preferredServiceType,
-    });
+    const targetTx =
+      prefetchedTargetTx ||
+      (await findAvailableTxForBalanceId(pool, {
+        targetBalanceId: slot.targetBalanceId,
+        customerUserId: params.customerUserId,
+        preferredServiceType: slot.preferredServiceType,
+      }));
     if (!targetTx) continue;
 
     const decNormal = Math.max(0, Number(targetTx.normal_count || 0));
