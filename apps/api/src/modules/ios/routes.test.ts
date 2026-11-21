@@ -143,7 +143,7 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
     false
   );
 
-  // MOS-BUG-227: When 2+ unassigned customers share the same upcoming slot, strictly only 1 head customer in queue is shown.
+  // UI-010 v1.4.0: When 2+ unassigned customers share the same head slot, ALL of them are shown (next slot stays hidden).
   const now1045 = new Date('2026-11-13T10:45:00+07:00');
   const sameSlotBookings = [
     { id: 10, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
@@ -158,10 +158,10 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
   });
   assert.deepEqual(
     sameSlotFiltered.map((b) => b.id),
-    [10]
+    [10, 11]
   );
 
-  // MOS-BUG-227: When a customer is past start time and still INCOMING (late), show the single earliest late customer at the head of queue.
+  // UI-010 v1.4.0: A late INCOMING customer is shown AND automatically opens the next head slot group.
   const lateAndNextBookings = [
     { id: 20, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '10:30 - 12:00' },
     { id: 21, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
@@ -175,7 +175,7 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
   });
   assert.deepEqual(
     lateAndNextFiltered.map((b) => b.id),
-    [20]
+    [20, 21, 22]
   );
 
   // Viewing a future date (e.g., tomorrow) must pick the earliest upcoming slot customer.

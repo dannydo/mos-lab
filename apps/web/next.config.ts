@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_COMMIT_SHA:
       process.env.NEXT_PUBLIC_APP_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || process.env.DEPLOY_COMMIT || '',
+    NEXT_PUBLIC_LOCAL_DEV_MOCK_LOGIN: process.env.PERFORMANCE_QA_PROXY === '1' ? '1' : '',
   },
   // Staff opens the dev app from localhost, while workshop participants scan
   // a LAN QR. Next 16 blocks its dev runtime/WebSocket when that LAN host is

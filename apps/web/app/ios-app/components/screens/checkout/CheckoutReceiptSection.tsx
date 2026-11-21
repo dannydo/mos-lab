@@ -1,12 +1,17 @@
 'use client';
 
 import React from 'react';
-import type { IosPromotionOption, IosPromotionTargetScope } from '@mos-lab/shared';
-import { Sparkles } from 'lucide-react';
+import {
+  resolveActiveBookingComboWallets,
+  type IosPromotionOption,
+  type IosPromotionTargetScope,
+} from '@mos-lab/shared';
 import { BookingItem } from '../../../state/mockData';
+import type { CheckoutComboSelectionController } from '../../../state/useCheckoutComboSelection';
 import { CvFeather1Badge, FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 import { CustomerPortfolioTriggerButton } from '../../ui-kit/CustomerPortfolioTriggerButton';
-import { ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
+import { CheckoutServiceComboStatusBadges, ReceiptComboExpiryLine } from './ReceiptComboExpiryLine';
+import { ReceiptComboItemsSection } from './ReceiptComboItemsSection';
 import { ReceiptItemPromotionBadge } from './ReceiptItemPromotionBadge';
 import { ReceiptTotalsSummary } from './ReceiptTotalsSummary';
 import { ReceiptQuickScanProductRow, ReceiptScannedSerialChips } from './ReceiptQuickSerumControls';
@@ -25,11 +30,6 @@ export interface ReceiptPromotionClearTarget {
   scope: IosPromotionTargetScope;
   productIndex?: number;
   productId?: number;
-}
-
-function cleanComboTitle(name?: string | null): string {
-  if (!name) return '';
-  return name.replace(/\s*\(\d+\s*lần\)/gi, '').trim();
 }
 
 export interface CheckoutReceiptSectionProps {
@@ -76,6 +76,8 @@ export interface CheckoutReceiptSectionProps {
   showStaffRewards: boolean;
   onToggleShowStaffRewards?: () => void;
   onEditService?: () => void;
+  comboSelection?: CheckoutComboSelectionController;
+  rememberedServicePromo?: IosPromotionOption | null;
 }
 
 export function CheckoutReceiptSection({
@@ -122,7 +124,10 @@ export function CheckoutReceiptSection({
   showStaffRewards,
   onToggleShowStaffRewards,
   onEditService,
+  comboSelection,
+  rememberedServicePromo,
 }: CheckoutReceiptSectionProps) {
+  const resolvedWallets = resolveActiveBookingComboWallets(booking || {});
   const hasNewComboWaiver =
     !comboRedemption &&
     (Boolean(selectedCombo && selectedCombo.todaySingleServiceWaived !== false) ||
@@ -239,70 +244,16 @@ export function CheckoutReceiptSection({
                   {booking?.attributes?.style ? `Dáng ${booking.attributes.style}` : ''}
                 </div>
               )}
-              {comboRedemption ? (
-                <div className="pt-0.5 space-y-0.5 text-[10px]">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span
-                      className={`font-bold ${
-                        isDark
-                          ? 'text-sky-300 bg-sky-950/40 border-sky-500/40'
-                          : 'text-sky-700 bg-sky-50 border-sky-200'
-                      } border px-1.5 py-0.5 rounded`}
-                    >
-                      Trừ 1 lượt gói ({comboRedemption.comboName || 'Gói cũ'})
-                    </span>
-                    <span className="text-neutral-400 font-semibold tabular-nums">
-                      Combo còn: ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
-                    </span>
-                  </div>
-                  <ReceiptComboExpiryLine
-                    dateExpired={comboRedemption.dateExpired ?? booking?.comboLiveStatus?.dateExpired}
-                    dateExpiredDisplay={comboRedemption.dateExpiredDisplay}
-                    isDark={isDark}
-                    variant="redemption"
-                  />
-                </div>
-              ) : hasNewComboWaiver ? (
-                <div className="pt-0.5">
-                  <span
-                    className={`inline-flex items-center text-[10px] font-bold ${
-                      isDark
-                        ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
-                        : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                    } border px-1.5 py-0.5 rounded`}
-                  >
-                    {effectiveServiceCharge === 0
-                      ? 'Trừ Buổi 1 (Miễn phí ca này)'
-                      : 'Trừ Buổi 1 gói đã chọn · Thu lẻ phần còn lại'}
-                  </span>
-                </div>
-              ) : selectedCombo ? (
-                <div className="pt-0.5">
-                  <span
-                    className={`inline-flex items-center text-[10px] font-bold ${
-                      isDark
-                        ? 'text-indigo-300 bg-indigo-950/40 border-indigo-500/40'
-                        : 'text-indigo-700 bg-indigo-50 border-indigo-200'
-                    } border px-1.5 py-0.5 rounded`}
-                  >
-                    Trả lẻ ca này · Giữ trọn số buổi gói
-                  </span>
-                </div>
-              ) : (
-                upgradePrice > 0 && (
-                  <div className="pt-0.5">
-                    <span
-                      className={`inline-flex items-center text-[10px] font-bold ${
-                        isDark
-                          ? 'text-emerald-300 bg-emerald-950/40 border-emerald-500/40'
-                          : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                      } border px-1.5 py-0.5 rounded tabular-nums`}
-                    >
-                      Nâng cấp (+{upgradePrice.toLocaleString('vi-VN')}đ)
-                    </span>
-                  </div>
-                )
-              )}
+              <CheckoutServiceComboStatusBadges
+                isDark={isDark}
+                booking={booking}
+                resolvedWallets={resolvedWallets}
+                comboRedemption={comboRedemption}
+                hasNewComboWaiver={hasNewComboWaiver}
+                selectedCombo={selectedCombo}
+                effectiveServiceCharge={effectiveServiceCharge}
+                upgradePrice={upgradePrice}
+              />
               <ReceiptItemPromotionBadge
                 isDark={isDark}
                 itemAmount={effectiveServiceCharge}
@@ -426,125 +377,23 @@ export function CheckoutReceiptSection({
             </div>
           </div>
 
-          {/* Item 2: Combo if selected */}
-          {selectedCombo && (
-            <div
-              className={`p-3.5 flex items-start justify-between gap-3 ${isDark ? 'bg-amber-950/20' : 'bg-amber-50/30'}`}
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-[13px] font-black text-[var(--mos-text)] tracking-tight`}>
-                    {cleanComboTitle(selectedCombo.name)}
-                  </span>
-                </div>
-                <div
-                  className={`flex items-center gap-2 flex-wrap text-[11px] text-[var(--mos-text-muted)] font-medium`}
-                >
-                  <span>{selectedCombo.sessions || selectedCombo.remainingAfterToday?.totalRemaining || 10} buổi</span>
-                  {showStaffRewards &&
-                    !isCheckoutStaffCc &&
-                    !hasBothCombos &&
-                    (upperComboBonus || totalComboBonus) > 0 && (
-                      <>
-                        <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
-                        <span
-                          className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
-                        >
-                          Thưởng gói: +{Math.round((upperComboBonus || totalComboBonus) / 1000)}
-                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                        </span>
-                      </>
-                    )}
-                </div>
-                <ReceiptComboExpiryLine
-                  dateExpired={selectedCombo.dateExpired}
-                  dateExpiredDisplay={selectedCombo.dateExpiredDisplay}
-                  expiryFormulaSummary={selectedCombo.expiryFormulaSummary}
-                  revivedExpiredSessions={selectedCombo.revivedExpiredSessions}
-                  isDark={isDark}
-                  variant="combo"
-                  showFormula
-                />
-              </div>
-              <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap shrink-0`}>
-                {selectedCombo.price.toLocaleString('vi-VN')}đ
-              </span>
-            </div>
-          )}
-
-          {/* Item 2B: Under Lash Combo if selected */}
-          {selectedUnderCombo && (
-            <div
-              className={`p-3.5 flex items-start justify-between gap-3 ${isDark ? 'bg-purple-950/20' : 'bg-purple-50/30'}`}
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-[13px] font-black text-[var(--mos-text)] tracking-tight`}>
-                    {cleanComboTitle(selectedUnderCombo.name)}
-                  </span>
-                </div>
-                <div
-                  className={`flex items-center gap-2 flex-wrap text-[11px] text-[var(--mos-text-muted)] font-medium`}
-                >
-                  <span>{selectedUnderCombo.sessions || 10} buổi (Mi Dưới)</span>
-                  {showStaffRewards &&
-                    !isCheckoutStaffCc &&
-                    !hasBothCombos &&
-                    (underComboBonus || totalComboBonus) > 0 && (
-                      <>
-                        <span className={isDark ? 'text-neutral-600' : 'text-neutral-300'}>•</span>
-                        <span
-                          className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold inline-flex items-center gap-0.5`}
-                        >
-                          Thưởng gói: +{Math.round((underComboBonus || totalComboBonus) / 1000)}
-                          <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-                        </span>
-                      </>
-                    )}
-                </div>
-                <ReceiptComboExpiryLine
-                  dateExpired={selectedUnderCombo.dateExpired}
-                  dateExpiredDisplay={selectedUnderCombo.dateExpiredDisplay}
-                  expiryFormulaSummary={selectedUnderCombo.expiryFormulaSummary}
-                  revivedExpiredSessions={selectedUnderCombo.revivedExpiredSessions}
-                  isDark={isDark}
-                  variant="under"
-                  showFormula
-                />
-              </div>
-              <span className={`text-[13px] text-[var(--mos-text)] font-black tabular-nums whitespace-nowrap shrink-0`}>
-                {selectedUnderCombo.price.toLocaleString('vi-VN')}đ
-              </span>
-            </div>
-          )}
-
-          {/* Item 2C: Combined 2-Combo Bonus Summary Banner */}
-          {hasBothCombos && showStaffRewards && !isCheckoutStaffCc && (
-            <div
-              className={`px-3.5 py-2.5 flex items-center justify-between text-[11.5px] border-t ${
-                isDark
-                  ? 'bg-gradient-to-r from-amber-950/40 to-purple-950/40 text-amber-200 border-amber-900/40'
-                  : 'bg-gradient-to-r from-amber-50 to-purple-50 text-amber-950 border-amber-200/70'
-              }`}
-            >
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="font-bold truncate">
-                  Thưởng gộp 2 gói mua cùng lúc ({comboTotalRevenue.toLocaleString('vi-VN')}đ):
-                </span>
-              </div>
-              <span
-                className={`${
-                  isDark
-                    ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800'
-                    : 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                } font-black tabular-nums border px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 shrink-0 text-[12px]`}
-              >
-                +{Math.round(totalComboBonus / 1000)}
-                <FeatherSvg className="w-2.5 h-2.5 text-amber-500" />
-              </span>
-            </div>
-          )}
+          {/* Item 2: Upper / Under Combo & Mode Toggle */}
+          <ReceiptComboItemsSection
+            isDark={isDark}
+            booking={booking}
+            selectedCombo={selectedCombo}
+            selectedUnderCombo={selectedUnderCombo}
+            hasBothCombos={hasBothCombos}
+            comboTotalRevenue={comboTotalRevenue}
+            totalComboBonus={totalComboBonus}
+            upperComboBonus={upperComboBonus}
+            underComboBonus={underComboBonus}
+            isCheckoutStaffCc={isCheckoutStaffCc}
+            showStaffRewards={showStaffRewards}
+            isSettled={isSettled}
+            comboSelection={comboSelection}
+            rememberedServicePromo={rememberedServicePromo}
+          />
 
           {/* Item 3: Products */}
           {cartProducts.map((p, idx) => {

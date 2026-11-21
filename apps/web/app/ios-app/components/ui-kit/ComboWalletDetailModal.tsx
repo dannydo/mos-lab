@@ -20,6 +20,11 @@ export interface ComboWalletDetailModalProps {
   isAdmin?: boolean;
   theme?: 'dark' | 'light';
   onUpdated?: () => Promise<void> | void;
+  onSelectWallet?: (wallet: IosCustomerComboWalletItem) => void;
+  selectedUpperBalanceId?: number | null;
+  selectedUnderBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
 }
 
 export function resolveBookingComboWallets(booking: IosBookingItem | null): IosCustomerComboWalletItem[] {
@@ -105,6 +110,11 @@ export function ComboWalletDetailModal({
   isAdmin = false,
   theme,
   onUpdated,
+  onSelectWallet,
+  selectedUpperBalanceId,
+  selectedUnderBalanceId,
+  skipUpperCombo = false,
+  skipUnderCombo = false,
 }: ComboWalletDetailModalProps) {
   const { themeMode } = useTheme();
   const titleId = useId();
@@ -226,233 +236,281 @@ export function ComboWalletDetailModal({
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3.5 text-left">
-        {feedbackMsg && (
-          <div
-            className={`rounded-xl px-3 py-2 text-[11.5px] font-bold flex items-start gap-2 ${
-              feedbackMsg.type === 'ok'
-                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300'
-                : 'bg-rose-500/15 border border-rose-500/40 text-rose-300'
-            }`}
-          >
-            {feedbackMsg.type === 'ok' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            )}
-            <span>{feedbackMsg.text}</span>
-          </div>
-        )}
+          {feedbackMsg && (
+            <div
+              className={`rounded-xl px-3 py-2 text-[11.5px] font-bold flex items-start gap-2 ${
+                feedbackMsg.type === 'ok'
+                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300'
+                  : 'bg-rose-500/15 border border-rose-500/40 text-rose-300'
+              }`}
+            >
+              {feedbackMsg.type === 'ok' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              )}
+              <span>{feedbackMsg.text}</span>
+            </div>
+          )}
 
-        {wallets.length === 0 ? (
-          <div className={`rounded-2xl p-5 text-center text-[12.5px] ${cardSurface}`}>
-            Khách hàng hiện chưa có gói Combo nào đang lưu trên hệ thống.
-          </div>
-        ) : (
-          wallets.map((w) => {
-            const expiryDisplay = formatExpiryDateDdMmYyyy(w.dateExpired);
-            const customDateVal = customDateByBalance[w.balanceId] ?? (w.dateExpired || '');
-            const isSubmitting = submittingBalanceId === w.balanceId;
+          {wallets.length === 0 ? (
+            <div className={`rounded-2xl p-5 text-center text-[12.5px] ${cardSurface}`}>
+              Khách hàng hiện chưa có gói Combo nào đang lưu trên hệ thống.
+            </div>
+          ) : (
+            wallets.map((w) => {
+              const expiryDisplay = formatExpiryDateDdMmYyyy(w.dateExpired);
+              const customDateVal = customDateByBalance[w.balanceId] ?? (w.dateExpired || '');
+              const isSubmitting = submittingBalanceId === w.balanceId;
 
-            return (
-              <div key={`${w.serviceGroup}-${w.balanceId}`} className={`rounded-2xl p-3.5 space-y-2.5 ${cardSurface}`}>
-                {/* Row 1: Category + Sessions */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span
-                    className={`inline-flex items-center justify-center leading-none py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                      w.serviceGroup === 'under'
-                        ? isDark
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                          : 'bg-purple-50 text-purple-700 border-purple-300'
-                        : isDark
-                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
-                          : 'bg-amber-50 text-amber-800 border-amber-300'
-                    }`}
-                  >
-                    {w.serviceGroup === 'under' ? 'Combo Mi Dưới' : 'Combo Mi Trên'}
-                  </span>
-                  <ComboSessionBadge
-                    normalRemaining={w.normalRemaining}
-                    retainRemaining={w.retainRemaining}
-                    remainingSessions={w.remainingSessions}
-                    comboName={w.comboName}
-                    variant="expanded"
-                    size="xs"
-                    theme={theme}
-                  />
-                </div>
-
-                {/* Row 2: Combo Name */}
-                <div className="text-[13.5px] font-extrabold leading-snug">{w.comboName}</div>
-
-                {/* Row 3: HSD + Pace `(Avg: X.X ngày/buổi)` matching Legacy iOS App */}
-                <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5 tabular-nums">
-                  {w.isExpired ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg bg-rose-600 text-white font-black text-[11.5px] shadow-xs">
-                      <AlertTriangle className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-                      <span>HSD: {expiryDisplay || 'Quá hạn'} · ĐÃ HẾT HẠN</span>
-                    </span>
-                  ) : w.isFrozen ? (
+              return (
+                <div
+                  key={`${w.serviceGroup}-${w.balanceId}`}
+                  className={`rounded-2xl p-3.5 space-y-2.5 ${cardSurface}`}
+                >
+                  {/* Row 1: Category + Sessions */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span
-                      className={`inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg border font-black text-[11.5px] ${
-                        isDark
-                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                          : 'bg-sky-50 text-sky-700 border-sky-300'
+                      className={`inline-flex items-center justify-center leading-none py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                        w.serviceGroup === 'under'
+                          ? isDark
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-purple-50 text-purple-700 border-purple-300'
+                          : isDark
+                            ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                            : 'bg-amber-50 text-amber-800 border-amber-300'
                       }`}
                     >
-                      <Snowflake className="w-3.5 h-3.5 shrink-0" />
-                      <span>Đang bảo lưu (Chưa kích hoạt HSD)</span>
+                      {w.serviceGroup === 'under' ? 'Combo Mi Dưới' : 'Combo Mi Trên'}
                     </span>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <ComboSessionBadge
+                      normalRemaining={w.normalRemaining}
+                      retainRemaining={w.retainRemaining}
+                      remainingSessions={w.remainingSessions}
+                      comboName={w.comboName}
+                      variant="expanded"
+                      size="xs"
+                      theme={theme}
+                    />
+                  </div>
+
+                  {/* Row 2: Combo Name */}
+                  <div className="text-[13.5px] font-extrabold leading-snug">{w.comboName}</div>
+
+                  {/* Row 3: HSD + Pace `(Avg: X.X ngày/buổi)` matching Legacy iOS App */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5 tabular-nums">
+                    {w.isExpired ? (
+                      <span className="inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg bg-rose-600 text-white font-black text-[11.5px] shadow-xs">
+                        <AlertTriangle className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                        <span>HSD: {expiryDisplay || 'Quá hạn'} · ĐÃ HẾT HẠN</span>
+                      </span>
+                    ) : w.isFrozen ? (
                       <span
-                        className={`inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg font-black text-[11.5px] border ${
-                          w.isExpiringSoon
-                            ? isDark
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                              : 'bg-amber-50 text-amber-800 border-amber-300'
-                            : isDark
-                              ? 'bg-[#1C1C1E] text-emerald-300 border-emerald-500/40'
-                              : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        className={`inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg border font-black text-[11.5px] ${
+                          isDark
+                            ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                            : 'bg-sky-50 text-sky-700 border-sky-300'
                         }`}
                       >
-                        <CalendarClock className="w-3.5 h-3.5 shrink-0" />
-                        <span>HSD: {expiryDisplay || '—'}</span>
+                        <Snowflake className="w-3.5 h-3.5 shrink-0" />
+                        <span>Đang bảo lưu (Chưa kích hoạt HSD)</span>
                       </span>
-                      {typeof w.avgDaysPerSession === 'number' && (
-                        <span className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                          (Avg: {w.avgDaysPerSession} ngày/buổi)
+                    ) : (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`inline-flex items-center justify-center gap-1.5 leading-none py-1.5 px-2.5 rounded-lg font-black text-[11.5px] border ${
+                            w.isExpiringSoon
+                              ? isDark
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                                : 'bg-amber-50 text-amber-800 border-amber-300'
+                              : isDark
+                                ? 'bg-[#1C1C1E] text-emerald-300 border-emerald-500/40'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          }`}
+                        >
+                          <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+                          <span>HSD: {expiryDisplay || '—'}</span>
                         </span>
-                      )}
+                        {typeof w.avgDaysPerSession === 'number' && (
+                          <span
+                            className={`text-[11.5px] font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}
+                          >
+                            (Avg: {w.avgDaysPerSession} ngày/buổi)
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Expired Revival Rule Callout */}
+                  {w.isExpired && (
+                    <div
+                      className={`rounded-xl border p-2.5 text-[11px] space-y-1 ${
+                        isDark
+                          ? 'bg-rose-950/50 border-rose-500/40 text-rose-200'
+                          : 'bg-rose-50 border-rose-300 text-rose-900'
+                      }`}
+                    >
+                      <div
+                        className={`font-extrabold flex items-center gap-1 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}
+                      >
+                        <Lock className="w-3 h-3 shrink-0" />
+                        <span>Đã khóa trừ buổi 0đ (Khách đi lẻ hoặc dùng Voucher hôm nay)</span>
+                      </div>
+                      <p className={`leading-relaxed ${isDark ? 'text-rose-200/90' : 'text-rose-800'}`}>
+                        Khi khách mua thêm gói Combo mới hôm nay: tự động{' '}
+                        <strong>cứu toàn bộ {w.remainingSessions} buổi tồn</strong> và quy đổi cộng dồn từ hôm nay theo{' '}
+                        <strong>Nối mới +1 tháng/buổi</strong> · <strong>Dặm +25 ngày/buổi</strong>.
+                      </p>
                     </div>
                   )}
-                </div>
 
-                {/* Expired Revival Rule Callout */}
-                {w.isExpired && (
-                  <div
-                    className={`rounded-xl border p-2.5 text-[11px] space-y-1 ${
-                      isDark
-                        ? 'bg-rose-950/50 border-rose-500/40 text-rose-200'
-                        : 'bg-rose-50 border-rose-300 text-rose-900'
-                    }`}
-                  >
+                  {w.note && (
                     <div
-                      className={`font-extrabold flex items-center gap-1 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}
+                      className={`text-[11px] rounded-lg p-2 ${isDark ? 'bg-[#1C1C1E] text-neutral-300' : 'bg-white text-neutral-700'}`}
                     >
-                      <Lock className="w-3 h-3 shrink-0" />
-                      <span>Đã khóa trừ buổi 0đ (Khách đi lẻ hoặc dùng Voucher hôm nay)</span>
+                      Ghi chú: {w.note}
                     </div>
-                    <p className={`leading-relaxed ${isDark ? 'text-rose-200/90' : 'text-rose-800'}`}>
-                      Khi khách mua thêm gói Combo mới hôm nay: tự động{' '}
-                      <strong>cứu toàn bộ {w.remainingSessions} buổi tồn</strong> và quy đổi cộng dồn từ hôm nay theo{' '}
-                      <strong>Nối mới +1 tháng/buổi</strong> · <strong>Dặm +25 ngày/buổi</strong>.
-                    </p>
-                  </div>
-                )}
+                  )}
 
-                {w.note && (
-                  <div
-                    className={`text-[11px] rounded-lg p-2 ${isDark ? 'bg-[#1C1C1E] text-neutral-300' : 'bg-white text-neutral-700'}`}
-                  >
-                    Ghi chú: {w.note}
-                  </div>
-                )}
+                  {onSelectWallet &&
+                    !w.isExpired &&
+                    w.remainingSessions > 0 &&
+                    (() => {
+                      const isCurrentlyUsed =
+                        w.serviceGroup === 'under'
+                          ? !skipUnderCombo &&
+                            Number(selectedUnderBalanceId ?? booking.selectedUnderComboBalanceId ?? 0) ===
+                              Number(w.balanceId)
+                          : !skipUpperCombo &&
+                            Number(selectedUpperBalanceId ?? booking.selectedUpperComboBalanceId ?? 0) ===
+                              Number(w.balanceId);
+                      return (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onSelectWallet(w);
+                              onClose();
+                            }}
+                            className={`w-full py-2 px-3 rounded-xl text-[11.5px] font-extrabold border transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 ${
+                              isCurrentlyUsed
+                                ? isDark
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-400'
+                                : isDark
+                                  ? 'bg-amber-400 text-black border-amber-400 hover:bg-amber-300'
+                                  : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'
+                            }`}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              {isCurrentlyUsed
+                                ? `Đang dùng gói này cho ca hôm nay (#${w.balanceId})`
+                                : `Dùng gói này cho ca hôm nay (#${w.balanceId})`}
+                            </span>
+                          </button>
+                        </div>
+                      );
+                    })()}
 
-                {/* Admin-Only Controls (Zero-Trust: Ẩn tuyệt đối với CV / CVL / CVLL / CC) */}
-                {isAdmin && (
-                  <div className="pt-2.5 mt-1 border-t border-amber-500/25 space-y-2">
-                    <div className="flex items-center justify-between text-[10.5px] font-black uppercase tracking-wider text-amber-400">
-                      <span className="inline-flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                        <span>Quyền Admin · Gia hạn & Bảo lưu</span>
-                      </span>
-                      <span className="text-[10px] font-semibold text-neutral-400 tabular-nums">ID #{w.balanceId}</span>
-                    </div>
+                  {/* Admin-Only Controls (Zero-Trust: Ẩn tuyệt đối với CV / CVL / CVLL / CC) */}
+                  {isAdmin && (
+                    <div className="pt-2.5 mt-1 border-t border-amber-500/25 space-y-2">
+                      <div className="flex items-center justify-between text-[10.5px] font-black uppercase tracking-wider text-amber-400">
+                        <span className="inline-flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                          <span>Quyền Admin · Gia hạn & Bảo lưu</span>
+                        </span>
+                        <span className="text-[10px] font-semibold text-neutral-400 tabular-nums">
+                          ID #{w.balanceId}
+                        </span>
+                      </div>
 
-                    <input
-                      type="text"
-                      value={reasonDraft}
-                      onChange={(e) => setReasonDraft(e.target.value)}
-                      placeholder="Nhập lý do gia hạn / bảo lưu..."
-                      style={{ colorScheme: isDark ? 'dark' : 'light' }}
-                      className={`w-full rounded-xl px-2.5 py-1.5 text-[11.5px] border outline-none ${
-                        isDark
-                          ? 'bg-[#1C1C1E] border-neutral-700 text-white focus:border-amber-400'
-                          : 'bg-white border-neutral-300 text-neutral-900 focus:border-amber-500'
-                      }`}
-                    />
-
-                    {/* Quick Add Days + Freeze/Unfreeze */}
-                    <div className="flex items-center gap-1.5 flex-wrap tabular-nums">
-                      {[15, 30, 60].map((days) => (
-                        <button
-                          key={days}
-                          type="button"
-                          disabled={isSubmitting}
-                          onClick={() => handleAdminAction(w, 'ADD_DAYS', { extendDays: days })}
-                          className="py-1.5 px-2.5 rounded-lg bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-300 text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
-                        >
-                          +{days}N
-                        </button>
-                      ))}
-
-                      {w.isFrozen ? (
-                        <button
-                          type="button"
-                          disabled={isSubmitting}
-                          onClick={() => handleAdminAction(w, 'UNFREEZE', { extendDays: 90 })}
-                          className="py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
-                        >
-                          Kích hoạt lại (+90N)
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isSubmitting}
-                          onClick={() => handleAdminAction(w, 'FREEZE')}
-                          className="py-1.5 px-2.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
-                        >
-                          Bảo lưu (Đóng băng)
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Exact Date Picker */}
-                    <div className="flex items-center gap-1.5">
                       <input
-                        type="date"
-                        aria-label={`Chọn ngày hết hạn mới cho ${w.comboName}`}
-                        value={customDateVal}
-                        onChange={(e) =>
-                          setCustomDateByBalance((prev) => ({
-                            ...prev,
-                            [w.balanceId]: e.target.value,
-                          }))
-                        }
+                        type="text"
+                        value={reasonDraft}
+                        onChange={(e) => setReasonDraft(e.target.value)}
+                        placeholder="Nhập lý do gia hạn / bảo lưu..."
                         style={{ colorScheme: isDark ? 'dark' : 'light' }}
-                        className={`flex-1 rounded-xl px-2.5 py-1.5 text-[11.5px] tabular-nums border outline-none ${
+                        className={`w-full rounded-xl px-2.5 py-1.5 text-[11.5px] border outline-none ${
                           isDark
                             ? 'bg-[#1C1C1E] border-neutral-700 text-white focus:border-amber-400'
                             : 'bg-white border-neutral-300 text-neutral-900 focus:border-amber-500'
                         }`}
                       />
-                      <button
-                        type="button"
-                        disabled={isSubmitting || !customDateVal}
-                        onClick={() => handleAdminAction(w, 'EXTEND_DATE', { targetDateExpired: customDateVal })}
-                        className="py-1.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-[11.5px] font-black cursor-pointer disabled:opacity-50 shrink-0"
-                      >
-                        {isSubmitting ? 'Đang lưu...' : 'Lưu HSD'}
-                      </button>
+
+                      {/* Quick Add Days + Freeze/Unfreeze */}
+                      <div className="flex items-center gap-1.5 flex-wrap tabular-nums">
+                        {[15, 30, 60].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => handleAdminAction(w, 'ADD_DAYS', { extendDays: days })}
+                            className="py-1.5 px-2.5 rounded-lg bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-300 text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
+                          >
+                            +{days}N
+                          </button>
+                        ))}
+
+                        {w.isFrozen ? (
+                          <button
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => handleAdminAction(w, 'UNFREEZE', { extendDays: 90 })}
+                            className="py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
+                          >
+                            Kích hoạt lại (+90N)
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => handleAdminAction(w, 'FREEZE')}
+                            className="py-1.5 px-2.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
+                          >
+                            Bảo lưu (Đóng băng)
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Exact Date Picker */}
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="date"
+                          aria-label={`Chọn ngày hết hạn mới cho ${w.comboName}`}
+                          value={customDateVal}
+                          onChange={(e) =>
+                            setCustomDateByBalance((prev) => ({
+                              ...prev,
+                              [w.balanceId]: e.target.value,
+                            }))
+                          }
+                          style={{ colorScheme: isDark ? 'dark' : 'light' }}
+                          className={`flex-1 rounded-xl px-2.5 py-1.5 text-[11.5px] tabular-nums border outline-none ${
+                            isDark
+                              ? 'bg-[#1C1C1E] border-neutral-700 text-white focus:border-amber-400'
+                              : 'bg-white border-neutral-300 text-neutral-900 focus:border-amber-500'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          disabled={isSubmitting || !customDateVal}
+                          onClick={() => handleAdminAction(w, 'EXTEND_DATE', { targetDateExpired: customDateVal })}
+                          className="py-1.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-[11.5px] font-black cursor-pointer disabled:opacity-50 shrink-0"
+                        >
+                          {isSubmitting ? 'Đang lưu...' : 'Lưu HSD'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

@@ -32,9 +32,8 @@ import {
   AppIcon,
   SectionCard,
   StatePanel,
-  RichTextViewer,
-  RichTextEditor,
 } from '../../../../components/ui';
+import { RichTextEditor, RichTextViewer } from '../../../../components/ui/rich-text';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';

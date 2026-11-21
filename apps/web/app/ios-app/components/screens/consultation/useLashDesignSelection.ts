@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { isSuperAdminRole, isCanonicalSuperAdminIdentity } from '@mos-lab/shared';
+import { useState, useMemo, useEffect, useRef, type SetStateAction } from 'react';
+import { isSuperAdminRole, isCanonicalSuperAdminIdentity, resolveActiveBookingComboWallets } from '@mos-lab/shared';
 import type { BookingItem } from '../../../state/mockData';
 import type { InfoModalType } from '../LashConsultationInfoModal';
 import {
@@ -47,10 +47,14 @@ export function useLashDesignSelection(booking?: BookingItem) {
     }
   }, []);
 
+  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking || {}), [booking]);
+  const effectiveComboLiveStatus = resolvedWallets.effectiveComboLiveStatus;
+  const effectiveUnderMinkComboStatus = resolvedWallets.effectiveUnderMinkComboStatus;
+
   // Tự động nhận diện Gói Combo (25 ngày) vs Khách lẻ Single (21 ngày vô điều kiện)
-  const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
-  const comboName = booking?.comboLiveStatus?.comboName || '';
-  const comboRemainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
+  const isComboLive = resolvedWallets.isRedeemingUpperToday;
+  const comboName = effectiveComboLiveStatus.comboName || '';
+  const comboRemainingSessions = effectiveComboLiveStatus.remainingSessions ?? 0;
   const lastVisitDate = booking?.lashHistory?.[0]?.date || null;
   const daysSinceLastVisit = useMemo(() => parseDaysSinceLastVisit(lastVisitDate || undefined), [lastVisitDate]);
   const retainDaysLimit = isComboLive ? COMBO_RETAIN_CYCLE_DAYS_LIMIT : SINGLE_RETAIN_CYCLE_DAYS_LIMIT;
@@ -61,7 +65,7 @@ export function useLashDesignSelection(booking?: BookingItem) {
 
   const autoComboSpec = useMemo(() => {
     const sourceText = isComboLive
-      ? booking?.comboLiveStatus?.serviceKey || booking?.comboLiveStatus?.comboName || booking?.serviceName
+      ? effectiveComboLiveStatus.serviceKey || effectiveComboLiveStatus.comboName || booking?.serviceName
       : booking?.attributes?.material || booking?.lashHistory?.[0]?.serviceName || booking?.serviceName;
     return (
       resolveServiceSpecsFromComboOrHistory(sourceText || 'Flawless Mink 880', materialCatalog) || {
@@ -74,8 +78,8 @@ export function useLashDesignSelection(booking?: BookingItem) {
     );
   }, [
     isComboLive,
-    booking?.comboLiveStatus?.serviceKey,
-    booking?.comboLiveStatus?.comboName,
+    effectiveComboLiveStatus.serviceKey,
+    effectiveComboLiveStatus.comboName,
     booking?.serviceName,
     booking?.attributes?.material,
     booking?.lashHistory,
@@ -90,8 +94,8 @@ export function useLashDesignSelection(booking?: BookingItem) {
   const { comboNormalRemaining, comboRetainRemaining, hasComboNormalRemaining, hasComboRetainRemaining } =
     useMemo(() => {
       const alwaysFull = isAlwaysFullSetMaterial(initialMat.code || initialMat.id);
-      let normalRem = booking?.comboLiveStatus?.normalRemaining ?? 0;
-      let retainRem = booking?.comboLiveStatus?.retainRemaining ?? 0;
+      let normalRem = effectiveComboLiveStatus.normalRemaining ?? 0;
+      let retainRem = effectiveComboLiveStatus.retainRemaining ?? 0;
       if (isComboLive && normalRem === 0 && retainRem === 0 && comboRemainingSessions > 0) {
         if (alwaysFull) {
           normalRem = comboRemainingSessions;
@@ -108,8 +112,8 @@ export function useLashDesignSelection(booking?: BookingItem) {
         hasComboRetainRemaining: alwaysFull ? normalRem > 0 : retainRem > 0,
       };
     }, [
-      booking?.comboLiveStatus?.normalRemaining,
-      booking?.comboLiveStatus?.retainRemaining,
+      effectiveComboLiveStatus.normalRemaining,
+      effectiveComboLiveStatus.retainRemaining,
       isComboLive,
       comboRemainingSessions,
       initialMat.code,
@@ -201,23 +205,85 @@ export function useLashDesignSelection(booking?: BookingItem) {
   const [serviceType, setServiceType] = useState<'Normal' | 'Retain'>(expectedAutoServiceType);
 
   // Trạng thái CVL Override & Cảnh báo xác nhận
+  const [hasManualMaterialEdit, setHasManualMaterialEdit] = useState<boolean>(false);
   const [isOverridden, setIsOverridden] = useState<boolean>(Boolean(booking?.attributes?.isOverridden));
   const [overrideReason, setOverrideReason] = useState<string>(booking?.attributes?.overrideReason || '');
   const [pendingOverride, setPendingOverride] = useState<PendingOverrideState | null>(null);
   const [selectedOverrideReasonDraft, setSelectedOverrideReasonDraft] = useState<string>('');
 
+  const handleSetSelectedVolumeManual = (next: SetStateAction<string>) => {
+    setHasManualMaterialEdit(true);
+    setSelectedVolume(next);
+  };
+  const handleSetSelectedCountManual = (next: SetStateAction<string>) => {
+    setHasManualMaterialEdit(true);
+    setSelectedCount(next);
+  };
+
+  const prevBookingIdRef = useRef<number | undefined>(booking?.id);
+  const prevWalletSelectionKeyRef = useRef<string>(
+    `${resolvedWallets.selectedUpperComboBalanceId ?? 'none'}:${resolvedWallets.skipUpperCombo ? 'skip' : 'use'}`
+  );
+
   useEffect(() => {
-    setSelectedMaterial(initialMat.id);
-    setSelectedVolume(
-      initialMat.allowedVolumes.includes(autoComboSpec.volume) ? autoComboSpec.volume : initialMat.defaultVolume
-    );
-    setSelectedCount(
-      initialMat.allowedCounts.includes(autoComboSpec.count) ? autoComboSpec.count : initialMat.defaultCount
-    );
-    setServiceType(expectedAutoServiceType);
-    setIsOverridden(Boolean(booking?.attributes?.isOverridden));
-    setOverrideReason(booking?.attributes?.overrideReason || '');
-  }, [booking?.id, initialMat.id, autoComboSpec.volume, autoComboSpec.count, expectedAutoServiceType]);
+    const currentWalletKey = `${resolvedWallets.selectedUpperComboBalanceId ?? 'none'}:${resolvedWallets.skipUpperCombo ? 'skip' : 'use'}`;
+    const bookingChanged = prevBookingIdRef.current !== booking?.id;
+    const walletChanged = prevWalletSelectionKeyRef.current !== currentWalletKey;
+
+    if (bookingChanged) {
+      prevBookingIdRef.current = booking?.id;
+      prevWalletSelectionKeyRef.current = currentWalletKey;
+      setHasManualMaterialEdit(false);
+      setSelectedMaterial(initialMat.id);
+      setSelectedVolume(
+        initialMat.allowedVolumes.includes(autoComboSpec.volume) ? autoComboSpec.volume : initialMat.defaultVolume
+      );
+      setSelectedCount(
+        initialMat.allowedCounts.includes(autoComboSpec.count) ? autoComboSpec.count : initialMat.defaultCount
+      );
+      setServiceType(expectedAutoServiceType);
+      setIsOverridden(Boolean(booking?.attributes?.isOverridden));
+      setOverrideReason(booking?.attributes?.overrideReason || '');
+      return;
+    }
+
+    if (walletChanged) {
+      prevWalletSelectionKeyRef.current = currentWalletKey;
+      setServiceType(expectedAutoServiceType);
+      if (!hasManualMaterialEdit) {
+        setSelectedMaterial(initialMat.id);
+        setSelectedVolume(
+          initialMat.allowedVolumes.includes(autoComboSpec.volume) ? autoComboSpec.volume : initialMat.defaultVolume
+        );
+        setSelectedCount(
+          initialMat.allowedCounts.includes(autoComboSpec.count) ? autoComboSpec.count : initialMat.defaultCount
+        );
+      }
+      return;
+    }
+
+    if (!hasManualMaterialEdit) {
+      setSelectedMaterial(initialMat.id);
+      setSelectedVolume(
+        initialMat.allowedVolumes.includes(autoComboSpec.volume) ? autoComboSpec.volume : initialMat.defaultVolume
+      );
+      setSelectedCount(
+        initialMat.allowedCounts.includes(autoComboSpec.count) ? autoComboSpec.count : initialMat.defaultCount
+      );
+      setServiceType(expectedAutoServiceType);
+      setIsOverridden(Boolean(booking?.attributes?.isOverridden));
+      setOverrideReason(booking?.attributes?.overrideReason || '');
+    }
+  }, [
+    booking?.id,
+    initialMat.id,
+    autoComboSpec.volume,
+    autoComboSpec.count,
+    expectedAutoServiceType,
+    resolvedWallets.selectedUpperComboBalanceId,
+    resolvedWallets.skipUpperCombo,
+    hasManualMaterialEdit,
+  ]);
 
   useEffect(() => {
     if (!currentMaterialSpec.allowedDesigns.includes(selectedStyle)) {
@@ -247,6 +313,7 @@ export function useLashDesignSelection(booking?: BookingItem) {
   }, [currentMaterialSpec]);
 
   const applyMaterialSelectionDirect = (mat: LashMaterialSpec) => {
+    setHasManualMaterialEdit(true);
     setSelectedMaterial(mat.id);
     if (!mat.allowedDesigns.includes(selectedStyle)) {
       setSelectedStyle(mat.defaultDesign);
@@ -429,6 +496,7 @@ export function useLashDesignSelection(booking?: BookingItem) {
   };
 
   const handleRestoreAutoRule = () => {
+    setHasManualMaterialEdit(false);
     setSelectedMaterial(initialMat.id);
     setSelectedVolume(
       initialMat.allowedVolumes.includes(autoComboSpec.volume) ? autoComboSpec.volume : initialMat.defaultVolume
@@ -442,11 +510,9 @@ export function useLashDesignSelection(booking?: BookingItem) {
   };
 
   // Option làm kèm: Mi Dưới (Under Mink)
-  const hasUnderMinkCombo = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo && Number(booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
-  const underComboNormalRemaining = Number(booking?.underMinkComboStatus?.normalRemaining ?? 0);
-  const underComboRetainRemaining = Number(booking?.underMinkComboStatus?.retainRemaining ?? 0);
+  const hasUnderMinkCombo = resolvedWallets.isRedeemingUnderToday;
+  const underComboNormalRemaining = Number(effectiveUnderMinkComboStatus?.normalRemaining ?? 0);
+  const underComboRetainRemaining = Number(effectiveUnderMinkComboStatus?.retainRemaining ?? 0);
 
   const [hasUnderMink, setHasUnderMink] = useState<boolean>(() => {
     const s = (booking?.serviceName || '').toLowerCase();
@@ -538,6 +604,9 @@ export function useLashDesignSelection(booking?: BookingItem) {
   }, []);
 
   return {
+    resolvedWallets,
+    hasManualMaterialEdit,
+    setHasManualMaterialEdit,
     materialCatalog,
     setMaterialCatalog,
     isConfiguratorOpen,
@@ -578,9 +647,9 @@ export function useLashDesignSelection(booking?: BookingItem) {
     setSelectedColors,
     selectedColor,
     selectedVolume,
-    setSelectedVolume,
+    setSelectedVolume: handleSetSelectedVolumeManual,
     selectedCount,
-    setSelectedCount,
+    setSelectedCount: handleSetSelectedCountManual,
     serviceType,
     setServiceType,
     isOverridden,

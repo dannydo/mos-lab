@@ -795,8 +795,9 @@ export const BookingsTab: React.FC<
                         )
                         .map((n: SafeAny) => {
                           const isCcNote = n.noteFieldKey === 'order_note';
+                          const isCvlNote = n.noteFieldKey === 'cvl_note';
                           const isPinned = Boolean(n.isSticky);
-                          const badgeLabel = isCcNote ? 'CC' : isPinned ? '📌 Note' : 'CS';
+                          const badgeLabel = isCcNote ? 'CC' : isCvlNote ? 'CVL' : isPinned ? 'Note' : 'CS';
                           const staffAuthor = n.staffName || (isCcNote ? 'CC' : 'Nhân viên');
                           const parsedNDate = safeParseDate(n.dateCreated);
 

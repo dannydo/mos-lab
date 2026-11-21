@@ -1,8 +1,4 @@
-import {
-  BookingOverrideRecord,
-  CrmConfigStoreAdapter,
-  createMysqlConfigStore,
-} from './ios-overrides.service.js';
+import { BookingOverrideRecord, CrmConfigStoreAdapter, createMysqlConfigStore } from './ios-overrides.service.js';
 import { computeBookingFinancials } from './ios-bookings-formatters.js';
 import {
   calculateActorTipBreakdown,
@@ -24,9 +20,7 @@ export function mapAttemptUpsellToCartProducts(
 ): IosCartProductItem[] {
   return (upsellProducts || []).map((p, idx) => {
     const qty = Math.max(1, Number(p.quantity) || 1);
-    const unitPrice = Number.isFinite(p.unitPrice)
-      ? Math.max(0, Number(p.unitPrice))
-      : Math.round(p.totalPrice / qty);
+    const unitPrice = Number.isFinite(p.unitPrice) ? Math.max(0, Number(p.unitPrice)) : Math.round(p.totalPrice / qty);
     const productId =
       Number(p.productId) > 0
         ? Number(p.productId)
@@ -298,9 +292,7 @@ export async function updateSimulationAttempt(
   };
 
   const next =
-    index >= 0
-      ? [...existing.slice(0, index), updated, ...existing.slice(index + 1)]
-      : [...existing, updated];
+    index >= 0 ? [...existing.slice(0, index), updated, ...existing.slice(index + 1)] : [...existing, updated];
   await store.upsert(key, JSON.stringify(next));
   return updated;
 }
@@ -308,12 +300,12 @@ export async function updateSimulationAttempt(
 export function hasAttemptWorthySimulationWork(override: BookingOverrideRecord): boolean {
   return Boolean(
     override.selectedCombo ||
-      override.selectedUnderCombo ||
-      override.comboRedemption ||
-      (Array.isArray(override.cartProducts) && override.cartProducts.length > 0) ||
-      override.billing ||
-      override.attributes?.style ||
-      override.status === 'DONE'
+    override.selectedUnderCombo ||
+    override.comboRedemption ||
+    (Array.isArray(override.cartProducts) && override.cartProducts.length > 0) ||
+    override.billing ||
+    override.attributes?.style ||
+    override.status === 'DONE'
   );
 }
 
@@ -329,7 +321,7 @@ export function hasCompletedSimulationSnapshot(
   }
   return Boolean(
     hasAttemptWorthySimulationWork(override) &&
-      (Boolean(override.progress?.completedAt) || Boolean(override.checkedOutAt))
+    (Boolean(override.progress?.completedAt) || Boolean(override.checkedOutAt))
   );
 }
 

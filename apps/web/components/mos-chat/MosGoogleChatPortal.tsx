@@ -5815,24 +5815,33 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       notifyLivePeers();
     } catch (err: SafeAny) {
-      // Restore user text on error so input does not disappear permanently
-      antdMessage.error(err?.message || 'Không thể gửi câu trả lời vào luồng. Vui lòng thử lại!');
-      updateThreadInput(text);
-      if (threadInputRef.current) {
-        threadInputRef.current.value = text;
+      // MAI mention resilience: when the API is slow/saturated the thread reply is usually already
+      // persisted server-side even though the HTTP response timed out (no `err.response`). In that
+      // case do NOT roll back and do NOT skip the @MAI call, otherwise MAI silently never answers.
+      const mentionsMai = canUseAiCopilot && /(?:^|\s)@\s*mai\b/i.test(text);
+      const responseTimedOut = !err?.response;
+      if (mentionsMai && responseTimedOut) {
+        antdMessage.warning('Máy chủ phản hồi chậm, tin nhắn có thể đã được gửi. Vẫn tiếp tục gọi MAI...');
+      } else {
+        // Restore user text on error so input does not disappear permanently
+        antdMessage.error(err?.message || 'Không thể gửi câu trả lời vào luồng. Vui lòng thử lại!');
+        updateThreadInput(text);
+        if (threadInputRef.current) {
+          threadInputRef.current.value = text;
+        }
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== activeConversation.id) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === targetMsgId ? { ...m, thread: (m.thread || []).filter((r) => r.id !== newReply.id) } : m
+              ),
+            };
+          })
+        );
+        return;
       }
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id !== activeConversation.id) return c;
-          return {
-            ...c,
-            messages: c.messages.map((m) =>
-              m.id === targetMsgId ? { ...m, thread: (m.thread || []).filter((r) => r.id !== newReply.id) } : m
-            ),
-          };
-        })
-      );
-      return;
     }
 
     // If user tagged @MAI in the thread reply, invoke MAI with full thread context!

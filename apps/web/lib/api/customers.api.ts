@@ -332,12 +332,10 @@ export const customersApi = {
       return response.data;
     },
     getServices: async (): Promise<Service[]> => {
-      const response = await api.get('/customers/services');
-      return response.data;
+      return dedupeApiGet<Service[]>('/customers/services', undefined, 60_000);
     },
     getServiceFilterOptions: async (): Promise<CustomerServiceFilterOptionsResponse> => {
-      const response = await api.get('/customers/service-filter-options');
-      return response.data;
+      return dedupeApiGet<CustomerServiceFilterOptionsResponse>('/customers/service-filter-options', undefined, 60_000);
     },
     getBookingSlots: async (params: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/customers/booking-slots', { params });

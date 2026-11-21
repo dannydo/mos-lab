@@ -156,7 +156,7 @@ import { api, dedupeApiGet, invalidateAcademySalesReadCache, resolveApiBaseUrl }
 export const academyApi = {
   academySales: {
     getAccess: async (): Promise<AcademyWorkspaceAccessResponse> => {
-      return dedupeApiGet<AcademyWorkspaceAccessResponse>('/academy-sales/access', undefined, 1_500);
+      return dedupeApiGet<AcademyWorkspaceAccessResponse>('/academy-sales/access', undefined, 30_000);
     },
     listLeads: async (params: ListAcademyLeadsParams): Promise<ListAcademyLeadsResponse> => {
       return dedupeApiGet<ListAcademyLeadsResponse>('/academy-sales/leads', params as Record<string, unknown>, 800);

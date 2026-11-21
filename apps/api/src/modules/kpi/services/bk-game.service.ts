@@ -24,6 +24,7 @@ import {
 import { getActiveBkTelesalesIds, getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
 import {
   BkGameTeamBookingDoneBonusService,
+  mergeActiveBkTelesalesParticipants,
   normalizeTimeHHmm,
   parseTeamBookingDoneBonusConfig,
 } from './bk-game-team-booking-done-bonus.service.js';
@@ -81,7 +82,10 @@ export function parseAllowedBookingChannels(val?: string | string[] | null): str
     } catch {
       // Fallback to comma-separated string
     }
-    const list = trimmed.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean);
+    const list = trimmed
+      .split(',')
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean);
     return list.length > 0 ? list : null;
   }
   return null;
@@ -90,9 +94,7 @@ export function parseAllowedBookingChannels(val?: string | string[] | null): str
 /**
  * Parses doneBonusConfig from either a JSON array string or array into BkGameDoneBonusRule[] or null.
  */
-export function parseDoneBonusConfig(
-  val?: string | BkGameDoneBonusRule[] | null
-): BkGameDoneBonusRule[] | null {
+export function parseDoneBonusConfig(val?: string | BkGameDoneBonusRule[] | null): BkGameDoneBonusRule[] | null {
   if (!val) return null;
   if (Array.isArray(val)) {
     return val.length > 0 ? val : null;
@@ -115,9 +117,7 @@ export function parseDoneBonusConfig(
 /**
  * Parses teamKpiConfig from either a JSON string or object into BkGameTeamKpiConfig or null.
  */
-export function parseTeamKpiConfig(
-  val?: string | BkGameTeamKpiConfig | null
-): BkGameTeamKpiConfig | null {
+export function parseTeamKpiConfig(val?: string | BkGameTeamKpiConfig | null): BkGameTeamKpiConfig | null {
   if (!val) return null;
   if (typeof val === 'object' && val !== null) {
     if (typeof (val as BkGameTeamKpiConfig).dailyTarget === 'number') {
@@ -143,15 +143,18 @@ export function parseTeamKpiConfig(
  * Builds SQL filter clause for allowed booking channels.
  * Example: AND UPPER(o.booking_channels) IN ('GB')
  */
-export function buildBookingChannelFilter(
-  allowedChannels?: string[] | null,
-  columnRef = 'o.booking_channels'
-): string {
+export function buildBookingChannelFilter(allowedChannels?: string[] | null, columnRef = 'o.booking_channels'): string {
   if (!allowedChannels || allowedChannels.length === 0) {
     return '';
   }
   const escaped = allowedChannels
-    .map((ch) => `'${ch.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')}'`)
+    .map(
+      (ch) =>
+        `'${ch
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9_-]/g, '')}'`
+    )
     .filter((c) => c !== "''")
     .join(', ');
   if (!escaped) return '';
@@ -362,10 +365,7 @@ export class BkGameService {
           if (rule.conditionType === 'FREE') {
             conditionMatched = actualPaid === 0;
           } else if (rule.conditionType === 'EXACT_PAY') {
-            conditionMatched =
-              rule.minPaid !== undefined
-                ? Math.abs(actualPaid - rule.minPaid) < 100
-                : true;
+            conditionMatched = rule.minPaid !== undefined ? Math.abs(actualPaid - rule.minPaid) < 100 : true;
           } else if (rule.conditionType === 'PROMO_PERCENT') {
             if (rule.minPaid !== undefined && rule.maxPaid !== undefined) {
               conditionMatched = actualPaid >= rule.minPaid && actualPaid <= rule.maxPaid;
@@ -643,6 +643,11 @@ export class BkGameService {
     const allowedChannels = parseAllowedBookingChannels(game.allowedBookingChannels);
     const channelFilter = buildBookingChannelFilter(allowedChannels, 'o.booking_channels');
 
+    const hasTeamBookingDoneBonus = Boolean(parseTeamBookingDoneBonusConfig(game.teamBookingDoneBonusConfig)?.enabled);
+    if (game.status === 'ACTIVE' && game.gameType !== 'TEAM' && hasTeamBookingDoneBonus) {
+      participants = await mergeActiveBkTelesalesParticipants(fastify, game, participants);
+    }
+
     // If game is ACTIVE, compute live scores from the database
     if (game.status === 'ACTIVE' && participants.length > 0) {
       const staffIds = participants.map((p) => p.staffId);
@@ -834,9 +839,7 @@ export class BkGameService {
         participants
       );
       if (teamBookingDoneBonusSummary) {
-        const staffTeamBkBonusMap = new Map(
-          teamBookingDoneBonusSummary.staffTotals.map((s) => [s.staffId, s])
-        );
+        const staffTeamBkBonusMap = new Map(teamBookingDoneBonusSummary.staffTotals.map((s) => [s.staffId, s]));
         participants = participants.map((p) => {
           const stat = staffTeamBkBonusMap.get(p.staffId);
           return {
@@ -1019,13 +1022,8 @@ export class BkGameService {
               ? JSON.stringify(input.allowedBookingChannels)
               : null,
           doneBonusConfig:
-            input.doneBonusConfig && input.doneBonusConfig.length > 0
-              ? JSON.stringify(input.doneBonusConfig)
-              : null,
-          teamKpiConfig:
-            input.teamKpiConfig
-              ? JSON.stringify(input.teamKpiConfig)
-              : null,
+            input.doneBonusConfig && input.doneBonusConfig.length > 0 ? JSON.stringify(input.doneBonusConfig) : null,
+          teamKpiConfig: input.teamKpiConfig ? JSON.stringify(input.teamKpiConfig) : null,
           teamBookingDoneBonusConfig: serializedTeamBookingDoneBonusConfig,
           targetScore: input.targetScore,
           startDate,
@@ -1118,15 +1116,10 @@ export class BkGameService {
     }
     if (input.doneBonusConfig !== undefined) {
       data.doneBonusConfig =
-        input.doneBonusConfig && input.doneBonusConfig.length > 0
-          ? JSON.stringify(input.doneBonusConfig)
-          : null;
+        input.doneBonusConfig && input.doneBonusConfig.length > 0 ? JSON.stringify(input.doneBonusConfig) : null;
     }
     if (input.teamKpiConfig !== undefined) {
-      data.teamKpiConfig =
-        input.teamKpiConfig
-          ? JSON.stringify(input.teamKpiConfig)
-          : null;
+      data.teamKpiConfig = input.teamKpiConfig ? JSON.stringify(input.teamKpiConfig) : null;
     }
     if (input.teamBookingDoneBonusConfig !== undefined) {
       data.teamBookingDoneBonusConfig = serializeTeamBookingDoneBonusConfig(input.teamBookingDoneBonusConfig);

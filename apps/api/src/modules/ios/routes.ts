@@ -12,10 +12,12 @@ import { resolveIosAuth } from './services/ios-auth.service.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
 import { executeAdminComboExpiryAction } from './services/ios-combo-expiry.service.js';
 import { getIosCustomerHistory } from './services/ios-customer-history.service.js';
+import { createIosCustomerNote } from './services/ios-customer-notes.service.js';
 import { queryIosBookingsList } from './services/ios-bookings-query.service.js';
 import { serveProgressPhoto } from './services/ios-photos.service.js';
 import { fetchIosProductCatalog, scanIosProductByCode } from './services/ios-product-scan.service.js';
 import { fetchIosPromotionsForActor, resolveCanViewGlobalPromotions } from './services/ios-promotions.service.js';
+import { listIosCheckoutEligibleStaff } from './services/ios-post-checkout-adjustment.service.js';
 import {
   executeIosSimulationBookingAction,
   loadOrReconcileSimulationAttemptsForActor,
@@ -99,7 +101,7 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const isSimulationRequest = Boolean(body?.simulationMode) || actionStr.startsWith('SIM_');
       const result = isSimulationRequest
         ? await executeIosSimulationBookingAction(fastify, authUser, body)
-        : await executeIosBookingAction(authUser, body);
+        : await executeIosBookingAction(authUser, body, undefined, undefined, { fastify });
       return reply.status(result.statusCode).send(result.payload);
     } catch (error: SafeAny) {
       fastify.log.error(error, 'Error executing /api/ios/bookings POST action');
@@ -153,7 +155,9 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const products = await fetchIosProductCatalog();
       return reply.send({ success: true, products });
     } catch (error: SafeAny) {
-      return reply.status(500).send({ success: false, products: [], error: error?.message || 'Product catalog failed' });
+      return reply
+        .status(500)
+        .send({ success: false, products: [], error: error?.message || 'Product catalog failed' });
     }
   });
 
@@ -255,6 +259,34 @@ export async function iosRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/ios/staff/checkout-eligible
+  fastify.get('/ios/staff/checkout-eligible', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, staff: [], error: 'Unauthorized' });
+      }
+      if (!canAccessIosConsultationApp(authUser.careerTier || authUser.role, authUser.teamCodes)) {
+        return reply.status(403).send({
+          success: false,
+          staff: [],
+          error: 'Tài khoản không có quyền truy cập ứng dụng /ios-app.',
+        });
+      }
+      const query = request.query as { storeId?: string };
+      const storeId = query.storeId ? Number(query.storeId) : undefined;
+      const staff = await listIosCheckoutEligibleStaff(fastify, storeId);
+      return reply.send({ success: true, staff });
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'Error fetching /api/ios/staff/checkout-eligible');
+      return reply.status(500).send({
+        success: false,
+        staff: [],
+        error: error?.message || 'Failed to fetch checkout-eligible staff',
+      });
+    }
+  });
+
   // GET /api/ios/promotions
   fastify.get('/ios/promotions', async (request, reply) => {
     try {
@@ -314,6 +346,26 @@ export async function iosRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         success: false,
         error: error?.message || 'Customer history fetch error',
+      });
+    }
+  });
+
+  // POST /api/ios/customers/:customerId/notes (Thêm Note CVL sau checkout / hồ sơ khách)
+  fastify.post('/ios/customers/:customerId/notes', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) {
+        return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      }
+      const params = (request.params || {}) as { customerId?: string };
+      const customerId = Number(params.customerId || 0);
+      const result = await createIosCustomerNote(authUser, customerId, (request.body || {}) as SafeAny);
+      return reply.status(result.statusCode).send(result.payload);
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'Error creating /api/ios/customers/:customerId/notes');
+      return reply.status(500).send({
+        success: false,
+        error: error?.message || 'Customer note creation error',
       });
     }
   });
@@ -393,6 +445,72 @@ export async function iosRoutes(fastify: FastifyInstance) {
       });
     } catch (err: SafeAny) {
       return reply.status(500).send({ success: false, error: err?.message || 'Print dispatch error' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET /api/ios/referrer/lookup?phone=<SĐT>
+  // Tìm khách hàng theo SĐT để xác nhận người giới thiệu (chỉ CVL/CC/Admin)
+  // ─────────────────────────────────────────────────────────────────────────────
+  fastify.get('/ios/referrer/lookup', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, error: 'Unauthorized' });
+
+      const tier = authUser.careerTier || authUser.role || '';
+      const allowedTiers = ['CVL', 'CVLL', 'CC', 'ADMIN', 'admin', 'super_admin'];
+      if (!allowedTiers.includes(tier)) {
+        return reply
+          .status(403)
+          .send({ success: false, error: 'Chỉ CVL/CC/Admin được phép tra cứu người giới thiệu.' });
+      }
+
+      const { phone } = request.query as { phone?: string };
+      if (!phone || phone.trim().length < 8) {
+        return reply.status(400).send({ success: false, error: 'SĐT không hợp lệ.' });
+      }
+
+      // Normalize phone
+      const normalizedPhone = phone.trim().replace(/\D/g, '');
+
+      const rows = await fastify.prisma.legacy.$queryRaw<SafeAny[]>`
+        SELECT
+          u.id AS userId,
+          up.full_name AS name,
+          uc.phone_number AS phone,
+          COALESCE((
+            SELECT SUM(ubt.amount)
+            FROM user_balance_transaction ubt
+            WHERE ubt.user_id = u.id AND ubt.currency_id = 3
+          ), 0) AS diamondBalance
+        FROM user u
+        INNER JOIN user_profile up ON up.user_id = u.id AND up.is_deleted = 0
+        INNER JOIN user_contact uc ON uc.user_id = u.id AND uc.is_disabled = 0
+        WHERE (
+          REPLACE(REPLACE(uc.phone_number, '.', ''), '-', '') = ${normalizedPhone}
+          OR uc.phone_number = ${phone.trim()}
+        )
+        AND up.provider = 'Customer'
+        LIMIT 1
+      `;
+
+      if (!rows.length) {
+        return reply.send({ success: false, error: 'Không tìm thấy khách hàng với SĐT này.' });
+      }
+
+      const row = rows[0];
+      return reply.send({
+        success: true,
+        referrer: {
+          userId: Number(row.userId),
+          name: String(row.name || 'Khách hàng'),
+          phone: String(row.phone || phone),
+          diamondBalance: Number(row.diamondBalance || 0),
+        },
+      });
+    } catch (err: SafeAny) {
+      fastify.log.error(err, '[ios/referrer/lookup] Error');
+      return reply.status(500).send({ success: false, error: err?.message || 'Lookup error' });
     }
   });
 }

@@ -148,10 +148,7 @@ export const chatApi = {
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
-    togglePinConversation: async (
-      conversationId: string,
-      pinned?: boolean
-    ): Promise<TogglePinConversationResponse> => {
+    togglePinConversation: async (conversationId: string, pinned?: boolean): Promise<TogglePinConversationResponse> => {
       const res = await api.post(
         `/chat/conversations/${encodeURIComponent(conversationId)}/pin`,
         typeof pinned === 'boolean' ? { pinned } : {}

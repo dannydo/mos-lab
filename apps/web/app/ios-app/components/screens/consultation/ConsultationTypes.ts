@@ -67,6 +67,18 @@ export interface Screen03ConsultationMatrixProps {
   isSimulationMode?: boolean;
   isReadOnlyMentorView?: boolean;
   onSimFastForwardToUpsell?: (bookingId: number) => void;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+    comboRedemption?: BookingItem['comboRedemption'] | null;
+    serviceName?: string;
+    servicePrice?: number;
+    serviceType?: 'Normal' | 'Retain';
+    upgradePrice?: number;
+  }) => void;
 }
 
 export interface PendingOverrideState {

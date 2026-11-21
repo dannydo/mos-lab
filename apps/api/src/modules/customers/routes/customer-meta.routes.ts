@@ -5,6 +5,7 @@ import { CustomerServiceFilterCatalogService } from '../services/customer-servic
 import { CustomerCreationError, CustomerCreationService } from '../services/customer-creation.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 import { TeamService } from '../../teams/team.service.js';
+import { mergeStaffDirectory, type DirectoryStaff } from '../services/staff-directory.service.js';
 import { BookingPromotionService } from '../services/booking-promotion.service.js';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { AllocationLedgerService } from '../../allocation/allocation-ledger.service.js';
@@ -257,29 +258,8 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
         };
       });
 
-      // Deduplicate CRM staff and legacy mappedKTVs by displayName (trimmed & case-insensitive)
-      const uniqueStaffMap = new Map<string, SafeAny>();
-
-      // 1. Add mappedKTVs first so technician attributes (offDays, approvedOffDates, role) are prioritized
-      mappedKTVs.forEach((ktv) => {
-        const key = (ktv.displayName || '').trim().toLowerCase();
-        if (key && !uniqueStaffMap.has(key)) {
-          uniqueStaffMap.set(key, ktv);
-        }
-      });
-
-      // 2. Add CRM staff for non-technicians or merge properties
-      crmStaffList.forEach((s) => {
-        const key = (s.displayName || '').trim().toLowerCase();
-        if (key && !uniqueStaffMap.has(key)) {
-          uniqueStaffMap.set(key, s);
-        } else if (key && uniqueStaffMap.has(key)) {
-          const existing = uniqueStaffMap.get(key);
-          uniqueStaffMap.set(key, { ...s, ...existing });
-        }
-      });
-
-      const result = Array.from(uniqueStaffMap.values());
+      // Merge by legacy identity (never by display name): see staff-directory.service.ts
+      const result = mergeStaffDirectory(crmStaffList as DirectoryStaff[], mappedKTVs as DirectoryStaff[]);
 
       if (role === 'cs' || role === 'coca' || role === 'loca') {
         const csConfigIds = await TeamService.getActiveStaffIdsWithFallback(

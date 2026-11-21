@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import type { IosCustomerHistoryTab } from '@mos-lab/shared';
 import { canSwitchIosBranch } from '@mos-lab/shared';
 import { BookingItem, resolveCustomerBookingTab, sortDoneBookingsWithCheckoutFirst } from '../../state/mockData';
 import {
@@ -109,6 +110,7 @@ export function Screen01IncomingBookings({
 
   // Modal / Bottom Sheet xem đầy đủ ghi chú và thông tin khách hàng
   const [selectedCustomerDetail, setSelectedCustomerDetail] = useState<BookingItem | null>(null);
+  const [selectedDetailTab, setSelectedDetailTab] = useState<IosCustomerHistoryTab>('LASH_PHOTOS');
   const [walletModalBookingId, setWalletModalBookingId] = useState<number | null>(null);
 
   const activeWalletBooking = useMemo(
@@ -444,7 +446,14 @@ export function Screen01IncomingBookings({
               onOpenLockedModal={(attemptedCustomerName) =>
                 setLockedCustomerModal({ isOpen: true, attemptedCustomerName })
               }
-              onOpenCustomerDetail={(bookingItem) => setSelectedCustomerDetail(bookingItem)}
+              onOpenCustomerDetail={(bookingItem) => {
+                setSelectedDetailTab('LASH_PHOTOS');
+                setSelectedCustomerDetail(bookingItem);
+              }}
+              onOpenCustomerNotes={(bookingItem) => {
+                setSelectedDetailTab('NOTES');
+                setSelectedCustomerDetail(bookingItem);
+              }}
               onOpenWalletModal={(bookingItem) => setWalletModalBookingId(bookingItem.id)}
               onOpenRevertModal={(bookingId, customerName) =>
                 setRevertConfirmModal({ isOpen: true, bookingId, customerName })
@@ -469,6 +478,8 @@ export function Screen01IncomingBookings({
         setRevertConfirmModal={setRevertConfirmModal}
         selectedCustomerDetail={selectedCustomerDetail}
         setSelectedCustomerDetail={setSelectedCustomerDetail}
+        initialHistoryTab={selectedDetailTab}
+        onNoteCreated={() => onRefreshDb?.()}
         activeServicingBooking={activeServicingBooking}
         isSimulationMode={isSimulationMode}
         isCvll={isCvll}

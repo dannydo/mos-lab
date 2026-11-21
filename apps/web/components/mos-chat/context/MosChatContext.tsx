@@ -679,10 +679,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   }, []);
 
   // Check if conversation is pinned
-  const isPinnedConversation = useCallback(
-    (convId: string) => pinnedConvIds.has(convId),
-    [pinnedConvIds]
-  );
+  const isPinnedConversation = useCallback((convId: string) => pinnedConvIds.has(convId), [pinnedConvIds]);
 
   // Toggle pin conversation
   const togglePinConversation = useCallback(

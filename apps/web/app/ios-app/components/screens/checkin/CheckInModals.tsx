@@ -1,10 +1,14 @@
 'use client';
 
 import React from 'react';
+import { resolveActiveBookingComboWallets } from '@mos-lab/shared';
 import { useTheme } from '../../../../../context/ThemeContext';
-import { BookingItem } from '../../../state/mockData';
+import { BookingItem, LashHistoryItem } from '../../../state/mockData';
 import { CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import { calculateLashPricingAndCvPoints, resolveQuickCheckInComboPreset } from '../LashMaterialConstraintMatrix';
+import { Screen02LashHistorySheet } from '../Screen02LashHistorySheet';
+import { ComboWalletDetailModal } from '../../ui-kit/ComboWalletDetailModal';
+import { CustomerHistoryAndSpendingSheet } from '../../ui-kit/CustomerHistoryAndSpendingSheet';
 import { Check, Sparkles, RotateCw, AlertTriangle, Info, X } from 'lucide-react';
 
 type QuickCheckInPreset = ReturnType<typeof resolveQuickCheckInComboPreset>;
@@ -39,6 +43,24 @@ interface CheckInModalsProps {
   quickServiceType: 'Normal' | 'Retain';
   quickUnderServiceType: 'Normal' | 'Retain';
   booking: BookingItem;
+  selectedLashHistory: LashHistoryItem | null;
+  isLashHistoryOpen: boolean;
+  setIsLashHistoryOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isWalletModalOpen: boolean;
+  setIsWalletModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isAdmin: boolean;
+  onRefreshDb?: () => void;
+  resolvedWallets: ReturnType<typeof resolveActiveBookingComboWallets>;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+  }) => void;
+  isHistoryModalOpen: boolean;
+  setIsHistoryModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isSimulationMode: boolean;
 }
 
 export function CheckInModals({
@@ -57,6 +79,18 @@ export function CheckInModals({
   quickServiceType,
   quickUnderServiceType,
   booking,
+  selectedLashHistory,
+  isLashHistoryOpen,
+  setIsLashHistoryOpen,
+  isWalletModalOpen,
+  setIsWalletModalOpen,
+  isAdmin,
+  onRefreshDb,
+  resolvedWallets,
+  onSelectComboWallet,
+  isHistoryModalOpen,
+  setIsHistoryModalOpen,
+  isSimulationMode,
 }: CheckInModalsProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -76,7 +110,9 @@ export function CheckInModals({
                 <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-[13.5px] font-black text-[var(--mos-text)] leading-snug">{pendingOverride.title}</h3>
+                <h3 className="text-[13.5px] font-black text-[var(--mos-text)] leading-snug">
+                  {pendingOverride.title}
+                </h3>
                 <p className="text-[11.5px] text-[var(--mos-text-muted)] font-medium mt-1 leading-relaxed">
                   {pendingOverride.message}
                 </p>
@@ -108,7 +144,9 @@ export function CheckInModals({
                       <span className="leading-snug">{r}</span>
                       <span
                         className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 border ${
-                          active ? 'border-rose-600 bg-rose-600 text-white' : 'border-[var(--mos-surface-border-strong)]'
+                          active
+                            ? 'border-rose-600 bg-rose-600 text-white'
+                            : 'border-[var(--mos-surface-border-strong)]'
                         }`}
                       >
                         {active && <Check className="w-2.5 h-2.5 stroke-[3]" />}
@@ -182,9 +220,10 @@ export function CheckInModals({
                   <span>DÀNH CHO KHÁCH HÀNG</span>
                 </div>
                 <p className="text-[var(--mos-text)] leading-relaxed font-medium">
-                  Khách được đi <strong className={isDark ? 'text-amber-300' : 'text-amber-700'}>Nối Mới thoải mái</strong>. Hệ thống sẽ{' '}
-                  <strong className="text-[var(--mos-text)]">TRỪ 1 LẦN NỐI MỚI</strong> trong gói (không hoàn phí/bù trừ nếu bộ mi
-                  cũ vẫn còn nhiều).
+                  Khách được đi{' '}
+                  <strong className={isDark ? 'text-amber-300' : 'text-amber-700'}>Nối Mới thoải mái</strong>. Hệ thống
+                  sẽ <strong className="text-[var(--mos-text)]">TRỪ 1 LẦN NỐI MỚI</strong> trong gói (không hoàn phí/bù
+                  trừ nếu bộ mi cũ vẫn còn nhiều).
                 </p>
               </div>
 
@@ -207,8 +246,8 @@ export function CheckInModals({
                   <strong className={`underline underline-offset-2 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
                     BẮT BUỘC phải gỡ ra toàn bộ mi cũ
                   </strong>{' '}
-                  và <strong>nối bộ mi mới 100%</strong> cho khách hàng (không được dặm đè lên mi
-                  cũ khi trừ suất Nối Mới)!
+                  và <strong>nối bộ mi mới 100%</strong> cho khách hàng (không được dặm đè lên mi cũ khi trừ suất Nối
+                  Mới)!
                 </p>
               </div>
             </div>
@@ -250,7 +289,9 @@ export function CheckInModals({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <RotateCw className={`w-4 h-4 shrink-0 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-                  <h3 className="text-[13.5px] font-black text-[var(--mos-text)]">Cách Tính Điểm Vòng Xoay (CV Xoay)</h3>
+                  <h3 className="text-[13.5px] font-black text-[var(--mos-text)]">
+                    Cách Tính Điểm Vòng Xoay (CV Xoay)
+                  </h3>
                 </div>
                 <p className="text-[10.5px] text-[var(--mos-text-muted)] font-medium mt-0.5">
                   Đồng bộ 100% Báo cáo CV → Tab CV Xoay (Điều răn CV-001)
@@ -400,6 +441,53 @@ export function CheckInModals({
           </div>
         </div>
       )}
+
+      {/* Lash History Modal / Bottom Sheet */}
+      <Screen02LashHistorySheet
+        item={selectedLashHistory}
+        isOpen={isLashHistoryOpen}
+        onClose={() => setIsLashHistoryOpen(false)}
+        onApplySpecs={() => setIsLashHistoryOpen(false)}
+      />
+
+      <ComboWalletDetailModal
+        booking={booking}
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        isAdmin={isAdmin}
+        onUpdated={() => onRefreshDb?.()}
+        selectedUpperBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+        selectedUnderBalanceId={resolvedWallets.selectedUnderComboBalanceId}
+        skipUpperCombo={resolvedWallets.skipUpperCombo}
+        skipUnderCombo={resolvedWallets.skipUnderCombo}
+        onSelectWallet={
+          onSelectComboWallet
+            ? (wallet) => {
+                if (wallet.serviceGroup === 'under') {
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUnderComboBalanceId: wallet.balanceId,
+                    skipUnderCombo: false,
+                  });
+                } else {
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUpperComboBalanceId: wallet.balanceId,
+                    skipUpperCombo: false,
+                  });
+                }
+              }
+            : undefined
+        }
+      />
+
+      <CustomerHistoryAndSpendingSheet
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        initialTab="ALL"
+        booking={booking}
+        isSimulationMode={isSimulationMode}
+      />
     </>
   );
 }

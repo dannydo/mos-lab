@@ -2,11 +2,16 @@
 
 import React from 'react';
 import { Wallet, AlertTriangle } from 'lucide-react';
-import { calculateComboRedemptionAccounting, formatExpiryDateDdMmYyyy } from '@mos-lab/shared';
+import {
+  calculateComboRedemptionAccounting,
+  formatExpiryDateDdMmYyyy,
+  type ResolveActiveBookingComboWalletsResult,
+} from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { CvFeather2Badge, CvFeather1Badge } from '../../ui-kit/CvFeatherLabels';
 import { ComboSessionBadge } from '../../ui-kit/ComboSessionBadge';
 import { ComboExpiryStatusBadge } from '../../ui-kit/ComboExpiryStatusBadge';
+import { ComboWalletSelectorList } from '../../ui-kit/ComboWalletSelectorList';
 import { formatComboName } from '../LashMaterialConstraintMatrix';
 import { UpsellSerumCard } from './UpsellSerumCard';
 import { UpsellBeforeAfterShowcaseCard } from './UpsellBeforeAfterShowcaseCard';
@@ -36,6 +41,14 @@ export interface UpsellHeaderAndSerumSectionProps {
   showStaffRewards: boolean;
   onOpenSerumInfoModal: () => void;
   onOpenWalletModal?: () => void;
+  resolvedWallets?: ResolveActiveBookingComboWalletsResult;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+  }) => void;
 }
 
 export function UpsellHeaderAndSerumSection({
@@ -60,11 +73,16 @@ export function UpsellHeaderAndSerumSection({
   showStaffRewards,
   onOpenSerumInfoModal,
   onOpenWalletModal,
+  resolvedWallets,
+  onSelectComboWallet,
 }: UpsellHeaderAndSerumSectionProps) {
+  const effectiveUpper = resolvedWallets?.effectiveComboLiveStatus ?? booking?.comboLiveStatus;
+  const displayUpper = resolvedWallets?.displayUpperWallet ?? effectiveUpper;
   const isOldComboExpired = Boolean(
-    booking?.comboLiveStatus?.isExpired && (booking?.comboLiveStatus?.remainingSessions ?? 0) > 0
+    displayUpper?.isExpired && (displayUpper?.remainingSessions ?? 0) > 0 && !resolvedWallets?.hasAnyLiveUpperWallet
   );
-  const expiredDateLabel = formatExpiryDateDdMmYyyy(booking?.comboLiveStatus?.dateExpired);
+  const expiredDateLabel = formatExpiryDateDdMmYyyy(displayUpper?.dateExpired);
+  const hasUnderServiceToday = Boolean(booking?.attributes?.hasUnderMink);
   return (
     <>
       {/* 0. Customer & Lash Service Identity Card (Nhận diện khách hàng & Ca phục vụ) */}
@@ -182,19 +200,81 @@ export function UpsellHeaderAndSerumSection({
             )}
           </div>
           <div className="text-[12.5px] font-black leading-snug">
-            {formatComboName(booking?.comboLiveStatus?.comboName, booking?.comboLiveStatus?.packageKey) ||
-              'Gói Combo Cũ'}{' '}
-            · Còn {booking?.comboLiveStatus?.remainingSessions} buổi đang khóa 0đ
+            {formatComboName(displayUpper?.comboName, displayUpper?.packageKey) || 'Gói Combo Cũ'} · Còn{' '}
+            {displayUpper?.remainingSessions} buổi đang khóa 0đ
           </div>
           <div
             className={`text-[11px] font-semibold leading-snug tabular-nums ${isDark ? 'text-rose-200/95' : 'text-rose-900'}`}
           >
             Chọn <strong>Mua gói Combo</strong> bên dưới để tự động <strong>cứu toàn bộ buổi tồn</strong> (✦
-            {booking?.comboLiveStatus?.normalRemaining ?? 0} Mới +1T/buổi · ↻
-            {booking?.comboLiveStatus?.retainRemaining ?? 0} Dặm +25N/buổi).
+            {displayUpper?.normalRemaining ?? 0} Mới +1T/buổi · ↻{displayUpper?.retainRemaining ?? 0} Dặm +25N/buổi).
           </div>
         </div>
       )}
+
+      {/* Section Chọn Ví Gói Combo Ca Hôm Nay (Mi Trên & Mi Dưới — luôn hiển thị kể cả khi đang chọn Đi lẻ) */}
+      {resolvedWallets &&
+        (resolvedWallets.upperWallets.length > 0 ||
+          (hasUnderServiceToday && resolvedWallets.underWallets.length > 0)) && (
+          <div
+            className={`rounded-2xl p-3 border space-y-2.5 shadow-2xs ${
+              isDark ? 'bg-[var(--mos-surface)] border-[var(--mos-surface-border)]' : 'bg-white border-neutral-200'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5" />
+                Chọn Ví Gói Combo Dùng Hôm Nay
+              </span>
+              {resolvedWallets.skipUpperCombo && resolvedWallets.liveUpperWallets.length > 0 && (
+                <span className="text-[10px] font-black text-amber-400">Đi lẻ ca này · Giữ gói ❖</span>
+              )}
+            </div>
+            {resolvedWallets.upperWallets.length > 0 && (
+              <ComboWalletSelectorList
+                wallets={resolvedWallets.upperWallets}
+                selectedBalanceId={resolvedWallets.selectedUpperComboBalanceId}
+                skipCombo={resolvedWallets.skipUpperCombo}
+                serviceGroup="upper"
+                compact
+                onSelectWallet={(wallet) =>
+                  onSelectComboWallet?.({
+                    selectedUpperComboBalanceId: wallet.balanceId,
+                    skipUpperCombo: false,
+                  })
+                }
+                onSelectSkipCombo={() =>
+                  onSelectComboWallet?.({
+                    selectedUpperComboBalanceId: null,
+                    skipUpperCombo: true,
+                  })
+                }
+              />
+            )}
+            {hasUnderServiceToday && resolvedWallets.underWallets.length > 0 && (
+              <ComboWalletSelectorList
+                wallets={resolvedWallets.underWallets}
+                selectedBalanceId={resolvedWallets.selectedUnderComboBalanceId}
+                skipCombo={resolvedWallets.skipUnderCombo}
+                serviceGroup="under"
+                compact
+                className={resolvedWallets.upperWallets.length > 0 ? 'pt-2 border-t border-neutral-500/20' : ''}
+                onSelectWallet={(wallet) =>
+                  onSelectComboWallet?.({
+                    selectedUnderComboBalanceId: wallet.balanceId,
+                    skipUnderCombo: false,
+                  })
+                }
+                onSelectSkipCombo={() =>
+                  onSelectComboWallet?.({
+                    selectedUnderComboBalanceId: null,
+                    skipUnderCombo: true,
+                  })
+                }
+              />
+            )}
+          </div>
+        )}
 
       {/* Section 1A: CA HÔM NAY · TRỪ VÀO GÓI COMBO ĐANG CÓ (Chỉ hiện khi khách có combo đang chạy) */}
       {isExistingComboLive && redemptionAccounting && (
@@ -207,7 +287,7 @@ export function UpsellHeaderAndSerumSection({
               1. CA HÔM NAY · TRỪ GÓI ❖ ĐANG CÓ
             </span>
             <ComboExpiryStatusBadge
-              status={booking?.comboLiveStatus}
+              status={effectiveUpper}
               showPace
               theme={isDark ? 'dark' : 'light'}
               onClick={onOpenWalletModal ? () => onOpenWalletModal() : undefined}
@@ -219,8 +299,7 @@ export function UpsellHeaderAndSerumSection({
           >
             <div>
               <div className={`text-[14px] font-black ${isDark ? 'text-sky-200' : 'text-sky-950'} leading-snug`}>
-                {formatComboName(booking?.comboLiveStatus?.comboName, booking?.comboLiveStatus?.packageKey) ||
-                  '❖ Gói Đang Active'}
+                {formatComboName(effectiveUpper?.comboName, effectiveUpper?.packageKey) || '❖ Gói Đang Active'}
               </div>
               <div
                 className={`text-[12px] ${isDark ? 'text-sky-300' : 'text-sky-800'} font-semibold mt-0.5 leading-snug`}

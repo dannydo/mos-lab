@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Avatar, theme } from 'antd';
 import { UserRound } from 'lucide-react';
 import { isCvRole, type SafeAny } from '@mos-lab/shared';
@@ -11,7 +12,8 @@ import {
   subscribeBugReportBadgeSummary,
 } from '../../lib/bug-diagnostics';
 import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
-import { UnifiedProfileSheet } from '../profile/UnifiedProfileSheet';
+
+const UnifiedProfileSheet = dynamic(() => import('../profile/UnifiedProfileSheet'), { ssr: false });
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -100,21 +102,23 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         </HeaderActionIndicator>
       )}
 
-      <UnifiedProfileSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        appContext="general"
-        user={user}
-        isImpersonating={isImpersonating}
-        onExitImpersonation={onExitImpersonation}
-        desktopDensity={desktopDensity}
-        setDesktopDensity={setDesktopDensity}
-        onOpenTelesalesDashboard={onOpenTelesalesDashboard}
-        onLogout={onLogout}
-        onAvatarUpdated={onAvatarUpdated}
-        dailyCallsCount={dailyCallsCount}
-        onOpenDailyCalls={onOpenDailyCalls}
-      />
+      {open ? (
+        <UnifiedProfileSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          appContext="general"
+          user={user}
+          isImpersonating={isImpersonating}
+          onExitImpersonation={onExitImpersonation}
+          desktopDensity={desktopDensity}
+          setDesktopDensity={setDesktopDensity}
+          onOpenTelesalesDashboard={onOpenTelesalesDashboard}
+          onLogout={onLogout}
+          onAvatarUpdated={onAvatarUpdated}
+          dailyCallsCount={dailyCallsCount}
+          onOpenDailyCalls={onOpenDailyCalls}
+        />
+      ) : null}
     </>
   );
 };

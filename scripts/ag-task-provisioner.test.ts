@@ -18,6 +18,8 @@ import {
   writeTicketSessions,
   probeIsAntigravityPort,
   detectAntigravityLsEnv,
+  resolveAgChatModel,
+  DEFAULT_AG_CHAT_MODEL,
 } from './ag-task-provisioner.js';
 
 const mockRequest = {
@@ -694,4 +696,22 @@ test('runPlanWatcher forwards discovered codeFiles and context to agPlanner fall
   assert.equal(result, 'PLANNED');
   assert.ok(receivedCodeFiles.some((f) => f.includes('bug-reports')));
   assert.match(completedPayload?.result?.plan?.evidence || '', /<!-- agent-model: AG -->/);
+});
+
+test('MAI chat uses a fast model by default and honours MOS_AG_CHAT_MODEL', () => {
+  assert.equal(DEFAULT_AG_CHAT_MODEL, 'gemini-3.8-flash-high');
+  assert.equal(resolveAgChatModel({} as NodeJS.ProcessEnv), 'gemini-3.8-flash-high');
+  assert.equal(
+    resolveAgChatModel({ MOS_AG_CHAT_MODEL: 'hydrogen' } as unknown as NodeJS.ProcessEnv),
+    'gemini-4-hydrogen-high'
+  );
+  assert.equal(
+    resolveAgChatModel({ MOS_AG_CHAT_MODEL: 'gemini-3.8-flash-high' } as unknown as NodeJS.ProcessEnv),
+    'gemini-3.8-flash-high'
+  );
+  // MOS_AG_MODEL (used for inbox planning) must NOT leak into the chat model choice.
+  assert.equal(
+    resolveAgChatModel({ MOS_AG_MODEL: 'hydrogen' } as unknown as NodeJS.ProcessEnv),
+    'gemini-3.8-flash-high'
+  );
 });

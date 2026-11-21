@@ -3,12 +3,14 @@
 import React from 'react';
 import type { IosPromotionOption, IosScannedProductCatalogMatch } from '@mos-lab/shared';
 import type { BookingItem } from '../../../state/mockData';
+import type { CheckoutComboSelectionController } from '../../../state/useCheckoutComboSelection';
 import type { IosCloudSyncStatus } from '../../ui-kit/IosCloudSyncBadge';
 import type { ReceiptPromotionOpenTarget } from './CheckoutReceiptSection';
 import { CheckoutVietQrModal } from './CheckoutVietQrModal';
 import { CheckoutZaloConsentModal } from './CheckoutZaloConsentModal';
 import { CheckoutPromotionPickerModal } from './CheckoutPromotionPickerModal';
 import { ProductQrScannerModal } from '../../modals/ProductQrScannerModal';
+import { ComboCatalogConsultModal } from '../ComboCatalogConsultModal';
 
 export interface CheckoutBillingOverlaysProps {
   isDark: boolean;
@@ -51,6 +53,7 @@ export interface CheckoutBillingOverlaysProps {
   cartProducts: NonNullable<BookingItem['cartProducts']>;
   onScannedProduct: (scanned: IosScannedProductCatalogMatch) => void;
   onRemoveScannedUnit: (productIndex: number, inventoryWarehouseItemId?: number) => void;
+  comboSelection?: CheckoutComboSelectionController;
 }
 
 export function CheckoutBillingOverlays({
@@ -94,6 +97,7 @@ export function CheckoutBillingOverlays({
   cartProducts,
   onScannedProduct,
   onRemoveScannedUnit,
+  comboSelection,
 }: CheckoutBillingOverlaysProps) {
   return (
     <>
@@ -161,6 +165,35 @@ export function CheckoutBillingOverlays({
         onRemoveUnit={onRemoveScannedUnit}
         onClose={onCloseProductQrScanner}
       />
+
+      {comboSelection && (
+        <ComboCatalogConsultModal
+          open={comboSelection.comboModalTarget !== null}
+          onClose={comboSelection.closeComboModal}
+          initialCategoryId={comboSelection.autoMatched.categoryId}
+          initialVolume={comboSelection.comboModalTarget === 'under' ? 'under' : comboSelection.autoMatched.volume}
+          welcomeEligibility={comboSelection.welcomeEligibility}
+          selectedPackageId={
+            comboSelection.comboModalTarget === 'under'
+              ? comboSelection.hydratedSelectedUnderPkg?.id || null
+              : comboSelection.hydratedSelectedUpperPkg?.id || null
+          }
+          todaySingleServicePrice={comboSelection.todaySingleUpperPrice}
+          existingUpperExpirySnapshot={comboSelection.existingUpperExpirySnapshot}
+          existingUnderExpirySnapshot={comboSelection.existingUnderExpirySnapshot}
+          upperTodayUsageMode={comboSelection.upperTodayUsageMode}
+          underTodayUsageMode={comboSelection.underTodayUsageMode}
+          todayServiceType={comboSelection.todayServiceType}
+          underServiceType={comboSelection.underServiceType}
+          onSelectPackage={comboSelection.handleSelectSinglePackage}
+          initialSelectedUpperPkg={comboSelection.hydratedSelectedUpperPkg}
+          initialSelectedUnderPkg={comboSelection.hydratedSelectedUnderPkg}
+          onApplyPackages={comboSelection.handleApplyPackages}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          customerAvatar={booking?.customerAvatar}
+        />
+      )}
     </>
   );
 }

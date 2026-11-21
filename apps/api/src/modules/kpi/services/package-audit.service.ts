@@ -180,8 +180,8 @@ export class PackageAuditService {
       const userNoteText = `[AUDIT REVOKE] Lượt cộng thủ công (+${totalNormalAdded} nối, +${totalRetainAdded} dặm) đã bị Quản lý Thu hồi. Lý do: ${reviewNote || 'Thao tác thu hồi từ Báo cáo Kiểm toán'}`;
       const groupKey = Math.floor(Date.now() / 1000).toString();
       await this.fastify.prisma.legacy.$executeRawUnsafe(
-        `INSERT INTO user_note (client_id, client_business_id, client_store_id, user_id, created_staff_id, note_field_key, note, attribute_group_key, is_sticky, is_issue, is_disabled, date_created, date_updated)
-         VALUES (11, 1, 1, ?, ?, 'note', ?, ?, 0, 0, 0, NOW(), NOW())`,
+        `INSERT INTO user_note (client_id, client_business_id, user_id, created_staff_id, note_field_key, note, attribute_group_key, is_sticky, is_issue, is_disabled, date_created, date_updated)
+         VALUES (11, 1, ?, ?, 'note', ?, ?, 0, 0, 0, NOW(), NOW())`,
         Number(txn.user_id),
         Number(reviewerStaffId),
         userNoteText,

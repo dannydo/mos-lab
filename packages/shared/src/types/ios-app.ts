@@ -3,12 +3,25 @@ import type { ComboExpiryState, ComboTodayUsageMode, IosCustomerComboWalletItem 
 import type { IosCvSelfSpeedHistoryProfile, IosSelfChallengeTierKey } from '../utils/ios-self-challenge.js';
 import type { IosServicingRound } from '../utils/ios-servicing-rounds.js';
 import type { IosPromotionOption } from './ios-promotions.js';
+import {
+  isDoneBookingPendingPostCheckoutAdjustment,
+  type IosPostCheckoutAdjustmentEntry,
+  type IosPostCheckoutPaymentMode,
+  type IosPostCheckoutPendingDraft,
+} from './ios-post-checkout.js';
+
+export * from './ios-post-checkout.js';
 
 export type IosUserRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 export type BookingScopeMode = 'MY_CUSTOMERS' | 'STORE_ALL';
 export type CustomerBookingTab = 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
 export type IosBookingStatus = 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
-export type IosSettlementStatus = 'SETTLED_COMPLETED' | 'PENDING_COUNTER_SETTLEMENT' | 'DEMO_ONLY' | 'BRIDGE_DEFERRED';
+export type IosSettlementStatus =
+  | 'SETTLED_COMPLETED'
+  | 'PENDING_COUNTER_SETTLEMENT'
+  | 'PENDING_POST_CHECKOUT_ADJUSTMENT'
+  | 'DEMO_ONLY'
+  | 'BRIDGE_DEFERRED';
 
 export const IOS_SIM_BOOKING_ID_MIN = 900_000_000;
 
@@ -210,6 +223,8 @@ export interface IosSelectedUnderCombo {
 }
 
 export interface IosComboRedemption {
+  balanceId?: number | null;
+  redeemSession?: boolean;
   comboName: string;
   deductedBucket: string;
   typeConversionSurcharge: number;
@@ -423,13 +438,19 @@ export interface IosBookingItem {
     expiryState?: ComboExpiryState;
   };
   comboWallets?: IosCustomerComboWalletItem[];
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
   diamondBalance?: number;
   debtAmount?: number;
   storeId?: number;
   branchCode?: string;
   branchName?: string;
+  bookingDateYmd?: string;
   lastVisitDate?: string;
   lashHistory?: LashHistoryItem[];
+  cvlNotes?: IosCustomerNoteItem[];
   isSimulationBooking?: boolean;
   isSimulationDraftBooking?: boolean;
   simulationAttemptCount?: number;
@@ -502,7 +523,14 @@ export interface IosBookingItem {
     bankTransferRef?: string;
     posTransactionId?: string;
     legacySyncedAt?: string;
+    previousPaidGrandTotal?: number;
+    previousPaymentMethod?: IosPaymentMethod;
+    previousPaymentBreakdown?: IosPaymentBreakdown;
+    lastAdjustmentMode?: IosPostCheckoutPaymentMode;
+    lastAdjustmentDeltaAmount?: number;
   };
+  pendingPostCheckoutAdjustment?: IosPostCheckoutPendingDraft | null;
+  postCheckoutAdjustments?: IosPostCheckoutAdjustmentEntry[];
 }
 
 export interface IosBookingListQuery {
@@ -556,6 +584,9 @@ export type IosBookingActionType =
   | 'UPDATE_CUSTOMER_AVATAR'
   | 'RESET_DEMO'
   | 'REVERT_TO_INCOMING'
+  | 'SUBMIT_POST_CHECKOUT_ADJUSTMENT'
+  | 'APPROVE_POST_CHECKOUT_ADJUSTMENT'
+  | 'REJECT_POST_CHECKOUT_ADJUSTMENT'
   | 'SIM_REVERT_CONSULTATION'
   | 'SIM_RESET_TO_INCOMING'
   | 'SIM_FAST_FORWARD_TO_UPSELL';
@@ -1198,14 +1229,16 @@ function isBookingAssignedToStaff(b: IosBookingItem, activeStaffId: number): boo
 }
 
 /**
- * Strict CVL (Chuyên Viên Tự Chủ) Customer Visibility Filter (Kinh Thánh mOS Điều răn UI-010):
+ * Strict CVL (Chuyên Viên Tự Chủ) Customer Visibility Filter (Kinh Thánh mOS Điều răn UI-010 v1.4.0):
  * CVL is strictly forbidden from viewing customers assigned to other Chuyên Viên.
  * CVL may ONLY view:
  * 1. Customers booked/assigned/checked-in/checked-out by this CVL.
- * 2. Exactly ONE unassigned lobby queue customer at the head of the queue (Đầu tua):
- *    - Prioritizing any late unassigned INCOMING customer (today, start time < now, not yet arrived),
- *      followed by the customer with the earliest scheduled start time.
- *    - Never showing 2 or more unassigned queue customers (MOS-BUG-227).
+ * 2. Unassigned lobby queue customers at the head of the queue (Đầu tua):
+ *    - ALL unassigned customers in the earliest not-yet-late time slot (2+ customers booked in the same slot
+ *      are all shown).
+ *    - PLUS every late unassigned INCOMING customer (today, start time < now, not yet arrived). A late customer
+ *      automatically opens the next head slot for the CVL, so the CVL is never blocked by a no-show.
+ *    - Never any customer beyond the next upcoming slot.
  */
 export function filterBookingsForCvlScope<T extends IosBookingItem>(
   bookings: T[],
@@ -1238,24 +1271,24 @@ export function filterBookingsForCvlScope<T extends IosBookingItem>(
     })
     .filter((item): item is { index: number; startMinutes: number | null; isLate: boolean } => item !== null);
 
-  // Sort unassigned candidates to strictly pick the single head customer of the queue (Đầu tua):
-  // 1. Late customers come first
-  // 2. Earlier start time comes first
-  // 3. Original order (index) as tie-breaker
-  unassignedCandidates.sort((a, b) => {
-    if (a.isLate && !b.isLate) return -1;
-    if (!a.isLate && b.isLate) return 1;
-    if (a.startMinutes !== null && b.startMinutes !== null) {
-      if (a.startMinutes !== b.startMinutes) return a.startMinutes - b.startMinutes;
-    } else if (a.startMinutes !== null && b.startMinutes === null) {
-      return -1;
-    } else if (a.startMinutes === null && b.startMinutes !== null) {
-      return 1;
-    }
-    return a.index - b.index;
-  });
+  // Head slot = earliest start time among NOT-late candidates; every candidate in that slot is shown.
+  const nonLateCandidates = unassignedCandidates.filter((c) => !c.isLate);
+  const nonLateStartMinutes = nonLateCandidates.map((c) => c.startMinutes).filter((m): m is number => m !== null);
+  const headSlotMinutes = nonLateStartMinutes.length > 0 ? Math.min(...nonLateStartMinutes) : null;
+  // Fallback when no candidate has a parseable start time: show the first one in original order.
+  const fallbackHeadIndex =
+    headSlotMinutes === null && nonLateCandidates.length > 0 ? nonLateCandidates[0].index : null;
 
-  const headUnassignedIndex = unassignedCandidates.length > 0 ? unassignedCandidates[0].index : null;
+  const includedUnassignedIndexes = new Set<number>();
+  for (const c of unassignedCandidates) {
+    if (c.isLate) {
+      includedUnassignedIndexes.add(c.index);
+    } else if (headSlotMinutes !== null) {
+      if (c.startMinutes === headSlotMinutes) includedUnassignedIndexes.add(c.index);
+    } else if (c.index === fallbackHeadIndex) {
+      includedUnassignedIndexes.add(c.index);
+    }
+  }
 
   const result: T[] = [];
 
@@ -1271,7 +1304,7 @@ export function filterBookingsForCvlScope<T extends IosBookingItem>(
       continue;
     }
 
-    if (headUnassignedIndex !== null && i === headUnassignedIndex) {
+    if (includedUnassignedIndexes.has(i)) {
       result.push({
         ...b,
         isUnassignedQueue: true,
@@ -1323,12 +1356,12 @@ export function isDoneBookingPendingCheckout(b: Pick<IosBookingItem, 'orderState
   return state === 'CheckOut' || state === 'Check-out' || settlement === 'PENDING_COUNTER_SETTLEMENT';
 }
 
-export function sortDoneBookingsWithCheckoutFirst<T extends Pick<IosBookingItem, 'orderState' | 'billing'>>(
-  bookings: T[]
-): T[] {
+export function sortDoneBookingsWithCheckoutFirst<
+  T extends Pick<IosBookingItem, 'orderState' | 'billing' | 'pendingPostCheckoutAdjustment'>,
+>(bookings: T[]): T[] {
   return [...bookings].sort((a, b) => {
-    const aPending = isDoneBookingPendingCheckout(a) ? 0 : 1;
-    const bPending = isDoneBookingPendingCheckout(b) ? 0 : 1;
+    const aPending = isDoneBookingPendingCheckout(a) || isDoneBookingPendingPostCheckoutAdjustment(a) ? 0 : 1;
+    const bPending = isDoneBookingPendingCheckout(b) || isDoneBookingPendingPostCheckoutAdjustment(b) ? 0 : 1;
     return aPending - bPending;
   });
 }
@@ -1543,7 +1576,43 @@ export function formatIosPaymentMethodLabel(params: {
   return 'Chuyển khoản QR (Bank)';
 }
 
-export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS';
+export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS' | 'NOTES';
+
+export type IosCustomerNoteSource = 'CVL' | 'CRM';
+
+export interface IosCustomerNoteItem {
+  id: number;
+  customerId: number;
+  note: string;
+  noteFieldKey: string;
+  source: IosCustomerNoteSource;
+  isSticky: boolean;
+  isIssue?: boolean;
+  dateCreated: string;
+  dateDisplay: string;
+  timeDisplay: string;
+  daysAgoLabel: string;
+  staffId?: number;
+  staffName: string;
+  staffAvatar?: string | null;
+  branchName?: string | null;
+  orderId?: number | null;
+  orderNumber?: string | null;
+}
+
+export interface IosCreateCustomerNotePayload {
+  note: string;
+  tags?: string[];
+  isSticky?: boolean;
+  bookingId?: number;
+  simulationMode?: boolean;
+}
+
+export interface IosCreateCustomerNoteResponse {
+  success: boolean;
+  note?: IosCustomerNoteItem;
+  error?: string;
+}
 
 export interface IosCustomerHistoryLashSpec {
   serviceName?: string;
@@ -1646,5 +1715,6 @@ export interface IosCustomerHistoryResponse {
   payments: IosCustomerHistoryVisitItem[];
   fixVisits: IosCustomerHistoryVisitItem[];
   diamondTransactions: IosCustomerDiamondTxnItem[];
+  notes?: IosCustomerNoteItem[];
   error?: string;
 }

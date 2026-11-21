@@ -54,10 +54,14 @@ export function useUpsellComboExpiry({
     mode: ComboTodayUsageMode;
   } | null>(null);
 
-  const upperTodayUsageMode: ComboTodayUsageMode =
+  const rawUpperMode: ComboTodayUsageMode =
     manualUpperMode && manualUpperMode.bookingId === booking?.id ? manualUpperMode.mode : defaultUpperMode;
-  const underTodayUsageMode: ComboTodayUsageMode =
+  const upperTodayUsageMode: ComboTodayUsageMode =
+    !isExistingComboLive && rawUpperMode === 'USE_OLD_COMBO' ? defaultUpperMode : rawUpperMode;
+  const rawUnderMode: ComboTodayUsageMode =
     manualUnderMode && manualUnderMode.bookingId === booking?.id ? manualUnderMode.mode : defaultUnderMode;
+  const underTodayUsageMode: ComboTodayUsageMode =
+    !hasUnderMinkComboActive && rawUnderMode === 'USE_OLD_COMBO' ? defaultUnderMode : rawUnderMode;
 
   const setUpperTodayUsageMode = useCallback(
     (mode: ComboTodayUsageMode) => {

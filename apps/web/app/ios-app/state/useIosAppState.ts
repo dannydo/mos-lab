@@ -31,6 +31,7 @@ import {
   calculateActorTipBreakdown,
 } from './useIosBillingCheckout';
 import type { ActorTipBreakdown } from './useIosBillingCheckout';
+import type { PendingReferral } from '../components/screens/checkin/NewCustomerReferralModal';
 import { useIosSimulationMode, IOS_SIM_MODE_SESSION_KEY } from './useIosSimulationMode';
 
 export {
@@ -74,6 +75,8 @@ export function useIosAppState(
   const [simulationActorStaffName, setSimulationActorStaffName] = useState<string | undefined>(undefined);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
   const [consultationReturnStep, setConsultationReturnStep] = useState<number | null>(null);
+  // ── Referral Diamond State ────────────────────────────────────────────────
+  const [pendingReferral, setPendingReferral] = useState<PendingReferral | null>(null);
 
   const handleOpenConsultation = useCallback(
     (returnStep?: number) => {
@@ -473,6 +476,7 @@ export function useIosAppState(
     handleCheckIn,
     handleSaveConsultation,
     handleAutoSaveConsultationDraft,
+    handleSelectComboWallet,
     handleAssignStaff,
     handleTransferToCv,
   } = useIosConsultationAndCheckIn({
@@ -520,6 +524,7 @@ export function useIosAppState(
     handleGoToBilling,
     handleSavePromotion,
     handleUpdateCartProducts,
+    handleUpdateCombos,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,
@@ -535,6 +540,8 @@ export function useIosAppState(
     refreshDb,
     setCurrentStep,
     setBookingSegment,
+    pendingReferral,
+    onReferralGranted: () => setPendingReferral(null),
   });
 
   return {
@@ -589,6 +596,7 @@ export function useIosAppState(
     handleGoToBilling,
     handleSavePromotion,
     handleUpdateCartProducts,
+    handleUpdateCombos,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,
@@ -602,8 +610,11 @@ export function useIosAppState(
     availableBranches: IOS_AVAILABLE_BRANCHES,
     handleUpdateCustomerAvatar,
     handleAutoSaveConsultationDraft,
+    handleSelectComboWallet,
     simulationActorStaffName,
     loggedInUser,
+    pendingReferral,
+    setPendingReferral,
     ...simulation,
   };
 }

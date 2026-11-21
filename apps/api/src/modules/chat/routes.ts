@@ -155,6 +155,7 @@ import {
   filterAndFormatConversationsForUser,
   filterTasksForUser,
 } from './chat-format.service.js';
+import { createCoalescedBulkSync } from './chat-bulk-sync.js';
 
 export {
   decodeAndValidateChatFile,
@@ -499,6 +500,7 @@ let memoryStaffCache: {
 } | null = null;
 
 let writeChain: Promise<void> = Promise.resolve();
+
 let jsonBackupChain: Promise<void> = Promise.resolve();
 const loadChatStateInFlightByFastify = new WeakMap<
   FastifyInstance,
@@ -512,6 +514,11 @@ const loadChatStateInFlightByFastify = new WeakMap<
   }>
 >();
 const loadStaffInFlightByFastify = new WeakMap<FastifyInstance, Promise<MosChatStaffMember[]>>();
+const MAX_UNREAD_SUMMARY_CACHE_ENTRIES = 300;
+const unreadSummaryCacheByFastify = new WeakMap<
+  FastifyInstance,
+  Map<string, { version: number; staffFetchedAt: number; payload: MosChatUnreadSummaryResponse }>
+>();
 
 function trimConversationsRetention(conversations: MosChatConversation[]): MosChatConversation[] {
   return conversations.map((c) => {
@@ -1176,6 +1183,35 @@ function scheduleTasksJsonPersist(fastify: FastifyInstance, snapshot: MosChatTas
   tasksJsonPersistTimeout.unref?.();
 }
 
+function scheduleBulkConversationsSync(fastify: FastifyInstance): void {
+  if (!bulkConversationsSyncRunner) {
+    bulkConversationsSyncRunner = createCoalescedBulkSync(
+      async () => {
+        const latest = memoryChatCache?.conversations;
+        if (latest) await syncConversationsToRelationalDb(fastify, latest);
+      },
+      (err) => fastify.log.error(err, 'bulk conversations sync error:')
+    );
+  }
+  bulkConversationsSyncRunner();
+}
+
+function scheduleBulkTasksSync(fastify: FastifyInstance): void {
+  if (!bulkTasksSyncRunner) {
+    bulkTasksSyncRunner = createCoalescedBulkSync(
+      async () => {
+        const latest = memoryChatCache?.tasks;
+        if (latest) await syncTasksToRelationalDb(fastify, latest);
+      },
+      (err) => fastify.log.error(err, 'bulk tasks sync error:')
+    );
+  }
+  bulkTasksSyncRunner();
+}
+
+let bulkConversationsSyncRunner: (() => void) | null = null;
+let bulkTasksSyncRunner: (() => void) | null = null;
+
 async function saveConversations(
   fastify: FastifyInstance,
   conversations: MosChatConversation[],
@@ -1188,6 +1224,8 @@ async function saveConversations(
       reply: MosChatThreadReply;
     };
     deletedMessageIds?: string[];
+    /** Persist the full relational re-sync in the background lane (does not block or queue behind user writes). */
+    bulkBackground?: boolean;
   }
 ) {
   const trimmed = trimConversationsRetention(conversations);
@@ -1200,6 +1238,10 @@ async function saveConversations(
   invalidateNotificationsCache();
   // Keep relational DB O(1) upserts on the critical request path and debounce the 2.5MB crmConfig snapshot backup asynchronously.
   scheduleConversationsJsonPersist(fastify, trimmed);
+  if (hint?.bulkBackground) {
+    scheduleBulkConversationsSync(fastify);
+    return;
+  }
   writeChain = writeChain
     .then(async () => {
       if (hint?.deletedMessageIds && hint.deletedMessageIds.length > 0) {
@@ -1254,6 +1296,8 @@ async function saveTasks(
   hint?: {
     touchedTask?: MosChatTaskItem;
     deletedTaskId?: string;
+    /** Persist the full relational re-sync in the background lane (does not block or queue behind user writes). */
+    bulkBackground?: boolean;
   }
 ) {
   const trimmed = trimTasksRetention(tasks, memoryChatCache?.conversations);
@@ -1265,6 +1309,10 @@ async function saveTasks(
   }
   invalidateNotificationsCache();
   scheduleTasksJsonPersist(fastify, trimmed);
+  if (hint?.bulkBackground) {
+    scheduleBulkTasksSync(fastify);
+    return;
+  }
   writeChain = writeChain
     .then(async () => {
       if (hint?.deletedTaskId) {
@@ -1462,7 +1510,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           tasks
         );
         if (missionMutated) {
-          await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+          // Polling endpoint: persist in the background lane so reads/writes never queue behind a full re-sync.
+          await Promise.all([
+            saveConversations(fastify, conversations, { bulkBackground: true }),
+            saveTasks(fastify, tasks, { bulkBackground: true }),
+          ]);
         }
         const version = memoryChatCache?.version || state.version;
 
@@ -1545,14 +1597,48 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const state = await loadChatState(fastify);
         const { conversations, tasks, accessConfig, userPrefsByUserKey } = state;
         const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const stateVersion = memoryChatCache?.version || state.version;
+        const staffFetchedAt = memoryStaffCache?.fetchedAt || 0;
+        const summaryCacheKey = `${Number(user?.id || 0)}:${String(user?.username || '').toLowerCase()}:${String(user?.role || '').toLowerCase()}`;
+
+        let fastifySummaryCache = unreadSummaryCacheByFastify.get(fastify);
+        if (!fastifySummaryCache) {
+          fastifySummaryCache = new Map();
+          unreadSummaryCacheByFastify.set(fastify, fastifySummaryCache);
+        }
+        const cachedSummary = fastifySummaryCache.get(summaryCacheKey);
+        if (
+          memoryChatCache &&
+          cachedSummary &&
+          cachedSummary.version === stateVersion &&
+          cachedSummary.staffFetchedAt === staffFetchedAt
+        ) {
+          return cachedSummary.payload;
+        }
+
+        const setSummaryCache = (payload: MosChatUnreadSummaryResponse): MosChatUnreadSummaryResponse => {
+          if (memoryChatCache && fastifySummaryCache) {
+            if (fastifySummaryCache.size >= MAX_UNREAD_SUMMARY_CACHE_ENTRIES) {
+              const oldestKey = fastifySummaryCache.keys().next().value;
+              if (oldestKey !== undefined) fastifySummaryCache.delete(oldestKey);
+            }
+            fastifySummaryCache.set(summaryCacheKey, {
+              version: stateVersion,
+              staffFetchedAt,
+              payload,
+            });
+          }
+          return payload;
+        };
+
         const canAccess = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
         if (!canAccess) {
-          return {
+          return setSummaryCache({
             unreadCount: 0,
             urgentTaskCount: 0,
             hasUnread: false,
-            version: memoryChatCache?.version || state.version,
-          } satisfies MosChatUnreadSummaryResponse;
+            version: stateVersion,
+          });
         }
 
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
@@ -1576,13 +1662,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           (t) => !t.done && (t.priority === 'URGENT' || t.priority === 'HIGH')
         ).length;
 
-        return {
+        return setSummaryCache({
           unreadCount: totalUnread,
           urgentTaskCount,
           hasUnread: totalUnread > 0 || urgentTaskCount > 0,
-          version: memoryChatCache?.version || state.version,
+          version: stateVersion,
           lastMessageAt,
-        } satisfies MosChatUnreadSummaryResponse;
+        });
       } catch (err: SafeAny) {
         fastify.log.error('Chat unread-summary error:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể đếm tin nhắn chưa đọc' });
@@ -5496,7 +5582,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           tasks
         );
         if (didSyncMissions) {
-          await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+          // Polling endpoint: persist in the background lane so reads/writes never queue behind a full re-sync.
+          await Promise.all([
+            saveConversations(fastify, conversations, { bulkBackground: true }),
+            saveTasks(fastify, tasks, { bulkBackground: true }),
+          ]);
         }
 
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);

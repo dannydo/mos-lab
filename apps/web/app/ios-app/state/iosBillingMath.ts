@@ -1,10 +1,13 @@
 import {
   calculateCvSerumTierBonus,
+  calculateDualComboTierBonus,
   calculateIosItemizedPromotionDiscounts,
+  canDirectlySettleCounterPayment,
+  resolveActiveBookingComboWallets,
   resolveEffectiveServiceTotal,
   type CvToCvPlusRequirements,
 } from '@mos-lab/shared';
-import type { IosPromotionOption, IosPromotionTargetScope } from '@mos-lab/shared';
+import type { IosPromotionOption, IosPromotionTargetScope, IosSettlementStatus } from '@mos-lab/shared';
 import type { BookingItem } from './mockData';
 
 export type CartProductItem = NonNullable<BookingItem['cartProducts']>[number];
@@ -28,6 +31,11 @@ export function computeFreshBillingLineTotals(
     | 'attributes'
     | 'comboLiveStatus'
     | 'underMinkComboStatus'
+    | 'comboWallets'
+    | 'selectedUpperComboBalanceId'
+    | 'selectedUnderComboBalanceId'
+    | 'skipUpperCombo'
+    | 'skipUnderCombo'
     | 'cartProducts'
     | 'selectedCombo'
     | 'selectedUnderCombo'
@@ -61,11 +69,19 @@ export function computeFreshBillingLineTotals(
   unifiedOrderPromotionId: number | null;
   primaryPromotion: IosPromotionOption | null;
 } {
-  const hasUnderMinkComboActive = Boolean(
-    booking.underMinkComboStatus?.hasUnderCombo && (booking.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const resolvedWallets = resolveActiveBookingComboWallets({
+    comboWallets: booking.comboWallets,
+    comboLiveStatus: booking.comboLiveStatus,
+    underMinkComboStatus: booking.underMinkComboStatus,
+    selectedUpperComboBalanceId: booking.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: booking.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(booking.skipUpperCombo),
+    skipUnderCombo: Boolean(booking.skipUnderCombo),
+    bookedServiceName: booking.serviceName,
+  });
+  const hasUnderMinkComboActive = resolvedWallets.isRedeemingUnderToday;
   const shouldUseOldUpperCombo = Boolean(
-    booking.comboLiveStatus?.isComboLive &&
+    resolvedWallets.isRedeemingUpperToday &&
     (!booking.selectedCombo ||
       !booking.selectedCombo.todayUsageMode ||
       booking.selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
@@ -88,10 +104,13 @@ export function computeFreshBillingLineTotals(
   const comboTotal = upperComboTotal + underComboTotal;
   const subtotal = serviceTotal + comboTotal + productTotal;
   const vatRate = booking.billing?.vatRate ?? 0.08;
+  const isSessionWaivedIntoNewCombo = Boolean(
+    booking.selectedCombo && booking.selectedCombo.todaySingleServiceWaived !== false
+  );
   const itemized = calculateIosItemizedPromotionDiscounts({
     serviceAmount: serviceTotal,
     upgradeAmount: booking.upgradePrice || 0,
-    servicePromotion: booking.servicePromotion,
+    servicePromotion: isSessionWaivedIntoNewCombo ? null : booking.servicePromotion,
     comboAmount: upperComboTotal,
     comboPromotion: booking.comboPromotion,
     underComboAmount: underComboTotal,
@@ -101,7 +120,7 @@ export function computeFreshBillingLineTotals(
       amount: Number(p.price || 0) * Number(p.quantity || 1),
       promotion: p.appliedPromotion ?? undefined,
     })),
-    fallbackOrderPromotion: booking.appliedPromotion,
+    fallbackOrderPromotion: isSessionWaivedIntoNewCombo ? null : booking.appliedPromotion,
     vatRate,
   });
 
@@ -135,9 +154,14 @@ export function applyTargetPromotionToBookingDraft(
   target?: SavePromotionTarget
 ): { draft: BookingItem; updatedCartProducts?: CartProductItem[] } {
   if (target?.scope === 'service') {
+    const clearFallbackOrderPromo =
+      prev.appliedPromotion && !prev.cartProducts?.some((p) => p.appliedPromotion)
+        ? { promotionId: null, appliedPromotion: null }
+        : {};
     return {
       draft: {
         ...prev,
+        ...clearFallbackOrderPromo,
         servicePromotionId: promotion?.promotionId ?? null,
         servicePromotion: promotion,
       },
@@ -267,5 +291,137 @@ export function applyCartProductsUpdateToBookingDraft(
         }
       : {}),
     billing: nextBilling,
+  };
+}
+
+export function applyCombosUpdateToBookingDraft(
+  prev: BookingItem,
+  payload: {
+    selectedCombo: BookingItem['selectedCombo'];
+    selectedUnderCombo: BookingItem['selectedUnderCombo'];
+    comboRedemption?: BookingItem['comboRedemption'];
+  },
+  actorTier?: string,
+  cvPlusRules?: Partial<CvToCvPlusRequirements>
+): BookingItem {
+  const dualBonus = calculateDualComboTierBonus(
+    payload.selectedCombo?.price ?? 0,
+    payload.selectedUnderCombo?.price ?? 0,
+    cvPlusRules
+  );
+  const isActorCc = actorTier === 'CC';
+  const shouldCreditComboToTech = !isActorCc || Boolean(prev.isTrainingCvlOrder);
+  const resolvedCombo = payload.selectedCombo
+    ? { ...payload.selectedCombo, bonus: shouldCreditComboToTech ? dualBonus.upperBonus : 0 }
+    : null;
+  const resolvedUnderCombo = payload.selectedUnderCombo
+    ? { ...payload.selectedUnderCombo, bonus: shouldCreditComboToTech ? dualBonus.underBonus : 0 }
+    : null;
+
+  const draft: BookingItem = {
+    ...prev,
+    selectedCombo: resolvedCombo,
+    selectedUnderCombo: resolvedUnderCombo,
+    comboRedemption: payload.comboRedemption !== undefined ? payload.comboRedemption : prev.comboRedemption,
+    _localComboUpdatedAt: Date.now(),
+  };
+  const nextBilling = buildRecomputedCheckoutBilling(draft);
+  const comboBonusAmount = shouldCreditComboToTech ? dualBonus.totalBonus : 0;
+  const serumBonusAmount = prev.cvRewardBreakdown?.serumBonusAmount ?? 0;
+  return {
+    ...draft,
+    ...(prev.cvRewardBreakdown
+      ? {
+          cvRewardBreakdown: {
+            ...prev.cvRewardBreakdown,
+            comboBonusAmount,
+            totalOrderBonusForCheckoutStaff: comboBonusAmount + serumBonusAmount,
+          },
+        }
+      : {}),
+    billing: nextBilling,
+  };
+}
+
+export function buildCheckoutVietQrInfo(params: {
+  booking?: BookingItem | null;
+  tipAmount: number;
+  vietQrTransferAmount: number;
+}) {
+  const branchCode = params.booking?.branchCode || 'DT';
+  const orderNumericCode = params.booking?.orderNumber?.replace(/\D/g, '') || String(params.booking?.id || '609609');
+  const tipCode =
+    params.tipAmount > 0
+      ? params.tipAmount >= 1000
+        ? `${Math.round(params.tipAmount / 1000)}K`
+        : String(params.tipAmount)
+      : '0';
+  const qrTransferContent = `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
+  const vietQrUrl = `https://img.vietqr.io/image/VCB-1024731897-qr_only.png?amount=${params.vietQrTransferAmount}&addInfo=${encodeURIComponent(
+    qrTransferContent
+  )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
+  return { branchCode, qrTransferContent, vietQrUrl };
+}
+
+export function buildRecordedTipBillingSnapshot(
+  prev: BookingItem,
+  tipAmount: number,
+  actorTier?: string,
+  completedAt: string = new Date().toISOString()
+) {
+  const cvShare = Math.round(tipAmount * 0.7);
+  const checkInShare = Math.round(tipAmount * 0.1);
+  const checkOutShare = Math.round(tipAmount * 0.1);
+  const ccShare = checkInShare + checkOutShare;
+  const {
+    serviceTotal: freshServiceTotal,
+    comboTotal: freshComboTotal,
+    productTotal: freshProductTotal,
+    subtotal,
+    promotionDiscountAmount,
+    subtotalAfterDiscount,
+    vatRate,
+    vatAmount,
+    creditEligiblePayableWithVat,
+    hasAnyCreditRestrictedItem,
+    isFullCreditLocked,
+  } = computeFreshBillingLineTotals(prev);
+  const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
+  const rawDiamondUsed = prev.billing?.diamondUsed ?? 0;
+  const clampedDiamondUsed = isFullCreditLocked
+    ? 0
+    : hasAnyCreditRestrictedItem
+      ? Math.max(0, Math.min(rawDiamondUsed, maxEligibleDiamonds))
+      : rawDiamondUsed;
+  const diamondDiscountAmount = isFullCreditLocked
+    ? 0
+    : hasAnyCreditRestrictedItem
+      ? clampedDiamondUsed * 1000
+      : (prev.billing?.diamondDiscountAmount ?? rawDiamondUsed * 1000);
+  const grandTotal = Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
+  const method = prev.billing?.paymentMethod || 'VIETQR';
+  const optimisticSettlement: IosSettlementStatus =
+    grandTotal <= 0 || method === 'VIETQR' || canDirectlySettleCounterPayment(actorTier)
+      ? 'SETTLED_COMPLETED'
+      : 'PENDING_COUNTER_SETTLEMENT';
+
+  return {
+    ...(prev.billing || {}),
+    subtotal,
+    serviceTotal: freshServiceTotal,
+    comboTotal: freshComboTotal,
+    productTotal: freshProductTotal,
+    promotionDiscountAmount,
+    paymentMethod: method,
+    settlementStatus: optimisticSettlement,
+    vatRate,
+    vatAmount,
+    tipAmount,
+    tipCvShare: cvShare,
+    tipCheckInShare: checkInShare,
+    tipCheckOutShare: checkOutShare,
+    tipCcShare: ccShare,
+    grandTotal,
+    completedAt,
   };
 }

@@ -176,19 +176,19 @@ export function SimulationAttemptEditModal({
 
   const hasCustomSavedCombo = useMemo(() => {
     if (!attempt.selectedComboName && !(attempt.selectedComboPrice > 0)) return false;
-    return !COMMON_COMBOS.some(
-      (c) =>
-        (c.price === 0 ? !attempt.selectedComboName && attempt.selectedComboPrice === 0 : c.name === attempt.selectedComboName && c.price === attempt.selectedComboPrice)
+    return !COMMON_COMBOS.some((c) =>
+      c.price === 0
+        ? !attempt.selectedComboName && attempt.selectedComboPrice === 0
+        : c.name === attempt.selectedComboName && c.price === attempt.selectedComboPrice
     );
   }, [attempt.selectedComboName, attempt.selectedComboPrice]);
 
   const hasCustomSavedUnderCombo = useMemo(() => {
     if (!attempt.selectedUnderComboName && !(attempt.selectedUnderComboPrice > 0)) return false;
-    return !COMMON_UNDER_COMBOS.some(
-      (uc) =>
-        (uc.price === 0
-          ? !attempt.selectedUnderComboName && attempt.selectedUnderComboPrice === 0
-          : uc.name === attempt.selectedUnderComboName && uc.price === attempt.selectedUnderComboPrice)
+    return !COMMON_UNDER_COMBOS.some((uc) =>
+      uc.price === 0
+        ? !attempt.selectedUnderComboName && attempt.selectedUnderComboPrice === 0
+        : uc.name === attempt.selectedUnderComboName && uc.price === attempt.selectedUnderComboPrice
     );
   }, [attempt.selectedUnderComboName, attempt.selectedUnderComboPrice]);
 
@@ -217,16 +217,17 @@ export function SimulationAttemptEditModal({
   };
 
   const handleQuantityChange = (prod: IosProductCatalogItem, delta: number) => {
-    setUpsellProducts((prev) =>
-      prev
-        .map((p) => {
-          if (!matchesCatalogProduct(p, prod)) return p;
-          const nextQ = p.quantity + delta;
-          if (nextQ <= 0) return null;
-          const unitPrice = resolveItemUnitPrice(p);
-          return { ...p, quantity: nextQ, unitPrice, totalPrice: unitPrice * nextQ };
-        })
-        .filter(Boolean) as IosSimulationUpsellProductItem[]
+    setUpsellProducts(
+      (prev) =>
+        prev
+          .map((p) => {
+            if (!matchesCatalogProduct(p, prod)) return p;
+            const nextQ = p.quantity + delta;
+            if (nextQ <= 0) return null;
+            const unitPrice = resolveItemUnitPrice(p);
+            return { ...p, quantity: nextQ, unitPrice, totalPrice: unitPrice * nextQ };
+          })
+          .filter(Boolean) as IosSimulationUpsellProductItem[]
     );
   };
 
@@ -649,7 +650,11 @@ export function SimulationAttemptEditModal({
               disabled={isSaving || isBusy}
               className="py-2 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[12px] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-md"
             >
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              {isSaving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+              )}
               <span>{isSaving ? 'Đang lưu...' : 'Lưu kịch bản'}</span>
             </button>
           </div>

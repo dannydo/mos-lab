@@ -238,13 +238,35 @@ function resolveSinglePromoSlot(
   return { promotionId, appliedPromotion };
 }
 
+function enrichZeroRuleCampaignPromo(
+  promo: IosPromotionOption | null,
+  pricingContext?: { servicePrice?: number; osDiscountAmount?: number | null }
+): IosPromotionOption | null {
+  if (!promo) return null;
+  const hasExplicitRule =
+    Number(promo.discountPercentage || 0) > 0 ||
+    Number(promo.discountAmount || 0) > 0 ||
+    Number(promo.exactlyAmount || 0) > 0;
+  if (hasExplicitRule) return promo;
+  const servicePrice = Number(pricingContext?.servicePrice || 0);
+  const osDiscount = Number(pricingContext?.osDiscountAmount || 0);
+  if (osDiscount > 0 && servicePrice > osDiscount) {
+    return {
+      ...promo,
+      exactlyAmount: Math.max(0, Math.round(servicePrice - osDiscount)),
+    };
+  }
+  return promo;
+}
+
 export function resolveItemizedBookingPromotions(
   override: Record<string, SafeAny>,
   legacyOrderPromotionId: unknown,
   legacyServicePromotionId: unknown,
   legacyProductPromotionMap: Record<number, number> | undefined,
   cartProducts: import('@mos-lab/shared').IosCartProductItem[],
-  promotionsById?: Map<number, IosPromotionOption>
+  promotionsById?: Map<number, IosPromotionOption>,
+  pricingContext?: { servicePrice?: number; osDiscountAmount?: number | null }
 ): {
   promotionId: number | null;
   appliedPromotion: IosPromotionOption | null;
@@ -266,19 +288,29 @@ export function resolveItemizedBookingPromotions(
   const hasAnyItemizedOverride =
     hasServiceOverride || hasComboOverride || hasUnderComboOverride || hasProductPromoOverride;
 
-  const { promotionId: legacyOrderPromoId, appliedPromotion: legacyOrderPromo } = resolveBookingPromotion(
+  const { promotionId: legacyOrderPromoId, appliedPromotion: rawLegacyOrderPromo } = resolveBookingPromotion(
     override,
     legacyOrderPromotionId,
     promotionsById
   );
+  const hasExplicitOrderOverride = override.promotionId !== undefined || override.billing?.promotionId !== undefined;
+  const legacyOrderPromo = !hasExplicitOrderOverride
+    ? enrichZeroRuleCampaignPromo(rawLegacyOrderPromo, pricingContext)
+    : rawLegacyOrderPromo;
 
-  const serviceResolved = resolveSinglePromoSlot(
+  const rawServiceResolved = resolveSinglePromoSlot(
     hasServiceOverride,
     override.servicePromotionId ?? override.servicePromotion?.promotionId,
     override.servicePromotion,
     hasAnyItemizedOverride ? null : legacyServicePromotionId,
     promotionsById
   );
+  const serviceResolved = {
+    ...rawServiceResolved,
+    appliedPromotion: !hasServiceOverride
+      ? enrichZeroRuleCampaignPromo(rawServiceResolved.appliedPromotion, pricingContext)
+      : rawServiceResolved.appliedPromotion,
+  };
 
   const hydratedCartProducts = cartProducts.map((item) => {
     const hasExplicitItem = item.promotionId !== undefined || item.appliedPromotion !== undefined;
@@ -458,6 +490,7 @@ export function resolveLegacyPromotionDiscountsAndCredits(params: {
   underComboPromotion?: IosPromotionOption | null;
   appliedPromotion?: IosPromotionOption | null;
   effectivePromotionId: number | null;
+  isSessionWaivedIntoNewCombo?: boolean;
   billing?: SafeAny;
   rawDiamondCredits: number;
 }) {
@@ -471,17 +504,20 @@ export function resolveLegacyPromotionDiscountsAndCredits(params: {
     servicePromotion = null,
     appliedPromotion = null,
     effectivePromotionId,
+    isSessionWaivedIntoNewCombo = effectiveServiceTotal <= 0 && upperComboPrice > 0,
     billing,
     rawDiamondCredits,
   } = params;
 
-  const hasAnyItemizedPromoObj = Boolean(servicePromotion || cartProducts.some((p) => p.appliedPromotion));
-  const hasAnyPromoObj = hasAnyItemizedPromoObj || Boolean(appliedPromotion);
+  const effectiveServicePromo = isSessionWaivedIntoNewCombo ? null : servicePromotion;
+  const effectiveFallbackOrderPromo = isSessionWaivedIntoNewCombo ? null : appliedPromotion;
+  const hasAnyItemizedPromoObj = Boolean(effectiveServicePromo || cartProducts.some((p) => p.appliedPromotion));
+  const hasAnyPromoObj = hasAnyItemizedPromoObj || Boolean(effectiveFallbackOrderPromo);
 
   const itemizedPromo = calculateIosItemizedPromotionDiscounts({
     serviceAmount: effectiveServiceTotal,
     upgradeAmount: upgradePrice,
-    servicePromotion,
+    servicePromotion: effectiveServicePromo,
     comboAmount: upperComboPrice,
     underComboAmount: underComboPrice,
     products: cartProducts.map((p) => ({
@@ -489,23 +525,35 @@ export function resolveLegacyPromotionDiscountsAndCredits(params: {
       amount: Number(p.price || 0) * Number(p.quantity || 1),
       promotion: p.appliedPromotion ?? undefined,
     })),
-    fallbackOrderPromotion: appliedPromotion,
+    fallbackOrderPromotion: effectiveFallbackOrderPromo,
     vatRate: 0.08,
   });
 
   let serviceDiscount = hasAnyPromoObj
     ? itemizedPromo.serviceDiscount
-    : Math.max(0, Math.round(Number(billing?.serviceDiscountAmount ?? 0)));
+    : !isSessionWaivedIntoNewCombo
+      ? Math.max(0, Math.round(Number(billing?.serviceDiscountAmount ?? 0)))
+      : 0;
   // Không giảm giá cho gói Combo nối mi
   const comboDiscount = 0;
   let productDiscount = hasAnyPromoObj
     ? itemizedPromo.totalProductDiscount
-    : Math.max(0, Math.round(Number(billing?.productDiscountAmount ?? 0)));
+    : !isSessionWaivedIntoNewCombo
+      ? Math.max(0, Math.round(Number(billing?.productDiscountAmount ?? 0)))
+      : 0;
   const orderDiscountTotal = hasAnyPromoObj
     ? itemizedPromo.totalDiscount
-    : Math.max(0, Math.round(Number(billing?.promotionDiscountAmount ?? serviceDiscount + productDiscount)));
+    : !isSessionWaivedIntoNewCombo
+      ? Math.max(0, Math.round(Number(billing?.promotionDiscountAmount ?? serviceDiscount + productDiscount)))
+      : 0;
 
-  if (effectivePromotionId && !hasAnyPromoObj && orderDiscountTotal > 0 && serviceDiscount + productDiscount === 0) {
+  if (
+    !isSessionWaivedIntoNewCombo &&
+    effectivePromotionId &&
+    !hasAnyPromoObj &&
+    orderDiscountTotal > 0 &&
+    serviceDiscount + productDiscount === 0
+  ) {
     if (effectiveServiceTotal > 0) serviceDiscount = Math.min(effectiveServiceTotal, orderDiscountTotal);
     else if (productTotal > 0) productDiscount = Math.min(productTotal, orderDiscountTotal);
   }

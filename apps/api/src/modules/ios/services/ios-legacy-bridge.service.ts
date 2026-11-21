@@ -7,11 +7,30 @@ import { getLegacyPool } from './db-pools.js';
 import { BookingOverrideRecord, LegacySettlementReceipt } from './ios-overrides.service.js';
 import { syncSettledComboExpiryInLegacyDb } from './ios-combo-expiry.service.js';
 import {
+  buildLegacyWalletReconciliationPlan,
+  findAvailableTxForBalanceId,
+  pinSelectedWalletTransactionsBeforeReport,
+  reconcileSelectedWalletDeductionInLegacyDb,
+  refundSkippedWalletDeductionInLegacyDb,
+  resolveEffectiveLegacyWalletFlags,
+  type TargetWalletSlot,
+} from './ios-legacy-wallet-reconciler.service.js';
+import {
   buildLegacyOrderPayloads,
   LegacyOrderCatalogSnapshot,
   resolveLegacyOrderCatalogSnapshot,
   shouldAutoCompleteLegacyOrder,
 } from './ios-legacy-payload.mapper.js';
+
+export {
+  buildLegacyWalletReconciliationPlan,
+  findAvailableTxForBalanceId,
+  pinSelectedWalletTransactionsBeforeReport,
+  reconcileSelectedWalletDeductionInLegacyDb,
+  refundSkippedWalletDeductionInLegacyDb,
+  resolveEffectiveLegacyWalletFlags,
+  type TargetWalletSlot,
+};
 
 export interface LegacyStaffAuthToken {
   authUserId: number;
@@ -401,6 +420,9 @@ export async function settleIosOrderWithLegacyPhp(
       ...body,
     });
 
+    const walletFlags = resolveEffectiveLegacyWalletFlags(mergedOverride);
+    const effectiveComboRedemption = walletFlags.skipUpperCombo ? null : mergedOverride.comboRedemption;
+
     const built = buildLegacyOrderPayloads({
       orderId: bookingId,
       assignedStaffId,
@@ -409,11 +431,11 @@ export async function settleIosOrderWithLegacyPhp(
       attributes: mergedOverride.attributes,
       hasUnderMink: mergedOverride.attributes?.hasUnderMink,
       underMinkServiceType: mergedOverride.attributes?.underMinkServiceType,
-      isComboLive: Boolean(mergedOverride.comboRedemption?.redeemSession),
-      hasUnderMinkCombo: false,
+      isComboLive: walletFlags.effectiveRedeemUpper,
+      hasUnderMinkCombo: walletFlags.effectiveRedeemUnder,
       selectedCombo: mergedOverride.selectedCombo,
       selectedUnderCombo: mergedOverride.selectedUnderCombo,
-      comboRedemption: mergedOverride.comboRedemption,
+      comboRedemption: effectiveComboRedemption,
       cartProducts: mergedOverride.cartProducts,
       servicePrice: mergedOverride.servicePrice,
       serviceName: mergedOverride.serviceName,
@@ -505,7 +527,14 @@ export async function settleIosOrderWithLegacyPhp(
       staffId: checkOutStaffId || checkInStaffId || assignedStaffId,
       selectedCombo: mergedOverride.selectedCombo,
       selectedUnderCombo: mergedOverride.selectedUnderCombo,
-      comboRedemption: mergedOverride.comboRedemption,
+      comboRedemption: effectiveComboRedemption,
+      selectedUpperComboBalanceId: walletFlags.selectedUpperBalanceId,
+      selectedUnderComboBalanceId: walletFlags.selectedUnderBalanceId,
+      skipUpperCombo: walletFlags.skipUpperCombo,
+      skipUnderCombo: walletFlags.skipUnderCombo,
+      hasUnderMinkComboRedemption: walletFlags.effectiveRedeemUnder,
+      upperComboCatalogServiceId: catalog.upperCombo?.serviceId ?? null,
+      underComboCatalogServiceId: catalog.underCombo?.serviceId ?? null,
     });
 
     // Bước 3: Đồng bộ sản phẩm Dưỡng mi Yeppeum vào giỏ order_product (nếu có)
@@ -585,7 +614,37 @@ export async function settleIosOrderWithLegacyPhp(
       };
     }
 
+    const { targetWalletSlots, skippedOrderServiceIds } = buildLegacyWalletReconciliationPlan({
+      mergedOverride,
+      walletFlags,
+      effectiveComboRedemption,
+      activeOrderServiceIds,
+    });
+
+    if (targetWalletSlots.length > 0 && !deps.callEndpoint) {
+      await pinSelectedWalletTransactionsBeforeReport(pool, {
+        customerUserId: catalog.customerUserId,
+        slots: targetWalletSlots,
+      });
+    }
+
     await callPhp('/order/booking/generate/report', withAuth(checkOutStaffId, { order_id: String(bookingId) }));
+
+    if (targetWalletSlots.length > 0 && !deps.callEndpoint) {
+      await reconcileSelectedWalletDeductionInLegacyDb(pool, {
+        bookingId,
+        customerUserId: catalog.customerUserId,
+        staffId: checkOutStaffId || checkInStaffId || assignedStaffId,
+        slots: targetWalletSlots,
+      });
+    }
+    if (skippedOrderServiceIds.length > 0 && !deps.callEndpoint) {
+      await refundSkippedWalletDeductionInLegacyDb(pool, {
+        bookingId,
+        staffId: checkOutStaffId || checkInStaffId || assignedStaffId,
+        skippedOrderServiceIds,
+      });
+    }
 
     // Chờ report_order_service sinh xong rồi gọi lại survey/staff/update để giải ngân staff_bonus technician
     if (hasStaffSurveyAnswers && !deps.callEndpoint) {

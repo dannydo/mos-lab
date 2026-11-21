@@ -12,16 +12,10 @@ import {
   SafeAny,
 } from '@mos-lab/shared';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
+import { getActiveBkTelesalesIds } from './bk-salary.service.js';
 
 const DAY_NAME_LABELS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-function formatIctDateTimeLocal(date: Date): string {
-  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
-  const datePart = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
-  const timePart = date.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
-  return `${datePart} ${timePart}`;
-}
 
 function formatIctDateLocal(date: Date): string {
   if (!(date instanceof Date) || isNaN(date.getTime())) return '';
@@ -58,7 +52,13 @@ function parseChannelsLocal(val?: string | string[] | null): string[] | null {
 function buildChannelFilterLocal(allowedChannels?: string[] | null, columnRef = 'o.booking_channels'): string {
   if (!allowedChannels || allowedChannels.length === 0) return '';
   const escaped = allowedChannels
-    .map((ch) => `'${ch.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')}'`)
+    .map(
+      (ch) =>
+        `'${ch
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9_-]/g, '')}'`
+    )
     .filter((c) => c !== "''")
     .join(', ');
   return escaped ? `AND UPPER(${columnRef}) IN (${escaped})` : '';
@@ -473,7 +473,8 @@ export function aggregateTeamBookingDoneBonusData(params: {
     });
 
     staffBreakdown.sort(
-      (a, b) => b.totalBonus - a.totalBonus || b.singleDoneCount - a.singleDoneCount || a.staffName.localeCompare(b.staffName)
+      (a, b) =>
+        b.totalBonus - a.totalBonus || b.singleDoneCount - a.singleDoneCount || a.staffName.localeCompare(b.staffName)
     );
 
     totalSingleDone += daySingleDone;
@@ -507,7 +508,10 @@ export function aggregateTeamBookingDoneBonusData(params: {
         totalBonus: stat.totalBonus,
       };
     })
-    .sort((a, b) => b.totalBonus - a.totalBonus || b.singleDoneCount - a.singleDoneCount || a.staffName.localeCompare(b.staffName));
+    .sort(
+      (a, b) =>
+        b.totalBonus - a.totalBonus || b.singleDoneCount - a.singleDoneCount || a.staffName.localeCompare(b.staffName)
+    );
 
   const todayResult = dailyResults.find((r) => r.isToday);
   const fallbackTier = resolveTeamBookingDoneTier(0, config.tiers);
@@ -537,6 +541,110 @@ export function aggregateTeamBookingDoneBonusData(params: {
   };
 }
 
+/**
+ * Keeps ACTIVE non-TEAM games aligned with the current live BK_TELESALES roster
+ * so newly added Bookers automatically appear in Team-Booking & Done Bonus tracking.
+ */
+export async function mergeActiveBkTelesalesParticipants(
+  fastify: FastifyInstance,
+  game: {
+    id: number;
+    gameType: string;
+    status: string;
+  },
+  participants: BkGameParticipant[]
+): Promise<BkGameParticipant[]> {
+  if (game.status !== 'ACTIVE' || game.gameType === 'TEAM') {
+    return participants;
+  }
+  const crm = fastify.prisma?.crm;
+  if (!crm?.crmTeam && !crm?.crmConfig) {
+    return participants;
+  }
+
+  let activeStaffIds: number[] = [];
+  try {
+    activeStaffIds = await getActiveBkTelesalesIds(fastify);
+  } catch (err) {
+    fastify.log?.warn?.(err, `Failed to load active BK_TELESALES roster for game ${game.id}`);
+    return participants;
+  }
+
+  const existingIds = new Set(
+    participants.map((p) => Number(p.staffId)).filter((id) => Number.isInteger(id) && id > 0)
+  );
+  const missingIds = activeStaffIds.filter((id) => Number.isInteger(id) && id > 0 && !existingIds.has(id));
+  if (missingIds.length === 0) {
+    return participants;
+  }
+
+  const profileMap = new Map<number, { staffName: string; avatar: string | null }>();
+  if (fastify.prisma?.legacy?.$queryRawUnsafe) {
+    try {
+      const profileRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT
+          up.user_id AS staffId,
+          up.full_name AS staffName,
+          up.avatar AS avatar
+        FROM user_profile up
+        WHERE up.user_id IN (${missingIds.join(',')})
+      `);
+      for (const r of profileRows || []) {
+        const sid = Number(r.staffId);
+        if (sid > 0) {
+          profileMap.set(sid, {
+            staffName: r.staffName ? String(r.staffName) : `Nhân viên #${sid}`,
+            avatar: r.avatar ? String(r.avatar) : null,
+          });
+        }
+      }
+    } catch (err) {
+      fastify.log?.warn?.(err, `Failed to fetch legacy profiles for added BK_TELESALES staff on game ${game.id}`);
+    }
+  }
+
+  const addedParticipants: BkGameParticipant[] = missingIds.map((sid) => {
+    const profile = profileMap.get(sid);
+    return {
+      id: 0,
+      gameId: game.id,
+      staffId: sid,
+      staffName: profile?.staffName || `Nhân viên #${sid}`,
+      avatar: profile?.avatar || null,
+      teamId: null,
+      teamName: null,
+      betAmount: 0,
+      score: 0,
+      rank: null,
+      rewardAmount: 0,
+      penaltyNote: null,
+      status: 'ACTIVE',
+      targetProgressPercent: 0,
+    };
+  });
+
+  if (crm.crmBkGameParticipant?.createMany) {
+    try {
+      await crm.crmBkGameParticipant.createMany({
+        data: addedParticipants.map((p) => ({
+          gameId: game.id,
+          staffId: p.staffId,
+          staffName: p.staffName,
+          avatar: p.avatar,
+          betAmount: 0,
+          score: 0,
+          status: 'ACTIVE',
+        })),
+        skipDuplicates: true,
+      });
+    } catch {
+      // Non-fatal: live computation still includes addedParticipants
+    }
+  }
+
+  return [...participants, ...addedParticipants];
+}
+
 export class BkGameTeamBookingDoneBonusService {
   static async syncAndComputeSummary(
     fastify: FastifyInstance,
@@ -558,8 +666,10 @@ export class BkGameTeamBookingDoneBonusService {
       return null;
     }
 
+    const resolvedParticipants = await mergeActiveBkTelesalesParticipants(fastify, game, participants);
+
     const staffIds = Array.from(
-      new Set(participants.map((p) => Number(p.staffId)).filter((id) => Number.isInteger(id) && id > 0))
+      new Set(resolvedParticipants.map((p) => Number(p.staffId)).filter((id) => Number.isInteger(id) && id > 0))
     );
     if (staffIds.length === 0) {
       return null;
@@ -573,8 +683,10 @@ export class BkGameTeamBookingDoneBonusService {
       return null;
     }
 
-    const startIctDateTime = formatIctDateTimeLocal(game.startDate);
-    const endIctDateTime = formatIctDateTimeLocal(game.endDate);
+    // Daily bonus evaluation covers full calendar days in ICT (startDateStr..endDateStr),
+    // while effectiveWindow narrows booking creation hours within each day.
+    const dayStartIctDateTime = `${startDateStr} 00:00:00`;
+    const dayEndIctDateTime = `${endDateStr} 23:59:59`;
     const allowedChannels = parseChannelsLocal(game.allowedBookingChannels);
     const channelFilter = buildChannelFilterLocal(allowedChannels, 'o.booking_channels');
     const teamKpiConfig = parseTeamKpiConfigLocal(game.teamKpiConfig);
@@ -596,7 +708,7 @@ export class BkGameTeamBookingDoneBonusService {
       });
       if (existingFrozen.length > 0) {
         frozenRecords = existingFrozen.map((r) => {
-          const p = participants.find((x) => x.staffId === r.staffId);
+          const p = resolvedParticipants.find((x) => x.staffId === r.staffId);
           return {
             id: r.id,
             gameId: r.gameId,
@@ -622,16 +734,17 @@ export class BkGameTeamBookingDoneBonusService {
 
     try {
       [bookingRows, completedOrderRows] = await Promise.all([
+        // Rule BK-007 v1.1.0 (2026-11-20): Count all created bookings in the configured time window
+        // (including orders cancelled later) per Product Owner ruling accepting virtual/cancelled bookings for this game.
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT
             DATE_FORMAT(o.date_created, '%Y-%m-%d') AS bookingDate,
             COUNT(DISTINCT o.id) AS teamBookings
           FROM \`order\` o
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.date_created >= '${startIctDateTime}'
-            AND o.date_created <= '${endIctDateTime}'
+            AND o.date_created >= '${dayStartIctDateTime}'
+            AND o.date_created <= '${dayEndIctDateTime}'
             ${timeWindowFilter}
-            AND o.order_state != 'Cancelled'
             ${channelFilter}
           GROUP BY DATE_FORMAT(o.date_created, '%Y-%m-%d')
         `),
@@ -647,11 +760,11 @@ export class BkGameTeamBookingDoneBonusService {
           LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
           LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.order_state = 'Completed'
+            AND o.order_state IN ('Completed', 'CheckOut')
             AND (
-              (ro.actual_booking_date_start >= '${startIctDateTime}' AND ro.actual_booking_date_start <= '${endIctDateTime}')
-              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startIctDateTime}' AND o.booking_date_start <= '${endIctDateTime}')
-              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start IS NULL AND o.date_created >= '${startIctDateTime}' AND o.date_created <= '${endIctDateTime}')
+              (ro.actual_booking_date_start >= '${dayStartIctDateTime}' AND ro.actual_booking_date_start <= '${dayEndIctDateTime}')
+              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${dayStartIctDateTime}' AND o.booking_date_start <= '${dayEndIctDateTime}')
+              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start IS NULL AND o.date_created >= '${dayStartIctDateTime}' AND o.date_created <= '${dayEndIctDateTime}')
             )
             ${channelFilter}
           ORDER BY completedAt DESC, o.id DESC
@@ -701,7 +814,7 @@ export class BkGameTeamBookingDoneBonusService {
       dailyTeamBookingsMap,
       completedOrders,
       comboLiveMap,
-      participants,
+      participants: resolvedParticipants,
       frozenRecords,
     });
 

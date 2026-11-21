@@ -7,15 +7,40 @@ import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { WingsComboCategoryId, MatchedComboPackageOption, getWingsComboCategory, checkWelcomeComboEligibility, matchComboCategoryAndVolumeFromBooking, getComboPackagesForCategoryAndVolume, calculateComboPurchaseAccounting, getLashFamilyInfo, resolveValidVolumeForCategory, getUnderLashComboPackages, resolveMatchedUpperComboFromSaved, resolveMatchedUnderComboFromSaved, resolveServicePriceSplit } from '@mos-lab/shared';
+import {
+  WingsComboCategoryId,
+  MatchedComboPackageOption,
+  getWingsComboCategory,
+  checkWelcomeComboEligibility,
+  matchComboCategoryAndVolumeFromBooking,
+  getComboPackagesForCategoryAndVolume,
+  calculateComboPurchaseAccounting,
+  getLashFamilyInfo,
+  resolveValidVolumeForCategory,
+  getUnderLashComboPackages,
+  resolveMatchedUpperComboFromSaved,
+  resolveMatchedUnderComboFromSaved,
+  resolveServicePriceSplit,
+  resolveActiveBookingComboWallets,
+} from '@mos-lab/shared';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
 import { UpsellHeaderAndSerumSection } from './upsell/UpsellHeaderAndSerumSection';
 import { UpsellMainComboSelector } from './upsell/UpsellMainComboSelector';
 import { UpsellUnderComboAndSummary } from './upsell/UpsellUnderComboAndSummary';
 import { UpsellOverlays } from './upsell/UpsellOverlays';
 import { computeUpsellRedemptionAccounting, computeUpsellTotals } from './upsell/upsellAccountingHelpers';
-import { addScannedProductToCartProducts, applyYeppeumTierToCartProducts, buildUpsellCheckoutPayload, isYeppeumProductItem, removeScannedUnitFromCartProducts, resolveInitialSerumSelection } from './upsell/upsellCheckoutHelpers';
+import {
+  addScannedProductToCartProducts,
+  applyYeppeumTierToCartProducts,
+  buildUpsellCheckoutPayload,
+  isYeppeumProductItem,
+  removeScannedUnitFromCartProducts,
+  resolveInitialSerumSelection,
+  resolveUpsellAutoAndPreferredSpec,
+  resolveValidSelectedNewComboId,
+} from './upsell/upsellCheckoutHelpers';
 import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
+import { hasBookingPreattachedOrServicePromotion } from './consultation/comboExpiryConsultHelpers';
 
 interface Screen11ProductUpsellProps {
   booking?: BookingItem;
@@ -24,11 +49,23 @@ interface Screen11ProductUpsellProps {
   onRefreshDb?: () => Promise<any> | void;
   onBack: () => void;
   onUpdateCartProducts?: (cartProducts: NonNullable<BookingItem['cartProducts']>) => void;
+  onSelectComboWallet?: (params: {
+    targetBookingId?: number;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
+    comboRedemption?: BookingItem['comboRedemption'] | null;
+  }) => void;
   onGoToBilling: (payload?: {
     cartProducts?: NonNullable<BookingItem['cartProducts']>;
     selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
     selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
     comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
   }) => void;
 }
 
@@ -39,6 +76,7 @@ export function Screen11ProductUpsell({
   onRefreshDb,
   onBack,
   onUpdateCartProducts,
+  onSelectComboWallet,
   onGoToBilling,
 }: Screen11ProductUpsellProps) {
   const { themeMode } = useTheme();
@@ -50,7 +88,8 @@ export function Screen11ProductUpsell({
   const initialSerum = resolveInitialSerumSelection(booking?.cartProducts);
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(initialSerum.tierId);
   const [localCartProducts, setLocalCartProducts] = useState<NonNullable<BookingItem['cartProducts']>>(
-() => booking?.cartProducts || []);
+    () => booking?.cartProducts || []
+  );
   useEffect(() => {
     const synced = resolveInitialSerumSelection(booking?.cartProducts);
     setSelectedSerumTierId(synced.tierId);
@@ -68,48 +107,14 @@ export function Screen11ProductUpsell({
   const [isSerumInfoModalOpen, setIsSerumInfoModalOpen] = useState<boolean>(false);
   const [isLockedWelcomeModalOpen, setIsLockedWelcomeModalOpen] = useState<boolean>(false);
 
-  // 1. Tự động nhận diện đúng Dòng Mi (Category) & Số Sợi (Volume SKU) từ dịch vụ khách vừa làm
-  const autoMatched = useMemo(
-    () =>
-      matchComboCategoryAndVolumeFromBooking({
-        serviceName: booking?.serviceName,
-        servicePrice: booking?.servicePrice,
-        material: booking?.attributes?.material,
-        volume: booking?.attributes?.volume,
-        count: booking?.attributes?.count,
-        comboName: booking?.comboLiveStatus?.comboName,
-        serviceKey: booking?.comboLiveStatus?.serviceKey,
-      }),
-    [
-      booking?.serviceName,
-      booking?.servicePrice,
-      booking?.attributes?.material,
-      booking?.attributes?.volume,
-      booking?.attributes?.count,
-      booking?.comboLiveStatus?.comboName,
-      booking?.comboLiveStatus?.serviceKey,
-    ]
-  );
+  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking || {}), [booking]);
+  const effectiveUpperStatus = resolvedWallets.effectiveComboLiveStatus;
 
-  const preferredUpperSpec = useMemo(() => {
-    const savedCombo = booking?.selectedCombo;
-    if (savedCombo) {
-      const idParts = String(savedCombo.id || '').split(':');
-      const rawCat = savedCombo.categoryId || idParts[0];
-      const rawVolPart = idParts[2];
-      const parsedVol =
-        savedCombo.volume ??
-        (rawVolPart && rawVolPart !== 'under_390' && rawVolPart !== 'under' && Number.isFinite(Number(rawVolPart))
-          ? Number(rawVolPart)
-          : undefined);
-      if (rawCat && rawCat !== 'VVIP' && parsedVol !== undefined && parsedVol !== 'under') {
-        const resolvedCat = getWingsComboCategory(rawCat).id;
-        const resolvedVol = resolveValidVolumeForCategory(resolvedCat, parsedVol);
-        return { categoryId: resolvedCat, volume: resolvedVol };
-      }
-    }
-    return { categoryId: autoMatched.categoryId, volume: autoMatched.volume };
-  }, [booking?.selectedCombo, autoMatched.categoryId, autoMatched.volume]);
+  // 1. Tự động nhận diện đúng Dòng Mi (Category) & Số Sợi (Volume SKU) từ dịch vụ khách vừa làm
+  const { autoMatched, preferredUpperSpec } = useMemo(
+    () => resolveUpsellAutoAndPreferredSpec(booking, effectiveUpperStatus.comboName, effectiveUpperStatus.serviceKey),
+    [booking, effectiveUpperStatus.comboName, effectiveUpperStatus.serviceKey]
+  );
 
   const [manualSpecEdit, setManualSpecEdit] = useState<{
     bookingId: number | undefined;
@@ -125,7 +130,10 @@ export function Screen11ProductUpsell({
     manualSpecEdit && manualSpecEdit.bookingId === booking?.id ? manualSpecEdit.volume : preferredUpperSpec.volume;
 
   const setActiveCategoryAndVolume = React.useCallback(
-(categoryId: WingsComboCategoryId, volume: number | 'under') => setManualSpecEdit({ bookingId: booking?.id, categoryId, volume }), [booking?.id]);
+    (categoryId: WingsComboCategoryId, volume: number | 'under') =>
+      setManualSpecEdit({ bookingId: booking?.id, categoryId, volume }),
+    [booking?.id]
+  );
 
   const familyInfo = useMemo(() => getLashFamilyInfo(activeCategoryId), [activeCategoryId]);
   const isUpTierPackage = activeCategoryId !== autoMatched.categoryId;
@@ -157,18 +165,18 @@ export function Screen11ProductUpsell({
     [activeCategoryId, activeVolume, welcomeEligibility]
   );
 
-  const isExistingComboLive = Boolean(
-    booking?.comboLiveStatus?.isComboLive && (booking?.comboLiveStatus?.remainingSessions ?? 0) > 0
-  );
-  const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
+  const isExistingComboLive = resolvedWallets.isRedeemingUpperToday;
+  const remainingSessions = effectiveUpperStatus.remainingSessions ?? 0;
 
-  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn và chưa chọn sẵn gói ở Tư Vấn): mặc định ẨN phần mua thêm combo
+  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn, chưa chọn sẵn gói ở Tư Vấn, và không có mã 50% gắn sẵn): mặc định ẨN phần mua thêm combo
   const hasPreselectedAnyCombo = Boolean(booking?.selectedCombo || booking?.selectedUnderCombo);
+  const activeBookingPromotion = booking?.servicePromotion ?? booking?.appliedPromotion ?? null;
   const shouldAutoExpandRenewal = Boolean(
-    booking?.comboLiveStatus?.isExpired ||
-    booking?.comboLiveStatus?.isExpiringSoon ||
+    effectiveUpperStatus.isExpired ||
+    effectiveUpperStatus.isExpiringSoon ||
     remainingSessions <= 2 ||
-    hasPreselectedAnyCombo
+    hasPreselectedAnyCombo ||
+    hasBookingPreattachedOrServicePromotion(booking)
   );
   const shouldCollapseNewComboByDefault = isExistingComboLive && !shouldAutoExpandRenewal;
   const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!shouldCollapseNewComboByDefault);
@@ -200,22 +208,10 @@ export function Screen11ProductUpsell({
       ? manualUpperComboEdit.comboId
       : defaultNewComboSelection;
 
-  const selectedNewComboId = useMemo(() => {
-    if (!rawSelectedNewComboId || rawSelectedNewComboId === 'NONE') return 'NONE';
-    const exact = matchedPackages.find((p) => p.id === rawSelectedNewComboId && !p.isLocked);
-    if (exact) return exact.id;
-
-    const idParts = rawSelectedNewComboId.split(':');
-    const desiredRule = (idParts[1] ? idParts[1].replace(/_/g, ' ') : rawSelectedNewComboId.replace(/^[^_]+_/, ''))
-      .trim()
-      .toLowerCase();
-    const ruleMatch = matchedPackages.find(
-      (p) => !p.isLocked && (p.ruleName.toLowerCase() === desiredRule || p.id.toLowerCase().endsWith(desiredRule))
-    );
-    if (ruleMatch) return ruleMatch.id;
-
-    return defaultNewComboSelection;
-  }, [rawSelectedNewComboId, matchedPackages, defaultNewComboSelection]);
+  const selectedNewComboId = useMemo(
+    () => resolveValidSelectedNewComboId(rawSelectedNewComboId, matchedPackages, defaultNewComboSelection),
+    [rawSelectedNewComboId, matchedPackages, defaultNewComboSelection]
+  );
 
   const setSelectedNewComboId: React.Dispatch<React.SetStateAction<string>> = React.useCallback(
     (next) => {
@@ -243,9 +239,7 @@ export function Screen11ProductUpsell({
 
   const servicePrice = booking?.servicePrice || 770000;
   const serviceName = booking?.serviceName || 'Flawless Mink 770';
-  const hasUnderMinkComboActive = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const hasUnderMinkComboActive = resolvedWallets.isRedeemingUnderToday;
   const { upperServicePrice, underServicePrice } = useMemo(
     () =>
       resolveServicePriceSplit({
@@ -354,13 +348,13 @@ export function Screen11ProductUpsell({
   const existingComboMatch = useMemo(
     () =>
       matchComboCategoryAndVolumeFromBooking({
-        comboName: booking?.comboLiveStatus?.comboName,
-        serviceKey: booking?.comboLiveStatus?.serviceKey,
+        comboName: effectiveUpperStatus.comboName,
+        serviceKey: effectiveUpperStatus.serviceKey,
         serviceName: booking?.originalBookedServiceName || booking?.serviceName,
       }),
     [
-      booking?.comboLiveStatus?.comboName,
-      booking?.comboLiveStatus?.serviceKey,
+      effectiveUpperStatus.comboName,
+      effectiveUpperStatus.serviceKey,
       booking?.originalBookedServiceName,
       booking?.serviceName,
     ]
@@ -457,7 +451,7 @@ export function Screen11ProductUpsell({
         deductTodayIntoCombo,
         upperTodayUsageMode,
         selectedUpperExpiry,
-        existingUpperComboDateExpired: booking?.comboLiveStatus?.dateExpired,
+        existingUpperComboDateExpired: effectiveUpperStatus.dateExpired,
         purchaseAccounting,
         newComboBonus,
         isUpTierPackage,
@@ -470,6 +464,10 @@ export function Screen11ProductUpsell({
         deductUnderTodayIntoCombo: shouldWaiveUnderToday,
         underTodayUsageMode,
         selectedUnderExpiry,
+        selectedUpperComboBalanceId: resolvedWallets.selectedUpperComboBalanceId,
+        selectedUnderComboBalanceId: resolvedWallets.selectedUnderComboBalanceId,
+        skipUpperCombo: resolvedWallets.skipUpperCombo,
+        skipUnderCombo: resolvedWallets.skipUnderCombo,
       })
     );
   };
@@ -508,9 +506,7 @@ export function Screen11ProductUpsell({
           <div className="rounded-2xl border p-3 text-xs flex items-center gap-2.5 shadow-2xs bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-600/50 dark:text-emerald-200">
             <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[14px]">🔒</span>
             <div className="leading-relaxed">
-              <strong className="block text-[12px] font-bold">
-                ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)
-              </strong>
+              <strong className="block text-[12px] font-bold">ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)</strong>
               <span className="text-[11px] opacity-90">
                 Mọi thông tin dịch vụ, combo và sản phẩm đã khóa sổ, không thể chỉnh sửa.
               </span>
@@ -539,6 +535,8 @@ export function Screen11ProductUpsell({
           showStaffRewards={showStaffRewards}
           onOpenSerumInfoModal={() => setIsSerumInfoModalOpen(true)}
           onOpenWalletModal={() => setIsWalletModalOpen(true)}
+          resolvedWallets={resolvedWallets}
+          onSelectComboWallet={onSelectComboWallet}
         />
 
         <UpsellMainComboSelector
@@ -574,6 +572,7 @@ export function Screen11ProductUpsell({
           selectedUpperExpiry={selectedUpperExpiry}
           showStaffRewards={showStaffRewards}
           actorName={actorName}
+          activeBookingPromotion={activeBookingPromotion}
           onOpenLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(true)}
         />
 
@@ -589,6 +588,8 @@ export function Screen11ProductUpsell({
           selectedUnderComboPkg={selectedUnderComboPkg}
           selectedNewComboPkg={selectedNewComboPkg}
           deductTodayIntoCombo={deductTodayIntoCombo}
+          upperTodayUsageMode={upperTodayUsageMode}
+          activeBookingPromotion={activeBookingPromotion}
           underExpiryPreviewMap={underExpiryPreviewMap}
           selectedUpperExpiry={selectedUpperExpiry}
           selectedUnderExpiry={selectedUnderExpiry}
@@ -678,6 +679,14 @@ export function Screen11ProductUpsell({
         onRemoveScannedUnit={handleRemoveScannedUnit}
         isWalletModalOpen={isWalletModalOpen}
         onCloseWalletModal={() => setIsWalletModalOpen(false)}
+        resolvedWallets={resolvedWallets}
+        onSelectWalletFromModal={(wallet) =>
+          onSelectComboWallet?.(
+            wallet.serviceGroup === 'under'
+              ? { selectedUnderComboBalanceId: wallet.balanceId, skipUnderCombo: false }
+              : { selectedUpperComboBalanceId: wallet.balanceId, skipUpperCombo: false }
+          )
+        }
       />
     </div>
   );

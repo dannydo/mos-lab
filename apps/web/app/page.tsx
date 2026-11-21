@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getDefaultRouteForRole } from '@mos-lab/shared';
+import { resolveRoleLandingRoute } from '../lib/resolve-landing-route';
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,19 +12,25 @@ export default function HomePage() {
   useEffect(() => {
     const token = localStorage.getItem('mos_token');
     const user = localStorage.getItem('mos_user');
-    if (token && user) {
-      try {
-        const parsed = JSON.parse(user);
-        const destination = getDefaultRouteForRole(parsed?.role);
-        setTargetRoute(destination);
-        router.replace(destination);
-        return;
-      } catch {
-        router.replace('/dashboard');
-        return;
-      }
+    if (!token || !user) {
+      router.replace('/login');
+      return;
     }
-    router.replace('/login');
+    let parsed: { role?: string | null; teamCodes?: string[] | null } | null = null;
+    try {
+      parsed = JSON.parse(user);
+    } catch {
+      parsed = null;
+    }
+    let cancelled = false;
+    void resolveRoleLandingRoute(parsed).then((destination) => {
+      if (cancelled) return;
+      setTargetRoute(destination);
+      router.replace(destination);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   return (

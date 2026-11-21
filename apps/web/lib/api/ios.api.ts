@@ -4,12 +4,15 @@ import type {
   IosBookingListResponse,
   IosBookingActionPayload,
   IosBookingActionResponse,
+  IosCheckoutStaffOption,
   IosPrintReceiptPayload,
   IosPrintReceiptResponse,
   IosPromotionOption,
   IosAdminComboExpiryActionPayload,
   IosAdminComboExpiryActionResponse,
   IosCustomerHistoryResponse,
+  IosCreateCustomerNotePayload,
+  IosCreateCustomerNoteResponse,
   IosScanProductRequest,
   IosScanProductResponse,
   IosCustomerLookupCandidate,
@@ -30,6 +33,19 @@ export interface IosPromotionsResponse {
   error?: string;
 }
 
+export interface IosReferrerLookupResult {
+  userId: number;
+  name: string;
+  phone: string;
+  diamondBalance: number;
+}
+
+export interface IosReferralDiamondPayload {
+  newCustomerId: number;
+  referrerUserId: number;
+  bookingId: number;
+}
+
 export const iosApi = {
   ios: {
     async getPromotions(
@@ -42,6 +58,22 @@ export const iosApi = {
         priority: options?.priority,
         timeout: options?.timeout,
       });
+      return res.data;
+    },
+
+    async listCheckoutEligibleStaff(
+      storeId?: number,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; staff: IosCheckoutStaffOption[]; error?: string }> {
+      const res = await api.get<{ success: boolean; staff: IosCheckoutStaffOption[]; error?: string }>(
+        '/ios/staff/checkout-eligible',
+        {
+          params: storeId ? { storeId } : undefined,
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
       return res.data;
     },
 
@@ -113,14 +145,11 @@ export const iosApi = {
       success: boolean;
       products: IosProductCatalogItem[];
     }> {
-      const res = await api.get<{ success: boolean; products: IosProductCatalogItem[] }>(
-        '/ios/products/catalog',
-        {
-          signal: options?.signal,
-          priority: options?.priority,
-          timeout: options?.timeout,
-        }
-      );
+      const res = await api.get<{ success: boolean; products: IosProductCatalogItem[] }>('/ios/products/catalog', {
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
       return res.data;
     },
 
@@ -231,6 +260,48 @@ export const iosApi = {
         signal: options?.signal,
         priority: options?.priority,
         timeout: options?.timeout,
+      });
+      return res.data;
+    },
+
+    async lookupReferrerByPhone(
+      phone: string,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; referrer?: IosReferrerLookupResult; error?: string }> {
+      const res = await api.get<{ success: boolean; referrer?: IosReferrerLookupResult; error?: string }>(
+        '/ios/referrer/lookup',
+        {
+          params: { phone },
+          signal: options?.signal,
+          timeout: options?.timeout ?? 6000,
+        }
+      );
+      return res.data;
+    },
+
+    async grantReferralDiamond(
+      payload: IosReferralDiamondPayload,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; diamondGranted?: number; error?: string }> {
+      const res = await api.post<{ success: boolean; diamondGranted?: number; error?: string }>(
+        '/ios/referral/grant-diamond',
+        payload,
+        {
+          signal: options?.signal,
+          timeout: options?.timeout ?? 8000,
+        }
+      );
+      return res.data;
+    },
+
+    async createCustomerNote(
+      customerId: number,
+      payload: IosCreateCustomerNotePayload,
+      options?: ApiRequestOptions
+    ): Promise<IosCreateCustomerNoteResponse> {
+      const res = await api.post<IosCreateCustomerNoteResponse>(`/ios/customers/${customerId}/notes`, payload, {
+        signal: options?.signal,
+        timeout: options?.timeout ?? 8000,
       });
       return res.data;
     },

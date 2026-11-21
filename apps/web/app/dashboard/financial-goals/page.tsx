@@ -180,7 +180,7 @@ function FinancialGoalsContent() {
         </div>
 
         {/* Right: Month Selector & Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Month Stepper */}
           <div
             className={`inline-flex items-center rounded-xl border p-0.5 ${

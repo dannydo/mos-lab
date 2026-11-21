@@ -68,6 +68,7 @@ function statusColor(status: FalAdjustmentShadowResult['status']) {
 
 export default function PayrollAdjustmentLabPage() {
   const [authorized, setAuthorized] = useState<boolean>(false);
+  const [safeDevEnabled, setSafeDevEnabled] = useState<boolean | null>(null);
   const [beforeAmount, setBeforeAmount] = useState('2,990');
   const [afterAmount, setAfterAmount] = useState('2,925');
   const [sourceStatus, setSourceStatus] = useState<PeriodStatus>('LOCKED');
@@ -190,9 +191,9 @@ export default function PayrollAdjustmentLabPage() {
   }, [customAmount, customComment, customTargetStatus]);
 
   useEffect(() => {
-    if (!authorized) return;
+    if (!authorized || safeDevEnabled !== true) return;
     void runShadow();
-  }, [authorized, runShadow]);
+  }, [authorized, safeDevEnabled, runShadow]);
 
   const refreshLocalCase = useCallback(async () => {
     const response = await apiClient.safeDevPayrollAdjustmentLab.getCase();
@@ -215,7 +216,7 @@ export default function PayrollAdjustmentLabPage() {
   }, []);
 
   useEffect(() => {
-    if (!authorized) return;
+    if (!authorized || safeDevEnabled !== true) return;
     void apiClient.safeDevPayrollAdjustmentLab.approverGroup().then((response) => {
       setApproverGroup(response.group);
       setRequesterStaffId(response.group.members[0]?.staffId ?? null);
@@ -226,7 +227,7 @@ export default function PayrollAdjustmentLabPage() {
     void refreshHrCustomCase();
     void refreshQueue();
     void apiClient.safeDevPayrollAdjustmentLab.settlementReview().then(setSettlementReview);
-  }, [authorized, refreshEligibleCase, refreshHrCustomCase, refreshLocalCase, refreshQueue]);
+  }, [authorized, safeDevEnabled, refreshEligibleCase, refreshHrCustomCase, refreshLocalCase, refreshQueue]);
 
   const lockSettlementReview = useCallback(async () => {
     if (!settlementReview || approverStaffId === null) return;
@@ -428,6 +429,7 @@ export default function PayrollAdjustmentLabPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let active = true;
     try {
       const token = window.localStorage.getItem('mos_token');
       const rawUser = window.localStorage.getItem('mos_user');
@@ -445,9 +447,20 @@ export default function PayrollAdjustmentLabPage() {
         return;
       }
       setAuthorized(true);
+      void apiClient.health
+        .get()
+        .then((health) => {
+          if (active) setSafeDevEnabled(health?.mode === 'safe-dev');
+        })
+        .catch(() => {
+          if (active) setSafeDevEnabled(false);
+        });
     } catch {
       window.location.replace('/login');
     }
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (!authorized) {
@@ -468,6 +481,15 @@ export default function PayrollAdjustmentLabPage() {
               không ghi database, không đổi payslip và không thể chi tiền.
             </Paragraph>
           </div>
+
+          {safeDevEnabled === false ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="Chế độ Safe Dev chưa được bật trên API server này"
+              description="Các endpoint mô phỏng /api/safe-dev/* chỉ khả dụng khi backend đang chạy ở chế độ Safe Dev."
+            />
+          ) : null}
 
           <Alert
             type="info"

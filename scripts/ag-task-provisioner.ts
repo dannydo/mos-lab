@@ -1939,6 +1939,12 @@ export async function runPlanWatcher(deps: {
   return 'PLANNED';
 }
 
+export const DEFAULT_AG_CHAT_MODEL = 'gemini-3.8-flash-high';
+
+export function resolveAgChatModel(env: NodeJS.ProcessEnv = process.env): string {
+  return resolveAgentApiModelArg(clean(env.MOS_AG_CHAT_MODEL, 120) || DEFAULT_AG_CHAT_MODEL);
+}
+
 let isChatWatcherRunning = false;
 
 export async function runAgChatWatcher(deps: {
@@ -1948,6 +1954,7 @@ export async function runAgChatWatcher(deps: {
 }): Promise<'IDLE' | 'ANSWERED'> {
   if (isChatWatcherRunning) return 'IDLE';
   isChatWatcherRunning = true;
+  let claimedJobId: string | null = null;
 
   try {
     let res: Response;
@@ -1963,12 +1970,17 @@ export async function runAgChatWatcher(deps: {
     const payload = (await res.json()) as { success?: boolean; data?: AgChatBridgeJob | null };
     const job = payload?.data;
     if (!job || !job.id || !job.prompt) return 'IDLE';
+    claimedJobId = job.id;
 
     process.stdout.write(
       `[${new Date().toISOString()}] [AgChatBridge] Received chat request (${job.id}). Executing via local Antigravity...\n`
     );
 
-    const agResult = await AgChatBridgeService.executeLocalAgPrompt(job.conversationId, job.prompt, job.title);
+    // MAI is an interactive chat: use a fast model (override with MOS_AG_CHAT_MODEL) instead of the heavy
+    // planning default (gemini-4-hydrogen-high), which took 70-160s per reply and made the API time out.
+    const agResult = await AgChatBridgeService.executeLocalAgPrompt(job.conversationId, job.prompt, job.title, {
+      model: resolveAgChatModel(),
+    });
 
     await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(job.id)}/complete`, {
       method: 'POST',
@@ -1984,9 +1996,20 @@ export async function runAgChatWatcher(deps: {
     );
     return 'ANSWERED';
   } catch (err) {
-    process.stderr.write(
-      `[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${err instanceof Error ? err.message : String(err)}\n`
-    );
+    const reason = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${reason}\n`);
+    if (claimedJobId) {
+      // Tell the API right away so it can fall back instead of waiting for its 90s bridge timeout.
+      await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(claimedJobId)}/fail`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${deps.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => undefined);
+    }
     return 'IDLE';
   } finally {
     isChatWatcherRunning = false;
