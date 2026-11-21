@@ -5778,6 +5778,29 @@ export function matchComboCategoryAndVolumeFromBooking(input?: {
     detectCategoryFromText(fallbackTextWithoutAny, true) ||
     'FlawlessMink';
 
+  const combinedWithVol = `${combinedText} ${volText}`;
+  const siblingCategoryIds: WingsComboCategoryId[] = (() => {
+    if (
+      categoryId.startsWith('HyperLight_') &&
+      !/(2x|3x|4x|5x|2𝒙|3𝒙|4𝒙|5𝒙|2𝑿|3𝑿|4𝑿|5𝑿)/.test(combinedWithVol)
+    ) {
+      return ['HyperLight_3X', 'HyperLight_2X', 'HyperLight_4X', 'HyperLight_5X'];
+    }
+    if (categoryId.startsWith('UltraLight_') && !/(3d|4d|5d)/.test(combinedWithVol)) {
+      return ['UltraLight_3D', 'UltraLight_4D', 'UltraLight_5D'];
+    }
+    if (
+      categoryId.startsWith('IvyLight_') &&
+      !/(3l|4l|5l|3ℓ|4ℓ|5ℓ|3𝓵|4𝓵|5𝓵|3𝓛|4𝓛|5𝓛)/.test(combinedWithVol)
+    ) {
+      return ['IvyLight_3L', 'IvyLight_4L', 'IvyLight_5L'];
+    }
+    if (categoryId.startsWith('Volume_') && !/(2d|3d|2 fan|3 fan)/.test(combinedWithVol)) {
+      return ['Volume_2D', 'Volume_3D'];
+    }
+    return [];
+  })();
+
   const category = getWingsComboCategory(categoryId);
   const availableVolumes = category.unitPrices
     .filter((u) => !u.isUnderLash && typeof u.volume === 'number')
@@ -5844,6 +5867,18 @@ export function matchComboCategoryAndVolumeFromBooking(input?: {
         volumeMeta: getVolumeFiberMeta(categoryId, parsedSku),
       };
     }
+    for (const sibId of siblingCategoryIds) {
+      const sibCat = getWingsComboCategory(sibId);
+      const hasVol = sibCat.unitPrices.some((u) => !u.isUnderLash && Number(u.volume) === parsedSku);
+      if (hasVol) {
+        return {
+          categoryId: sibId,
+          category: sibCat,
+          volume: parsedSku,
+          volumeMeta: getVolumeFiberMeta(sibId, parsedSku),
+        };
+      }
+    }
   }
 
   // 3. Khớp theo servicePrice (newPrice hoặc refillPrice)
@@ -5859,6 +5894,20 @@ export function matchComboCategoryAndVolumeFromBooking(input?: {
         volume: exactUnit.volume,
         volumeMeta: getVolumeFiberMeta(categoryId, exactUnit.volume),
       };
+    }
+    for (const sibId of siblingCategoryIds) {
+      const sibCat = getWingsComboCategory(sibId);
+      const sibExact = sibCat.unitPrices.find(
+        (u) => !u.isUnderLash && (u.newPrice === price || u.refillPrice === price)
+      );
+      if (sibExact && typeof sibExact.volume === 'number') {
+        return {
+          categoryId: sibId,
+          category: sibCat,
+          volume: sibExact.volume,
+          volumeMeta: getVolumeFiberMeta(sibId, sibExact.volume),
+        };
+      }
     }
     // Tìm volume có newPrice gần nhất
     let closestVol = availableVolumes[0] || 770;
@@ -6154,6 +6203,8 @@ export function calculateComboRedemptionAccounting(params: {
   targetCategoryId?: WingsComboCategoryId | string;
   targetVolume?: number | 'under';
   requestedServiceType: 'Normal' | 'Retain';
+  /** Cho phép giữ đúng lượt Dặm (Retain) đã chốt trên đơn/tư vấn kể cả khi daysSinceLastVisit > 25 */
+  respectRequestedServiceType?: boolean;
   daysSinceLastVisit?: number | null;
   paidNewRemaining: number;
   paidRefillRemaining: number;
@@ -6177,7 +6228,9 @@ export function calculateComboRedemptionAccounting(params: {
 
   const isWithin25DayCycle = params.daysSinceLastVisit == null ? true : params.daysSinceLastVisit <= 25;
   const effectiveServiceType: 'Normal' | 'Retain' =
-    params.requestedServiceType === 'Retain' && isWithin25DayCycle ? 'Retain' : 'Normal';
+    params.requestedServiceType === 'Retain' && (isWithin25DayCycle || params.respectRequestedServiceType)
+      ? 'Retain'
+      : 'Normal';
 
   let paidNew = Math.max(0, params.paidNewRemaining);
   let paidRefill = Math.max(0, params.paidRefillRemaining);

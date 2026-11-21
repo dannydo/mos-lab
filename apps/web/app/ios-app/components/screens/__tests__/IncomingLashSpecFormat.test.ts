@@ -164,4 +164,18 @@ describe('formatLashSpecLine & getLashDetailSpecs — Canonical Wings Nối Mớ
       label: 'Khách mới lần đầu',
     });
   });
+
+  it('parses YYYY-MM-DD dates and uses today Vietnam date instead of a hardcoded reference date', () => {
+    expect(parseDaysSinceLastVisit('2026-10-01', '2026-11-20')).toBe(50);
+    expect(parseDaysSinceLastVisit('01/10/2026', '20/11/2026')).toBe(50);
+
+    const todayMidnight = new Date();
+    const tenDaysAgo = new Date(todayMidnight.getFullYear(), todayMidnight.getMonth(), todayMidnight.getDate() - 10, 12);
+    const dd = String(tenDaysAgo.getDate()).padStart(2, '0');
+    const mm = String(tenDaysAgo.getMonth() + 1).padStart(2, '0');
+    const yyyy = tenDaysAgo.getFullYear();
+    const defaultDays = parseDaysSinceLastVisit(`${dd}/${mm}/${yyyy}`);
+    expect(defaultDays).toBeGreaterThanOrEqual(9);
+    expect(defaultDays).toBeLessThanOrEqual(11);
+  });
 });

@@ -465,6 +465,7 @@ export function ConsultationServiceAndUpgradeCard({
       <div className="bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] p-1 rounded-xl grid grid-cols-2 gap-1">
         <button
           type="button"
+          aria-pressed={serviceType === 'Normal'}
           onClick={() => handleRequestServiceTypeChange('Normal')}
           className={`py-1.5 px-2 rounded-lg font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition-all cursor-pointer tabular-nums ${
             serviceType === 'Normal'
@@ -478,6 +479,7 @@ export function ConsultationServiceAndUpgradeCard({
 
         <button
           type="button"
+          aria-pressed={serviceType === 'Retain'}
           disabled={isComboLive && !hasComboRetainRemaining}
           onClick={() => handleRequestServiceTypeChange('Retain')}
           className={`py-1.5 px-2 rounded-lg font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition-all tabular-nums ${
