@@ -11,13 +11,20 @@ import { createInMemoryConfigStore } from '../services/ios-overrides.service.js'
 import type { IosAuthContext } from '../services/ios-auth.service.js';
 
 interface MockNotesDb {
-  orders: Array<{ order_id: number; order_state: string; order_assigned_staff_id: number; user_id: number }>;
+  orders: Array<{
+    order_id: number;
+    order_state: string;
+    order_assigned_staff_id: number;
+    user_id: number;
+    client_store_id?: number;
+  }>;
   services: Array<{
     order_id: number;
     assigned_staff_id: number;
     check_in_staff_id: number;
     check_out_staff_id: number;
   }>;
+  users?: number[];
   userNotes: Array<Record<string, unknown>>;
 }
 
@@ -27,12 +34,15 @@ function createNotesMockPool(db: MockNotesDb): mysql.Pool {
     const lower = sql.replace(/\s+/g, ' ').trim().toLowerCase();
 
     if (lower.startsWith('insert into user_note')) {
+      if (lower.includes('client_store_id')) {
+        throw new Error("Unknown column 'client_store_id' in 'field list'");
+      }
       const id = ++nextId;
       db.userNotes.push({
         id,
-        client_store_id: Number(params[0]),
-        user_id: Number(params[1]),
-        created_staff_id: Number(params[2]),
+        user_id: Number(params[0]),
+        order_id: params[1] === null ? null : Number(params[1]),
+        created_staff_id: params[2] === null ? null : Number(params[2]),
         note_field_key: String(params[3]),
         note: String(params[4]),
         attribute_group_key: String(params[5]),
@@ -51,7 +61,25 @@ function createNotesMockPool(db: MockNotesDb): mysql.Pool {
       return [{ affectedRows: 2 }, []] as unknown as [mysql.ResultSetHeader, mysql.FieldPacket[]];
     }
 
-    if (lower.includes('from `order`')) {
+    if (lower.startsWith('select id, client_store_id from `order` where id = ?')) {
+      const oid = Number(params[0]);
+      const found = db.orders.find((o) => o.order_id === oid);
+      return [found ? [{ id: found.order_id, client_store_id: found.client_store_id ?? 6 }] : [], []] as unknown as [
+        mysql.RowDataPacket[],
+        mysql.FieldPacket[],
+      ];
+    }
+
+    if (lower.startsWith('select id from `user` where id = ?')) {
+      const uid = Number(params[0]);
+      const validUsers = db.users || [46272, 13783, 99001];
+      return [validUsers.includes(uid) ? [{ id: uid }] : [], []] as unknown as [
+        mysql.RowDataPacket[],
+        mysql.FieldPacket[],
+      ];
+    }
+
+    if (lower.includes('from `order`') && lower.includes('where o.user_id = ?')) {
       const uid = Number(params[0]);
       return [db.orders.filter((o) => o.user_id === uid), []] as unknown as [
         mysql.RowDataPacket[],
@@ -72,6 +100,9 @@ function createNotesMockPool(db: MockNotesDb): mysql.Pool {
     }
 
     if (lower.includes('from user_note')) {
+      if (lower.includes('un.client_store_id')) {
+        throw new Error("Unknown column 'un.client_store_id' in 'on clause'");
+      }
       let rows = [...db.userNotes];
       if (lower.includes('un.note_field_key = ?')) {
         const key = String(params[params.length - 1]);
@@ -223,4 +254,69 @@ test('Simulation mode isolates created CVL notes in crm_config store without wri
   const allSim = await listIosCustomerAllNotes(pool, 33732, { sim: true, actorStaffId: 46272 }, { simStore });
   assert.equal(allSim.length, 1);
   assert.equal(allSim[0].note, 'Note mô phỏng tập luyện');
+});
+
+test('MOS-FEAT-254: createIosCustomerNote saves note without user_note.client_store_id and links order_id + branch', async () => {
+  const db: MockNotesDb = {
+    orders: [
+      {
+        order_id: 7501,
+        order_state: 'Completed',
+        order_assigned_staff_id: 46272,
+        user_id: 33732,
+        client_store_id: 16,
+      },
+    ],
+    services: [{ order_id: 7501, assigned_staff_id: 46272, check_in_staff_id: 46272, check_out_staff_id: 46272 }],
+    userNotes: [],
+  };
+  const pool = createNotesMockPool(db);
+
+  const res = await createIosCustomerNote(
+    CVL_LY,
+    33732,
+    { note: 'chị về gấp', isSticky: false, bookingId: 7501 },
+    {
+      getPool: () => pool,
+      overrideRepo: { loadBookingOverride: async () => null },
+      now: () => new Date('2026-11-21T05:40:00.000Z'),
+    }
+  );
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.payload.success, true);
+  assert.equal(res.payload.note?.note, 'chị về gấp');
+  assert.equal(res.payload.note?.branchName, 'Estella Place');
+  assert.equal(res.payload.note?.orderId, 7501);
+  assert.equal(db.userNotes.length, 1);
+  assert.equal(db.userNotes[0].order_id, 7501);
+  assert.equal(db.userNotes[0].created_staff_id, 46272);
+});
+
+test('MOS-FEAT-254: Admin without legacyStaffId and synthetic bookingId falls back to null FK columns safely', async () => {
+  const db: MockNotesDb = { orders: [], services: [], userNotes: [] };
+  const pool = createNotesMockPool(db);
+  const adminNoLegacy: IosAuthContext = {
+    id: 1,
+    clientStoreId: 6,
+    displayName: 'Danny Do',
+    role: 'super_admin',
+    careerTier: 'ADMIN',
+  };
+
+  const res = await createIosCustomerNote(
+    adminNoLegacy,
+    33732,
+    { note: 'Ghi chú Admin kiểm thử', isSticky: false, bookingId: 99999999 },
+    {
+      getPool: () => pool,
+      overrideRepo: { loadBookingOverride: async () => null },
+    }
+  );
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.payload.success, true);
+  assert.equal(db.userNotes.length, 1);
+  assert.equal(db.userNotes[0].order_id, null);
+  assert.equal(db.userNotes[0].created_staff_id, null);
 });

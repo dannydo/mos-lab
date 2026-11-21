@@ -54,6 +54,8 @@ export function mapRawUserNoteRow(row: mysql.RowDataPacket, now: Date = new Date
     staffName: String(row.staff_name || (source === 'CVL' ? 'Chuyên Viên' : 'System')).trim(),
     staffAvatar: resolveStaffAvatar(rawAvatar) || rawAvatar || null,
     branchName: row.branch_name ? String(row.branch_name).trim() : null,
+    ...(row.order_id ? { orderId: Number(row.order_id) } : {}),
+    ...(row.order_number ? { orderNumber: String(row.order_number).trim() } : {}),
   };
 }
 
@@ -136,6 +138,8 @@ export async function listIosCustomerCvlNotesBatch(
       `SELECT
          un.id,
          un.user_id,
+         un.order_id,
+         o.order_number,
          un.note,
          un.note_field_key,
          un.is_sticky,
@@ -147,7 +151,10 @@ export async function listIosCustomerCvlNotesBatch(
          csl.client_store_name AS branch_name
        FROM user_note un
        LEFT JOIN user_profile up ON up.user_id = un.created_staff_id
-       LEFT JOIN client_store_language csl ON csl.client_store_id = un.client_store_id AND csl.language_id = 1
+       LEFT JOIN \`order\` o ON o.id = un.order_id
+       LEFT JOIN client_store_language csl
+         ON csl.client_store_id = COALESCE(o.client_store_id, up.client_store_id)
+        AND csl.language_id = 1
        WHERE un.user_id IN (${placeholders})
          AND un.note_field_key = ?
          AND un.is_disabled = 0
@@ -212,6 +219,8 @@ export async function listIosCustomerAllNotes(
       `SELECT
          un.id,
          un.user_id,
+         un.order_id,
+         o.order_number,
          un.note,
          un.note_field_key,
          un.is_sticky,
@@ -223,7 +232,10 @@ export async function listIosCustomerAllNotes(
          csl.client_store_name AS branch_name
        FROM user_note un
        LEFT JOIN user_profile up ON up.user_id = un.created_staff_id
-       LEFT JOIN client_store_language csl ON csl.client_store_id = un.client_store_id AND csl.language_id = 1
+       LEFT JOIN \`order\` o ON o.id = un.order_id
+       LEFT JOIN client_store_language csl
+         ON csl.client_store_id = COALESCE(o.client_store_id, up.client_store_id)
+        AND csl.language_id = 1
        WHERE un.user_id = ?
          AND (un.is_disabled = 0 OR un.note_field_key = 'order_note')
        ORDER BY un.is_sticky DESC, un.date_created DESC, un.id DESC
@@ -363,10 +375,19 @@ export async function createIosCustomerNote(
   const vnParts = toVnDateParts(now);
   const isSticky = Boolean(payload?.isSticky);
   const staffName = authUser.displayName || 'Chuyên Viên';
-  const storeId = Number(authUser.clientStoreId || 6);
-  const branchName = storeId === 16 ? 'Estella Place' : 'Đề Thám';
+  const BRANCH_FALLBACK_NAMES: Record<number, string> = {
+    1: 'CMT8',
+    2: 'PXL',
+    6: 'Đề Thám',
+    11: 'Kỳ Đồng',
+    15: 'Him Lam',
+    16: 'Estella Place',
+  };
+  let resolvedStoreId = Number(authUser.clientStoreId || 6);
+  const resolveBranchName = (sid: number) => BRANCH_FALLBACK_NAMES[sid] || 'Đề Thám';
 
   if (isSim) {
+    const branchName = resolveBranchName(resolvedStoreId);
     const simStore = deps?.simStore || createMysqlConfigStore();
     const existingSim = await loadSimulationCustomerNotes(simStore, actorStaffId, customerId);
     const simNote: IosCustomerNoteItem = {
@@ -396,13 +417,41 @@ export async function createIosCustomerNote(
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+
+    let validOrderId: number | null = null;
+    if (payload?.bookingId && Number(payload.bookingId) > 0) {
+      const [orderCheck] = await conn.query<mysql.RowDataPacket[]>(
+        'SELECT id, client_store_id FROM `order` WHERE id = ? LIMIT 1',
+        [Number(payload.bookingId)]
+      );
+      if (orderCheck.length > 0) {
+        validOrderId = Number(orderCheck[0].id);
+        if (orderCheck[0].client_store_id) {
+          resolvedStoreId = Number(orderCheck[0].client_store_id);
+        }
+      }
+    }
+
+    let validStaffId: number | null = null;
+    if (authUser.legacyStaffId && Number(authUser.legacyStaffId) > 0) {
+      const [staffCheck] = await conn.query<mysql.RowDataPacket[]>(
+        'SELECT id FROM `user` WHERE id = ? LIMIT 1',
+        [Number(authUser.legacyStaffId)]
+      );
+      if (staffCheck.length > 0) {
+        validStaffId = Number(staffCheck[0].id);
+      }
+    }
+
+    const branchName = resolveBranchName(resolvedStoreId);
+
     const [insertResult] = await conn.query<mysql.ResultSetHeader>(
       `INSERT INTO user_note (
-         client_id, client_business_id, client_store_id, user_id, created_staff_id,
+         client_id, client_business_id, user_id, order_id, created_staff_id,
          note_field_key, note, attribute_group_key, is_sticky, is_issue, is_disabled,
          date_created, date_updated
        ) VALUES (11, 1, ?, ?, ?, ?, ?, ?, ?, 0, 0, NOW(), NOW())`,
-      [storeId, customerId, actorStaffId, CVL_NOTE_FIELD_KEY, trimmedNote, groupKey, isSticky ? 1 : 0]
+      [customerId, validOrderId, validStaffId, CVL_NOTE_FIELD_KEY, trimmedNote, groupKey, isSticky ? 1 : 0]
     );
     const newNoteId = Number(insertResult.insertId || 0);
     if (newNoteId > 0) {
@@ -430,11 +479,11 @@ export async function createIosCustomerNote(
       dateDisplay: vnParts.dateDisplay,
       timeDisplay: vnParts.timeDisplay,
       daysAgoLabel: 'Hôm Nay',
-      staffId: actorStaffId || undefined,
+      staffId: validStaffId ?? (actorStaffId || undefined),
       staffName,
       staffAvatar: null,
       branchName,
-      ...(payload?.bookingId ? { orderId: Number(payload.bookingId) } : {}),
+      ...(validOrderId ? { orderId: validOrderId } : {}),
     };
     return { statusCode: 200, payload: { success: true, note: createdItem } };
   } catch (err: SafeAny) {

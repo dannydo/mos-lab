@@ -265,8 +265,8 @@ export async function executeAdminComboExpiryAction(
         ? `[ADMIN BẢO LƯU COMBO #${balanceId}] Đóng băng HSD (date_expired = NULL). Lý do: ${reason}`
         : `[ADMIN CẬP NHẬT HSD COMBO #${balanceId}] HSD mới: ${formatExpiryDateDdMmYyyy(resolvedDateExpired)}. Lý do: ${reason}`;
       await pool.query(
-        `INSERT INTO user_note (client_id, client_business_id, client_store_id, user_id, created_staff_id, note_field_key, note, attribute_group_key, is_sticky, is_issue, is_disabled, date_created, date_updated)
-         VALUES (11, 1, 1, ?, ?, 'note', ?, ?, 0, 0, 0, NOW(), NOW())`,
+        `INSERT INTO user_note (client_id, client_business_id, user_id, created_staff_id, note_field_key, note, attribute_group_key, is_sticky, is_issue, is_disabled, date_created, date_updated)
+         VALUES (11, 1, ?, ?, 'note', ?, ?, 0, 0, 0, NOW(), NOW())`,
         [customerId, staffId, userNoteText.slice(0, 500), groupKey]
       );
     } catch {
