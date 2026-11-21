@@ -4,7 +4,21 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Popover, Progress, Segmented, Select, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { Trophy, RefreshCw, Plus, Clock, ShieldAlert, Swords, CheckCircle2, Info, Sparkles, Edit3, Target, Calendar, Users } from 'lucide-react';
+import {
+  Trophy,
+  RefreshCw,
+  Plus,
+  Clock,
+  ShieldAlert,
+  Swords,
+  CheckCircle2,
+  Info,
+  Sparkles,
+  Edit3,
+  Target,
+  Calendar,
+  Users,
+} from 'lucide-react';
 import type { BkBookingLeaderboardEntry, BkGame, BkGameDetailResponse } from '@mos-lab/shared';
 import { BK_GAME_SCORING_RULES } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid, StatePanel, StatusTag } from '~/components/ui';
@@ -70,29 +84,43 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
   // Countdown timer in seconds
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   // 1. Load Live leaderboard (from BK Leaderboard)
-  const loadLeaderboard = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: Record<string, unknown> = {
-        storeId: 'ALL',
-      };
-      if (selectedGameId) {
-        params.gameId = selectedGameId;
-      } else {
-        params.dateFrom = dateRange[0].format('YYYY-MM-DD');
-        params.dateTo = dateRange[1].format('YYYY-MM-DD');
+  const loadLeaderboard = useCallback(
+    async (options?: { silent?: boolean; skipCache?: boolean }) => {
+      if (!options?.silent) {
+        setLoading(true);
       }
-      const response = await apiClient.bk.getBookingLeaderboard(params);
-      setLeaderboard(response.leaderboard || []);
-    } catch {
-      setError('Không thể tải bảng xếp hạng Game BK. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, selectedGameId]);
+      setError(null);
+      try {
+        const params: Record<string, unknown> = {
+          storeId: 'ALL',
+        };
+        if (selectedGameId) {
+          params.gameId = selectedGameId;
+        } else {
+          params.dateFrom = dateRange[0].format('YYYY-MM-DD');
+          params.dateTo = dateRange[1].format('YYYY-MM-DD');
+        }
+        if (options?.skipCache) {
+          params.skipCache = true;
+        }
+        const response = await apiClient.bk.getBookingLeaderboard(params);
+        setLeaderboard(response.leaderboard || []);
+        setLastUpdatedAt(new Date());
+      } catch {
+        if (!options?.silent) {
+          setError('Không thể tải bảng xếp hạng Game BK. Vui lòng thử lại.');
+        }
+      } finally {
+        if (!options?.silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [dateRange, selectedGameId]
+  );
 
   // 2. Load Configured Games list
   const loadGames = useCallback(async () => {
@@ -110,33 +138,52 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
   }, []);
 
   // 3. Load Selected Game detail
-  const loadSelectedGameDetail = useCallback(async (gameId: number) => {
+  const loadSelectedGameDetail = useCallback(async (gameId: number, options?: { silent?: boolean }) => {
     if (typeof apiClient.bk?.getGameDetail !== 'function') return;
-    setGameLoading(true);
+    if (!options?.silent) {
+      setGameLoading(true);
+    }
     try {
       const detail = await apiClient.bk.getGameDetail(gameId);
       setGameDetail(detail);
       setSecondsRemaining(detail.stats.timeRemainingSeconds);
+      setLastUpdatedAt(new Date());
     } catch {
       // Ignore
     } finally {
-      setGameLoading(false);
+      if (!options?.silent) {
+        setGameLoading(false);
+      }
     }
   }, []);
 
-  // Initial and periodic refresh
+  // Initial and periodic live refresh (15s + immediate sync on tab focus/visibility)
   useEffect(() => {
     void loadLeaderboard();
     void loadGames();
 
-    const timer = window.setInterval(() => {
-      void loadLeaderboard();
+    const refreshLive = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void loadLeaderboard({ silent: true, skipCache: true });
       if (selectedGameId) {
-        void loadSelectedGameDetail(selectedGameId);
+        void loadSelectedGameDetail(selectedGameId, { silent: true });
       }
-    }, 30_000);
+    };
 
-    return () => window.clearInterval(timer);
+    const timer = window.setInterval(refreshLive, 15_000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshLive();
+      }
+    };
+    window.addEventListener('focus', refreshLive);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshLive);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [loadLeaderboard, loadGames, selectedGameId, loadSelectedGameDetail]);
 
   useEffect(() => {
@@ -223,7 +270,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
   const hasDoneBonusConfig = Boolean(
     activeGame?.doneBonusConfig &&
-      (Array.isArray(activeGame.doneBonusConfig) ? activeGame.doneBonusConfig.length > 0 : true)
+    (Array.isArray(activeGame.doneBonusConfig) ? activeGame.doneBonusConfig.length > 0 : true)
   );
   const totalDoneBonusAmount = gameDetail?.doneBonusesSummary?.totalDoneBonus ?? 0;
   const totalDoneBonusBookings = gameDetail?.doneBonusesSummary?.totalDoneBookings ?? 0;
@@ -249,9 +296,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
   }, [gameDetail]);
 
   const teamBookingDoneBonusSummary = gameDetail?.teamBookingDoneBonusSummary || null;
-  const hasTeamBookingDoneBonus = Boolean(
-    teamBookingDoneBonusSummary && teamBookingDoneBonusSummary.config?.enabled
-  );
+  const hasTeamBookingDoneBonus = Boolean(teamBookingDoneBonusSummary && teamBookingDoneBonusSummary.config?.enabled);
 
   const staffTeamBookingDoneBonusMap = useMemo(() => {
     const map = new Map<number, { singleDoneCount: number; totalBonus: number }>();
@@ -304,7 +349,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           </Typography.Title>
           <Typography.Text type="secondary" className="text-xs">
             Thi đua theo {comparisonMode === 'day' ? 'ngày' : comparisonMode === 'week' ? 'tuần' : 'tháng'} · tự làm mới
-            mỗi 30 giây
+            mỗi 15 giây
           </Typography.Text>
         </div>
 
@@ -381,7 +426,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           <Button
             icon={<AppIcon icon={RefreshCw} size="action" />}
             onClick={() => {
-              void loadLeaderboard();
+              void loadLeaderboard({ skipCache: true });
               void loadGames();
               if (selectedGameId) void loadSelectedGameDetail(selectedGameId);
             }}
@@ -405,8 +450,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                       activeGame.gameType === 'TEAM_KPI'
                         ? 'Team KPI – Thử Thách Tập Thể'
                         : activeGame.gameType === 'TEAM'
-                        ? 'Chia Đội Đối Đầu'
-                        : 'Thi Đấu Cá Nhân'
+                          ? 'Chia Đội Đối Đầu'
+                          : 'Thi Đấu Cá Nhân'
                     }
                   />
                   <StatusTag
@@ -414,10 +459,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     label={activeGame.status === 'ACTIVE' ? 'Đang Diễn Ra' : 'Đã Kết Thúc'}
                   />
                   {activeGame.allowedBookingChannels && activeGame.allowedBookingChannels.length > 0 && (
-                    <StatusTag
-                      status="cyan"
-                      label={`Kênh: ${activeGame.allowedBookingChannels.join(', ')}`}
-                    />
+                    <StatusTag status="cyan" label={`Kênh: ${activeGame.allowedBookingChannels.join(', ')}`} />
                   )}
                 </div>
                 <Typography.Title level={3} className="!text-white !mb-1 font-extrabold tracking-tight">
@@ -496,7 +538,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 <div className="text-2xl font-black tabular-nums tracking-wider text-amber-300">
                   {formatCountdown(secondsRemaining)}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-1">Tự động cập nhật mỗi 30s</div>
+                <div className="text-[11px] text-slate-400 mt-1">Live · Tự động cập nhật mỗi 15s</div>
               </div>
             </div>
 
@@ -507,7 +549,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                   <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
                     <span>Mục Tiêu Hôm Nay</span>
                     <span className="text-[10px] text-purple-300">
-                      {gameDetail.teamKpiSummary.config.timeWindowStart || '08:00'}–{gameDetail.teamKpiSummary.config.timeWindowEnd || '17:00'}
+                      {gameDetail.teamKpiSummary.config.timeWindowStart || '08:00'}–
+                      {gameDetail.teamKpiSummary.config.timeWindowEnd || '17:00'}
                     </span>
                   </div>
                   <div className="text-xl font-bold mt-1 text-white tabular-nums">
@@ -520,7 +563,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
                 <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                   <div className="text-xs text-slate-400 uppercase font-medium">Quỹ Thưởng Team</div>
-                  <div className={`text-xl font-bold mt-1 tabular-nums ${gameDetail.teamKpiSummary.netReward >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <div
+                    className={`text-xl font-bold mt-1 tabular-nums ${gameDetail.teamKpiSummary.netReward >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+                  >
                     {gameDetail.teamKpiSummary.netReward >= 0 ? '+' : ''}
                     {gameDetail.teamKpiSummary.netReward.toLocaleString('vi-VN')} đ
                   </div>
@@ -550,9 +595,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     <div className="text-xl font-bold mt-1 text-emerald-400 tabular-nums">
                       {totalDoneBonusAmount.toLocaleString('vi-VN')} đ
                     </div>
-                    <div className="text-xs text-slate-300 mt-0.5">
-                      {totalDoneBonusBookings} đơn Done đạt thưởng
-                    </div>
+                    <div className="text-xs text-slate-300 mt-0.5">{totalDoneBonusBookings} đơn Done đạt thưởng</div>
                   </div>
                 )}
 
@@ -575,7 +618,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                       +{teamBookingDoneBonusSummary.totalBonus.toLocaleString('vi-VN')} đ
                     </div>
                     <div className="text-xs text-slate-300 mt-0.5 tabular-nums">
-                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK · {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
+                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK ·{' '}
+                      {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
                     </div>
                   </div>
                 )}
@@ -651,9 +695,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     <div className="text-xl font-bold mt-1 text-emerald-400 tabular-nums">
                       {totalDoneBonusAmount.toLocaleString('vi-VN')} đ
                     </div>
-                    <div className="text-xs text-slate-300 mt-0.5">
-                      {totalDoneBonusBookings} đơn Done đạt thưởng
-                    </div>
+                    <div className="text-xs text-slate-300 mt-0.5">{totalDoneBonusBookings} đơn Done đạt thưởng</div>
                   </div>
                 )}
 
@@ -676,7 +718,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                       +{teamBookingDoneBonusSummary.totalBonus.toLocaleString('vi-VN')} đ
                     </div>
                     <div className="text-xs text-slate-300 mt-0.5 tabular-nums">
-                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK · {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
+                      Hôm nay: {teamBookingDoneBonusSummary.todayTeamBookings} BK ·{' '}
+                      {teamBookingDoneBonusSummary.todayBonusPerDone.toLocaleString('vi-VN')}đ/Done
                     </div>
                   </div>
                 )}
@@ -718,7 +761,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                             Tiến Độ KPI Theo Ngày
                           </Typography.Title>
                           <Typography.Text type="secondary" className="text-xs">
-                            Mục tiêu: {gameDetail.teamKpiSummary.config.dailyTarget} booking/ngày ({gameDetail.teamKpiSummary.config.timeWindowStart || '08:00'}–{gameDetail.teamKpiSummary.config.timeWindowEnd || '17:00'})
+                            Mục tiêu: {gameDetail.teamKpiSummary.config.dailyTarget} booking/ngày (
+                            {gameDetail.teamKpiSummary.config.timeWindowStart || '08:00'}–
+                            {gameDetail.teamKpiSummary.config.timeWindowEnd || '17:00'})
                           </Typography.Text>
                         </div>
                       </div>
@@ -739,17 +784,15 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                               day.isToday
                                 ? 'border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 shadow-sm ring-1 ring-purple-400/30'
                                 : day.isPassed
-                                ? 'border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10'
-                                : day.isFuture
-                                ? 'border-slate-200/60 dark:border-slate-800/60 bg-slate-50/30 dark:bg-slate-900/20 opacity-70'
-                                : 'border-rose-200/80 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-950/10'
+                                  ? 'border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10'
+                                  : day.isFuture
+                                    ? 'border-slate-200/60 dark:border-slate-800/60 bg-slate-50/30 dark:bg-slate-900/20 opacity-70'
+                                    : 'border-rose-200/80 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-950/10'
                             }`}
                           >
                             <div className="flex items-center justify-between text-xs mb-1.5">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-800 dark:text-slate-200">
-                                  {day.dateLabel}
-                                </span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200">{day.dateLabel}</span>
                                 {day.isToday && (
                                   <span className="text-[10px] bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold px-1.5 py-0.5 rounded-full">
                                     Hôm nay
@@ -761,7 +804,13 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                                   <span className="text-slate-400 text-[11px]">Sắp diễn ra</span>
                                 ) : day.isPassed ? (
                                   <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
-                                    +{(day.rewardAmount || gameDetail.teamKpiSummary?.config.rewardPerDay || 50000).toLocaleString('vi-VN')} đ
+                                    +
+                                    {(
+                                      day.rewardAmount ||
+                                      gameDetail.teamKpiSummary?.config.rewardPerDay ||
+                                      50000
+                                    ).toLocaleString('vi-VN')}{' '}
+                                    đ
                                   </span>
                                 ) : day.isToday ? (
                                   <span className="text-purple-600 dark:text-purple-400 font-medium text-[11px]">
@@ -769,7 +818,13 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                                   </span>
                                 ) : (
                                   <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
-                                    -{(day.penaltyAmount || gameDetail.teamKpiSummary?.config.penaltyPerDay || 25000).toLocaleString('vi-VN')} đ
+                                    -
+                                    {(
+                                      day.penaltyAmount ||
+                                      gameDetail.teamKpiSummary?.config.penaltyPerDay ||
+                                      25000
+                                    ).toLocaleString('vi-VN')}{' '}
+                                    đ
                                   </span>
                                 )}
                               </div>
@@ -778,7 +833,11 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                             {/* Progress & Target numbers */}
                             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                               <span>
-                                Tiến độ: <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{day.actual}</strong> / {day.target} Booking
+                                Tiến độ:{' '}
+                                <strong className="text-slate-800 dark:text-slate-200 tabular-nums">
+                                  {day.actual}
+                                </strong>{' '}
+                                / {day.target} Booking
                               </span>
                               <span className="tabular-nums font-semibold text-slate-700 dark:text-slate-300">
                                 {pct}%
@@ -790,10 +849,10 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                                 day.isPassed
                                   ? 'var(--ant-color-success)'
                                   : day.isToday
-                                  ? 'var(--ant-color-primary)'
-                                  : day.isFuture
-                                  ? 'var(--ant-color-text-quaternary)'
-                                  : 'var(--ant-color-error)'
+                                    ? 'var(--ant-color-primary)'
+                                    : day.isFuture
+                                      ? 'var(--ant-color-text-quaternary)'
+                                      : 'var(--ant-color-error)'
                               }
                               size="small"
                               showInfo={false}
@@ -807,7 +866,10 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                                 <div className="flex items-center gap-2 truncate max-w-[70%]">
                                   {day.contributors.slice(0, 3).map((c) => (
                                     <span key={c.staffId} className="text-slate-700 dark:text-slate-300 truncate">
-                                      {c.staffName}: <strong className="text-purple-600 dark:text-purple-400 tabular-nums">{c.count}</strong>
+                                      {c.staffName}:{' '}
+                                      <strong className="text-purple-600 dark:text-purple-400 tabular-nums">
+                                        {c.count}
+                                      </strong>
                                     </span>
                                   ))}
                                 </div>
@@ -821,7 +883,13 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
                   {/* Footer info */}
                   <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs text-slate-500 flex items-center justify-between">
-                    <span>Khung giờ tính KPI: <strong>{gameDetail.teamKpiSummary.config.timeWindowStart || '08:00'} - {gameDetail.teamKpiSummary.config.timeWindowEnd || '17:00'}</strong></span>
+                    <span>
+                      Khung giờ tính KPI:{' '}
+                      <strong>
+                        {gameDetail.teamKpiSummary.config.timeWindowStart || '08:00'} -{' '}
+                        {gameDetail.teamKpiSummary.config.timeWindowEnd || '17:00'}
+                      </strong>
+                    </span>
                     <span>Tính theo thời điểm tạo booking (không tính đơn Hủy)</span>
                   </div>
                 </div>
@@ -849,10 +917,13 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                       <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
                         <span>Tổng quỹ ròng của Team:</span>
                         <span className="font-bold text-slate-700 dark:text-slate-300">
-                          {gameDetail.teamKpiSummary.passedDays} ngày đạt · {gameDetail.teamKpiSummary.failedDays} ngày phạt
+                          {gameDetail.teamKpiSummary.passedDays} ngày đạt · {gameDetail.teamKpiSummary.failedDays} ngày
+                          phạt
                         </span>
                       </div>
-                      <div className={`text-2xl font-black tabular-nums ${gameDetail.teamKpiSummary.netReward >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <div
+                        className={`text-2xl font-black tabular-nums ${gameDetail.teamKpiSummary.netReward >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
+                      >
                         {gameDetail.teamKpiSummary.netReward >= 0 ? '+' : ''}
                         {gameDetail.teamKpiSummary.netReward.toLocaleString('vi-VN')} đ
                       </div>
@@ -879,7 +950,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                                   className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between gap-3 text-xs"
                                 >
                                   <div className="flex items-center gap-2.5 truncate">
-                                    <span className={`w-5 text-center font-bold text-xs ${idx === 0 ? 'text-amber-500 font-black' : 'text-slate-400'}`}>
+                                    <span
+                                      className={`w-5 text-center font-bold text-xs ${idx === 0 ? 'text-amber-500 font-black' : 'text-slate-400'}`}
+                                    >
                                       #{idx + 1}
                                     </span>
                                     <BkAvatar name={p.staffName} src={p.avatar} size={28} />
@@ -887,9 +960,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                                       <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
                                         {p.staffName}
                                       </div>
-                                      <div className="text-[10px] text-slate-400">
-                                        Đóng góp {contributionPct}%
-                                      </div>
+                                      <div className="text-[10px] text-slate-400">Đóng góp {contributionPct}%</div>
                                     </div>
                                   </div>
                                   <div className="text-right flex-shrink-0">
@@ -901,7 +972,9 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                               );
                             })
                         ) : (
-                          <div className="text-xs text-slate-400 italic py-4 text-center">Chưa có thành viên tham gia</div>
+                          <div className="text-xs text-slate-400 italic py-4 text-center">
+                            Chưa có thành viên tham gia
+                          </div>
                         )}
                       </div>
                     </div>
@@ -923,293 +996,301 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               </div>
             </div>
           ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-            {/* TOP 3 PODIUM */}
-            <div
-              className={
-                activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
-                  ? 'lg:col-span-7 flex flex-col'
-                  : 'lg:col-span-8 flex flex-col'
-              }
-            >
-              <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                      <AppIcon icon={Trophy} size="md" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+              {/* TOP 3 PODIUM */}
+              <div
+                className={
+                  activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
+                    ? 'lg:col-span-7 flex flex-col'
+                    : hasTeamBookingDoneBonus
+                      ? 'lg:col-span-12 flex flex-col'
+                      : 'lg:col-span-8 flex flex-col'
+                }
+              >
+                <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <AppIcon icon={Trophy} size="md" />
+                      </div>
+                      <div>
+                        <Typography.Title level={5} className="!mb-0 font-bold tracking-tight">
+                          Top 3 Bảng Xếp Hạng
+                        </Typography.Title>
+                        <Typography.Text type="secondary" className="text-xs">
+                          Bục vinh danh những cá nhân xuất sắc nhất
+                        </Typography.Text>
+                      </div>
                     </div>
-                    <div>
-                      <Typography.Title level={5} className="!mb-0 font-bold tracking-tight">
-                        Top 3 Bảng Xếp Hạng
-                      </Typography.Title>
-                      <Typography.Text type="secondary" className="text-xs">
-                        Bục vinh danh những cá nhân xuất sắc nhất
-                      </Typography.Text>
+                    <StatusTag status="gold" label="PODIUM" />
+                  </div>
+
+                  {/* Olympic 3-Step Podium Pedestal */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-6 pb-2 px-1 max-w-lg mx-auto w-full">
+                    {/* #2 Silver (Left) */}
+                    <div className="flex flex-col items-center text-center">
+                      {top2 ? (
+                        <>
+                          <div className="relative mb-2">
+                            <div className="relative inline-block rounded-full ring-2 ring-slate-400 dark:ring-slate-500 p-0.5 shadow-sm">
+                              <BkAvatar name={top2.staffName} src={top2.avatar} size={46} />
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-white dark:ring-slate-900">
+                              #2
+                            </span>
+                          </div>
+                          <div className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 truncate max-w-[100px] mb-0.5">
+                            {top2.staffName}
+                          </div>
+                          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+                            {top2.score} {activeGame.metricType === 'BOOKINGS' ? 'Booking' : 'Điểm'}
+                          </div>
+                          {/* Silver Pedestal Step */}
+                          <div className="w-full mt-3 h-24 rounded-t-xl bg-gradient-to-t from-slate-200/90 to-slate-100/60 dark:from-slate-800 dark:to-slate-700/50 border-t-2 border-slate-300 dark:border-slate-500 flex flex-col items-center justify-center shadow-sm">
+                            <span className="text-2xl font-black text-slate-400 dark:text-slate-500">2</span>
+                            <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
+                              Á Quân
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-slate-400 italic py-8">Chưa có</div>
+                      )}
                     </div>
-                  </div>
-                  <StatusTag status="gold" label="PODIUM" />
-                </div>
 
-                {/* Olympic 3-Step Podium Pedestal */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-6 pb-2 px-1 max-w-lg mx-auto w-full">
-                  {/* #2 Silver (Left) */}
-                  <div className="flex flex-col items-center text-center">
-                    {top2 ? (
-                      <>
-                        <div className="relative mb-2">
-                          <div className="relative inline-block rounded-full ring-2 ring-slate-400 dark:ring-slate-500 p-0.5 shadow-sm">
-                            <BkAvatar name={top2.staffName} src={top2.avatar} size={46} />
+                    {/* #1 Gold (Center - Elevated & Glowing) */}
+                    <div className="flex flex-col items-center text-center -mt-6">
+                      {top1 ? (
+                        <>
+                          <div className="relative mb-2">
+                            <div className="text-amber-500 mb-0.5 flex justify-center animate-bounce">
+                              <AppIcon icon={Trophy} size="md" />
+                            </div>
+                            <div className="relative inline-block rounded-full ring-4 ring-amber-400 dark:ring-amber-500 shadow-md shadow-amber-500/20 p-0.5 scale-105">
+                              <BkAvatar name={top1.staffName} src={top1.avatar} size={56} />
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 text-xs font-black px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow">
+                              #1
+                            </span>
                           </div>
-                          <span className="absolute -bottom-1 -right-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-white dark:ring-slate-900">
-                            #2
-                          </span>
-                        </div>
-                        <div className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 truncate max-w-[100px] mb-0.5">
-                          {top2.staffName}
-                        </div>
-                        <div className="text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">
-                          {top2.score} {activeGame.metricType === 'BOOKINGS' ? 'Booking' : 'Điểm'}
-                        </div>
-                        {/* Silver Pedestal Step */}
-                        <div className="w-full mt-3 h-24 rounded-t-xl bg-gradient-to-t from-slate-200/90 to-slate-100/60 dark:from-slate-800 dark:to-slate-700/50 border-t-2 border-slate-300 dark:border-slate-500 flex flex-col items-center justify-center shadow-sm">
-                          <span className="text-2xl font-black text-slate-400 dark:text-slate-500">2</span>
-                          <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
-                            Á Quân
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-xs text-slate-400 italic py-8">Chưa có</div>
-                    )}
-                  </div>
+                          <div className="font-bold text-sm sm:text-base text-amber-600 dark:text-amber-400 truncate max-w-[120px] mb-0.5">
+                            {top1.staffName}
+                          </div>
+                          <div className="text-xs sm:text-sm font-black text-amber-500 tabular-nums">
+                            {top1.score} {activeGame.metricType === 'BOOKINGS' ? 'Booking' : 'Điểm'}
+                          </div>
+                          {/* Gold Pedestal Step */}
+                          <div className="w-full mt-3 h-32 rounded-t-xl bg-gradient-to-t from-amber-500/30 via-amber-400/20 to-amber-300/30 dark:from-amber-600/40 dark:via-amber-500/20 dark:to-amber-400/30 border-t-4 border-amber-400 flex flex-col items-center justify-center shadow-md shadow-amber-500/10">
+                            <span className="text-3xl font-black text-amber-500 dark:text-amber-400">1</span>
+                            <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400">
+                              Quán Quân
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-slate-400 italic py-8">Chưa có</div>
+                      )}
+                    </div>
 
-                  {/* #1 Gold (Center - Elevated & Glowing) */}
-                  <div className="flex flex-col items-center text-center -mt-6">
-                    {top1 ? (
-                      <>
-                        <div className="relative mb-2">
-                          <div className="text-amber-500 mb-0.5 flex justify-center animate-bounce">
-                            <AppIcon icon={Trophy} size="md" />
+                    {/* #3 Bronze (Right) */}
+                    <div className="flex flex-col items-center text-center">
+                      {top3 ? (
+                        <>
+                          <div className="relative mb-2">
+                            <div className="relative inline-block rounded-full ring-2 ring-amber-700/60 dark:ring-amber-600/60 p-0.5 shadow-sm">
+                              <BkAvatar name={top3.staffName} src={top3.avatar} size={42} />
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 bg-amber-800 text-amber-100 text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-white dark:ring-slate-900">
+                              #3
+                            </span>
                           </div>
-                          <div className="relative inline-block rounded-full ring-4 ring-amber-400 dark:ring-amber-500 shadow-md shadow-amber-500/20 p-0.5 scale-105">
-                            <BkAvatar name={top1.staffName} src={top1.avatar} size={56} />
+                          <div className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 truncate max-w-[100px] mb-0.5">
+                            {top3.staffName}
                           </div>
-                          <span className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 text-xs font-black px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow">
-                            #1
-                          </span>
-                        </div>
-                        <div className="font-bold text-sm sm:text-base text-amber-600 dark:text-amber-400 truncate max-w-[120px] mb-0.5">
-                          {top1.staffName}
-                        </div>
-                        <div className="text-xs sm:text-sm font-black text-amber-500 tabular-nums">
-                          {top1.score} {activeGame.metricType === 'BOOKINGS' ? 'Booking' : 'Điểm'}
-                        </div>
-                        {/* Gold Pedestal Step */}
-                        <div className="w-full mt-3 h-32 rounded-t-xl bg-gradient-to-t from-amber-500/30 via-amber-400/20 to-amber-300/30 dark:from-amber-600/40 dark:via-amber-500/20 dark:to-amber-400/30 border-t-4 border-amber-400 flex flex-col items-center justify-center shadow-md shadow-amber-500/10">
-                          <span className="text-3xl font-black text-amber-500 dark:text-amber-400">1</span>
-                          <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400">
-                            Quán Quân
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-xs text-slate-400 italic py-8">Chưa có</div>
-                    )}
-                  </div>
-
-                  {/* #3 Bronze (Right) */}
-                  <div className="flex flex-col items-center text-center">
-                    {top3 ? (
-                      <>
-                        <div className="relative mb-2">
-                          <div className="relative inline-block rounded-full ring-2 ring-amber-700/60 dark:ring-amber-600/60 p-0.5 shadow-sm">
-                            <BkAvatar name={top3.staffName} src={top3.avatar} size={42} />
+                          <div className="text-xs font-bold text-amber-700 dark:text-amber-500 tabular-nums">
+                            {top3.score} {activeGame.metricType === 'BOOKINGS' ? 'Booking' : 'Điểm'}
                           </div>
-                          <span className="absolute -bottom-1 -right-1 bg-amber-800 text-amber-100 text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-white dark:ring-slate-900">
-                            #3
-                          </span>
-                        </div>
-                        <div className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 truncate max-w-[100px] mb-0.5">
-                          {top3.staffName}
-                        </div>
-                        <div className="text-xs font-bold text-amber-700 dark:text-amber-500 tabular-nums">
-                          {top3.score} {activeGame.metricType === 'BOOKINGS' ? 'Booking' : 'Điểm'}
-                        </div>
-                        {/* Bronze Pedestal Step */}
-                        <div className="w-full mt-3 h-20 rounded-t-xl bg-gradient-to-t from-amber-900/20 to-amber-800/10 dark:from-amber-950 dark:to-amber-900/40 border-t-2 border-amber-700 flex flex-col items-center justify-center shadow-sm">
-                          <span className="text-2xl font-black text-amber-700 dark:text-amber-600">3</span>
-                          <span className="text-[9px] uppercase font-bold tracking-wider text-amber-700 dark:text-amber-500">
-                            Hạng Ba
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-xs text-slate-400 italic py-8">Chưa có</div>
-                    )}
+                          {/* Bronze Pedestal Step */}
+                          <div className="w-full mt-3 h-20 rounded-t-xl bg-gradient-to-t from-amber-900/20 to-amber-800/10 dark:from-amber-950 dark:to-amber-900/40 border-t-2 border-amber-700 flex flex-col items-center justify-center shadow-sm">
+                            <span className="text-2xl font-black text-amber-700 dark:text-amber-600">3</span>
+                            <span className="text-[9px] uppercase font-bold tracking-wider text-amber-700 dark:text-amber-500">
+                              Hạng Ba
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-slate-400 italic py-8">Chưa có</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* SIDE PANEL: TEAM BATTLE OR CHALLENGE OVERVIEW */}
-            <div
-              className={
-                activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
-                  ? 'lg:col-span-5 flex flex-col'
-                  : 'lg:col-span-4 flex flex-col'
-              }
-            >
-              {activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2 ? (
-                <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <AppIcon icon={Swords} size="md" className="text-rose-500" />
-                        <Typography.Title level={5} className="!mb-0 font-bold">
-                          Đối Đầu Đồng Đội
-                        </Typography.Title>
+              {/* SIDE PANEL: TEAM BATTLE OR CHALLENGE OVERVIEW (Hidden when Team-Booking Done Bonus replaces legacy challenge card) */}
+              {(activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2) ||
+              !hasTeamBookingDoneBonus ? (
+                <div
+                  className={
+                    activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2
+                      ? 'lg:col-span-5 flex flex-col'
+                      : 'lg:col-span-4 flex flex-col'
+                  }
+                >
+                  {activeGame.gameType === 'TEAM' && gameDetail?.teams && gameDetail.teams.length >= 2 ? (
+                    <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <AppIcon icon={Swords} size="md" className="text-rose-500" />
+                            <Typography.Title level={5} className="!mb-0 font-bold">
+                              Đối Đầu Đồng Đội
+                            </Typography.Title>
+                          </div>
+                          <StatusTag status="error" label="LIVE BATTLE" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 items-center">
+                          <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
+                            <div className="font-bold text-sm text-blue-600 dark:text-blue-400 truncate">
+                              {gameDetail.teams[0].teamName}
+                            </div>
+                            <div className="text-xl font-black tabular-nums text-blue-600 dark:text-blue-400 mt-1">
+                              {gameDetail.teams[0].score} <span className="text-xs font-normal">điểm</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-1">
+                              {gameDetail.teams[0].participants?.length || 0} thành viên
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/20">
+                            <div className="font-bold text-sm text-rose-600 dark:text-rose-400 truncate">
+                              {gameDetail.teams[1].teamName}
+                            </div>
+                            <div className="text-xl font-black tabular-nums text-rose-600 dark:text-rose-400 mt-1">
+                              {gameDetail.teams[1].score} <span className="text-xs font-normal">điểm</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-1">
+                              {gameDetail.teams[1].participants?.length || 0} thành viên
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Battle Progress Bar */}
+                        <div className="mt-4">
+                          {(() => {
+                            const t1 = gameDetail.teams[0].score;
+                            const t2 = gameDetail.teams[1].score;
+                            const sum = t1 + t2;
+                            const p1 = sum > 0 ? Math.round((t1 / sum) * 100) : 50;
+                            return (
+                              <div>
+                                <div className="flex justify-between text-xs font-semibold mb-1">
+                                  <span className="text-blue-600">
+                                    {gameDetail.teams[0].teamName} ({p1}%)
+                                  </span>
+                                  <span className="text-rose-600">
+                                    {gameDetail.teams[1].teamName} ({100 - p1}%)
+                                  </span>
+                                </div>
+                                <Progress
+                                  percent={p1}
+                                  strokeColor="var(--ant-color-primary)"
+                                  trailColor="var(--ant-color-error)"
+                                  showInfo={false}
+                                  className="!m-0"
+                                />
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
-                      <StatusTag status="error" label="LIVE BATTLE" />
+
+                      {activeGame.status === 'ACTIVE' && (
+                        <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80">
+                          <Button
+                            type="primary"
+                            icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                            onClick={() => setFinalizeModalOpen(true)}
+                            className="w-full !bg-emerald-600 hover:!bg-emerald-500 !border-emerald-600 font-semibold"
+                          >
+                            Chốt & Công Bố Kết Quả Đội Thắng
+                          </Button>
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <Typography.Title level={5} className="!mb-0 font-bold">
+                            Tiến Độ & Thưởng Phạt
+                          </Typography.Title>
+                          <StatusTag status="gold" label={`${activeGame.rewardPool.toLocaleString('vi-VN')} đ`} />
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-3 items-center">
-                      <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
-                        <div className="font-bold text-sm text-blue-600 dark:text-blue-400 truncate">
-                          {gameDetail.teams[0].teamName}
-                        </div>
-                        <div className="text-xl font-black tabular-nums text-blue-600 dark:text-blue-400 mt-1">
-                          {gameDetail.teams[0].score} <span className="text-xs font-normal">điểm</span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-1">
-                          {gameDetail.teams[0].participants?.length || 0} thành viên
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/20">
-                        <div className="font-bold text-sm text-rose-600 dark:text-rose-400 truncate">
-                          {gameDetail.teams[1].teamName}
-                        </div>
-                        <div className="text-xl font-black tabular-nums text-rose-600 dark:text-rose-400 mt-1">
-                          {gameDetail.teams[1].score} <span className="text-xs font-normal">điểm</span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-1">
-                          {gameDetail.teams[1].participants?.length || 0} thành viên
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Battle Progress Bar */}
-                    <div className="mt-4">
-                      {(() => {
-                        const t1 = gameDetail.teams[0].score;
-                        const t2 = gameDetail.teams[1].score;
-                        const sum = t1 + t2;
-                        const p1 = sum > 0 ? Math.round((t1 / sum) * 100) : 50;
-                        return (
-                          <div>
-                            <div className="flex justify-between text-xs font-semibold mb-1">
-                              <span className="text-blue-600">
-                                {gameDetail.teams[0].teamName} ({p1}%)
-                              </span>
-                              <span className="text-rose-600">
-                                {gameDetail.teams[1].teamName} ({100 - p1}%)
+                        <div className="space-y-3">
+                          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-slate-500">Mục tiêu toàn đội:</span>
+                              <span className="font-bold tabular-nums">
+                                {gameDetail?.stats.totalScore || 0} / {activeGame.targetScore || 50}
                               </span>
                             </div>
                             <Progress
-                              percent={p1}
+                              percent={Math.min(
+                                100,
+                                Math.round(((gameDetail?.stats.totalScore || 0) / (activeGame.targetScore || 50)) * 100)
+                              )}
                               strokeColor="var(--ant-color-primary)"
-                              trailColor="var(--ant-color-error)"
-                              showInfo={false}
-                              className="!m-0"
+                              size="small"
                             />
                           </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
 
-                  {activeGame.status === 'ACTIVE' && (
-                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80">
-                      <Button
-                        type="primary"
-                        icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                        onClick={() => setFinalizeModalOpen(true)}
-                        className="w-full !bg-emerald-600 hover:!bg-emerald-500 !border-emerald-600 font-semibold"
-                      >
-                        Chốt & Công Bố Kết Quả Đội Thắng
-                      </Button>
+                          <div className="p-3 rounded-xl bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-xs">
+                            <div className="flex items-center gap-1.5 font-bold text-rose-600 dark:text-rose-400 mb-1">
+                              <AppIcon icon={ShieldAlert} size="sm" />
+                              <span>Hình Phạt Vui Áp Dụng:</span>
+                            </div>
+                            <div className="text-slate-700 dark:text-slate-300 font-medium">
+                              {activeGame.penaltyDescription || 'Bao trà sữa / bánh tráng cả team'}
+                            </div>
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 text-xs">
+                            <div className="font-bold text-amber-700 dark:text-amber-400 mb-0.5">
+                              Cơ Cấu Giải Thưởng:
+                            </div>
+                            <div className="text-slate-600 dark:text-slate-300">
+                              {activeGame.rewardDescription || 'Quán quân nhận toàn bộ quỹ cược + thưởng cty'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {activeGame.status === 'ACTIVE' && (
+                        <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80">
+                          <Button
+                            type="primary"
+                            icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                            onClick={() => setFinalizeModalOpen(true)}
+                            className="w-full !bg-emerald-600 hover:!bg-emerald-500 !border-emerald-600 font-semibold"
+                          >
+                            Chốt & Công Bố Kết Quả
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="h-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <Typography.Title level={5} className="!mb-0 font-bold">
-                        Tiến Độ & Thưởng Phạt
-                      </Typography.Title>
-                      <StatusTag status="gold" label={`${activeGame.rewardPool.toLocaleString('vi-VN')} đ`} />
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-slate-500">Mục tiêu toàn đội:</span>
-                          <span className="font-bold tabular-nums">
-                            {gameDetail?.stats.totalScore || 0} / {activeGame.targetScore || 50}
-                          </span>
-                        </div>
-                        <Progress
-                          percent={Math.min(
-                            100,
-                            Math.round(((gameDetail?.stats.totalScore || 0) / (activeGame.targetScore || 50)) * 100)
-                          )}
-                          strokeColor="var(--ant-color-primary)"
-                          size="small"
-                        />
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-xs">
-                        <div className="flex items-center gap-1.5 font-bold text-rose-600 dark:text-rose-400 mb-1">
-                          <AppIcon icon={ShieldAlert} size="sm" />
-                          <span>Hình Phạt Vui Áp Dụng:</span>
-                        </div>
-                        <div className="text-slate-700 dark:text-slate-300 font-medium">
-                          {activeGame.penaltyDescription || 'Bao trà sữa / bánh tráng cả team'}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 text-xs">
-                        <div className="font-bold text-amber-700 dark:text-amber-400 mb-0.5">Cơ Cấu Giải Thưởng:</div>
-                        <div className="text-slate-600 dark:text-slate-300">
-                          {activeGame.rewardDescription || 'Quán quân nhận toàn bộ quỹ cược + thưởng cty'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {activeGame.status === 'ACTIVE' && (
-                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80">
-                      <Button
-                        type="primary"
-                        icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                        onClick={() => setFinalizeModalOpen(true)}
-                        className="w-full !bg-emerald-600 hover:!bg-emerald-500 !border-emerald-600 font-semibold"
-                      >
-                        Chốt & Công Bố Kết Quả
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
+              ) : null}
             </div>
-          </div>
           )}
 
           {hasTeamBookingDoneBonus && teamBookingDoneBonusSummary && (
             <BkTeamBookingDoneBonusPanel
               summary={teamBookingDoneBonusSummary}
               onOpenDetailsDrawer={openTeamBookingDoneDrawer}
+              lastUpdatedAt={lastUpdatedAt}
             />
           )}
         </div>
@@ -1237,10 +1318,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
         extra={
           activeGame && (
             <div className="flex items-center gap-2">
-              <Button
-                icon={<AppIcon icon={Edit3} size="sm" />}
-                onClick={() => setEditModalOpen(true)}
-              >
+              <Button icon={<AppIcon icon={Edit3} size="sm" />} onClick={() => setEditModalOpen(true)}>
                 Chỉnh sửa Game
               </Button>
               {activeGame.status === 'ACTIVE' && (
@@ -1270,7 +1348,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               <em>{scoringRule.formula}</em>.
               {activeGame.allowedBookingChannels && activeGame.allowedBookingChannels.length > 0 && (
                 <span>
-                  {' '}· 🎯 <strong>Chỉ ghi nhận kênh:</strong>{' '}
+                  {' '}
+                  · 🎯 <strong>Chỉ ghi nhận kênh:</strong>{' '}
                   <code className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-mono font-semibold">
                     {activeGame.allowedBookingChannels.join(', ')}
                   </code>
@@ -1278,9 +1357,11 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               )}
               {activeGame.gameType === 'TEAM_KPI' && (
                 <span>
-                  {' '}· ⏰ <strong>Khung giờ tính KPI:</strong>{' '}
+                  {' '}
+                  · ⏰ <strong>Khung giờ tính KPI:</strong>{' '}
                   <code className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-mono font-semibold">
-                    {activeGame.teamKpiConfig?.timeWindowStart || '08:00'}–{activeGame.teamKpiConfig?.timeWindowEnd || '17:00'}
+                    {activeGame.teamKpiConfig?.timeWindowStart || '08:00'}–
+                    {activeGame.teamKpiConfig?.timeWindowEnd || '17:00'}
                   </code>
                 </span>
               )}

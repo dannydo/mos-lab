@@ -3575,7 +3575,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           ? `#${targetConv.name}`
           : targetConv.name
         : 'mục này';
-      updateUserSidebarPrefs((prev) => {
+      const currentlyPinned = (userPrefs.pinnedIds || []).includes(convId);
+      const nextPinnedState = !currentlyPinned;
+      lastLocalPrefsMutationAtRef.current = Date.now();
+
+      // Optimistic local state update WITHOUT firing a competing updateUserPrefs PUT
+      updateUserPrefsLocalOnly((prev) => {
         const exists = (prev.pinnedIds || []).includes(convId);
         const nextPinned = exists
           ? (prev.pinnedIds || []).filter((id) => id !== convId)
@@ -3596,23 +3601,47 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           }
         }
 
-        antdMessage.success(
-          exists
-            ? `Đã bỏ ghim ${convLabel} khỏi danh sách cá nhân`
-            : `📌 Đã ghim ${convLabel} lên đầu danh sách cá nhân (đã lưu)`
-        );
         return {
           ...prev,
           pinnedIds: nextPinned,
           hiddenIds: nextHidden,
           conversationOrder: nextConvOrder,
+          updatedAt: new Date().toISOString(),
         };
       });
+
+      antdMessage.success(
+        nextPinnedState
+          ? `📌 Đã ghim ${convLabel} lên đầu danh sách cá nhân (đã lưu)`
+          : `Đã bỏ ghim ${convLabel} khỏi danh sách cá nhân`
+      );
       notifyLivePeers();
-      // Kích hoạt song song API backend để đồng bộ tức thì trên relational database
-      apiClient.chat.togglePinConversation(convId).catch(() => {});
+
+      // Single authoritative backend mutation with explicit { pinned: nextPinnedState } (prevents double-toggle race)
+      apiClient.chat
+        .togglePinConversation(convId, nextPinnedState)
+        .then((res) => {
+          if (res?.userPrefs) {
+            updateUserPrefsLocalOnly(() => res.userPrefs!);
+          }
+          notifyLivePeers();
+        })
+        .catch(() => {
+          // Roll back optimistic toggle if backend failed
+          updateUserPrefsLocalOnly((prev) => {
+            const revertedPinned = nextPinnedState
+              ? (prev.pinnedIds || []).filter((id) => id !== convId)
+              : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
+            return {
+              ...prev,
+              pinnedIds: revertedPinned,
+              updatedAt: new Date().toISOString(),
+            };
+          });
+          antdMessage.error('Không thể đồng bộ trạng thái ghim lên máy chủ, vui lòng thử lại');
+        });
     },
-    [allUserConversations, updateUserSidebarPrefs, notifyLivePeers]
+    [allUserConversations, userPrefs.pinnedIds, updateUserPrefsLocalOnly, notifyLivePeers]
   );
 
   const toggleMuteConversation = useCallback(

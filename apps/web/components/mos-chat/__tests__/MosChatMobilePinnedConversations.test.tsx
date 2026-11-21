@@ -176,8 +176,8 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
     const unpinOption = screen.getByText(/Bỏ ghim Không gian này/i);
     fireEvent.click(unpinOption);
 
-    // API should be invoked with space-core-team
-    expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-core-team');
+    // API should be invoked with space-core-team and explicit pinned=false
+    expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-core-team', false);
   });
 
   it('displays pin toggle in mobile room header and allows pinning active room', async () => {
@@ -206,6 +206,6 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
 
     // Click pin button
     fireEvent.click(pinHeaderBtn);
-    expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-general');
+    expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-general', true);
   });
 });

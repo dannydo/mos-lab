@@ -31,6 +31,7 @@ import { saveLocalProgressSnapshot, setActiveServicingBookingId, setActiveServic
 import { buildSimBookingMetaPayload } from './useIosSimulationMode';
 import {
   applyCartProductsUpdateToBookingDraft,
+  applyCombosUpdateToBookingDraft,
   applyTargetPromotionToBookingDraft,
   buildRecomputedCheckoutBilling,
   computeFreshBillingLineTotals,
@@ -73,6 +74,10 @@ export interface UseIosBillingCheckoutParams {
   onSimulationAttemptSaved?: (bookingId: number, attempt: IosSimulationAttemptSummary | undefined) => void;
   actor: ActiveActorProfile;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
+  /** Referral đang pending — sẽ được inject vào COMPLETE_ORDER để backend trao 100 KC */
+  pendingReferral?: { referrerUserId: number; referrerName: string } | null;
+  /** Callback để reset pendingReferral sau khi COMPLETE_ORDER thành công */
+  onReferralGranted?: () => void;
   updateActiveBooking: (updater: (prev: BookingItem) => BookingItem) => void;
   postAction: (action: string, payload?: Record<string, any>) => Promise<any>;
   refreshDb?: () => Promise<any>;
@@ -87,6 +92,8 @@ export function useIosBillingCheckout({
   onSimulationAttemptSaved,
   actor,
   cvPlusRules,
+  pendingReferral,
+  onReferralGranted,
   updateActiveBooking,
   postAction,
   refreshDb,
@@ -101,10 +108,22 @@ export function useIosBillingCheckout({
         if (res?.data?.attemptSnapshot) {
           onSimulationAttemptSaved?.(activeBookingId, res.data.attemptSnapshot);
         }
+        // Reset pendingReferral sau khi order hoàn tất thành công
+        if (!isSimulationMode) {
+          onReferralGranted?.();
+        }
         return refreshDb?.();
       });
     },
-    [activeBooking, activeBookingId, isSimulationMode, onSimulationAttemptSaved, postAction, refreshDb]
+    [
+      activeBooking,
+      activeBookingId,
+      isSimulationMode,
+      onReferralGranted,
+      onSimulationAttemptSaved,
+      postAction,
+      refreshDb,
+    ]
   );
 
   // Step 12 -> 13: Go To Billing with Upsell
@@ -303,6 +322,19 @@ export function useIosBillingCheckout({
     [actor.tier, cvPlusRules, postAction, updateActiveBooking]
   );
 
+  // Step 13C: Chọn / đổi / xóa hoặc chuyển chế độ Combo trực tiếp từ Checkout
+  const handleUpdateCombos = useCallback(
+    (payload: {
+      selectedCombo: BookingItem['selectedCombo'];
+      selectedUnderCombo: BookingItem['selectedUnderCombo'];
+      comboRedemption?: BookingItem['comboRedemption'];
+    }) => {
+      updateActiveBooking((prev) => applyCombosUpdateToBookingDraft(prev, payload, actor.tier, cvPlusRules));
+      void postAction('SAVE_UPSELL', payload);
+    },
+    [actor.tier, cvPlusRules, postAction, updateActiveBooking]
+  );
+
   // Step 13: Choose Payment Method & Confirm Tip Directly & Diamond Wallet (One-Stop Checkout)
   const handleChoosePaymentMethod = useCallback(
     (
@@ -412,20 +444,30 @@ export function useIosBillingCheckout({
         const grandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
         const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
 
+        const isSessionWaivedIntoNewCombo = Boolean(
+          nextBookingDraft.selectedCombo && nextBookingDraft.selectedCombo.todaySingleServiceWaived !== false
+        );
         const effectiveOrderPromoId =
-          unifiedOrderPromotionId ?? nextBookingDraft.promotionId ?? primaryPromotion?.promotionId ?? null;
+          unifiedOrderPromotionId ??
+          (isSessionWaivedIntoNewCombo ? null : nextBookingDraft.promotionId) ??
+          primaryPromotion?.promotionId ??
+          null;
         promoActionSnapshot = {
           promotionId: effectiveOrderPromoId,
-          appliedPromotion: nextBookingDraft.appliedPromotion ?? null,
-          servicePromotionId:
-            nextBookingDraft.servicePromotion?.promotionId ?? nextBookingDraft.servicePromotionId ?? null,
-          servicePromotion: nextBookingDraft.servicePromotion ?? null,
+          appliedPromotion: isSessionWaivedIntoNewCombo ? null : (nextBookingDraft.appliedPromotion ?? null),
+          servicePromotionId: isSessionWaivedIntoNewCombo
+            ? null
+            : (nextBookingDraft.servicePromotion?.promotionId ?? nextBookingDraft.servicePromotionId ?? null),
+          servicePromotion: isSessionWaivedIntoNewCombo ? null : (nextBookingDraft.servicePromotion ?? null),
           comboPromotionId: nextBookingDraft.comboPromotion?.promotionId ?? nextBookingDraft.comboPromotionId ?? null,
           comboPromotion: nextBookingDraft.comboPromotion ?? null,
           underComboPromotionId:
             nextBookingDraft.underComboPromotion?.promotionId ?? nextBookingDraft.underComboPromotionId ?? null,
           underComboPromotion: nextBookingDraft.underComboPromotion ?? null,
           cartProducts: nextBookingDraft.cartProducts,
+          selectedCombo: nextBookingDraft.selectedCombo ?? null,
+          selectedUnderCombo: nextBookingDraft.selectedUnderCombo ?? null,
+          comboRedemption: nextBookingDraft.comboRedemption ?? null,
         };
 
         const normalizedPayment = resolveNormalizedPaymentBreakdown(
@@ -445,7 +487,10 @@ export function useIosBillingCheckout({
           comboTotal: freshComboTotal,
           productTotal: freshProductTotal,
           promotionId: effectiveOrderPromoId,
-          promotionName: primaryPromotion?.name ?? nextBookingDraft.appliedPromotion?.name ?? undefined,
+          promotionName:
+            primaryPromotion?.name ??
+            (isSessionWaivedIntoNewCombo ? undefined : nextBookingDraft.appliedPromotion?.name) ??
+            undefined,
           promotionDiscountAmount,
           serviceDiscountAmount,
           comboDiscountAmount,
@@ -488,7 +533,21 @@ export function useIosBillingCheckout({
         };
       });
 
-      dispatchCompleteOrder({ ...promoActionSnapshot, billing: calculatedBilling, status: 'DONE', completedAt });
+      dispatchCompleteOrder({
+        ...promoActionSnapshot,
+        billing: calculatedBilling,
+        status: 'DONE',
+        completedAt,
+        // Inject referral: backend sẽ kiểm tra guard duplicate và trao 100 KC
+        ...(pendingReferral && !isSimulationMode
+          ? {
+              referralPending: {
+                referrerUserId: pendingReferral.referrerUserId,
+                referrerName: pendingReferral.referrerName,
+              },
+            }
+          : {}),
+      });
       setActiveServicingBookingId(null);
       setActiveServicingStep(null);
       saveLocalProgressSnapshot(activeBookingId, { status: 'DONE', completedAt, currentStep: 1 });
@@ -627,6 +686,7 @@ export function useIosBillingCheckout({
     handleGoToBilling,
     handleSavePromotion,
     handleUpdateCartProducts,
+    handleUpdateCombos,
     handleChoosePaymentMethod,
     handleRecordTip,
     handleFinishOrder,

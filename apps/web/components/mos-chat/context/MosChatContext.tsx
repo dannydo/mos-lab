@@ -659,25 +659,34 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   }, []);
 
   // Check if conversation is pinned
-  const isPinnedConversation = useCallback(
-    (convId: string) => pinnedConvIds.has(convId),
-    [pinnedConvIds]
-  );
+  const isPinnedConversation = useCallback((convId: string) => pinnedConvIds.has(convId), [pinnedConvIds]);
 
   // Toggle pin conversation
-  const togglePinConversation = useCallback(async (convId: string) => {
-    setPinnedConvIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(convId)) next.delete(convId);
-      else next.add(convId);
-      return next;
-    });
-    try {
-      await apiClient.chat.togglePinConversation(convId);
-    } catch {
-      // ignore
-    }
-  }, []);
+  const togglePinConversation = useCallback(
+    async (convId: string) => {
+      const nextPinnedState = !pinnedConvIds.has(convId);
+      setPinnedConvIds((prev) => {
+        const next = new Set(prev);
+        if (nextPinnedState) next.add(convId);
+        else next.delete(convId);
+        return next;
+      });
+      try {
+        const res = await apiClient.chat.togglePinConversation(convId, nextPinnedState);
+        if (res?.userPrefs?.pinnedIds) {
+          setPinnedConvIds(new Set(res.userPrefs.pinnedIds));
+        }
+      } catch {
+        setPinnedConvIds((prev) => {
+          const reverted = new Set(prev);
+          if (nextPinnedState) reverted.delete(convId);
+          else reverted.add(convId);
+          return reverted;
+        });
+      }
+    },
+    [pinnedConvIds]
+  );
 
   // Start or open direct message with a staff member
   const startDirectMessage = useCallback(

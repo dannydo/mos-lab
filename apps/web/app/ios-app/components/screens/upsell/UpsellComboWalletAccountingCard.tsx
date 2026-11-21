@@ -7,6 +7,7 @@ import {
   calculateComboPurchaseAccounting,
   type ComboPurchaseExpiryResult,
   type ComboTodayUsageMode,
+  type IosPromotionOption,
 } from '@mos-lab/shared';
 import { FeatherSvg } from '../../ui-kit/CvFeatherLabels';
 
@@ -25,6 +26,7 @@ export interface UpsellComboWalletAccountingCardProps {
   servicePrice: number;
   showStaffRewards: boolean;
   actorName: string;
+  activeBookingPromotion?: IosPromotionOption | null;
   onCollapseNewComboSection: () => void;
 }
 
@@ -45,6 +47,7 @@ export function UpsellComboWalletAccountingCard({
   servicePrice,
   showStaffRewards,
   actorName,
+  activeBookingPromotion,
   onCollapseNewComboSection,
 }: UpsellComboWalletAccountingCardProps) {
   return (
@@ -76,7 +79,10 @@ export function UpsellComboWalletAccountingCard({
                   [
                     { mode: 'USE_OLD_COMBO' as const, label: 'Trừ gói cũ (+1T)' },
                     { mode: 'USE_NEW_COMBO' as const, label: 'Trừ gói mới' },
-                    { mode: 'RETAIL_OR_VOUCHER' as const, label: 'Đi lẻ (+1T+21N)' },
+                    {
+                      mode: 'RETAIL_OR_VOUCHER' as const,
+                      label: activeBookingPromotion ? 'Hưởng ưu đãi (+1T+21N)' : 'Đi lẻ (+1T+21N)',
+                    },
                   ] as const
                 ).map((opt) => {
                   const active = upperTodayUsageMode === opt.mode;
@@ -231,7 +237,11 @@ export function UpsellComboWalletAccountingCard({
                       }`}
                     >
                       {!deductTodayIntoCombo && <span>✓</span>}
-                      <span>Đi lẻ / Voucher (+21N)</span>
+                      <span>
+                        {activeBookingPromotion
+                          ? `Hưởng ưu đãi lẻ · Giữ đủ ${selectedNewComboPkg.totalSessions}b (+21N)`
+                          : 'Đi lẻ / Voucher (+21N)'}
+                      </span>
                     </button>
                   </div>
                 </div>

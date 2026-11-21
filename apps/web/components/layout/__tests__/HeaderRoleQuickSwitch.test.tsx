@@ -82,9 +82,10 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.getByText('mOS General')).toBeDefined();
     expect(screen.getByText('mOS Chat')).toBeDefined();
     expect(screen.getByText('iOS-App')).toBeDefined();
-    // Suite row for un-granted Manager+CC shows mOS Reports (CC KPI) & mOS Bible, hides Zero-Trust Mission & Lab
+    // Suite row for un-granted Manager+CC shows mOS Reports (CC KPI), mOS Bible & Báo lỗi, hides Zero-Trust Mission & Lab
     expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
 
@@ -129,6 +130,9 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-suite="mission"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')?.getAttribute('data-coming-soon')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
     expect(screen.getByText('4')).toBeDefined();
 
     fireEvent.click(panel.querySelector('[data-launcher-suite="bible"]')!);
@@ -139,6 +143,11 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     const reopened = screen.getByTestId('mos-app-launcher-panel');
     fireEvent.click(reopened.querySelector('[data-launcher-suite="lab"]')!);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/labs');
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const reopenedForGarden = screen.getByTestId('mos-app-launcher-panel');
+    fireEvent.click(reopenedForGarden.querySelector('[data-launcher-suite="wings-garden"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/wings-garden');
 
     window.removeEventListener('open-mos-bible', bibleSpy);
   });
@@ -164,6 +173,15 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).toBeNull();
+
+    const cvlGarden = panel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
+    expect(cvlGarden).not.toBeNull();
+    expect(cvlGarden?.getAttribute('data-coming-soon')).toBe('true');
+    expect(cvlGarden?.disabled).toBe(true);
+    expect(cvlGarden?.textContent).toContain('Coming soon');
+    fireEvent.click(cvlGarden!);
+    expect(mockPush).not.toHaveBeenCalled();
 
     fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/cv');
@@ -190,8 +208,15 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
 
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
+
+    const mgrGarden = panel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
+    expect(mgrGarden?.getAttribute('data-coming-soon')).toBe('true');
+    expect(mgrGarden?.disabled).toBe(true);
+    fireEvent.click(mgrGarden!);
+    expect(mockPush).not.toHaveBeenCalled();
 
     // Clicking mOS Reports goes straight to /dashboard/cc
     fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
@@ -231,5 +256,41 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(grantedPanel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
 
     window.removeEventListener('mos-chat:close', closeListener);
+  });
+
+  it('enables Wings Garden for Admin and marks it Coming soon (non-navigable) for non-admin roles', () => {
+    const { rerender } = render(<MosAppLauncher currentApp="general" userRole="admin" displayName="Hân Huỳnh" />);
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const adminPanel = screen.getByTestId('mos-app-launcher-panel');
+    const adminGarden = adminPanel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
+    expect(adminGarden).not.toBeNull();
+    expect(adminGarden?.disabled).toBe(false);
+    expect(adminGarden?.getAttribute('data-coming-soon')).toBeNull();
+    fireEvent.click(adminGarden!);
+    expect(mockPush).toHaveBeenCalledWith('/wings-garden');
+
+    mockPush.mockClear();
+
+    rerender(<MosAppLauncher currentApp="general" userRole="telesales" displayName="Tư vấn viên BK" />);
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    const salesPanel = screen.getByTestId('mos-app-launcher-panel');
+    const salesGarden = salesPanel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
+    expect(salesGarden).not.toBeNull();
+    expect(salesGarden?.disabled).toBe(true);
+    expect(salesGarden?.getAttribute('data-coming-soon')).toBe('true');
+    expect(salesGarden?.textContent).toContain('Coming soon');
+    fireEvent.click(salesGarden!);
+    expect(mockPush).not.toHaveBeenCalled();
+
+    rerender(<MosAppLauncher currentApp="general" userRole="cv" displayName="Chuyên viên Mi" />);
+    const cvPanel = screen.getByTestId('mos-app-launcher-panel');
+    const cvGarden = cvPanel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
+    expect(cvGarden).not.toBeNull();
+    expect(cvGarden?.disabled).toBe(true);
+    expect(cvGarden?.getAttribute('data-coming-soon')).toBe('true');
+    expect(cvGarden?.textContent).toContain('Coming soon');
+    fireEvent.click(cvGarden!);
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

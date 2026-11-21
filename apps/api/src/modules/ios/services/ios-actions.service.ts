@@ -21,18 +21,10 @@ import {
   resolveCheckoutOverridePromotions,
 } from './ios-promotions.service.js';
 import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
+import { grantReferralDiamond } from './ios-referral-diamond.service.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
-
-export interface ExecuteIosActionResult {
-  statusCode: number;
-  payload: Record<string, SafeAny>;
-}
-
-export interface ExecuteIosActionOptions {
-  simulationMode?: boolean;
-  enableLegacyStepSync?: boolean;
-}
+import { ExecuteIosActionResult, ExecuteIosActionOptions } from './ios-actions.types.js';
 
 export async function executeIosBookingAction(
   authUser: IosAuthContext,
@@ -42,6 +34,7 @@ export async function executeIosBookingAction(
   options?: ExecuteIosActionOptions
 ): Promise<ExecuteIosActionResult> {
   const isSimulationMode = Boolean(options?.simulationMode);
+  const fastify = options?.fastify;
   const bookingId = Number(body?.bookingId || 0);
   const action = String(body?.action || '').toUpperCase();
   const isLockedCvl = authUser.careerTier === 'CVL';
@@ -571,6 +564,23 @@ export async function executeIosBookingAction(
 
       if (!isSimulationMode) {
         invalidateStaffStatsCache([actorStaffId, assignedStaffId, checkInStaffId, checkOutStaffId]);
+        // ── 💎 Referral Diamond Grant (100 KC cho người giới thiệu) ────────────
+        const referralPending = body?.referralPending as { referrerUserId: number; referrerName?: string } | undefined;
+        const newCustomerId = Number(current.customerId || effectiveCustomerId || 0);
+
+        if (
+          referralPending?.referrerUserId &&
+          newCustomerId > 0 &&
+          settlement.settlementStatus !== 'DEMO_ONLY' &&
+          fastify
+        ) {
+          void grantReferralDiamond({
+            fastify,
+            referrerUserId: Number(referralPending.referrerUserId),
+            newCustomerId,
+            actorStaffId,
+          });
+        }
       }
     } else if (action === 'REVERT_TO_INCOMING') {
       nextOverride = {

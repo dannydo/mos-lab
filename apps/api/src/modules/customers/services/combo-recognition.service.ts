@@ -60,7 +60,7 @@ export function buildComboLiveAtBookingSql(orderAlias: string): string {
             AND usbt_after.used_staff_id IS NOT NULL
         )
       ) > 0
-      -- Short-circuit 2: Expiration check (null or >= booking date)
+      -- Short-circuit 2: Expiration check (null or >= booking date; also honor extended usb.date_expired)
       AND (
         COALESCE(
           (
@@ -84,6 +84,8 @@ export function buildComboLiveAtBookingSql(orderAlias: string): string {
           ),
           usb.date_expired
         ) >= DATE(${orderAlias}.date_created)
+        OR usb.date_expired IS NULL
+        OR usb.date_expired >= DATE(${orderAlias}.date_created)
       )
       -- Short-circuit 3: Remaining count at last transaction (or fallback 999999) > 0
       AND COALESCE(

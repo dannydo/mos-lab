@@ -34,17 +34,17 @@ const MOCK_ATTEMPT: IosSimulationAttemptSummary = {
   selectedComboPrice: 1170000,
   selectedUnderComboName: null,
   selectedUnderComboPrice: 0,
-  upsellProducts: [{ productName: 'Serum Dưỡng Mi Wings', quantity: 1, totalPrice: 299000 }],
-  upsellTotal: 299000,
+  upsellProducts: [{ productName: 'Dưỡng Mi Yeppeum Korea', quantity: 1, totalPrice: 1100000 }],
+  upsellTotal: 1100000,
   promotionName: null,
   promotionDiscountAmount: 0,
-  grandTotal: 2019000,
+  grandTotal: 2820000,
   tipAmount: 0,
   tipActorShare: 0,
   comboBonusAmount: 50000,
-  serumBonusAmount: 20000,
+  serumBonusAmount: 100000,
   cvRotationPoints: 2,
-  totalEstimatedReward: 125000,
+  totalEstimatedReward: 205000,
   elapsedSeconds: 2700,
   notes: 'Kịch bản ban đầu',
 };
@@ -151,6 +151,32 @@ describe('SimulationAttemptEditModal & IosSimulationHistorySheet Contract (MOS-F
     // Click edit button opens SimulationAttemptEditModal
     fireEvent.click(editBtn);
     expect(screen.getByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeDefined();
+
+    // Clicking [X] closes the modal reliably even while parent action is busy (MOS-BUG-242)
+    const closeButtons = screen.getAllByRole('button', { name: 'Đóng' });
+    fireEvent.click(closeButtons[closeButtons.length - 1]);
+    expect(screen.queryByText(/Chỉnh sửa Kịch bản · Phương án #1/i)).toBeNull();
+  });
+
+  it('closes via [X] even when isBusy is true and lists real Dưỡng Mi Yeppeum Korea catalog tiers (MOS-BUG-241, MOS-BUG-242)', () => {
+    const handleClose = vi.fn();
+    render(
+      <SimulationAttemptEditModal
+        isOpen={true}
+        onClose={handleClose}
+        attempt={MOCK_ATTEMPT}
+        bookingId={771121}
+        onSave={vi.fn()}
+        isBusy={true}
+      />
+    );
+
+    expect(screen.getByText('Dưỡng Mi Yeppeum Korea')).toBeDefined();
+    expect(screen.getAllByText(/1\.100\.000đ/).length).toBeGreaterThan(0);
+
+    const closeBtn = screen.getByRole('button', { name: 'Đóng' });
+    fireEvent.click(closeBtn);
+    expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
   it('renders Tạo & Chỉnh sửa kịch bản mới button when attempts is empty and opens edit modal', () => {

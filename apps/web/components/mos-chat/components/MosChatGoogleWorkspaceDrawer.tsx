@@ -589,11 +589,14 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     const maxDrawerWidth = getMaxAllowedGwDrawerWidth(viewportWidth);
 
     const containerClass = isMobile
-      ? 'fixed inset-0 z-[1300] flex flex-col w-full h-[100dvh]'
+      ? 'fixed inset-0 z-[1300] flex flex-col w-full h-[100dvh] pb-[env(safe-area-inset-bottom,0px)]'
       : 'flex flex-col shrink-0 h-full relative';
 
     const containerStyle: React.CSSProperties = isMobile
-      ? { background: bgSurface, color: isDark ? '#f8fafc' : '#0f172a' }
+      ? {
+          background: bgSurface,
+          color: isDark ? '#f8fafc' : '#0f172a',
+        }
       : {
           width: drawerWidth,
           minWidth: MIN_GW_DRAWER_WIDTH,
@@ -709,125 +712,232 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
           </Tooltip>
         )}
 
-        {/* TOP HEADER: Title on LEFT, Mode Switch + Controls + [X] Close strictly on RIGHT */}
+        {/* TOP HEADER: Title on LEFT, Mode Switch + Controls + [X] Close strictly on RIGHT (safe-area aware on mobile) */}
         <div
-          className="h-[52px] px-3 flex items-center justify-between gap-2 shrink-0"
+          className={
+            isMobile
+              ? 'min-h-[52px] px-3 pb-2 pt-[max(env(safe-area-inset-top),10px)] flex flex-col gap-2 shrink-0'
+              : 'h-[52px] px-3 flex items-center justify-between gap-2 shrink-0'
+          }
           style={{
             background: bgRaised,
             borderBottom: `1px solid ${bColor}`,
           }}
         >
-          {/* Left: Document Icon & Title */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                isSheet
-                  ? isDark
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-emerald-100 text-emerald-700'
-                  : isCanva
-                    ? isDark
-                      ? 'bg-violet-500/20 text-violet-300'
-                      : 'bg-violet-100 text-violet-700'
-                    : isDark
-                      ? 'bg-sky-500/20 text-sky-400'
-                      : 'bg-sky-100 text-sky-700'
-              }`}
-            >
-              {isSheet ? <FileSpreadsheet size={15} /> : isCanva ? <Palette size={15} /> : <FileText size={15} />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[12.5px] font-extrabold truncate">{docTitle}</div>
-              <div className="text-[10.5px] opacity-75 flex items-center gap-1.5 truncate tabular-nums">
-                <span>
-                  {isCanva
-                    ? `Canva${data?.designType ? ` ${data.designType}` : ''}${data?.authorName ? ` · ${data.authorName}` : ''}`
-                    : isSheet
-                      ? 'Google Sheets'
-                      : 'Google Docs'}
-                </span>
-                {data?.activeTab?.title && <span>· {data.activeTab.title}</span>}
-                {effectiveRangeLabel && <span className="font-bold text-amber-500">· {effectiveRangeLabel}</span>}
+          {isMobile ? (
+            <>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                      isSheet
+                        ? isDark
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : 'bg-emerald-100 text-emerald-700'
+                        : isCanva
+                          ? isDark
+                            ? 'bg-violet-500/20 text-violet-300'
+                            : 'bg-violet-100 text-violet-700'
+                          : isDark
+                            ? 'bg-sky-500/20 text-sky-400'
+                            : 'bg-sky-100 text-sky-700'
+                    }`}
+                  >
+                    {isSheet ? <FileSpreadsheet size={15} /> : isCanva ? <Palette size={15} /> : <FileText size={15} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12.5px] font-extrabold truncate">{docTitle}</div>
+                    <div className="text-[10.5px] opacity-75 flex items-center gap-1.5 truncate tabular-nums">
+                      <span>
+                        {isCanva
+                          ? `Canva${data?.designType ? ` ${data.designType}` : ''}${data?.authorName ? ` · ${data.authorName}` : ''}`
+                          : isSheet
+                            ? 'Google Sheets'
+                            : 'Google Docs'}
+                      </span>
+                      {data?.activeTab?.title && <span>· {data.activeTab.title}</span>}
+                      {effectiveRangeLabel && <span className="font-bold text-amber-500">· {effectiveRangeLabel}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <Tooltip title={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}>
+                    <a
+                      href={canonicalHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}
+                      className="w-8 h-8 rounded-md inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10"
+                    >
+                      <ExternalLink size={15} />
+                    </a>
+                  </Tooltip>
+
+                  <Tooltip title="Đóng trình đọc tài liệu">
+                    <button
+                      type="button"
+                      aria-label="Đóng trình đọc tài liệu"
+                      onClick={handleCloseDrawer}
+                      className="w-8 h-8 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
+                    >
+                      <X size={17} />
+                    </button>
+                  </Tooltip>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Right: Dual-Mode Switcher, Width Toggle, External Link, Close [X] at End */}
-          <div className="flex items-center gap-1 shrink-0">
-            <div
-              className="flex items-center gap-0.5 p-0.5 rounded-lg"
-              style={{ background: bgCanvas, border: `1px solid ${bColor}` }}
-            >
-              <button
-                type="button"
-                onClick={() => setReaderMode('fast')}
-                className={`inline-flex items-center justify-center gap-1 leading-none px-2 py-1 rounded-md text-[10.5px] font-bold cursor-pointer transition-colors ${
-                  readerMode === 'fast'
-                    ? isDark
-                      ? 'bg-emerald-500 text-slate-950'
-                      : 'bg-emerald-600 text-white'
-                    : 'opacity-75 hover:opacity-100'
-                }`}
+              <div
+                className="flex items-center gap-1 p-0.5 rounded-lg self-start"
+                style={{ background: bgCanvas, border: `1px solid ${bColor}` }}
               >
-                <Zap size={11} />
-                <span>{isCanva ? 'Đọc nhanh văn bản' : 'Đọc nhanh mOS'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setReaderMode('embed')}
-                className={`inline-flex items-center justify-center gap-1 leading-none px-2 py-1 rounded-md text-[10.5px] font-bold cursor-pointer transition-colors ${
-                  readerMode === 'embed'
-                    ? isCanva
-                      ? isDark
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-violet-600 text-white'
-                      : isDark
-                        ? 'bg-sky-500 text-slate-950'
-                        : 'bg-sky-600 text-white'
-                    : 'opacity-75 hover:opacity-100'
-                }`}
-              >
-                <Globe size={11} />
-                <span>{isCanva ? 'Canva Trực tiếp' : 'Google Trực tiếp'}</span>
-              </button>
-            </div>
-
-            {!isMobile && (
-              <Tooltip title={expandedWidth ? 'Thu chuẩn độ rộng' : 'Mở rộng khung đọc'}>
                 <button
                   type="button"
-                  aria-label={expandedWidth ? 'Thu chuẩn độ rộng' : 'Mở rộng khung đọc'}
-                  onClick={handleToggleExpandWidth}
-                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
+                  onClick={() => setReaderMode('fast')}
+                  className={`inline-flex items-center justify-center gap-1 leading-none px-2.5 py-1.5 rounded-md text-[11px] font-bold cursor-pointer transition-colors ${
+                    readerMode === 'fast'
+                      ? isDark
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-emerald-600 text-white'
+                      : 'opacity-75 hover:opacity-100'
+                  }`}
                 >
-                  {expandedWidth ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  <Zap size={11} />
+                  <span>{isCanva ? 'Đọc nhanh văn bản' : 'Đọc nhanh mOS'}</span>
                 </button>
-              </Tooltip>
-            )}
+                <button
+                  type="button"
+                  onClick={() => setReaderMode('embed')}
+                  className={`inline-flex items-center justify-center gap-1 leading-none px-2.5 py-1.5 rounded-md text-[11px] font-bold cursor-pointer transition-colors ${
+                    readerMode === 'embed'
+                      ? isCanva
+                        ? isDark
+                          ? 'bg-violet-500 text-white'
+                          : 'bg-violet-600 text-white'
+                        : isDark
+                          ? 'bg-sky-500 text-slate-950'
+                          : 'bg-sky-600 text-white'
+                      : 'opacity-75 hover:opacity-100'
+                  }`}
+                >
+                  <Globe size={11} />
+                  <span>{isCanva ? 'Canva Trực tiếp' : 'Google Trực tiếp'}</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Left: Document Icon & Title */}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isSheet
+                      ? isDark
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-emerald-100 text-emerald-700'
+                      : isCanva
+                        ? isDark
+                          ? 'bg-violet-500/20 text-violet-300'
+                          : 'bg-violet-100 text-violet-700'
+                        : isDark
+                          ? 'bg-sky-500/20 text-sky-400'
+                          : 'bg-sky-100 text-sky-700'
+                  }`}
+                >
+                  {isSheet ? <FileSpreadsheet size={15} /> : isCanva ? <Palette size={15} /> : <FileText size={15} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12.5px] font-extrabold truncate">{docTitle}</div>
+                  <div className="text-[10.5px] opacity-75 flex items-center gap-1.5 truncate tabular-nums">
+                    <span>
+                      {isCanva
+                        ? `Canva${data?.designType ? ` ${data.designType}` : ''}${data?.authorName ? ` · ${data.authorName}` : ''}`
+                        : isSheet
+                          ? 'Google Sheets'
+                          : 'Google Docs'}
+                    </span>
+                    {data?.activeTab?.title && <span>· {data.activeTab.title}</span>}
+                    {effectiveRangeLabel && <span className="font-bold text-amber-500">· {effectiveRangeLabel}</span>}
+                  </div>
+                </div>
+              </div>
 
-            <Tooltip title={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}>
-              <a
-                href={canonicalHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10"
-              >
-                <ExternalLink size={14} />
-              </a>
-            </Tooltip>
+              {/* Right: Dual-Mode Switcher, Width Toggle, External Link, Close [X] at End */}
+              <div className="flex items-center gap-1 shrink-0">
+                <div
+                  className="flex items-center gap-0.5 p-0.5 rounded-lg"
+                  style={{ background: bgCanvas, border: `1px solid ${bColor}` }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setReaderMode('fast')}
+                    className={`inline-flex items-center justify-center gap-1 leading-none px-2 py-1 rounded-md text-[10.5px] font-bold cursor-pointer transition-colors ${
+                      readerMode === 'fast'
+                        ? isDark
+                          ? 'bg-emerald-500 text-slate-950'
+                          : 'bg-emerald-600 text-white'
+                        : 'opacity-75 hover:opacity-100'
+                    }`}
+                  >
+                    <Zap size={11} />
+                    <span>{isCanva ? 'Đọc nhanh văn bản' : 'Đọc nhanh mOS'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReaderMode('embed')}
+                    className={`inline-flex items-center justify-center gap-1 leading-none px-2 py-1 rounded-md text-[10.5px] font-bold cursor-pointer transition-colors ${
+                      readerMode === 'embed'
+                        ? isCanva
+                          ? isDark
+                            ? 'bg-violet-500 text-white'
+                            : 'bg-violet-600 text-white'
+                          : isDark
+                            ? 'bg-sky-500 text-slate-950'
+                            : 'bg-sky-600 text-white'
+                        : 'opacity-75 hover:opacity-100'
+                    }`}
+                  >
+                    <Globe size={11} />
+                    <span>{isCanva ? 'Canva Trực tiếp' : 'Google Trực tiếp'}</span>
+                  </button>
+                </div>
 
-            <Tooltip title="Đóng trình đọc tài liệu">
-              <button
-                type="button"
-                aria-label="Đóng trình đọc tài liệu"
-                onClick={handleCloseDrawer}
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
-              >
-                <X size={16} />
-              </button>
-            </Tooltip>
-          </div>
+                <Tooltip title={expandedWidth ? 'Thu chuẩn độ rộng' : 'Mở rộng khung đọc'}>
+                  <button
+                    type="button"
+                    aria-label={expandedWidth ? 'Thu chuẩn độ rộng' : 'Mở rộng khung đọc'}
+                    onClick={handleToggleExpandWidth}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    {expandedWidth ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  </button>
+                </Tooltip>
+
+                <Tooltip title={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}>
+                  <a
+                    href={canonicalHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                </Tooltip>
+
+                <Tooltip title="Đóng trình đọc tài liệu">
+                  <button
+                    type="button"
+                    aria-label="Đóng trình đọc tài liệu"
+                    onClick={handleCloseDrawer}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
+                  >
+                    <X size={16} />
+                  </button>
+                </Tooltip>
+              </div>
+            </>
+          )}
         </div>
 
         {/* SUB-TOOLBAR (Fast Reader Search / Refresh / Range Jump / Ask AI Toggle) */}

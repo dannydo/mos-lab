@@ -21,6 +21,7 @@ test('evaluates COMBO_LIVE from the booking-time ledger snapshot', () => {
   assert.match(sql, /usbt_after\.date_created >= o\.date_created/);
   assert.match(sql, /total_normal_count_left \+ usbt\.total_retain_count_left/);
   assert.match(sql, /DATE\(o\.date_created\)/);
+  assert.match(sql, /OR usb\.date_expired >= DATE\(o\.date_created\)/);
   assert.doesNotMatch(sql, /actual_booking_date_start|booking_date_start/);
 });
 

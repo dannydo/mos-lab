@@ -10,6 +10,7 @@ import { apiClient, resolveMediaUrl } from '../../lib/api-client';
 import {
   getBugReportBadgeServerSnapshot,
   getBugReportBadgeSummary,
+  openBugReport,
   subscribeBugReportBadgeSummary,
 } from '../../lib/bug-diagnostics';
 import { openMosBible } from '../../lib/mos-bible-launcher';
@@ -22,6 +23,7 @@ import {
   isLabPathname,
   isMissionPathname,
   isReportPathname,
+  isWingsGardenPathname,
 } from '../../config/ecosystem-nav';
 import { CvFeather1Badge, CvFeather2Badge } from '../../app/ios-app/components/ui-kit/CvFeatherLabels';
 
@@ -120,8 +122,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     getBugReportBadgeSummary,
     getBugReportBadgeServerSnapshot
   );
-  const effectiveMissionBadge =
-    missionBadgeCount ?? (!isCvRole(effectiveRole) ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0);
+  const isCv = isCvRole(effectiveRole);
+  const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
+  const effectiveMissionBadge = missionBadgeCount ?? bugAttentionCount;
+  const relevantChatCount = currentApp !== 'chat' ? unreadChatCount : 0;
+  const totalOutsideBadgeCount = relevantChatCount + bugAttentionCount;
 
   useEffect(() => {
     if (menuVisibilityProp || isAdminOrSuperAdminRole(effectiveRole) || typeof window === 'undefined') return;
@@ -151,10 +156,19 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         teamCodes: effectiveTeamCodes,
         unreadChatCount,
         missionBadgeCount: effectiveMissionBadge,
+        bugAttentionCount,
         savedAdminRole,
         menuVisibility: effectiveMenuVisibility,
       }),
-    [effectiveRole, effectiveTeamCodes, unreadChatCount, effectiveMissionBadge, savedAdminRole, effectiveMenuVisibility]
+    [
+      effectiveRole,
+      effectiveTeamCodes,
+      unreadChatCount,
+      effectiveMissionBadge,
+      bugAttentionCount,
+      savedAdminRole,
+      effectiveMenuVisibility,
+    ]
   );
 
   useEffect(() => {
@@ -230,7 +244,8 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         currentApp === 'general' &&
         !isReportPathname(pathname) &&
         !isMissionPathname(pathname) &&
-        !isLabPathname(pathname)
+        !isLabPathname(pathname) &&
+        !isWingsGardenPathname(pathname)
       );
     }
     if (key === 'chat') return currentApp === 'chat' || pathname.startsWith('/chat');
@@ -241,6 +256,7 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     if (key === 'reports') return isReportPathname(pathname);
     if (key === 'mission') return isMissionPathname(pathname);
     if (key === 'lab') return isLabPathname(pathname);
+    if (key === 'wings-garden') return isWingsGardenPathname(pathname);
     return false;
   };
 
@@ -276,7 +292,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         data-testid="mos-app-launcher-btn"
         aria-label="Mở bộ chuyển nhanh Hệ sinh thái mOS"
         aria-expanded={open}
-        title="Chuyển nhanh Hệ sinh thái mOS"
+        title={
+          totalOutsideBadgeCount > 0
+            ? `Chuyển nhanh Hệ sinh thái mOS (${totalOutsideBadgeCount} thông báo mới)`
+            : 'Chuyển nhanh Hệ sinh thái mOS'
+        }
         onClick={() => setOpen((prev) => !prev)}
         className={`${shapeClass} relative border flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
           open
@@ -287,12 +307,12 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
         }`}
       >
         <LayoutGrid className="w-4 h-4 stroke-[2.2]" />
-        {unreadChatCount > 0 && currentApp !== 'chat' && !open && (
+        {totalOutsideBadgeCount > 0 && !open && (
           <span
             className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold leading-none flex items-center justify-center border border-[var(--mos-surface,#0e131f)] tabular-nums"
             aria-hidden="true"
           >
-            {unreadChatCount > 99 ? '99+' : unreadChatCount}
+            {totalOutsideBadgeCount > 99 ? '99+' : totalOutsideBadgeCount}
           </span>
         )}
       </button>
@@ -437,18 +457,30 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                     <div className={`grid gap-2 ${suiteColsClass}`}>
                       {navModel.suiteApps.map((suite) => {
                         const Icon = suite.icon;
-                        const active = isSuiteActive(suite.key);
+                        const isComingSoon = Boolean(suite.comingSoon);
+                        const active = !isComingSoon && isSuiteActive(suite.key);
                         return (
                           <button
                             key={suite.key}
                             type="button"
+                            disabled={isComingSoon}
+                            aria-disabled={isComingSoon || undefined}
                             data-launcher-suite={suite.key}
+                            data-coming-soon={isComingSoon ? 'true' : undefined}
                             aria-current={active ? 'page' : undefined}
+                            title={isComingSoon ? `${suite.label} · Coming soon` : suite.label}
                             onClick={() => {
+                              if (isComingSoon) return;
                               if (suite.action === 'open-bible') {
                                 setOpen(false);
                                 onAfterNavigate?.();
                                 openMosBible();
+                                return;
+                              }
+                              if (suite.action === 'open-feedback') {
+                                setOpen(false);
+                                onAfterNavigate?.();
+                                openBugReport(undefined, { preferHistoryIfPending: true });
                                 return;
                               }
                               navigateTo(suite.href, suite.key);
@@ -467,7 +499,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                                   ? 'rgba(255,255,255,0.04)'
                                   : '#f1f5f9',
                             }}
-                            className="p-2.5 rounded-2xl border flex items-center gap-2.5 text-left transition-all active:scale-95 cursor-pointer hover:border-amber-400/50"
+                            className={`p-2.5 rounded-2xl border flex items-center gap-2.5 text-left transition-all ${
+                              isComingSoon
+                                ? 'cursor-not-allowed opacity-70'
+                                : 'active:scale-95 cursor-pointer hover:border-amber-400/50'
+                            }`}
                           >
                             <div
                               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${toneClass(suite.tone)}`}
@@ -476,9 +512,19 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="text-[11.5px] font-extrabold leading-tight truncate">{suite.label}</div>
-                              <div className="text-[9.5px] opacity-65 leading-tight truncate mt-0.5">
-                                {suite.subtitle}
-                              </div>
+                              {isComingSoon ? (
+                                <span
+                                  className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide mt-0.5 ${
+                                    isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-200/90 text-slate-600'
+                                  }`}
+                                >
+                                  Coming soon
+                                </span>
+                              ) : (
+                                <div className="text-[9.5px] opacity-65 leading-tight truncate mt-0.5">
+                                  {suite.subtitle}
+                                </div>
+                              )}
                             </div>
                             {suite.badgeCount && suite.badgeCount > 0 ? (
                               <span className="min-w-[17px] h-[17px] px-1.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none inline-flex items-center justify-center tabular-nums shrink-0">

@@ -308,6 +308,7 @@ function IosAppInner() {
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
+            onReferralConfirmed={state.setPendingReferral}
           />
         );
       case 3:
@@ -440,7 +441,9 @@ function IosAppInner() {
             onChoosePayment={state.handleChoosePaymentMethod}
             onSavePromotion={state.handleSavePromotion}
             onUpdateCartProducts={state.handleUpdateCartProducts}
+            onUpdateCombos={state.handleUpdateCombos}
             onEditService={() => state.handleOpenConsultation(13)}
+            pendingReferral={state.pendingReferral}
           />
         );
       case 14:

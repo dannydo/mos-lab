@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import {
-  BkGameParticipant,
-  BkGameTeamBookingDoneTier,
-  DEFAULT_BK_TEAM_BOOKING_DONE_TIERS,
-} from '@mos-lab/shared';
+import { BkGameParticipant, BkGameTeamBookingDoneTier, DEFAULT_BK_TEAM_BOOKING_DONE_TIERS } from '@mos-lab/shared';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
 import {
   BkGameTeamBookingDoneBonusService,
@@ -117,8 +113,26 @@ test('parseTeamBookingDoneBonusConfig and resolveEffectiveDailyTimeWindow handle
 
 test('aggregateTeamBookingDoneBonusData calculates daily tiers, excludes Combo, deduplicates orders, and aggregates per-Booker totals', () => {
   const participants: BkGameParticipant[] = [
-    { id: 1, gameId: 77, staffId: 101, staffName: 'Ngọc Điệp', betAmount: 0, score: 0, rewardAmount: 0, status: 'ACTIVE' },
-    { id: 2, gameId: 77, staffId: 102, staffName: 'Bích Phượng', betAmount: 0, score: 0, rewardAmount: 0, status: 'ACTIVE' },
+    {
+      id: 1,
+      gameId: 77,
+      staffId: 101,
+      staffName: 'Ngọc Điệp',
+      betAmount: 0,
+      score: 0,
+      rewardAmount: 0,
+      status: 'ACTIVE',
+    },
+    {
+      id: 2,
+      gameId: 77,
+      staffId: 102,
+      staffName: 'Bích Phượng',
+      betAmount: 0,
+      score: 0,
+      rewardAmount: 0,
+      status: 'ACTIVE',
+    },
   ];
 
   const config = parseTeamBookingDoneBonusConfig({
@@ -137,17 +151,80 @@ test('aggregateTeamBookingDoneBonusData calculates daily tiers, excludes Combo, 
 
   const completedOrders = [
     // Day 1 (0đ tier): 2 single dones for 101
-    { orderId: 1001, orderKey: 'ORD-1001', staffId: 101, customerName: 'Khách A', completedAt: '2026-11-19T04:00:00Z', completedDate: '2026-11-19' },
-    { orderId: 1002, orderKey: 'ORD-1002', staffId: 101, customerName: 'Khách B', completedAt: '2026-11-19T05:00:00Z', completedDate: '2026-11-19' },
+    {
+      orderId: 1001,
+      orderKey: 'ORD-1001',
+      staffId: 101,
+      customerName: 'Khách A',
+      completedAt: '2026-11-19T04:00:00Z',
+      completedDate: '2026-11-19',
+    },
+    {
+      orderId: 1002,
+      orderKey: 'ORD-1002',
+      staffId: 101,
+      customerName: 'Khách B',
+      completedAt: '2026-11-19T05:00:00Z',
+      completedDate: '2026-11-19',
+    },
     // Day 2 (7.000đ tier): 3 single + 1 duplicate orderId (must count once!) + 2 combo (must exclude!)
-    { orderId: 1003, orderKey: 'ORD-1003', staffId: 101, customerName: 'Khách C', completedAt: '2026-11-20T03:00:00Z', completedDate: '2026-11-20' },
-    { orderId: 1003, orderKey: 'ORD-1003', staffId: 101, customerName: 'Khách C', completedAt: '2026-11-20T03:00:00Z', completedDate: '2026-11-20' },
-    { orderId: 1004, orderKey: 'ORD-1004', staffId: 101, customerName: 'Khách D (Combo)', completedAt: '2026-11-20T04:00:00Z', completedDate: '2026-11-20' },
-    { orderId: 1005, orderKey: 'ORD-1005', staffId: 102, customerName: 'Khách E', completedAt: '2026-11-20T05:00:00Z', completedDate: '2026-11-20' },
-    { orderId: 1006, orderKey: 'ORD-1006', staffId: 102, customerName: 'Khách F', completedAt: '2026-11-20T06:00:00Z', completedDate: '2026-11-20' },
-    { orderId: 1007, orderKey: 'ORD-1007', staffId: 102, customerName: 'Khách G (Combo)', completedAt: '2026-11-20T07:00:00Z', completedDate: '2026-11-20' },
+    {
+      orderId: 1003,
+      orderKey: 'ORD-1003',
+      staffId: 101,
+      customerName: 'Khách C',
+      completedAt: '2026-11-20T03:00:00Z',
+      completedDate: '2026-11-20',
+    },
+    {
+      orderId: 1003,
+      orderKey: 'ORD-1003',
+      staffId: 101,
+      customerName: 'Khách C',
+      completedAt: '2026-11-20T03:00:00Z',
+      completedDate: '2026-11-20',
+    },
+    {
+      orderId: 1004,
+      orderKey: 'ORD-1004',
+      staffId: 101,
+      customerName: 'Khách D (Combo)',
+      completedAt: '2026-11-20T04:00:00Z',
+      completedDate: '2026-11-20',
+    },
+    {
+      orderId: 1005,
+      orderKey: 'ORD-1005',
+      staffId: 102,
+      customerName: 'Khách E',
+      completedAt: '2026-11-20T05:00:00Z',
+      completedDate: '2026-11-20',
+    },
+    {
+      orderId: 1006,
+      orderKey: 'ORD-1006',
+      staffId: 102,
+      customerName: 'Khách F',
+      completedAt: '2026-11-20T06:00:00Z',
+      completedDate: '2026-11-20',
+    },
+    {
+      orderId: 1007,
+      orderKey: 'ORD-1007',
+      staffId: 102,
+      customerName: 'Khách G (Combo)',
+      completedAt: '2026-11-20T07:00:00Z',
+      completedDate: '2026-11-20',
+    },
     // Day 3 (10.000đ tier): 1 single for 101
-    { orderId: 1008, orderKey: 'ORD-1008', staffId: 101, customerName: 'Khách H', completedAt: '2026-11-21T04:00:00Z', completedDate: '2026-11-21' },
+    {
+      orderId: 1008,
+      orderKey: 'ORD-1008',
+      staffId: 101,
+      customerName: 'Khách H',
+      completedAt: '2026-11-21T04:00:00Z',
+      completedDate: '2026-11-21',
+    },
   ];
 
   const comboLiveMap = new Map<number, boolean>([
@@ -237,7 +314,7 @@ test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary queries legacy DB,
           if (sql.includes('COUNT(DISTINCT o.id) AS teamBookings')) {
             return [{ bookingDate: '2026-11-19', teamBookings: 35 }];
           }
-          if (sql.includes("o.order_state = 'Completed'")) {
+          if (sql.includes("o.order_state IN ('Completed', 'CheckOut')")) {
             return [
               {
                 orderId: 5001,
@@ -358,12 +435,72 @@ test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary queries legacy DB,
   assert.deepEqual(deletedIds, [10]);
   assert.deepEqual(upsertedOrderIds, [5001]);
 
-  // Verify channel filter & time window filter were inherited in SQL
+  // Verify channel filter, time window filter, and virtual/cancelled booking inclusion were inherited in SQL
   const bookingSql = queriesExecuted.find((q) => q.includes('teamBookings'))!;
   assert.ok(bookingSql.includes("UPPER(o.booking_channels) IN ('GB')"));
   assert.ok(bookingSql.includes("TIME(o.date_created) >= '08:00:00'"));
   assert.ok(bookingSql.includes("TIME(o.date_created) <= '17:00:59'"));
-  assert.ok(bookingSql.includes("o.order_state != 'Cancelled'"));
+  assert.ok(!bookingSql.includes("o.order_state != 'Cancelled'"));
+
+  const doneSql = queriesExecuted.find((q) => q.includes("o.order_state IN ('Completed', 'CheckOut')"))!;
+  assert.ok(doneSql.includes('2026-11-19 00:00:00'));
+  assert.ok(doneSql.includes('2026-11-19 23:59:59'));
+});
+
+test('BkGameTeamBookingDoneBonusService.syncAndComputeSummary uses full ICT day bounds even when game timestamps are mid-day', async () => {
+  ComboRecognitionService.clearComboLiveCache();
+  const queriesExecuted: string[] = [];
+
+  const mockFastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          queriesExecuted.push(sql);
+          return [];
+        },
+      },
+      crm: {
+        crmBkGameTeamBookingDoneBonus: {
+          findMany: async () => [],
+        },
+      },
+    },
+    log: { info: () => {}, warn: () => {} },
+  } as unknown as FastifyInstance;
+
+  await BkGameTeamBookingDoneBonusService.syncAndComputeSummary(
+    mockFastify,
+    {
+      id: 89,
+      gameType: 'INDIVIDUAL',
+      status: 'ACTIVE',
+      startDate: new Date('2026-11-19T04:15:00.000Z'), // 11:15:00 ICT (mid-day)
+      endDate: new Date('2026-11-22T17:00:00.000Z'), // 2026-11-23 00:00:00 ICT (midnight)
+      teamBookingDoneBonusConfig: JSON.stringify({
+        enabled: true,
+        tiers: DEFAULT_BK_TEAM_BOOKING_DONE_TIERS,
+      }),
+    },
+    [
+      {
+        id: 1,
+        gameId: 89,
+        staffId: 101,
+        staffName: 'Ngọc Điệp',
+        betAmount: 0,
+        score: 0,
+        rewardAmount: 0,
+        status: 'ACTIVE',
+      },
+    ]
+  );
+
+  const bookingSql = queriesExecuted.find((q) => q.includes('teamBookings'))!;
+  const doneSql = queriesExecuted.find((q) => q.includes("o.order_state IN ('Completed', 'CheckOut')"))!;
+  assert.ok(bookingSql.includes("o.date_created >= '2026-11-19 00:00:00'"));
+  assert.ok(bookingSql.includes("o.date_created <= '2026-11-23 23:59:59'"));
+  assert.ok(doneSql.includes("ro.actual_booking_date_start >= '2026-11-19 00:00:00'"));
+  assert.ok(doneSql.includes("ro.actual_booking_date_start <= '2026-11-23 23:59:59'"));
 });
 
 test('BkGameService.updateGame serializes teamBookingDoneBonusConfig and rejects invalid timeWindow', async () => {
@@ -427,4 +564,102 @@ test('BkGameService.updateGame serializes teamBookingDoneBonusConfig and rejects
   assert.ok(updated.teamBookingDoneBonusConfig?.enabled);
   assert.equal(updated.teamBookingDoneBonusConfig?.tiers.length, 3);
   assert.ok(typeof (updatedData as Record<string, unknown> | null)?.teamBookingDoneBonusConfig === 'string');
+});
+
+test('BkGameTeamBookingDoneBonusService merges newly added active BK_TELESALES staff into live calculation', async () => {
+  ComboRecognitionService.clearComboLiveCache();
+  let capturedStaffFilter = '';
+  const createdParticipantStaffIds: number[] = [];
+
+  const mockFastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('SELECT user_id FROM user_profile')) {
+            return [{ user_id: 50670 }, { user_id: 52853 }];
+          }
+          if (sql.includes('FROM user_profile up')) {
+            return [{ staffId: 52853, staffName: 'Ngọc Huyền', avatar: null }];
+          }
+          if (sql.includes('teamBookings')) {
+            capturedStaffFilter = sql;
+            return [{ bookingDate: '2026-11-20', teamBookings: 28 }];
+          }
+          if (sql.includes("o.order_state IN ('Completed', 'CheckOut')")) {
+            return [
+              {
+                orderId: 339915,
+                orderKey: 'WL-339915',
+                staffId: 52853,
+                customerName: 'Chị Hương',
+                completedAt: new Date('2026-11-20T04:00:00Z'),
+                completedDate: '2026-11-20',
+              },
+            ];
+          }
+          if (sql.includes('hasLiveComboAtBooking')) {
+            return [{ orderId: 339915, hasLiveComboAtBooking: 0 }];
+          }
+          return [];
+        },
+      },
+      crm: {
+        crmTeam: {
+          findUnique: async () => null,
+        },
+        crmConfig: {
+          findUnique: async () => ({
+            key: 'ACTIVE_BK_TELESALES_STAFF_CONFIG',
+            value: JSON.stringify([50670, 52853]),
+          }),
+        },
+        crmBkGameParticipant: {
+          createMany: async ({ data }: { data: Array<{ staffId: number }> }) => {
+            createdParticipantStaffIds.push(...data.map((d) => d.staffId));
+            return { count: data.length };
+          },
+        },
+        crmBkGameTeamBookingDoneBonus: {
+          findMany: async () => [],
+          upsert: async () => ({}),
+        },
+      },
+    },
+    log: { info: () => {}, warn: () => {} },
+  } as unknown as FastifyInstance;
+
+  const summary = await BkGameTeamBookingDoneBonusService.syncAndComputeSummary(
+    mockFastify,
+    {
+      id: 5,
+      gameType: 'INDIVIDUAL',
+      status: 'ACTIVE',
+      startDate: new Date('2026-11-18T17:00:00.000Z'),
+      endDate: new Date('2026-11-20T16:59:59.000Z'),
+      teamBookingDoneBonusConfig: JSON.stringify({
+        enabled: true,
+        tiers: DEFAULT_BK_TEAM_BOOKING_DONE_TIERS,
+      }),
+    },
+    [
+      {
+        id: 1,
+        gameId: 5,
+        staffId: 50670,
+        staffName: 'Bích Phượng',
+        betAmount: 0,
+        score: 0,
+        rewardAmount: 0,
+        status: 'ACTIVE',
+      },
+    ]
+  );
+
+  assert.ok(summary);
+  assert.ok(capturedStaffFilter.includes('50670,52853'));
+  assert.deepEqual(createdParticipantStaffIds, [52853]);
+  assert.equal(summary.totalSingleDone, 1);
+  assert.ok(
+    summary.staffTotals.some((s) => s.staffId === 52853 && s.staffName === 'Ngọc Huyền' && s.singleDoneCount === 1)
+  );
 });

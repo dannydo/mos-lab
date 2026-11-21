@@ -24,6 +24,7 @@ import { QuickCheckInComboCard } from './checkin/QuickCheckInComboCard';
 import { CheckInStaffAndProfileCards } from './checkin/CheckInStaffAndProfileCards';
 import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
 import { CheckInModals, PendingComboNewConfirmationState, PendingOverrideState } from './checkin/CheckInModals';
+import { NewCustomerReferralModal, PendingReferral } from './checkin/NewCustomerReferralModal';
 
 interface Screen02CheckInProfileProps {
   booking: BookingItem;
@@ -76,6 +77,7 @@ interface Screen02CheckInProfileProps {
     targetBookingId?: number
   ) => void;
   onUpdateAvatar?: (avatarUrl: string, targetBookingId?: number) => Promise<any> | void;
+  onReferralConfirmed?: (referral: PendingReferral | null) => void;
 }
 
 export function Screen02CheckInProfile({
@@ -90,6 +92,7 @@ export function Screen02CheckInProfile({
   onCheckIn,
   onQuickCheckIn,
   onUpdateAvatar,
+  onReferralConfirmed,
 }: Screen02CheckInProfileProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -184,6 +187,14 @@ export function Screen02CheckInProfile({
   const [isLashHistoryOpen, setIsLashHistoryOpen] = useState<boolean>(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
+
+  // ── Referral State (Khách Mới) ──────────────────────────────────────────────
+  // Chỉ show khi khách MỚI (visitCount <= 1) và actor là CVL/CC/Admin
+  const isNewCustomer = visits <= 1 && !booking?.comboLiveStatus?.isComboLive;
+  const canManageReferral =
+    actor?.tier === 'CVL' || actor?.tier === 'CVLL' || actor?.tier === 'CC' || actor?.tier === 'ADMIN';
+  const [referralModalOpen, setReferralModalOpen] = useState<boolean>(false);
+  const [pendingReferral, setPendingReferral] = useState<PendingReferral | null>(null);
 
   const handleOpenLashHistory = (item: LashHistoryItem) => {
     setSelectedLashHistory(item);
@@ -464,7 +475,9 @@ export function Screen02CheckInProfile({
                   <span className={`text-[14px] font-black select-none ${typeMeta.colorClass}`} title={typeMeta.label}>
                     {typeMeta.symbol}
                   </span>
-                  <h2 className="text-[17px] font-bold text-[var(--mos-text)] tracking-tight truncate">{customerName}</h2>
+                  <h2 className="text-[17px] font-bold text-[var(--mos-text)] tracking-tight truncate">
+                    {customerName}
+                  </h2>
                   {visits >= 5 && (
                     <span
                       className={`text-[11px] px-2 py-0.5 rounded-full font-bold tracking-tight border ${
@@ -479,7 +492,9 @@ export function Screen02CheckInProfile({
                 </div>
               );
             })()}
-            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">{customerPhone}</div>
+            <div className="text-[13px] text-[var(--mos-text-muted)] font-normal mt-0.5 tabular-nums">
+              {customerPhone}
+            </div>
             <div className="text-[12px] text-[var(--mos-text-muted)] font-medium mt-0.5 flex flex-wrap items-center justify-between gap-2">
               <span>
                 Lần ghé: <strong className="font-bold text-[var(--mos-text)]">{visits}</strong>
@@ -554,6 +569,45 @@ export function Screen02CheckInProfile({
           onOpenLashHistory={handleOpenLashHistory}
           onOpenFullHistory={() => setIsHistoryModalOpen(true)}
         />
+
+        {/* ── Referral Diamond Banner (Khách Mới) ──────────────────────────── */}
+        {isNewCustomer && canManageReferral && (
+          <div
+            className={`mx-3 mb-2 rounded-2xl border px-4 py-3 flex items-center justify-between gap-3 ${
+              isDark ? 'bg-amber-500/8 border-amber-500/25' : 'bg-amber-50 border-amber-200'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg shrink-0">🌟</span>
+              <div className="min-w-0">
+                <p className={`text-[12px] font-bold truncate ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                  Khách mới — Có người giới thiệu?
+                </p>
+                {pendingReferral ? (
+                  <p className={`text-[11px] truncate ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                    ✓ GT: {pendingReferral.referrerName} → +100 KC sau TT
+                  </p>
+                ) : (
+                  <p className={`text-[11px] truncate ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                    Nhập SĐT người giới thiệu để trao 100 Kim Cương
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setReferralModalOpen(true)}
+              className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black active:scale-95 transition-all ${
+                pendingReferral
+                  ? isDark
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                  : 'bg-amber-400 text-black'
+              }`}
+            >
+              {pendingReferral ? 'Sửa' : '+ Thêm'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sticky Bottom Action Bar (Native iOS Floating Dock) */}
@@ -608,6 +662,21 @@ export function Screen02CheckInProfile({
         onClose={() => setIsHistoryModalOpen(false)}
         booking={booking}
       />
+
+      {/* ── Referral Diamond Modal (Khách Mới) ───────────────────────────────── */}
+      {referralModalOpen && isNewCustomer && canManageReferral && (
+        <NewCustomerReferralModal
+          newCustomerId={booking.customerId || 0}
+          newCustomerName={customerName}
+          isDark={isDark}
+          onConfirm={(referral) => {
+            setPendingReferral(referral);
+            onReferralConfirmed?.(referral);
+            setReferralModalOpen(false);
+          }}
+          onDismiss={() => setReferralModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

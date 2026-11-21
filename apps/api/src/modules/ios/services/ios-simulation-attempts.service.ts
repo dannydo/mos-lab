@@ -1,11 +1,8 @@
-import {
-  BookingOverrideRecord,
-  CrmConfigStoreAdapter,
-  createMysqlConfigStore,
-} from './ios-overrides.service.js';
+import { BookingOverrideRecord, CrmConfigStoreAdapter, createMysqlConfigStore } from './ios-overrides.service.js';
 import { computeBookingFinancials } from './ios-bookings-formatters.js';
 import {
   calculateActorTipBreakdown,
+  calculateCvSerumTierBonus,
   IosCartProductItem,
   IosSimulationAttemptSourceAction,
   IosSimulationAttemptSummary,
@@ -222,9 +219,13 @@ export async function updateSimulationAttempt(
     servicePrice + selectedComboPrice + selectedUnderComboPrice + upsellTotal - promotionDiscountAmount + tipAmount
   );
 
-  const comboBonusAmount =
-    selectedComboPrice > 0 ? (selectedComboPrice >= 1_000_000 ? 50_000 : 30_000) : 0;
-  const serumBonusAmount = upsellProducts.some((p) => /serum/i.test(p.productName)) ? 20_000 : 0;
+  const comboBonusAmount = selectedComboPrice > 0 ? (selectedComboPrice >= 1_000_000 ? 50_000 : 30_000) : 0;
+  const serumBonusAmount = upsellProducts.reduce((sum, p) => {
+    if (!/serum|yeppeum|dưỡng mi/i.test(p.productName)) return sum;
+    const qty = Math.max(1, Number(p.quantity) || 1);
+    const unitPrice = qty > 0 ? Math.round(Number(p.totalPrice || 0) / qty) : 0;
+    return sum + calculateCvSerumTierBonus(unitPrice, qty);
+  }, 0);
   const tipActorShare = Math.round(tipAmount * 0.8);
   const totalEstimatedReward = Math.round(servicePrice * 0.1 + comboBonusAmount + serumBonusAmount + tipActorShare);
 
@@ -249,9 +250,7 @@ export async function updateSimulationAttempt(
   };
 
   const next =
-    index >= 0
-      ? [...existing.slice(0, index), updated, ...existing.slice(index + 1)]
-      : [...existing, updated];
+    index >= 0 ? [...existing.slice(0, index), updated, ...existing.slice(index + 1)] : [...existing, updated];
   await store.upsert(key, JSON.stringify(next));
   return updated;
 }
@@ -259,12 +258,12 @@ export async function updateSimulationAttempt(
 export function hasAttemptWorthySimulationWork(override: BookingOverrideRecord): boolean {
   return Boolean(
     override.selectedCombo ||
-      override.selectedUnderCombo ||
-      override.comboRedemption ||
-      (Array.isArray(override.cartProducts) && override.cartProducts.length > 0) ||
-      override.billing ||
-      override.attributes?.style ||
-      override.status === 'DONE'
+    override.selectedUnderCombo ||
+    override.comboRedemption ||
+    (Array.isArray(override.cartProducts) && override.cartProducts.length > 0) ||
+    override.billing ||
+    override.attributes?.style ||
+    override.status === 'DONE'
   );
 }
 
@@ -280,7 +279,7 @@ export function hasCompletedSimulationSnapshot(
   }
   return Boolean(
     hasAttemptWorthySimulationWork(override) &&
-      (Boolean(override.progress?.completedAt) || Boolean(override.checkedOutAt))
+    (Boolean(override.progress?.completedAt) || Boolean(override.checkedOutAt))
   );
 }
 

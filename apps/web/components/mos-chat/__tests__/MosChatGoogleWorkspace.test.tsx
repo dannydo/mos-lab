@@ -659,4 +659,48 @@ describe('mOS Chat Google Workspace Reader & Files Integration', () => {
     fireEvent.click(canvaFilterBtn);
     expect(within(filesPane).getByText(/Google Sheets, Docs & Canva \(1\)/)).toBeDefined();
   });
+
+  it('applies iOS safe-area-inset-top and stacked mobile header layout on mobile viewport (MOS-BUG-244)', async () => {
+    vi.mocked(apiClient.chat.previewGoogleWorkspace).mockResolvedValue({
+      success: true,
+      kind: 'spreadsheet',
+      fileId: '1_T_X3L12RWMs1LRjAROBKSbQiN-hUCJwCOmtC8uULFQ',
+      title: '[HR][2025] TỔNG HỢP',
+      accessStatus: 'PUBLIC_LINK',
+      tabs: [{ sheetId: 516151439, gid: '516151439', title: 'ORDER', rowCount: 40 }],
+      activeTab: {
+        gid: '516151439',
+        title: 'ORDER',
+        totalRows: 5,
+        totalCols: 2,
+        rows: [
+          ['C', 'D'],
+          ['17', 'Liquid Hand Wash'],
+        ],
+      },
+      serviceAccountEmail: 'wings-sheets-sa@wings-lashes.iam.gserviceaccount.com',
+      canonicalUrl: SHEETS_URL,
+      embedUrl: `${SHEETS_URL}&rm=minimal`,
+      fetchedAt: new Date().toISOString(),
+    });
+
+    const { container } = render(
+      <MosChatGoogleWorkspaceDrawer isDark={true} isMobile={true} activeConversationId="space-kho" />
+    );
+
+    act(() => {
+      openGoogleWorkspaceReader({
+        url: SHEETS_URL,
+        gid: '516151439',
+        range: 'D17',
+        conversationId: 'space-kho',
+      });
+    });
+
+    const drawer = await screen.findByTestId('google-workspace-split-drawer');
+    expect(drawer.className).toContain('safe-area-inset-bottom');
+    const safeTopHeader = container.querySelector('[class*="safe-area-inset-top"]');
+    expect(safeTopHeader).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Đóng trình đọc tài liệu' })).toBeDefined();
+  });
 });

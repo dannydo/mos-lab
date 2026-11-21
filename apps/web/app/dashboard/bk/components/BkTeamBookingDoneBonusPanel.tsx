@@ -14,11 +14,13 @@ import BkAvatar from './BkAvatar';
 interface BkTeamBookingDoneBonusPanelProps {
   summary: BkGameTeamBookingDoneBonusSummary;
   onOpenDetailsDrawer: (staffId?: number | null, rewardDate?: string | null) => void;
+  lastUpdatedAt?: Date | null;
 }
 
 export default function BkTeamBookingDoneBonusPanel({
   summary,
   onOpenDetailsDrawer,
+  lastUpdatedAt,
 }: BkTeamBookingDoneBonusPanelProps) {
   const defaultDayDate = useMemo(() => {
     const todayDay = summary.dailyResults.find((d) => d.isToday);
@@ -79,14 +81,30 @@ export default function BkTeamBookingDoneBonusPanel({
               <StatusTag
                 status="cyan"
                 label={
-                  summary.effectiveTimeWindow
-                    ? `Khung giờ BK: ${summary.effectiveTimeWindow}`
-                    : 'Theo khung giờ Game'
+                  summary.effectiveTimeWindow ? `Khung giờ BK: ${summary.effectiveTimeWindow}` : 'Theo khung giờ Game'
                 }
               />
+              {lastUpdatedAt && (
+                <span
+                  data-testid="team-booking-done-live-indicator"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 tabular-nums"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>
+                    Live ·{' '}
+                    {lastUpdatedAt.toLocaleTimeString('vi-VN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false,
+                    })}
+                  </span>
+                </span>
+              )}
             </div>
             <Typography.Text type="secondary" className="text-xs block mt-0.5">
-              Chốt 1 mốc Booking Team/ngày · Thưởng trên mỗi Done khách lẻ hoàn thành cùng ngày (loại trừ khách Combo) · Độc lập lương BK &amp; quỹ Team KPI.
+              Chốt 1 mốc Booking Team/ngày · Thưởng trên mỗi Done khách lẻ hoàn thành cùng ngày (loại trừ khách Combo) ·
+              Độc lập lương BK &amp; quỹ Team KPI.
             </Typography.Text>
           </div>
         </div>
@@ -239,9 +257,7 @@ export default function BkTeamBookingDoneBonusPanel({
               rowKey="staffId"
               locale={{
                 emptyText: (
-                  <div className="py-8 text-center text-slate-400 text-xs">
-                    Chưa có dữ liệu Booker trong ngày này.
-                  </div>
+                  <div className="py-8 text-center text-slate-400 text-xs">Chưa có dữ liệu Booker trong ngày này.</div>
                 ),
               }}
               columns={[
@@ -253,9 +269,7 @@ export default function BkTeamBookingDoneBonusPanel({
                     <div className="flex items-center gap-2 min-w-0">
                       <BkAvatar name={name} src={record.avatar} size={26} />
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
-                          {name}
-                        </div>
+                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{name}</div>
                         {record.comboDoneExcludedCount > 0 && (
                           <Tooltip title="Đơn khách Combo không được tính vào thưởng Done khách lẻ">
                             <span className="text-[10px] text-slate-400 tabular-nums">
@@ -274,9 +288,7 @@ export default function BkTeamBookingDoneBonusPanel({
                   width: 110,
                   align: 'right',
                   render: (val: number) => (
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 tabular-nums">
-                      {val}
-                    </span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 tabular-nums">{val}</span>
                   ),
                 },
                 {

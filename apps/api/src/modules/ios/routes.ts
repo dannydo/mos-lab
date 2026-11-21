@@ -99,7 +99,7 @@ export async function iosRoutes(fastify: FastifyInstance) {
       const isSimulationRequest = Boolean(body?.simulationMode) || actionStr.startsWith('SIM_');
       const result = isSimulationRequest
         ? await executeIosSimulationBookingAction(fastify, authUser, body)
-        : await executeIosBookingAction(authUser, body);
+        : await executeIosBookingAction(authUser, body, undefined, undefined, { fastify });
       return reply.status(result.statusCode).send(result.payload);
     } catch (error: SafeAny) {
       fastify.log.error(error, 'Error executing /api/ios/bookings POST action');
@@ -378,6 +378,72 @@ export async function iosRoutes(fastify: FastifyInstance) {
       });
     } catch (err: SafeAny) {
       return reply.status(500).send({ success: false, error: err?.message || 'Print dispatch error' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET /api/ios/referrer/lookup?phone=<SĐT>
+  // Tìm khách hàng theo SĐT để xác nhận người giới thiệu (chỉ CVL/CC/Admin)
+  // ─────────────────────────────────────────────────────────────────────────────
+  fastify.get('/ios/referrer/lookup', async (request, reply) => {
+    try {
+      const authUser = await resolveIosAuth(fastify, request);
+      if (!authUser) return reply.status(401).send({ success: false, error: 'Unauthorized' });
+
+      const tier = authUser.careerTier || authUser.role;
+      const allowedTiers = ['CVL', 'CVLL', 'CC', 'ADMIN', 'admin', 'super_admin'];
+      if (!allowedTiers.includes(tier)) {
+        return reply
+          .status(403)
+          .send({ success: false, error: 'Chỉ CVL/CC/Admin được phép tra cứu người giới thiệu.' });
+      }
+
+      const { phone } = request.query as { phone?: string };
+      if (!phone || phone.trim().length < 8) {
+        return reply.status(400).send({ success: false, error: 'SĐT không hợp lệ.' });
+      }
+
+      // Normalize phone
+      const normalizedPhone = phone.trim().replace(/\D/g, '');
+
+      const rows = await fastify.prisma.legacy.$queryRaw<SafeAny[]>`
+        SELECT
+          u.id AS userId,
+          up.full_name AS name,
+          uc.phone_number AS phone,
+          COALESCE((
+            SELECT SUM(ubt.amount)
+            FROM user_balance_transaction ubt
+            WHERE ubt.user_id = u.id AND ubt.currency_id = 3
+          ), 0) AS diamondBalance
+        FROM user u
+        INNER JOIN user_profile up ON up.user_id = u.id AND up.is_deleted = 0
+        INNER JOIN user_contact uc ON uc.user_id = u.id AND uc.is_disabled = 0
+        WHERE (
+          REPLACE(REPLACE(uc.phone_number, '.', ''), '-', '') = ${normalizedPhone}
+          OR uc.phone_number = ${phone.trim()}
+        )
+        AND up.provider = 'Customer'
+        LIMIT 1
+      `;
+
+      if (!rows.length) {
+        return reply.send({ success: false, error: 'Không tìm thấy khách hàng với SĐT này.' });
+      }
+
+      const row = rows[0];
+      return reply.send({
+        success: true,
+        referrer: {
+          userId: Number(row.userId),
+          name: String(row.name || 'Khách hàng'),
+          phone: String(row.phone || phone),
+          diamondBalance: Number(row.diamondBalance || 0),
+        },
+      });
+    } catch (err: SafeAny) {
+      fastify.log.error(err, '[ios/referrer/lookup] Error');
+      return reply.status(500).send({ success: false, error: err?.message || 'Lookup error' });
     }
   });
 }

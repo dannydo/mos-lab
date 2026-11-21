@@ -65,7 +65,7 @@ export async function queryIosBookingsList(
   const isDemoMode = !isSimulationMode && isIosDemoModeRequested(query.demo);
   const requestedStoreId = query.storeId !== undefined && query.storeId !== '' ? Number(query.storeId) : undefined;
   const storeId =
-    !isAdmin && !isSimulationMode && authUser.clientStoreId && authUser.clientStoreId !== 4
+    !isAdmin && authUser.clientStoreId && authUser.clientStoreId !== 4
       ? authUser.clientStoreId
       : (requestedStoreId ?? (authUser.clientStoreId && authUser.clientStoreId !== 4 ? authUser.clientStoreId : 6));
   const segment = (query.segment || 'INCOMING').toUpperCase();

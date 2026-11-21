@@ -7,15 +7,37 @@ import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { BookingItem, SERUM_TIERS_CVL } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { WingsComboCategoryId, MatchedComboPackageOption, getWingsComboCategory, checkWelcomeComboEligibility, matchComboCategoryAndVolumeFromBooking, getComboPackagesForCategoryAndVolume, calculateComboPurchaseAccounting, getLashFamilyInfo, resolveValidVolumeForCategory, getUnderLashComboPackages, resolveMatchedUpperComboFromSaved, resolveMatchedUnderComboFromSaved, resolveServicePriceSplit } from '@mos-lab/shared';
+import {
+  WingsComboCategoryId,
+  MatchedComboPackageOption,
+  getWingsComboCategory,
+  checkWelcomeComboEligibility,
+  matchComboCategoryAndVolumeFromBooking,
+  getComboPackagesForCategoryAndVolume,
+  calculateComboPurchaseAccounting,
+  getLashFamilyInfo,
+  resolveValidVolumeForCategory,
+  getUnderLashComboPackages,
+  resolveMatchedUpperComboFromSaved,
+  resolveMatchedUnderComboFromSaved,
+  resolveServicePriceSplit,
+} from '@mos-lab/shared';
 import { parseDaysSinceLastVisit } from './LashMaterialConstraintMatrix';
 import { UpsellHeaderAndSerumSection } from './upsell/UpsellHeaderAndSerumSection';
 import { UpsellMainComboSelector } from './upsell/UpsellMainComboSelector';
 import { UpsellUnderComboAndSummary } from './upsell/UpsellUnderComboAndSummary';
 import { UpsellOverlays } from './upsell/UpsellOverlays';
 import { computeUpsellRedemptionAccounting, computeUpsellTotals } from './upsell/upsellAccountingHelpers';
-import { addScannedProductToCartProducts, applyYeppeumTierToCartProducts, buildUpsellCheckoutPayload, isYeppeumProductItem, removeScannedUnitFromCartProducts, resolveInitialSerumSelection } from './upsell/upsellCheckoutHelpers';
+import {
+  addScannedProductToCartProducts,
+  applyYeppeumTierToCartProducts,
+  buildUpsellCheckoutPayload,
+  isYeppeumProductItem,
+  removeScannedUnitFromCartProducts,
+  resolveInitialSerumSelection,
+} from './upsell/upsellCheckoutHelpers';
 import { useUpsellComboExpiry } from './upsell/useUpsellComboExpiry';
+import { hasBookingPreattachedOrServicePromotion } from './consultation/comboExpiryConsultHelpers';
 
 interface Screen11ProductUpsellProps {
   booking?: BookingItem;
@@ -50,7 +72,8 @@ export function Screen11ProductUpsell({
   const initialSerum = resolveInitialSerumSelection(booking?.cartProducts);
   const [selectedSerumTierId, setSelectedSerumTierId] = useState<string>(initialSerum.tierId);
   const [localCartProducts, setLocalCartProducts] = useState<NonNullable<BookingItem['cartProducts']>>(
-() => booking?.cartProducts || []);
+    () => booking?.cartProducts || []
+  );
   useEffect(() => {
     const synced = resolveInitialSerumSelection(booking?.cartProducts);
     setSelectedSerumTierId(synced.tierId);
@@ -125,7 +148,10 @@ export function Screen11ProductUpsell({
     manualSpecEdit && manualSpecEdit.bookingId === booking?.id ? manualSpecEdit.volume : preferredUpperSpec.volume;
 
   const setActiveCategoryAndVolume = React.useCallback(
-(categoryId: WingsComboCategoryId, volume: number | 'under') => setManualSpecEdit({ bookingId: booking?.id, categoryId, volume }), [booking?.id]);
+    (categoryId: WingsComboCategoryId, volume: number | 'under') =>
+      setManualSpecEdit({ bookingId: booking?.id, categoryId, volume }),
+    [booking?.id]
+  );
 
   const familyInfo = useMemo(() => getLashFamilyInfo(activeCategoryId), [activeCategoryId]);
   const isUpTierPackage = activeCategoryId !== autoMatched.categoryId;
@@ -162,13 +188,15 @@ export function Screen11ProductUpsell({
   );
   const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
 
-  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn và chưa chọn sẵn gói ở Tư Vấn): mặc định ẨN phần mua thêm combo
+  // Nếu khách có combo còn hạn > 2 lần (chưa sắp hết hạn, chưa chọn sẵn gói ở Tư Vấn, và không có mã 50% gắn sẵn): mặc định ẨN phần mua thêm combo
   const hasPreselectedAnyCombo = Boolean(booking?.selectedCombo || booking?.selectedUnderCombo);
+  const activeBookingPromotion = booking?.servicePromotion ?? booking?.appliedPromotion ?? null;
   const shouldAutoExpandRenewal = Boolean(
     booking?.comboLiveStatus?.isExpired ||
     booking?.comboLiveStatus?.isExpiringSoon ||
     remainingSessions <= 2 ||
-    hasPreselectedAnyCombo
+    hasPreselectedAnyCombo ||
+    hasBookingPreattachedOrServicePromotion(booking)
   );
   const shouldCollapseNewComboByDefault = isExistingComboLive && !shouldAutoExpandRenewal;
   const [showNewComboSection, setShowNewComboSection] = useState<boolean>(!shouldCollapseNewComboByDefault);
@@ -508,9 +536,7 @@ export function Screen11ProductUpsell({
           <div className="rounded-2xl border p-3 text-xs flex items-center gap-2.5 shadow-2xs bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-600/50 dark:text-emerald-200">
             <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[14px]">🔒</span>
             <div className="leading-relaxed">
-              <strong className="block text-[12px] font-bold">
-                ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)
-              </strong>
+              <strong className="block text-[12px] font-bold">ĐƠN HÀNG ĐÃ CHỐT THANH TOÁN (COMPLETED)</strong>
               <span className="text-[11px] opacity-90">
                 Mọi thông tin dịch vụ, combo và sản phẩm đã khóa sổ, không thể chỉnh sửa.
               </span>
@@ -574,6 +600,7 @@ export function Screen11ProductUpsell({
           selectedUpperExpiry={selectedUpperExpiry}
           showStaffRewards={showStaffRewards}
           actorName={actorName}
+          activeBookingPromotion={activeBookingPromotion}
           onOpenLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(true)}
         />
 
@@ -589,6 +616,8 @@ export function Screen11ProductUpsell({
           selectedUnderComboPkg={selectedUnderComboPkg}
           selectedNewComboPkg={selectedNewComboPkg}
           deductTodayIntoCombo={deductTodayIntoCombo}
+          upperTodayUsageMode={upperTodayUsageMode}
+          activeBookingPromotion={activeBookingPromotion}
           underExpiryPreviewMap={underExpiryPreviewMap}
           selectedUpperExpiry={selectedUpperExpiry}
           selectedUnderExpiry={selectedUnderExpiry}

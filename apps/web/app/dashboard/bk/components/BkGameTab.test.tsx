@@ -373,12 +373,20 @@ describe('BkGameTab', () => {
         ],
         records: [],
       },
-      stats: { totalScore: 6, totalParticipants: 1, totalTeams: 0, leaderScore: 6, timeRemainingSeconds: 3600, isExpired: false },
+      stats: {
+        totalScore: 6,
+        totalParticipants: 1,
+        totalTeams: 0,
+        leaderScore: 6,
+        timeRemainingSeconds: 3600,
+        isExpired: false,
+      },
     });
 
     render(<BkGameTab dateRange={[dayjs('2026-11-19'), dayjs('2026-11-30')]} comparisonMode="month" />);
 
     expect(await screen.findByText('Thưởng Done Khách Lẻ Theo Mốc Booking Team')).toBeInTheDocument();
+    expect(screen.queryByText('Tiến Độ & Thưởng Phạt')).not.toBeInTheDocument();
     expect(screen.getByText('44 Booking')).toBeInTheDocument();
     expect(screen.getByText(/Mốc đạt: 40–49 Booking/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Chi Tiết Thưởng Mốc BK/i })).toBeInTheDocument();

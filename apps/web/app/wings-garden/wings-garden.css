@@ -1,0 +1,105 @@
+/* Thiên Đường Nối Lông — Scoped Styles & Modern Web Guidance Compliance */
+
+dialog.wg-dialog:modal {
+  overscroll-behavior: contain;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  width: min(410px, calc(100vw - 20px));
+  max-width: 100%;
+}
+
+dialog.wg-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+dialog.wg-dialog:not([open]) {
+  display: none;
+}
+
+@keyframes wgCloudDrift {
+  0%,
+  100% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(12px);
+  }
+}
+
+@keyframes wgCloudDriftReverse {
+  0%,
+  100% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes wgIslandBob {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes wgAirshipFloat {
+  0%,
+  100% {
+    transform: translate(0px, 0px);
+  }
+  50% {
+    transform: translate(6px, -4px);
+  }
+}
+
+@keyframes wgWingHover {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.03);
+  }
+}
+
+@keyframes wgRipePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.94;
+  }
+  50% {
+    transform: scale(1.018);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wg-root:not(.wg-motion-paused) .wg-anim-cloud {
+    animation: wgCloudDrift 7.5s ease-in-out infinite;
+  }
+  .wg-root:not(.wg-motion-paused) .wg-anim-cloud-rev {
+    animation: wgCloudDriftReverse 9s ease-in-out infinite;
+  }
+  .wg-root:not(.wg-motion-paused) .wg-anim-island {
+    animation: wgIslandBob 5.2s ease-in-out infinite;
+  }
+  .wg-root:not(.wg-motion-paused) .wg-anim-airship {
+    animation: wgAirshipFloat 4.6s ease-in-out infinite;
+  }
+  .wg-root:not(.wg-motion-paused) .wg-anim-wing {
+    animation: wgWingHover 3.5s ease-in-out infinite;
+  }
+  .wg-root:not(.wg-motion-paused) .wg-anim-ripe {
+    animation: wgRipePulse 1.9s ease-in-out infinite;
+  }
+}

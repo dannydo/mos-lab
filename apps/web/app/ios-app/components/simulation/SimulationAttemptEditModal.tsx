@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { X, Edit3, Sparkles, Plus, Minus, Trash2, Check, Loader2, Play } from 'lucide-react';
-import type { IosSimulationAttemptSummary, IosUpdateSimulationAttemptRequest } from '@mos-lab/shared';
+import React, { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { X, Edit3, Sparkles, Plus, Minus, Check, Loader2, Play } from 'lucide-react';
+import {
+  calculateCvSerumTierBonus,
+  type IosSimulationAttemptSummary,
+  type IosUpdateSimulationAttemptRequest,
+} from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { SERUM_TIERS_CVL } from '../../state/mockData';
 import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
 
 interface SimulationAttemptEditModalProps {
@@ -31,12 +37,12 @@ const COMMON_UNDER_COMBOS = [
   { name: 'Mi Dưới 5 Lần', price: 700000 },
 ];
 
-const COMMON_PRODUCTS = [
-  { productName: 'Serum Dưỡng Mi Wings', price: 299000 },
-  { productName: 'Mascara Chuyên Nối Mi', price: 199000 },
-  { productName: 'Gel Tháo Mi Dưỡng Ẩm', price: 120000 },
-  { productName: 'Bọt Vệ Sinh Mi Kháng Khuẩn', price: 150000 },
-];
+const REAL_UPSELL_PRODUCTS = SERUM_TIERS_CVL.map((tier) => ({
+  productName: tier.id === 'serum-orig' ? 'Dưỡng Mi Yeppeum Korea' : `Dưỡng Mi Yeppeum Korea (${tier.label})`,
+  price: tier.price,
+  cvBonus: tier.cvBonus,
+  desc: tier.desc,
+}));
 
 export function SimulationAttemptEditModal({
   isOpen,
@@ -78,7 +84,12 @@ export function SimulationAttemptEditModal({
 
   const estimatedReward = useMemo(() => {
     const comboBonus = comboPrice > 0 ? (comboPrice >= 1000000 ? 50000 : 30000) : 0;
-    const serumBonus = upsellProducts.some((p) => /serum/i.test(p.productName)) ? 20000 : 0;
+    const serumBonus = upsellProducts.reduce((sum, p) => {
+      if (!/serum|yeppeum|dưỡng mi/i.test(p.productName)) return sum;
+      const qty = Math.max(1, Number(p.quantity) || 1);
+      const unitPrice = qty > 0 ? Math.round(Number(p.totalPrice || 0) / qty) : 0;
+      return sum + calculateCvSerumTierBonus(unitPrice, qty);
+    }, 0);
     const tipShare = Math.round(tipAmount * 0.8);
     return Math.round(servicePrice * 0.1 + comboBonus + serumBonus + tipShare);
   }, [servicePrice, comboPrice, upsellProducts, tipAmount]);
@@ -89,6 +100,30 @@ export function SimulationAttemptEditModal({
     if (upsellProducts.length > 0) pts += 1;
     return pts;
   }, [attempt.cvRotationPoints, comboPrice, upsellProducts]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isSaving) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isSaving, onClose]);
+
+  const displayedCatalogProducts = useMemo(() => {
+    const knownNames = new Set(REAL_UPSELL_PRODUCTS.map((p) => p.productName));
+    const legacyExtras = upsellProducts
+      .filter((p) => !knownNames.has(p.productName))
+      .map((p) => ({
+        productName: p.productName,
+        price: p.quantity > 0 ? Math.round(p.totalPrice / p.quantity) : p.totalPrice,
+        cvBonus: calculateCvSerumTierBonus(p.quantity > 0 ? Math.round(p.totalPrice / p.quantity) : p.totalPrice, 1),
+        desc: 'Sản phẩm đã lưu trước đó',
+      }));
+    return [...REAL_UPSELL_PRODUCTS, ...legacyExtras];
+  }, [upsellProducts]);
 
   if (!isOpen) return null;
 
@@ -102,18 +137,19 @@ export function SimulationAttemptEditModal({
   };
 
   const handleQuantityChange = (productName: string, delta: number) => {
-    const catalogItem = COMMON_PRODUCTS.find((p) => p.productName === productName);
+    const catalogItem = displayedCatalogProducts.find((p) => p.productName === productName);
     const unitPrice = catalogItem ? catalogItem.price : 0;
-    setUpsellProducts((prev) =>
-      prev
-        .map((p) => {
-          if (p.productName !== productName) return p;
-          const nextQ = p.quantity + delta;
-          if (nextQ <= 0) return null;
-          const uPrice = unitPrice || p.totalPrice / p.quantity;
-          return { ...p, quantity: nextQ, totalPrice: uPrice * nextQ };
-        })
-        .filter(Boolean) as Array<{ productName: string; quantity: number; totalPrice: number }>
+    setUpsellProducts(
+      (prev) =>
+        prev
+          .map((p) => {
+            if (p.productName !== productName) return p;
+            const nextQ = p.quantity + delta;
+            if (nextQ <= 0) return null;
+            const uPrice = catalogItem ? unitPrice : p.totalPrice / p.quantity;
+            return { ...p, quantity: nextQ, totalPrice: uPrice * nextQ };
+          })
+          .filter(Boolean) as Array<{ productName: string; quantity: number; totalPrice: number }>
     );
   };
 
@@ -143,14 +179,18 @@ export function SimulationAttemptEditModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
-      onClick={() => {
-        if (!isSaving && !isBusy) onClose();
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!isSaving) onClose();
       }}
-      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4"
+      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4"
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Chỉnh sửa Kịch bản · Phương án #${attempt.attemptNumber}`}
         onClick={(e) => e.stopPropagation()}
         className={`w-full max-w-[460px] max-h-[92dvh] rounded-t-3xl sm:rounded-3xl border shadow-2xl flex flex-col overflow-hidden ${
           isDark ? 'bg-[#141414] border-neutral-800 text-white' : 'bg-white border-neutral-200 text-neutral-900'
@@ -175,10 +215,13 @@ export function SimulationAttemptEditModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            disabled={isSaving || isBusy}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isSaving) onClose();
+            }}
+            disabled={isSaving}
             aria-label="Đóng"
-            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 cursor-pointer touch-manipulation disabled:opacity-50 ${
               isDark
                 ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
                 : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-600'
@@ -337,7 +380,7 @@ export function SimulationAttemptEditModal({
               )}
             </div>
             <div className="space-y-1.5">
-              {COMMON_PRODUCTS.map((prod) => {
+              {displayedCatalogProducts.map((prod) => {
                 const selected = upsellProducts.find((p) => p.productName === prod.productName);
                 return (
                   <div
@@ -368,9 +411,12 @@ export function SimulationAttemptEditModal({
                       >
                         {selected && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
-                      <div className="truncate text-[11.5px] font-semibold">{prod.productName}</div>
-                      <div className="text-[10px] opacity-75 tabular-nums shrink-0">
-                        ({prod.price.toLocaleString('vi-VN')}đ)
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[11.5px] font-semibold">{prod.productName}</div>
+                        <div className="text-[9.5px] opacity-75 truncate">{prod.desc}</div>
+                      </div>
+                      <div className="text-[10.5px] font-bold opacity-85 tabular-nums shrink-0">
+                        {prod.price > 0 ? `${prod.price.toLocaleString('vi-VN')}đ` : '0đ (Tặng)'}
                       </div>
                     </button>
 
@@ -535,7 +581,11 @@ export function SimulationAttemptEditModal({
               disabled={isSaving || isBusy}
               className="py-2 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[12px] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-md"
             >
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              {isSaving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+              )}
               <span>{isSaving ? 'Đang lưu...' : 'Lưu kịch bản'}</span>
             </button>
           </div>
@@ -543,4 +593,9 @@ export function SimulationAttemptEditModal({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }

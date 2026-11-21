@@ -460,7 +460,7 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
       selectedComboPrice: 1850000,
       selectedUnderComboName: 'Mi Dưới 3 Lần',
       selectedUnderComboPrice: 450000,
-      upsellProducts: [{ productName: 'Serum Dưỡng Mi Wings', quantity: 1, totalPrice: 299000 }],
+      upsellProducts: [{ productName: 'Dưỡng Mi Yeppeum Korea', quantity: 1, totalPrice: 1100000 }],
       promotionName: 'Tri Ân Khách Cũ',
       promotionDiscountAmount: 100000,
       tipAmount: 50000,
@@ -474,15 +474,15 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
   assert.equal(updated.selectedComboPrice, 1850000);
   assert.equal(updated.selectedUnderComboName, 'Mi Dưới 3 Lần');
   assert.equal(updated.selectedUnderComboPrice, 450000);
-  assert.equal(updated.upsellTotal, 299000);
+  assert.equal(updated.upsellTotal, 1100000);
   assert.equal(updated.promotionDiscountAmount, 100000);
   assert.equal(updated.tipAmount, 50000);
-  // grandTotal = 500000 (service) + 1850000 (combo) + 450000 (under) + 299000 (upsell) - 100000 (promo) + 50000 (tip) = 3049000
-  assert.equal(updated.grandTotal, 3049000);
-  // comboBonus = 50000, serumBonus = 20000, tipShare = 40000, serviceShare = 50000 -> 160000
+  // grandTotal = 500000 (service) + 1850000 (combo) + 450000 (under) + 1100000 (upsell) - 100000 (promo) + 50000 (tip) = 3850000
+  assert.equal(updated.grandTotal, 3850000);
+  // comboBonus = 50000, serumBonus = 100000 (Yeppeum >= 1M), tipShare = 40000, serviceShare = 50000 -> 240000
   assert.equal(updated.comboBonusAmount, 50000);
-  assert.equal(updated.serumBonusAmount, 20000);
-  assert.equal(updated.totalEstimatedReward, 160000);
+  assert.equal(updated.serumBonusAmount, 100000);
+  assert.equal(updated.totalEstimatedReward, 240000);
 
   // 3. Verify updating nonexistent attempt throws 404
   await assert.rejects(
@@ -526,8 +526,8 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
   assert.equal(appliedOverride.selectedCombo?.name, 'Gói 5 Lần');
   assert.equal(appliedOverride.selectedUnderCombo?.name, 'Mi Dưới 3 Lần');
   assert.equal(appliedOverride.cartProducts?.length, 1);
-  assert.equal(appliedOverride.cartProducts?.[0]?.productName, 'Serum Dưỡng Mi Wings');
-  assert.equal(appliedOverride.billing?.grandTotal, 3049000);
+  assert.equal(appliedOverride.cartProducts?.[0]?.productName, 'Dưỡng Mi Yeppeum Korea');
+  assert.equal(appliedOverride.billing?.grandTotal, 3850000);
 });
 
 test('MOS-BUG-230: reconciles missing attempts for completed/checked-out scenarios and preserves state across reopen & apply', async () => {

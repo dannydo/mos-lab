@@ -106,6 +106,7 @@ export class FinancialGoalsService {
     const m = parseInt(monthStr, 10);
     const daysInMonth = new Date(year, m, 0).getDate();
 
+    const todayStr = `${currentYm}-${String(currentDay).padStart(2, '0')}`;
     const startDateStr = `${month}-01 00:00:00`;
     const endDateStr = `${month}-${String(daysInMonth).padStart(2, '0')} 23:59:59`;
 
@@ -136,9 +137,14 @@ export class FinancialGoalsService {
     const isConfigured = Boolean(existingConfigRecord?.value);
     const config = await this.getConfig(fastify, month);
 
-    // 4. Query Actual Completed Orders for the entire month
-    const rawOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-      `
+    // 4. Query Actual Completed Orders up to today (never attribute future dates/months as actual revenue)
+    const effectiveEndDateStr = periodStatus === 'IN_PROGRESS' ? `${todayStr} 23:59:59` : endDateStr;
+
+    const rawOrders =
+      periodStatus === 'NOT_STARTED'
+        ? []
+        : await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            `
       SELECT 
         o.id as orderId,
         o.total_price,
@@ -160,13 +166,13 @@ export class FinancialGoalsService {
         )
       ORDER BY checkin_time ASC
     `,
-      startDateStr,
-      endDateStr,
-      startDateStr,
-      endDateStr,
-      startDateStr,
-      endDateStr
-    );
+            startDateStr,
+            effectiveEndDateStr,
+            startDateStr,
+            effectiveEndDateStr,
+            startDateStr,
+            effectiveEndDateStr
+          );
 
     // 5. Query combo and product line items for revenue attribution
     const orderIds = rawOrders.map((o) => Number(o.orderId)).filter((id) => id > 0);
@@ -223,6 +229,11 @@ export class FinancialGoalsService {
     let actualProduct = 0;
 
     for (const o of rawOrders) {
+      const dateKey = String(o.checkin_date || '').slice(0, 10);
+      if (periodStatus === 'NOT_STARTED' || (periodStatus === 'IN_PROGRESS' && dateKey > todayStr)) {
+        continue;
+      }
+
       let comboRev = combosMap[o.orderId] || 0;
       let productRev = productsMap[o.orderId] || 0;
       let orderTotal = Number(o.total_price || 0);
@@ -262,7 +273,6 @@ export class FinancialGoalsService {
       actualRetail += finalRevLe;
       actualProduct += finalRevProduct;
 
-      const dateKey = String(o.checkin_date || '').slice(0, 10);
       const dayEntry = dailyMap.get(dateKey);
       if (dayEntry) {
         dayEntry.totalRevenue += orderFinalRev;

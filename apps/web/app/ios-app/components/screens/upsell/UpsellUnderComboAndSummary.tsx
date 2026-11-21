@@ -3,9 +3,12 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import {
-  MatchedComboPackageOption,
   calculateComboRedemptionAccounting,
+  calculateIosItemizedPromotionDiscounts,
+  MatchedComboPackageOption,
   type ComboPurchaseExpiryResult,
+  type ComboTodayUsageMode,
+  type IosPromotionOption,
 } from '@mos-lab/shared';
 import { BookingItem, SERUM_TIERS_CVL } from '../../../state/mockData';
 import { FeatherSvg } from '../../ui-kit/CvFeatherLabels';
@@ -26,6 +29,8 @@ export interface UpsellUnderComboAndSummaryProps {
   selectedUnderComboPkg: MatchedComboPackageOption | null;
   selectedNewComboPkg: MatchedComboPackageOption | null;
   deductTodayIntoCombo: boolean;
+  upperTodayUsageMode?: ComboTodayUsageMode;
+  activeBookingPromotion?: IosPromotionOption | null;
   underExpiryPreviewMap?: Record<string, ComboExpiryPreviewItem>;
   selectedUpperExpiry?: ComboPurchaseExpiryResult | null;
   selectedUnderExpiry?: ComboPurchaseExpiryResult | null;
@@ -63,6 +68,8 @@ export function UpsellUnderComboAndSummary({
   selectedUnderComboPkg,
   selectedNewComboPkg,
   deductTodayIntoCombo,
+  upperTodayUsageMode,
+  activeBookingPromotion,
   underExpiryPreviewMap,
   selectedUpperExpiry,
   selectedUnderExpiry,
@@ -87,9 +94,26 @@ export function UpsellUnderComboAndSummary({
   onOpenLockedWelcomeModal,
   onConfirmCheckout,
 }: UpsellUnderComboAndSummaryProps) {
+  const isPromoActiveForTodayService = Boolean(
+    effectiveServiceChargeToday > 0 && activeBookingPromotion && upperTodayUsageMode !== 'USE_NEW_COMBO'
+  );
+  const servicePromoCalc = isPromoActiveForTodayService
+    ? calculateIosItemizedPromotionDiscounts({
+        serviceAmount: effectiveServiceChargeToday,
+        upgradeAmount: booking?.upgradePrice || 0,
+        servicePromotion: activeBookingPromotion,
+        comboAmount: 0,
+        underComboAmount: 0,
+        products: [],
+        fallbackOrderPromotion: null,
+        vatRate: 0,
+      })
+    : null;
+  const serviceDiscountToday = servicePromoCalc?.serviceDiscount ?? 0;
+  const netSubtotal = Math.max(0, subtotal - serviceDiscountToday);
   const diamondBalance = customerDiamondBalance ?? booking?.diamondBalance ?? 0;
-  const diamondDiscountAmount = Math.min(diamondBalance * 1000, subtotal);
-  const payableAfterDiamond = Math.max(0, subtotal - diamondDiscountAmount);
+  const diamondDiscountAmount = Math.min(diamondBalance * 1000, netSubtotal);
+  const payableAfterDiamond = Math.max(0, netSubtotal - diamondDiscountAmount);
   return (
     <>
       {/* Section 2B: MUA THÊM GÓI COMBO MI DƯỚI */}
@@ -226,6 +250,17 @@ export function UpsellUnderComboAndSummary({
           )}
         </div>
 
+        {serviceDiscountToday > 0 && activeBookingPromotion && (
+          <div data-testid="upsell-summary-promo-discount" className="flex items-center justify-between text-[12px]">
+            <span className={`${isDark ? 'text-amber-300' : 'text-amber-800'} font-semibold truncate pr-2`}>
+              Ưu đãi ({activeBookingPromotion.name}):
+            </span>
+            <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold tabular-nums shrink-0`}>
+              -{serviceDiscountToday.toLocaleString('vi-VN')}đ
+            </span>
+          </div>
+        )}
+
         {/* Row 2: Gói Combo đã chọn */}
         {selectedNewComboPkg && (
           <div className="space-y-0.5">
@@ -291,22 +326,16 @@ export function UpsellUnderComboAndSummary({
         {diamondBalance > 0 && (
           <div
             className={`p-2.5 rounded-xl border flex items-center justify-between text-[12px] font-medium ${
-              isDark
-                ? "bg-cyan-950/25 border-cyan-800/50 text-cyan-300"
-                : "bg-cyan-50/70 border-cyan-200 text-cyan-900"
+              isDark ? 'bg-cyan-950/25 border-cyan-800/50 text-cyan-300' : 'bg-cyan-50/70 border-cyan-200 text-cyan-900'
             }`}
           >
             <div className="flex items-center gap-1.5">
               <span>💎 Ví Kim Cương:</span>
-              <span className="font-extrabold tabular-nums">
-                {diamondBalance.toLocaleString("vi-VN")} 💎
-              </span>
-              <span className="text-[10.5px] opacity-75">
-                (= {(diamondBalance * 1000).toLocaleString("vi-VN")}đ)
-              </span>
+              <span className="font-extrabold tabular-nums">{diamondBalance.toLocaleString('vi-VN')} 💎</span>
+              <span className="text-[10.5px] opacity-75">(= {(diamondBalance * 1000).toLocaleString('vi-VN')}đ)</span>
             </div>
             <span className="text-[11px] font-bold tabular-nums text-cyan-600 dark:text-cyan-400">
-              Ước tính sau trừ: {payableAfterDiamond.toLocaleString("vi-VN")}đ
+              Ước tính sau trừ: {payableAfterDiamond.toLocaleString('vi-VN')}đ
             </span>
           </div>
         )}
@@ -315,7 +344,7 @@ export function UpsellUnderComboAndSummary({
         <div className={`pt-2 border-t border-[var(--mos-surface-border)] flex items-center justify-between`}>
           <span className={`text-[14px] font-extrabold text-[var(--mos-text)]`}>Tổng thanh toán:</span>
           <span className="text-[18px] font-black text-[#FF9500] tabular-nums">
-            {subtotal.toLocaleString("vi-VN")}đ
+            {netSubtotal.toLocaleString('vi-VN')}đ
           </span>
         </div>
 
@@ -395,8 +424,8 @@ export function UpsellUnderComboAndSummary({
           <div
             className={`w-full py-3.5 px-4 rounded-2xl border text-center font-bold text-[14px] shadow-xs ${
               isDark
-                ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400"
-                : "bg-emerald-50 border-emerald-300 text-emerald-800"
+                ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-400'
+                : 'bg-emerald-50 border-emerald-300 text-emerald-800'
             }`}
           >
             ✓ ĐÃ CHỐT THANH TOÁN (COMPLETED)

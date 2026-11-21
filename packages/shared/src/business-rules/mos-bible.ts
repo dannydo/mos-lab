@@ -342,28 +342,29 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'REWARDS',
     title: 'Thưởng Done khách lẻ theo mốc Booking Team trong Game BK',
     summary:
-      'Trong Game BK có bật cơ chế này, tổng Booking hợp lệ của toàn Team trong ngày quyết định mức thưởng trên mỗi đơn Done khách lẻ thực tế hoàn thành cùng ngày cho Booker tạo lịch.',
+      'Trong Game BK có bật cơ chế này, tổng Booking tạo ra của toàn Team trong ngày quyết định mức thưởng trên mỗi đơn Done khách lẻ thực tế hoàn thành cùng ngày cho Booker tạo lịch.',
     commandments: [
       'Các mốc Booking Team/ngày và mức thưởng/Done được cấu hình trực tiếp trên giao diện Tạo/Sửa Game BK, không hard-code.',
-      'Booking Team tính theo thời điểm tạo đơn (order.date_created) trong thời gian và khung giờ Game đã cấu hình, kế thừa quy tắc Booking hợp lệ hiện có (loại trừ Cancelled, tuân thủ kênh tiếp nhận của Game).',
+      'Booking Team tính theo tổng đơn tạo mới (order.date_created) trong thời gian và khung giờ Game đã cấu hình cho danh sách nhân sự BK_TELESALES đang hoạt động, bao gồm cả đơn bị huỷ sau đó (chấp nhận book ảo theo chỉ đạo 2026-11-20; vẫn tuân thủ kênh tiếp nhận của Game).',
       'Mỗi ngày chốt một mốc thưởng duy nhất theo tổng Booking Team đạt được trong ngày đó.',
-      'Chỉ thưởng cho đơn Done khách lẻ thực tế hoàn thành (order_state = Completed, phân định Khách lẻ theo Điều răn BK-005 và ComboRecognitionService) trong cùng ngày Team đạt mốc; tuyệt đối không tính Done khách Combo.',
+      "Chỉ thưởng cho đơn Done khách lẻ thực tế hoàn thành (order_state IN ('Completed', 'CheckOut') — cập nhật live ngay khi khách hoàn tất thanh toán/CheckOut hoặc quầy chốt Completed, phân định Khách lẻ theo Điều răn BK-005 và ComboRecognitionService) trong cùng ngày Team đạt mốc; tuyệt đối không tính Done khách Combo.",
       'Ghi nhận Done và tiền thưởng cho nhân viên tạo Booking (order.created_staff_id); mỗi Done hợp lệ chỉ được thưởng tối đa một lần trong Game.',
       'Công thức: Thưởng cá nhân/ngày = Done khách lẻ hợp lệ trong ngày × Mức thưởng theo mốc Booking Team ngày đó.',
       'Khoản thưởng này độc lập hoàn toàn với lương thưởng Telesales và quỹ thưởng/phạt Team KPI, và không làm thay đổi các Game đang vận hành không bật cấu hình.',
     ],
     rationale:
-      'Gắn chặt nỗ lực tạo lịch tập thể của cả Team theo ngày với chất lượng chuyển đổi khách lẻ đến làm dịch vụ thực tế, tạo động lực kép cho WINGS BOOKING RACE.',
+      'Gắn chặt nỗ lực tạo lịch tập thể của cả Team theo ngày với chất lượng chuyển đổi khách lẻ đến làm dịch vụ thực tế, tạo động lực kép cho WINGS BOOKING RACE. Lưu ý: việc không loại trừ đơn Cancelled là ngoại lệ có chủ đích cho mechanic hiện tại (đã ghi nhận review thiết kế game với Tâm Nguyễn).',
     examples: [
-      'Cấu hình mốc: Dưới 30 Booking = 0đ/Done; 30–39 = 5.000đ/Done; 40–49 = 7.000đ/Done; Từ 50 = 10.000đ/Done. Ngày 20/11 cả Team tạo được 42 Booking hợp lệ -> chốt mức 7.000đ/Done. Booker A có 4 Done khách lẻ và 2 Done khách Combo hoàn thành ngày 20/11 -> được tính 4 × 7.000đ = 28.000đ.',
+      'Cấu hình mốc: Dưới 30 Booking = 0đ/Done; 30–39 = 5.000đ/Done; 40–49 = 7.000đ/Done; Từ 50 = 10.000đ/Done. Ngày 20/11 cả Team tạo được 42 Booking -> chốt mức 7.000đ/Done. Booker A có 4 Done khách lẻ và 2 Done khách Combo hoàn thành ngày 20/11 -> được tính 4 × 7.000đ = 28.000đ.',
     ],
     tags: ['Game BK', 'WINGS BOOKING RACE', 'Booking Team', 'Done khách lẻ', 'Mốc thưởng', 'Khách lẻ'],
     routeScopes: ['/dashboard/bk', '/dashboard/kpi'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-18',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-20',
     sources: [
       { label: 'Ticket yêu cầu', reference: 'MOS-BUG-247' },
+      { label: 'Game Mechanic Review Note', reference: 'docs/retro-game-bk-booking-race-2026-11-20.md' },
       { label: 'Shared Game BK Types', reference: 'packages/shared/src/types/bk-game.ts' },
       {
         label: 'Team-Booking Done Bonus Engine',
@@ -1286,7 +1287,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '2. Công Thức Tính HSD Khi Khách ĐANG CÒN Combo Còn Hạn & Mua Thêm Gói Mới: (a) Nếu gói mới dùng 1 lần (USE_NEW_COMBO): HSD mới = Thời hạn gói mới + Thời gian còn lại của gói cũ (= HSD cũ + Thời hạn gói mới); (b) Nếu gói mới dùng 0 lần và trừ 1 buổi vào gói cũ khi gói cũ còn >= 2 buổi (USE_OLD_COMBO): HSD mới = Thời hạn gói mới + Thời gian còn lại của gói cũ + 1 tháng thưởng mua sớm; (c) Nếu gói mới dùng 0 lần và gói cũ dùng 0 lần, hôm nay đi lẻ hoặc dùng Voucher (RETAIL_OR_VOUCHER): HSD mới = Thời hạn gói mới + Thời gian còn lại của gói cũ + 1 tháng + 21 ngày; (d) Nhánh buổi cuối (combo_last): Khi gói cũ còn hạn chỉ còn đúng 1 buổi cuối và hôm nay trừ nốt về 0 rồi mua nối tiếp gói mới, thời gian dư gói cũ kết thúc và HSD mới = Hôm nay + Thời hạn gói mới + 1 tháng thưởng mua nối tiếp sớm.',
       '3. Xử Lý Gói Combo ĐÃ HẾT HẠN (date_expired < Hôm nay, còn buổi tồn > 0): (a) Nếu khách KHÔNG mua gói mới hôm nay: Khóa cứng trừ buổi 0đ (isComboLive = false, isExpired = true), khách bắt buộc đi lẻ hoặc dùng Voucher, hiển thị thẻ cảnh báo ĐỎ rõ ràng trên mOS iOS App; (b) Nếu khách MUA thêm gói Combo mới hôm nay: Tự động cứu toàn bộ buổi tồn của gói hết hạn cộng dồn vào gói Combo chung, quy đổi thời gian tính từ Hôm nay theo công thức [Nối mới = +1 tháng/buổi] và [Dặm = +25 ngày/buổi], sau đó cộng Thời hạn gói mới (tuyệt đối KHÔNG cộng +1 tháng thưởng gia hạn sớm vì gói cũ đã để trễ hạn; nếu hôm nay đi lẻ hoặc dùng Voucher thì vẫn cộng thêm +21 ngày).',
       '4. Đồng Nhất 100% Combo Mi Trên & Combo Mi Dưới + Nhịp Độ Sử Dụng: Toàn bộ công thức HSD, cộng dồn, thưởng mua sớm và cứu gói hết hạn áp dụng đồng nhất và độc lập cho cả Combo Mi Trên và Combo Mi Dưới. Trên Chi tiết Gói Combo luôn hiển thị nhãn Combo Mi Trên / Combo Mi Dưới, HSD: dd/MM/yyyy và nhịp độ tiêu thụ (Avg: X.X ngày/buổi) để khách hàng và Chuyên Viên dễ dàng theo dõi.',
-      '5. Bảo Lưu (date_expired = NULL) & Đặc Quyền Admin Duy Nhất: Gói đang Bảo lưu (date_expired = NULL khi còn buổi > 0) hiển thị trạng thái "Đang bảo lưu" và tự kích hoạt lại HSD khi dùng buổi tiếp theo. Trên /ios-app, chỉ duy nhất Admin / Super Admin mới có quyền bấm Gia hạn ngày (Extend) hoặc Bảo lưu đóng băng / Kích hoạt lại (Freeze / Unfreeze) kèm lý do bắt buộc; khóa tuyệt đối quyền này với CV🪶 (CVL), 🪶CV🪶 (CVLL), CC và CV.',
+      '5. Bảo Lưu (date_expired = NULL) & Đặc Quyền Admin Duy Nhất: Gói đang Bảo lưu (date_expired = NULL khi còn buổi > 0) hiển thị trạng thái "Đang bảo lưu" và tự kích hoạt lại HSD khi dùng buổi tiếp theo. Trên /ios-app, chỉ duy nhất Admin / Super Admin mới có quyền bấm Gia hạn ngày (Extend) hoặc Bảo lưu đóng băng / Kích hoạt lại (Freeze / Unfreeze) kèm lý do bắt buộc; khóa tuyệt đối quyền này với CVL, CVLL, CC và CV.',
+      '6. Đơn Đặt Lịch Có Gắn Sẵn Mã Khuyến Mãi (Mã 50% / Chiến Dịch) & Mua Kèm Gói Combo Tại Upsell / Checkout: (a) Bước 12 Upsell (Screen11ProductUpsell) luôn tự động mở sẵn (auto-expand) danh sách gói Combo khi đơn có gắn sẵn Mã khuyến mãi, kể cả khi khách còn gói cũ > 2 buổi; (b) Bước 13 Checkout (Screen12CheckoutBilling) luôn hiển thị nút "+ Chọn / Mua gói Combo" ngay trong Chi Tiết Hóa Đơn để chọn/đổi/xóa gói tại quầy kể cả với đơn nhảy thẳng Checkout; (c) Giá dịch vụ chuẩn luôn lấy giá niêm yết gốc (order_service.service_price) trước giảm giá để tránh giảm trùng 2 lần và tránh dò lệch size Combo; (d) Khi khách có Mã khuyến mãi (chưa có gói cũ hoạt động) quyết định mua thêm Combo, chế độ hôm nay mặc định là "Trả lẻ ca này hưởng Mã ưu đãi + Mua gói giữ trọn số buổi (+21N HSD)" (RETAIL_OR_VOUCHER), cho phép nhân viên gạt sang "Trừ Buổi 1 gói mới (0đ ca này)" (USE_NEW_COMBO) khi tạm ngưng áp dụng Mã ưu đãi mà vẫn giữ nhớ Mã chiến dịch (CAMP_*) trong phiên nếu gạt ngược lại.',
     ],
     rationale:
       'Đảm bảo tính công bằng tài chính, khuyến khích khách hàng gia hạn gói đúng hạn (+1 tháng thưởng mua sớm), đồng thời tạo cơ chế nhân văn và hấp dẫn để Chuyên Viên tư vấn cứu lại các buổi tồn bị quá hạn khi khách mua gói mới, tránh thất thoát doanh thu do trừ 0đ vô thời hạn.',
@@ -1305,11 +1307,13 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'gia hạn sớm',
       '21 ngày',
       '25 ngày',
+      'mã 50%',
+      'RETAIL_OR_VOUCHER',
     ],
     routeScopes: ['/ios-app', '/dashboard/customers', '/dashboard/appointments', '/dashboard/catalog'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-13',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-20',
     sources: [
       {
         label: 'Canonical Combo Expiry & Revival Engine',
@@ -1326,6 +1330,10 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       {
         label: 'Chi tiết Gói Combo & Bàn Tư Vấn (/ios-app)',
         reference: 'apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx',
+      },
+      {
+        label: 'Chọn / Mua & Chuyển Chế Độ Combo Trên Checkout (/ios-app)',
+        reference: 'apps/web/app/ios-app/components/screens/checkout/ReceiptComboItemsSection.tsx',
       },
     ],
   },

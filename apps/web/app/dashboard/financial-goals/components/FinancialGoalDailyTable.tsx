@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { DataTable } from '../../../../components/ui/DataTable';
-import { Calendar, TrendingUp } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { FinancialGoalDayBreakdown } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -13,13 +13,15 @@ interface FinancialGoalDailyTableProps {
   includeVat?: boolean;
 }
 
-export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = ({
-  data,
-  month,
-  includeVat = true,
-}) => {
+export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = ({ data, month, includeVat = true }) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [month]);
 
   const formatCurrency = (amount: number): string => {
     if (!amount) return '0đ';
@@ -125,9 +127,7 @@ export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = (
       align: 'right',
       render: (val: number) => (
         <span
-          className={`font-mono tabular-nums text-xs font-semibold ${
-            isDark ? 'text-cyan-400/90' : 'text-cyan-700'
-          }`}
+          className={`font-mono tabular-nums text-xs font-semibold ${isDark ? 'text-cyan-400/90' : 'text-cyan-700'}`}
         >
           {formatCurrency(val)}
         </span>
@@ -195,10 +195,23 @@ export const FinancialGoalDailyTable: React.FC<FinancialGoalDailyTableProps> = (
           rowKey="date"
           size="small"
           pagination={{
-            pageSize: 15,
+            current: currentPage,
+            pageSize,
             showSizeChanger: true,
             pageSizeOptions: ['10', '15', '31'],
             size: 'small',
+            onChange: (page, nextPageSize) => {
+              if (nextPageSize && nextPageSize !== pageSize) {
+                setPageSize(nextPageSize);
+                setCurrentPage(1);
+                return;
+              }
+              setCurrentPage(page);
+            },
+            onShowSizeChange: (_current, nextPageSize) => {
+              setPageSize(nextPageSize);
+              setCurrentPage(1);
+            },
           }}
           className={isDark ? 'dark-theme' : 'light-theme'}
         />

@@ -29,6 +29,19 @@ export interface IosPromotionsResponse {
   error?: string;
 }
 
+export interface IosReferrerLookupResult {
+  userId: number;
+  name: string;
+  phone: string;
+  diamondBalance: number;
+}
+
+export interface IosReferralDiamondPayload {
+  newCustomerId: number;
+  referrerUserId: number;
+  bookingId: number;
+}
+
 export const iosApi = {
   ios: {
     async getPromotions(
@@ -216,6 +229,36 @@ export const iosApi = {
         priority: options?.priority,
         timeout: options?.timeout,
       });
+      return res.data;
+    },
+
+    async lookupReferrerByPhone(
+      phone: string,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; referrer?: IosReferrerLookupResult; error?: string }> {
+      const res = await api.get<{ success: boolean; referrer?: IosReferrerLookupResult; error?: string }>(
+        '/ios/referrer/lookup',
+        {
+          params: { phone },
+          signal: options?.signal,
+          timeout: options?.timeout ?? 6000,
+        }
+      );
+      return res.data;
+    },
+
+    async grantReferralDiamond(
+      payload: IosReferralDiamondPayload,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; diamondGranted?: number; error?: string }> {
+      const res = await api.post<{ success: boolean; diamondGranted?: number; error?: string }>(
+        '/ios/referral/grant-diamond',
+        payload,
+        {
+          signal: options?.signal,
+          timeout: options?.timeout ?? 8000,
+        }
+      );
       return res.data;
     },
   },

@@ -127,4 +127,58 @@ describe('FinancialGoalsService', () => {
     assert.equal(overviewWithoutVat.kpiSub.combo.actual, Math.round(600_000 / 1.08));
     assert.equal(overviewWithoutVat.kpiSub.product.actual, Math.round(100_000 / 1.08));
   });
+
+  it('never attributes future-dated orders in the current month or future months (MOS-BUG-245)', async () => {
+    const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+    const currentYm = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}`;
+    const todayDay = vnNow.getDate();
+    const daysInCurrentMonth = new Date(vnNow.getFullYear(), vnNow.getMonth() + 1, 0).getDate();
+    const futureDayInMonth = todayDay < daysInCurrentMonth ? todayDay + 1 : daysInCurrentMonth;
+    const futureDateInMonth = `${currentYm}-${String(futureDayInMonth).padStart(2, '0')}`;
+    const todayDate = `${currentYm}-${String(todayDay).padStart(2, '0')}`;
+    const nextMonthDate = new Date(vnNow.getFullYear(), vnNow.getMonth() + 1, 1);
+    const nextYm = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+    const capturedSqlBounds: unknown[][] = [];
+    const mockFastify = {
+      prisma: {
+        crm: {
+          crmConfig: {
+            findUnique: async () => null,
+          },
+        },
+        legacy: {
+          $queryRawUnsafe: async (sql: string, ...params: unknown[]) => {
+            if (sql.includes('FROM `order`')) {
+              capturedSqlBounds.push(params);
+              return [
+                { orderId: 10, total_price: 500_000, checkin_time: new Date(), checkin_date: todayDate },
+                ...(todayDay < daysInCurrentMonth
+                  ? [{ orderId: 11, total_price: 880_000, checkin_time: new Date(), checkin_date: futureDateInMonth }]
+                  : []),
+              ];
+            }
+            return [];
+          },
+        },
+      },
+      cache: {
+        invalidatePattern: () => {},
+      },
+    } as unknown as FastifyInstance;
+
+    const currentOverview = await FinancialGoalsService.getOverview(mockFastify, currentYm, true);
+    assert.equal(capturedSqlBounds.length, 1);
+    assert.equal(capturedSqlBounds[0][1], `${todayDate} 23:59:59`);
+    assert.equal(currentOverview.kpiMain.actual, 500_000);
+    if (todayDay < daysInCurrentMonth) {
+      const futureEntry = currentOverview.dailyBreakdown.find((d) => d.date === futureDateInMonth);
+      assert.equal(futureEntry?.totalRevenue, 0);
+      assert.equal(futureEntry?.orderCount, 0);
+    }
+
+    const futureMonthOverview = await FinancialGoalsService.getOverview(mockFastify, nextYm, true);
+    assert.equal(futureMonthOverview.kpiMain.actual, 0);
+    assert.equal(capturedSqlBounds.length, 1);
+  });
 });
