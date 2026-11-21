@@ -38,6 +38,7 @@ export interface RawIosOrderSnapshot {
   customer_name: string;
   customer_phone: string;
   customer_avatar: string | null;
+  customer_dob?: string | null;
   booker_name: string;
   booker_avatar: string | null;
   service_name: string;
@@ -121,10 +122,18 @@ export async function fetchLiveOrderSnapshots(
        up.full_name AS customer_name,
        up.avatar AS customer_avatar,
        up.last_order_booking AS customer_last_order_booking,
+       CASE
+         WHEN u.date_of_birth IS NOT NULL
+          AND CAST(u.date_of_birth AS CHAR) != '0000-00-00'
+          AND u.date_of_birth != '1970-01-01'
+         THEN DATE_FORMAT(u.date_of_birth, '%Y-%m-%d')
+         ELSE NULL
+       END AS customer_dob,
        direct_uc.phone_number AS direct_contact_phone,
        order_booker_up.full_name AS order_booker_name,
        order_booker_up.avatar AS order_booker_avatar
      FROM \`order\` o
+     LEFT JOIN user u ON u.id = o.user_id
      LEFT JOIN user_profile up ON up.user_id = o.user_id
      LEFT JOIN user_contact direct_uc ON direct_uc.id = o.user_contact_id
      LEFT JOIN user_profile order_booker_up ON order_booker_up.user_id = o.created_staff_id
@@ -384,6 +393,7 @@ export async function fetchLiveOrderSnapshots(
         (userId ? latestPhoneByUserId.get(userId) : undefined) ||
         '0901.xxx.xxx',
       customer_avatar: r.customer_avatar ? String(r.customer_avatar) : null,
+      customer_dob: r.customer_dob ? String(r.customer_dob) : null,
       booker_name: resolvedBookerName ? String(resolvedBookerName) : 'Tư vấn',
       booker_avatar: resolvedBookerAvatar ? String(resolvedBookerAvatar) : null,
       service_name: String(os?.service_name || os?.service_key || 'Any - Lashes'),

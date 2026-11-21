@@ -1,7 +1,10 @@
 'use client';
 
 import React from 'react';
-import { isDoneBookingPendingPostCheckoutAdjustment } from '@mos-lab/shared';
+import {
+  getCustomerBirthdayThisMonthStatus,
+  isDoneBookingPendingPostCheckoutAdjustment,
+} from '@mos-lab/shared';
 import {
   BookingItem,
   KNOWN_STAFF_AVATARS,
@@ -20,7 +23,7 @@ import {
   formatShortMoney,
   formatTime24h,
 } from './incomingBookingHelpers';
-import { RotateCcw, Info, Package, Heart, Lock, Camera, PenLine } from 'lucide-react';
+import { RotateCcw, Info, Package, Heart, Lock, Camera, PenLine, Cake } from 'lucide-react';
 import { useTheme } from '../../../../../context/ThemeContext';
 
 interface IncomingBookingCardProps {
@@ -78,6 +81,7 @@ export function IncomingBookingCard({
   const daysSinceLastVisit = parseDaysSinceLastVisit(lastVisitDateStr, viewRefDateStr);
   const daysText = visits > 1 && daysSinceLastVisit !== null ? ` · ${daysSinceLastVisit}N` : '';
   const isServicingActive = b.status === 'SERVICING' || bookingSegment === 'SERVICING';
+  const birthdayStatus = getCustomerBirthdayThisMonthStatus(b.customerDateOfBirth, now);
   const countdown = formatArrivalCountdownInMins(b.time12h || b.timeSlot, dateOffset, now, isDark);
   const completionInfo = getBookingCompletionInfo(b, now, isDark);
   const isDone = bookingSegment === 'DONE' || b.status === 'DONE';
@@ -202,6 +206,23 @@ export function IncomingBookingCard({
         >
           {idx + 1}
         </span>
+
+        {/* Badge ngày sinh nhật (giống iOS App cũ): góc trên bên phải Avatar khi khách sinh nhật trong tháng */}
+        {birthdayStatus.isBirthdayThisMonth && (
+          <span
+            data-testid={`card-birthday-badge-${b.id}`}
+            className={`absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 rounded-full border-2 border-[var(--mos-accent)] bg-white text-neutral-950 text-[10px] font-black flex items-center justify-center tabular-nums shadow-md leading-none z-10 ${
+              birthdayStatus.isBirthdayToday ? 'ring-2 ring-amber-400/60' : ''
+            }`}
+            title={
+              birthdayStatus.isBirthdayToday
+                ? `Hôm nay là sinh nhật khách hàng (${birthdayStatus.ddMm})`
+                : `Sinh nhật trong tháng này (${birthdayStatus.ddMm})`
+            }
+          >
+            {birthdayStatus.day}
+          </span>
+        )}
 
         <div
           className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-sm ${avatarRingClass}`}
@@ -361,6 +382,31 @@ export function IncomingBookingCard({
               {daysText}
             </span>
           </button>
+
+          {birthdayStatus.isBirthdayThisMonth && (
+            <span
+              data-testid={`card-birthday-pill-${b.id}`}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10.5px] font-bold tabular-nums leading-none ${
+                birthdayStatus.isBirthdayToday
+                  ? isDark
+                    ? 'bg-amber-500/25 border-amber-400/60 text-amber-300'
+                    : 'bg-amber-100 border-amber-400 text-amber-800'
+                  : isDark
+                    ? 'bg-amber-500/15 border-amber-500/35 text-amber-300'
+                    : 'bg-amber-50 border-amber-300 text-amber-800'
+              }`}
+              title={
+                birthdayStatus.isBirthdayToday
+                  ? `Hôm nay là sinh nhật khách hàng (${birthdayStatus.ddMm})`
+                  : `Sinh nhật trong tháng này (${birthdayStatus.ddMm})`
+              }
+            >
+              <Cake className="w-2.5 h-2.5 shrink-0" />
+              <span>
+                {birthdayStatus.isBirthdayToday ? `Hôm nay SN (${birthdayStatus.ddMm})` : `SN ${birthdayStatus.ddMm}`}
+              </span>
+            </span>
+          )}
 
           {isOtherCustomerLocked && (
             <span
