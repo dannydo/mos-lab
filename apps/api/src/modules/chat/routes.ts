@@ -1282,7 +1282,8 @@ async function saveConversations(
         await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
         return;
       }
-      await syncConversationsToRelationalDb(fastify, trimmed);
+      // Never block the shared writeChain with a full-history O(N) relational re-sync on a user request.
+      scheduleBulkConversationsSync(fastify);
     })
     .catch((err) => {
       fastify.log.error(err, 'saveConversations error:');
@@ -1323,7 +1324,8 @@ async function saveTasks(
         await upsertSingleTaskToRelationalDb(fastify, hint.touchedTask);
         return;
       }
-      await syncTasksToRelationalDb(fastify, trimmed);
+      // Never block the shared writeChain with a full-table task re-sync on a user request.
+      scheduleBulkTasksSync(fastify);
     })
     .catch((err) => {
       fastify.log.error(err, 'saveTasks error:');
@@ -2634,11 +2636,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(fastify, conversations, tasks);
       }
 
+      const touchedMoveMsg = moveResult.promotedMessage || moveResult.targetMessage || undefined;
       await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        ...(touchedMoveMsg ? { touchedMessage: touchedMoveMsg } : {}),
         deletedMessageIds: moveResult.deletedMessageIds,
       });
+      if (moveResult.movedReplies.length > 0) {
+        scheduleBulkConversationsSync(fastify);
+      }
       if (moveResult.tasksChanged || moveResult.targetMessage?.missionId) {
-        await saveTasks(fastify, tasks);
+        await saveTasks(fastify, tasks, { bulkBackground: true });
       }
 
       const userPrefKey = resolveUserPrefKey(user, staffDirectory);
@@ -3414,17 +3422,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         if (body.sourceMessageId) {
           existingTask.sourceMessageId = body.sourceMessageId;
         }
+        let touchedExistingMsg: MosChatMessage | undefined;
         if (existingTask.sourceMessageId) {
           const sourceMsg = conv.messages.find((m) => m.id === existingTask.sourceMessageId);
           if (sourceMsg) {
             sourceMsg.taskId = existingTask.id;
             existingTask.sourceAuthorName = sourceMsg.senderName;
+            touchedExistingMsg = sourceMsg;
           }
         }
 
         tasks.splice(existingTaskIdx, 1);
         tasks.unshift(existingTask);
-        await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+        await Promise.all([
+          saveConversations(fastify, conversations, {
+            touchedConversation: conv,
+            ...(touchedExistingMsg ? { touchedMessage: touchedExistingMsg } : {}),
+          }),
+          saveTasks(fastify, tasks, { touchedTask: existingTask }),
+        ]);
 
         return {
           success: true,
@@ -3436,16 +3452,18 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const taskId = `task-${crypto.randomUUID().slice(0, 8)}`;
       let targetMsgId = body.sourceMessageId || null;
       let sourceAuthorName = creatorName;
+      let touchedTaskMsg: MosChatMessage | undefined;
 
       if (targetMsgId) {
         const sourceMsg = conv.messages.find((m) => m.id === targetMsgId);
         if (sourceMsg) {
           sourceMsg.taskId = taskId;
           sourceAuthorName = sourceMsg.senderName;
+          touchedTaskMsg = sourceMsg;
         }
       } else {
         targetMsgId = `msg-task-${crypto.randomUUID().slice(0, 8)}`;
-        conv.messages.push({
+        const createdTaskMsg: MosChatMessage = {
           id: targetMsgId,
           conversationId: conv.id,
           senderId: user.id,
@@ -3462,7 +3480,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           taskId,
           reactions: {},
           thread: [],
-        });
+        };
+        conv.messages.push(createdTaskMsg);
+        touchedTaskMsg = createdTaskMsg;
       }
 
       let deadlineIso: string | null = null;
@@ -3593,7 +3613,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       };
 
       tasks.unshift(newTask);
-      await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+      await Promise.all([
+        saveConversations(fastify, conversations, {
+          touchedConversation: conv,
+          ...(touchedTaskMsg ? { touchedMessage: touchedTaskMsg } : {}),
+        }),
+        saveTasks(fastify, tasks, { touchedTask: newTask }),
+      ]);
 
       return {
         success: true,
@@ -4082,7 +4108,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           ],
         };
         conversations.unshift(selfConv);
-        await saveConversations(fastify, conversations);
+        await saveConversations(fastify, conversations, {
+          touchedConversation: selfConv,
+          touchedMessage: selfConv.messages[0],
+        });
         return {
           success: true,
           conversation: formatConversationForUser(selfConv, user, staffDirectory),
@@ -4151,7 +4180,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         };
 
         conversations.unshift(dmConv);
-        await saveConversations(fastify, conversations);
+        await saveConversations(fastify, conversations, {
+          touchedConversation: dmConv,
+        });
         return {
           success: true,
           conversation: formatConversationForUser(dmConv, user, staffDirectory),
@@ -4206,7 +4237,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       };
 
       conversations.unshift(newConv);
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: newConv,
+      });
       return { success: true, conversation: newConv };
     }
   );
@@ -4566,7 +4599,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
               .map((s) => s.displayName || s.username)
               .join(', ')}${staffList.length > 3 ? '...' : ''})`;
 
-      conv.messages.push({
+      const systemMsg: MosChatMessage = {
         id: `msg-${crypto.randomUUID().slice(0, 8)}`,
         conversationId: conv.id,
         senderId: 'system',
@@ -4580,10 +4613,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         reactions: {},
         thread: [],
         isSystemReminder: true,
-      });
+      };
+      conv.messages.push(systemMsg);
       conv.updatedAt = now.toISOString();
 
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: systemMsg,
+      });
       return { success: true, conversation: conv };
     }
   );
@@ -4639,7 +4676,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const operatorName = user.username || 'Quản trị viên';
       const removedName = staff?.displayName || staff?.username || `ID ${staffId}`;
 
-      conv.messages.push({
+      const systemMsg: MosChatMessage = {
         id: `msg-${crypto.randomUUID().slice(0, 8)}`,
         conversationId: conv.id,
         senderId: 'system',
@@ -4653,10 +4690,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         reactions: {},
         thread: [],
         isSystemReminder: true,
-      });
+      };
+      conv.messages.push(systemMsg);
       conv.updatedAt = now.toISOString();
 
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: systemMsg,
+      });
       return { success: true, conversation: conv };
     }
   );
@@ -4716,10 +4757,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const rawNick = typeof body.nickname === 'string' ? body.nickname.trim() : '';
 
       const now = new Date();
+      let systemMsg: MosChatMessage;
       if (!rawNick) {
         // Gỡ bỏ biệt danh
         delete conv.memberNicknames[String(targetStaffId)];
-        conv.messages.push({
+        systemMsg = {
           id: `msg-${crypto.randomUUID().slice(0, 8)}`,
           conversationId: conv.id,
           senderId: 'system',
@@ -4735,12 +4777,12 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           reactions: {},
           thread: [],
           isSystemReminder: true,
-        });
+        };
       } else {
         // Đặt biệt danh mới (tối đa 40 ký tự)
         const sanitizedNick = rawNick.slice(0, 40);
         conv.memberNicknames[String(targetStaffId)] = sanitizedNick;
-        conv.messages.push({
+        systemMsg = {
           id: `msg-${crypto.randomUUID().slice(0, 8)}`,
           conversationId: conv.id,
           senderId: 'system',
@@ -4756,11 +4798,15 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           reactions: {},
           thread: [],
           isSystemReminder: true,
-        });
+        };
       }
+      conv.messages.push(systemMsg);
       conv.updatedAt = now.toISOString();
 
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: systemMsg,
+      });
       return {
         success: true,
         conversation: conv,
@@ -4856,10 +4902,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       conv.updatedAt = now.toISOString();
 
       // Nếu có thay đổi, ghi system message vào luồng chat của Space
+      let systemMsg: MosChatMessage | undefined;
       if (changes.length > 0) {
         const operatorStaff = staffDirectory.find((s) => s.id === myStaffId);
         const operatorName = operatorStaff?.displayName || user.displayName || user.username || 'Thành viên';
-        conv.messages.push({
+        systemMsg = {
           id: `msg-${crypto.randomUUID().slice(0, 8)}`,
           conversationId: conv.id,
           senderId: 'system',
@@ -4873,10 +4920,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           reactions: {},
           thread: [],
           isSystemReminder: true,
-        });
+        };
+        conv.messages.push(systemMsg);
       }
 
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        ...(systemMsg ? { touchedMessage: systemMsg } : {}),
+      });
       return {
         success: true,
         conversation: conv,
@@ -5017,10 +5068,27 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           tasks
         );
 
+        const missionConvId = result.message?.conversationId || result.mission.conversationId || body.conversationId;
+        const missionConv = missionConvId ? conversations.find((c) => c.id === missionConvId) : undefined;
         await Promise.all([
-          saveConversations(fastify, conversations),
+          missionConv
+            ? saveConversations(fastify, conversations, {
+                touchedConversation: missionConv,
+                ...(result.message ? { touchedMessage: result.message } : {}),
+                ...(result.message && result.systemReply
+                  ? {
+                      touchedReply: {
+                        conversationId: missionConv.id,
+                        parentMessageId: result.message.id,
+                        reply: result.systemReply,
+                      },
+                    }
+                  : {}),
+              })
+            : saveConversations(fastify, conversations, { bulkBackground: true }),
           saveTasks(fastify, tasks, {
             touchedTask: result.task || undefined,
+            bulkBackground: !result.task,
           }),
         ]);
 
@@ -5235,8 +5303,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const nextInstances = [instance, ...wfState.instances];
         await Promise.all([
           saveWorkflowInstances(fastify, nextInstances),
-          saveConversations(fastify, conversations),
-          saveTasks(fastify, tasks),
+          saveConversations(fastify, conversations, {
+            touchedConversation: conv,
+            touchedMessage: newMessage,
+          }),
+          createdTask ? saveTasks(fastify, tasks, { touchedTask: createdTask }) : Promise.resolve(),
         ]);
 
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
@@ -5413,8 +5484,22 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
         await Promise.all([
           saveWorkflowInstances(fastify, wfState.instances),
-          saveConversations(fastify, conversations),
-          saveTasks(fastify, tasks),
+          conv
+            ? saveConversations(fastify, conversations, {
+                touchedConversation: conv,
+                ...(targetMsg ? { touchedMessage: targetMsg } : {}),
+                ...(targetMsg && threadReply
+                  ? {
+                      touchedReply: {
+                        conversationId: conv.id,
+                        parentMessageId: targetMsg.id,
+                        reply: threadReply,
+                      },
+                    }
+                  : {}),
+              })
+            : Promise.resolve(),
+          updatedTask ? saveTasks(fastify, tasks, { touchedTask: updatedTask }) : Promise.resolve(),
         ]);
 
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);

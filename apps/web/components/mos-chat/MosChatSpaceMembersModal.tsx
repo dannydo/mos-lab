@@ -168,7 +168,11 @@ export const MosChatSpaceMembersModal: React.FC<MosChatSpaceMembersModalProps> =
     const trimmed = nicknameInput.trim();
     try {
       if (updateMemberNickname) {
-        await updateMemberNickname(editingNicknameStaffId, trimmed, conversation.id);
+        const ok = await updateMemberNickname(editingNicknameStaffId, trimmed, conversation.id);
+        if (!ok) {
+          antdMessage.error('Không thể cập nhật biệt danh');
+          return;
+        }
       } else {
         await apiClient.chat.updateNickname(conversation.id, {
           targetStaffId: editingNicknameStaffId,

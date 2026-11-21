@@ -7149,6 +7149,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           antdMessage.success(newNick ? `Đã đổi biệt danh thành "${newNick}"!` : 'Đã gỡ biệt danh, trở về tên thật!');
           setEditingNicknameTarget(null);
           setNicknameInputVal('');
+        } else {
+          antdMessage.error((res as SafeAny)?.message || 'Không thể lưu biệt danh');
         }
       } catch (err: SafeAny) {
         antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể lưu biệt danh');
