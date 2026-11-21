@@ -33,6 +33,7 @@ import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMoveThreadModal } from './MosChatMobileMoveThreadModal';
+import { MosChatForwardModal } from '../components/MosChatForwardModal';
 import { MosChatMobileSearchSheet, type FilterScope } from './MosChatMobileSearchSheet';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { MosChatRichEditorModal } from '../MosChatRichEditorModal';
@@ -106,6 +107,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     staffDirectory,
     sendMessage,
     sendThreadReply,
+    forwardMessage,
     updateSpaceConfig,
     togglePinConversation,
     pinnedConvIds,
@@ -130,6 +132,10 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   const [movingReplyForThread, setMovingReplyForThread] = useState<{
     parentMsg: MosChatMessage;
     replyId: string;
+  } | null>(null);
+  const [forwardTarget, setForwardTarget] = useState<{
+    message: MosChatMessage;
+    reply?: MosChatThreadReply | null;
   } | null>(null);
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
@@ -933,6 +939,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         <MosChatMobileThreadSheet
           onOpenTaskModal={openTaskModalForThread}
           onOpenMoveReply={(sourceMsg, replyId) => setMovingReplyForThread({ parentMsg: sourceMsg, replyId })}
+          onForwardMessage={(sourceMsg, reply) => setForwardTarget({ message: sourceMsg, reply: reply || null })}
         />
       )}
 
@@ -1016,6 +1023,30 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         onCreateTaskFromMsg={handleCreateTaskFromMsg}
         onEditMessage={(msg) => setEditingMessage(msg)}
         onOpenMoveThread={(msg) => setMovingMsgForThread(msg)}
+        onForwardMessage={(msg) => setForwardTarget({ message: msg })}
+      />
+
+      {/* Forward Message & Subthread Modal (Mobile) */}
+      <MosChatForwardModal
+        open={forwardTarget !== null}
+        onClose={() => setForwardTarget(null)}
+        sourceConversation={activeConversation}
+        sourceMessage={forwardTarget?.message || null}
+        sourceReply={forwardTarget?.reply || null}
+        conversations={conversations}
+        staffDirectory={staffDirectory}
+        currentUser={currentUser}
+        pinnedIds={Array.from(pinnedConvIds)}
+        isDark={isDark}
+        onSubmit={async (payload) => {
+          if (!forwardMessage) return null;
+          return forwardMessage(payload);
+        }}
+        onNavigateToConversation={(cid) => {
+          setActiveConvId(cid);
+          setActiveSubtab('chat');
+          setMobileView('room');
+        }}
       />
 
       {/* Reaction Users Bottom Sheet (Xem ai đã react) */}

@@ -27,6 +27,7 @@ import {
   Check,
   ArrowDown,
   Copy,
+  Forward,
   Phone,
 } from 'lucide-react';
 import { Tooltip, Popover, Dropdown } from 'antd';
@@ -51,6 +52,7 @@ import {
 import { copyMessageToClipboard } from '../utils/chat-helpers';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
+import { MosChatForwardedHeader } from './MosChatForwardedHeader';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -139,6 +141,8 @@ export interface MosChatDockedWindowsProps {
   dockActiveThreadMsgIds?: Record<string, string | null>;
   setDockActiveThreadMsgIds?: React.Dispatch<React.SetStateAction<Record<string, string | null>>>;
   onStartVoiceCall?: (convId: string) => void;
+  handleOpenForwardModal?: (m: MosChatMessage, reply?: MosChatThreadReply | null, sourceConvId?: string) => void;
+  onJumpToForwardedSource?: (sourceConversationId: string, sourceMessageId: string) => void;
 }
 
 export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.memo(
@@ -200,6 +204,8 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
     dockActiveThreadMsgIds: externalThreadMsgIds,
     setDockActiveThreadMsgIds: externalSetThreadMsgIds,
     onStartVoiceCall,
+    handleOpenForwardModal,
+    onJumpToForwardedSource,
   }) => {
     // Local state fallbacks if not controlled by parent
     const [internalDimensions, setInternalDimensions] = useState<Record<string, MosChatDockDimension>>({});
@@ -845,6 +851,17 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   >
                                     <Copy size={10} />
                                   </button>
+                                  {!reply.isDeleted && cid !== AI_COPILOT_CONV_ID && handleOpenForwardModal && (
+                                    <button
+                                      type="button"
+                                      aria-label="Chuyển tiếp phản hồi này"
+                                      title="Chuyển tiếp phản hồi này"
+                                      onClick={() => handleOpenForwardModal(activeThreadMsg, reply, cid)}
+                                      className="opacity-60 hover:opacity-100 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded cursor-pointer transition-opacity text-slate-400 hover:text-amber-400"
+                                    >
+                                      <Forward size={10} />
+                                    </button>
+                                  )}
                                 </div>
                                 <div className="break-words leading-relaxed" style={{ color: token.colorText }}>
                                   {renderRichTextMessage(reply.text, isMine, {
@@ -1239,8 +1256,34 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                         <Copy size={12} />
                                       </button>
                                     </Tooltip>
+                                    {!m.isDeleted && cid !== AI_COPILOT_CONV_ID && handleOpenForwardModal && (
+                                      <Tooltip title="Chuyển tiếp tin nhắn">
+                                        <button
+                                          type="button"
+                                          aria-label="Chuyển tiếp tin nhắn"
+                                          onClick={() => handleOpenForwardModal(m, null, cid)}
+                                          className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 text-neutral-400 hover:text-amber-400"
+                                        >
+                                          <Forward size={12} />
+                                        </button>
+                                      </Tooltip>
+                                    )}
                                   </div>
                                 </div>
+
+                                {m.forwardedFrom && (
+                                  <MosChatForwardedHeader
+                                    compact
+                                    forwardedFrom={m.forwardedFrom}
+                                    isDark={Boolean(isDark)}
+                                    canJumpToSource={Boolean(
+                                      onJumpToForwardedSource &&
+                                      conversations.some((c) => c.id === m.forwardedFrom?.sourceConversationId)
+                                    )}
+                                    onJumpToSource={onJumpToForwardedSource}
+                                    renderNoteText={(t) => renderRichTextMessage(t, isDockMine)}
+                                  />
+                                )}
 
                                 {/* Quoted Message Preview */}
                                 {(() => {

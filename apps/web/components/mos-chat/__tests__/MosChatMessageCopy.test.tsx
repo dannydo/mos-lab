@@ -26,7 +26,7 @@ describe('MOS-FEAT-205: Message Copying in Thread and Main Feed', () => {
           writeText: writeTextMock,
         },
       });
-      const successSpy = vi.spyOn(antdMessage, 'success').mockImplementation(() => ({} as SafeAny));
+      const successSpy = vi.spyOn(antdMessage, 'success').mockImplementation(() => ({}) as SafeAny);
 
       const res = await copyMessageToClipboard('Nội dung tin nhắn thử nghiệm');
       expect(res).toBe(true);
@@ -41,7 +41,7 @@ describe('MOS-FEAT-205: Message Copying in Thread and Main Feed', () => {
           writeText: writeTextMock,
         },
       });
-      const successSpy = vi.spyOn(antdMessage, 'success').mockImplementation(() => ({} as SafeAny));
+      const successSpy = vi.spyOn(antdMessage, 'success').mockImplementation(() => ({}) as SafeAny);
 
       const res = await copyMessageToClipboard('', [{ url: 'https://cdn.example.com/photo.png' }]);
       expect(res).toBe(true);
@@ -50,7 +50,7 @@ describe('MOS-FEAT-205: Message Copying in Thread and Main Feed', () => {
     });
 
     it('warns when both text and attachments are absent', async () => {
-      const warnSpy = vi.spyOn(antdMessage, 'warning').mockImplementation(() => ({} as SafeAny));
+      const warnSpy = vi.spyOn(antdMessage, 'warning').mockImplementation(() => ({}) as SafeAny);
       const res = await copyMessageToClipboard('   ', []);
       expect(res).toBe(false);
       expect(warnSpy).toHaveBeenCalledWith('Tin nhắn không có nội dung để sao chép');
@@ -63,7 +63,7 @@ describe('MOS-FEAT-205: Message Copying in Thread and Main Feed', () => {
           writeText: writeTextMock,
         },
       });
-      const successSpy = vi.spyOn(antdMessage, 'success').mockImplementation(() => ({} as SafeAny));
+      const successSpy = vi.spyOn(antdMessage, 'success').mockImplementation(() => ({}) as SafeAny);
 
       const res = await copyMessageToClipboard('Nội dung phản hồi', null, {
         customSuccessMsg: 'Đã sao chép phản hồi',
@@ -194,7 +194,10 @@ describe('MOS-FEAT-205: Message Copying in Thread and Main Feed', () => {
 
       render(<MosChatMessageFeed {...(feedProps as MosChatMessageFeedProps)} />);
 
-      const copyBtn = screen.getByLabelText('Sao chép tin nhắn');
+      const moreBtn = screen.getByLabelText('Thêm thao tác tin nhắn');
+      fireEvent.click(moreBtn);
+
+      const copyBtn = await screen.findByLabelText('Sao chép tin nhắn');
       expect(copyBtn).toBeDefined();
 
       fireEvent.click(copyBtn);
@@ -376,7 +379,10 @@ describe('MOS-FEAT-205: Message Copying in Thread and Main Feed', () => {
 
       render(<MosChatThreadDrawer {...(threadProps as MosChatThreadDrawerProps)} />);
 
-      const replyCopyBtn = screen.getByLabelText('Sao chép phản hồi trong luồng');
+      const replyMoreBtn = screen.getByLabelText('Thêm thao tác phản hồi');
+      fireEvent.click(replyMoreBtn);
+
+      const replyCopyBtn = await screen.findByLabelText('Sao chép phản hồi trong luồng');
       expect(replyCopyBtn).toBeDefined();
 
       fireEvent.click(replyCopyBtn);

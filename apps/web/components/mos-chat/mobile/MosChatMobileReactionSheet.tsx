@@ -11,6 +11,7 @@ import {
   X,
   Pencil,
   CornerDownRight,
+  Forward,
   Users,
   ChevronRight,
   SmilePlus,
@@ -37,6 +38,7 @@ export interface MosChatMobileReactionSheetProps {
   onCreateTaskFromMsg: (msg: MosChatMessage) => void;
   onEditMessage?: (msg: MosChatMessage) => void;
   onOpenMoveThread?: (msg: MosChatMessage) => void;
+  onForwardMessage?: (msg: MosChatMessage) => void;
 }
 
 export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProps> = ({
@@ -46,6 +48,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   onCreateTaskFromMsg,
   onEditMessage,
   onOpenMoveThread,
+  onForwardMessage,
 }) => {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -215,35 +218,36 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             {/* Actions List */}
             <div className="space-y-1 divide-y divide-[var(--mos-surface-border)]">
               {/* View who read this message (MOS-BUG-229) */}
-              {!message.isDeleted && (() => {
-                const readBreakdown =
-                  message && getMessageReadBreakdown
-                    ? getMessageReadBreakdown(activeConversation, message)
-                    : { seenBy: [], unseenBy: [] };
-                return (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      openSeenUsersSheetForMessage?.(message);
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <UserCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span className={`font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
-                        Xem người đã đọc
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
-                      <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                        {readBreakdown.seenBy.length} đã xem
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
-                    </div>
-                  </button>
-                );
-              })()}
+              {!message.isDeleted &&
+                (() => {
+                  const readBreakdown =
+                    message && getMessageReadBreakdown
+                      ? getMessageReadBreakdown(activeConversation, message)
+                      : { seenBy: [], unseenBy: [] };
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        openSeenUsersSheetForMessage?.(message);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        <UserCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                        <span className={`font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                          Xem người đã đọc
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
+                        <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                          {readBreakdown.seenBy.length} đã xem
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
+                      </div>
+                    </button>
+                  );
+                })()}
 
               {totalReactions > 0 && (
                 <button
@@ -292,6 +296,31 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                 <span className="font-medium">Thảo luận trong luồng (Thread)</span>
               </button>
 
+              {!message.isDeleted &&
+                activeConversation?.id !== 'ai-copilot' &&
+                onForwardMessage &&
+                (() => {
+                  const activeThreadCount = (message.thread || []).filter((r) => !r.isDeleted).length;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetMsg = message;
+                        onClose();
+                        onForwardMessage(targetMsg);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
+                    >
+                      <Forward className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                      <span className="font-medium tabular-nums">
+                        {activeThreadCount > 0
+                          ? `Chuyển tiếp kèm ${activeThreadCount} phản hồi trong luồng...`
+                          : 'Chuyển tiếp tin nhắn...'}
+                      </span>
+                    </button>
+                  );
+                })()}
+
               <button
                 type="button"
                 onClick={() => {
@@ -326,7 +355,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
                 >
                   <Copy className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                  <span className={`font-medium ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>Sao chép hình ảnh</span>
+                  <span className={`font-medium ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                    Sao chép hình ảnh
+                  </span>
                 </button>
               )}
 
@@ -335,7 +366,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                 onClick={handlePin}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
               >
-                <Pin className={`w-4 h-4 ${message.pinned ? 'text-[var(--mos-accent)] fill-[var(--mos-accent)]' : 'text-[var(--mos-text-muted)]'}`} />
+                <Pin
+                  className={`w-4 h-4 ${message.pinned ? 'text-[var(--mos-accent)] fill-[var(--mos-accent)]' : 'text-[var(--mos-text-muted)]'}`}
+                />
                 <span className="font-medium">{message.pinned ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}</span>
               </button>
 

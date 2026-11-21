@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Tooltip, Popover, Popconfirm, Dropdown, Input } from 'antd';
+import { Tooltip, Popover, Dropdown, Input } from 'antd';
 import dayjs from 'dayjs';
 import {
   AlarmClockPlus,
+  ArrowLeft,
   Check,
   ChevronDown,
   ChevronRight,
@@ -10,10 +11,12 @@ import {
   Copy,
   CornerDownRight,
   ExternalLink,
+  Forward,
   History,
   ImagePlus,
   Loader2,
   MessageSquareReply,
+  MoreHorizontal,
   Pencil,
   Pin,
   PinOff,
@@ -50,6 +53,7 @@ import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
 import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
 import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
 import { MosChatGoogleWorkspaceCardList } from './MosChatGoogleWorkspaceCard';
+import { MosChatForwardedHeader } from './MosChatForwardedHeader';
 
 const MainMessageInlineEditor: React.FC<{
   initialText: string;
@@ -241,6 +245,9 @@ export interface MosChatMessageFeedProps {
   renderMessageAttachments?: (attachments?: SafeAny[], compact?: boolean, isMine?: boolean) => React.ReactNode;
   openCustomerDetail?: (customerId: number) => void;
   handleReplyToMessage?: (m: MosChatMessage) => void;
+  handleOpenForwardModal?: (m: MosChatMessage) => void;
+  accessibleConversationIds?: Set<string>;
+  onJumpToForwardedSource?: (sourceConversationId: string, sourceMessageId: string) => void;
   handleOpenReactionUsers?: (target: SafeAny, initialEmoji?: string) => void;
   staffDirectory?: MosChatStaffMember[];
 }
@@ -310,7 +317,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     handleToggleReaction,
     mobileActiveMsgId,
     openMovePopoverKey,
-    setOpenMovePopoverKey,
+    setOpenMovePopoverKey: _setOpenMovePopoverKey,
     openStickerPopoverKey,
     setOpenStickerPopoverKey,
     renderReactionPickerContent,
@@ -340,10 +347,15 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     renderMessageAttachments,
     openCustomerDetail,
     handleReplyToMessage,
+    handleOpenForwardModal,
+    accessibleConversationIds,
+    onJumpToForwardedSource,
     handleOpenReactionUsers,
     staffDirectory = [],
   }) => {
     const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
+    const [openMoreMenuMsgId, setOpenMoreMenuMsgId] = useState<string | null>(null);
+    const [moreMenuView, setMoreMenuView] = useState<'menu' | 'move' | 'confirm-buzz' | 'confirm-delete'>('menu');
 
     const taskByMsgOrTaskId = useMemo(() => {
       const map = new Map<string, MosChatTaskItem>();
@@ -380,8 +392,9 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
           if (!qNorm) return true;
           const linkedTask = (m.taskId ? taskByMsgOrTaskId.get(m.taskId) : undefined) || taskByMsgOrTaskId.get(m.id);
           const taskCode = linkedTask?.id ? `TASK-${linkedTask.id.replace(/[^a-zA-Z0-9]/g, '').slice(-5)}` : '';
+          const nick = getMemberNickname(m.senderId);
           const hay = removeVietnameseTones(
-            `${m.senderName} ${m.text || ''} ${linkedTask?.title || ''} ${taskCode} ${m.mission?.missionKey || ''}`.toLowerCase()
+            `${nick || ''} ${m.senderName} ${m.text || ''} ${linkedTask?.title || ''} ${taskCode} ${m.mission?.missionKey || ''}`.toLowerCase()
           );
           return hay.includes(qNorm);
         });
@@ -414,13 +427,15 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
             <button
               type="button"
               disabled={isBusy}
-              onClick={() =>
+              onClick={() => {
+                setOpenMoreMenuMsgId(null);
+                setMoreMenuView('menu');
                 void handleMoveThreadItem({
                   mode: 'MERGE_ROOT_TO_THREAD',
                   sourceMessageId: sourceMsg.id,
                   targetMessageId: prevMsg.id,
-                })
-              }
+                });
+              }}
               className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
               style={{
                 background: isDark ? 'rgba(212, 168, 75, 0.16)' : 'rgba(245, 158, 11, 0.12)',
@@ -437,7 +452,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                 </span>
               </div>
               <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
-                <span className="font-bold">{prevMsg.senderName}:</span> {formatMoveTargetSnippet(prevMsg)}
+                <span className="font-bold">{getMemberNickname(prevMsg.senderId) || prevMsg.senderName}:</span>{' '}
+                {formatMoveTargetSnippet(prevMsg)}
               </div>
             </button>
           )}
@@ -447,13 +463,15 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
             <button
               type="button"
               disabled={isBusy}
-              onClick={() =>
+              onClick={() => {
+                setOpenMoreMenuMsgId(null);
+                setMoreMenuView('menu');
                 void handleMoveThreadItem({
                   mode: 'MERGE_ROOT_TO_THREAD',
                   sourceMessageId: sourceMsg.id,
                   targetMessageId: openThreadTarget.id,
-                })
-              }
+                });
+              }}
               className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
               style={{
                 background: isDark ? 'rgba(99, 102, 241, 0.16)' : 'rgba(99, 102, 241, 0.1)',
@@ -467,7 +485,9 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                 </span>
               </div>
               <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
-                <span className="font-bold">{openThreadTarget.senderName}:</span>{' '}
+                <span className="font-bold">
+                  {getMemberNickname(openThreadTarget.senderId) || openThreadTarget.senderName}:
+                </span>{' '}
                 {formatMoveTargetSnippet(openThreadTarget)}
               </div>
             </button>
@@ -490,24 +510,31 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                 candidates.slice(0, 25).map((target) => {
                   const replyCount = (target.thread || []).filter((r) => !r.deletedAt).length;
                   const missionKey = target.mission?.missionKey;
+                  const targetNick = getMemberNickname(target.senderId);
+                  const targetDisplayName =
+                    targetNick && targetNick !== target.senderName
+                      ? `${targetNick} (${target.senderName})`
+                      : target.senderName;
                   return (
                     <button
                       key={target.id}
                       type="button"
                       disabled={isBusy}
-                      onClick={() =>
+                      onClick={() => {
+                        setOpenMoreMenuMsgId(null);
+                        setMoreMenuView('menu');
                         void handleMoveThreadItem({
                           mode: 'MERGE_ROOT_TO_THREAD',
                           sourceMessageId: sourceMsg.id,
                           targetMessageId: target.id,
-                        })
-                      }
+                        });
+                      }}
                       className="w-full px-2 py-1.5 rounded-md text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/10 flex flex-col gap-0.5"
                       style={{ border: `1px solid ${borderColor}` }}
                     >
                       <div className="flex items-center justify-between gap-1.5 text-[11px]">
                         <span className="font-bold truncate">
-                          {target.senderName}{' '}
+                          {targetDisplayName}{' '}
                           <span className="text-slate-400 font-normal tabular-nums">· {target.timeLabel}</span>
                         </span>
                         <span className="inline-flex items-center gap-1 shrink-0 tabular-nums text-[10px] font-bold text-blue-400">
@@ -955,6 +982,18 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                     </div>
                   ) : (
                     <>
+                      {m.forwardedFrom && (
+                        <MosChatForwardedHeader
+                          forwardedFrom={m.forwardedFrom}
+                          isDark={isDark}
+                          canJumpToSource={Boolean(
+                            onJumpToForwardedSource &&
+                            accessibleConversationIds?.has(m.forwardedFrom.sourceConversationId)
+                          )}
+                          onJumpToSource={onJumpToForwardedSource}
+                          renderNoteText={(noteText) => renderRichTextMessage(noteText, isMine)}
+                        />
+                      )}
                       {m.text
                         ? (() => {
                             const isPureSticker = Boolean(parsePureStickerMessage(m.text));
@@ -1046,7 +1085,11 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                                   <div
                                     role="button"
                                     tabIndex={0}
-                                    aria-label={`Đi tới tin nhắn gốc của ${quotedMessage.senderName}`}
+                                    aria-label={`Đi tới tin nhắn gốc của ${
+                                      ((quotedMessage as SafeAny).senderId &&
+                                        getMemberNickname((quotedMessage as SafeAny).senderId)) ||
+                                      quotedMessage.senderName
+                                    }`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const targetEl = document.getElementById(`mos-chat-msg-${quotedMessage.id}`);
@@ -1067,7 +1110,9 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                                   >
                                     <div className="min-w-0 flex-1">
                                       <p className="font-bold text-[11px] truncate text-amber-400">
-                                        {quotedMessage.senderName}
+                                        {((quotedMessage as SafeAny).senderId &&
+                                          getMemberNickname((quotedMessage as SafeAny).senderId)) ||
+                                          quotedMessage.senderName}
                                       </p>
                                       <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
                                     </div>
@@ -1429,11 +1474,12 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         </Tooltip>
                       )}
 
-                    {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
+                    {/* Adjacent Quick Emoji & Compact Action Bar */}
                     <div
                       className={`${
                         mobileActiveMsgId === m.id ||
                         openMovePopoverKey === `root:${m.id}` ||
+                        openMoreMenuMsgId === m.id ||
                         openStickerPopoverKey === `react:${m.id}`
                           ? 'opacity-100 pointer-events-auto scale-100 ring-1 ring-amber-500/50 shadow-md'
                           : 'opacity-0 pointer-events-none'
@@ -1443,13 +1489,14 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         border: `1px solid ${
                           mobileActiveMsgId === m.id ||
                           openMovePopoverKey === `root:${m.id}` ||
+                          openMoreMenuMsgId === m.id ||
                           openStickerPopoverKey === `react:${m.id}`
                             ? 'rgba(212, 168, 75, 0.6)'
                             : borderStrong
                         }`,
                       }}
                     >
-                      {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+                      {GOOGLE_CHAT_QUICK_EMOJIS.slice(0, 3).map((emoji) => {
                         const reactedByMe = hasUserReacted(m, emoji);
                         return (
                           <Tooltip
@@ -1538,48 +1585,35 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         </Tooltip>
                       )}
 
-                      {canMoveThisMsg && filteredMessages.length > 1 && (
-                        <Tooltip
-                          title={
-                            openMovePopoverKey === `root:${m.id}`
-                              ? undefined
-                              : 'Gộp tin nhắn này vào luồng trả lời phụ (Subthread) của tin nhắn khác'
-                          }
-                        >
-                          <Popover
-                            trigger="click"
-                            placement={isMine ? 'topRight' : 'topLeft'}
-                            open={openMovePopoverKey === `root:${m.id}`}
-                            onOpenChange={(vis) => {
-                              setOpenMovePopoverKey(vis ? `root:${m.id}` : null);
-                              if (!vis) setMoveThreadSearchQuery('');
-                            }}
-                            content={
-                              openMovePopoverKey === `root:${m.id}`
-                                ? renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)
-                                : null
-                            }
-                          >
-                            <button
-                              type="button"
-                              aria-label="Gộp tin nhắn vào luồng trả lời phụ"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const rootKey = `root:${m.id}`;
-                                const nextOpen = openMovePopoverKey === rootKey ? null : rootKey;
-                                setOpenMovePopoverKey(nextOpen);
-                                if (!nextOpen) setMoveThreadSearchQuery('');
-                              }}
-                              className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer transition-transform hover:scale-110"
-                              style={{
-                                color: openMovePopoverKey === `root:${m.id}` ? '#d4a84b' : token.colorTextSecondary,
-                              }}
+                      {/* Chuyển tiếp tin nhắn & trọn bộ subthread */}
+                      {!m.isDeleted &&
+                        activeConversation?.id !== AI_COPILOT_CONV_ID &&
+                        handleOpenForwardModal &&
+                        (() => {
+                          const forwardReplyCount = (m.thread || []).filter((r) => !r.isDeleted).length;
+                          return (
+                            <Tooltip
+                              title={
+                                forwardReplyCount > 0
+                                  ? `Chuyển tiếp tin nhắn & cả luồng (${forwardReplyCount} phản hồi)`
+                                  : 'Chuyển tiếp tin nhắn (Forward)'
+                              }
                             >
-                              <CornerDownRight size={13} />
-                            </button>
-                          </Popover>
-                        </Tooltip>
-                      )}
+                              <button
+                                type="button"
+                                aria-label="Chuyển tiếp tin nhắn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenForwardModal(m);
+                                }}
+                                className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer transition-colors"
+                                style={{ color: token.colorTextSecondary }}
+                              >
+                                <Forward size={13} />
+                              </button>
+                            </Tooltip>
+                          );
+                        })()}
 
                       <Tooltip title="Tạo Task & Hẹn giờ nhắc từ tin nhắn">
                         <button
@@ -1596,162 +1630,334 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         </button>
                       </Tooltip>
 
-                      {isStrictDannySuperAdmin && (
-                        <Tooltip
-                          title={
-                            m.mission || linkedTask?.mission
-                              ? `Mở tiến độ mOS Mission #${(m.mission || linkedTask?.mission)?.missionKey}`
-                              : '🚀 Chuyển vào mOS Mission (Đóng gói trọn luồng & hình ảnh)'
+                      {/* Overflow Menu (⋯): Sao chép, Ghim, Buzz, Gộp luồng, mOS Mission, Sửa, Lịch sử, Xoá */}
+                      {(() => {
+                        const canShowCopy = !m.isDeleted;
+                        const canShowBuzz = !m.isDeleted;
+                        const canShowMove = canMoveThisMsg && filteredMessages.length > 1;
+                        const canShowMission = isStrictDannySuperAdmin;
+                        const canShowEdit = isMine && !m.isDeleted;
+                        const canShowHistory = Boolean(m.isDeleted || (m.editHistory && m.editHistory.length > 0));
+                        const canShowDelete = (isMine || isDannyAccount) && !m.isDeleted;
+                        const hasGroup1 = canShowCopy || true || canShowBuzz;
+                        const hasGroup2 = canShowMove || canShowMission;
+                        const hasGroup3 = canShowEdit || canShowHistory || canShowDelete;
+
+                        const renderMoreMenuContent = () => {
+                          if (moreMenuView === 'move' && canShowMove) {
+                            return (
+                              <div
+                                data-no-chat-autofocus="true"
+                                onClick={(e) => e.stopPropagation()}
+                                className="space-y-2"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMoreMenuView('menu');
+                                    setMoveThreadSearchQuery('');
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-amber-500 hover:underline cursor-pointer"
+                                >
+                                  <ArrowLeft size={12} />
+                                  <span>Quay lại</span>
+                                </button>
+                                {renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)}
+                              </div>
+                            );
                           }
-                        >
-                          <button
-                            type="button"
-                            aria-label="Chuyển vào mOS Mission"
-                            onClick={() => openMissionModalFromChat(m, linkedTask)}
-                            className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
-                            style={{
-                              background:
-                                m.mission || linkedTask?.mission
-                                  ? 'rgba(16, 185, 129, 0.2)'
-                                  : 'rgba(139, 92, 246, 0.2)',
-                              color: m.mission || linkedTask?.mission ? '#10b981' : '#a78bfa',
-                            }}
-                          >
-                            <Rocket size={13} />
-                          </button>
-                        </Tooltip>
-                      )}
 
-                      <Tooltip title={m.pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}>
-                        <button
-                          type="button"
-                          aria-label="Ghim tin nhắn"
-                          onClick={() => handleTogglePin(m.id)}
-                          className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                          style={{ color: m.pinned ? '#d4a84b' : token.colorTextSecondary }}
-                        >
-                          <Pin size={13} />
-                        </button>
-                      </Tooltip>
-
-                      {/* Copy Message Button (MOS-FEAT-205) */}
-                      {!m.isDeleted && (
-                        <Tooltip title="Sao chép tin nhắn">
-                          <button
-                            type="button"
-                            aria-label="Sao chép tin nhắn"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              await copyMessageToClipboard(m.text, m.attachments);
-                            }}
-                            className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                            style={{ color: token.colorTextSecondary }}
-                          >
-                            <Copy size={13} />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      {/* Buzz / Bump Urgent Message Button */}
-                      {!m.isDeleted && (
-                        <Tooltip
-                          title={
-                            m.isBuzzed
-                              ? `Đã Buzz ${m.buzzCount || 1} lần · Nhấp để Buzz lại tin nhắn khẩn cấp`
-                              : '⚡ Buzz / Bump tin nhắn khẩn cấp (Cảnh báo chuông & rung)'
+                          if (moreMenuView === 'confirm-buzz' && canShowBuzz) {
+                            return (
+                              <div
+                                data-no-chat-autofocus="true"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-[236px] space-y-2.5 p-0.5 text-[12px]"
+                                style={{ color: token.colorText }}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <Zap size={15} className="text-amber-500 fill-amber-500 shrink-0 mt-0.5" />
+                                  <div>
+                                    <div className="font-bold text-[12.5px]">Buzz / Bump tin nhắn khẩn cấp?</div>
+                                    <div className="text-[11px] mt-0.5" style={{ color: token.colorTextSecondary }}>
+                                      Gửi tín hiệu cảnh báo nổi bật kèm âm thanh &amp; rung để người nhận xử lý ngay.
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setMoreMenuView('menu')}
+                                    className="px-2.5 py-1 rounded-lg text-[11.5px] font-medium hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    Huỷ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMoreMenuMsgId(null);
+                                      setMoreMenuView('menu');
+                                      handleBuzzMessage(m.id);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 cursor-pointer"
+                                  >
+                                    ⚡ Buzz ngay
+                                  </button>
+                                </div>
+                              </div>
+                            );
                           }
-                        >
-                          <Popconfirm
-                            title="⚡ Buzz / Bump tin nhắn khẩn cấp?"
-                            description="Gửi tín hiệu cảnh báo nổi bật kèm âm thanh & rung để người nhận chú ý xử lý ngay."
-                            onConfirm={() => handleBuzzMessage(m.id)}
-                            okText="⚡ Buzz ngay"
-                            cancelText="Huỷ"
-                            okButtonProps={{
-                              style: {
-                                backgroundColor: '#f59e0b',
-                                borderColor: '#f59e0b',
-                                color: '#000',
-                                fontWeight: 'bold',
-                              },
-                            }}
-                            zIndex={1350}
-                            overlayStyle={{ zIndex: 1350 }}
-                          >
-                            <button
-                              type="button"
-                              aria-label="Buzz / Bump tin nhắn khẩn cấp"
-                              className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer transition-transform hover:scale-110"
-                              style={{
-                                background: m.isBuzzed ? 'rgba(245, 158, 11, 0.22)' : 'transparent',
-                                color: m.isBuzzed ? '#f59e0b' : token.colorTextSecondary,
+
+                          if (moreMenuView === 'confirm-delete' && canShowDelete) {
+                            return (
+                              <div
+                                data-no-chat-autofocus="true"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-[236px] space-y-2.5 p-0.5 text-[12px]"
+                                style={{ color: token.colorText }}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <Trash2 size={15} className="text-rose-500 shrink-0 mt-0.5" />
+                                  <div>
+                                    <div className="font-bold text-[12.5px]">Xoá tin nhắn này?</div>
+                                    <div className="text-[11px] mt-0.5" style={{ color: token.colorTextSecondary }}>
+                                      Tin nhắn sẽ chuyển sang trạng thái đã xoá. Lịch sử trước khi xoá vẫn được lưu an
+                                      toàn.
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setMoreMenuView('menu')}
+                                    className="px-2.5 py-1 rounded-lg text-[11.5px] font-medium hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    Huỷ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMoreMenuMsgId(null);
+                                      setMoreMenuView('menu');
+                                      handleDeleteMessage(m.id);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-rose-500 text-white hover:bg-rose-400 cursor-pointer"
+                                  >
+                                    Xoá
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          const itemCls =
+                            'w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-[12px] font-medium cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-left';
+
+                          return (
+                            <div
+                              data-no-chat-autofocus="true"
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-[232px] py-0.5 space-y-0.5"
+                              style={{ color: token.colorText }}
+                            >
+                              {canShowCopy && (
+                                <button
+                                  type="button"
+                                  aria-label="Sao chép tin nhắn"
+                                  onClick={async () => {
+                                    setOpenMoreMenuMsgId(null);
+                                    setMoreMenuView('menu');
+                                    await copyMessageToClipboard(m.text, m.attachments);
+                                  }}
+                                  className={itemCls}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <Copy size={13} style={{ color: token.colorTextSecondary }} />
+                                    <span>Sao chép tin nhắn</span>
+                                  </span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                aria-label="Ghim tin nhắn"
+                                onClick={() => {
+                                  setOpenMoreMenuMsgId(null);
+                                  setMoreMenuView('menu');
+                                  handleTogglePin(m.id);
+                                }}
+                                className={itemCls}
+                              >
+                                <span className="inline-flex items-center gap-2">
+                                  <Pin size={13} style={{ color: m.pinned ? '#d4a84b' : token.colorTextSecondary }} />
+                                  <span>{m.pinned ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}</span>
+                                </span>
+                              </button>
+
+                              {canShowBuzz && (
+                                <button
+                                  type="button"
+                                  aria-label="Buzz / Bump tin nhắn khẩn cấp"
+                                  onClick={() => setMoreMenuView('confirm-buzz')}
+                                  className={itemCls}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <Zap
+                                      size={13}
+                                      className={m.isBuzzed ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}
+                                    />
+                                    <span>Buzz / Bump khẩn cấp</span>
+                                  </span>
+                                  {m.isBuzzed && (
+                                    <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold tabular-nums">
+                                      x{m.buzzCount || 1}
+                                    </span>
+                                  )}
+                                </button>
+                              )}
+
+                              {hasGroup1 && hasGroup2 && <div className="my-1 border-t" style={{ borderColor }} />}
+
+                              {canShowMove && (
+                                <button
+                                  type="button"
+                                  aria-label="Gộp tin nhắn vào luồng trả lời phụ"
+                                  onClick={() => {
+                                    setMoveThreadSearchQuery('');
+                                    setMoreMenuView('move');
+                                  }}
+                                  className={itemCls}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <CornerDownRight size={13} className="text-amber-500" />
+                                    <span>Gộp vào luồng phụ (Subthread)</span>
+                                  </span>
+                                  <ChevronRight size={12} style={{ color: token.colorTextSecondary }} />
+                                </button>
+                              )}
+
+                              {canShowMission && (
+                                <button
+                                  type="button"
+                                  aria-label="Chuyển vào mOS Mission"
+                                  onClick={() => {
+                                    setOpenMoreMenuMsgId(null);
+                                    setMoreMenuView('menu');
+                                    openMissionModalFromChat(m, linkedTask);
+                                  }}
+                                  className={itemCls}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <Rocket
+                                      size={13}
+                                      style={{ color: m.mission || linkedTask?.mission ? '#10b981' : '#a78bfa' }}
+                                    />
+                                    <span>
+                                      {m.mission || linkedTask?.mission
+                                        ? `Mở Mission #${(m.mission || linkedTask?.mission)?.missionKey}`
+                                        : 'Chuyển vào mOS Mission'}
+                                    </span>
+                                  </span>
+                                </button>
+                              )}
+
+                              {(hasGroup1 || hasGroup2) && hasGroup3 && (
+                                <div className="my-1 border-t" style={{ borderColor }} />
+                              )}
+
+                              {canShowEdit && (
+                                <button
+                                  type="button"
+                                  aria-label="Chỉnh sửa tin nhắn"
+                                  onClick={() => {
+                                    setOpenMoreMenuMsgId(null);
+                                    setMoreMenuView('menu');
+                                    handleStartEdit(m);
+                                  }}
+                                  className={itemCls}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <Pencil size={13} style={{ color: token.colorTextSecondary }} />
+                                    <span>Chỉnh sửa tin nhắn</span>
+                                  </span>
+                                </button>
+                              )}
+
+                              {canShowHistory && (
+                                <button
+                                  type="button"
+                                  aria-label="Xem lịch sử chỉnh sửa & xoá"
+                                  onClick={() => {
+                                    setOpenMoreMenuMsgId(null);
+                                    setMoreMenuView('menu');
+                                    setHistoryModalMessage(m);
+                                    setHistoryModalOpen(true);
+                                  }}
+                                  className={itemCls}
+                                >
+                                  <span className="inline-flex items-center gap-2 text-amber-500">
+                                    <History size={13} />
+                                    <span>Xem lịch sử chỉnh sửa &amp; xoá</span>
+                                  </span>
+                                </button>
+                              )}
+
+                              {canShowDelete && (
+                                <button
+                                  type="button"
+                                  aria-label="Xoá tin nhắn"
+                                  onClick={() => setMoreMenuView('confirm-delete')}
+                                  className={`${itemCls} text-rose-500 hover:bg-rose-500/10`}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <Trash2 size={13} />
+                                    <span>Xoá tin nhắn</span>
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <Tooltip title={openMoreMenuMsgId === m.id ? undefined : 'Thêm thao tác'}>
+                            <Popover
+                              trigger="click"
+                              placement={isMine ? 'topRight' : 'topLeft'}
+                              zIndex={1500}
+                              destroyOnHidden
+                              open={openMoreMenuMsgId === m.id}
+                              onOpenChange={(vis) => {
+                                setOpenMoreMenuMsgId(vis ? m.id : null);
+                                setMoreMenuView('menu');
+                                if (!vis) setMoveThreadSearchQuery('');
                               }}
+                              content={openMoreMenuMsgId === m.id ? renderMoreMenuContent() : null}
                             >
-                              <Zap
-                                size={13}
-                                className={m.isBuzzed ? 'fill-amber-500 animate-pulse text-amber-500' : ''}
-                              />
-                            </button>
-                          </Popconfirm>
-                        </Tooltip>
-                      )}
-
-                      {/* Edit Message Button (author only, and not deleted) */}
-                      {isMine && !m.isDeleted && (
-                        <Tooltip title="Chỉnh sửa tin nhắn">
-                          <button
-                            type="button"
-                            aria-label="Chỉnh sửa tin nhắn"
-                            onClick={() => handleStartEdit(m)}
-                            className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                            style={{ color: token.colorTextSecondary }}
-                          >
-                            <Pencil size={13} />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      {/* Delete Message Button (author or super admin) */}
-                      {(isMine || isDannyAccount) && !m.isDeleted && (
-                        <Tooltip title="Xoá tin nhắn">
-                          <Popconfirm
-                            title="Xoá tin nhắn này?"
-                            description="Tin nhắn sẽ được chuyển sang trạng thái đã xoá. Lịch sử trước khi xoá vẫn được lưu lại an toàn."
-                            onConfirm={() => handleDeleteMessage(m.id)}
-                            okText="Xoá"
-                            cancelText="Huỷ"
-                            okButtonProps={{ danger: true }}
-                            zIndex={1350}
-                            overlayStyle={{ zIndex: 1350 }}
-                          >
-                            <button
-                              type="button"
-                              aria-label="Xoá tin nhắn"
-                              className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer hover:text-rose-400"
-                              style={{ color: token.colorTextSecondary }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </Popconfirm>
-                        </Tooltip>
-                      )}
-
-                      {/* View History Button (if edited or deleted) */}
-                      {(m.isDeleted || (m.editHistory && m.editHistory.length > 0)) && (
-                        <Tooltip title="Xem lịch sử chỉnh sửa & xoá">
-                          <button
-                            type="button"
-                            aria-label="Xem lịch sử chỉnh sửa & xoá"
-                            onClick={() => {
-                              setHistoryModalMessage(m);
-                              setHistoryModalOpen(true);
-                            }}
-                            className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer text-amber-400"
-                          >
-                            <History size={13} />
-                          </button>
-                        </Tooltip>
-                      )}
+                              <button
+                                type="button"
+                                aria-label="Thêm thao tác tin nhắn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const nextOpen = openMoreMenuMsgId === m.id ? null : m.id;
+                                  setOpenMoreMenuMsgId(nextOpen);
+                                  setMoreMenuView('menu');
+                                  if (!nextOpen) setMoveThreadSearchQuery('');
+                                }}
+                                className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                                style={{
+                                  background: openMoreMenuMsgId === m.id ? 'rgba(212, 168, 75, 0.16)' : 'transparent',
+                                  color: openMoreMenuMsgId === m.id ? '#d4a84b' : token.colorTextSecondary,
+                                }}
+                              >
+                                <MoreHorizontal size={13} />
+                              </button>
+                            </Popover>
+                          </Tooltip>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -1827,7 +2033,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
       prev.movingThreadItemKey === next.movingThreadItemKey &&
       prev.threadOpen === next.threadOpen &&
       prev.activeThreadMessage === next.activeThreadMessage &&
-      prev.isDraggingOver === next.isDraggingOver
+      prev.isDraggingOver === next.isDraggingOver &&
+      prev.getMemberNickname === next.getMemberNickname
     );
   }
 );

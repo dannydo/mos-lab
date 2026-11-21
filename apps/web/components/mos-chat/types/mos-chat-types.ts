@@ -1,4 +1,6 @@
 import type {
+  ForwardMosChatMessageRequest,
+  ForwardMosChatMessageResponse,
   MosChatConversation,
   MosChatMessage,
   MosChatQuotedMessage,
@@ -151,6 +153,7 @@ export interface MosChatContextValue {
     replyId?: string;
     targetMessageId?: string;
   }) => Promise<boolean>;
+  forwardMessage?: (payload: ForwardMosChatMessageRequest) => Promise<ForwardMosChatMessageResponse | null>;
   markThreadAsRead: (convId: string, msgId: string) => Promise<void>;
 
   // AI Copilot

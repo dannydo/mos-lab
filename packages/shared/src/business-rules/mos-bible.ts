@@ -2258,6 +2258,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Mọi tin nhắn đều có thể chuyển thành Công việc & Cài giờ nhắc hẹn (Message-to-Task -> Reminder) giao cho bản thân hoặc đồng nghiệp; khi đến giờ nhắc hệ thống phát chuông, bung thông báo nổi và đẩy tin nhắn nhắc tự động vào phòng chat.',
       'Thông báo đẩy chuẩn Apple Web Push / Desktop Push khi khóa màn hình: Khi nhân sự cài mOS ra Màn hình chính iPhone (iOS PWA) hoặc bật thông báo trên máy tính, hệ thống tự động bắn Native Push Notification (VAPID + mã hóa RFC 8291 aes128gcm) cho 4 nhóm sự kiện: Tin nhắn riêng 1-1 (Direct Message ở cả luồng chính và phản hồi Thread), được nhắc tên (@Mention cá nhân / @all trong nhóm có quyền truy cập), Cuộc gọi thoại đến / Cuộc gọi nhỡ và BUZZ khẩn cấp — tự động chống gửi trùng thiết bị và tôn trọng tuyệt đối ranh giới bảo mật phòng kín.',
       'Kiến trúc Lưu trữ Relational & Dynamic Workflow Engine (Operational OS): Toàn bộ dữ liệu mOS Chat và Quy trình Sống được lưu trữ chuẩn hóa trên 7 bảng Prisma chuyên biệt (crm_chat_conversations, crm_chat_participants, crm_chat_messages, crm_chat_tasks, crm_chat_user_prefs, crm_chat_workflow_templates, crm_chat_workflow_instances). Chỉ duy nhất Super Admin mới thấy và sử dụng bộ công cụ khởi tạo/đóng gói/nâng cấp Workflow (/tam-ung, /kiem-kho, /tao-quy-trinh, nút [⚡ Quy trình], nút [✨ Lưu Workflow]); đối với nhân sự khác, giao diện tự động ẩn gọn toàn bộ nút quản trị và chỉ hiển thị nút xác nhận/đính kèm UNC tại đúng bước mà nhân sự đó được phân công phụ trách. Khi hoàn tất bước cuối, hệ thống tự động đồng bộ sang Báo cáo Thu Chi (CrmCashFlowEntry) hoặc mOS Kho (CrmStockInventory).',
+      'Chuyển tiếp tin nhắn & trọn bộ Subthread đa đích (Forward): Người dùng có thể chuyển tiếp bất kỳ tin nhắn đơn, phản hồi riêng lẻ trong luồng hoặc toàn bộ luồng thảo luận (tin nhắn gốc + toàn bộ các phản hồi chưa bị xóa trong Subthread kèm ảnh/video/tệp/thẻ khách hàng và đúng tác giả gốc của từng phản hồi) từ DM hoặc Space sang tối đa 20 phòng đích cùng lúc (Space, DM 1-1, Ghi chú cá nhân hoặc bất kỳ đồng nghiệp nào trong danh bạ — tự động tạo phòng DM 1-1 mới nếu chưa từng nhắn). Bản chuyển tiếp được sao chép độc lập (không chỉnh sửa bản gốc), che tên riêng đối tác khi nguồn là DM 1-1 ("Tin nhắn riêng (DM)"), và tách biệt hoàn toàn khỏi Task/Mission/Workflow/Reaction/Pin/Buzz của phòng cũ.',
     ],
     rationale:
       'Giúp các bộ phận Telesales, Tư Vấn (CC), Chuyên Viên (CV) và CSKH trao đổi tức thì, nhận thông báo tin nhắn riêng và @Mention ngay trên màn hình khóa iPhone, nắm bắt chính xác ai đã đọc thông tin ở cả luồng chính lẫn sub-thread, đính kèm hồ sơ khách hàng, giao việc có hẹn giờ nhắc và vận hành quy trình phê duyệt đa bước (Tạm ứng, Kiểm kho) ngay trên bất kỳ màn hình nào của mOS mà không bị trôi việc.',
@@ -2272,6 +2273,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'task',
       'reminder',
       'thread',
+      'forward',
+      'chuyển tiếp',
       'read receipts',
       'đã xem',
       'header',
@@ -2282,10 +2285,14 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/dashboard', '/chat'],
     status: 'ACTIVE',
-    version: '2.1.0',
-    effectiveFrom: '2026-11-11',
+    version: '2.2.0',
+    effectiveFrom: '2026-11-21',
     sources: [
       { label: 'mOS Chat Workspace Component', reference: 'apps/web/components/mos-chat/MosGoogleChatPortal.tsx' },
+      {
+        label: 'mOS Chat Forward Service',
+        reference: 'apps/api/src/modules/chat/chat-forward.service.ts',
+      },
       {
         label: 'mOS Chat Web Push Service (iOS PWA & Desktop)',
         reference: 'apps/api/src/modules/chat/chat-web-push.service.ts',

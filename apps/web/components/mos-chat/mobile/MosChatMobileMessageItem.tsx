@@ -43,6 +43,7 @@ import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
 import { MosChatGoogleWorkspaceCardList } from '../components/MosChatGoogleWorkspaceCard';
 import { MosChatVideoPlayer } from '../components/MosChatVideoPlayer';
+import { MosChatForwardedHeader } from '../components/MosChatForwardedHeader';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -66,6 +67,8 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       messages,
       staffDirectory,
       openCustomerDetail,
+      conversations,
+      setActiveConvId,
       activeConversation,
       getMessageReadBreakdown,
       stoppedReadersByMsgId,
@@ -346,14 +349,34 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {message.pinned && (
               <div
                 className={`flex items-center gap-1 text-[11px] font-semibold mb-1 pb-1 border-b ${
-                  isDark
-                    ? 'text-amber-300 border-white/15'
-                    : 'text-amber-700 border-black/10'
+                  isDark ? 'text-amber-300 border-white/15' : 'text-amber-700 border-black/10'
                 }`}
               >
                 <Pin className="w-3 h-3 fill-current" />
                 Đã ghim trong kênh
               </div>
+            )}
+
+            {message.forwardedFrom && (
+              <MosChatForwardedHeader
+                forwardedFrom={message.forwardedFrom}
+                isDark={isDark}
+                compact={true}
+                canJumpToSource={Boolean(
+                  conversations?.some((c) => c.id === message.forwardedFrom?.sourceConversationId)
+                )}
+                onJumpToSource={(srcConvId, srcMsgId) => {
+                  if (srcConvId !== activeConversation?.id) {
+                    setActiveConvId(srcConvId);
+                  }
+                  setTimeout(() => {
+                    const targetEl = document.getElementById(`mos-chat-msg-${srcMsgId}`);
+                    if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+                      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }, 120);
+                }}
+              />
             )}
 
             {/* Quoted Message Preview */}
@@ -704,11 +727,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {/* Time & Read status */}
             <div
               className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                isMe
-                  ? isDark
-                    ? 'text-amber-300/80'
-                    : 'text-amber-800/80'
-                  : 'text-[var(--mos-text-muted)]'
+                isMe ? (isDark ? 'text-amber-300/80' : 'text-amber-800/80') : 'text-[var(--mos-text-muted)]'
               }`}
             >
               {message.editedAt && <span className="italic mr-0.5">đã sửa</span>}
@@ -740,9 +759,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                     <Check className="w-3.5 h-3.5 stroke-[2.2]" />
                   )}
                   {msgReadBreakdown.seenBy.length > 1 && (
-                    <span className="text-[9.5px] tabular-nums font-bold">
-                      {msgReadBreakdown.seenBy.length}
-                    </span>
+                    <span className="text-[9.5px] tabular-nums font-bold">{msgReadBreakdown.seenBy.length}</span>
                   )}
                 </button>
               )}
@@ -822,11 +839,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
         {/* Mini Seen Avatars Stack (MOS-BUG-229) */}
         {!message.isDeleted && stoppedReadersForMsg.length > 0 && (
-          <div
-            className={`mt-1 flex items-center gap-1 select-none px-1 ${
-              isMe ? 'self-end' : 'self-start'
-            }`}
-          >
+          <div className={`mt-1 flex items-center gap-1 select-none px-1 ${isMe ? 'self-end' : 'self-start'}`}>
             <button
               type="button"
               onClick={(e) => {

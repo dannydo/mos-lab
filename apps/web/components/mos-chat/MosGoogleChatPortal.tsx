@@ -141,6 +141,8 @@ import { formatRelativeTime } from '../../lib/date-utils';
 
 dayjs.extend(relativeTime);
 import type {
+  ForwardMosChatMessageRequest,
+  ForwardMosChatMessageResponse,
   MosChatMessageEditHistoryItem,
   MosChatAccessConfig,
   MosChatBuzzEvent,
@@ -256,6 +258,7 @@ import { MosChatReactionUsersModal } from './components/MosChatReactionUsersModa
 import { MosChatAiSessionsModal, copyMosChatSessionPermalink } from './components/MosChatAiSessionsModal';
 import { MosChatAiAuditReasonModal } from './components/MosChatAiAuditReasonModal';
 import { MOS_CHAT_SESSION_QUERY_KEYS, syncConversationIntoUrl } from './utils/mos-chat-permalink';
+import { MosChatForwardModal } from './components/MosChatForwardModal';
 import type { MosChatActiveSubtab, MosChatReactionUsersTarget } from './types/mos-chat-types';
 import type { AiSessionAccessInfo } from '@mos-lab/shared';
 import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
@@ -5745,6 +5748,69 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       navigateToMessage(item.conversationId, item.id);
     },
     [navigateToMessage]
+  );
+
+  const [forwardModalTarget, setForwardModalTarget] = useState<{
+    sourceConversationId: string;
+    message: MosChatMessage;
+    reply?: MosChatThreadReply | null;
+  } | null>(null);
+
+  const accessibleConversationIds = useMemo(() => new Set((conversations || []).map((c) => c.id)), [conversations]);
+
+  const handleOpenForwardModal = useCallback(
+    (msg: MosChatMessage, reply?: MosChatThreadReply | null, sourceConvIdOverride?: string) => {
+      const cid = sourceConvIdOverride || msg.conversationId || activeConversation?.id || '';
+      if (!cid || cid === AI_COPILOT_CONV_ID) return;
+      setForwardModalTarget({
+        sourceConversationId: cid,
+        message: msg,
+        reply: reply || null,
+      });
+    },
+    [activeConversation?.id]
+  );
+
+  const handleJumpToForwardedSource = useCallback(
+    (sourceConvId: string, sourceMsgId: string) => {
+      if (!accessibleConversationIds.has(sourceConvId)) return;
+      navigateToMessage(sourceConvId, sourceMsgId);
+    },
+    [accessibleConversationIds, navigateToMessage]
+  );
+
+  const handleForwardMessage = useCallback(
+    async (payload: ForwardMosChatMessageRequest): Promise<ForwardMosChatMessageResponse | null> => {
+      try {
+        const res = await apiClient.chat.forwardMessage(payload);
+        lastVersionRef.current = Date.now();
+        if (Array.isArray(res?.updatedConversations) && res.updatedConversations.length > 0) {
+          setConversations((prev) => {
+            const byId = new Map(res.updatedConversations.map((c) => [c.id, c]));
+            const updatedExisting = prev.map((c) => byId.get(c.id) || c);
+            const existingIds = new Set(prev.map((c) => c.id));
+            const newlyCreated = res.updatedConversations.filter((c) => !existingIds.has(c.id));
+            return [...newlyCreated, ...updatedExisting];
+          });
+        }
+        if (res?.userPrefs) {
+          setUserPrefs(res.userPrefs);
+        }
+        notifyLivePeers();
+        const destCount = res?.results?.length || 0;
+        const threadCount = res?.results?.[0]?.forwardedThreadCount || 0;
+        antdMessage.success(
+          threadCount > 0
+            ? `Đã chuyển tiếp tin nhắn (kèm ${threadCount} phản hồi trong luồng) tới ${destCount} nơi nhận!`
+            : `Đã chuyển tiếp tin nhắn tới ${destCount} nơi nhận!`
+        );
+        return res;
+      } catch (err: SafeAny) {
+        antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể chuyển tiếp tin nhắn.');
+        return null;
+      }
+    },
+    [notifyLivePeers, antdMessage]
   );
 
   const lastProcessedNavRef = useRef<string | null>(null);
@@ -11789,6 +11855,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     renderMessageAttachments={renderMessageAttachments}
                     openCustomerDetail={openCustomerDetail}
                     handleReplyToMessage={handleReplyToMessage}
+                    handleOpenForwardModal={handleOpenForwardModal}
+                    accessibleConversationIds={accessibleConversationIds}
+                    onJumpToForwardedSource={handleJumpToForwardedSource}
                   />
 
                   {activeConversation?.id === AI_COPILOT_CONV_ID && isAiSessionReadOnly && (
@@ -12073,6 +12142,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               setIsUrgentSendThread={setIsUrgentSendThread}
               setTriggerWorkflowModalOpen={setTriggerWorkflowModalOpen}
               setInitialWorkflowCode={setInitialWorkflowCode}
+              handleOpenForwardModal={handleOpenForwardModal}
+              accessibleConversationIds={accessibleConversationIds}
+              onJumpToForwardedSource={handleJumpToForwardedSource}
             />
 
             {/* RIGHT SIDE SPLIT READER: GOOGLE SHEETS & DOCS WORKSPACE */}
@@ -12165,6 +12237,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         dockActiveThreadMsgIds={dockActiveThreadMsgIds}
         setDockActiveThreadMsgIds={setDockActiveThreadMsgIds}
         onStartVoiceCall={(cid) => void voiceCall.startOrJoinVoiceCall(cid)}
+        handleOpenForwardModal={handleOpenForwardModal}
+        onJumpToForwardedSource={handleJumpToForwardedSource}
       />
 
       {/* ================= VOICE CALL FLOATING WIDGET & INCOMING CALL BANNER ================= */}
@@ -12243,6 +12317,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         staffDirectory={staffDirectory}
         onToggleReaction={handleToggleReaction}
         isDark={isDark}
+      />
+
+      {/* Forward Message & Subthread Modal */}
+      <MosChatForwardModal
+        open={Boolean(forwardModalTarget)}
+        onClose={() => setForwardModalTarget(null)}
+        sourceConversation={
+          allUserConversations.find((c) => c.id === forwardModalTarget?.sourceConversationId) || activeConversation
+        }
+        sourceMessage={forwardModalTarget?.message || null}
+        sourceReply={forwardModalTarget?.reply || null}
+        conversations={allUserConversations}
+        staffDirectory={staffDirectory}
+        currentUser={currentUser}
+        pinnedIds={userPrefs.pinnedIds}
+        isDark={isDark}
+        onSubmit={handleForwardMessage}
+        onNavigateToConversation={(cid) => navigateToMessage(cid)}
       />
 
       <MosChatModals

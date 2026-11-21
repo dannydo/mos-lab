@@ -17,6 +17,8 @@ import type {
   DeleteMosChatTaskResponse,
   EditMosChatMessageRequest,
   ExtractMosChatChecklistResponse,
+  ForwardMosChatMessageRequest,
+  ForwardMosChatMessageResponse,
   MarkConversationAsUnreadResponse,
   MarkThreadAsReadResponse,
   MosChatAccessConfig,
@@ -196,6 +198,11 @@ export const chatApi = {
     moveThreadItem: async (payload: MoveMosChatThreadItemRequest): Promise<MoveMosChatThreadItemResponse> => {
       const res = await api.post('/chat/threads/move', payload);
       invalidateApiGetCache(['/chat/bootstrap', '/bug-reports/inbox']);
+      return res.data;
+    },
+    forwardMessage: async (payload: ForwardMosChatMessageRequest): Promise<ForwardMosChatMessageResponse> => {
+      const res = await api.post('/chat/messages/forward', payload);
+      invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
     reactToMessage: async (

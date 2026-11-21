@@ -215,13 +215,16 @@ describe('MosChatThreadUtilities - Utilities parity between main chat and thread
     expect(setStagedCustomerCard).toHaveBeenCalledWith(null);
   });
 
-  it('renders task creation button for individual thread replies', () => {
+  it('renders task creation button inside reply overflow menu for individual thread replies', async () => {
     const openTaskModalFromMessage = vi.fn();
     const props = createDefaultProps({ openTaskModalFromMessage });
 
     render(<MosChatThreadDrawer {...props} />);
 
-    const replyTaskBtn = screen.getByRole('button', { name: 'Tạo Task & Hẹn giờ nhắc từ phản hồi này' });
+    const moreReplyBtns = screen.getAllByRole('button', { name: 'Thêm thao tác phản hồi' });
+    fireEvent.click(moreReplyBtns[0]);
+
+    const replyTaskBtn = await screen.findByRole('button', { name: 'Tạo Task & Hẹn giờ nhắc từ phản hồi này' });
     expect(replyTaskBtn).toBeInTheDocument();
 
     fireEvent.click(replyTaskBtn);

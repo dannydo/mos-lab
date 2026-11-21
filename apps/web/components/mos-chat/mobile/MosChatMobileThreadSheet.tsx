@@ -32,6 +32,7 @@ import {
   FileText,
   File,
   FilePenLine,
+  Forward,
 } from 'lucide-react';
 import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
@@ -54,6 +55,7 @@ import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
 import { MosChatGoogleWorkspaceCardList } from '../components/MosChatGoogleWorkspaceCard';
 import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
+import { MosChatForwardedHeader } from '../components/MosChatForwardedHeader';
 import type {
   MosChatCustomerCard,
   MosChatImageAttachment,
@@ -85,11 +87,13 @@ export interface MosChatMobileThreadSheetProps {
     isNew?: boolean;
   }) => void;
   onOpenMoveReply?: (sourceMsg: MosChatMessage, replyId: string) => void;
+  onForwardMessage?: (sourceMsg: MosChatMessage, reply?: MosChatThreadReply | null) => void;
 }
 
 export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> = ({
   onOpenTaskModal,
   onOpenMoveReply,
+  onForwardMessage,
 }) => {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -893,17 +897,33 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           <Check className="w-3.5 h-3.5 stroke-[2.2]" />
                         )}
                         {parentBreakdown.seenBy.length > 1 && (
-                          <span className="text-[9.5px] tabular-nums font-bold">
-                            {parentBreakdown.seenBy.length}
-                          </span>
+                          <span className="text-[9.5px] tabular-nums font-bold">{parentBreakdown.seenBy.length}</span>
                         )}
                       </button>
                     )}
                   </span>
+                  {!activeThreadMsg.isDeleted && activeConversation?.id !== 'ai-copilot' && onForwardMessage && (
+                    <button
+                      type="button"
+                      aria-label="Chuyển tiếp luồng thảo luận"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onForwardMessage(activeThreadMsg);
+                      }}
+                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-[var(--mos-surface-muted)] text-[var(--mos-accent)] active:scale-95 shrink-0"
+                    >
+                      <Forward className="w-3.5 h-3.5" />
+                      <span>Chuyển tiếp</span>
+                    </button>
+                  )}
                 </div>
               </>
             );
           })()}
+
+          {activeThreadMsg.forwardedFrom && (
+            <MosChatForwardedHeader forwardedFrom={activeThreadMsg.forwardedFrom} isDark={isDark} compact={true} />
+          )}
 
           {/* Parent Message Content */}
           {activeThreadMsg.isDeleted ? (
@@ -1559,8 +1579,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             activeThreadMsg && getThreadReplyReadBreakdown
               ? getThreadReplyReadBreakdown(activeThreadMsg, reply)
               : { seenBy: [], unseenBy: [] };
-          const stoppedReadersForReply =
-            (stoppedReadersByReplyId && stoppedReadersByReplyId[reply.id]) || [];
+          const stoppedReadersForReply = (stoppedReadersByReplyId && stoppedReadersByReplyId[reply.id]) || [];
           const isReplySeen = replyBreakdown.seenBy.length > 0;
 
           const swipeOffset = swipeOffsetMap[reply.id] || 0;
@@ -1831,11 +1850,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   <div
                     className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                      isMe
-                        ? isDark
-                          ? 'text-amber-300/80'
-                          : 'text-amber-800/80'
-                        : 'text-[var(--mos-text-muted)]'
+                      isMe ? (isDark ? 'text-amber-300/80' : 'text-amber-800/80') : 'text-[var(--mos-text-muted)]'
                     }`}
                   >
                     {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
@@ -1869,9 +1884,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                           <Check className="w-3.5 h-3.5 stroke-[2.2]" />
                         )}
                         {replyBreakdown.seenBy.length > 1 && (
-                          <span className="text-[9.5px] tabular-nums font-bold">
-                            {replyBreakdown.seenBy.length}
-                          </span>
+                          <span className="text-[9.5px] tabular-nums font-bold">{replyBreakdown.seenBy.length}</span>
                         )}
                       </button>
                     )}
@@ -1949,11 +1962,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
               {/* Mini Seen Avatars Stack for Thread Reply (MOS-BUG-229) */}
               {!reply.isDeleted && stoppedReadersForReply.length > 0 && (
-                <div
-                  className={`mt-1 flex items-center gap-1 select-none px-1 ${
-                    isMe ? 'self-end' : 'self-start'
-                  }`}
-                >
+                <div className={`mt-1 flex items-center gap-1 select-none px-1 ${isMe ? 'self-end' : 'self-start'}`}>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -2440,38 +2449,39 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             {/* Actions List */}
             <div className="space-y-1 divide-y divide-[var(--mos-surface-border)]">
               {/* View Who Read Subthread Reply (MOS-BUG-229) */}
-              {!actionSheetReply.isDeleted && (() => {
-                const breakdown =
-                  activeThreadMsg && getThreadReplyReadBreakdown
-                    ? getThreadReplyReadBreakdown(activeThreadMsg, actionSheetReply)
-                    : { seenBy: [], unseenBy: [] };
-                return (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const replyObj = actionSheetReply;
-                      setActionSheetReply(null);
-                      if (activeThreadMsg && openSeenUsersSheetForReply) {
-                        openSeenUsersSheetForReply(activeThreadMsg, replyObj);
-                      }
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface-muted)] hover:opacity-90 rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <UserCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span className={`font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
-                        Xem người đã đọc
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
-                      <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                        {breakdown.seenBy.length} đã xem
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
-                    </div>
-                  </button>
-                );
-              })()}
+              {!actionSheetReply.isDeleted &&
+                (() => {
+                  const breakdown =
+                    activeThreadMsg && getThreadReplyReadBreakdown
+                      ? getThreadReplyReadBreakdown(activeThreadMsg, actionSheetReply)
+                      : { seenBy: [], unseenBy: [] };
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const replyObj = actionSheetReply;
+                        setActionSheetReply(null);
+                        if (activeThreadMsg && openSeenUsersSheetForReply) {
+                          openSeenUsersSheetForReply(activeThreadMsg, replyObj);
+                        }
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-[var(--mos-text)] bg-[var(--mos-surface-muted)] hover:opacity-90 rounded-xl transition-colors active:scale-98 border border-[var(--mos-surface-border)] mb-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        <UserCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                        <span className={`font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                          Xem người đã đọc
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--mos-text-muted)]">
+                        <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                          {breakdown.seenBy.length} đã xem
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[var(--mos-text-muted)]" />
+                      </div>
+                    </button>
+                  );
+                })()}
 
               {Object.values(actionSheetReply.reactions || {}).reduce((s, c) => s + c, 0) > 0 && (
                 <button
@@ -2571,6 +2581,21 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <Copy className={`w-4 h-4 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
                 <span className="font-medium">Sao chép phản hồi</span>
               </button>
+
+              {activeConversation?.id !== 'ai-copilot' && onForwardMessage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const replyToForward = actionSheetReply;
+                    setActionSheetReply(null);
+                    onForwardMessage(activeThreadMsg, replyToForward);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--mos-text)] hover:bg-[var(--mos-surface-muted)] rounded-xl transition-colors active:scale-98"
+                >
+                  <Forward className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <span className="font-medium">Chuyển tiếp phản hồi này...</span>
+                </button>
+              )}
 
               {(() => {
                 const isReplyOwner = isUserMessageOwner(actionSheetReply, currentUser);

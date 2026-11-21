@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import dynamic from 'next/dynamic';
 import dayjs from 'dayjs';
 import type {
+  ForwardMosChatMessageRequest,
+  ForwardMosChatMessageResponse,
   MosChatConversation,
   MosChatMessage,
   MosChatQuotedMessage,
@@ -1599,6 +1601,46 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     [activeConvId, messages, activeThreadMsg]
   );
 
+  // Forward message & optional subthread to any spaces / DMs / colleagues
+  const forwardMessage = useCallback(
+    async (payload: ForwardMosChatMessageRequest): Promise<ForwardMosChatMessageResponse | null> => {
+      try {
+        const res = await apiClient.chat.forwardMessage(payload);
+        lastVersionRef.current = Date.now();
+        if (Array.isArray(res?.updatedConversations) && res.updatedConversations.length > 0) {
+          setConversations((prev) => {
+            const byId = new Map(res.updatedConversations.map((c) => [c.id, c]));
+            const updatedExisting = prev.map((c) => byId.get(c.id) || c);
+            const existingIds = new Set(prev.map((c) => c.id));
+            const newlyCreated = res.updatedConversations.filter((c) => !existingIds.has(c.id));
+            return [...newlyCreated, ...updatedExisting];
+          });
+          setAllMessagesByConv((prev) => {
+            const next = { ...prev };
+            for (const updatedConv of res.updatedConversations) {
+              if (Array.isArray(updatedConv.messages)) {
+                next[updatedConv.id] = updatedConv.messages;
+              }
+            }
+            return next;
+          });
+        }
+        const destCount = res?.results?.length || 0;
+        const threadCount = res?.results?.[0]?.forwardedThreadCount || 0;
+        antdMessage.success(
+          threadCount > 0
+            ? `Đã chuyển tiếp tin nhắn (kèm ${threadCount} phản hồi trong luồng) tới ${destCount} nơi nhận!`
+            : `Đã chuyển tiếp tin nhắn tới ${destCount} nơi nhận!`
+        );
+        return res;
+      } catch (err: SafeAny) {
+        antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể chuyển tiếp tin nhắn.');
+        return null;
+      }
+    },
+    []
+  );
+
   // Edit message
   const editMessage = useCallback(
     async (msgId: string, newText: string, options?: { replyId?: string }) => {
@@ -2084,6 +2126,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       threadReplies,
       sendThreadReply,
       moveThreadItem,
+      forwardMessage,
       markThreadAsRead,
       isAiThinking,
       activeSubtab,
@@ -2159,6 +2202,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       threadReplies,
       sendThreadReply,
       moveThreadItem,
+      forwardMessage,
       markThreadAsRead,
       isAiThinking,
       activeSubtab,

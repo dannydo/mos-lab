@@ -565,8 +565,11 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
       expect(screen.getByText('x2')).toBeTruthy();
     });
 
-    // Verify Buzz / Bump button is present in message action toolbar
-    const buzzBtn = screen.getByRole('button', { name: /Buzz \/ Bump tin nhắn khẩn cấp/i });
+    // Open overflow menu (⋯) and verify Buzz / Bump button is present inside
+    const moreBtn = screen.getByRole('button', { name: /Thêm thao tác tin nhắn/i });
+    fireEvent.click(moreBtn);
+
+    const buzzBtn = await screen.findByRole('button', { name: /Buzz \/ Bump tin nhắn khẩn cấp/i });
     expect(buzzBtn).toBeTruthy();
   });
 

@@ -326,11 +326,11 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     expect(toolbars).toHaveLength(1);
   });
 
-  it('triggers setOpenMovePopoverKey and handles separating thread reply (MOS-BUG-188)', () => {
+  it('opens reply overflow menu to handle separating thread reply (MOS-BUG-188)', async () => {
     const setOpenMovePopoverKeyMock = vi.fn();
     const handleMoveThreadItemMock = vi.fn();
 
-    const { rerender } = render(
+    render(
       <MosChatThreadDrawer
         {...defaultProps}
         openMovePopoverKey={null}
@@ -340,27 +340,17 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
       />
     );
 
-    // Look for split button
-    const splitButtons = screen.getAllByRole('button', { name: 'Tách hoặc chuyển câu trả lời sang luồng khác' });
-    expect(splitButtons.length).toBeGreaterThan(0);
+    // Open overflow menu on first reply
+    const moreReplyButtons = screen.getAllByRole('button', { name: 'Thêm thao tác phản hồi' });
+    expect(moreReplyButtons.length).toBeGreaterThan(0);
+    fireEvent.click(moreReplyButtons[0]);
 
-    // Click the split button on first reply
-    fireEvent.click(splitButtons[0]);
-    expect(setOpenMovePopoverKeyMock).toHaveBeenCalledWith('reply:msg-root-101:reply-1');
+    // Click the split button inside overflow menu to switch to move sub-view
+    const splitButton = await screen.findByRole('button', { name: 'Tách hoặc chuyển câu trả lời sang luồng khác' });
+    fireEvent.click(splitButton);
 
-    // Rerender with popover open
-    rerender(
-      <MosChatThreadDrawer
-        {...defaultProps}
-        openMovePopoverKey="reply:msg-root-101:reply-1"
-        setOpenMovePopoverKey={setOpenMovePopoverKeyMock}
-        handleMoveThreadItem={handleMoveThreadItemMock}
-        canManageChatThreads={true}
-      />
-    );
-
-    // Primary action button in popover
-    const promoteBtn = screen.getByRole('button', { name: /Tách ra thành tin nhắn riêng ở luồng chính/i });
+    // Primary action button in move sub-view
+    const promoteBtn = await screen.findByRole('button', { name: /Tách ra thành tin nhắn riêng ở luồng chính/i });
     expect(promoteBtn).toBeInTheDocument();
 
     // Click promote
@@ -421,5 +411,53 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     expect(lines[1]).toBe('');
     expect(lines[2]).toBe('Option này chỉ áp dụng cho khách đang còn gói và mua gói mới');
     expect(lines).toHaveLength(3);
+  });
+
+  it('syncs Space member nickname on both subthread root message and reply quote banner', () => {
+    const rootWithHuong: MosChatMessage = {
+      ...mockActiveMessage,
+      id: 'msg-huong-1',
+      senderId: 'user-huong',
+      senderName: 'Diễm Hương',
+      text: 'Em yêu cầu chị ly có thể tự done kh ra khỏi phần servicing',
+      timeLabel: '20:47',
+      thread: [
+        {
+          id: 'reply-huong-1',
+          senderId: 'user-huong',
+          senderName: 'Diễm Hương',
+          senderRole: 'Tư Vấn (CC)',
+          text: 'Bổ sung thêm ý này ạ',
+          timeLabel: '20:48',
+          createdAt: '2026-11-21T20:48:00.000Z',
+        },
+      ],
+    };
+
+    const getMemberNickname = (staffId: string | number) =>
+      String(staffId) === 'user-huong' ? 'Hương Qua Đèo' : undefined;
+
+    render(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        activeThreadMessage={rootWithHuong}
+        activeConversation={{
+          id: 'conv-general',
+          type: 'space',
+          memberNicknames: { 'user-huong': 'Hương Qua Đèo' },
+          messages: [rootWithHuong],
+        }}
+        getMemberNickname={getMemberNickname}
+      />
+    );
+
+    // Both root message and reply in subthread must display the synced nickname
+    expect(screen.getAllByText('Hương Qua Đèo')).toHaveLength(2);
+    expect(screen.getAllByText('(Diễm Hương)')).toHaveLength(2);
+
+    // Quoting the root message in subthread must also use the synced nickname
+    const quoteRootBtn = screen.getByRole('button', { name: 'Trả lời tin nhắn gốc trong luồng' });
+    fireEvent.click(quoteRootBtn);
+    expect(screen.getByText('Trả lời Hương Qua Đèo:')).toBeInTheDocument();
   });
 });

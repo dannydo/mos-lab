@@ -694,6 +694,28 @@ export async function upsertSingleThreadReplyToRelationalDb(
 }
 
 /**
+ * Direct O(1+K) Row Upsert for a root message AND all of its subthread replies.
+ * Used when forwarding a thread so cloned replies persist immediately to MySQL.
+ */
+export async function upsertMessageWithThreadToRelationalDb(
+  fastify: FastifyInstance,
+  conversationId: string,
+  msg: MosChatMessage
+): Promise<void> {
+  await upsertSingleMessageToRelationalDb(fastify, conversationId, msg);
+  const replies = Array.isArray(msg.thread) ? msg.thread : [];
+  if (replies.length === 0) return;
+
+  const CHUNK_SIZE = 15;
+  for (let i = 0; i < replies.length; i += CHUNK_SIZE) {
+    const chunk = replies.slice(i, i + CHUNK_SIZE);
+    await Promise.all(
+      chunk.map((reply) => upsertSingleThreadReplyToRelationalDb(fastify, conversationId, msg.id, reply))
+    );
+  }
+}
+
+/**
  * Direct O(1) Row Upsert for a single task (~1-2ms).
  */
 export async function upsertSingleTaskToRelationalDb(fastify: FastifyInstance, task: MosChatTaskItem): Promise<void> {

@@ -167,6 +167,25 @@ export interface MosChatThreadReadReceiptEntry {
   readAt: string;
 }
 
+export interface MosChatForwardedMetadata {
+  sourceConversationId: string;
+  sourceConversationName: string;
+  sourceConversationType: 'dm' | 'space';
+  sourceMessageId: string;
+  sourceReplyId?: string | null;
+  originalSenderId: number | string;
+  originalSenderName: string;
+  originalSenderRole?: string;
+  originalSenderAvatar?: string | null;
+  originalCreatedAt: string;
+  originalTimeLabel?: string;
+  forwardedByStaffId: number | string;
+  forwardedByName: string;
+  forwardedAt: string;
+  forwardedThreadCount?: number;
+  note?: string | null;
+}
+
 export interface MosChatThreadReply {
   id: string;
   senderId: number | string;
@@ -178,6 +197,7 @@ export interface MosChatThreadReply {
   createdAt: string;
   attachments?: MosChatImageAttachment[];
   customerCard?: MosChatCustomerCard | null;
+  forwardedFrom?: MosChatForwardedMetadata | null;
   editedAt?: string | null;
   editedBy?: string | number | null;
   editHistory?: MosChatMessageEditHistoryItem[];
@@ -239,6 +259,7 @@ export interface MosChatMessage {
   createdAt: string;
   replyToId?: string | null;
   replyTo?: MosChatQuotedMessage | null;
+  forwardedFrom?: MosChatForwardedMetadata | null;
   pinned?: boolean;
   reactions?: Record<string, number>;
   reactionUsers?: Record<string, Array<number | string>>;
@@ -795,6 +816,32 @@ export interface MoveMosChatThreadItemResponse {
   targetMessage?: MosChatMessage | null;
   promotedMessage?: MosChatMessage | null;
   tasks?: MosChatTaskItem[];
+}
+
+export interface ForwardMosChatMessageRequest {
+  sourceConversationId: string;
+  sourceMessageId: string;
+  sourceReplyId?: string | null;
+  includeThread?: boolean;
+  targetConversationIds?: string[];
+  targetStaffIds?: number[];
+  note?: string | null;
+}
+
+export interface ForwardMosChatMessageResultItem {
+  conversationId: string;
+  conversationName: string;
+  conversationType: 'dm' | 'space';
+  message: MosChatMessage;
+  forwardedThreadCount: number;
+  createdNewConversation?: boolean;
+}
+
+export interface ForwardMosChatMessageResponse {
+  success: boolean;
+  results: ForwardMosChatMessageResultItem[];
+  updatedConversations: MosChatConversation[];
+  userPrefs?: MosChatUserSidebarPrefs;
 }
 
 // ================= DYNAMIC WORKFLOW ENGINE & CONTEXTUAL ENTITY TYPES =================
